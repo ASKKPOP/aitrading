@@ -64,6 +64,7 @@ import { Language, getT, DEFAULT_LANGUAGE, LANGUAGES } from './i18n'
 import { THEMES, DEFAULT_THEME } from './appShared'
 import {
   ForgotPasswordPage,
+  AppleCallbackPage,
   GoogleCallbackPage,
   MfaSetupPage,
   SignInPage,
@@ -525,6 +526,7 @@ function AppRouter({
           <Route path="/sign-up" element={<SignUpPage onLogin={userLogin} />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+          <Route path="/auth/apple/callback" element={<AppleCallbackPage onLogin={userLogin} />} />
           {/* Enterprise contact is public — no account needed to ask for a contract. */}
           <Route path="/contract" element={<ContractPage />} />
           {/* Guest browsing: the leaderboard is public by design ("view profit
@@ -656,6 +658,7 @@ function AppRouter({
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/auth/mfa/setup" element={<MfaSetupPage userToken={userToken} />} />
               <Route path="/auth/google/callback" element={<GoogleCallbackPage onLogin={userLogin} />} />
+              <Route path="/auth/apple/callback" element={<AppleCallbackPage onLogin={userLogin} />} />
               <Route
                 path="/my-trading"
                 element={userToken

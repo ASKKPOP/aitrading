@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in with Apple — Setup Guide</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  h3 { font-size: 15.5px; margin: 22px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .card.warn { border-color: var(--warn); }
+  .card.bad { border-color: var(--bad); }
+  .card.good { border-color: var(--good); }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  pre { background: var(--code); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
+        font-size: 12.5px; line-height: 1.55; margin: 10px 0; }
+  pre code { background: none; padding: 0; }
+  ol, ul { padding-left: 22px; }
+  li { margin: 6px 0; }
+  .step { border-left: 3px solid var(--accent); padding-left: 14px; margin: 20px 0; overflow-x: auto; }
+  .step h3 { margin-top: 0; }
+  .tag { display: inline-block; font-size: 11px; border: 1px solid var(--line);
+         border-radius: 6px; padding: 1px 7px; color: var(--muted); margin-left: 6px; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wn { color: var(--warn); }
+  svg { display: block; max-width: 100%; height: auto; }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Sign in with Apple — Setup Guide</h1>
+<p class="kr">Sooppiy 애플 로그인 발급 · 등록 단계별 가이드 (코드 기준: <code>routes_oauth.py</code>, <code>authV2.tsx</code> — main @ 31fceb1f)</p>
+
+<div class="chips">
+  <div class="chip"><b>5</b><span>things to create in Apple</span></div>
+  <div class="chip"><b>5</b><span>env vars to set</span></div>
+  <div class="chip"><b>1</b><span>file to host on the domain</span></div>
+  <div class="chip"><b>6mo</b><span>secret lifetime — then it expires</span></div>
+  <div class="chip"><b>1</b><span>chance to capture name+email</span></div>
+</div>
+
+<div class="card good">
+<b>The backend is built and merged — this guide is now only about the Apple side.</b><br>
+<code>routes_oauth.py</code> ships <code>/api/auth/apple/start</code>, <code>POST /api/auth/apple/callback</code>
+and <code>POST /api/auth/apple/session</code>; the login page's Apple button turns itself on the moment
+<code>/api/auth/providers</code> reports <code>apple: true</code>, which happens as soon as the five env vars below
+are set. So: do Part A, put the values in the prod <code>.env</code>, deploy — and it is live. Nothing else to write.
+<p class="kr" style="margin:8px 0 0">백엔드는 구현·병합 완료 — 이제 애플 쪽 작업만 남았습니다. 아래 환경변수 5개를 prod <code>.env</code>에 넣고 배포하면 버튼이 자동으로 활성화됩니다.</p>
+</div>
+
+<h2>0. What already exists, and what does not</h2>
+<p class="kr">지금 상태 — 무엇이 준비되어 있고 무엇이 없는지</p>
+
+<div class="card">
+<table>
+<tr><th>Piece</th><th>State</th><th>Where</th></tr>
+<tr><td><code>oauth_identities</code> table</td><td class="ok">✅ Ready</td><td><code>database.py</code> — <code>UNIQUE(provider, provider_user_id)</code>, one user can hold Google <b>and</b> Apple rows. The schema comment already names Apple.</td></tr>
+<tr><td>OAuth state store (CSRF)</td><td class="ok">✅ Ready</td><td><code>routes_oauth._store_state</code> / <code>_consume_state</code> — Redis w/ TTL, in-process fallback. <b>Not a cookie</b>, which is exactly what Apple needs (see §5).</td></tr>
+<tr><td>Google flow</td><td class="ok">✅ Live on prod</td><td><code>GET /api/auth/google/start</code> → <code>GET /api/auth/google/callback</code></td></tr>
+<tr><td>Apple backend flow</td><td class="ok">✅ Built</td><td><code>routes_oauth.py</code> — <code>GET /api/auth/apple/start</code>, <code>POST /api/auth/apple/callback</code>, <code>POST /api/auth/apple/session</code>. Provider list reports <code>apple: true</code> once the env vars are set.</td></tr>
+<tr><td>Apple button (frontend)</td><td class="ok">✅ Self-enabling</td><td><code>appCommunityPages.tsx</code> — already reads <code>providers.apple</code> and links to <code>/auth/apple/start</code>. No code change needed to switch it on. The callback lands on <code>AppleCallbackPage</code> (<code>authV2.tsx</code>).</td></tr>
+<tr><td>Env vars</td><td class="wn">⚠ Yours to fill</td><td><code>.env.example</code> — uncommented and documented. <b>The only thing standing between here and a working Apple login.</b></td></tr>
+<tr><td>ES256 signing capability</td><td class="ok">✅ Available</td><td><code>cryptography&gt;=42.0.0</code> is already in <code>service/requirements.txt</code>. <b>PyJWT is not</b> — see §5.</td></tr>
+</table>
+</div>
+
+<h2>Part A — Apple Developer portal</h2>
+<p class="kr">A파트: 애플 개발자 포털에서 직접 하셔야 하는 작업</p>
+
+<div class="card warn">
+<b>Prerequisites.</b> A paid <b>Apple Developer Program</b> membership (US$99/year) — a free Apple ID cannot enable
+Sign in with Apple. You must be signed in as <b>Account Holder</b> or <b>Admin</b>. Sooppiy already serves
+<code>https://sooppiy.com</code>, which satisfies Apple's HTTPS requirement.
+<p class="kr" style="margin:8px 0 0">유료 Apple Developer Program 멤버십(연 $99) 필요 — 무료 계정으로는 불가. 역할은 Account Holder 또는 Admin. HTTPS 도메인은 이미 충족.</p>
+</div>
+
+<div class="step">
+<h3>Step 1 · App ID (primary identifier)</h3>
+<p class="kr">앱 ID 생성 — 웹 전용이어도 반드시 먼저 필요합니다</p>
+<ol>
+<li>Go to <a href="https://developer.apple.com/account/resources/identifiers/list">Certificates, Identifiers &amp; Profiles → Identifiers</a> → <b>+</b> → <b>App IDs</b> → <b>App</b>.</li>
+<li>Description: <code>Sooppiy</code>. Bundle ID: <b>Explicit</b>, e.g. <code>com.sooppiy.app</code>.</li>
+<li>Under <b>Capabilities</b>, tick <b>Sign in with Apple</b>. Register.</li>
+</ol>
+<p>Even though we only need web login, the Services ID and the signing key both have to point at a primary App ID.
+This one exists purely to be that anchor.</p>
+</div>
+
+<div class="step">
+<h3>Step 2 · Services ID — this becomes <code>APPLE_CLIENT_ID</code></h3>
+<p class="kr">서비스 ID — 웹 로그인의 client_id가 되는 값 (앱 ID와 반드시 달라야 합니다)</p>
+<ol>
+<li>Identifiers → <b>+</b> → <b>Services IDs</b>.</li>
+<li>Description: <code>Sooppiy Web</code>. Identifier: <code>com.sooppiy.web</code> — <b>must differ from the App ID above</b>.</li>
+<li>Register, then click it again to configure. Tick <b>Sign in with Apple</b> → <b>Configure</b>. Set
+    <b>Primary App ID</b> to the one from Step 1. The domain and return URL are <b>not</b> on this screen — they live
+    behind the <b>⊕</b> next to “Website URLs”, which Step 3 walks through.</li>
+</ol>
+<div class="card bad" style="margin-top:12px">
+<b>The return URL is NOT the same shape as Google's.</b> Our Google return URL is
+<code>https://sooppiy.com/auth/google/callback</code> — an SPA route that reads the query string and then calls the API.
+Apple <b>POSTs</b> a form body to its return URL, and a static SPA route cannot read a POST body. So Apple's return
+URL must hit the backend directly, under <code>/api/</code> (nginx proxies <code>/api/</code> → the backend; everything
+else falls through to <code>index.html</code>).
+<p class="kr" style="margin:8px 0 0">애플 리턴 URL은 구글과 형태가 다릅니다. 애플은 POST로 폼을 보내므로 SPA 라우트가 받을 수 없습니다. 반드시 <code>/api/</code> 아래 백엔드 경로여야 합니다.</p>
+</div>
+<p style="margin-top:10px">Rules Apple enforces on this field: HTTPS only, exact match (no wildcards, no trailing-slash
+mismatch), and <b><code>localhost</code> / raw IPs are rejected</b>. That last one is why Apple login cannot be tested
+on a local dev server the way Google can — see §6.</p>
+</div>
+
+<div class="step">
+<h3>Step 3 · Verify the domain <span class="tag">the step people get stuck on</span></h3>
+<p class="kr">도메인 소유 확인 — 별도 메뉴가 아니라 <b>서비스 ID 안</b>에 있습니다</p>
+
+<div class="card warn">
+<b>There is no “Domain Verification” menu.</b> That is why it is hard to find: verification lives <i>inside</i> the
+Services ID you made in Step 2, behind its <b>Configure</b> button. If you are hunting through the sidebar for it, you
+will not find it there.
+<p class="kr" style="margin:8px 0 0">사이드바에 “도메인 확인” 메뉴는 없습니다. Step 2에서 만든 <b>서비스 ID → Configure</b> 안에 있습니다.</p>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3a · Get to the right screen</h4>
+<div class="card">
+<ol>
+<li><a href="https://developer.apple.com/account/resources/identifiers/list/serviceId">developer.apple.com/account</a>
+    → <b>Certificates, Identifiers &amp; Profiles</b> → <b>Identifiers</b> (left sidebar).</li>
+<li><b>Change the filter in the top-right dropdown from “App IDs” to “Services IDs”.</b> This is the single most
+    common place to get lost — your Services ID is invisible while the list is filtered to App IDs, and it looks like
+    it was never created.</li>
+<li>Click your Services ID (<code>com.sooppiy.web</code>).</li>
+<li>Tick the <b>Sign In with Apple</b> checkbox. The <b>Configure</b> button beside it only becomes clickable once
+    that box is ticked.</li>
+<li>Click <b>Configure</b> → the <b>Web Authentication Configuration</b> dialog opens. Everything below happens here.</li>
+</ol>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3b · Inside the dialog — the ⊕ is the whole trick</h4>
+<div class="card bad">
+<b>The Download button is not on this screen, and that is not a bug.</b> The <b>Web Authentication Configuration</b>
+dialog opens with only a <b>Primary App ID</b> picker and an empty <b>Website URLs</b> section holding a
+<b>Search</b> box. There is nothing to download yet because <b>no website URL group exists</b>. The blue <b>⊕</b> next
+to “Website URLs” is what creates one — and that is where the domain field, the return-URL field, and the association
+file all live.
+<p class="kr" style="margin:8px 0 0">이 화면에는 Download 버튼이 없습니다 — 아직 등록된 웹사이트 URL 그룹이 없기 때문입니다. “Website URLs” 옆의 파란 <b>⊕</b>를 누르면 도메인·리턴 URL 입력과 파일 다운로드가 나옵니다.</p>
+</div>
+
+<div class="card">
+<svg viewBox="0 0 900 250" role="img" aria-label="The Web Authentication Configuration dialog and the plus button that opens URL registration">
+  <rect class="box" x="10" y="10" width="560" height="230"/>
+  <text class="t-b" x="30" y="38">Web Authentication Configuration</text>
+
+  <text class="t-small" x="30" y="66">Primary App ID</text>
+  <rect class="box" x="30" y="74" width="330" height="26"/>
+  <text class="t-small" x="42" y="92">Sooppiy (Y2WV2C335B.com.sooppiy.app)</text>
+  <text class="t-small" x="372" y="92">✅ already set</text>
+
+  <text class="t-b" x="30" y="134">Website URLs</text>
+  <circle cx="128" cy="128" r="10" fill="var(--accent)"/>
+  <text x="128" y="133" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:14px">+</text>
+  <text class="t-small" x="150" y="133">← click this</text>
+
+  <rect class="box" x="30" y="152" width="330" height="26"/>
+  <text class="t-small" x="42" y="170">Search                                    ▾</text>
+  <text class="t-small" x="30" y="206">empty — nothing to download yet</text>
+
+  <path class="ln" d="M575 130 H 625" marker-end="url(#b)"/>
+  <rect class="box-accent" x="630" y="30" width="255" height="190"/>
+  <text class="t-b" x="650" y="56">Register Website URLs</text>
+  <text class="t-small" x="650" y="82">Domains and Subdomains</text>
+  <rect class="box" x="650" y="90" width="215" height="24"/>
+  <text class="t-small" x="660" y="107">sooppiy.com</text>
+  <text class="t-small" x="650" y="136">Return URLs</text>
+  <rect class="box" x="650" y="144" width="215" height="24"/>
+  <text class="t-small" x="660" y="161">https://sooppiy.com/api/auth/…</text>
+  <rect class="box" x="650" y="182" width="70" height="24"/>
+  <text class="t-small t-b" x="685" y="199" text-anchor="middle">Next</text>
+  <text class="t-small" x="732" y="199">→ then Download</text>
+  <defs><marker id="b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+    <path d="M0 0 L8 4 L0 8 z" style="fill:var(--muted)"/></marker></defs>
+</svg>
+</div>
+
+<div class="card">
+<b>What to type in the ⊕ sheet</b>
+<table style="margin-top:10px">
+<tr><th>Field</th><th>Value</th><th>Why</th></tr>
+<tr><td>Domains and Subdomains</td><td><code>sooppiy.com</code></td><td>Domain only. Apple rejects a scheme or a path — <code>https://sooppiy.com</code> and <code>sooppiy.com/</code> both fail.</td></tr>
+<tr><td>Return URLs</td><td><code>https://sooppiy.com/api/auth/apple/callback</code></td><td>Here the <code>https://</code> <b>is</b> required — the dialog says so explicitly. Must be character-identical to <code>APPLE_REDIRECT_URI</code>, and must be under <code>/api/</code> so it reaches the backend (Apple POSTs; an SPA route cannot read that).</td></tr>
+</table>
+<p style="margin-top:10px">Then <b>Next</b>. Apple immediately tries to fetch the association file from the domain — it will
+fail, because we have not deployed it yet. That failure is expected and it is exactly what surfaces the
+<b>Download</b> button.</p>
+<p class="kr" style="margin:8px 0 0">도메인은 스킴 없이, 리턴 URL은 <code>https://</code> 포함. Next를 누르면 애플이 즉시 확인을 시도하고 실패합니다 — 그 실패 화면에서 Download 버튼이 나타납니다.</p>
+</div>
+
+<div class="card bad">
+<b>Registering the URLs does not select them — and the click target is a 12-pixel square.</b> After the ⊕ sheet
+succeeds, both entries appear in the dropdown under <b>Domains and Subdomains</b> and <b>Return URLs</b>, each with a
+small blue outlined <b>□</b> on its right. Those are checkboxes. <b>Clicking the row text does nothing</b>, which reads
+exactly like “I cannot select these”. Click the square itself; it fills in when selected.
+<pre><code>Domains and Subdomains
+  sooppiy.com                                    □  ← click THIS square
+Return URLs
+  https://sooppiy.com/api/auth/apple/callback    □  ← and THIS one     [Remove]</code></pre>
+<b>Tick both.</b> A domain selected without its return URL (or the reverse) leaves the Services ID half-configured, and
+the failure shows up much later as a redirect-URI mismatch at sign-in — nowhere near this screen. Then click outside the
+dropdown to close it.
+<p class="kr" style="margin:8px 0 0">등록만으로는 선택되지 않습니다. 각 항목 오른쪽의 작은 파란 네모(□)가 체크박스이며, <b>글자를 눌러도 반응하지 않습니다</b>. 네모를 직접 클릭하고, 도메인과 리턴 URL <b>둘 다</b> 체크하세요.</p>
+</div>
+
+<div class="card">
+<b>If the square genuinely will not tick:</b> it is a small hit target, so check browser zoom is at 100% (⌘0), and try
+Chrome if you are in Safari — this control misbehaves there for some accounts. A content blocker can also swallow the
+click. The entries being <i>listed</i> at all means the registration itself already succeeded, so nothing needs redoing.
+<p class="kr" style="margin:8px 0 0">체크가 안 되면: 브라우저 확대율 100%(⌘0) 확인, Safari라면 Chrome으로 시도, 광고 차단기 해제. 목록에 보인다는 것은 등록 자체는 성공했다는 뜻입니다.</p>
+</div>
+
+<div class="card warn">
+<b>Finishing the dialog is a four-click tail, and stopping early loses the work.</b> Apple spells it out in the dialog
+text: register the URLs → confirm the list → <b>Done</b> → <b>Continue</b> → <b>Save</b>. If you close after Done, the
+Services ID keeps the old configuration and the login will fail with a redirect-URI mismatch that points at nothing
+obvious.
+<p class="kr" style="margin:8px 0 0">Done → Continue → <b>Save</b>까지 눌러야 저장됩니다. 중간에 닫으면 설정이 반영되지 않습니다.</p>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3c · The file, and where it has to live</h4>
+<div class="card">
+<b>Download</b> gives you <code>apple-developer-domain-association.txt</code> — a small text file containing a JSON
+token. It is <b>not a secret</b>: it is a public proof-of-control token, which is why it is safe to send to me or commit
+to the repo. It must answer at exactly:
+<pre><code>https://sooppiy.com/.well-known/apple-developer-domain-association.txt</code></pre>
+Note the leading dot in <code>.well-known</code>.
+</div>
+
+<div class="card bad">
+<b>Do not <code>scp</code> it onto the server.</b> The SPA root <code>/usr/share/nginx/sooppiy</code> is replaced on
+every deploy (<code>scripts/deploy.sh</code> publishes all three static roots), so a hand-placed file disappears the
+next time we ship — and Apple silently un-verifies the domain, which kills Apple login for everyone with no error
+anywhere in our logs.
+<br><br>
+<b>Correct placement — commit it so every deploy republishes it:</b>
+<pre><code>service/frontend/public/.well-known/apple-developer-domain-association.txt</code></pre>
+Vite copies <code>public/</code> verbatim into <code>dist/</code>, and nginx's <code>try_files $uri /index.html</code>
+serves a real file before falling back to the SPA. Verified on prod: <code>/guide.html</code> and <code>/logo.svg</code>
+both ship this way and answer 200.
+<p class="kr" style="margin:8px 0 0">서버에 직접 올리면 다음 배포에 지워지고, 애플이 조용히 인증을 해제합니다. 반드시 <code>service/frontend/public/.well-known/</code>에 커밋해서 빌드에 포함시키세요.</p>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3d · Check it yourself BEFORE pressing Verify</h4>
+<div class="card bad">
+<b>Checking the status code will lie to you.</b> nginx falls back with <code>try_files $uri /index.html</code>, so a
+<b>missing</b> file still answers <b>200</b> — with the SPA's HTML. Confirmed live: <code>/definitely-not-a-file.txt</code>
+returns 200. You must look at the <b>body</b>.
+<pre><code># Right — shows the actual bytes Apple will read
+curl -s https://sooppiy.com/.well-known/apple-developer-domain-association.txt
+
+# ✅ good   → a short JSON token, something like {"webcredentials":{"apps":[...]}}
+# ❌ bad    → &lt;!doctype html&gt;  ... that is index.html; the file is NOT deployed
+
+# Also confirm no redirect is in the way (Apple does not chase them):
+curl -sI https://sooppiy.com/.well-known/apple-developer-domain-association.txt | head -3
+# want: HTTP/1.1 200 · content-type: text/plain — not 301/302</code></pre>
+<p class="kr" style="margin:8px 0 0">상태 코드는 거짓말을 합니다 — 파일이 없어도 SPA 폴백 때문에 200이 나옵니다. 반드시 <b>본문</b>을 확인하세요.</p>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3e · Press Verify, and what each failure means</h4>
+<div class="card">
+Only once the <code>curl</code> above prints the token: go back to the dialog and press <b>Verify</b>. Apple fetches the
+URL server-side, right then. Success turns the row green / shows the domain as verified; then <b>Save</b> / <b>Continue</b>
+to persist the configuration.
+<table style="margin-top:12px">
+<tr><th>What Apple says</th><th>What it actually means</th></tr>
+<tr><td>“Domain verification failed” / “couldn't verify”</td><td>Apple fetched the URL and did not get the expected bytes — nine times out of ten it got <code>index.html</code> because the file was never deployed. Re-run the <code>curl</code>.</td></tr>
+<tr><td>Verification passes but login still fails later</td><td>The domain is fine; the mismatch is the <b>Return URL</b>. It must be character-identical to <code>APPLE_REDIRECT_URI</code> — no trailing slash, no <code>www</code> drift, HTTPS.</td></tr>
+<tr><td>Was verified, now broken with no change from us</td><td>A deploy overwrote the file. That is exactly the failure 3c prevents — check the <code>curl</code> first, then confirm the file is still in <code>public/.well-known/</code>.</td></tr>
+<tr><td>“Please enter a valid domain”</td><td>You typed a scheme or a path. Domain only.</td></tr>
+</table>
+</div>
+
+<div class="card warn">
+<b>There is a second, different domain screen — do not confuse them.</b> <b>Services</b> →
+<b>Sign in with Apple for Email Communication</b> also asks for a domain and its own association file. That one is for
+<i>sending mail to relay addresses</i> (Step 6), not for login. Verifying one does not verify the other; you will
+eventually need both.
+<p class="kr" style="margin:8px 0 0">도메인을 요구하는 화면이 두 곳입니다. 이메일 릴레이용(Step 6)과 로그인용은 별개이며, 하나를 인증해도 다른 하나는 인증되지 않습니다.</p>
+</div>
+</div>
+
+<div class="step">
+<h3>Step 4 · Private key (.p8) — downloadable exactly once</h3>
+<p class="kr">개인 키 발급 — 다운로드는 단 한 번만 가능합니다</p>
+<ol>
+<li><a href="https://developer.apple.com/account/resources/authkeys/list">Keys</a> → <b>+</b>.</li>
+<li>Key Name: <code>Sooppiy Sign in with Apple</code>. Tick <b>Sign in with Apple</b> → <b>Configure</b> → pick the primary App ID from Step 1.</li>
+<li>Register → <b>Download</b>. You get <code>AuthKey_XXXXXXXXXX.p8</code>.</li>
+<li>Record the <b>Key ID</b> (the 10 characters in the filename) — that is <code>APPLE_KEY_ID</code>.</li>
+</ol>
+<div class="card bad">
+<b>The .p8 downloads once and can never be downloaded again.</b> Lose it and the only path is revoking the key and
+issuing a new one. Apple also caps how many Sign in with Apple keys can exist at a time (2) — if the portal refuses a
+new key, revoke a stale one first. Store the file in your password manager, not in the repo.
+<p class="kr" style="margin:8px 0 0">.p8는 재다운로드 불가 — 분실 시 폐기 후 재발급뿐입니다. 저장소에 커밋하지 말고 비밀번호 관리자에 보관하세요.</p>
+</div>
+</div>
+
+<div class="step">
+<h3>Step 5 · Team ID</h3>
+<p class="kr">팀 ID 확인</p>
+<p><a href="https://developer.apple.com/account">Membership details</a> → <b>Team ID</b>, a 10-character string. That is
+<code>APPLE_TEAM_ID</code>, and also the <code>iss</code> claim of the client secret.</p>
+<div class="card"><b>Shortcut:</b> it is already on screen in the Web Authentication Configuration dialog — the Primary App ID renders as <code>&lt;TeamID&gt;.&lt;bundle&gt;</code>, e.g. <code>Y2WV2C335B.com.sooppiy.app</code> → Team ID <code>Y2WV2C335B</code>.<p class="kr" style="margin:8px 0 0">Primary App ID 앞부분이 곧 Team ID입니다.</p></div>
+</div>
+
+<div class="step">
+<h3>Step 6 · Hide My Email relay <span class="tag">optional now, required for email delivery</span></h3>
+<p class="kr">이메일 가리기(릴레이) 설정 — 안 하면 애플 사용자에게 메일이 안 갑니다</p>
+<p>Apple users can choose <b>Hide My Email</b>, which hands us a relay address like
+<code>a1b2c3d4e5@privaterelay.appleid.com</code> instead of their real one. Apple <b>drops</b> mail sent to a relay address
+from an unregistered sender. Sooppiy sends welcome mail, alerts, password resets and reports — all of that silently
+disappears for those users unless you register the sender.</p>
+<ol>
+<li>Certificates, Identifiers &amp; Profiles → <b>Services</b> → <b>Sign in with Apple for Email Communication</b> → <b>Configure</b>.</li>
+<li>Register the sending domain we already use with SendGrid, plus the exact From addresses.</li>
+<li>Confirm the SPF record Apple asks for is present on that domain.</li>
+</ol>
+<p class="kr">가입 환영 메일·알림·비밀번호 재설정이 전부 이 경로를 탑니다. 등록하지 않으면 조용히 전달 실패합니다.</p>
+</div>
+
+<h2>Part B — what to set, and what has to be built</h2>
+
+<h3>5 env vars</h3>
+<p class="kr">환경변수 5개 — <code>.env.example</code>에 문서화되어 있습니다</p>
+<div class="card">
+<table>
+<tr><th>Env var</th><th>Value</th><th>From</th></tr>
+<tr><td><code>APPLE_TEAM_ID</code></td><td>10 chars, e.g. <code>A1B2C3D4E5</code></td><td>Step 5</td></tr>
+<tr><td><code>APPLE_CLIENT_ID</code></td><td>The <b>Services ID</b>, e.g. <code>com.sooppiy.web</code> — <b>not</b> the App ID</td><td>Step 2</td></tr>
+<tr><td><code>APPLE_KEY_ID</code></td><td>10 chars from the .p8 filename</td><td>Step 4</td></tr>
+<tr><td><code>APPLE_REDIRECT_URI</code></td><td><code>https://sooppiy.com/api/auth/apple/callback</code> — must equal the Return URL registered in Step 2</td><td>Step 2</td></tr>
+<tr><td><code>APPLE_PRIVATE_KEY</code></td><td>Contents of the <code>.p8</code> file (or <code>APPLE_PRIVATE_KEY_B64</code>)</td><td>Step 4</td></tr>
+</table>
+<p style="margin-top:12px"><b>The .p8 is multi-line, and <code>.env</code> is not.</b> Pasting it raw breaks the file. Two workable forms — pick one and make the backend match:</p>
+<pre><code># A. single line with escaped newlines (quote it)
+APPLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIGTAgEA...\n-----END PRIVATE KEY-----"
+
+# B. base64, decoded at load time (no escaping to get wrong)
+APPLE_PRIVATE_KEY_B64=LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t...</code></pre>
+<p class="kr" style="margin-top:8px">.p8는 여러 줄이라 <code>.env</code>에 그대로 붙이면 깨집니다. 개행을 <code>\n</code>으로 이스케이프하거나 base64로 넣으세요.</p>
+</div>
+
+<div class="card warn">
+<b>Where to put them:</b> straight into the prod <code>.env</code> over SSH
+(<code>/home/ec2-user/sooppiy/.env</code>), never into the repo. Then re-run <code>scripts/deploy.sh</code> so the
+containers pick them up — the deploy script re-checks the image guard, so editing <code>.env</code> by hand and
+restarting outside the script defeats the drift protection.
+<p class="kr" style="margin:8px 0 0">값은 SSH로 prod <code>.env</code>에만. 저장소에 커밋 금지. 반영은 <code>scripts/deploy.sh</code>로.</p>
+</div>
+
+<h2>5. Why Apple is not a copy-paste of the Google flow</h2>
+<p class="kr">애플은 구글 흐름을 복사해서 되지 않습니다 — 반드시 다른 7가지</p>
+
+<div class="card">
+<svg viewBox="0 0 960 250" role="img" aria-label="Google returns via GET to an SPA route; Apple POSTs a form directly to the backend">
+  <text class="t-b" x="10" y="20">Google (today)</text>
+  <rect class="box" x="10" y="30" width="150" height="50"/>
+  <text class="t-small" x="85" y="52" text-anchor="middle">Google consent</text>
+  <text class="t-small" x="85" y="68" text-anchor="middle">accounts.google.com</text>
+  <path class="ln" d="M160 55 H 215" marker-end="url(#a)"/>
+  <text class="t-small" x="187" y="46" text-anchor="middle">GET</text>
+  <rect class="box" x="215" y="30" width="185" height="50"/>
+  <text class="t-b" x="307" y="50" text-anchor="middle">SPA route</text>
+  <text class="t-small" x="307" y="68" text-anchor="middle">/auth/google/callback</text>
+  <path class="ln" d="M400 55 H 455" marker-end="url(#a)"/>
+  <text class="t-small" x="427" y="46" text-anchor="middle">fetch</text>
+  <rect class="box" x="455" y="30" width="195" height="50"/>
+  <text class="t-b" x="552" y="50" text-anchor="middle">Backend</text>
+  <text class="t-small" x="552" y="68" text-anchor="middle">GET /api/auth/google/callback</text>
+
+  <text class="t-b" x="10" y="140">Apple (required)</text>
+  <rect class="box" x="10" y="150" width="150" height="50"/>
+  <text class="t-small" x="85" y="172" text-anchor="middle">Apple consent</text>
+  <text class="t-small" x="85" y="188" text-anchor="middle">appleid.apple.com</text>
+  <path class="ln" d="M160 175 H 455" marker-end="url(#a)" stroke-dasharray="5 4"/>
+  <text class="t-small" x="307" y="166" text-anchor="middle">POST form_post — an SPA route cannot read this body</text>
+  <rect class="box-accent" x="455" y="150" width="195" height="50"/>
+  <text class="t-b" x="552" y="170" text-anchor="middle">Backend, directly</text>
+  <text class="t-small" x="552" y="188" text-anchor="middle">POST /api/auth/apple/callback</text>
+  <path class="ln" d="M650 175 H 705" marker-end="url(#a)"/>
+  <rect class="box" x="705" y="150" width="180" height="50"/>
+  <text class="t-b" x="795" y="170" text-anchor="middle">302 → SPA</text>
+  <text class="t-small" x="795" y="188" text-anchor="middle">with the session token</text>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+    <path d="M0 0 L8 4 L0 8 z" fill="currentColor" style="fill:var(--muted)"/></marker></defs>
+</svg>
+</div>
+
+<div class="card">
+<table>
+<tr><th>#</th><th>Difference</th><th>What it means for the implementation</th></tr>
+<tr><td>1</td><td><b>The client secret is a JWT you sign, not a string Apple gives you</b></td>
+    <td>ES256, signed with the .p8. Header <code>{alg: ES256, kid: APPLE_KEY_ID}</code>; claims <code>iss</code>=Team ID, <code>sub</code>=Services ID, <code>aud</code>=<code>https://appleid.apple.com</code>, <code>iat</code>, <code>exp</code> (<b>max 6 months</b>). Generate on demand and cache until just before <code>exp</code>. <code>cryptography</code> is already a dependency; <b>PyJWT is not</b> — either add it to <code>service/requirements.txt</code> or sign with <code>cryptography</code> directly.</td></tr>
+<tr><td>2</td><td><b>The callback is a POST</b></td>
+    <td>With <code>scope=name email</code> Apple requires <code>response_mode=form_post</code> and sends <code>application/x-www-form-urlencoded</code>. Google's handler is <code>@app.get</code>; Apple's must be <code>@app.post</code> reading form fields, then <b>302 the browser back into the SPA</b> carrying the session token.</td></tr>
+<tr><td>3</td><td><b>Name and email arrive only on the FIRST authorization</b></td>
+    <td>They come in a <code>user</code> form field as JSON, once, ever. Every later sign-in returns only <code>code</code> and <code>id_token</code>. If the first response is not persisted, the name is gone permanently — the only recovery is the user removing the app under Apple ID settings and re-authorizing. Write it inside the same transaction that creates the user.</td></tr>
+<tr><td>4</td><td><b>Identity comes from the <code>id_token</code>, not a userinfo endpoint</b></td>
+    <td>There is no <code>/userinfo</code>. Verify the <code>id_token</code> against Apple's JWKS (<code>https://appleid.apple.com/auth/keys</code>, cache it), check <code>iss</code>=<code>https://appleid.apple.com</code>, <code>aud</code>=Services ID, and <code>exp</code>. The <code>sub</code> claim is the stable per-team user identity → that is the <code>provider_user_id</code> for <code>oauth_identities</code>.</td></tr>
+<tr><td>5</td><td><b>Emails may be relay addresses</b></td>
+    <td><code>@privaterelay.appleid.com</code>. Treat as a real address, but do not assume it is unique-forever or that the user recognises it. Account-linking by email (the Google flow's case 2) still works, but the relay address will never match an existing password account — those users get a new account, which is correct behaviour.</td></tr>
+<tr><td>6</td><td><b>State cannot ride in a cookie</b></td>
+    <td>A cross-site POST does not carry a <code>SameSite=Lax</code> cookie. <span class="ok">Our existing design already avoids this</span> — <code>_store_state</code> keeps the nonce in Redis/in-proc and it returns in the POST body. Reuse <code>_store_state</code>/<code>_consume_state</code> as-is.</td></tr>
+<tr><td>7</td><td><b>No localhost testing</b></td>
+    <td>Apple rejects <code>localhost</code> return URLs, so the flow cannot be exercised the way the Google one can. Either register a second Services ID against a staging HTTPS host, or accept that the first real test happens on prod — in which case ship it behind the provider flag so a failure only shows a disabled button.</td></tr>
+</table>
+</div>
+
+<h3>Frontend</h3>
+<p class="kr">프런트엔드 — 버튼 2곳 모두 고쳐야 합니다</p>
+<div class="card">
+Once <code>/api/auth/providers</code> reports <code>apple: true</code>, the button has to stop being hardcoded-disabled.
+There are <b>two</b> copies of this UI, and both need the change:
+<ul>
+<li><code>service/frontend/src/authV2.tsx</code> → <code>OAuthButtons</code> (the disabled “Coming soon” button)</li>
+<li><code>service/frontend/src/appCommunityPages.tsx</code> (~line 211, the sibling provider switch)</li>
+</ul>
+Apple's Human Interface Guidelines also constrain the button: their black/white/outline styles, their logo, corner
+radius, and the localized wording (“Apple로 로그인” / “Sign in with Apple”). The existing 6-language strings are already
+in place — they just need the button enabled and restyled to spec.
+</div>
+
+<h2>6. Verification checklist</h2>
+<p class="kr">검증 체크리스트 — 순서대로 확인</p>
+<div class="card">
+<ol>
+<li><code>curl https://sooppiy.com/.well-known/apple-developer-domain-association.txt</code> → <b>check the body, not the status code</b>. nginx's SPA fallback is <code>try_files $uri /index.html</code>, so a <b>missing</b> file still answers <b>200</b> — with <code>index.html</code>. Verified live: <code>/definitely-not-a-file.txt</code> → 200. So <code>curl -s … | head -1</code> must show the Apple payload, not <code>&lt;!doctype html&gt;</code>. Re-check after the next deploy too.</li>
+<li>Apple portal shows the domain as <b>Verified</b>.</li>
+<li><code>curl https://sooppiy.com/api/auth/providers</code> → <code>"apple": true</code>.</li>
+<li>Sign in on a real device with a real Apple ID → lands back in the SPA logged in.</li>
+<li>Row appears: <code>SELECT * FROM oauth_identities WHERE provider='apple'</code>.</li>
+<li>Sign out, sign in again → <b>same</b> <code>user_id</code>, no duplicate user created.</li>
+<li>Repeat once with <b>Hide My Email</b> selected, then confirm a welcome email actually arrives at the relay address.</li>
+<li>Existing password account with the same real email → gets linked, not duplicated.</li>
+</ol>
+</div>
+
+<h2>7. Maintenance — the 6-month cliff</h2>
+<p class="kr">유지보수 — 6개월 만료가 조용한 장애를 만듭니다</p>
+<div class="card good">
+<b>Resolved by the implementation — there is nothing to rotate.</b> Apple caps the client secret JWT at 6 months, and a
+long-lived one pasted into <code>.env</code> would expire silently: login just starts failing one day with no deploy to
+blame. So <code>_apple_client_secret()</code> mints a fresh JWT on every token exchange with a <b>5-minute</b> expiry.
+Nothing is stored, nothing expires on a calendar. The <code>.p8</code> key itself never expires — keep it safe and this
+stays hands-off. (A test asserts the lifetime stays short, so a future change back to a long-lived secret fails CI.)
+<p class="kr" style="margin:8px 0 0">구현으로 해결됨 — 회전할 것이 없습니다. 시크릿 JWT를 매 요청마다 5분짜리로 생성합니다. .p8 키 자체는 만료되지 않습니다.</p>
+</div>
+
+<h2>Order of operations</h2>
+<div class="card good">
+<ol>
+<li><b>You:</b> Part A steps 1–5 in the Apple portal. Keep the <code>.p8</code> in your password manager.</li>
+<li><b>You → me:</b> the <code>apple-developer-domain-association.txt</code> file only (it is a public verification
+token, not a secret). I commit it to <code>service/frontend/public/.well-known/</code> and deploy, so the URL survives
+every future deploy.</li>
+<li><b>You:</b> press <b>Verify</b> in the portal.</li>
+<li><b>You:</b> put the 5 values into the prod <code>.env</code> over SSH — they go from Apple to the server and
+nowhere else.</li>
+<li><b>Me:</b> deploy, then walk the §6 checklist with you. The button switches itself on.</li>
+<li><b>You:</b> Part A step 6 (email relay) before real users arrive, or Hide-My-Email members silently stop receiving
+mail.</li>
+</ol>
+<p class="kr" style="margin:8px 0 0">순서: A파트(1–5) → 도메인 확인 파일만 전달(비밀 아님) → 포털에서 Verify → prod .env에 값 5개 입력 → 배포·검증 → 이메일 릴레이 등록.</p>
+</div>
+
+<p class="kr" style="margin-top:34px">문서 위치: <code>docs/ops/apple-signin-setup.html</code> · 코드 기준 main @ 31fceb1f (2026-08-09)</p>
+
+</div>
+</body>
+</html>

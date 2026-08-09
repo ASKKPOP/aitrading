@@ -706,6 +706,54 @@ export function GoogleCallbackPage({ onLogin }: { onLogin: (token: string) => vo
 }
 
 
+// ═══ AppleCallbackPage ════════════════════════════════════════════════════
+// Apple POSTs its result to the BACKEND (a form_post cannot land on a static
+// SPA route), so by the time we get here the account already exists and the
+// session is already minted. All that is left is redeeming the one-time
+// handoff nonce — the session token is deliberately never put in the URL,
+// where it would linger in browser history.
+
+export function AppleCallbackPage({ onLogin }: { onLogin: (token: string) => void }) {
+  const navigate = useNavigate()
+  const { language } = useLanguage()
+  const [params] = useSearchParams()
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    // The user cancelled at Apple's sheet — not an error worth a red banner.
+    if (params.get('apple_error')) {
+      navigate('/login')
+      return
+    }
+    const handoff = params.get('handoff')
+    if (!handoff) {
+      setError(tr(language, { ko: 'Apple 응답 매개변수가 없습니다', en: 'Missing Apple response parameters', ja: 'Apple応答パラメーターがありません', th: 'ไม่มีพารามิเตอร์การตอบกลับ Apple', vi: 'Thiếu tham số phản hồi Apple', id: 'Parameter respons Apple tidak lengkap' }))
+      return
+    }
+    fetch(`${API_BASE}/auth/apple/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handoff }),
+    })
+      .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d)))
+      .then(d => {
+        storeUserToken(d.token)
+        onLogin(d.token)
+        navigate(d.created ? '/welcome' : '/my-trading')
+      })
+      .catch(d => setError(errMessage(d, tr(language, { ko: 'Apple 로그인에 실패했습니다', en: 'Apple sign-in failed', ja: 'Appleログインに失敗しました', th: 'เข้าสู่ระบบด้วย Apple ไม่สำเร็จ', vi: 'Đăng nhập Apple thất bại', id: 'Gagal masuk dengan Apple' }))))
+  }, [params, onLogin, navigate, language])
+
+  return (
+    <AuthShell title={tr(language, { ko: 'Apple 로그인 마무리 중…', en: 'Finishing Apple sign-in…', ja: 'Appleログインを完了しています…', th: 'กำลังทำการเข้าสู่ระบบด้วย Apple…', vi: 'Đang hoàn tất đăng nhập Apple…', id: 'Menyelesaikan proses masuk dengan Apple…' })} subtitle={tr(language, { ko: '잠시만요.', en: 'One moment.', ja: '少々お待ちください。', th: 'สักครู่', vi: 'Chờ một chút.', id: 'Mohon tunggu sebentar.' })}>
+      {error
+        ? <div style={{ color: '#f87171', fontSize: 14 }}>{error}</div>
+        : <div style={{ color: '#93a0aa' }}>{tr(language, { ko: 'Apple로 확인 중…', en: 'Verifying with Apple…', ja: 'Appleで確認中…', th: 'กำลังยืนยันกับ Apple…', vi: 'Đang xác minh với Apple…', id: 'Memverifikasi dengan Apple…' })}</div>}
+    </AuthShell>
+  )
+}
+
+
 // ═══ Export the token clearer for sign-out elsewhere ═════════════════════
 
 export function signOutUser() {
