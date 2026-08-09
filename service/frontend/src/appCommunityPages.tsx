@@ -153,8 +153,9 @@ export function AuthShell({
   social?: boolean
 }) {
   const { language } = useLanguage()
-  // Which social providers the backend actually has configured. Google is live;
-  // Apple stays "coming soon" until Apple Developer credentials are provisioned.
+  // Which social providers the backend actually has configured. Both Google
+  // and Apple have flows now; each button falls back to its coming-soon
+  // notice while that provider's credentials are missing from the env.
   const [providers, setProviders] = useState<{ google: boolean; apple: boolean }>({ google: false, apple: false })
   useEffect(() => {
     fetch(`${API_BASE}/auth/providers`)

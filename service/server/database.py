@@ -2156,6 +2156,14 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_oauth_identities_user
         ON oauth_identities(user_id, provider)
     """)
+    # Apple hands over the member's name exactly once — on the first
+    # authorization ever, and never again. There is no endpoint to ask
+    # later, so it is captured onto the identity row at link time. Added
+    # idempotently, like the MFA columns, for databases that predate Apple.
+    try:
+        cursor.execute("ALTER TABLE oauth_identities ADD COLUMN display_name TEXT")
+    except Exception:
+        pass
 
     # AI trading automation (Target 3): per-agent rules that the automation worker
     # executes on schedule — run the multi-agent analysis and, when the decision
