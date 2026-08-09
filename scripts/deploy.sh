@@ -141,15 +141,24 @@ remote_locked "
 "
 
 # ── 6. all THREE static roots — skipping one silently serves an old build ───
+#
+# `cp -r src/*` and `rm -rf dir/*` both use a glob, and a glob does NOT match
+# dotfiles. That silently dropped every hidden path — most importantly
+# `.well-known/`, which is where domain-verification files for Apple, and any
+# future ACME or security.txt, have to live. The bug was invisible because the
+# visible site kept working; only the hidden path went missing, on every single
+# deploy. `find -mindepth 1 -delete` clears dotfiles too, and `cp -a src/.`
+# copies them. Canary: service/frontend/public/.well-known/README.txt must
+# answer 200 at https://sooppiy.com/.well-known/README.txt after a deploy.
 say "publishing the SPA to all three static roots"
 $SSH "
   set -e
   rm -rf /tmp/newdist && docker cp sooppiy-backend:/app/service/frontend/dist /tmp/newdist
   sudo cp -a /usr/share/nginx/sooppiy /usr/share/nginx/sooppiy.prev-$TS
-  sudo rm -rf /usr/share/nginx/sooppiy/* && sudo cp -r /tmp/newdist/* /usr/share/nginx/sooppiy/
+  sudo find /usr/share/nginx/sooppiy -mindepth 1 -delete && sudo cp -a /tmp/newdist/. /usr/share/nginx/sooppiy/
   sudo restorecon -R /usr/share/nginx/sooppiy
   sudo cp -a $REMOTE/admin-site $REMOTE/admin-site.prev-$TS
-  sudo rm -rf $REMOTE/admin-site/* && sudo cp -r /tmp/newdist/* $REMOTE/admin-site/
+  sudo find $REMOTE/admin-site -mindepth 1 -delete && sudo cp -a /tmp/newdist/. $REMOTE/admin-site/
   sudo chown -R root:root $REMOTE/admin-site
   docker restart sooppiy-admin >/dev/null
   rm -rf /tmp/newdist
