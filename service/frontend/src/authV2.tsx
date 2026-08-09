@@ -12,6 +12,7 @@
  *   MfaSetupPage       — secret + otpauth URL + 10 backup codes
  *   GoogleCallbackPage — receives session, redirects to /my-trading
  */
+import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -552,6 +553,19 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
   const [enabled, setEnabled] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  // The page told people to "scan the QR code" and then only printed the
+  // otpauth URL as text — there was no QR to scan, so the only way through
+  // was typing a 32-character secret by hand. Rendered client-side on
+  // purpose: the secret must not travel to a third-party chart service.
+  const [qr, setQr] = useState('')
+  useEffect(() => {
+    if (!setup?.otpauth_url) { setQr(''); return }
+    let live = true
+    QRCode.toDataURL(setup.otpauth_url, { errorCorrectionLevel: 'M', margin: 1, width: 320 })
+      .then(url => { if (live) setQr(url) })
+      .catch(() => { if (live) setQr('') })  // secret + URL below stay authoritative
+    return () => { live = false }
+  }, [setup?.otpauth_url])
 
   // Redirect to sign-in if not logged in.
   useEffect(() => {
@@ -631,18 +645,39 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
       ) : (
         <form onSubmit={verifyAndEnable}>
           <div style={{ marginBottom: 12, fontSize: 13, color: '#93a0aa' }}>
-            {tr(language, { ko: '인증 앱에 이 계정을 추가하세요. 아래 URL의 QR 코드를 스캔하거나 시크릿을 직접 붙여넣으세요.', en: 'Add this account to your authenticator. Either scan a QR code from the URL below, or paste the secret directly.', ja: '認証アプリにこのアカウントを追加してください。下記URLのQRコードをスキャンするか、シークレットを直接貼り付けます。', th: 'เพิ่มบัญชีนี้ในแอปยืนยันตัวตน สแกน QR จาก URL ด้านล่าง หรือวางซีเคร็ตโดยตรง', vi: 'Thêm tài khoản này vào ứng dụng xác thực. Quét mã QR từ URL bên dưới, hoặc dán secret trực tiếp.', id: 'Tambahkan akun ini ke autentikator Anda. Pindai kode QR dari URL di bawah, atau tempel secret-nya langsung.' })}
+            {tr(language, { ko: '인증 앱에 이 계정을 추가하세요. 아래 QR 코드를 스캔하거나, 시크릿을 직접 붙여넣으세요.', en: 'Add this account to your authenticator. Scan the QR code below, or paste the secret directly.', ja: '認証アプリにこのアカウントを追加してください。下のQRコードをスキャンするか、シークレットを直接貼り付けます。', th: 'เพิ่มบัญชีนี้ในแอปยืนยันตัวตน สแกนคิวอาร์โค้ดด้านล่าง หรือวางซีเคร็ตโดยตรง', vi: 'Thêm tài khoản này vào ứng dụng xác thực. Quét mã QR bên dưới, hoặc dán secret trực tiếp.', id: 'Tambahkan akun ini ke autentikator Anda. Pindai kode QR di bawah, atau tempel secret-nya langsung.' })}
           </div>
-          <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 12,
-            background: '#f1f5f9',
-            color: '#0f172a',
-            padding: 10,
-            borderRadius: 6,
-            marginBottom: 12,
-            wordBreak: 'break-all',
-          }}>{setup.otpauth_url}</div>
+          {/* White plate behind the code: scanners need the quiet zone and
+              light modules, and this shell renders on a dark background. */}
+          {qr && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+              <img
+                src={qr}
+                alt={tr(language, { ko: '2단계 인증 QR 코드', en: 'Two-factor QR code', ja: '2段階認証QRコード', th: 'คิวอาร์โค้ดสองขั้นตอน', vi: 'Mã QR xác thực hai lớp', id: 'Kode QR autentikasi dua faktor' })}
+                width={200}
+                height={200}
+                style={{ background: '#fff', padding: 10, borderRadius: 10, display: 'block' }}
+              />
+            </div>
+          )}
+          {/* The URL stays available as the fallback — a desktop browser
+              cannot scan its own screen — but it no longer crowds out the
+              thing most people actually came here to use. */}
+          <details style={{ marginBottom: 12 }}>
+            <summary style={{ fontSize: 12.5, color: '#93a0aa', cursor: 'pointer' }}>
+              {tr(language, { ko: 'QR을 스캔할 수 없나요? 설정 URL 보기', en: "Can't scan it? Show the setup URL", ja: 'スキャンできない場合はセットアップURLを表示', th: 'สแกนไม่ได้? แสดง URL สำหรับตั้งค่า', vi: 'Không quét được? Hiện URL thiết lập', id: 'Tidak bisa memindai? Tampilkan URL penyiapan' })}
+            </summary>
+            <div style={{
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: 12,
+              background: '#f1f5f9',
+              color: '#0f172a',
+              padding: 10,
+              borderRadius: 6,
+              marginTop: 8,
+              wordBreak: 'break-all',
+            }}>{setup.otpauth_url}</div>
+          </details>
           <div style={{ marginBottom: 12, fontSize: 13, color: '#e8eaed' }}>
             <strong>{tr(language, { ko: '시크릿:', en: 'Secret:', ja: 'シークレット:', th: 'ซีเคร็ต:', vi: 'Secret:', id: 'Secret:' })}</strong>{' '}
             <code style={{ fontFamily: 'JetBrains Mono, monospace', userSelect: 'all' }}>{setup.secret}</code>
