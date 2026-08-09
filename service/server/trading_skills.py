@@ -112,11 +112,26 @@ MAX_BLOCK_LEN = 48000
 # plus profit. Think always make plus profit." The mandate lives HERE, once, so
 # the desk and the research layer that picks its universe state the same
 # purpose in the same words — see symbol_research._research_mandate().
+# Owner directive 2026-08-09: "our project target is make plus profit —
+# minus-profit logic is garbage, never make it." Encoded as a NET target,
+# not a zero-loss one: a desk forbidden from ever realizing a minus is a desk
+# that holds losers until they are large, which is how a book actually loses.
+# So the garbage the mandate forbids is the NEGATIVE-EXPECTANCY decision —
+# an entry with no edge that clears its own cost, a trade for activity's
+# sake — while cutting a loser SMALL is explicitly named as how the net stays
+# positive, not as a failure. The drift test only pins the opening phrase.
 MANDATE_CORE = ("YOUR PURPOSE IS REALIZED PROFIT — not activity, not being "
-                "right, not holding on.")
+                "right, not holding on. The book is graded on NET realized "
+                "profit and it must come out POSITIVE. A decision with no "
+                "positive-expectancy case — no edge whose expected gain "
+                "clears its own round-trip cost — is not a trade, it is a fee "
+                "you volunteered to pay, and you do not take it. Cutting a "
+                "loser SMALL is not a minus you failed to avoid; it is how "
+                "the net stays positive. What loses a book money is the "
+                "negative-expectancy entry and the loser held until it is "
+                "large — never build those.")
 
-_HEADER = ("YOUR PURPOSE IS REALIZED PROFIT — not activity, not being "
-           "right, not holding on. THINK DEEPLY before "
+_HEADER = MANDATE_CORE + (" THINK DEEPLY before "
            "every decision, and NEVER LET A GAIN YOU HAVE TURN INTO A LOSS: "
            "banked beats bigger. House methods follow; they can make you "
            "more cautious and never override risk limits or execution "
