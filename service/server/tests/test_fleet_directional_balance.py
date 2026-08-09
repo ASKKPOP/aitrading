@@ -74,6 +74,33 @@ class DirectionalBalanceTests(unittest.TestCase):
         picked = _select_from_eligible(elig, 3, dir_balance=True)
         self.assertEqual(len(picked), 3)
 
+    def test_one_way_book_across_markets_is_braked(self):
+        """Per-market balance says nothing about ES + a mega-cap + BTC all
+        long — four markets, one bet. The diversity pass keeps the WHOLE book
+        within ceil(n/3) of neutral before it starts spending slots on a fifth
+        instance of the same directional view."""
+        elig = [
+            _t("crypto", "BTC", "long"),
+            _t("us-stock", "AAPL", "long"),
+            _t("futures", "ES", "long"),
+            _t("forex", "EURUSD", "long"),
+            _t("crypto", "ETH", "short"),
+            _t("us-stock", "PFE", "short"),
+        ]
+        picked = _select_from_eligible(elig, 4, dir_balance=True)
+        self.assertEqual(len(picked), 4)
+        longs = sum(1 for p in picked if p["direction"] == "long")
+        shorts = sum(1 for p in picked if p["direction"] == "short")
+        self.assertLessEqual(abs(longs - shorts), 2)  # ceil(4/3) = 2
+        self.assertGreaterEqual(shorts, 1)
+
+    def test_one_way_only_batch_still_reaches_n_across_markets(self):
+        """The brake is a preference, never a reason to under-fill: with
+        nothing to balance against, pass 2 still delivers N."""
+        elig = [_t("crypto", "BTC", "long"), _t("us-stock", "AAPL", "long"),
+                _t("futures", "ES", "long"), _t("forex", "EURUSD", "long")]
+        self.assertEqual(len(_select_from_eligible(elig, 4, dir_balance=True)), 4)
+
     def test_non_directional_markets_unconstrained(self):
         # polymarket theses carry no long/short — never blocked by the guard
         elig = [_t("polymarket", "A", None), _t("polymarket", "B", None), _t("polymarket", "C", None)]

@@ -4151,9 +4151,16 @@ def run_cycle(run_id: int) -> dict:
         order_params = None
         op_mode = order_params_mode()
         if op_mode != "off":
+            # Price the fee floor at THIS run's market. The entry gate already
+            # uses fees.fee_rate(market); the bracket rail was still on the flat
+            # legacy rate, which is 20x a US equity round trip and 12x a major
+            # pair's. Only visible on a target-only block — with a stop present
+            # the R:R floor lands on the same number.
+            from fees import fee_rate as _fee_rate_for_market
             order_params = parse_order_block(
                 decision.get("order"),
-                leverage_cap=max(1.0, float(cfg.get("leverage") or 1.0)))
+                leverage_cap=max(1.0, float(cfg.get("leverage") or 1.0)),
+                fee_rate=_fee_rate_for_market(run.get("market")))
             emit_telemetry_event(
                 run_id, "order_params",
                 {"cycle": seq, "mode": op_mode, "action": action,
