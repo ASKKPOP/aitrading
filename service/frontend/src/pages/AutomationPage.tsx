@@ -287,6 +287,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại', id: 'Setoran saat ini' }),
     sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động', id: 'Sepanjang waktu' }),
     sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận', id: 'Keuntungan' }),
+    sumNet: tr(language, { ko: '순', en: 'net', ja: '純', th: 'สุทธิ', vi: 'ròng', id: 'bersih' }),
+    dGain: tr(language, { ko: '수익 합계 (+)', en: 'Gross gains (+)', ja: '利益合計 (+)', th: 'กำไรรวม (+)', vi: 'Tổng lãi (+)', id: 'Total untung (+)' }),
+    dLoss: tr(language, { ko: '손실 합계 (−)', en: 'Gross losses (−)', ja: '損失合計 (−)', th: 'ขาดทุนรวม (−)', vi: 'Tổng lỗ (−)', id: 'Total rugi (−)' }),
     sumToday: tr(language, { ko: '오늘', en: 'Today', ja: '今日', th: 'วันนี้', vi: 'Hôm nay', id: 'Hari ini' }),
     sumWeek: tr(language, { ko: '이번 주', en: 'This week', ja: '今週', th: 'สัปดาห์นี้', vi: 'Tuần này', id: 'Minggu ini' }),
     sumMonth: tr(language, { ko: '이번 달', en: 'This month', ja: '今月', th: 'เดือนนี้', vi: 'Tháng này', id: 'Bulan ini' }),
@@ -805,6 +808,14 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       ? assets.summary : null
     const realized = sm ? sm.window.pnl
       : trades.reduce((s: number, t: any) => s + (t.pnl ?? 0), 0)
+    // Gross winning vs gross losing that sum to `realized` (owner ask
+    // 2026-08-09: a net figure hides that +3.79 can be big wins minus big
+    // losses). Server aggregate is fee-accurate; the capped-list fallback is
+    // used only for the one poll right after a chip switch.
+    const gain = sm ? sm.window.gain
+      : trades.reduce((s: number, t: any) => s + Math.max(0, t.pnl ?? 0), 0)
+    const loss = sm ? sm.window.loss
+      : trades.reduce((s: number, t: any) => s + Math.min(0, t.pnl ?? 0), 0)
     // Rails inside the window: both boundaries apply — the fixed epoch (same
     // string compare as the lifetime figure) AND the chip's start.
     const realizedRails = sm ? sm.window.split_pnl
@@ -818,7 +829,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     const opStartMs = Number.isFinite(sinceMs) ? Math.max(sinceMs, periodStart) : NaN
     const opWindow = Number.isFinite(opStartMs) && Date.now() > opStartMs ? dur(Date.now() - opStartMs) : null
     const profit = realized + assets.unrealized
-    return { periodStart, trades, realized, railsTrades, realizedRails, tradeCount, railsSince, life, opStartMs, opWindow, profit, localDate }
+    return { periodStart, trades, realized, gain, loss, railsTrades, realizedRails, tradeCount, railsSince, life, opStartMs, opWindow, profit, localDate }
   })()
 
   // Account summary. Lives in the page header, right-aligned: it is reference
@@ -866,7 +877,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('profit') : undefined}>
           <div style={kSt}>📈 {T.sumProfit}</div>
           <div style={{ ...vSt, color: win ? pnlColor(win.profit) : undefined }}>{win ? `${win.profit >= 0 ? '+' : ''}${fmtUsd(win.profit)}` : '—'}</div>
-          <div style={sSt}>{win && assets ? <>{T.assetsRealized} {win.realized >= 0 ? '+' : ''}{fmtUsd(win.realized)} · {T.assetsUnrealized} {assets.unrealized >= 0 ? '+' : ''}{fmtUsd(assets.unrealized)}</> : '\u00a0'}</div>
+          <div style={sSt}>{win ? <><span style={{ color: 'var(--success,#2e7d32)' }}>+{fmtUsd(win.gain)}</span> <span style={{ color: 'var(--danger,#c0392b)' }}>{fmtUsd(win.loss)}</span> · {T.sumNet} {win.realized >= 0 ? '+' : ''}{fmtUsd(win.realized)}</> : '\u00a0'}</div>
         </button>
         <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('rails') : undefined}>
           <div style={kSt}>🛡️ {T.sumCurrentRails}</div>
@@ -1108,6 +1119,8 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
 
               {sumDetail === 'profit' && <>
                 {row(`${T.sumProfit} · ${periodLabel[sumPeriod]}`, money(win.profit), pnlColor(win.profit))}
+                {row(T.dGain, `+${fmtUsd(win.gain)}`, 'var(--success,#2e7d32)')}
+                {row(T.dLoss, fmtUsd(win.loss), 'var(--danger,#c0392b)')}
                 {row(T.dRealizedPeriod, money(win.realized), pnlColor(win.realized))}
                 {row(T.dUnrealizedNow, money(assets.unrealized), pnlColor(assets.unrealized))}
                 {row(T.dRealizedLife, money(assets.realized), pnlColor(assets.realized))}
