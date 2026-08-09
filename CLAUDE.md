@@ -72,6 +72,29 @@ An independent agent-native trading platform. Sooppiy is a standalone product.
 
 **Repo:** `origin` → `https://github.com/ASKKPOP/aitrading.git`. Single remote.
 
+### THE TARGET — plus profit, or it is garbage (owner rule 2026-08-09)
+
+The whole project — every layer, every skill, every line of trading logic —
+exists to make **plus (net) profit**. Logic or code whose expected outcome is
+negative profit is **garbage; never build it.** This is the acceptance test
+for any trading change before it ships: does its expected contribution to
+*net realized* profit clear its own cost? If not, it does not go in.
+
+Read this precisely, so it is not mis-applied:
+
+- The target is **NET realized profit over the book**, not a zero-loss book.
+  A design that forbids ever realizing a single minus is itself garbage — it
+  holds losers until they are large, which is how a book actually loses.
+  **Cutting a loser small is on-target, not a violation.**
+- "Garbage" means the **negative-expectancy** decision, feature, or rail: an
+  entry with no edge that clears its round-trip cost, a trade for activity's
+  sake, a skill that adds noise, a change that churns fees. Those are the
+  things to never make.
+- The one wording lives in `trading_skills.MANDATE_CORE` and is drift-tested
+  against the desk header and `symbol_research._research_mandate()`. Change
+  the target's wording in ONE place. See memory
+  [[profit-is-the-target-every-layer]].
+
 ### What this project actually is
 
 A **signal and copy-trading platform** first. Agents register, publish signals (strategies, operations, discussions), and followers mirror trades. Positions are tracked by polling prices via `price_fetcher.py`; the internal simulated ledger is the default for everything. Since 2026-07-19 a real execution layer exists (`service/server/execution/` — see extension area 2), but it is opt-in per automation rule (`account_type: live`) and gated behind gateway credentials + consent. Feature work should still assume the simulated ledger unless it is explicitly about live routing.
