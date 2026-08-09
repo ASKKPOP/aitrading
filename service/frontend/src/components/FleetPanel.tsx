@@ -101,6 +101,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     profitLevel: tr(language, { ko: '수익 단계 (위험 성향)', en: 'Profit level (risk appetite)', ja: '収益レベル（リスク）', th: 'ระดับกำไร (ความเสี่ยง)', vi: 'Mức lợi nhuận (khẩu vị rủi ro)', id: 'Tingkat profit (selera risiko)' }),
     launch: tr(language, { ko: '🚀 플릿 시작', en: '🚀 Launch fleet', ja: '🚀 フリート開始', th: '🚀 เริ่มฟลีต', vi: '🚀 Khởi chạy', id: '🚀 Luncurkan fleet' }),
     stopAll: tr(language, { ko: '⏹ 전체 정지 (청산)', en: '⏹ Stop all (flatten)', ja: '⏹ 全停止（清算）', th: '⏹ หยุดทั้งหมด (ปิดสถานะ)', vi: '⏹ Dừng tất cả (đóng lệnh)', id: '⏹ Hentikan semua (tutup posisi)' }),
+    editFleet: tr(language, { ko: '플릿 수정', en: 'Edit fleet', ja: 'フリート編集', th: 'แก้ไขฟลีต', vi: 'Sửa fleet', id: 'Edit fleet' }),
+    editFleetSub: tr(language, { ko: '가동 중에도 목표 수익과 슬롯 수를 바꿀 수 있습니다', en: 'Change the profit goal and slot count while the fleet is running', ja: '稼働中でも目標利益とスロット数を変更できます', th: 'เปลี่ยนเป้ากำไรและจำนวนสล็อตได้ระหว่างทำงาน', vi: 'Đổi mục tiêu lợi nhuận và số slot khi fleet đang chạy', id: 'Ubah target profit dan jumlah slot saat fleet berjalan' }),
     pause: tr(language, { ko: '일시정지', en: 'Pause', ja: '一時停止', th: 'พัก', vi: 'Tạm dừng', id: 'Jeda' }),
     resume: tr(language, { ko: '재개', en: 'Resume', ja: '再開', th: 'ดำเนินต่อ', vi: 'Tiếp tục', id: 'Lanjutkan' }),
     resumeWarning: tr(language, { ko: '경고 확인 후 거래 재개 (본인 책임)', en: 'Resume trading (your responsibility)', ja: '警告を確認して再開（自己責任）', th: 'ดำเนินการต่อ (ความรับผิดชอบของคุณ)', vi: 'Tiếp tục giao dịch (bạn tự chịu trách nhiệm)', id: 'Lanjutkan trading (tanggung jawab Anda)' }),
@@ -217,6 +219,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   // (?) next to the fleet index — owner report: members read 99.93 as a
   // price or a balance. The badge says INDEX; this opens the full guide.
   const [showIndexGuide, setShowIndexGuide] = useState(false)
+  // 플릿 수정 popup (owner ask 2026-08-08): the goal + slots rows moved out of
+  // the always-visible monitor into a popup behind one button.
+  const [showEdit, setShowEdit] = useState(false)
   const [trades, setTrades] = useState<any[]>([])
   const [actMkt, setActMkt] = useState('all')
 
@@ -515,7 +520,11 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               </span>
             </div>
           )}
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+          {/* Owner ask 2026-08-08: the status line reads as reference data,
+              not an action — right-aligned so the left edge stays for the
+              index and controls. */}
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center',
+            justifyContent: 'flex-end', marginBottom: 10 }}>
             <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 12.5 }}>
               {fleet.status}{fleet.status_reason ? ` · ${reasonLabel(fleet.status_reason)}` : ''}
             </span>
@@ -701,6 +710,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#c0392b', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: busy ? 0.55 : 1 }}>
               {spin('stop')}{T.stopAll}
             </button>
+            <button style={chip(false)} onClick={() => setShowEdit(true)}>{T.editFleet}</button>
             <HelpTip style={{ alignSelf: 'center' }} text={tr(language, {
               ko: '「일시정지」는 신규 진입만 멈춥니다 — 보유 포지션과 손절/익절 보호는 그대로 유지되며, 「재개」로 이어서 운용합니다.\n「전체 정지 (청산)」은 플릿 전체를 정지하고 모든 포지션을 즉시 청산합니다. 정지된 플릿은 다시 시작할 수 없고 새로 만들어야 합니다.',
               en: '"Pause" only stops new entries — open positions and their SL/TP protection stay active, and Resume continues the fleet.\n"Stop all (flatten)" halts the whole fleet and closes every position immediately. A stopped fleet cannot be restarted — you launch a new one.',
@@ -713,6 +723,27 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
           {error && (
             <div style={{ color: '#f0663f', fontSize: 12.5, marginTop: 8 }}>⚠️ {error}</div>
           )}
+          {/* 플릿 수정 — the goal and slots controls live in this popup so the
+              always-visible monitor stays read-only at a glance (owner ask
+              2026-08-08). The rows inside are unchanged. */}
+          {showEdit && (
+          <div role="dialog" aria-modal="true" aria-label={T.editFleet}
+            onClick={() => setShowEdit(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(0,0,0,0.55)',
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ width: '100%', maxWidth: 720, margin: 'auto', background: 'var(--bg-card,#fff)',
+                border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>{T.editFleet}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)', marginTop: 2 }}>{T.editFleetSub}</div>
+                </div>
+                <button onClick={() => setShowEdit(false)}
+                  style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>
+                  {T.close}
+                </button>
+              </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
             <span style={{ fontWeight: 600 }}>{T.goal}</span>
             <HelpTip text={tr(language, {
@@ -787,6 +818,12 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               })()}
             </span>
           </div>
+              {error && (
+                <div style={{ color: '#f0663f', fontSize: 12.5, marginTop: 10 }}>⚠️ {error}</div>
+              )}
+            </div>
+          </div>
+          )}
           </>
           ) : (
           <>
