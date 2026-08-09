@@ -1457,7 +1457,7 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
           {tr(language, { ko: 'Sooppiy가 처음이신가요?', en: 'New to Sooppiy?', ja: 'Sooppiy は初めてですか？', th: 'เพิ่งรู้จัก Sooppiy?', vi: 'Mới đến với Sooppiy?', id: 'Baru di Sooppiy?' })}{' '}
-          <Link to="/register" style={{ color: 'var(--accent-primary)' }}>
+          <Link to="/agent-register" style={{ color: 'var(--accent-primary)' }}>
             {tr(language, { ko: '지금 가입하기', en: 'Create an account', ja: '今すぐ登録', th: 'สร้างบัญชีเลย', vi: 'Tạo tài khoản ngay', id: 'Buat akun' })}
           </Link>
         </p>
@@ -1548,7 +1548,7 @@ export function RegisterPage({ onLogin }: { onLogin: (token: string) => void }) 
       footer={
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
           {tr(language, { ko: '이미 계정이 있으신가요?', en: 'Already have an account?', ja: 'すでにアカウントをお持ちですか？', th: 'มีบัญชีอยู่แล้ว?', vi: 'Đã có tài khoản?', id: 'Sudah punya akun?' })}{' '}
-          <Link to="/login" style={{ color: 'var(--accent-primary)' }}>
+          <Link to="/agent-login" style={{ color: 'var(--accent-primary)' }}>
             {tr(language, { ko: '로그인', en: 'Sign in', ja: 'サインイン', th: 'เข้าสู่ระบบ', vi: 'Đăng nhập', id: 'Masuk' })}
           </Link>
         </p>

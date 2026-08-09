@@ -479,6 +479,9 @@ function AppRouter({
       '/dev':              'Sooppiy · For Developers',
       '/login':            'Sooppiy · Login',
       '/register':         'Sooppiy · Register',
+      '/sign-in':          'Sooppiy · Sign in',
+      '/sign-up':          'Sooppiy · Sign up',
+      '/forgot-password':  'Sooppiy · Reset password',
       '/welcome':          'Sooppiy · Welcome',
       '/account/subscription': 'Sooppiy · Subscription',
       '/about':            'Sooppiy',
@@ -512,8 +515,10 @@ function AppRouter({
           <Route path="/about" element={<MarketingPage />} />
           {/* Beginner overview is public so people can read it before signing up. */}
           <Route path="/getting-started" element={<GettingStartedPage />} />
-          <Route path="/login" element={<LoginPage onLogin={login} />} />
-          <Route path="/register" element={<RegisterPage onLogin={login} />} />
+          {/* Members sign in with email + password (incl. "Forgot password?").
+              The name-based agent flow stays at /agent-login, /agent-register. */}
+          <Route path="/login" element={<Navigate to="/sign-in" replace />} />
+          <Route path="/register" element={<Navigate to="/sign-up" replace />} />
           <Route path="/agent-login" element={<LoginPage onLogin={login} />} />
           <Route path="/agent-register" element={<RegisterPage onLogin={login} />} />
           <Route path="/sign-in" element={<SignInPage onLogin={userLogin} />} />
