@@ -753,27 +753,53 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       {rules.length > 0 && <>
       <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', margin: '20px 0 10px' }}>{T.yourRules}</div>
       {removeError && <div style={{ color: '#f0663f', fontSize: 12.5, marginBottom: 10 }}>⚠️ {removeError}</div>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {rules.map(r => (
-            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 0', borderTop: '1px solid var(--border-color,#d3c8b6)' }}>
-              <b style={{ fontSize: 14 }}>{r.mode === 'agent' ? `🤖 ${T.modeAgent} · $${r.budget_usd}` : r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)' }}>
-                {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {normalizeAccountType(r.account_type)}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: r.auto_execute ? 'rgba(63,185,80,0.16)' : 'rgba(138,128,115,0.18)', color: r.auto_execute ? '#3fb950' : '#8a8073' }}>
-                {r.auto_execute ? T.badgeAuto : T.badgeAnalysis}
-              </span>
-              {/* Real money is on the line here — never let it read the
-                  same as a simulated rule at a glance. */}
-              {r.auto_execute && normalizeAccountType(r.account_type) === 'live' && (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: 'rgba(240,102,63,0.18)', color: '#f0663f' }}>
-                  ⚠ {T.liveMoney}
-                </span>
-              )}
-              <button onClick={() => remove(r.id)} disabled={removingId !== null} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12, opacity: removingId === r.id ? 0.5 : 1 }}>{removingId === r.id ? '⏳ ' : ''}{T.remove}</button>
+      {/* Aligned columns (owner ask 2026-08-09 "inside each block, arrange"):
+          name | settings | state | remove under a header row. ONE grid
+          container (per-row grids let the auto tracks drift per row), wrapped
+          in its own overflow-x scroller so a phone can still reach the Remove
+          button — the only way to stop a running rule — instead of the modal
+          clipping it. Cells stretch to row height (no alignItems on the
+          container) so their borderTops draw one level separator; each cell
+          centers its own content. */}
+      {(() => {
+        const cell: any = { borderTop: '1px solid var(--border-color,#d3c8b6)', padding: '10px 0', display: 'flex', alignItems: 'center' }
+        return (
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px,1fr) minmax(200px,2.2fr) max-content max-content', columnGap: 12, minWidth: 520 }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted,#a89f92)', paddingBottom: 6 }}>
+                {tr(language, { ko: '규칙', en: 'Rule', ja: 'ルール', th: 'กฎ', vi: 'Quy tắc', id: 'Aturan' })}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted,#a89f92)', paddingBottom: 6 }}>
+                {tr(language, { ko: '설정', en: 'Settings', ja: '設定', th: 'การตั้งค่า', vi: 'Thiết lập', id: 'Pengaturan' })}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted,#a89f92)', paddingBottom: 6 }}>
+                {tr(language, { ko: '상태', en: 'State', ja: '状態', th: 'สถานะ', vi: 'Trạng thái', id: 'Status' })}</span>
+              <span />
+              {rules.map(r => (
+                <div key={r.id} style={{ display: 'contents' }}>
+                  <b style={{ ...cell, fontSize: 13.5 }}>{r.mode === 'agent' ? `🤖 ${T.modeAgent} · $${r.budget_usd}` : r.symbol === 'SCANNER' ? `🔍 ${T.coinAuto}` : r.symbol}</b>
+                  <span style={{ ...cell, fontSize: 12, color: 'var(--text-secondary,#8a8073)', fontVariantNumeric: 'tabular-nums' }}>
+                    {r.market} · {r.provider || T.serverDefault} · {r.interval_minutes}m · ≥{Math.round((r.min_confidence || 0) * 100)}% · ${r.size_usd} · {normalizeAccountType(r.account_type)}
+                  </span>
+                  <span style={{ ...cell, gap: 6, whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: r.auto_execute ? 'rgba(63,185,80,0.16)' : 'rgba(138,128,115,0.18)', color: r.auto_execute ? '#3fb950' : '#8a8073' }}>
+                      {r.auto_execute ? T.badgeAuto : T.badgeAnalysis}
+                    </span>
+                    {/* Real money is on the line here — never let it read the
+                        same as a simulated rule at a glance. */}
+                    {r.auto_execute && normalizeAccountType(r.account_type) === 'live' && (
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: 'rgba(240,102,63,0.18)', color: '#f0663f' }}>
+                        ⚠ {T.liveMoney}
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ ...cell, justifyContent: 'flex-end' }}>
+                    <button onClick={() => remove(r.id)} disabled={removingId !== null} style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border-color,#d3c8b6)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12, opacity: removingId === r.id ? 0.5 : 1 }}>{removingId === r.id ? '⏳ ' : ''}{T.remove}</button>
+                  </span>
+                </div>
+              ))}
             </div>
-        ))}
-      </div>
+          </div>
+        )
+      })()}
       </>}
     </div>
   )
@@ -844,10 +870,14 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // current. Tiles only become clickable once there is something to open.
   const summaryStrip = (() => {
     const ready = !!(assets && win)
-    const tile: any = { minWidth: 140, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 10, padding: '9px 13px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: ready ? 'pointer' : 'default' }
-    const kSt: any = { fontSize: 10.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 3, whiteSpace: 'nowrap' }
-    const vSt: any = { fontSize: 17, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
-    const sSt: any = { fontSize: 10, color: 'var(--text-muted,#a89f92)', marginTop: 2, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
+    // Equal-width tiles (owner ask 2026-08-09 "inside each block, arrange"):
+    // content-driven widths made the four tiles ragged; a fixed width lines
+    // them up. 186px keeps the typical sub-line ("in use X · cash Y") whole;
+    // anything longer ellipsizes — the detail modal carries the full figure.
+    const tile: any = { width: 186, overflow: 'hidden', background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 10, padding: '9px 13px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: ready ? 'pointer' : 'default' }
+    const kSt: any = { fontSize: 10.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+    const vSt: any = { fontSize: 17, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+    const sSt: any = { fontSize: 10, color: 'var(--text-muted,#a89f92)', marginTop: 2, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
     const periods: Array<'today' | 'week' | 'month' | 'year'> = ['today', 'week', 'month', 'year']
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
