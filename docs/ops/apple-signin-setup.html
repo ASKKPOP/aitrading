@@ -147,25 +147,132 @@ on a local dev server the way Google can — see §6.</p>
 </div>
 
 <div class="step">
-<h3>Step 3 · Verify the domain <span class="tag">has a Sooppiy-specific trap</span></h3>
-<p class="kr">도메인 소유 확인 — 배포에 지워지지 않는 위치에 올려야 합니다</p>
-<ol>
-<li>In the same Configure dialog, click <b>Download</b> next to Domains — you get <code>apple-developer-domain-association.txt</code>.</li>
-<li>It must be reachable at exactly:
-<pre><code>https://sooppiy.com/.well-known/apple-developer-domain-association.txt</code></pre></li>
-<li>Then press <b>Verify</b> in the portal.</li>
-</ol>
+<h3>Step 3 · Verify the domain <span class="tag">the step people get stuck on</span></h3>
+<p class="kr">도메인 소유 확인 — 별도 메뉴가 아니라 <b>서비스 ID 안</b>에 있습니다</p>
+
 <div class="card warn">
-<b>Do not just <code>scp</code> it onto the box.</b> The SPA root <code>/usr/share/nginx/sooppiy</code> is replaced on every
-deploy (<code>scripts/deploy.sh</code> publishes to all three static roots), so a hand-placed file disappears the next time
-we ship — and Apple silently un-verifies the domain, which kills login for everyone.
+<b>There is no “Domain Verification” menu.</b> That is why it is hard to find: verification lives <i>inside</i> the
+Services ID you made in Step 2, behind its <b>Configure</b> button. If you are hunting through the sidebar for it, you
+will not find it there.
+<p class="kr" style="margin:8px 0 0">사이드바에 “도메인 확인” 메뉴는 없습니다. Step 2에서 만든 <b>서비스 ID → Configure</b> 안에 있습니다.</p>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3a · Get to the right screen</h4>
+<div class="card">
+<ol>
+<li><a href="https://developer.apple.com/account/resources/identifiers/list/serviceId">developer.apple.com/account</a>
+    → <b>Certificates, Identifiers &amp; Profiles</b> → <b>Identifiers</b> (left sidebar).</li>
+<li><b>Change the filter in the top-right dropdown from “App IDs” to “Services IDs”.</b> This is the single most
+    common place to get lost — your Services ID is invisible while the list is filtered to App IDs, and it looks like
+    it was never created.</li>
+<li>Click your Services ID (<code>com.sooppiy.web</code>).</li>
+<li>Tick the <b>Sign In with Apple</b> checkbox. The <b>Configure</b> button beside it only becomes clickable once
+    that box is ticked.</li>
+<li>Click <b>Configure</b> → the <b>Web Authentication Configuration</b> dialog opens. Everything below happens here.</li>
+</ol>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3b · Inside the dialog — where Download and Verify actually are</h4>
+<div class="card">
+<svg viewBox="0 0 900 260" role="img" aria-label="Layout of Apple's Web Authentication Configuration dialog">
+  <rect class="box" x="10" y="10" width="880" height="240"/>
+  <text class="t-b" x="30" y="38">Web Authentication Configuration</text>
+
+  <text class="t-small" x="30" y="66">Primary App ID</text>
+  <rect class="box" x="30" y="74" width="330" height="26"/>
+  <text class="t-small" x="42" y="92">com.sooppiy.app  ▾</text>
+
+  <text class="t-small" x="30" y="126">Domains and Subdomains</text>
+  <rect class="box-accent" x="30" y="134" width="330" height="26"/>
+  <text class="t-small" x="42" y="152">sooppiy.com</text>
+  <rect class="box" x="372" y="134" width="92" height="26"/>
+  <text class="t-small t-b" x="418" y="152" text-anchor="middle">Download</text>
+  <rect class="box" x="474" y="134" width="76" height="26"/>
+  <text class="t-small t-b" x="512" y="152" text-anchor="middle">Verify</text>
+  <text class="t-small" x="566" y="152">← the two buttons you are looking for</text>
+
+  <text class="t-small" x="30" y="192">Return URLs</text>
+  <rect class="box" x="30" y="200" width="520" height="26"/>
+  <text class="t-small" x="42" y="218">https://sooppiy.com/api/auth/apple/callback</text>
+</svg>
+<p style="margin-top:12px"><b>Download</b> and <b>Verify</b> sit on the <b>Domains and Subdomains</b> row — not at the
+bottom of the dialog, and not on the Return URLs row. Type the domain in first; both buttons act on what is in that
+box.</p>
+<p class="kr" style="margin:8px 0 0">두 버튼은 <b>Domains and Subdomains</b> 줄에 붙어 있습니다. 도메인을 먼저 입력해야 동작합니다.</p>
+</div>
+
+<div class="card">
+<b>Enter the domain without a scheme or path.</b>
+<pre><code>✅ sooppiy.com
+❌ https://sooppiy.com
+❌ sooppiy.com/
+❌ www.sooppiy.com     ← see the note on www below</code></pre>
+Apple rejects a scheme outright. If you registered the apex (<code>sooppiy.com</code>), that is the domain Apple will
+fetch the file from — our nginx serves <code>sooppiy.com</code> and <code>www.sooppiy.com</code> from the same root, so
+the file answers on both, but keep the registered domain and the <code>APPLE_REDIRECT_URI</code> on the <b>same</b>
+host or the return URL will not match.
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3c · The file, and where it has to live</h4>
+<div class="card">
+<b>Download</b> gives you <code>apple-developer-domain-association.txt</code> — a small text file containing a JSON
+token. It is <b>not a secret</b>: it is a public proof-of-control token, which is why it is safe to send to me or commit
+to the repo. It must answer at exactly:
+<pre><code>https://sooppiy.com/.well-known/apple-developer-domain-association.txt</code></pre>
+Note the leading dot in <code>.well-known</code>.
+</div>
+
+<div class="card bad">
+<b>Do not <code>scp</code> it onto the server.</b> The SPA root <code>/usr/share/nginx/sooppiy</code> is replaced on
+every deploy (<code>scripts/deploy.sh</code> publishes all three static roots), so a hand-placed file disappears the
+next time we ship — and Apple silently un-verifies the domain, which kills Apple login for everyone with no error
+anywhere in our logs.
 <br><br>
-<b>Correct placement:</b> commit it into the frontend build so every deploy re-publishes it —
+<b>Correct placement — commit it so every deploy republishes it:</b>
 <pre><code>service/frontend/public/.well-known/apple-developer-domain-association.txt</code></pre>
 Vite copies <code>public/</code> verbatim into <code>dist/</code>, and nginx's <code>try_files $uri /index.html</code>
-serves the real file before the SPA fallback. Verified: <code>service/frontend/public/</code> already exists and is
-published this way (<code>favicon.svg</code>, <code>guide.html</code>, <code>logo.svg</code>).
-<p class="kr" style="margin:8px 0 0">서버에 직접 올리면 다음 배포 때 지워집니다. <code>service/frontend/public/.well-known/</code>에 커밋해서 빌드에 포함시키세요.</p>
+serves a real file before falling back to the SPA. Verified on prod: <code>/guide.html</code> and <code>/logo.svg</code>
+both ship this way and answer 200.
+<p class="kr" style="margin:8px 0 0">서버에 직접 올리면 다음 배포에 지워지고, 애플이 조용히 인증을 해제합니다. 반드시 <code>service/frontend/public/.well-known/</code>에 커밋해서 빌드에 포함시키세요.</p>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3d · Check it yourself BEFORE pressing Verify</h4>
+<div class="card bad">
+<b>Checking the status code will lie to you.</b> nginx falls back with <code>try_files $uri /index.html</code>, so a
+<b>missing</b> file still answers <b>200</b> — with the SPA's HTML. Confirmed live: <code>/definitely-not-a-file.txt</code>
+returns 200. You must look at the <b>body</b>.
+<pre><code># Right — shows the actual bytes Apple will read
+curl -s https://sooppiy.com/.well-known/apple-developer-domain-association.txt
+
+# ✅ good   → a short JSON token, something like {"webcredentials":{"apps":[...]}}
+# ❌ bad    → &lt;!doctype html&gt;  ... that is index.html; the file is NOT deployed
+
+# Also confirm no redirect is in the way (Apple does not chase them):
+curl -sI https://sooppiy.com/.well-known/apple-developer-domain-association.txt | head -3
+# want: HTTP/1.1 200 · content-type: text/plain — not 301/302</code></pre>
+<p class="kr" style="margin:8px 0 0">상태 코드는 거짓말을 합니다 — 파일이 없어도 SPA 폴백 때문에 200이 나옵니다. 반드시 <b>본문</b>을 확인하세요.</p>
+</div>
+
+<h4 style="margin:18px 0 4px;font-size:14px">3e · Press Verify, and what each failure means</h4>
+<div class="card">
+Only once the <code>curl</code> above prints the token: go back to the dialog and press <b>Verify</b>. Apple fetches the
+URL server-side, right then. Success turns the row green / shows the domain as verified; then <b>Save</b> / <b>Continue</b>
+to persist the configuration.
+<table style="margin-top:12px">
+<tr><th>What Apple says</th><th>What it actually means</th></tr>
+<tr><td>“Domain verification failed” / “couldn't verify”</td><td>Apple fetched the URL and did not get the expected bytes — nine times out of ten it got <code>index.html</code> because the file was never deployed. Re-run the <code>curl</code>.</td></tr>
+<tr><td>Verification passes but login still fails later</td><td>The domain is fine; the mismatch is the <b>Return URL</b>. It must be character-identical to <code>APPLE_REDIRECT_URI</code> — no trailing slash, no <code>www</code> drift, HTTPS.</td></tr>
+<tr><td>Was verified, now broken with no change from us</td><td>A deploy overwrote the file. That is exactly the failure 3c prevents — check the <code>curl</code> first, then confirm the file is still in <code>public/.well-known/</code>.</td></tr>
+<tr><td>“Please enter a valid domain”</td><td>You typed a scheme or a path. Domain only.</td></tr>
+</table>
+</div>
+
+<div class="card warn">
+<b>There is a second, different domain screen — do not confuse them.</b> <b>Services</b> →
+<b>Sign in with Apple for Email Communication</b> also asks for a domain and its own association file. That one is for
+<i>sending mail to relay addresses</i> (Step 6), not for login. Verifying one does not verify the other; you will
+eventually need both.
+<p class="kr" style="margin:8px 0 0">도메인을 요구하는 화면이 두 곳입니다. 이메일 릴레이용(Step 6)과 로그인용은 별개이며, 하나를 인증해도 다른 하나는 인증되지 않습니다.</p>
 </div>
 </div>
 
