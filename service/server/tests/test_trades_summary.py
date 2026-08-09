@@ -104,6 +104,16 @@ class TradesSummaryTestCase(unittest.TestCase):
         self.assertEqual(out['window']['trades'], 2)
         # window ∩ split = the later boundary (since here)
         self.assertAlmostEqual(out['window']['split_pnl'], -25.0, places=6)
+        # gross gain/loss decompose the net, lifetime AND windowed (owner ask
+        # 2026-08-09): lifetime +180 gains / -40 losses = +140 net; window
+        # +5 gain / -30 loss = -25 net.
+        self.assertAlmostEqual(out['gain'], 180.0, places=6)
+        self.assertAlmostEqual(out['loss'], -40.0, places=6)
+        self.assertAlmostEqual(out['gain'] + out['loss'], out['pnl'], places=6)
+        self.assertAlmostEqual(out['window']['gain'], 5.0, places=6)
+        self.assertAlmostEqual(out['window']['loss'], -30.0, places=6)
+        self.assertAlmostEqual(
+            out['window']['gain'] + out['window']['loss'], out['window']['pnl'], places=6)
 
     def test_window_before_split_uses_split_boundary(self):
         self._insert_fills([

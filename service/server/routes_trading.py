@@ -993,7 +993,15 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         # exactly the open-leg fees (buy 0.1927 + short 0.0415). An open
         # row (pnl NULL) therefore contributes minus its fee.
         net = "COALESCE(pnl, -COALESCE(fee_usd, 0))"
-        cols = [f"COALESCE(SUM({net}), 0) AS pnl", "COUNT(*) AS trades",
+        # Net is one number; a book that is net +3.79 can still be built from
+        # large gains AND large losses, and the owner wants that shape per
+        # period (2026-08-09): gross gain, gross loss, and the net they sum
+        # to. gain = Σ of the winning contributions, loss = Σ of the losing
+        # ones (≤ 0); pnl = gain + loss.
+        gain = f"COALESCE(SUM(CASE WHEN {net} > 0 THEN {net} END), 0)"
+        loss = f"COALESCE(SUM(CASE WHEN {net} < 0 THEN {net} END), 0)"
+        cols = [f"COALESCE(SUM({net}), 0) AS pnl", f"{gain} AS gain",
+                f"{loss} AS loss", "COUNT(*) AS trades",
                 "MIN(created_at) AS first_trade", "MAX(created_at) AS last_trade"]
         params: list = []
         if split:
@@ -1006,9 +1014,11 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
             # before every 'YYYY-MM-DDT...' of the same day).
             win_split = max(since, split) if split else since
             cols += [f"COALESCE(SUM(CASE WHEN created_at >= ? THEN {net} END), 0) AS window_pnl",
+                     f"COALESCE(SUM(CASE WHEN created_at >= ? AND {net} > 0 THEN {net} END), 0) AS window_gain",
+                     f"COALESCE(SUM(CASE WHEN created_at >= ? AND {net} < 0 THEN {net} END), 0) AS window_loss",
                      "SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS window_trades",
                      f"COALESCE(SUM(CASE WHEN created_at >= ? THEN {net} END), 0) AS window_split_pnl"]
-            params += [since, since, win_split]
+            params += [since, since, since, since, win_split]
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -1019,13 +1029,15 @@ def register_trading_routes(app: FastAPI, ctx: RouteContext) -> None:
         row = dict(cursor.fetchone())
         conn.close()
 
-        out = {'pnl': row['pnl'], 'trades': int(row['trades'] or 0),
+        out = {'pnl': row['pnl'], 'gain': row['gain'], 'loss': row['loss'],
+               'trades': int(row['trades'] or 0),
                'first_trade': row['first_trade'], 'last_trade': row['last_trade']}
         if split:
             out['split'] = {'since': split, 'pnl': row['split_pnl'],
                             'trades': int(row['split_trades'] or 0)}
         if since:
             out['window'] = {'since': since, 'pnl': row['window_pnl'],
+                             'gain': row['window_gain'], 'loss': row['window_loss'],
                              'trades': int(row['window_trades'] or 0),
                              'split_pnl': row['window_split_pnl']}
         return out
