@@ -1,0 +1,344 @@
+<!-- machine-translated from plan/22-desk-retrieval-rag.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kế hoạch 22 — Cách RAG Hoạt động với Sooppiy AI</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+  pre.sample { background: var(--code); border-radius: 8px; padding: 12px 14px;
+               font-size: 12px; line-height: 1.5; white-space: pre-wrap; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kế hoạch 22 — Cách RAG Hoạt động với Sooppiy AI</h1>
+<p class="kr">Nguyên lý hoạt động của RAG trong Sooppiy AI — Thu thập những gì, khi nào và cách nào để truy hồi và sử dụng, và cách tiến tới học có trọng số (2026-08-09, trạng thái đo lường thực tế trên production)</p>
+
+<div class="quote">Chủ sở hữu, 2026-08-06: <i>“RAG giữ lại toàn bộ phân tích và giám sát cho phiên này và sooppiy AI”</i> — và 2026-08-07: <i>“từ ngày mai sooppiy và phiên này phải tham chiếu RAG.”</i> Kho ngữ liệu phải được <b>đọc</b>, chứ không chỉ được ghi.</div>
+
+<div class="chips">
+  <div class="chip"><b>1,103</b><span>đoạn (chunks) trong kho ngữ liệu (2026-08-09)</span></div>
+  <div class="chip"><b>562</b><span>phát hiện giám sát (có thể truy hồi)</span></div>
+  <div class="chip"><b>510</b><span>quyết định của desk (dữ liệu huấn luyện Giai đoạn 3)</span></div>
+  <div class="chip"><b>31</b><span>kết quả chạy (P&amp;L đã được nối)</span></div>
+  <div class="chip"><b>46</b><span>sự kiện truy hồi được ghi nhật ký kể từ #340</span></div>
+  <div class="chip"><b>3</b><span>số đoạn (chunks) tối đa được chèn vào mỗi bản tóm tắt</span></div>
+</div>
+
+<h2>1. Bức tranh tổng thể — một kho ngữ liệu, hai người đọc</h2>
+<p class="kr">Cấu trúc tổng thể — một kho ngữ liệu duy nhất (desk_memory) được cả desk và phiên giám sát cùng đọc. Không có dịch vụ embedding: bộ tính điểm Python thuần hoạt động giống nhau trên cả SQLite/MySQL.</p>
+<div class="card">
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- sources -->
+  <rect class="box" x="20" y="30" width="230" height="72"/>
+  <text x="34" y="54" class="t-b">Quyết định của desk</text>
+  <text x="34" y="72" class="t-small">`report` của mỗi sự kiện quyết định —</text>
+  <text x="34" y="87" class="t-small">lý luận do chính desk trình bày</text>
+  <rect class="box" x="20" y="122" width="230" height="72"/>
+  <text x="34" y="146" class="t-b">Kết quả chạy</text>
+  <text x="34" y="164" class="t-small">các lượt chạy kết thúc được nối với P&amp;L đã thực hiện —</text>
+  <text x="34" y="179" class="t-small">"kết quả của lý luận đó là gì"</text>
+  <rect class="box" x="20" y="214" width="230" height="72"/>
+  <text x="34" y="238" class="t-b">Phân tích giám sát</text>
+  <text x="34" y="256" class="t-small">handoff, ghi chú chu kỳ hàng ngày, phát hiện —</text>
+  <text x="34" y="271" class="t-small">được chia đoạn theo tiêu đề ##</text>
+  <!-- ingest -->
+  <rect class="box-accent" x="310" y="112" width="180" height="92"/>
+  <text x="324" y="138" class="t-b">desk_memory_ingest</text>
+  <text x="324" y="156" class="t-small">chạy theo tick giao dịch,</text>
+  <text x="324" y="171" class="t-small">bất biến theo SHA (idempotent),</text>
+  <text x="324" y="186" class="t-small">fail-soft (không bao giờ chặn một chu kỳ)</text>
+  <path class="ln" marker-end="url(#ar)" d="M250 66 C 280 66, 285 128, 308 138"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 158 L 308 158"/>
+  <path class="ln" marker-end="url(#ar)" d="M250 250 C 280 250, 285 188, 308 178"/>
+  <!-- corpus -->
+  <rect class="box-good" x="550" y="96" width="180" height="124"/>
+  <text x="564" y="122" class="t-b">desk_memory</text>
+  <text x="564" y="140" class="t-small">loại = giám sát · quyết định</text>
+  <text x="564" y="155" class="t-small">· outcome (+ dự trữ: lesson)</text>
+  <text x="564" y="173" class="t-small">các đoạn được gắn thẻ tình huống,</text>
+  <text x="564" y="188" class="t-small">SHA duy nhất, market/symbol/run</text>
+  <text x="564" y="206" class="t-small">alembic 0046 · SQLite + MySQL</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M490 158 L 548 158"/>
+  <!-- readers -->
+  <rect class="box-accent" x="790" y="40" width="150" height="88"/>
+  <text x="804" y="64" class="t-b">Bộ phận giao dịch</text>
+  <text x="804" y="82" class="t-small">_recall_line chèn top-3</text>
+  <text x="804" y="97" class="t-small">kết quả khớp với các phát hiện TRƯỚC ĐÓ</text>
+  <text x="804" y="112" class="t-small">vào mỗi bản tóm tắt vị thế</text>
+  <rect class="box" x="790" y="190" width="150" height="88"/>
+  <text x="804" y="214" class="t-b">Phiên giám sát</text>
+  <text x="804" y="232" class="t-small">tìm kiếm trong corpus TRƯỚC KHI</text>
+  <text x="804" y="247" class="t-small">đề xuất bất kỳ bản sửa lỗi nào — một phát hiện</text>
+  <text x="804" y="262" class="t-small">đã được ghi lại thì không bao giờ còn là "mới" nữa</text>
+  <path class="ln-accent" marker-end="url(#ar)" d="M730 130 C 760 120, 762 96, 788 88"/>
+  <path class="ln" marker-end="url(#ar)" d="M730 190 C 760 200, 762 224, 788 232"/>
+  <!-- learning loop -->
+  <rect class="box-dim" x="310" y="300" width="420" height="70"/>
+  <text x="324" y="324" class="t-b">Giai đoạn 3 (đang thực hiện): học các trọng số truy xuất (retrieval weights)</text>
+  <text x="324" y="342" class="t-small">nhật ký recall (#340, live) → tập dữ liệu attribution → điểm số shadow → có trọng số</text>
+  <text x="324" y="357" class="t-small">hành vi truy xuất phía sau một cờ mặc định-tắt — mỗi ngày tăng một bước, hàng ngày vào 21:00 UTC</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M840 280 C 840 330, 760 335, 732 335"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M520 300 C 560 270, 590 250, 610 222"/>
+</svg>
+<div class="legend"><span class="dot" style="background:var(--good)"></span>corpus &nbsp; <span class="dot" style="background:var(--accent)"></span>đường dẫn chèn trực tiếp (live injection path) &nbsp; nét đứt = vòng lặp học tập đang được xây dựng</div>
+</div>
+
+<h2>2. Thu thập — cách các đoạn (chunks) được tạo ra</h2>
+<p class="kr">Thu thập — con đường mà các chunk được tạo ra. Cả ba nguồn đều bám theo mỗi tick giao dịch, được nạp vào với throttle, idempotent (SHA), và fail-soft. Việc một corpus bị hỏng làm chết chu kỳ giao dịch là điều không thể xảy ra về mặt cấu trúc.</p>
+<div class="card">
+<table>
+  <tr><th>nguồn</th><th>điều gì trở thành một chunk</th><th>loại</th><th>tại sao điều này quan trọng</th></tr>
+  <tr>
+    <td><code>ingest_decisions()</code></td>
+    <td>mỗi <code>decision</code>một sự kiện <code>report</code> — luận điểm đã nêu của bộ phận giao dịch — cùng với các con số phía sau nó (hành động, độ tin cậy, mức độ xác tín)</td>
+    <td><code>decision</code></td>
+    <td>đoạn văn bản giá trị nhất mà nền tảng tạo ra chỉ được đọc một lần rồi bị chôn vùi dưới 200 sự kiện tiếp theo</td>
+  </tr>
+  <tr>
+    <td><code>ingest_run_outcomes()</code></td>
+    <td>một lần chạy kết thúc (<code>stopped/finished/failed</code>) được nối với kết quả thực tế của nó</td>
+    <td><code>outcome</code></td>
+    <td>không có gì khác nối "quyết định này" với "nó đã mang lại hoặc gây tốn kém gì" — bộ phận giao dịch không bao giờ có thể được hỏi <i>"lần cuối bạn suy luận như thế này, điều gì đã xảy ra?"</i></td>
+  </tr>
+  <tr>
+    <td><code>ingest_reports()</code></td>
+    <td>markdown giám sát (bàn giao, ghi chú chu kỳ hàng ngày, backlog) được chia nhỏ theo mỗi tiêu đề <code>##</code> — cả một ngày thì quá thô, còn một đoạn văn thì mất tiêu đề</td>
+    <td><code>monitoring</code></td>
+    <td>các phát hiện đã đo lường được (ngưỡng phí, dump toàn bộ sổ lệnh, ladder churn…) tồn tại qua việc luân chuyển tài khoản và đến được bàn giao dịch</td>
+  </tr>
+</table>
+</div>
+<div class="card">
+<svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="35" width="160" height="58"/>
+  <text x="34" y="59" class="t-b">Tick TradingRuns</text>
+  <text x="34" y="77" class="t-small">mỗi lượt chạy của worker</text>
+  <rect class="box" x="230" y="35" width="170" height="58"/>
+  <text x="244" y="59" class="t-b">maybe_ingest()</text>
+  <text x="244" y="77" class="t-small">được điều tiết ở bên trong</text>
+  <rect class="box-accent" x="450" y="35" width="200" height="58"/>
+  <text x="464" y="59" class="t-b">khử trùng lặp SHA</text>
+  <text x="464" y="77" class="t-small">chạy lại an toàn · chỉnh sửa lưu lại</text>
+  <rect class="box-good" x="700" y="35" width="240" height="58"/>
+  <text x="714" y="59" class="t-b">CHÈN desk_memory</text>
+  <text x="714" y="77" class="t-small">lỗi = ghi log cảnh báo, không bao giờ là tick chết</text>
+  <path class="ln" marker-end="url(#ar)" d="M180 64 L 228 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M400 64 L 448 64"/>
+  <path class="ln" marker-end="url(#ar)" d="M650 64 L 698 64"/>
+</svg>
+</div>
+
+<h2>3. Sử dụng — cách một chunk đến được một quyết định trực tiếp</h2>
+<p class="kr">Sử dụng — con đường mà một chunk chạm đến quyết định thực tế. Thiết kế cốt lõi: không phải là symbol mà là <b>Tình huống</b>để tìm kiếm. Vì bài học rút ra từ ZC cần đến được desk ETH.</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="20" y="20" width="170" height="62"/>
+  <text x="34" y="44" class="t-b">run_cycle bắt đầu</text>
+  <text x="34" y="62" class="t-small">~mỗi 30 phút mỗi lần chạy</text>
+  <rect class="box-accent" x="240" y="20" width="220" height="62"/>
+  <text x="254" y="40" class="t-b">_recall_query(run, pnl, qty)</text>
+  <text x="254" y="58" class="t-small">TÌNH HUỐNG (SITUATION), theo từ vựng corpus:</text>
+  <text x="254" y="73" class="t-small">thị trường + đi ngang / thua lỗ / có lãi / trả lại lợi nhuận</text>
+  <rect class="box" x="510" y="20" width="190" height="62"/>
+  <text x="524" y="40" class="t-b">desk_memory.search</text>
+  <text x="524" y="58" class="t-small">bộ tính điểm từ vựng bằng Python thuần,</text>
+  <text x="524" y="73" class="t-small">kind=monitoring, top-3</text>
+  <rect class="box-good" x="750" y="20" width="190" height="62"/>
+  <text x="764" y="40" class="t-b">khối recall → bản tóm tắt</text>
+  <text x="764" y="58" class="t-small">"phát hiện trong quá khứ, KHÔNG PHẢI dữ liệu thị trường trực tiếp"</text>
+  <text x="764" y="73" class="t-small">giới hạn ký tự cho mỗi chunk</text>
+  <path class="ln" marker-end="url(#ar)" d="M190 51 L 238 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M460 51 L 508 51"/>
+  <path class="ln" marker-end="url(#ar)" d="M700 51 L 748 51"/>
+  <rect class="box" x="240" y="120" width="220" height="62"/>
+  <text x="254" y="144" class="t-b">prompt quyết định</text>
+  <text x="254" y="162" class="t-small">cả hai luồng desk nhẹ VÀ đầy đủ —</text>
+  <text x="254" y="177" class="t-small">cả hai đều thấy cùng một recall</text>
+  <rect class="box-warn" x="510" y="120" width="270" height="62"/>
+  <text x="524" y="140" class="t-b">sự kiện telemetry recall (#340)</text>
+  <text x="524" y="158" class="t-small">query cùng SHA/điểm số của chunk được chèn được ghi log</text>
+  <text x="524" y="173" class="t-small">bên cạnh quyết định — nguyên liệu thô của Phase 3</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M840 82 C 840 108, 500 100, 462 130"/>
+  <path class="ln-warn ln-dash" marker-end="url(#ar)" d="M460 151 L 508 151"/>
+</svg>
+</div>
+<div class="card">
+<table>
+  <tr><th>tình huống của chu kỳ này</th><th>nội dung của query</th><th>loại phát hiện mà nó hiển thị</th></tr>
+  <tr><td>flat, đang xem xét vào lệnh</td><td><code>flat considering entry fee hurdle expected move</code></td><td>bằng chứng ngưỡng phí — "một biến động không thể vượt qua chi phí round trip của nó thì không phải là cơ hội"</td></tr>
+  <tr><td>đang giữ lệnh, đang lỗ</td><td><code>losing position stop distance cut or hold reduce</code></td><td>các phát hiện về ladder-of-adds và khoảng cách stop; <i>reduce</i> như một động từ rẻ hơn</td></tr>
+  <tr><td>giữ, thắng</td><td><code>winning position trailing take partial profit</code></td><td>bài học về trailing-lock và partial-banking</td></tr>
+  <tr><td>trả lại mức đỉnh của nó</td><td><code>gave back peak give-back bank the gain arm the level</code></td><td>các phát hiện về give-back/arm — các lệnh thắng trong lịch sử đã trả lại 34–49% mức đỉnh</td></tr>
+</table>
+<div class="legend">Khả năng truy xuất thực tế được xác minh trong container trên production (lượt chạy 1012, trường hợp thua lỗ): phát hiện từ run-932 — một vị thế bị giảm một nửa mỗi chu kỳ, giảm 87.5% khi giá đi được 21% về phía mục tiêu, mức cản đo được so với việc chỉ giữ nguyên — đã đến được bàn của một mã khác vì <i>tình huống</i> khớp.</div>
+</div>
+
+<h2>4. Khi nào — mọi trigger, mọi actor</h2>
+<p class="kr">Khi nào — Tổng hợp thời điểm thực thi theo từng trigger.</p>
+<div class="card">
+<table>
+  <tr><th>khi nào</th><th>tác nhân</th><th>điều gì xảy ra</th></tr>
+  <tr><td>mỗi worker tick</td><td><code>desk_memory_ingest.maybe_ingest</code></td><td>các quyết định mới / kết quả / ghi chú giám sát đã chỉnh sửa trở thành các chunk (được throttled, khử trùng lặp bằng SHA)</td></tr>
+  <tr><td>mỗi chu kỳ quyết định (~30 phút mỗi lượt chạy)</td><td><code>run_engine._recall_line</code></td><td>truy vấn tình huống → top-3 chunk giám sát → khối được gắn nhãn trong bản tóm tắt vị thế; các SHA được chèn vào được ghi lại như một <code>recall</code> sự kiện</td></tr>
+  <tr><td>trước khi bất kỳ bản sửa lỗi giám sát nào được đề xuất</td><td>phiên giám sát</td><td>tìm kiếm trong kho dữ liệu trước và nêu rõ kết quả trả về — một phát hiện đã được ghi nhận không được phát hiện lại như thể là mới</td></tr>
+  <tr><td>hàng ngày lúc 21:00 UTC (14:00 PT)</td><td>tác vụ theo lịch <code>rag-phase3-daily-increment</code></td><td>một bước tăng trưởng Phase-3: TDD → PR → CI → merge → deploy → xác minh production ×2 → dòng ghi ngày trong §7 của kế hoạch</td></tr>
+  <tr><td>khẩn cấp</td><td><code>DESK_RECALL_ENABLED=0</code></td><td>công tắc ngắt khẩn cấp — khả năng truy hồi biến mất khỏi các bản tóm tắt; việc nạp dữ liệu vẫn tiếp tục; không có gì khác thay đổi</td></tr>
+</table>
+</div>
+
+<h2>5. Logic tính điểm — cố tình đơn giản</h2>
+<p class="kr">Chấm điểm — cố tình đơn giản. Không có dịch vụ embedding, FTS5, MySQL FULLTEXT.</p>
+<div class="card">
+<ul style="margin:0 0 0 18px; padding:0;">
+  <li><b>Bộ chấm điểm từ vựng thuần Python.</b> Kho dữ liệu có kích thước nhỏ (từ hàng trăm đến vài nghìn đoạn); một bộ chấm điểm Python hoạt động <i>giống hệt nhau</i> trên cả SQLite và MySQL — sự khác biệt phương ngữ đã từng gây rắc rối cho codebase này trước đây (LIKE ESCAPE, các hàm datetime, việc thực thi FK).</li>
+  <li><b>Danh sách từ dừng ngắn.</b> Danh sách từ dừng quá mạnh sẽ loại bỏ các từ chuyên ngành — <code>loss</code>, <code>stop</code>, <code>close</code> — mà các truy vấn thực sự nói đến.</li>
+  <li><b>chỉ kind=monitoring mới có thể truy hồi được ở thời điểm hiện tại.</b> 510 đoạn quyết định và 31 đoạn kết quả chỉ ghi <i>theo thiết kế</i>: chúng là dữ liệu huấn luyện cho Phase 3, và việc đưa chúng vào trước khi có attribution sẽ chỉ thêm nhiễu mà không có vòng phản hồi.</li>
+  <li><b>Mọi thứ trên đường dẫn cycle đều fail-soft.</b> Một corpus rỗng, chậm, hoặc bị hỏng sẽ trả về <code>""</code> — một cycle không bao giờ bị mất vì chính bộ nhớ của nó.</li>
+</ul>
+</div>
+
+<h2>6. Lộ trình Phase — nơi vòng lặp học tập diễn ra</h2>
+<p class="kr">Lộ trình — quy tắc thứ tự có tính ràng buộc: đối với việc thu hồi <b>Biến động (variance)</b>Phải có dữ liệu thì mới học được trọng số. Không xây dựng trước dữ liệu. Mỗi ngày 1 lần tăng thêm, hằng ngày đến khi production.</p>
+<div class="card">
+<svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+  <line class="ln" x1="40" y1="52" x2="920" y2="52"/>
+  <rect class="box-good" x="40" y="80" width="150" height="66"/>
+  <text x="54" y="104" class="t-b">Giai đoạn 0 · hoàn thành</text>
+  <text x="54" y="122" class="t-small">kế hoạch (tệp .md của tài liệu này)</text>
+  <circle cx="115" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="230" y="80" width="150" height="66"/>
+  <text x="244" y="104" class="t-b">Giai đoạn 1 · LIVE</text>
+  <text x="244" y="122" class="t-small">chunking + ingest</text>
+  <text x="244" y="137" class="t-small">(alembic 0046)</text>
+  <circle cx="305" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-good" x="420" y="80" width="150" height="66"/>
+  <text x="434" y="104" class="t-b">Giai đoạn 2 · LIVE</text>
+  <text x="434" y="122" class="t-small">ghi nhớ theo tình huống</text>
+  <text x="434" y="137" class="t-small">vào mọi tài liệu tóm tắt</text>
+  <circle cx="495" cy="52" r="5" fill="var(--good)"/>
+  <rect class="box-warn" x="610" y="80" width="150" height="66"/>
+  <text x="624" y="104" class="t-b">Giai đoạn 3 · đang xây dựng</text>
+  <text x="624" y="122" class="t-small">(a) SHIPPED #340:</text>
+  <text x="624" y="137" class="t-small">ghi nhật ký hồi tưởng</text>
+  <circle cx="685" cy="52" r="5" fill="var(--warn)"/>
+  <rect class="box-dim" x="800" y="80" width="140" height="66"/>
+  <text x="814" y="104" class="t-b">(b)(c)(d) next</text>
+  <text x="814" y="122" class="t-small">một lần mỗi ngày,</text>
+  <text x="814" y="137" class="t-small">Tần suất 21:00 UTC</text>
+  <circle cx="870" cy="52" r="5" fill="var(--muted)"/>
+  <!-- ladder -->
+  <rect class="box-warn" x="40" y="186" width="205" height="84"/>
+  <text x="54" y="208" class="t-b">(a) nhật ký ghi nhớ ✓</text>
+  <text x="54" y="226" class="t-small">chunk SHA nào cho mỗi quyết định</text>
+  <text x="54" y="241" class="t-small">thực sự đã thấy — không có sự kiện gợi nhớ nào</text>
+  <text x="54" y="256" class="t-small">≠ khả năng nhớ lại rỗng (cả hai đều quan trọng)</text>
+  <rect class="box-dim" x="275" y="186" width="205" height="84"/>
+  <text x="289" y="208" class="t-b">(b) tập dữ liệu quy kết</text>
+  <text x="289" y="226" class="t-small">kết hợp các bản ghi thu hồi (recall) đã lưu nhật ký để chạy</text>
+  <text x="289" y="241" class="t-small">kết quả — bảng bóng (shadow table),</text>
+  <text x="289" y="256" class="t-small">không thay đổi hành vi</text>
+  <rect class="box-dim" x="510" y="186" width="205" height="84"/>
+  <text x="524" y="208" class="t-b">(c) điểm số shadow</text>
+  <text x="524" y="226" class="t-small">mức độ hữu ích được tính toán theo từng phần (per-chunk)</text>
+  <text x="524" y="241" class="t-small">ngoại tuyến bởi worker,</text>
+  <text x="524" y="256" class="t-small">chỉ nhật ký</text>
+  <rect class="box-dim" x="745" y="186" width="195" height="84"/>
+  <text x="759" y="208" class="t-b">(d) truy xuất có trọng số</text>
+  <text x="759" y="226" class="t-small">đằng sau một cờ (flag) mặc định tắt,</text>
+  <text x="759" y="241" class="t-small">chỉ được quảng bá dựa trên số liệu đo lường</text>
+  <text x="759" y="256" class="t-small">bằng chứng trong sổ cái §7</text>
+  <path class="ln" marker-end="url(#ar)" d="M245 228 L 273 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M480 228 L 508 228"/>
+  <path class="ln" marker-end="url(#ar)" d="M715 228 L 743 228"/>
+</svg>
+<div class="legend">Rủi ro overfitting đã được nêu rõ trong kế hoạch: các skill và findings được viết ra từ các episode đã đo lường — đó <i>là</i> việc khớp với quá khứ. Biện pháp giảm thiểu là mỗi bài học đều giữ điều khoản bằng chứng của nó, và trọng số đặt trên bằng chứng, không bao giờ trên ý kiến.</div>
+</div>
+
+<h2>7. Tham chiếu — nơi mọi thứ nằm ở đâu</h2>
+<p class="kr">Tài liệu tham khảo — Tổng quan về module, hàm và switch.</p>
+<div class="card">
+<table>
+  <tr><th>piece</th><th>location</th><th>role</th></tr>
+  <tr><td>kho ngữ liệu + tìm kiếm</td><td><code>service/server/desk_memory.py</code></td><td>các loại, định danh SHA, bộ tính điểm từ vựng, <code>remember()</code> / <code>search()</code></td></tr>
+  <tr><td>ingest</td><td><code>service/server/desk_memory_ingest.py</code></td><td><code>ingest_decisions</code> / <code>ingest_run_outcomes</code> / <code>ingest_reports</code>, <code>maybe_ingest</code> throttle</td></tr>
+  <tr><td>gợi nhớ lại vào bản tóm tắt</td><td><code>run_engine._recall_query</code> · <code>_recall_line</code></td><td>truy vấn tình huống; top-3 đoạn (chunk) giám sát, được gán nhãn và giới hạn</td></tr>
+  <tr><td>ghi nhật ký hồi tưởng (3a)</td><td><code>run_engine._recall_capture</code> · <code>_take_recall_journal</code></td><td><code>recall</code>telemetry event bên cạnh mỗi quyết định: query + SHAs/kinds/scores đã được chèn</td></tr>
+  <tr><td>công tắc ngắt khẩn cấp</td><td><code>DESK_RECALL_ENABLED</code> (mặc định bật)</td><td>chỉ tắt việc chèn (injection); việc thu thập vẫn tiếp tục</td></tr>
+  <tr><td>schema</td><td><code>alembic 0046_desk_memory</code></td><td><code>desk_memory</code>bảng: kind, source, ts, run/symbol/market, tags, title, body, sha</td></tr>
+  <tr><td>sổ cái kế hoạch + gia số</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7</td><td>mỗi lần cập nhật hàng ngày đều được lưu tại đó, có ghi ngày, trong cùng PR đã triển khai nó</td></tr>
+  <tr><td>nhịp xây dựng hàng ngày</td><td>tác vụ theo lịch <code>rag-phase3-daily-increment</code></td><td>21:00 UTC; hướng dẫn kích hoạt lại có trong §7 (vẫn tồn tại qua việc xoay vòng tài khoản nhờ repo)</td></tr>
+</table>
+</div>
+
+<h2>8. Đây cố tình không phải là gì</h2>
+<p class="kr">Đây cố tình không phải là gì — thực tế so với các tuyên bố RAG phổ biến.</p>
+<div class="card">
+<table>
+  <tr><th>tuyên bố phổ biến</th><th>ở đây</th></tr>
+  <tr><td>"xử lý dữ liệu khổng lồ ngay lập tức"</td><td><span class="no">Không.</span> Bàn giao dịch chỉ thấy một bản tóm tắt nhỏ. Truy xuất gửi <i>đúng</i> bản tóm tắt nhỏ, không phải nhiều dữ liệu hơn.</td></tr>
+  <tr><td>"loại bỏ cảm xúc con người"</td><td><span class="wr">Một phần.</span> Việc bán toàn bộ sổ khi biến động dưới 2% đã được đo lường — về hành vi giống hệt với hoảng loạn. Recall tồn tại để đưa bài học đã đo lường ra trước thời điểm tương tự tiếp theo.</td></tr>
+  <tr><td>"tự động học"</td><td><span class="wr">Chưa.</span> Trọng số yêu cầu có phương sai trong những gì được truy xuất. Việc ghi log phương sai đó đã hoạt động (#340); học từ đó là công việc của nhịp xây dựng hàng ngày, từng bước tăng dần có kiểm soát một lúc.</td></tr>
+  <tr><td>"một cơ sở dữ liệu vector"</td><td><span class="no">Không.</span> Một bảng và một bộ tính điểm Python, giống nhau trên cả hai phương ngữ SQL, fail-soft trên đường dẫn tiền. Nhàm chán một cách có chủ đích.</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>
