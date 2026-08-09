@@ -183,6 +183,69 @@ Every increment lands here as a dated line, in the same PR that ships it.
       runs**, with at least two distinct chunk shas appearing in ≥20 events
       each — below that there is no retrieval VARIANCE to attribute, and §2's
       sequencing rule forbids building on it.
+      **↑ SUPERSEDED 2026-08-09 — this was a VOLUME gate for a VARIANCE
+      question, and it would have opened on a dataset that cannot answer it.
+      See the next entry.**
+  - **2026-08-09 — increment: analysis only. The (b) gate above is wrong,
+    and (a2) is inserted before (b).** No code shipped; the finding is the
+    increment. Measured on prod at 22:20Z, first full day of (a) journaling
+    (101 `recall` events, 11 runs, window 08-08 21:35Z → 08-09 22:17Z):
+
+    | measure | value | yesterday's gate |
+    |---|---|---|
+    | `recall` events | 101 | ≥200 — not met |
+    | distinct runs (all closed) | 11 | ≥20 — not met |
+    | shas appearing in ≥20 events | **4** (54/47/47/46) | ≥2 — **met** |
+    | distinct chunk shas, all time | **5** | — |
+    | distinct queries | **5** | — |
+    | **distinct chunk-pairs per query** | **1, for every query** | — |
+    | rows with `chunks: []` (the control group) | **0** | — |
+
+    - **Retrieval is a deterministic function of the query string.** Every
+      one of the 5 queries returned the same pair of shas on every one of its
+      101 firings, across 11 runs and 25 hours; scores moved for one query
+      and the ranking still did not. So the per-chunk usefulness score (b)
+      would compute is **perfectly collinear with the situation class that
+      retrieved it** — "chunk `a5c29c` is bad" and "crypto losing positions
+      lose" are the same number wearing two labels. That is not a weak
+      dataset, it is an **unidentifiable** one.
+    - **Volume cannot fix it, and the old gate would have opened anyway.**
+      At 4.1 events/h the 200-event leg lands ~08-10 21Z and the sha leg is
+      already met — two of three conditions green on a dataset with zero
+      within-class variance. §2's sequencing rule was right; the number
+      chosen to enforce it measured the wrong quantity.
+    - **Why it is structural, not "not yet".** Three multipliers are each
+      pinned to one: (1) `_recall_query` is a pure function of `market` ×
+      holding × gave-back-peak × winning/losing — ~4 reachable classes per
+      market, all crypto ones already seen; (2) `search()` is a
+      deterministic scorer over a **frozen pool** — retrieval reads
+      `kind="monitoring"` only, and monitoring chunks sit at **562, exactly
+      where they were on 08-08**, while the corpus grew 1,023 → 1,197 (all
+      of it `decision`/`outcome`, which recall never reads). Monitoring
+      chunks come from `ingest_reports(docs/reports)`, so the retrievable
+      pool only moves when a monitoring session's markdown is **deployed**;
+      (3) `limit=_RECALL_MAX` = 2, always filled — hence zero control rows.
+      Constant query space × constant pool × constant top-2 = constant
+      output. Waiting changes none of the three.
+    - **Therefore (a2) is inserted before (b): make retrieval stochastic
+      behind a default-off flag.** The minimum that creates within-class
+      variance is an epsilon draw from the top-k pool instead of a fixed
+      top-2 (e.g. `DESK_RECALL_EXPLORE`, default **off**, sampling below the
+      head some fraction of the time), with the journal already recording
+      what was drawn. This is the `edge-signal-aggregator` decay loop in §8
+      run forward: weights may only fall on evidence, and evidence requires
+      a counterfactual. It is a behaviour change on the trading path, so it
+      ships default-off and is promoted only on measured evidence — same
+      bar as (d).
+    - **Corrected gate for (b)** — a VARIANCE gate, replacing the volume
+      one: **≥3 distinct chunk-pairs observed for each of ≥2 situation
+      classes, with ≥30 events per class**, and ≥20 closed runs. Until
+      exploration is live and on, that gate cannot be met by waiting — which
+      is the point of stating it this way.
+    - Also recorded, since (b) will need it: `desk_memory` holds **39**
+      `outcome` chunks (24 on 08-08), and all 11 journalled runs are closed,
+      so the right-hand side of the join exists and is growing. The left
+      side is what is degenerate.
 
 ## 8. External design references (2026-08-07)
 
