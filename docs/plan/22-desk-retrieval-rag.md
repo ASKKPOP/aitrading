@@ -246,6 +246,20 @@ Every increment lands here as a dated line, in the same PR that ships it.
       `outcome` chunks (24 on 08-08), and all 11 journalled runs are closed,
       so the right-hand side of the join exists and is growing. The left
       side is what is degenerate.
+    - **Same-day follow-up: the 562 is no longer frozen, deliberately.** A
+      second PR that evening (owner-ordered hygiene, not a ladder increment)
+      added a trap section to `HANDOFF-automation-monitoring.md`, which lives
+      under `docs/reports` — the ingest root. So `kind=monitoring` moves off
+      562 on that deploy. **This does not weaken the finding above:** the
+      frozen pool is one of three multipliers, and the other two (a query
+      space that is a pure function of ~4 situation classes, and an always-
+      filled top-2) are untouched. A pool that grows by a handful of chunks
+      per deploy also cannot manufacture *within-class* variance — it can
+      only, rarely, swap one incumbent for another, which is exactly the
+      slow confounded-with-time drift §2 forbids learning from. Retrieval
+      output was re-checked after that deploy and the pairs were unchanged.
+      Recorded here so a later session does not read a moved count as this
+      entry being wrong.
 
 ## 8. External design references (2026-08-07)
 

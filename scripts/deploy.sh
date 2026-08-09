@@ -86,8 +86,18 @@ if [ "$DRY_RUN" = "1" ]; then
 fi
 
 # ── 3. upload the exact merged-main tree ────────────────────────────────────
-TARBALL=$(mktemp -t sooppiy-app.XXXXXX).tgz
-trap 'rm -f "$TARBALL"' EXIT
+# One scratch dir for every local temp file, removed on ANY exit path.
+#
+# This used to be `TARBALL=$(mktemp -t sooppiy-app.XXXXXX).tgz`, which leaks:
+# mktemp CREATES the file it names, then `.tgz` is appended to the variable,
+# so the archive is written to a DIFFERENT path and the trap removed only that
+# one. The 0-byte mktemp file stayed behind on every deploy — 93 of them had
+# accumulated locally by 2026-08-09. The marketing tarball had the same shape
+# plus no trap at all, so a failure between its mktemp and its `rm -f` leaked
+# the whole archive.
+WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/sooppiy-deploy.XXXXXX")
+trap 'rm -rf "$WORKDIR"' EXIT
+TARBALL="$WORKDIR/app.tgz"
 say "packing $MAIN_SHA"
 git archive --format=tar.gz -o "$TARBALL" HEAD
 
@@ -166,10 +176,9 @@ $SSH "
 
 say "building and publishing the marketing pages"
 ( cd marketing && npm run build --silent >/dev/null )
-MKT=$(mktemp -t sooppiy-mkt.XXXXXX).tgz
+MKT="$WORKDIR/mkt.tgz"
 tar czf "$MKT" -C marketing/dist .
 scp -q -i "$SSH_KEY" "$MKT" "$SSH_HOST:/tmp/sooppiy-mkt.tgz"
-rm -f "$MKT"
 $SSH "
   set -e
   rm -rf /tmp/newmkt && mkdir -p /tmp/newmkt && tar xzf /tmp/sooppiy-mkt.tgz -C /tmp/newmkt 2>/dev/null
@@ -201,6 +210,16 @@ $SSH "
   prune '/usr/share/nginx/sooppiy.prev-*'
   prune '/usr/share/nginx/sooppiy-marketing.prev-*'
 "
+
+# Stale upload tarballs in the box's /tmp. This deploy removes its own two
+# (step 6), but hand deploys from before this script existed did not: five
+# were still sitting there on 2026-08-09 — 15.5 MB dated Jul 31 – Aug 3, on a
+# disk at 78%. Age-based, so it can never race an upload in flight, and
+# tarballs-only, so it can never touch /tmp/sooppiy-deploy.lock — the flock
+# target that serialises deploys.
+say "pruning /tmp upload tarballs older than ${TMP_TARBALL_DAYS:-7} days"
+$SSH "sudo find /tmp -maxdepth 1 -type f \\( -name '*.tar.gz' -o -name '*.tgz' \\) \
+        -mtime +${TMP_TARBALL_DAYS:-7} -print -delete 2>/dev/null | sed 's/^/  removed /' || true"
 
 # ── 8. verify, and say plainly if someone raced us ─────────────────────────
 say "verifying"
