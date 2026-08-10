@@ -91,14 +91,16 @@ export function GuideDocOverlay({ slug, auth, onClose }: {
       // z 600 matches the app's dialog convention (DeskCyclesPanel) — dialogs
       // outrank the nav. At 80 the fixed topbar painted over the overlay's own
       // header, hiding its close button.
-      style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center' }}
+      // The gaps (top/left/right; bottom stays flush) keep the page visible
+      // around the reader — a sheet, not a page swap (owner ask 2026-08-10).
+      style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center', padding: '48px 16px 0' }}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: 'min(980px, 100vw)', height: '100%', display: 'flex', flexDirection: 'column',
-          background: 'var(--bg-primary)', borderLeft: '1px solid var(--border-color)',
-          borderRight: '1px solid var(--border-color)',
+          width: 'min(980px, 100%)', height: '100%', display: 'flex', flexDirection: 'column',
+          background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+          borderBottom: 'none', borderRadius: '14px 14px 0 0', overflow: 'hidden',
         }}
       >
         <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 10 }}>
