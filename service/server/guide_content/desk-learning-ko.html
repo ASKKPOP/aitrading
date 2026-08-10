@@ -1,0 +1,306 @@
+<!-- machine-translated from plan/22-phase3-learning-to-profit.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 22 · Phase 3 — 수익을 위한 학습</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .t-good { fill: var(--good); } svg .t-warn { fill: var(--warn); } svg .t-bad { fill: var(--bad); }
+  svg .t-accent { fill: var(--accent); }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .bar-warn { fill: var(--warn); opacity: .75; }
+  svg .bar-accent { fill: var(--accent); opacity: .8; }
+  svg .bar-dim { fill: var(--muted); opacity: .45; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 22 · Phase 3 — 수익을 위한 학습</h1>
+<p class="kr">자가 학습 데몬의 전체 설계 — 어떻게 작동하고, 목적이 무엇이고, 목표가 무엇이고, 일정이 어떻게 되는가. 수치는 2026-08-09 23:33Z 프로드 실측. 원문 분석: <code>docs/plan/22-phase3-learning-to-profit.md</code></p>
+
+<div class="quote">Owner, 2026-08-09: <i>"target: make automated learning implemented so it makes plus profit."</i> — 인수 테스트는 "데몬이 학습하는가"가 아니다. "학습한 것이 <b>NET realized P&amp;L</b>."</div>
+
+<div class="chips">
+  <div class="chip"><b>109</b><span>저널화된 리콜 이벤트 (14회 실행)</span></div>
+  <div class="chip"><b>1,216</b><span>코퍼스 청크 (종류별 614/562/40/0)</span></div>
+  <div class="chip"><b>0</b><span>레슨 청크 — 데몬에 필요한 풀</span></div>
+  <div class="chip"><b>~3%</b><span>오늘 루프가 변경할 수 있는 독트린 텍스트의 양</span></div>
+  <div class="chip"><b>48,000</b><span>매 사이클 통째로 전송되는 스킬 문자 수</span></div>
+  <div class="chip"><b>~101/day</b><span>리콜 볼륨 — 학습 주기를 결정</span></div>
+</div>
+
+<h2>1. 목적 — 이것이 존재하는 이유</h2>
+<p class="kr">목적 — 데스크가 이미 가진 원칙을, 그것이 적용되는 바로 그 상황에서, 검증된 것만 읽게 만든다. 새 알파 발굴이 아니라 측정된 손실 형태를 막는 것.</p>
+<div class="card">
+<p style="margin:6px 0">데스크는 이미 독트린을 가지고 있다: 측정된 에피소드로부터 작성된 36개의 스킬. 문제는 <b>전달</b> 방식이다 — 모든 것이 모든 결정에 전송되어, 상황별 레슨이 적용되지 않는 48,000자의 독트린과 경쟁하게 된다. 학습 데몬의 목적은 플랫폼이 수작업으로는 닫을 수 없는 루프를 닫는 것이다:</p>
+<table>
+  <tr><th>질문</th><th>답변</th></tr>
+  <tr><td>무엇을 학습하는가?</td><td>어떤 레슨이, 어떤 <b>상황</b>에서 제시되어, 손실 형태 감사가 이미 산정한 방향으로 데스크의 <b>행동</b>을 변화시키는가 (덤프→축소, 왕복거래→이익확정, 손실 포지션에 추가 매수 금지, 수수료 문턱 규율, 암 사용).</td></tr>
+  <tr><td>무엇을 학습하지 않는가?</td><td>알파. 리콜 청크 2개의 순위를 더 잘 매긴다고 해서 새로운 거래를 찾아내지는 않는다. 또한 게이트, 사이징, 리스크 레일, 위임 사항에는 절대 손대지 않는다 — 이것들은 코드로 남는다.</td></tr>
+  <tr><td>이것이 왜 수익 경로인가?</td><td>측정된 전체 손실의 74%가 하나의 행동 클래스(2% 미만 변동에서의 전체 북 덤프, 84건의 청산 중 6건)에서 발생했다. 데스크가 독트린이 적용되는 그 순간에 기존 독트린을 안정적으로 적용하도록 만드는 것은 가장 큰 측정된 누수를 공략하는 것이다 — 게다가 결정론적인 LLM 비용 절감 효과도 있다 (§6).</td></tr>
+</table>
+</div>
+
+<h2>2. 오늘의 프롬프트 — 변화가 존재하는 곳과 존재하지 않는 곳</h2>
+<p class="kr">현재 프롬프트 구성 — 학습 루프가 변화시킬 수 있는 건 전체 원칙 텍스트의 약 3%(리콜 라인)뿐. 48,000자 스킬 월은 구조적으로 분산 0.</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="24" class="t-b">하나의 결정 프롬프트, 세 개의 원칙 채널</text>
+  <!-- mandate -->
+  <rect class="bar-dim" x="20" y="44" width="24" height="34" rx="4"/>
+  <text x="52" y="60">지시 헤더 — 무조건적이며, 모든 결정에 적용됨</text>
+  <text x="52" y="76" class="t-small">MANDATE_CORE, 단일 문구, 드리프트 테스트 완료. 설계상 절대 변하지 않음.</text>
+  <!-- skills wall -->
+  <rect class="bar-warn" x="20" y="94" width="852" height="34" rx="4"/>
+  <text x="30" y="115" class="t-b" style="fill:#fff">스킬 월 — 최대 48,000자 · 36개 스킬 · 전부 · 매 사이클</text>
+  <text x="880" y="115" class="t-warn t-b">~97%</text>
+  <text x="20" y="146" class="t-small t-warn">구조적으로 분산 0 → 데몬은 스킬에 대해 아무것도 학습할 수 없음. 원래 Plan 22 §1 문제 — 여전히 미해결. 이는 Phase 4의 영역이자 수익 레버임.</text>
+  <!-- recall -->
+  <rect class="bar-accent" x="20" y="160" width="26" height="34" rx="4"/>
+  <text x="54" y="176" class="t-b t-accent">리콜 라인 — ≤2 청크 × 700자 ≈ 1,400자</text>
+  <text x="880" y="176" class="t-accent t-b">~3%</text>
+  <text x="54" y="192" class="t-small">Phase 3가 변화시키는 유일한 채널 — 탐험 비용이 낮음(작은 영향 범위), 하지만 학습 가능한 수익도 그만큼 작은 규모로 제한됨</text>
+</svg>
+<p class="legend">심층 분석의 발견 1: 구축 중인 루프는 가장 작은 채널에서 학습함. 발견 2: "Phase 1"은 desk_memory 코퍼스로 출시되었으나 — 스킬 월의 설계된 원자화는 실행되지 않았고, 따라서 데스크가 읽는 내용의 97%는 여전히 절대 변하지 않음.</p>
+</div>
+
+<h2>3. 학습 루프의 작동 방식 — 전체 과정</h2>
+<p class="kr">학습 루프 전체 흐름 — 상황 → 검색(+탐험, 성향점수 기록) → 브리프 → 판단 → 저널 → 결과 조인 → 행동 대리지표 → 그림자 점수(하향만) → 승격 게이트 → 가중 검색. 자동 채굴 교훈은 격리 후 입장.</p>
+<div class="card">
+<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- 1 situation -->
+  <rect class="box" x="20" y="30" width="200" height="86"/>
+  <text x="34" y="52" class="t-b">1 · 상황</text>
+  <text x="34" y="70" class="t-small">시장 · 무포지션/보유 중 ·</text>
+  <text x="34" y="85" class="t-small">수익/손실 · 최고점 반납</text>
+  <text x="34" y="103" class="t-small"><tspan style="font-family:monospace">_recall_query(run, pnl, qty)</tspan></text>
+  <!-- 2 retrieve -->
+  <rect class="box-accent" x="270" y="30" width="220" height="86"/>
+  <text x="284" y="52" class="t-b">2 · 검색 + 탐험</text>
+  <text x="284" y="70" class="t-small">관련성 최저치 이상의 top-K;</text>
+  <text x="284" y="85" class="t-small">헤드 아래 ε-추출 (a2, 플래그 off)</text>
+  <text x="284" y="103" class="t-small t-accent">PROPENSITY + 스킴 버전을 로그로 기록</text>
+  <path class="ln" marker-end="url(#ar)" d="M220 73 L 268 73"/>
+  <!-- 3 brief/decision -->
+  <rect class="box" x="540" y="30" width="190" height="86"/>
+  <text x="554" y="52" class="t-b">3 · 브리프 → 결정</text>
+  <text x="554" y="70" class="t-small">PAST로 라벨링된 청크 2개,</text>
+  <text x="554" y="85" class="t-small">상한 적용, fail-soft 방식; 데스크가</text>
+  <text x="554" y="103" class="t-small">고정된 레일 안에서 결정합니다</text>
+  <path class="ln" marker-end="url(#ar)" d="M490 73 L 538 73"/>
+  <!-- 4 journal -->
+  <rect class="box-accent" x="780" y="30" width="160" height="86"/>
+  <text x="794" y="52" class="t-b">4 · 저널</text>
+  <text x="794" y="70" class="t-small">리콜 이벤트: 쿼리,</text>
+  <text x="794" y="85" class="t-small">청크 SHA, 점수,</text>
+  <text x="794" y="103" class="t-small">성향 (LIVE: #340)</text>
+  <path class="ln" marker-end="url(#ar)" d="M730 73 L 778 73"/>
+  <!-- 5 outcomes -->
+  <rect class="box" x="780" y="170" width="160" height="86"/>
+  <text x="794" y="192" class="t-b">5 · 결과</text>
+  <text x="794" y="210" class="t-small">강제 포함 종료</text>
+  <text x="794" y="225" class="t-small">플래트닝 — pnl_audit</text>
+  <text x="794" y="243" class="t-small">장부 리플레이, 원시 데이터 아님</text>
+  <path class="ln" marker-end="url(#ar)" d="M860 116 L 860 168"/>
+  <!-- 6 surrogates -->
+  <rect class="box-good" x="520" y="170" width="210" height="86"/>
+  <text x="534" y="192" class="t-b">6 · 행동 대리 지표</text>
+  <text x="534" y="210" class="t-small">dump-vs-reduce · round-trip ·</text>
+  <text x="534" y="225" class="t-small">add-into-loser · fee hurdle · arm use</text>
+  <text x="534" y="243" class="t-small t-good">각각 손실 감사로 사전 검증됨</text>
+  <path class="ln" marker-end="url(#ar)" d="M778 213 L 732 213"/>
+  <!-- 7 shadow scores -->
+  <rect class="box-good" x="270" y="170" width="200" height="86"/>
+  <text x="284" y="192" class="t-b">7 · 섀도 점수 (c)</text>
+  <text x="284" y="210" class="t-small">(class, chunk)당 SNIPS,</text>
+  <text x="284" y="225" class="t-small">사전값으로 축소되고 할인됨;</text>
+  <text x="284" y="243" class="t-small t-warn">가중치는 증거에 의해서만 하락함</text>
+  <path class="ln" marker-end="url(#ar)" d="M518 213 L 472 213"/>
+  <!-- 8 gate -->
+  <rect class="box-warn" x="20" y="170" width="200" height="86"/>
+  <text x="34" y="192" class="t-b">8 · 승격 게이트 (d)</text>
+  <text x="34" y="210" class="t-small">OPE CI가 0을 제외 · 리플레이</text>
+  <text x="34" y="225" class="t-small">비열등 · 중대 행동 없음</text>
+  <text x="34" y="243" class="t-small">상승 · 순 P&amp;L: 처리 대 대조</text>
+  <path class="ln" marker-end="url(#ar)" d="M268 213 L 222 213"/>
+  <!-- loop back -->
+  <path class="ln-accent ln-dash" marker-end="url(#ar)" d="M120 170 C 120 130, 200 120, 300 118"/>
+  <text x="128" y="146" class="t-small t-accent">승격된 가중치가 검색을 재순위화함 (카나리 실행, 기본값 off 플래그)</text>
+  <!-- corpus + quarantine lane -->
+  <rect class="box-good" x="270" y="330" width="220" height="92"/>
+  <text x="284" y="352" class="t-b">desk_memory (풀)</text>
+  <text x="284" y="370" class="t-small">모니터링 562+ · 결정 614</text>
+  <text x="284" y="385" class="t-small">· 결과 40 · 교훈 0 → 다음을 통해 증가</text>
+  <text x="284" y="400" class="t-small">(a3): 스킬이 교훈으로 원자화됨,</text>
+  <text x="284" y="415" class="t-small">리콜은 교훈+결과 종류를 읽음</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M380 330 C 380 290, 380 150, 378 118"/>
+  <text x="390" y="300" class="t-small">검색은 풀을 읽음</text>
+  <!-- automine -->
+  <rect class="box-dim" x="560" y="330" width="230" height="92"/>
+  <text x="574" y="352" class="t-b">자동 채굴된 교훈 (f)</text>
+  <text x="574" y="370" class="t-small">사후 분석 작업: 종료된 실행의</text>
+  <text x="574" y="385" class="t-small">결정+결과 → 후보 교훈</text>
+  <text x="574" y="400" class="t-small t-bad">격리됨 — 검색만 가능</text>
+  <text x="574" y="415" class="t-small t-bad">(b)가 점수를 매기거나 리플레이가 통과한 후</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M558 376 L 492 376"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M860 256 C 860 300, 800 320, 740 330"/>
+  <!-- safety strip -->
+  <rect class="box-bad" x="20" y="460" width="920" height="96"/>
+  <text x="34" y="484" class="t-b t-bad">루프가 절대 건드릴 수 없는 것</text>
+  <text x="34" y="503" class="t-small">신뢰도 게이트 · 포지션 사이징 · 적응형 래더 (안티-마틴게일) · 자기자본 레일 · −0.99 하한 · 지시사항 — 모두 결정론적 코드.</text>
+  <text x="34" y="519" class="t-small">학습된 가중치는 데스크가 읽는 과거 텍스트에 대한 순위 사전값임; 모든 단계는 기본값 off, 저널 우선으로 출시되며,</text>
+  <text x="34" y="535" class="t-small">결정론적 top-K로 되돌리는 단일 플래그 킬 스위치를 포함함. run_feedback과 동일한 안전 구조: 단조 —</text>
+  <text x="34" y="551" class="t-small">가중치는 증거에 의해 하락하며, 의견에 의해 상승하지 않음 (tradermonty edge-signal-aggregator 감쇠 규칙).</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--accent)"></span>오늘 사용 중 (수집) · <span class="dot" style="background:var(--good)"></span>다음 증분 (a3, b, c) · <span class="dot" style="background:var(--warn)"></span>게이팅된 활성화 (d) · 점선 = 격리됨 / 기본값 off</p>
+</div>
+
+<h2>4. 보상이 P&amp;L이 아니라 행동인 이유 — 식별 가능성 수학</h2>
+<p class="kr">보상이 P&amp;L이 아니라 행동인 이유 — 청크별 원시 P&amp;L 귀속은 현재 물량에서 통계적으로 식별 불가(수년). 행동 대리지표는 수주면 판정 가능. P&amp;L은 승격 게이트에서 포트폴리오 단위로만.</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="box-accent" x="20" y="30" width="200" height="60"/>
+  <text x="34" y="55" class="t-b">맥락 속 청크</text>
+  <text x="34" y="74" class="t-small">검색이 보여주기로 선택한 것</text>
+  <rect class="box-good" x="380" y="30" width="200" height="60"/>
+  <text x="394" y="55" class="t-b">데스크 행동</text>
+  <text x="394" y="74" class="t-small">축소? 확정? 거절? 활성화?</text>
+  <rect class="box-warn" x="740" y="30" width="200" height="60"/>
+  <text x="754" y="55" class="t-b">실현 P&amp;L</text>
+  <text x="754" y="74" class="t-small">꼬리가 두꺼움: 84건의 종료 중 6건이 손실의 74%</text>
+  <path class="ln-good" marker-end="url(#ar2)" d="M220 60 L 378 60"/>
+  <text x="252" y="50" class="t-small t-good t-b">링크 1 — 학습 가능</text>
+  <path class="ln-warn ln-dash" marker-end="url(#ar2)" d="M580 60 L 738 60"/>
+  <text x="608" y="50" class="t-small t-warn t-b">링크 2 — 이미 대량으로 측정됨</text>
+  <!-- sample size bars -->
+  <text x="20" y="132" class="t-b">팔당, 상황 클래스당 필요한 결정 수 (80% 검정력)</text>
+  <rect class="bar-accent" x="20" y="146" width="75" height="22" rx="4"/>
+  <text x="104" y="162">행동 대리지표 (30%→15% 전환): <tspan class="t-b">~120–150</tspan> → 클래스당 하루 약 20건 기준 3–6주</text>
+  <rect class="bar-warn" x="20" y="178" width="800" height="22" rx="4"/>
+  <text x="30" y="194" style="fill:#fff" class="t-b">청크별 원시 P&amp;L (σ/δ ≥ 10): 약 1,600+ → 현재 물량 기준 수년</text>
+  <text x="20" y="226" class="t-small">따라서: 청크 단위 학습은 북(book)이 달러 비용을 이미 산정한 대리 지표(surrogate)에서 실행된다(link 2 감사).</text>
+  <text x="20" y="242" class="t-small">원시 NET P&amp;L은 승격 게이트에서 단 한 번 말한다 — 처리(treatment) 실행 대 대조군(control) 실행, 실질적인 검정력을 가진 하나의 숫자.</text>
+</svg>
+</div>
+
+<h2>5. 일정 — 증분 사다리와 그 게이트</h2>
+<p class="kr">일정 — 매일 1 증분(21:00 UTC 상비 스케줄, 계정 로테이션 시 §7 지침으로 재장전). 각 단계는 게이트를 통과해야 다음으로. 날짜는 물량 의존 추정치.</p>
+<div class="card">
+<table>
+  <tr><th>단계</th><th>무엇이 출시되는가</th><th>진행을 위한 게이트</th><th>가장 이른 시점</th></tr>
+  <tr><td><b>a2</b></td><td>재현율(recall)에 대한 ε-탐색 — 성향(propensity) + 스킴 버전 로깅, 관련성 하한선(relevance floor), 정체/승리 클래스 우선, <code>DESK_RECALL_EXPLORE</code> 기본 비활성화</td><td>컨테이너 내 검증; 패배 클래스는 첫 번째 (d) 통과 이후에만</td><td>다음 증분들</td></tr>
+  <tr><td><b>a3</b></td><td>풀 보강: 36개 스킬을 원자화 → <code>lesson</code> 청크 (추정 120–180개); 재현율은 동일한 플래그 하에서 lesson+outcome 종류를 읽는다</td><td>활성 클래스당 ≥3개의 하한선 이상 후보</td><td>with a2</td></tr>
+  <tr><td><b>b</b></td><td>속성 분석 데이터셋: recall journal ⨝ surrogates ⨝ pnl_audit-replayed closes (flattens included)</td><td>수정된 VARIANCE 게이트 (클래스당 ≥2개, 클래스당 별개 chunk-set ≥3개, 클래스당 이벤트 ≥30개, 종료된 실행 ≥20개)</td><td>+2–3주간의 탐색</td></tr>
+  <tr><td><b>c</b></td><td>청크별 shadow 점수: surrogates에 대한 SNIPS, empirical-Bayes 축소, 할인 윈도우, fall-only — journal-only</td><td>일부 (class, surrogate)에서 arm당 이벤트 ≥120개</td><td>+3–6주</td></tr>
+  <tr><td><b>d</b></td><td>canary treatment 실행 대 control 실행에 대한 weighted retrieval, default-off</td><td>다음 모두 충족: OPE CI가 0을 배제 · replay non-inferiority · 심각한 행동(critical-behavior) 증가 없음 · 이후 NET 실현 P&amp;L 판정</td><td>게이트로 결정되며, 날짜로 결정되지 않음</td></tr>
+  <tr><td><b>e</b></td><td><b>Phase 4</b> — 48,000자 규모의 skills wall에 대한 동일한 메커니즘: mandate + situational top-K lessons</td><td>(d) 승격되어 안정적임; 결정적인 비용 절감이 측정됨</td><td>d 이후</td></tr>
+  <tr><td><b>f</b></td><td>종료된 실행에서 자동 채굴된 후보 lessons — 점수화되기 전까지 quarantine 상태</td><td>(b) live; retrieval floor에 의해 quarantine이 강제됨</td><td>c+와 병행</td></tr>
+</table>
+<p class="legend">주기: 하루에 한 번 증분, 새 워크트리, TDD, PR → CI → merge → deploy → 프로덕션 검증 ×2, Plan 22 §7 원장에 날짜가 기록된 항목. 일정의 실제 시계는 <b>리콜 볼륨</b> (현재 ~101/일) — 새로운 실행과 마켓마다 일정이 선형적으로 단축된다.</p>
+</div>
+
+<h2>6. 목표 — "플러스 수익"이 실제로 어디서 나오는가</h2>
+<p class="kr">목표 — 플러스 수익의 실제 출처. 확정적 이득(비용)부터, 행동 개선, 그리고 정직하게: 알파는 약속하지 않는다.</p>
+<div class="card">
+<table>
+  <tr><th>출처</th><th>성격</th><th>메커니즘</th></tr>
+  <tr><td>LLM 프롬프트 비용</td><td><span class="ok">결정론적</span></td><td>스킬 벽은 결정 프롬프트당 ~12k 토큰이며, 매 사이클, 매 실행마다 영원히 지속된다. 상황별 top-K(Phase 4 / step e)는 이를 60–80% 줄인다 — 보장된, 누적되는 비용 절감이다. 정의상 NET P&amp;L이다.</td></tr>
+  <tr><td>용량 여유</td><td><span class="ok">결정론적</span></td><td>블록 상한은 4배 인상되었고 한때 6자의 여유가 있었다; #287은 상한이 조용히 레슨 비용을 초래했음을 보여주었다. 검색(retrieval)은 반복되는 세금을 종료시킨다.</td></tr>
+  <tr><td>손실 형태 감소</td><td><span class="wr">측정된 행동적</span></td><td>측정된 손실의 74%가 하나의 행동 클래스에 몰려 있었다. 그 행동을 입증 가능하게 바꾸는 교훈(link 1)은 북(book)의 가장 큰 누수를 공격한다 — 데몬의 실제 임무다.</td></tr>
+  <tr><td>검색 알파</td><td><span class="no">주장되지 않음</span></td><td>recall 청크 2개를 더 잘 순위화한다고 해서 새로운 알파가 생길 가능성은 낮다. 프로모션 게이트가 비용 + loss-shape를 넘어서는 양의 P&amp;L을 측정하게 된다면, 그것은 부수적 이익이지 계획이 아니다.</td></tr>
+</table>
+</div>
+
+<h2>7. 자율성의 경계 — "스스로 학습한다"는 것이 여기서 의미하는 바</h2>
+<p class="kr">자율성의 경계 — (f) 이후 시스템은 스스로 교훈을 쓰고, 측정된 결과로 가중하고, 증거로 퇴역시킨다. 단 게이트·사이징·레일·맨데이트는 데몬이 만질 수 없는 코드로 남는다.</p>
+<div class="card">
+<table>
+  <tr><th>시스템이 스스로</th><th>시스템이 절대 하지 않을 것</th></tr>
+  <tr><td>자체 종료된 실행(closed runs)에서 후보 교훈을 작성한다 (f)</td><td>측정된 점수 없이 자체 교훈을 격리 상태에서 승격시킨다</td></tr>
+  <tr><td>결과가 반박하는 교훈의 가중치를 낮춘다 (c)</td><td>의견에 근거하여 가중치를 높인다 — 가중치는 오직 증거에만 의존한다</td></tr>
+  <tr><td>각 상황이 어떤 검증된 교훈을 참조할지 선택한다 (d/e)</td><td>신뢰 게이트, 사이징, adapt ladder, equity rail, 또는 맨데이트를 건드린다</td></tr>
+  <tr><td>run이 종료됨에 따라 검색 가능한 풀을 확장 (a3/f)</td><td>단일 플래그 킬 스위치로 deterministic 동작으로 되돌릴 수 없는 run은 실행하지 않음</td></tr>
+</table>
+<p class="legend">플랫폼이 이미 신뢰하는 동일한 엔벨로프: monotone-tightening, flag-gated, journal-first, NET 실현 손익(P&amp;L) 기준으로만 승격.</p>
+</div>
+
+<h2>8. 참조</h2>
+<p class="kr">참조 — 문서·모듈·수치 출처.</p>
+<div class="card">
+<table>
+  <tr><th>구성 요소</th><th>위치</th></tr>
+  <tr><td>전체 분석(이 페이지의 소스)</td><td><code>docs/plan/22-phase3-learning-to-profit.md</code></td></tr>
+  <tr><td>계획 + 증분 원장</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7 — 권한 소스; 모든 증분은 날짜와 함께 그곳에 기록됨</td></tr>
+  <tr><td>코퍼스 + 스코어러</td><td><code>service/server/desk_memory.py</code>  · 수집: <code>desk_memory_ingest.py</code></td></tr>
+  <tr><td>회상 + 저널</td><td><code>run_engine._recall_query · _recall_line · _recall_capture</code></td></tr>
+  <tr><td>스킬 월 (Phase 4 목표)</td><td><code>trading_skills.skills_block</code> — 36개 스킬, <code>MAX_BLOCK_LEN</code> 48,000, 검색 없음</td></tr>
+  <tr><td>결과 진실</td><td><code>pnl_audit.py</code> 원장 리플레이 — 원시 쿼리는 생략 <code>run:N:flatten</code> 종료</td></tr>
+  <tr><td>외부 근거화</td><td>OPE/IPS 실용 가이드 (arXiv 2010.12470), 이중 강건 추정량, 안전 탐색 밴딧, LLM 에이전트를 위한 단계별 신용 할당 — md 분석에 링크됨</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

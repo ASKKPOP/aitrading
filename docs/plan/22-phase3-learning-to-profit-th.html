@@ -1,0 +1,306 @@
+<!-- machine-translated from plan/22-phase3-learning-to-profit.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แผน 22 · เฟสที่ 3 — การเรียนรู้เพื่อผลกำไร</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .t-good { fill: var(--good); } svg .t-warn { fill: var(--warn); } svg .t-bad { fill: var(--bad); }
+  svg .t-accent { fill: var(--accent); }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .bar-warn { fill: var(--warn); opacity: .75; }
+  svg .bar-accent { fill: var(--accent); opacity: .8; }
+  svg .bar-dim { fill: var(--muted); opacity: .45; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>แผน 22 · เฟสที่ 3 — การเรียนรู้เพื่อผลกำไร</h1>
+<p class="kr">การออกแบบทั้งหมดของดีมอนการเรียนรู้ด้วยตนเอง — ทำงานอย่างไร มีจุดประสงค์อะไร มีเป้าหมายอะไร และมีกำหนดเวลาอย่างไร ตัวเลขอ้างอิงจากการวัดจริงในโปรดักชันเมื่อ 2026-08-09 23:33Z วิเคราะห์ต้นฉบับ: <code>docs/plan/22-phase3-learning-to-profit.md</code></p>
+
+<div class="quote">เจ้าของ, 2026-08-09: <i>"เป้าหมาย: ทำให้การเรียนรู้อัตโนมัติถูกนำมาใช้งานเพื่อให้เกิดผลกำไรบวก"</i> — การทดสอบการยอมรับไม่ใช่ "ดีมอนเรียนรู้หรือไม่" แต่คือ "สิ่งที่มันเรียนรู้ปรากฏใน <b>กำไร/ขาดทุนที่รับรู้แล้วสุทธิ (NET realized P&amp;L)</b>."</div>
+
+<div class="chips">
+  <div class="chip"><b>109</b><span>บันทึกเหตุการณ์การเรียกคืน (14 รันs)</span></div>
+  <div class="chip"><b>1,216</b><span>ชิ้นส่วนคลังข้อมูล (614/562/40/0 ตามประเภท)</span></div>
+  <div class="chip"><b>0</b><span>ชิ้นส่วนบทเรียน — พูลที่ daemon ต้องการ</span></div>
+  <div class="chip"><b>~3%</b><span>ข้อความหลักการที่ loop สามารถปรับเปลี่ยนได้วันนี้</span></div>
+  <div class="chip"><b>48,000</b><span>ตัวอักษรของ skills ที่ส่งทั้งหมด ในทุกไซเคิล</span></div>
+  <div class="chip"><b>~101/วัน</b><span>ปริมาณการเรียกคืน — กำหนดนาฬิกาการเรียนรู้</span></div>
+</div>
+
+<h2>1. จุดประสงค์ — สิ่งนี้มีไว้เพื่อทำอะไร</h2>
+<p class="kr">วัตถุประสงค์ — ทำให้เดสก์อ่านเฉพาะหลักการที่เดสก์มีอยู่แล้ว ในสถานการณ์ที่มันถูกนำไปใช้จริง และเป็นสิ่งที่ผ่านการพิสูจน์แล้วเท่านั้น ไม่ใช่การค้นหาอัลฟาใหม่ แต่เป็นการป้องกันรูปแบบการขาดทุนที่วัดได้</p>
+<div class="card">
+<p style="margin:6px 0">เดสก์มีหลักคำสอนอยู่แล้ว: ทักษะ 36 อย่าง เขียนขึ้นจากเหตุการณ์ที่วัดผลได้จริง ปัญหาคือ <b>การส่งมอบ</b> — ทุกอย่างถูกส่งไปยังทุกการตัดสินใจ ทำให้บทเรียนเฉพาะสถานการณ์ต้องแข่งขันกับหลักคำสอนจำนวน 48,000 ตัวอักษรที่ไม่เกี่ยวข้อง จุดประสงค์ของ learning daemon คือการปิดวงจรที่แพลตฟอร์มไม่สามารถปิดได้ด้วยมือ:</p>
+<table>
+  <tr><th>คำถาม</th><th>คำตอบ</th></tr>
+  <tr><td>มันเรียนรู้อะไร?</td><td>บทเรียนใด ที่แสดงในสถานการณ์ ใด<b>สถานการณ์</b> ที่เปลี่ยน <b>พฤติกรรม</b> ของเดสก์ไปในทิศทางที่การตรวจสอบรูปแบบการขาดทุนได้ประเมินไว้แล้ว (dump→reduce, round-trip→bank, ไม่เพิ่มสถานะเข้าไปในสถานะที่ขาดทุน, วินัยเรื่องเกณฑ์ค่าธรรมเนียม, การใช้ arm)</td></tr>
+  <tr><td>มันไม่เรียนรู้อะไร?</td><td>อัลฟา การจัดอันดับ recall chunks 2 ให้ดีขึ้นไม่ได้ช่วยหาการเทรดใหม่ ทั้งยังไม่แตะต้อง gates, sizing, risk rails หรือ mandate — สิ่งเหล่านั้นยังคงเป็นโค้ด</td></tr>
+  <tr><td>เหตุใดนี่จึงเป็นเส้นทางสู่กำไร?</td><td>74% ของการขาดทุนที่วัดได้ทั้งหมดมาจากพฤติกรรมกลุ่มเดียว (full-book dumps บนการเคลื่อนไหวต่ำกว่า 2%, 6 จาก 84 closes) การทำให้เดสก์นำหลักคำสอนที่มีอยู่มาใช้ได้อย่างสม่ำเสมอในช่วงเวลาที่มันเกี่ยวข้อง จะเข้าโจมตีจุดรั่วไหลที่วัดได้ใหญ่ที่สุด — พร้อมทั้งได้ประโยชน์ด้าน LLM-cost ที่แน่นอน (§6)</td></tr>
+</table>
+</div>
+
+<h2>2. พรอมต์ในวันนี้ — ที่ใดมีความแปรปรวนและที่ใดไม่มี</h2>
+<p class="kr">การจัดโครงสร้างพรอมต์ในปัจจุบัน — สิ่งที่ลูปการเรียนรู้สามารถเปลี่ยนแปลงได้มีเพียงประมาณ 3% ของข้อความหลักการทั้งหมด (บรรทัด recall) เท่านั้น กำแพงทักษะ 48,000 ตัวอักษรมีความแปรปรวนเป็น 0 โดยโครงสร้าง</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="24" class="t-b">พรอมต์การตัดสินใจหนึ่งชุด สามช่องทางหลักคำสอน</text>
+  <!-- mandate -->
+  <rect class="bar-dim" x="20" y="44" width="24" height="34" rx="4"/>
+  <text x="52" y="60">ส่วนหัวคำสั่ง (mandate header) — ไม่มีเงื่อนไข ใช้กับทุกการตัดสินใจ</text>
+  <text x="52" y="76" class="t-small">MANDATE_CORE ถ้อยคำเดียว ผ่านการทดสอบ drift แล้ว ไม่เปลี่ยนแปลงเลย โดยการออกแบบ</text>
+  <!-- skills wall -->
+  <rect class="bar-warn" x="20" y="94" width="852" height="34" rx="4"/>
+  <text x="30" y="115" class="t-b" style="fill:#fff">กำแพงทักษะ — สูงสุด 48,000 ตัวอักษร · 36 ทักษะ · ทั้งหมด · ทุกรอบ</text>
+  <text x="880" y="115" class="t-warn t-b">~97%</text>
+  <text x="20" y="146" class="t-small t-warn">ความแปรปรวนเป็นศูนย์โดยโครงสร้าง → ดีมอนไม่สามารถเรียนรู้อะไรเกี่ยวกับทักษะเหล่านี้ได้เลย ปัญหาเดิมจาก Plan 22 §1 — ยังคงไม่ได้รับการแก้ไข นี่คือขอบเขตของ Phase 4 และเป็นตัวขับเคลื่อนกำไร</text>
+  <!-- recall -->
+  <rect class="bar-accent" x="20" y="160" width="26" height="34" rx="4"/>
+  <text x="54" y="176" class="t-b t-accent">บรรทัด recall — ≤2 ชิ้น × 700 ตัวอักษร ≈ 1,400 ตัวอักษร</text>
+  <text x="880" y="176" class="t-accent t-b">~3%</text>
+  <text x="54" y="192" class="t-small">ช่องทางเดียวที่ Phase 3 ปรับเปลี่ยน — ต้นทุนต่ำในการสำรวจ (รัศมีผลกระทบน้อย) แต่กำไรที่เรียนรู้ได้ก็ถูกจำกัดด้วยขนาดที่เล็กเช่นกัน</text>
+</svg>
+<p class="legend">การค้นพบที่ 1 ของการวิเคราะห์เชิงลึก: ลูปที่กำลังสร้างเรียนรู้ผ่านช่องทางที่เล็กที่สุด การค้นพบที่ 2: "เฟส 1" ถูกส่งมอบเป็นชุดข้อมูล desk_memory — การแบ่งย่อยทักษะ (atomisation) ของกำแพงทักษะที่ออกแบบไว้ไม่เคยถูกดำเนินการจริง ดังนั้น 97% ของสิ่งที่ desk อ่านจึงยังคงไม่เปลี่ยนแปลงเลย</p>
+</div>
+
+<h2>3. ลูปการเรียนรู้ทำงานอย่างไร — ตั้งแต่ต้นจนจบ</h2>
+<p class="kr">ภาพรวมทั้งหมดของลูปการเรียนรู้ — สถานการณ์ → การค้นหา (+การสำรวจ, บันทึกคะแนนแนวโน้ม) → บรีฟ → การตัดสินใจ → บันทึกประจำวัน → การรวมผลลัพธ์ → ตัวชี้วัดแทนพฤติกรรม → คะแนนเงา (ปรับลดเท่านั้น) → เกตการเลื่อนขั้น → การค้นหาแบบถ่วงน้ำหนัก บทเรียนที่ขุดค้นอัตโนมัติจะเข้าสู่ระบบหลังผ่านการแยกกักกัน</p>
+<div class="card">
+<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- 1 situation -->
+  <rect class="box" x="20" y="30" width="200" height="86"/>
+  <text x="34" y="52" class="t-b">1 · สถานการณ์</text>
+  <text x="34" y="70" class="t-small">ตลาด · คงที่/ถือครอง ·</text>
+  <text x="34" y="85" class="t-small">กำไร/ขาดทุน · คืนกำไรจากจุดสูงสุด</text>
+  <text x="34" y="103" class="t-small"><tspan style="font-family:monospace">_recall_query(run, pnl, qty)</tspan></text>
+  <!-- 2 retrieve -->
+  <rect class="box-accent" x="270" y="30" width="220" height="86"/>
+  <text x="284" y="52" class="t-b">2 · ดึงข้อมูล + สำรวจ (EXPLORE)</text>
+  <text x="284" y="70" class="t-small">top-K ที่อยู่เหนือเกณฑ์ความเกี่ยวข้องขั้นต่ำ;</text>
+  <text x="284" y="85" class="t-small">ε-draw ต่ำกว่าหัว (a2, ปิด flag)</text>
+  <text x="284" y="103" class="t-small t-accent">บันทึก PROPENSITY + เวอร์ชันของ scheme</text>
+  <path class="ln" marker-end="url(#ar)" d="M220 73 L 268 73"/>
+  <!-- 3 brief/decision -->
+  <rect class="box" x="540" y="30" width="190" height="86"/>
+  <text x="554" y="52" class="t-b">3 · สรุปข้อมูล → การตัดสินใจ</text>
+  <text x="554" y="70" class="t-small">2 chunks ที่ติดป้ายกำกับ PAST,</text>
+  <text x="554" y="85" class="t-small">มีเพดานจำกัด, fail-soft; เดสก์</text>
+  <text x="554" y="103" class="t-small">ตัดสินใจภายในขอบเขตที่กำหนดตายตัว</text>
+  <path class="ln" marker-end="url(#ar)" d="M490 73 L 538 73"/>
+  <!-- 4 journal -->
+  <rect class="box-accent" x="780" y="30" width="160" height="86"/>
+  <text x="794" y="52" class="t-b">4 · บันทึกการเทรด</text>
+  <text x="794" y="70" class="t-small">เหตุการณ์การเรียกคืนความจำ: query,</text>
+  <text x="794" y="85" class="t-small">chunk SHAs, คะแนน,</text>
+  <text x="794" y="103" class="t-small">ความโน้มเอียง (LIVE: #340)</text>
+  <path class="ln" marker-end="url(#ar)" d="M730 73 L 778 73"/>
+  <!-- 5 outcomes -->
+  <rect class="box" x="780" y="170" width="160" height="86"/>
+  <text x="794" y="192" class="t-b">5 · ผลลัพธ์</text>
+  <text x="794" y="210" class="t-small">การปิดโดยรวมถึงการบังคับ</text>
+  <text x="794" y="225" class="t-small">การ flatten — pnl_audit</text>
+  <text x="794" y="243" class="t-small">การเล่นซ้ำ ledger, ไม่ใช่ข้อมูลดิบ</text>
+  <path class="ln" marker-end="url(#ar)" d="M860 116 L 860 168"/>
+  <!-- 6 surrogates -->
+  <rect class="box-good" x="520" y="170" width="210" height="86"/>
+  <text x="534" y="192" class="t-b">6 · ตัวแทนพฤติกรรม (Behavior surrogates)</text>
+  <text x="534" y="210" class="t-small">dump-vs-reduce · round-trip ·</text>
+  <text x="534" y="225" class="t-small">add-into-loser · อุปสรรคค่าธรรมเนียม · การเปิดใช้งาน arm</text>
+  <text x="534" y="243" class="t-small t-good">แต่ละรายการได้รับการตรวจสอบล่วงหน้าโดย loss audit</text>
+  <path class="ln" marker-end="url(#ar)" d="M778 213 L 732 213"/>
+  <!-- 7 shadow scores -->
+  <rect class="box-good" x="270" y="170" width="200" height="86"/>
+  <text x="284" y="192" class="t-b">7 · คะแนนเงา (c)</text>
+  <text x="284" y="210" class="t-small">SNIPS ต่อ (class, chunk),</text>
+  <text x="284" y="225" class="t-small">ปรับให้เข้าใกล้ค่าก่อนหน้า, ลดทอนแล้ว;</text>
+  <text x="284" y="243" class="t-small t-warn">น้ำหนักจะ**ลดลง**จากหลักฐานเท่านั้น</text>
+  <path class="ln" marker-end="url(#ar)" d="M518 213 L 472 213"/>
+  <!-- 8 gate -->
+  <rect class="box-warn" x="20" y="170" width="200" height="86"/>
+  <text x="34" y="192" class="t-b">8 · เกณฑ์การเลื่อนขั้น (d)</text>
+  <text x="34" y="210" class="t-small">OPE CI ไม่รวมศูนย์ · replay</text>
+  <text x="34" y="225" class="t-small">ไม่ด้อยกว่า · ไม่มีพฤติกรรมวิกฤต</text>
+  <text x="34" y="243" class="t-small">เพิ่มขึ้น · NET P&amp;L: เปรียบเทียบ treat กับ control</text>
+  <path class="ln" marker-end="url(#ar)" d="M268 213 L 222 213"/>
+  <!-- loop back -->
+  <path class="ln-accent ln-dash" marker-end="url(#ar)" d="M120 170 C 120 130, 200 120, 300 118"/>
+  <text x="128" y="146" class="t-small t-accent">น้ำหนักที่ได้รับการเลื่อนขั้นจัดอันดับการดึงข้อมูลใหม่ (รัน canary, ค่าเริ่มต้นปิดอยู่)</text>
+  <!-- corpus + quarantine lane -->
+  <rect class="box-good" x="270" y="330" width="220" height="92"/>
+  <text x="284" y="352" class="t-b">desk_memory (พูล)</text>
+  <text x="284" y="370" class="t-small">การตรวจสอบ 562+ · การตัดสินใจ 614</text>
+  <text x="284" y="385" class="t-small">· ผลลัพธ์ 40 · บทเรียน 0 → เติบโตผ่าน</text>
+  <text x="284" y="400" class="t-small">(a3): ทักษะถูกย่อยเป็นบทเรียน,</text>
+  <text x="284" y="415" class="t-small">การเรียกคืนอ่านชนิดของบทเรียน+ผลลัพธ์</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M380 330 C 380 290, 380 150, 378 118"/>
+  <text x="390" y="300" class="t-small">การดึงข้อมูลอ่านจาก the pool</text>
+  <!-- automine -->
+  <rect class="box-dim" x="560" y="330" width="230" height="92"/>
+  <text x="574" y="352" class="t-b">บทเรียนที่ขุดค้นอัตโนมัติ (f)</text>
+  <text x="574" y="370" class="t-small">งาน postmortem: ของรันที่ปิดแล้ว</text>
+  <text x="574" y="385" class="t-small">การตัดสินใจ+ผลลัพธ์ → บทเรียนที่เป็นตัวเลือก</text>
+  <text x="574" y="400" class="t-small t-bad">ถูกกักกัน — ดึงข้อมูลได้เท่านั้น</text>
+  <text x="574" y="415" class="t-small t-bad">หลังจาก (b) ให้คะแนนหรือผ่านการ replay</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M558 376 L 492 376"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M860 256 C 860 300, 800 320, 740 330"/>
+  <!-- safety strip -->
+  <rect class="box-bad" x="20" y="460" width="920" height="96"/>
+  <text x="34" y="484" class="t-b t-bad">สิ่งที่ loop ไม่สามารถแตะต้องได้เด็ดขาด</text>
+  <text x="34" y="503" class="t-small">confidence gates · position sizing · adapt ladder (anti-martingale) · equity rail · −0.99 floor · the mandate — ทั้งหมดเป็นโค้ดที่กำหนดแน่นอน (deterministic)</text>
+  <text x="34" y="519" class="t-small">น้ำหนักที่เรียนรู้แล้วเป็นตัวจัดลำดับความสำคัญของ PAST TEXT ที่ desk จะอ่าน; ทุกขั้นตอนถูกส่งมอบแบบปิดเป็นค่าเริ่มต้น, บันทึกก่อน,</text>
+  <text x="34" y="535" class="t-small">พร้อมสวิตช์ปิดการทำงานแบบ flag เดียวกลับไปสู่ deterministic top-K แบบเดิม รูปแบบความปลอดภัยเดียวกับ run_feedback: เป็นเอกภาพ (monotone) —</text>
+  <text x="34" y="551" class="t-small">น้ำหนักจะลดลงจากหลักฐาน ไม่มีวันเพิ่มขึ้นจากความคิดเห็น (กฎการลดทอนของ tradermonty edge-signal-aggregator)</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--accent)"></span>ใช้งานจริงวันนี้ (collection) · <span class="dot" style="background:var(--good)"></span>ขั้นถัดไป (a3, b, c) · <span class="dot" style="background:var(--warn)"></span>การเปิดใช้งานแบบมีเงื่อนไข (d) · เส้นประ = ถูกกักกัน / ปิดเป็นค่าเริ่มต้น</p>
+</div>
+
+<h2>4. เหตุใดรางวัลจึงเป็นพฤติกรรม ไม่ใช่ P&amp;L — คณิตศาสตร์เชิงระบุตัวตน (identifiability)</h2>
+<p class="kr">เหตุผลที่รางวัลคือพฤติกรรม ไม่ใช่ P&amp;L — การอ้างอิง P&amp;L แบบดิบต่อชังก์ไม่สามารถระบุได้ทางสถิติที่ปริมาณปัจจุบัน (ต้องใช้เวลาหลายปี) ตัวชี้วัดแทนพฤติกรรมสามารถตัดสินได้ภายในไม่กี่สัปดาห์ ส่วน P&amp;L จะใช้ในระดับพอร์ตโฟลิโอเท่านั้นที่ประตูการเลื่อนขั้น</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="box-accent" x="20" y="30" width="200" height="60"/>
+  <text x="34" y="55" class="t-b">ชิ้นข้อมูล (chunk) ในบริบท</text>
+  <text x="34" y="74" class="t-small">สิ่งที่การดึงข้อมูลเลือกแสดง</text>
+  <rect class="box-good" x="380" y="30" width="200" height="60"/>
+  <text x="394" y="55" class="t-b">พฤติกรรมของ desk</text>
+  <text x="394" y="74" class="t-small">ลด? เก็บ? ปฏิเสธ? เปิดใช้?</text>
+  <rect class="box-warn" x="740" y="30" width="200" height="60"/>
+  <text x="754" y="55" class="t-b">P&amp;L ที่รับรู้แล้ว</text>
+  <text x="754" y="74" class="t-small">หางหนัก (heavy-tailed): 6 จาก 84 การปิดสถานะ = 74% ของการขาดทุน</text>
+  <path class="ln-good" marker-end="url(#ar2)" d="M220 60 L 378 60"/>
+  <text x="252" y="50" class="t-small t-good t-b">link 1 — เรียนรู้ได้ (LEARNABLE)</text>
+  <path class="ln-warn ln-dash" marker-end="url(#ar2)" d="M580 60 L 738 60"/>
+  <text x="608" y="50" class="t-small t-warn t-b">link 2 — วัดผลเป็นกลุ่มแล้ว</text>
+  <!-- sample size bars -->
+  <text x="20" y="132" class="t-b">จำนวนการตัดสินใจที่ต้องการต่อ arm ต่อกลุ่มสถานการณ์ (พลังทางสถิติ 80%)</text>
+  <rect class="bar-accent" x="20" y="146" width="75" height="22" rx="4"/>
+  <text x="104" y="162">ตัวแทนพฤติกรรม (behavior surrogate) (เปลี่ยนจาก 30%→15%): <tspan class="t-b">~120–150</tspan> → 3–6 สัปดาห์ที่ประมาณ 20/วัน/กลุ่ม</text>
+  <rect class="bar-warn" x="20" y="178" width="800" height="22" rx="4"/>
+  <text x="30" y="194" style="fill:#fff" class="t-b">P&amp;L ดิบต่อชิ้นข้อมูล (σ/δ ≥ 10): ~1,600+ → หลายปีที่ปริมาณปัจจุบัน</text>
+  <text x="20" y="226" class="t-small">ดังนั้น: การเรียนรู้แบบแยกส่วน (per-chunk) จะทำงานบนตัวแทน (surrogates) ที่ต้นทุนเป็นดอลลาร์ได้ถูกกำหนดราคาโดยบันทึกไว้แล้ว (ตรวจสอบ link 2).</text>
+  <text x="20" y="242" class="t-small">Raw NET P&amp;L พูดเพียงครั้งเดียว ที่ประตูการเลื่อนขั้น (promotion gate) — รันแบบ treatment เทียบกับรันแบบ control, ตัวเลขเดียวที่มีอำนาจทางสถิติจริง.</text>
+</svg>
+</div>
+
+<h2>5. ตารางเวลา — ขั้นบันไดของการเพิ่มขึ้นและประตูของมัน</h2>
+<p class="kr">ตารางเวลา — เพิ่ม 1 หน่วยทุกวัน (กำหนดการมาตรฐานเวลา 21:00 UTC, โหลดใหม่ตามคำแนะนำ §7 เมื่อมีการหมุนบัญชี) แต่ละขั้นต้องผ่านประตูก่อนจะไปขั้นต่อไป วันที่เป็นค่าประมาณที่ขึ้นกับปริมาณ</p>
+<div class="card">
+<table>
+  <tr><th>ขั้นตอน</th><th>สิ่งที่จัดส่ง</th><th>ประตูสำหรับดำเนินการต่อ</th><th>เร็วที่สุด</th></tr>
+  <tr><td><b>a2</b></td><td>ε-exploration บน recall — propensity + scheme-version logging, relevance floor, flat/winning classes มาก่อน, <code>DESK_RECALL_EXPLORE</code> ปิดใช้งานเป็นค่าเริ่มต้น</td><td>การตรวจสอบภายใน container; losing classes เท่านั้นหลังจากผ่านรอบแรก (d)</td><td>การเพิ่มขั้นถัดไป</td></tr>
+  <tr><td><b>a3</b></td><td>pool enrichment: 36 skills แยกเป็นหน่วยย่อย → <code>lesson</code> chunks (ประมาณ 120–180); recall อ่าน lesson+outcome kinds ภายใต้ flag เดียวกัน</td><td>≥3 candidates ที่สูงกว่า floor ต่อ active class</td><td>ด้วย a2</td></tr>
+  <tr><td><b>b</b></td><td>ชุดข้อมูล attribution: recall journal ⨝ surrogates ⨝ pnl_audit-replayed closes (รวม flattens ด้วย)</td><td>เกต VARIANCE ที่แก้ไขแล้ว (≥3 chunk-set ที่แตกต่างกันสำหรับ ≥2 คลาส, ≥30 events/class, ≥20 closed runs)</td><td>+2–3 สัปดาห์ของการสำรวจ</td></tr>
+  <tr><td><b>c</b></td><td>shadow per-chunk scores: SNIPS บน surrogates, empirical-Bayes shrinkage, discounted window, fall-only — journal-only</td><td>≥120 events/arm บาง (class, surrogate)</td><td>+3–6 สัปดาห์</td></tr>
+  <tr><td><b>d</b></td><td>weighted retrieval บน canary treatment runs กับ control runs, default-off</td><td>ทั้งหมดของ: OPE CI ไม่รวมศูนย์ · replay non-inferiority · ไม่มี critical-behavior เพิ่มขึ้น · จากนั้นคำตัดสิน NET realized P&amp;L</td><td>ขึ้นอยู่กับเกต ไม่ใช่กำหนดเวลา</td></tr>
+  <tr><td><b>e</b></td><td><b>เฟส 4</b> — กลไกเดียวกันบน skills wall ขนาด 48,000 อักขระ: mandate + situational top-K lessons</td><td>(d) ได้รับการเลื่อนขั้นและมีความเสถียร; วัดผล deterministic cost win แล้ว</td><td>หลังจาก d</td></tr>
+  <tr><td><b>f</b></td><td>candidate lessons ที่ขุดโดยอัตโนมัติจาก closed runs — ถูกกักไว้ (quarantined) จนกว่าจะได้คะแนน</td><td>(b) live; บังคับใช้ quarantine โดย retrieval floor</td><td>คู่ขนานกับ c+</td></tr>
+</table>
+<p class="legend">จังหวะการทำงาน: เพิ่มหนึ่งขั้นต่อวัน, worktree ใหม่, TDD, PR → CI → merge → deploy → ตรวจสอบ prod ×2, บรรทัดที่มีวันที่ใน Plan 22 §7 ledger นาฬิกาที่แท้จริงของกำหนดการคือ <b>ปริมาณการเรียกคืน</b> (~101/day ในปัจจุบัน) — การรันใหม่และตลาดใหม่ทุกครั้งจะทำให้ปฏิทินสั้นลงแบบเชิงเส้น</p>
+</div>
+
+<h2>6. เป้าหมาย — ที่มาที่แท้จริงของ "กำไรส่วนเพิ่ม"</h2>
+<p class="kr">เป้าหมาย — ที่มาที่แท้จริงของกำไรส่วนเพิ่ม จากผลประโยชน์ที่แน่นอน (ต้นทุน) ไปจนถึงการปรับปรุงพฤติกรรม และพูดตรงๆ ว่า: อัลฟาไม่มีการรับประกัน</p>
+<div class="card">
+<table>
+  <tr><th>แหล่งที่มา</th><th>ลักษณะ</th><th>กลไก</th></tr>
+  <tr><td>ต้นทุน LLM prompt</td><td><span class="ok">แน่นอน</span></td><td>กำแพงทักษะอยู่ที่ประมาณ 12k tokens ต่อ decision prompt ทุกรอบ ทุกการรัน ตลอดไป Situational top-K (Phase 4 / step e) ลดลงได้ 60–80% — การลดค่าใช้จ่ายแบบทวีคูณที่รับประกันได้ NET P&amp;L ตามคำนิยาม</td></tr>
+  <tr><td>พื้นที่ว่างของความสามารถ</td><td><span class="ok">แน่นอน</span></td><td>block cap ถูกปรับขึ้น 4× และครั้งหนึ่งมีพื้นที่ว่าง 6 chars; #287 แสดงให้เห็นว่า cap ทำให้เสียบทเรียนไปอย่างเงียบๆ การ Retrieval ยุติภาระที่เกิดขึ้นซ้ำๆ นี้</td></tr>
+  <tr><td>การลดรูปทรงของการขาดทุน</td><td><span class="wr">พฤติกรรมที่ถูกวัดผล</span></td><td>74% ของการขาดทุนที่วัดได้อยู่ในพฤติกรรมประเภทเดียว บทเรียนที่พิสูจน์ได้ว่าเปลี่ยนพฤติกรรมนั้น (link 1) โจมตีจุดรั่วไหลที่ใหญ่ที่สุดของหนังสือ — นั่นคืองานจริงของ daemon</td></tr>
+  <tr><td>อัลฟาจากการดึงข้อมูล</td><td><span class="no">ไม่ได้อ้างสิทธิ์</span></td><td>การจัดอันดับ 2 recall chunks ให้ดีขึ้นไม่น่าจะสร้าง alpha ใหม่ได้ หากประตูส่งเสริม (promotion gate) วัดผล P&amp;L เชิงบวกที่เกินกว่าต้นทุน + รูปแบบการขาดทุน นั่นคือผลกำไรเพิ่มเติม ไม่ใช่แผนหลัก</td></tr>
+</table>
+</div>
+
+<h2>7. ขอบเขตของความอิสระ — สิ่งที่ "เรียนรู้ด้วยตัวเอง" จะหมายถึงอะไรที่นี่</h2>
+<p class="kr">ขอบเขตของความอิสระ — หลังจาก (f) ระบบจะเขียนบทเรียนด้วยตัวเอง ให้ค่าน้ำหนักตามผลลัพธ์ที่วัดได้ และปลดออกจากการใช้งานด้วยหลักฐาน แต่ประตูควบคุม ขนาดการเทรด ราวกั้นความเสี่ยง และข้อกำหนดยังคงเป็นโค้ดที่ daemon แตะต้องไม่ได้</p>
+<div class="card">
+<table>
+  <tr><th>ระบบจะทำสิ่งนี้ด้วยตัวเอง</th><th>ระบบจะไม่ทำสิ่งนี้เด็ดขาด</th></tr>
+  <tr><td>เขียนบทเรียนที่เป็นตัวเลือกจากการทำงานที่ปิดรอบของตัวเอง (f)</td><td>ส่งเสริมบทเรียนของตัวเองออกจากการกักกันโดยไม่มีคะแนนที่วัดได้</td></tr>
+  <tr><td>ลดค่าน้ำหนักของบทเรียนที่ผลลัพธ์ของมันหักล้าง (c)</td><td>เพิ่มค่าน้ำหนักตามความเห็น — ค่าน้ำหนักตกอยู่บนหลักฐานเท่านั้น</td></tr>
+  <tr><td>เลือกว่าบทเรียนที่ผ่านการตรวจสอบใดที่แต่ละสถานการณ์จะอ่าน (d/e)</td><td>แตะต้องประตูความเชื่อมั่น ขนาดการเทรด บันไดการปรับตัว ราวกั้นส่วนของผู้ถือหุ้น หรือข้อกำหนด</td></tr>
+  <tr><td>ขยายพูลที่สามารถเรียกค้นได้เมื่อ runs ปิด (a3/f)</td><td>รันโดยไม่มี one-flag kill switch กลับสู่พฤติกรรมแบบ deterministic</td></tr>
+</table>
+<p class="legend">envelope เดียวกันที่แพลตฟอร์มไว้วางใจอยู่แล้ว: monotone-tightening, flag-gated, journal-first, เลื่อนขั้นบนพื้นฐาน NET realized P&amp;L หรือไม่เลื่อนขั้นเลย</p>
+</div>
+
+<h2>8. อ้างอิง</h2>
+<p class="kr">อ้างอิง — แหล่งที่มาของเอกสาร โมดูล และตัวเลข</p>
+<div class="card">
+<table>
+  <tr><th>ส่วน</th><th>ที่ไหน</th></tr>
+  <tr><td>การวิเคราะห์แบบเต็ม (แหล่งที่มาของหน้านี้)</td><td><code>docs/plan/22-phase3-learning-to-profit.md</code></td></tr>
+  <tr><td>แผน + บันทึกส่วนเพิ่ม (increment ledger)</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7 — แหล่งอ้างอิงหลัก; ทุกส่วนเพิ่มจะถูกบันทึกไว้ที่นี่พร้อมวันที่</td></tr>
+  <tr><td>คลังข้อมูล + ตัวให้คะแนน</td><td><code>service/server/desk_memory.py</code> · นำเข้าข้อมูล (ingest): <code>desk_memory_ingest.py</code></td></tr>
+  <tr><td>จดจำ + บันทึกประจำวัน</td><td><code>run_engine._recall_query · _recall_line · _recall_capture</code></td></tr>
+  <tr><td>skills wall (เป้าหมาย Phase 4)</td><td><code>trading_skills.skills_block</code>— ทักษะ 36 อย่าง <code>MAX_BLOCK_LEN</code> 48,000, ไม่มีการเรียกค้น</td></tr>
+  <tr><td>ผลลัพธ์ที่เป็นจริง (outcome truth)</td><td><code>pnl_audit.py</code> ledger replay — คำสั่ง query แบบ raw ไม่รวม <code>run:N:flatten</code> ปิด</td></tr>
+  <tr><td>การยึดโยงกับข้อมูลภายนอก (external grounding)</td><td>คู่มือปฏิบัติ OPE/IPS (arXiv 2010.12470), ตัวประมาณค่าแบบ doubly-robust, safe-exploration bandits, การกำหนด credit ระดับ step สำหรับ LLM agents — ลิงก์อยู่ในการวิเคราะห์แบบ md</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

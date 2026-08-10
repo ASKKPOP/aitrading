@@ -1,0 +1,306 @@
+<!-- machine-translated from plan/22-phase3-learning-to-profit.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>プラン22・フェーズ3 — 利益を学習する</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .t-good { fill: var(--good); } svg .t-warn { fill: var(--warn); } svg .t-bad { fill: var(--bad); }
+  svg .t-accent { fill: var(--accent); }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .bar-warn { fill: var(--warn); opacity: .75; }
+  svg .bar-accent { fill: var(--accent); opacity: .8; }
+  svg .bar-dim { fill: var(--muted); opacity: .45; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>プラン22・フェーズ3 — 利益を学習する</h1>
+<p class="kr">自己学習デーモンの全体設計 — どのように動作し、目的は何で、目標は何で、スケジュールはどうなっているか。数値は2026-08-09 23:33Zの本番実測値。原文分析: <code>docs/plan/22-phase3-learning-to-profit.md</code></p>
+
+<div class="quote">オーナー、2026-08-09: <i>「目標：自動学習を実装してプラス収益を生み出すようにすること。」</i> — 受け入れテストは「デーモンが学習するか」ではない。「学習した内容が<b>NET実現損益</b>."</div>
+
+<div class="chips">
+  <div class="chip"><b>109</b><span>記録されたリコールイベント（14回の実行）</span></div>
+  <div class="chip"><b>1,216</b><span>コーパスチャンク（種類別 614/562/40/0）</span></div>
+  <div class="chip"><b>0</b><span>レッスンチャンク — デーモンが必要とするプール</span></div>
+  <div class="chip"><b>~3%</b><span>ループが本日変更可能なドクトリンテキストの</span></div>
+  <div class="chip"><b>48,000</b><span>毎サイクル丸ごと送信されるスキルの文字数</span></div>
+  <div class="chip"><b>~101/日</b><span>リコール量 — 学習クロックを設定する</span></div>
+</div>
+
+<h2>1. 目的 — これが存在する理由</h2>
+<p class="kr">目的 — デスクが既に持っている原則を、それが適用されるまさにその状況で、検証されたものだけを読ませる。新しいアルファ発掘ではなく、測定された損失の形を防ぐこと。</p>
+<div class="card">
+<p style="margin:6px 0">デスクには既にドクトリンがある：測定されたエピソードから書かれた36のスキル。問題は<b>配信</b> — すべてがすべての決定に送られるため、状況特有の教訓が適用されない48,000文字のドクトリンと競合する。学習デーモンの目的は、プラットフォームが手動では閉じられないループを閉じることである：</p>
+<table>
+  <tr><th>質問</th><th>回答</th></tr>
+  <tr><td>何を学習するのか？</td><td>どの教訓が、どの<b>状況</b>で示されることで、デスクの<b>行動</b>を、損失形状オーディットが既に価格に反映した方向に変えるか（ダンプ→削減、ラウンドトリップ→確定、負けポジションへの追加なし、手数料ハードル規律、アーム使用）。</td></tr>
+  <tr><td>何を学習しないのか？</td><td>アルファ。2つのリコールチャンクをより良くランキングしても新しいトレードは見つからない。また、ゲート、サイジング、リスクレール、マンデートには一切触れない — これらはコードのままである。</td></tr>
+  <tr><td>なぜこれが利益への道なのか？</td><td>測定された全損失の74%は、たった1つの行動クラス（2%未満の値動きでのフルブックダンプ、84クローズ中6件）から生じていた。デスクが既存のドクトリンを、それが適用される瞬間に確実に適用するようにすることは、測定された最大の漏出に対処する — さらに決定論的なLLMコストの利益（§6）も得られる。</td></tr>
+</table>
+</div>
+
+<h2>2. 今日のプロンプト — 分散が存在する部分と存在しない部分</h2>
+<p class="kr">現在のプロンプト構成 ― 学習ループが変化させられるのは、原則テキスト全体の約3%(リコールライン)のみ。48,000文字のスキルウォールは構造的に分散0。</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="24" class="t-b">1つの判断プロンプト、3つのドクトリンチャネル</text>
+  <!-- mandate -->
+  <rect class="bar-dim" x="20" y="44" width="24" height="34" rx="4"/>
+  <text x="52" y="60">マンデートヘッダー — 無条件、すべての判断に適用</text>
+  <text x="52" y="76" class="t-small">MANDATE_CORE、単一の文言、ドリフトテスト済み。設計上、決して変化しない。</text>
+  <!-- skills wall -->
+  <rect class="bar-warn" x="20" y="94" width="852" height="34" rx="4"/>
+  <text x="30" y="115" class="t-b" style="fill:#fff">スキルウォール — 最大48,000文字 · 36スキル · そのすべて · 全サイクル</text>
+  <text x="880" y="115" class="t-warn t-b">~97%</text>
+  <text x="20" y="146" class="t-small t-warn">構造上分散ゼロ → デーモンはスキルについて何も学習できない。元のPlan 22 §1の問題 — まだ未解決。これはPhase 4の領域であり、利益のレバーである。</text>
+  <!-- recall -->
+  <rect class="bar-accent" x="20" y="160" width="26" height="34" rx="4"/>
+  <text x="54" y="176" class="t-b t-accent">リコールライン — ≤2チャンク × 700文字 ≈ 1,400文字</text>
+  <text x="880" y="176" class="t-accent t-b">~3%</text>
+  <text x="54" y="192" class="t-small">Phase 3が変化させる唯一のチャネル — 探索コストは低い(影響範囲が小さい)が、学習可能な利益もその小ささに制約される</text>
+</svg>
+<p class="legend">深層分析の発見1: 構築中のループは最小のチャネル上で学習する。発見2: 「Phase 1」はdesk_memoryコーパスとして出荷された — スキルウォールの設計されたアトミゼーションは実施されなかったため、デスクが読む内容の97%は依然として決して変化しない。</p>
+</div>
+
+<h2>3. 学習ループの全体的な仕組み — エンドツーエンド</h2>
+<p class="kr">学習ループの全体フロー — 状況 → 検索（+探索、傾向スコアの記録） → ブリーフ → 判断 → ジャーナル → 結果の結合 → 行動代理指標 → シャドースコア（下方修正のみ） → 昇格ゲート → 重み付き検索。自動採掘された教訓は隔離を経て入場。</p>
+<div class="card">
+<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- 1 situation -->
+  <rect class="box" x="20" y="30" width="200" height="86"/>
+  <text x="34" y="52" class="t-b">1 · 状況</text>
+  <text x="34" y="70" class="t-small">市場 · 平常/保有中 ·</text>
+  <text x="34" y="85" class="t-small">勝ち/負け · ピークからの後退</text>
+  <text x="34" y="103" class="t-small"><tspan style="font-family:monospace">_recall_query(run, pnl, qty)</tspan></text>
+  <!-- 2 retrieve -->
+  <rect class="box-accent" x="270" y="30" width="220" height="86"/>
+  <text x="284" y="52" class="t-b">2 · 検索 + 探索</text>
+  <text x="284" y="70" class="t-small">関連度フロアを超えるtop-K;</text>
+  <text x="284" y="85" class="t-small">ヘッド未満のε-draw (a2、フラグオフ)</text>
+  <text x="284" y="103" class="t-small t-accent">PROPENSITY + スキームバージョンをログ記録</text>
+  <path class="ln" marker-end="url(#ar)" d="M220 73 L 268 73"/>
+  <!-- 3 brief/decision -->
+  <rect class="box" x="540" y="30" width="190" height="86"/>
+  <text x="554" y="52" class="t-b">3 · ブリーフ → 判断</text>
+  <text x="554" y="70" class="t-small">2チャンク、PASTとラベル付け、</text>
+  <text x="554" y="85" class="t-small">上限あり、フェイルソフト; デスクは</text>
+  <text x="554" y="103" class="t-small">固定レール内で判断する</text>
+  <path class="ln" marker-end="url(#ar)" d="M490 73 L 538 73"/>
+  <!-- 4 journal -->
+  <rect class="box-accent" x="780" y="30" width="160" height="86"/>
+  <text x="794" y="52" class="t-b">4 · ジャーナル</text>
+  <text x="794" y="70" class="t-small">リコールイベント: クエリ、</text>
+  <text x="794" y="85" class="t-small">チャンクSHA、スコア、</text>
+  <text x="794" y="103" class="t-small">傾向スコア (LIVE: #340)</text>
+  <path class="ln" marker-end="url(#ar)" d="M730 73 L 778 73"/>
+  <!-- 5 outcomes -->
+  <rect class="box" x="780" y="170" width="160" height="86"/>
+  <text x="794" y="192" class="t-b">5 · 結果</text>
+  <text x="794" y="210" class="t-small">強制を含むクローズ</text>
+  <text x="794" y="225" class="t-small">フラット化 — pnl_audit</text>
+  <text x="794" y="243" class="t-small">台帳リプレイ、生データではない</text>
+  <path class="ln" marker-end="url(#ar)" d="M860 116 L 860 168"/>
+  <!-- 6 surrogates -->
+  <rect class="box-good" x="520" y="170" width="210" height="86"/>
+  <text x="534" y="192" class="t-b">6 · 行動代理指標</text>
+  <text x="534" y="210" class="t-small">ダンプ対リデュース · ラウンドトリップ ·</text>
+  <text x="534" y="225" class="t-small">負け増し · 手数料ハードル · アーム使用</text>
+  <text x="534" y="243" class="t-small t-good">各々は損失監査により事前検証済み</text>
+  <path class="ln" marker-end="url(#ar)" d="M778 213 L 732 213"/>
+  <!-- 7 shadow scores -->
+  <rect class="box-good" x="270" y="170" width="200" height="86"/>
+  <text x="284" y="192" class="t-b">7 · シャドースコア (c)</text>
+  <text x="284" y="210" class="t-small">(class, chunk)ごとのSNIPS、</text>
+  <text x="284" y="225" class="t-small">先行分布に縮小、ディスカウント適用済み;</text>
+  <text x="284" y="243" class="t-small t-warn">重みは証拠に基づいてのみ下落する</text>
+  <path class="ln" marker-end="url(#ar)" d="M518 213 L 472 213"/>
+  <!-- 8 gate -->
+  <rect class="box-warn" x="20" y="170" width="200" height="86"/>
+  <text x="34" y="192" class="t-b">8 · 昇格ゲート (d)</text>
+  <text x="34" y="210" class="t-small">OPE CIがゼロを除外 · リプレイ</text>
+  <text x="34" y="225" class="t-small">非劣性 · クリティカルな挙動なし</text>
+  <text x="34" y="243" class="t-small">上昇 · NET P&amp;L: 処置群と対照群を比較</text>
+  <path class="ln" marker-end="url(#ar)" d="M268 213 L 222 213"/>
+  <!-- loop back -->
+  <path class="ln-accent ln-dash" marker-end="url(#ar)" d="M120 170 C 120 130, 200 120, 300 118"/>
+  <text x="128" y="146" class="t-small t-accent">昇格済みの重みが検索結果を再ランク付け(カナリア実行、デフォルトはオフのフラグ)</text>
+  <!-- corpus + quarantine lane -->
+  <rect class="box-good" x="270" y="330" width="220" height="92"/>
+  <text x="284" y="352" class="t-b">desk_memory (プール)</text>
+  <text x="284" y="370" class="t-small">監視 562+ ・ 判断 614</text>
+  <text x="284" y="385" class="t-small">· outcome 40 · lesson 0 → 経由で成長</text>
+  <text x="284" y="400" class="t-small">(a3): スキルはlessonに原子化され、</text>
+  <text x="284" y="415" class="t-small">recallはlesson+outcome種別を読む</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M380 330 C 380 290, 380 150, 378 118"/>
+  <text x="390" y="300" class="t-small">検索はプールを読む</text>
+  <!-- automine -->
+  <rect class="box-dim" x="560" y="330" width="230" height="92"/>
+  <text x="574" y="352" class="t-b">自動抽出されたlesson (f)</text>
+  <text x="574" y="370" class="t-small">postmortemジョブ: クローズされたrunの</text>
+  <text x="574" y="385" class="t-small">decision+outcome → 候補lesson</text>
+  <text x="574" y="400" class="t-small t-bad">検疫済み — 検索のみ可能</text>
+  <text x="574" y="415" class="t-small t-bad">(b)がスコアを付けるか、リプレイに合格した後</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M558 376 L 492 376"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M860 256 C 860 300, 800 320, 740 330"/>
+  <!-- safety strip -->
+  <rect class="box-bad" x="20" y="460" width="920" height="96"/>
+  <text x="34" y="484" class="t-b t-bad">ループが決して触れられないもの</text>
+  <text x="34" y="503" class="t-small">信頼度ゲート · ポジションサイジング · アダプトラダー(アンチマルチンゲール) · イクイティレール · −0.99フロア · マンデート — すべて決定論的コード。</text>
+  <text x="34" y="519" class="t-small">学習済みの重みは、desk が読むべき過去のテキストに関するランキング事前分布である。すべてのステップはデフォルトでオフ、まずジャーナル記録され、</text>
+  <text x="34" y="535" class="t-small">デフォルトの決定論的トップKへワンフラグで戻せるキルスイッチを備える。run_feedbackと同じ安全形状 — 単調 —</text>
+  <text x="34" y="551" class="t-small">重みは証拠に基づいて下落するが、意見によって上昇することはない(tradermontyのedge-signal-aggregator減衰ルール)。</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--accent)"></span>本日稼働中(コレクション) · <span class="dot" style="background:var(--good)"></span>次のインクリメント(a3, b, c) · <span class="dot" style="background:var(--warn)"></span>ゲート付きアクティベーション(d) · 破線 = 検疫済み/デフォルトオフ</p>
+</div>
+
+<h2>4. 報酬が行動であってP&amp;Lでない理由 — 識別可能性の数学</h2>
+<p class="kr">報酬がP&amp;Lではなく行動である理由 — チャンク別の生のP&amp;L帰属は現在の量では統計的に識別不可能(数年)。行動代理指標は数週間で判定可能。P&amp;Lは昇格ゲートでポートフォリオ単位のみ。</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="box-accent" x="20" y="30" width="200" height="60"/>
+  <text x="34" y="55" class="t-b">コンテキスト内のチャンク</text>
+  <text x="34" y="74" class="t-small">検索が表示するために選んだもの</text>
+  <rect class="box-good" x="380" y="30" width="200" height="60"/>
+  <text x="394" y="55" class="t-b">deskの挙動</text>
+  <text x="394" y="74" class="t-small">縮小?保留?減少?武装?</text>
+  <rect class="box-warn" x="740" y="30" width="200" height="60"/>
+  <text x="754" y="55" class="t-b">実現P&amp;L</text>
+  <text x="754" y="74" class="t-small">テールが重い: 84件のクローズのうち6件が損失の74%を占める</text>
+  <path class="ln-good" marker-end="url(#ar2)" d="M220 60 L 378 60"/>
+  <text x="252" y="50" class="t-small t-good t-b">リンク1 — 学習可能</text>
+  <path class="ln-warn ln-dash" marker-end="url(#ar2)" d="M580 60 L 738 60"/>
+  <text x="608" y="50" class="t-small t-warn t-b">リンク2 — すでに大量に測定済み</text>
+  <!-- sample size bars -->
+  <text x="20" y="132" class="t-b">アームごと、状況クラスごとに必要な判定数(検出力80%)</text>
+  <rect class="bar-accent" x="20" y="146" width="75" height="22" rx="4"/>
+  <text x="104" y="162">行動代理指標(30%→15%シフト): <tspan class="t-b">~120–150</tspan> → クラスあたり1日約20件で3〜6週間</text>
+  <rect class="bar-warn" x="20" y="178" width="800" height="22" rx="4"/>
+  <text x="30" y="194" style="fill:#fff" class="t-b">チャンクごとの原始P&amp;L (σ/δ ≥ 10): ~1,600+ → 現在の物量では数年</text>
+  <text x="20" y="226" class="t-small">したがって:チャンクごとの学習は、帳簿がすでに価格付け済み(リンク2の監査)であるサロゲート上で実行される。</text>
+  <text x="20" y="242" class="t-small">生のNET P&amp;Lは、プロモーションゲートで一度だけ発言する — 処置実行群 対 対照実行群、実効力を持つ一つの数値。</text>
+</svg>
+</div>
+
+<h2>5. スケジュール — 増分のはしごとそのゲート</h2>
+<p class="kr">スケジュール — 毎日1増分(21:00 UTC常設スケジュール、アカウントローテーション時は§7の指針で再読み込み)。各段階はゲートを通過して初めて次に進む。日付は物量依存の推定値。</p>
+<div class="card">
+<table>
+  <tr><th>ステップ</th><th>出荷内容</th><th>進行のためのゲート</th><th>最短</th></tr>
+  <tr><td><b>a2</b></td><td>リコールにおけるε探索 — 傾向スコア + スキームバージョンのロギング、関連性フロア、フラット/勝利クラスを優先、 <code>DESK_RECALL_EXPLORE</code> デフォルトオフ</td><td>コンテナ内検証;敗北クラスは最初の(d)パス後にのみ</td><td>次の増分</td></tr>
+  <tr><td><b>a3</b></td><td>プール強化: 36スキルをアトム化 → <code>lesson</code> チャンク(推定120–180);リコールは同一フラグの下でlesson+outcome種別を読み取る</td><td>≥3のフロア超え候補(アクティブクラスごと)</td><td>a2を伴う</td></tr>
+  <tr><td><b>b</b></td><td>アトリビューションデータセット: recall journal ⨝ surrogates ⨝ pnl_audit-replayedされたクローズ（フラット化を含む）</td><td>修正されたVARIANCEゲート（≥2クラスに対して≥3個の異なるchunk-sets、クラスあたり≥30イベント、≥20件のclosed runs）</td><td>+2–3週間の探索</td></tr>
+  <tr><td><b>c</b></td><td>shadow per-chunkスコア: surrogatesに対するSNIPS、empirical-Bayes shrinkage、discounted window、fall-only — journal-only</td><td>一部の（class, surrogate）でarmあたり≥120イベント</td><td>+3–6週間</td></tr>
+  <tr><td><b>d</b></td><td>canary treatment runs対control runsでの重み付きretrieval、default-off</td><td>すべて: OPE CIがゼロを除外 · replay non-inferiority · critical-behaviorの上昇なし · その後NET realized P&amp;L判定</td><td>gatedであり、datedではない</td></tr>
+  <tr><td><b>e</b></td><td><b>フェーズ4</b> — 48,000文字のskills wallに対する同じmachinery: mandate + situational top-Kレッスン</td><td>（d）promotedかつstable；deterministicなコスト優位性が測定済み</td><td>dの後</td></tr>
+  <tr><td><b>f</b></td><td>closed runsからauto-minedされた候補レッスン — スコアリングされるまでquarantined</td><td>（b）live；retrieval floorによってquarantineが強制される</td><td>c+と並行</td></tr>
+</table>
+<p class="legend">ケイデンス:1日1インクリメント、新規ワークツリー、TDD、PR → CI → マージ → デプロイ → 本番検証×2、Plan 22 §7 台帳への日付付き記録。スケジュールの真の時計は<b>リコール件数</b> (今日時点で~101件/日) — 新しいランと市場が増えるたびに、カレンダーは線形に短縮される。</p>
+</div>
+
+<h2>6. ターゲット — 「プラスの利益」が実際にどこから来るのか</h2>
+<p class="kr">目標 — プラスの利益の実際の出所。確定的な利益(コスト)から、行動の改善、そして正直に言えば:アルファは約束しない。</p>
+<div class="card">
+<table>
+  <tr><th>出所</th><th>性質</th><th>仕組み</th></tr>
+  <tr><td>LLMプロンプトコスト</td><td><span class="ok">確定的</span></td><td>スキルの壁は、決定プロンプト1回あたり~12kトークンで、毎サイクル、毎ラン、永久に続く。状況別トップK(フェーズ4 / ステップe)はこれを60–80%削減する — 保証された、複利的なコスト削減。定義上のNET P&amp;L。</td></tr>
+  <tr><td>キャパシティの余裕</td><td><span class="ok">確定的</span></td><td>ブロックキャップは4倍に引き上げられ、かつて6文字分の余裕しかなかった時期がある。#287は、そのキャップが密かに教訓のコストとなっていたことを示した。検索はこの繰り返しの負担を終わらせる。</td></tr>
+  <tr><td>損失形状の削減</td><td><span class="wr">測定された行動</span></td><td>測定された損失の74%が、単一の行動クラスに集中していた。その行動を実証的に変化させる教訓(link 1)は、帳簿上最大の漏れ — デーモンの本来の仕事 — に対処する。</td></tr>
+  <tr><td>検索アルファ</td><td><span class="no">主張しない</span></td><td>2件のリコールチャンクをより良くランク付けしても、新たなアルファが生まれる可能性は低い。プロモーションゲートがコスト+損失形状の削減を超えるプラスのP&amp;Lを測定することがあれば、それはアップサイドであり、計画ではない。</td></tr>
+</table>
+</div>
+
+<h2>7. 自律性の境界 — 「自ら学ぶ」がここで意味すること</h2>
+<p class="kr">自律性の境界 — (f)以降、システムは自ら教訓を書き、測定された結果で重み付けし、証拠によって退役させる。ただし、確信ゲート・サイジング・レール・マンデートはデーモンが触れられないコードのままである。</p>
+<div class="card">
+<table>
+  <tr><th>システムが自ら行うこと</th><th>システムが決して行わないこと</th></tr>
+  <tr><td>自身のクローズドランから候補となる教訓を書く (f)</td><td>測定されたスコアなしに、自身の教訓を検疫状態から昇格させる</td></tr>
+  <tr><td>その結果が反証する教訓の重みを下げる (c)</td><td>意見に基づいて重みを上げる — 重みは証拠にのみ基づく</td></tr>
+  <tr><td>各状況がどの検証済みの教訓を読むかを選択する (d/e)</td><td>確信ゲート、サイジング、適応ラダー、エクイティレール、またはマンデートに触れる</td></tr>
+  <tr><td>クローズしたラン(a3/f)に応じて取得可能プールを拡張する</td><td>決定論的な動作に戻すためのワンフラグ・キルスイッチなしで実行する</td></tr>
+</table>
+<p class="legend">プラットフォームがすでに信頼している同じエンベロープです：単調に収束し、フラグでゲート制御され、ジャーナルを優先し、NET実現損益に基づいて昇格するか、まったく昇格しないかのいずれかです。</p>
+</div>
+
+<h2>8. 参照</h2>
+<p class="kr">参照 — 文書・モジュール・数値の出典。</p>
+<div class="card">
+<table>
+  <tr><th>断片</th><th>場所</th></tr>
+  <tr><td>フルアナリシス(このページのソース)</td><td><code>docs/plan/22-phase3-learning-to-profit.md</code></td></tr>
+  <tr><td>プラン + インクリメント台帳</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7 — 権限；すべての増分はそこに日付付きで記録される</td></tr>
+  <tr><td>コーパス + スコアラー</td><td><code>service/server/desk_memory.py</code>・ingest: <code>desk_memory_ingest.py</code></td></tr>
+  <tr><td>リコール + ジャーナル</td><td><code>run_engine._recall_query · _recall_line · _recall_capture</code></td></tr>
+  <tr><td>スキルウォール(第4フェーズの目標)</td><td><code>trading_skills.skills_block</code>- 36個のスキル、<code>MAX_BLOCK_LEN</code>48,000件、リトリーバルなし</td></tr>
+  <tr><td>結果の真実性</td><td><code>pnl_audit.py</code>元帳のリプレイ — 生クエリを省略<code>run:N:flatten</code>クローズ</td></tr>
+  <tr><td>外部グラウンディング</td><td>OPE/IPS実践ガイド（arXiv 2010.12470）、ダブルロバスト推定量、安全探索バンディット、LLMエージェント向けステップレベルのクレジット割り当て — md分析内でリンク</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

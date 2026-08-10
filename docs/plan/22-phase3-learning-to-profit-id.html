@@ -1,0 +1,306 @@
+<!-- machine-translated from plan/22-phase3-learning-to-profit.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 22 · Fase 3 — Belajar untuk Profit</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .t-good { fill: var(--good); } svg .t-warn { fill: var(--warn); } svg .t-bad { fill: var(--bad); }
+  svg .t-accent { fill: var(--accent); }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .bar-warn { fill: var(--warn); opacity: .75; }
+  svg .bar-accent { fill: var(--accent); opacity: .8; }
+  svg .bar-dim { fill: var(--muted); opacity: .45; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 22 · Fase 3 — Belajar untuk Profit</h1>
+<p class="kr">Desain lengkap daemon pembelajaran mandiri — bagaimana cara kerjanya, apa tujuannya, apa targetnya, dan bagaimana jadwalnya. Angka-angka berdasarkan pengukuran produksi aktual pada 2026-08-09 23:33Z. Analisis teks asli: <code>docs/plan/22-phase3-learning-to-profit.md</code></p>
+
+<div class="quote">Pemilik, 2026-08-09: <i>"target: membuat pembelajaran otomatis diimplementasikan sehingga menghasilkan profit positif."</i> — Uji penerimaan bukan "apakah daemon belajar." Melainkan "apakah apa yang dipelajarinya muncul di <b>Laba/Rugi (P&amp;L) realisasi BERSIH</b>."</div>
+
+<div class="chips">
+  <div class="chip"><b>109</b><span>peristiwa recall yang dicatat dalam jurnal (14 run)</span></div>
+  <div class="chip"><b>1,216</b><span>chunk korpus (614/562/40/0 berdasarkan jenis)</span></div>
+  <div class="chip"><b>0</b><span>chunk pelajaran — kumpulan yang dibutuhkan daemon</span></div>
+  <div class="chip"><b>~3%</b><span>teks doktrin yang dapat divariasikan loop hari ini</span></div>
+  <div class="chip"><b>48,000</b><span>karakter skill yang dikirim utuh, setiap siklus</span></div>
+  <div class="chip"><b>~101/day</b><span>volume recall — menentukan jam pembelajaran</span></div>
+</div>
+
+<h2>1. Tujuan — untuk apa ini ada</h2>
+<p class="kr">Tujuan — membuat desk hanya membaca prinsip yang sudah dimilikinya, yang telah terverifikasi, tepat pada situasi di mana prinsip itu berlaku. Bukan menemukan alpha baru, melainkan mencegah bentuk kerugian yang sudah terukur.</p>
+<div class="card">
+<p style="margin:6px 0">Desk sudah memiliki doktrin: 36 skills, ditulis dari episode-episode yang terukur. Masalahnya adalah <b>delivery</b> — semuanya dikirim ke setiap keputusan, sehingga pelajaran spesifik-situasi harus bersaing dengan 48,000 chars doktrin yang tidak relevan. Tujuan learning daemon adalah menutup loop yang tidak bisa ditutup platform secara manual:</p>
+<table>
+  <tr><th>question</th><th>answer</th></tr>
+  <tr><td>Apa yang dipelajarinya?</td><td>Pelajaran mana, yang ditampilkan dalam <b>situation</b> mana, yang mengubah <b>behavior</b> desk ke arah yang sudah dinilai oleh audit bentuk-kerugian (dump→reduce, round-trip→bank, no adds into losers, fee-hurdle discipline, arm usage).</td></tr>
+  <tr><td>Apa yang TIDAK dipelajarinya?</td><td>Alpha. Merangking 2 recall chunks dengan lebih baik tidak menemukan trade baru. Ini juga tidak pernah menyentuh gates, sizing, risk rails, atau mandate — semua itu tetap berupa code.</td></tr>
+  <tr><td>Mengapa ini menjadi jalur profit?</td><td>74% dari seluruh kerugian yang terukur berasal dari SATU behavior class (full-book dumps pada pergerakan sub-2%, 6 dari 84 closes). Membuat desk secara konsisten menerapkan doktrin yang sudah ada tepat pada saat doktrin itu berlaku akan menyerang kebocoran terbesar yang terukur — ditambah keuntungan deterministik pada biaya LLM (§6).</td></tr>
+</table>
+</div>
+
+<h2>2. Prompt hari ini — di mana varians ada dan di mana tidak</h2>
+<p class="kr">Konfigurasi prompt saat ini — yang dapat diubah oleh loop pembelajaran hanyalah sekitar 3% (baris recall) dari seluruh teks prinsip. 48.000 karakter skill wall secara struktural memiliki varians 0.</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="24" class="t-b">Satu prompt keputusan, tiga kanal doktrin</text>
+  <!-- mandate -->
+  <rect class="bar-dim" x="20" y="44" width="24" height="34" rx="4"/>
+  <text x="52" y="60">header mandat — tanpa syarat, berlaku untuk setiap keputusan</text>
+  <text x="52" y="76" class="t-small">MANDATE_CORE, kata-kata tunggal, telah diuji drift. Tidak pernah berubah, secara desain.</text>
+  <!-- skills wall -->
+  <rect class="bar-warn" x="20" y="94" width="852" height="34" rx="4"/>
+  <text x="30" y="115" class="t-b" style="fill:#fff">dinding skill — hingga 48,000 karakter · 36 skill · SEMUANYA · SETIAP siklus</text>
+  <text x="880" y="115" class="t-warn t-b">~97%</text>
+  <text x="20" y="146" class="t-small t-warn">varians nol secara konstruksi → daemon TIDAK BISA belajar apa pun tentang skill tersebut. Masalah Plan 22 §1 yang asli — masih belum terpecahkan. Ini wilayah Phase 4, dan tumpuan profit.</text>
+  <!-- recall -->
+  <rect class="bar-accent" x="20" y="160" width="26" height="34" rx="4"/>
+  <text x="54" y="176" class="t-b t-accent">baris recall — ≤2 chunk × 700 karakter ≈ 1.400 karakter</text>
+  <text x="880" y="176" class="t-accent t-b">~3%</text>
+  <text x="54" y="192" class="t-small">SATU-SATUNYA kanal yang divariasikan Phase 3 — murah untuk dieksplorasi (radius dampak kecil), tetapi profit yang dapat dipelajari dibatasi oleh kekecilan yang sama</text>
+</svg>
+<p class="legend">Temuan 1 dari analisis mendalam: loop yang sedang dibangun belajar melalui kanal terkecil. Temuan 2: "Phase 1" dirilis sebagai korpus desk_memory — atomisasi terencana dari dinding skill tidak pernah dilakukan, sehingga 97% dari yang dibaca desk masih tidak pernah berubah.</p>
+</div>
+
+<h2>3. Bagaimana loop pembelajaran bekerja — dari awal hingga akhir</h2>
+<p class="kr">Alur lengkap loop pembelajaran — situasi → pencarian (+eksplorasi, pencatatan skor kecenderungan) → ringkasan → penilaian → jurnal → penggabungan hasil → indikator proksi perilaku → skor bayangan (hanya menurun) → gerbang promosi → pencarian berbobot. Pelajaran hasil penambangan otomatis masuk setelah dikarantina.</p>
+<div class="card">
+<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- 1 situation -->
+  <rect class="box" x="20" y="30" width="200" height="86"/>
+  <text x="34" y="52" class="t-b">1 · Situasi</text>
+  <text x="34" y="70" class="t-small">market · datar/menahan ·</text>
+  <text x="34" y="85" class="t-small">menang/kalah · gave-back-peak</text>
+  <text x="34" y="103" class="t-small"><tspan style="font-family:monospace">_recall_query(run, pnl, qty)</tspan></text>
+  <!-- 2 retrieve -->
+  <rect class="box-accent" x="270" y="30" width="220" height="86"/>
+  <text x="284" y="52" class="t-b">2 · Ambil + EXPLORE</text>
+  <text x="284" y="70" class="t-small">top-K di atas ambang relevansi;</text>
+  <text x="284" y="85" class="t-small">ε-draw di bawah head (a2, flag off)</text>
+  <text x="284" y="103" class="t-small t-accent">mencatat PROPENSITY + versi skema</text>
+  <path class="ln" marker-end="url(#ar)" d="M220 73 L 268 73"/>
+  <!-- 3 brief/decision -->
+  <rect class="box" x="540" y="30" width="190" height="86"/>
+  <text x="554" y="52" class="t-b">3 · Brief → Keputusan</text>
+  <text x="554" y="70" class="t-small">2 chunk, berlabel PAST,</text>
+  <text x="554" y="85" class="t-small">dibatasi, fail-soft; desk</text>
+  <text x="554" y="103" class="t-small">memutuskan dalam rel yang tetap</text>
+  <path class="ln" marker-end="url(#ar)" d="M490 73 L 538 73"/>
+  <!-- 4 journal -->
+  <rect class="box-accent" x="780" y="30" width="160" height="86"/>
+  <text x="794" y="52" class="t-b">4 · Journal</text>
+  <text x="794" y="70" class="t-small">peristiwa recall: query,</text>
+  <text x="794" y="85" class="t-small">chunk SHA, skor,</text>
+  <text x="794" y="103" class="t-small">propensity (LIVE: #340)</text>
+  <path class="ln" marker-end="url(#ar)" d="M730 73 L 778 73"/>
+  <!-- 5 outcomes -->
+  <rect class="box" x="780" y="170" width="160" height="86"/>
+  <text x="794" y="192" class="t-b">5 · Hasil</text>
+  <text x="794" y="210" class="t-small">penutupan termasuk forced</text>
+  <text x="794" y="225" class="t-small">mendatarkan — pnl_audit</text>
+  <text x="794" y="243" class="t-small">replay ledger, tidak pernah mentah</text>
+  <path class="ln" marker-end="url(#ar)" d="M860 116 L 860 168"/>
+  <!-- 6 surrogates -->
+  <rect class="box-good" x="520" y="170" width="210" height="86"/>
+  <text x="534" y="192" class="t-b">6 · Proksi perilaku</text>
+  <text x="534" y="210" class="t-small">dump-vs-reduce · round-trip ·</text>
+  <text x="534" y="225" class="t-small">add-into-loser · fee hurdle · penggunaan arm</text>
+  <text x="534" y="243" class="t-small t-good">masing-masing telah divalidasi sebelumnya oleh audit rugi</text>
+  <path class="ln" marker-end="url(#ar)" d="M778 213 L 732 213"/>
+  <!-- 7 shadow scores -->
+  <rect class="box-good" x="270" y="170" width="200" height="86"/>
+  <text x="284" y="192" class="t-b">7 · Skor bayangan (c)</text>
+  <text x="284" y="210" class="t-small">SNIPS per (kelas, chunk),</text>
+  <text x="284" y="225" class="t-small">menyusut ke prior, didiskon;</text>
+  <text x="284" y="243" class="t-small t-warn">bobot hanya TURUN pada evidence</text>
+  <path class="ln" marker-end="url(#ar)" d="M518 213 L 472 213"/>
+  <!-- 8 gate -->
+  <rect class="box-warn" x="20" y="170" width="200" height="86"/>
+  <text x="34" y="192" class="t-b">8 · Gerbang promosi (d)</text>
+  <text x="34" y="210" class="t-small">OPE CI mengecualikan nol · replay</text>
+  <text x="34" y="225" class="t-small">non-inferior · tidak ada critical-behavior</text>
+  <text x="34" y="243" class="t-small">naik · NET P&amp;L: perlakuan vs kontrol</text>
+  <path class="ln" marker-end="url(#ar)" d="M268 213 L 222 213"/>
+  <!-- loop back -->
+  <path class="ln-accent ln-dash" marker-end="url(#ar)" d="M120 170 C 120 130, 200 120, 300 118"/>
+  <text x="128" y="146" class="t-small t-accent">bobot yang dipromosikan me-rank ulang retrieval (canary runs, default-off flag)</text>
+  <!-- corpus + quarantine lane -->
+  <rect class="box-good" x="270" y="330" width="220" height="92"/>
+  <text x="284" y="352" class="t-b">desk_memory (pool)</text>
+  <text x="284" y="370" class="t-small">pemantauan 562+ · keputusan 614</text>
+  <text x="284" y="385" class="t-small">· outcome 40 · lesson 0 → tumbuh melalui</text>
+  <text x="284" y="400" class="t-small">(a3): skills diatomisasi menjadi lessons,</text>
+  <text x="284" y="415" class="t-small">recall membaca lesson+outcome kinds</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M380 330 C 380 290, 380 150, 378 118"/>
+  <text x="390" y="300" class="t-small">retrieval membaca pool</text>
+  <!-- automine -->
+  <rect class="box-dim" x="560" y="330" width="230" height="92"/>
+  <text x="574" y="352" class="t-b">Lessons yang ditambang otomatis (f)</text>
+  <text x="574" y="370" class="t-small">postmortem job: run yang telah ditutup</text>
+  <text x="574" y="385" class="t-small">keputusan+hasil → calon pelajaran</text>
+  <text x="574" y="400" class="t-small t-bad">DIKARANTINA — hanya dapat diambil (retrievable)</text>
+  <text x="574" y="415" class="t-small t-bad">setelah (b) menilainya atau replay lolos</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M558 376 L 492 376"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M860 256 C 860 300, 800 320, 740 330"/>
+  <!-- safety strip -->
+  <rect class="box-bad" x="20" y="460" width="920" height="96"/>
+  <text x="34" y="484" class="t-b t-bad">Apa yang TIDAK BOLEH pernah disentuh oleh loop</text>
+  <text x="34" y="503" class="t-small">confidence gates · position sizing · adapt ladder (anti-martingale) · equity rail · lantai −0.99 · the mandate — semuanya kode deterministik.</text>
+  <text x="34" y="519" class="t-small">Bobot yang dipelajari adalah prior perankingan tentang TEKS MASA LALU mana yang dibaca desk; setiap langkah dirilis default-off, journal-first,</text>
+  <text x="34" y="535" class="t-small">dengan kill switch satu-flag kembali ke deterministic top-K. Bentuk keamanan yang sama seperti run_feedback: monoton —</text>
+  <text x="34" y="551" class="t-small">bobot turun pada evidence, tidak pernah naik pada opini (tradermonty edge-signal-aggregator decay rule).</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--accent)"></span>berjalan hari ini (collection) · <span class="dot" style="background:var(--good)"></span>increment berikutnya (a3, b, c) · <span class="dot" style="background:var(--warn)"></span>aktivasi bergerbang (d) · putus-putus = dikarantina / default-off</p>
+</div>
+
+<h2>4. Mengapa reward adalah behavior, bukan P&amp;L — matematika identifiability</h2>
+<p class="kr">Alasan mengapa imbalan bukan P&amp;L melainkan tindakan — atribusi P&amp;L mentah per chunk secara statistik tidak dapat diidentifikasi pada volume saat ini (bertahun-tahun). Proksi tindakan dapat ditentukan dalam beberapa minggu. P&amp;L hanya pada tingkat portofolio di gerbang promosi.</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="box-accent" x="20" y="30" width="200" height="60"/>
+  <text x="34" y="55" class="t-b">chunk dalam context</text>
+  <text x="34" y="74" class="t-small">apa yang dipilih retrieval untuk ditampilkan</text>
+  <rect class="box-good" x="380" y="30" width="200" height="60"/>
+  <text x="394" y="55" class="t-b">behavior desk</text>
+  <text x="394" y="74" class="t-small">turun? bank? menurun? lengan?</text>
+  <rect class="box-warn" x="740" y="30" width="200" height="60"/>
+  <text x="754" y="55" class="t-b">P&amp;L yang terealisasi</text>
+  <text x="754" y="74" class="t-small">heavy-tailed: 6 dari 84 closes = 74% dari loss</text>
+  <path class="ln-good" marker-end="url(#ar2)" d="M220 60 L 378 60"/>
+  <text x="252" y="50" class="t-small t-good t-b">link 1 — DAPAT DIPELAJARI</text>
+  <path class="ln-warn ln-dash" marker-end="url(#ar2)" d="M580 60 L 738 60"/>
+  <text x="608" y="50" class="t-small t-warn t-b">link 2 — sudah diukur secara bulk</text>
+  <!-- sample size bars -->
+  <text x="20" y="132" class="t-b">Decisions yang diperlukan per arm, per situation class (80% power)</text>
+  <rect class="bar-accent" x="20" y="146" width="75" height="22" rx="4"/>
+  <text x="104" y="162">surogat perilaku (peralihan 30%→15%): <tspan class="t-b">~120–150</tspan> → 3–6 minggu pada ~20/hari/class</text>
+  <rect class="bar-warn" x="20" y="178" width="800" height="22" rx="4"/>
+  <text x="30" y="194" style="fill:#fff" class="t-b">per-chunk raw P&amp;L (σ/δ ≥ 10): ~1,600+ → tahunan pada volume saat ini</text>
+  <text x="20" y="226" class="t-small">Oleh karena itu: pembelajaran per-chunk berjalan pada surrogate yang biaya dolarnya TELAH dinilai oleh book (audit link 2).</text>
+  <text x="20" y="242" class="t-small">Raw NET P&amp;L berbicara sekali, di gate promosi — treatment runs vs control runs, satu angka dengan kekuatan nyata.</text>
+</svg>
+</div>
+
+<h2>5. Schedule — tangga increment dan gate-nya</h2>
+<p class="kr">Jadwal — 1 pertambahan setiap hari (jadwal tetap 21:00 UTC, dimuat ulang sesuai panduan §7 saat rotasi akun). Setiap tahap harus melewati gate sebelum lanjut ke tahap berikutnya. Tanggal merupakan estimasi yang bergantung pada volume.</p>
+<div class="card">
+<table>
+  <tr><th>step</th><th>Apa yang disertakan</th><th>gerbang untuk melanjutkan</th><th>earliest</th></tr>
+  <tr><td><b>a2</b></td><td>ε-exploration pada recall — propensity + scheme-version logging, relevance floor, kelas flat/winning lebih dulu, <code>DESK_RECALL_EXPLORE</code>nonaktif secara default</td><td>verifikasi in-container; kelas losing hanya setelah lolos pass pertama (d)</td><td>increment berikutnya</td></tr>
+  <tr><td><b>a3</b></td><td>pool enrichment: 36 skills diatomisasi → <code>lesson</code> chunks (est. 120–180); recall membaca lesson+outcome kinds di bawah flag yang sama</td><td>≥3 kandidat above-floor per kelas aktif</td><td>with a2</td></tr>
+  <tr><td><b>b</b></td><td>dataset atribusi: recall journal ⨝ surrogates ⨝ pnl_audit-penutupan yang diputar ulang (flattens termasuk)</td><td>gate VARIANCE yang telah dikoreksi (≥3 distinct chunk-sets untuk ≥2 kelas, ≥30 events/class, ≥20 closed runs)</td><td>+2–3 minggu eksplorasi</td></tr>
+  <tr><td><b>c</b></td><td>shadow per-chunk scores: SNIPS pada surrogates, empirical-Bayes shrinkage, discounted window, fall-only — journal-only</td><td>≥120 events/arm pada beberapa (class, surrogate)</td><td>+3–6 minggu</td></tr>
+  <tr><td><b>d</b></td><td>weighted retrieval pada canary treatment runs vs control runs, default-off</td><td>SEMUA dari: OPE CI excludes zero · replay non-inferiority · tidak ada critical-behavior rise · lalu verdict NET realized P&amp;L</td><td>dibatasi, bukan tertanggal</td></tr>
+  <tr><td><b>e</b></td><td><b>Phase 4</b> — mesin yang sama pada 48,000-char skills wall: mandate + situational top-K lessons</td><td>(d) promoted dan stable; deterministic cost win terukur</td><td>after d</td></tr>
+  <tr><td><b>f</b></td><td>auto-mined candidate lessons dari closed runs — dikarantina hingga discore</td><td>(b) live; quarantine ditegakkan oleh retrieval floor</td><td>paralel dengan c+</td></tr>
+</table>
+<p class="legend">Kadensi: satu peningkatan per hari, worktree baru, TDD, PR → CI → merge → deploy → verifikasi prod ×2, baris bertanggal di buku besar Plan 22 §7. Jam sebenarnya dari jadwal ini adalah <b>volume recall</b> (~101/hari saat ini) — setiap run dan market baru memperpendek kalender secara linear.</p>
+</div>
+
+<h2>6. Target — dari mana "profit tambahan" sebenarnya berasal</h2>
+<p class="kr">Target — sumber sebenarnya dari profit tambahan. Mulai dari keuntungan pasti (biaya), perbaikan perilaku, dan secara jujur: tidak menjanjikan alpha.</p>
+<div class="card">
+<table>
+  <tr><th>sumber</th><th>sifat</th><th>mekanisme</th></tr>
+  <tr><td>biaya prompt LLM</td><td><span class="ok">deterministik</span></td><td>Skills wall adalah ~12k token per prompt keputusan, setiap siklus, setiap run, selamanya. Situational top-K (Phase 4 / step e) memotongnya 60–80% — pengurangan biaya yang terjamin dan bertambah seiring waktu. NET P&amp;L menurut definisi.</td></tr>
+  <tr><td>Headroom kapasitas</td><td><span class="ok">deterministik</span></td><td>Batas blok dinaikkan 4× dan pernah memiliki headroom 6 karakter; #287 menunjukkan batas tersebut secara diam-diam memakan biaya berupa satu pelajaran. Retrieval mengakhiri pajak berulang ini.</td></tr>
+  <tr><td>Pengurangan bentuk kerugian</td><td><span class="wr">perilaku yang terukur</span></td><td>74% dari kerugian yang terukur berada dalam satu kelas perilaku. Pelajaran yang secara nyata mengubah perilaku tersebut (tautan 1) menyerang kebocoran terbesar dalam buku — tugas sebenarnya dari daemon.</td></tr>
+  <tr><td>Alpha pengambilan</td><td><span class="no">tidak diklaim</span></td><td>Melakukan ranking yang lebih baik terhadap 2 recall chunks tidak mungkin menciptakan alpha baru. Jika promotion gate pernah mengukur P&amp;L positif di luar cost + loss-shape, itu adalah upside, bukan rencana.</td></tr>
+</table>
+</div>
+
+<h2>7. Batas otonomi — apa arti "belajar sendiri" di sini</h2>
+<p class="kr">Batas otonomi — setelah (f), sistem menulis pelajarannya sendiri, memberi bobot berdasarkan hasil yang terukur, dan menariknya berdasarkan bukti. Namun gate, sizing, rail, dan mandate tetap menjadi kode yang tidak dapat disentuh oleh daemon.</p>
+<div class="card">
+<table>
+  <tr><th>sistem akan, dengan sendirinya</th><th>sistem tidak akan pernah</th></tr>
+  <tr><td>menulis pelajaran kandidat dari proses tertutupnya sendiri (f)</td><td>mempromosikan pelajarannya sendiri keluar dari karantina tanpa skor yang terukur</td></tr>
+  <tr><td>menurunkan bobot pelajaran yang disangkal oleh hasilnya (c)</td><td>menaikkan bobot berdasarkan opini — bobot hanya ditentukan oleh bukti</td></tr>
+  <tr><td>memilih pelajaran valid mana yang dibaca oleh setiap situasi (d/e)</td><td>menyentuh confidence gates, sizing, adapt ladder, equity rail, atau mandate</td></tr>
+  <tr><td>perluas kumpulan yang dapat diambil saat run ditutup (a3/f)</td><td>jalankan tanpa kill switch satu-flag kembali ke perilaku deterministik</td></tr>
+</table>
+<p class="legend">Envelope yang sama yang sudah dipercaya platform: monotone-tightening, flag-gated, journal-first, dipromosikan berdasarkan NET realized P&amp;L atau tidak sama sekali.</p>
+</div>
+
+<h2>8. Referensi</h2>
+<p class="kr">Referensi — sumber dokumen · modul · angka.</p>
+<div class="card">
+<table>
+  <tr><th>bagian</th><th>di mana</th></tr>
+  <tr><td>analisis lengkap (sumber halaman ini)</td><td><code>docs/plan/22-phase3-learning-to-profit.md</code></td></tr>
+  <tr><td>rencana + ledger inkremen</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7 — otoritasnya; setiap inkremen mendarat di sana dengan tanggal</td></tr>
+  <tr><td>korpus + scorer</td><td><code>service/server/desk_memory.py</code> · ingest: <code>desk_memory_ingest.py</code></td></tr>
+  <tr><td>recall + jurnal</td><td><code>run_engine._recall_query · _recall_line · _recall_capture</code></td></tr>
+  <tr><td>skills wall (target Fase 4)</td><td><code>trading_skills.skills_block</code> — 36 skill, <code>MAX_BLOCK_LEN</code> 48,000, tanpa retrieval</td></tr>
+  <tr><td>kebenaran hasil</td><td><code>pnl_audit.py</code> ledger replay — raw query menghilangkan <code>run:N:flatten</code> menutup</td></tr>
+  <tr><td>grounding eksternal</td><td>panduan praktis OPE/IPS (arXiv 2010.12470), estimator doubly-robust, bandit safe-exploration, penugasan kredit level-langkah untuk agen LLM — ditautkan dalam analisis md</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>
