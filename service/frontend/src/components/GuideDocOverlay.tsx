@@ -113,7 +113,10 @@ export function GuideDocOverlay({ slug, auth, onClose }: {
             style={{ border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 6, fontSize: 13, padding: '4px 9px', cursor: 'pointer' }}
           >✕</button>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* The shared theme injection strips the DOCUMENT's own gutters
+            (right for /docs, where the page supplies the measure) — so the
+            overlay's scroll area carries the horizontal padding instead. */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 clamp(14px, 3vw, 28px)' }}>
           {!html && (
             <div style={{ padding: '18px 20px', fontSize: 13, color: 'var(--text-secondary)' }}>
               {failed ? tr(language, T.failed) : tr(language, T.loading)}
