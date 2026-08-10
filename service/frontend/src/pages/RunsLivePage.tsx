@@ -1091,7 +1091,11 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
             )
           }
           const run = item
-          const tick = tickByRun[run.id]
+          // A tick is attached per-subscription and can carry another watched
+          // symbol's price (useRunStream seeds empty slots with any tick) —
+          // riding it would mark this book at the wrong symbol's price.
+          const tickRaw = tickByRun[run.id]
+          const tick = tickRaw && tickRaw.symbol === run.symbol ? tickRaw : null
           const pnl = Number(run.realized_pnl_usd || 0)
           const pnlColor = pnl > 0 ? '#0ca30c' : pnl < 0 ? '#d03b3b' : 'var(--text-muted,#898781)'
           const ageTs = run.status === 'running' ? (tick?.ts || run.last_cycle_at) : run.last_cycle_at
@@ -1335,7 +1339,7 @@ export function RunsLivePage({ token }: Props) {
   )
 }
 
-function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdit, language,
+function RunDetail({ runId, token, events, tick: tickRaw, onClose, onAct, onDelete, onEdit, language,
   acting, err }: {
   runId: number; token: string; events: any[]; tick: any
   onClose: () => void
@@ -1363,6 +1367,9 @@ function RunDetail({ runId, token, events, tick, onClose, onAct, onDelete, onEdi
   }, [snap, events])
 
   const run = snap?.run
+  // Same wrong-symbol guard as the grid: a seeded tick may belong to another
+  // watched run's symbol until this symbol's own tick arrives.
+  const tick = tickRaw && run && tickRaw.symbol === run.symbol ? tickRaw : null
   const status = run?.status
   const canStop = ['armed', 'running', 'paused'].includes(status)
   const log = events.slice().reverse().slice(0, 60)
