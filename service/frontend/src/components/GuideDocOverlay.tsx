@@ -88,7 +88,10 @@ export function GuideDocOverlay({ slug, auth, onClose }: {
       aria-modal="true"
       aria-label={tr(language, T.title)}
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center' }}
+      // z 600 matches the app's dialog convention (DeskCyclesPanel) — dialogs
+      // outrank the nav. At 80 the fixed topbar painted over the overlay's own
+      // header, hiding its close button.
+      style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center' }}
     >
       <div
         onClick={e => e.stopPropagation()}
