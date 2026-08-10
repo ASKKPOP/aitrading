@@ -38,6 +38,7 @@ import asyncio
 import json
 import logging
 import os
+import random
 import re
 import socket
 from concurrent.futures import ThreadPoolExecutor
@@ -3347,15 +3348,26 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
     try:
         import desk_memory
         query = _recall_query(run, pnl, pos_qty)
+        explore = (_recall_explore_enabled()
+                   and _recall_explore_allowed(pnl, pos_qty))
         hits = desk_memory.search(query,
                                   kind="monitoring",
                                   market=str(run.get("market") or "") or None,
-                                  limit=_RECALL_MAX)
+                                  limit=(_RECALL_EXPLORE_POOL if explore
+                                         else _RECALL_MAX))
+        # Same reasoning as the capture guard below: a selector that raises
+        # must fall back to the incumbent ranking, never to no recall at all.
+        try:
+            hits, meta = _recall_select(hits, explore)
+        except Exception:  # noqa: BLE001
+            hits = list(hits or [])[:_RECALL_MAX]
+            meta = {"scheme": _RECALL_SCHEME_FIXED, "explore": False,
+                    "propensity": 1.0}
         # Guarded HERE as well as inside the capture: a journal that raises
         # would otherwise fall to the outer handler and silently strip the
         # desk's recall — a degradation, not the no-op fail-soft demands.
         try:
-            _recall_capture(run.get("id"), query, hits)
+            _recall_capture(run.get("id"), query, hits, meta)
         except Exception:  # noqa: BLE001
             pass
         if not hits:
@@ -3394,7 +3406,8 @@ def _recall_reset(run_id) -> None:
         pass
 
 
-def _recall_capture(run_id, query: str, hits: list) -> None:
+def _recall_capture(run_id, query: str, hits: list,
+                    meta: "dict | None" = None) -> None:
     """Record the retrieval this cycle performed.
 
     Empty hits are recorded as an EMPTY list, never as absence: a decision
@@ -3409,9 +3422,86 @@ def _recall_capture(run_id, query: str, hits: list) -> None:
             "chunks": [{"sha": h.get("sha"), "kind": h.get("kind"),
                         "source": h.get("source"), "score": h.get("score")}
                        for h in (hits or [])],
+            **(meta or {}),
         }
     except Exception:  # noqa: BLE001 — telemetry must never cost a cycle
         pass
+
+
+# ── Phase 3(a2): ε-exploration with LOGGED PROPENSITIES (plan 22 §3, §10) ──
+# Measured on prod 2026-08-10: 262 `recall` events over 14 (market ×
+# situation) cells, and EVERY cell returned exactly ONE chunk-pair. With no
+# within-class variance "chunk c is harmful" and "this situation loses" are
+# the same number, so no per-chunk effect is identifiable — and waiting for
+# volume cannot fix that, only a counterfactual can.
+#
+# Scheme `eps-head-fixed-v1`: the rank-1 chunk is never displaced; with
+# probability EPS the SECOND slot is drawn uniformly from the above-floor
+# candidates ranked below the incumbent pair. Three consequences, all
+# deliberate:
+#   - min propensity is EPS/|alternates| ≈ 0.08 on the measured pools. IPS
+#     estimators blow up on small propensities, so the design is few arms and
+#     a fat epsilon, never a long tail of rarely-drawn options.
+#   - the head is common to every arm, so it is NOT scoreable under v1. That
+#     is the price of bounding exploration to one slot, and it is exactly why
+#     the scheme VERSION is journaled: a later v2 that also drops the head
+#     would be a different dataset, not more of this one.
+#   - the floor is a FRACTION OF THE HEAD, not an absolute score. Measured,
+#     the 'winning' class heads at 15.0 while the 'gave-back' class's eighth
+#     chunk still scores 17.2 — one absolute number would mean two different
+#     things in two situations.
+_RECALL_SCHEME_FIXED = "deterministic-top2"
+_RECALL_SCHEME_EPS = "eps-head-fixed-v1"
+_RECALL_EXPLORE_POOL = 5
+_RECALL_EXPLORE_FLOOR = 0.60
+_RECALL_EXPLORE_EPS = 0.25
+
+
+def _recall_explore_enabled() -> bool:
+    return os.environ.get("DESK_RECALL_EXPLORE", "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _recall_explore_allowed(pnl: dict, pos_qty: float) -> bool:
+    """Losing positions keep the incumbent ranking until the first promotion
+    gate passes. Exploration swaps the advice a run reads while it is losing,
+    and the mandate's asymmetry — never loosen an unproven thing on the losing
+    side — applies to advice as much as it does to rails."""
+    if not pos_qty:
+        return True
+    try:
+        return float(pnl.get("unrealized") or 0) >= 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _recall_select(hits: list, explore: bool) -> "tuple[list, dict]":
+    """Choose what the brief carries, and record the probability of the choice.
+
+    The propensity is journaled ALWAYS, including when exploration is off: a
+    row logged under the deterministic policy carries propensity 1.0, and
+    pooling it with epsilon-scheme rows unlabelled would silently corrupt
+    every off-policy estimate increment (c) computes."""
+    head = list(hits or [])[:_RECALL_MAX]
+    if not explore:
+        return head, {"scheme": _RECALL_SCHEME_FIXED, "explore": False,
+                      "propensity": 1.0}
+    meta = {"scheme": _RECALL_SCHEME_EPS, "explore": False,
+            "eps": _RECALL_EXPLORE_EPS, "pool": 0, "propensity": 1.0}
+    if not head:
+        return head, meta
+    floor = float(head[0].get("score") or 0) * _RECALL_EXPLORE_FLOOR
+    alts = [h for h in list(hits)[_RECALL_MAX:]
+            if float(h.get("score") or 0) >= floor]
+    meta["pool"] = len(alts)
+    if not alts:
+        return head, meta
+    if random.random() < _RECALL_EXPLORE_EPS:
+        meta["explore"] = True
+        meta["propensity"] = round(_RECALL_EXPLORE_EPS / len(alts), 6)
+        return [head[0], random.choice(alts)], meta
+    meta["propensity"] = round(1.0 - _RECALL_EXPLORE_EPS, 6)
+    return head, meta
 
 
 def _take_recall_journal(run_id):
@@ -4185,7 +4275,15 @@ def run_cycle(run_id: int) -> dict:
             emit_telemetry_event(run_id, "recall",
                                  {"cycle": seq, "action": action,
                                   "query": recalled.get("query"),
-                                  "chunks": recalled.get("chunks")})
+                                  "chunks": recalled.get("chunks"),
+                                  # (a2): the logging policy that produced the
+                                  # row. Without the propensity and the scheme
+                                  # VERSION beside the choice, none of the
+                                  # off-policy estimators can be computed
+                                  # offline, and it cannot be retrofitted.
+                                  **{k: recalled[k] for k in
+                                     ("scheme", "explore", "propensity",
+                                      "eps", "pool") if k in recalled}})
 
         # AI-authored order parameters (2026-07-27). Parsed and railed here,
         # journaled either way; whether they change the order is

@@ -1866,6 +1866,210 @@ class RecallJournalTests(unittest.TestCase):
         self.assertIn("_take_recall_journal(run_id)", src)
 
 
+class RecallExploreTests(unittest.TestCase):
+    """Plan 22 Phase 3(a2). Measured on prod 2026-08-10: 262 `recall` events
+    across 14 (market x situation) cells, and EVERY cell returned exactly one
+    chunk-pair — zero within-class variance, so "chunk c is harmful" and "this
+    situation loses" are the same number wearing two labels. Weights cannot be
+    learned from that; only a logged counterfactual fixes it.
+
+    Default-off, and the propensity is journaled on every row — without it
+    none of the off-policy estimators (c) needs can be computed offline."""
+
+    def _hits(self, *scores):
+        return [{"sha": f"{i:064d}", "kind": "monitoring",
+                 "source": f"note{i}.md", "score": s, "body": f"body {i}",
+                 "title": f"t{i}"} for i, s in enumerate(scores)]
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_EXPLORE", None)
+
+    def test_exploration_is_off_by_default(self):
+        self.assertFalse(run_engine._recall_explore_enabled(),
+                         "a behaviour change on the trading path must ship "
+                         "default-off")
+
+    def test_off_emits_the_incumbent_head_at_propensity_one(self):
+        hits = self._hits(30.0, 22.0, 21.0, 20.0, 19.0)
+        chosen, meta = run_engine._recall_select(hits, False)
+        self.assertEqual([c["sha"] for c in chosen],
+                         [hits[0]["sha"], hits[1]["sha"]])
+        self.assertEqual(meta["scheme"], "deterministic-top2")
+        self.assertEqual(meta["propensity"], 1.0)
+        self.assertFalse(meta["explore"])
+
+    def test_the_scheme_and_propensity_are_journaled_even_when_off(self):
+        """A deterministic row pooled with epsilon rows UNLABELLED would
+        silently corrupt every estimate (c) computes."""
+        chosen, meta = run_engine._recall_select(self._hits(30.0, 22.0), False)
+        self.assertIn("scheme", meta)
+        self.assertIn("propensity", meta)
+
+    def test_on_it_varies_the_second_slot_and_never_the_first(self):
+        hits = self._hits(30.0, 22.0, 21.0, 20.0, 19.0)
+        firsts, seconds = set(), set()
+        for _ in range(400):
+            chosen, _meta = run_engine._recall_select(hits, True)
+            self.assertEqual(len(chosen), 2)
+            firsts.add(chosen[0]["sha"])
+            seconds.add(chosen[1]["sha"])
+        self.assertEqual(firsts, {hits[0]["sha"]},
+                         "the rank-1 chunk must never be displaced — "
+                         "exploration's blast radius is one slot")
+        self.assertGreaterEqual(
+            len(seconds), 4,
+            "without >=3 distinct chunk-pairs per class the corrected (b) "
+            "variance gate can never open")
+
+    def test_the_logged_propensity_matches_the_scheme(self):
+        hits = self._hits(30.0, 22.0, 21.0, 20.0, 19.0)
+        explored = 0
+        for _ in range(600):
+            chosen, meta = run_engine._recall_select(hits, True)
+            self.assertEqual(meta["scheme"], "eps-head-fixed-v1")
+            self.assertEqual(meta["pool"], 3)
+            if meta["explore"]:
+                explored += 1
+                self.assertAlmostEqual(meta["propensity"], 0.25 / 3, places=5)
+            else:
+                self.assertAlmostEqual(meta["propensity"], 0.75, places=5)
+            self.assertGreaterEqual(meta["propensity"], 0.05,
+                                    "IPS blows up on small propensities")
+        self.assertTrue(60 < explored < 240,
+                        f"explore rate {explored / 600:.2f} is not ~0.25")
+
+    def test_chunks_below_the_relevance_floor_are_never_drawn(self):
+        """Exploration compares PLAUSIBLE lessons. A near-irrelevant chunk
+        costs prompt budget and desk attention and can never win weight
+        honestly (deep analysis §3.2)."""
+        hits = self._hits(30.0, 22.0, 21.0, 3.0, 1.0)
+        drawn = set()
+        for _ in range(400):
+            chosen, meta = run_engine._recall_select(hits, True)
+            self.assertEqual(meta["pool"], 1)
+            drawn.add(chosen[1]["sha"])
+        self.assertEqual(drawn, {hits[1]["sha"], hits[2]["sha"]},
+                         "a chunk under 60% of the head's score was drawn")
+
+    def test_the_floor_is_relative_because_score_scales_differ_by_class(self):
+        """Measured on prod: the 'winning' class heads at 15.0 while the
+        'gave-back' class's EIGHTH chunk scores 17.2. An absolute floor would
+        mean two different things in two situations."""
+        _c, low = run_engine._recall_select(self._hits(15.0, 14.3, 11.2, 9.9),
+                                            True)
+        _c, high = run_engine._recall_select(
+            self._hits(30.3, 22.5, 22.0, 21.2), True)
+        self.assertEqual(low["pool"], 2)
+        self.assertEqual(high["pool"], 2)
+
+    def test_a_losing_position_is_never_explored(self):
+        """The mandate's asymmetry — never loosen an unproven thing on the
+        losing side — applies to advice as much as to rails."""
+        self.assertFalse(run_engine._recall_explore_allowed(
+            {"unrealized": -0.42}, 3.0))
+        self.assertTrue(run_engine._recall_explore_allowed(
+            {"unrealized": 0.42}, 3.0))
+        self.assertTrue(run_engine._recall_explore_allowed({}, 0))
+
+    def test_no_alternatives_is_an_honest_propensity_of_one(self):
+        chosen, meta = run_engine._recall_select(self._hits(30.0, 22.0), True)
+        self.assertEqual(meta["pool"], 0)
+        self.assertEqual(meta["propensity"], 1.0)
+        self.assertFalse(meta["explore"])
+
+    def test_it_is_wired_into_the_line_and_the_cycle(self):
+        import inspect
+        src = inspect.getsource(run_engine._recall_line)
+        self.assertIn("_recall_select", src,
+                      "the selector is never called — exploration would be a "
+                      "no-op that still logs a scheme")
+        self.assertIn("_recall_explore_allowed", src,
+                      "losing positions are not excluded at the call site")
+        # Comments stripped on purpose: a source grep that a PROSE mention
+        # satisfies is not a wiring test. Caught by mutation — dropping
+        # "propensity" from the emitted tuple left this green.
+        cyc = "\n".join(ln.split("#")[0]
+                        for ln in inspect.getsource(run_engine.run_cycle)
+                        .splitlines())
+        for field in ("propensity", "scheme", "explore"):
+            self.assertIn(field, cyc,
+                          f"{field} never reaches run_events, so (c) cannot "
+                          f"be computed offline — and it cannot be "
+                          f"retrofitted onto rows already written")
+
+
+class RecallExploreWiringTests(unittest.TestCase):
+    """(a2) through the real corpus and the real journal."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "x.db")
+        database.init_database()
+        import desk_memory
+        self.mem = desk_memory
+        for i in range(6):
+            self.mem.remember(
+                "monitoring", f"notes.md#give{i}", f"Give-back {i}",
+                "A position that gave back its peak should bank the gain or "
+                f"arm the level rather than hold for a full round trip {i}. "
+                + "trailing partial profit winning " * (6 - i))
+        run_engine._RECALL_JOURNAL.clear()
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_EXPLORE", None)
+        run_engine._RECALL_JOURNAL.clear()
+        self.tmp.cleanup()
+
+    def _run(self):
+        return {"id": 11, "market": "crypto", "peak_pnl_usd": 5.0}
+
+    def test_the_journal_carries_the_scheme_when_exploration_is_off(self):
+        run_engine._recall_line(self._run(), {"unrealized": 1.0}, 3.0)
+        rec = run_engine._take_recall_journal(11)
+        self.assertEqual(rec["scheme"], "deterministic-top2")
+        self.assertEqual(rec["propensity"], 1.0)
+
+    def test_exploring_journals_the_scheme_and_widens_the_pool(self):
+        os.environ["DESK_RECALL_EXPLORE"] = "1"
+        seconds, schemes = set(), set()
+        for _ in range(60):
+            run_engine._recall_reset(11)
+            line = run_engine._recall_line(self._run(), {"unrealized": 1.0},
+                                           3.0)
+            self.assertIn("past findings", line)
+            rec = run_engine._take_recall_journal(11)
+            schemes.add(rec["scheme"])
+            self.assertGreaterEqual(rec["propensity"], 0.05)
+            if len(rec["chunks"]) > 1:
+                seconds.add(rec["chunks"][1]["sha"])
+        self.assertEqual(schemes, {"eps-head-fixed-v1"})
+        self.assertGreater(len(seconds), 1,
+                           "exploration produced no within-class variance — "
+                           "the whole point of (a2)")
+
+    def test_a_losing_run_keeps_the_deterministic_ranking(self):
+        os.environ["DESK_RECALL_EXPLORE"] = "1"
+        run_engine._recall_line(self._run(), {"unrealized": -1.0}, 3.0)
+        rec = run_engine._take_recall_journal(11)
+        self.assertEqual(rec["scheme"], "deterministic-top2")
+
+    def test_a_broken_draw_never_costs_the_desk_its_brief(self):
+        """A selector that raises must fall back to the INCUMBENT ranking.
+        Reaching `_recall_line`'s outer handler would strip the recall
+        entirely — a degradation, not the no-op fail-soft demands."""
+        os.environ["DESK_RECALL_EXPLORE"] = "1"
+        with patch.object(run_engine.random, "random",
+                          side_effect=RuntimeError("rng down")):
+            line = run_engine._recall_line(self._run(), {"unrealized": 1.0},
+                                           3.0)
+        self.assertIn("past findings", line,
+                      "a failed draw stripped the desk's recall")
+        rec = run_engine._take_recall_journal(11)
+        self.assertEqual(rec["scheme"], "deterministic-top2")
+        self.assertEqual(rec["propensity"], 1.0)
+
+
 class ExcursionScaleBriefTests(unittest.TestCase):
     """Peak reaches the desk in DOLLARS; an arm is a PRICE. Without the
     conversion the desk armed levels 12-13x beyond anything its tape had done
