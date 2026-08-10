@@ -10,6 +10,15 @@
       "id": "Panduan Lengkap"
     },
     {
+      "group": "automation",
+      "ko": "자동화 페이지 가이드",
+      "en": "Automation Page Guide",
+      "ja": "自動売買ページガイド",
+      "th": "คู่มือหน้าเทรดอัตโนมัติ",
+      "vi": "Hướng dẫn trang Tự động hóa",
+      "id": "Panduan Halaman Otomatisasi"
+    },
+    {
       "group": "gateway",
       "ko": "실거래 게이트웨이",
       "en": "Live Trading Gateway",
@@ -393,6 +402,12 @@
       "lang": "en",
       "group": "how-it-works",
       "title": "How AI Automated Trading Works"
+    },
+    {
+      "key": "automation-en",
+      "lang": "en",
+      "group": "automation",
+      "title": "The Automation Page — First-Visit Guide"
     },
     {
       "key": "market-hours-en",
@@ -871,6 +886,36 @@
       "lang": "id",
       "group": "how-it-works",
       "title": "Bagaimana Trading Otomatis AI Bekerja"
+    },
+    {
+      "key": "automation-ko",
+      "lang": "ko",
+      "group": "automation",
+      "title": "자동화 페이지 — 첫 방문 가이드"
+    },
+    {
+      "key": "automation-ja",
+      "lang": "ja",
+      "group": "automation",
+      "title": "自動売買ページ — はじめてガイド"
+    },
+    {
+      "key": "automation-th",
+      "lang": "th",
+      "group": "automation",
+      "title": "หน้าเทรดอัตโนมัติ — คู่มือสำหรับการเข้าชมครั้งแรก"
+    },
+    {
+      "key": "automation-vi",
+      "lang": "vi",
+      "group": "automation",
+      "title": "Trang Tự động hóa — Hướng dẫn cho lần đầu"
+    },
+    {
+      "key": "automation-id",
+      "lang": "id",
+      "group": "automation",
+      "title": "Halaman Otomatisasi — Panduan Kunjungan Pertama"
     },
     {
       "key": "psych-report-ja",
