@@ -712,7 +712,8 @@ function AppRouter({
       {/* Per-page guide — the topbar button opens this drawer, which resolves
           its content from the route registry in ./guides. */}
       <Suspense fallback={null}>
-        <GuidePanel open={guideOpen} onClose={() => setGuideOpen(false)} />
+        <GuidePanel open={guideOpen} onClose={() => setGuideOpen(false)}
+          token={token} userToken={userToken} />
       </Suspense>
 
       {/* AI Assistant — mounted once in the authed shell so it is reachable
