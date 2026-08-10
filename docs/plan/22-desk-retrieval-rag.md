@@ -260,6 +260,24 @@ Every increment lands here as a dated line, in the same PR that ships it.
       output was re-checked after that deploy and the pairs were unchanged.
       Recorded here so a later session does not read a moved count as this
       entry being wrong.
+  - **2026-08-09 — deep analysis shipped:**
+    [22-phase3-learning-to-profit.md](22-phase3-learning-to-profit.md) — the
+    owner-requested full analysis of the path from retrieval variance to
+    attributed NET profit. Its deltas to this ladder, binding from here on:
+    (1) **(a2) must log propensities** (and the scheme version) and sample
+    only above a relevance floor — without logged propensities the (c)/(d)
+    evaluation cannot be computed offline; (2) **(b)'s reward signal is
+    behavior surrogates** (dump-vs-reduce, round-trip, add-into-loser, fee
+    hurdle, arm usage), each pre-validated by an existing loss-shape audit —
+    per-chunk raw P&L is shown to be unidentifiable at our volume (power
+    math in §5 there); raw NET P&L enters only at the (d) promotion gate,
+    treatment vs control runs; (3) **(a3) is inserted**: pool enrichment —
+    skills atomised into `lesson` chunks, recall reading lesson+outcome
+    kinds — because several situation classes cannot have ≥3 above-floor
+    candidates in a 562-chunk frozen pool; (4) **Phase 4 named**: the same
+    machinery applied to the 48,000-char skills wall, which still has zero
+    variance by construction and is where both the deterministic cost win
+    and the material profit effect live.
 
 ## 8. External design references (2026-08-07)
 

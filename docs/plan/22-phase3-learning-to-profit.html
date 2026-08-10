@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 22 · Phase 3 — Learning to Profit</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .t-good { fill: var(--good); } svg .t-warn { fill: var(--warn); } svg .t-bad { fill: var(--bad); }
+  svg .t-accent { fill: var(--accent); }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .bar-warn { fill: var(--warn); opacity: .75; }
+  svg .bar-accent { fill: var(--accent); opacity: .8; }
+  svg .bar-dim { fill: var(--muted); opacity: .45; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 22 · Phase 3 — Learning to Profit</h1>
+<p class="kr">자가 학습 데몬의 전체 설계 — 어떻게 작동하고, 목적이 무엇이고, 목표가 무엇이고, 일정이 어떻게 되는가. 수치는 2026-08-09 23:33Z 프로드 실측. 원문 분석: <code>docs/plan/22-phase3-learning-to-profit.md</code></p>
+
+<div class="quote">Owner, 2026-08-09: <i>"target: make automated learning implemented so it makes plus profit."</i> — The acceptance test is not "does the daemon learn." It is "does what it learns show up in <b>NET realized P&amp;L</b>."</div>
+
+<div class="chips">
+  <div class="chip"><b>109</b><span>recall events journaled (14 runs)</span></div>
+  <div class="chip"><b>1,216</b><span>corpus chunks (614/562/40/0 by kind)</span></div>
+  <div class="chip"><b>0</b><span>lesson chunks — the pool the daemon needs</span></div>
+  <div class="chip"><b>~3%</b><span>of doctrine text the loop can vary today</span></div>
+  <div class="chip"><b>48,000</b><span>chars of skills sent whole, every cycle</span></div>
+  <div class="chip"><b>~101/day</b><span>recall volume — sets the learning clock</span></div>
+</div>
+
+<h2>1. Purpose — what this exists to do</h2>
+<p class="kr">목적 — 데스크가 이미 가진 원칙을, 그것이 적용되는 바로 그 상황에서, 검증된 것만 읽게 만든다. 새 알파 발굴이 아니라 측정된 손실 형태를 막는 것.</p>
+<div class="card">
+<p style="margin:6px 0">The desk already has the doctrine: 36 skills, written from measured episodes. The problem is <b>delivery</b> — everything is sent to every decision, so the situation-specific lesson competes with 48,000 chars of doctrine that does not apply. The learning daemon's purpose is to close a loop the platform cannot close by hand:</p>
+<table>
+  <tr><th>question</th><th>answer</th></tr>
+  <tr><td>What does it learn?</td><td>Which lesson, shown in which <b>situation</b>, changes the desk's <b>behavior</b> in the direction the loss-shape audits already priced (dump→reduce, round-trip→bank, no adds into losers, fee-hurdle discipline, arm usage).</td></tr>
+  <tr><td>What does it NOT learn?</td><td>Alpha. Ranking 2 recall chunks better does not find new trades. It also never touches gates, sizing, risk rails or the mandate — those stay code.</td></tr>
+  <tr><td>Why is this the profit path?</td><td>74% of all measured loss came from ONE behavior class (full-book dumps on sub-2% moves, 6 of 84 closes). Making the desk reliably apply existing doctrine in the moment it applies attacks the largest measured leak — plus a deterministic LLM-cost win (§6).</td></tr>
+</table>
+</div>
+
+<h2>2. The prompt today — where variance exists and where it does not</h2>
+<p class="kr">현재 프롬프트 구성 — 학습 루프가 변화시킬 수 있는 건 전체 원칙 텍스트의 약 3%(리콜 라인)뿐. 48,000자 스킬 월은 구조적으로 분산 0.</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="24" class="t-b">One decision prompt, three doctrine channels</text>
+  <!-- mandate -->
+  <rect class="bar-dim" x="20" y="44" width="24" height="34" rx="4"/>
+  <text x="52" y="60">mandate header — unconditional, applies to every decision</text>
+  <text x="52" y="76" class="t-small">MANDATE_CORE, single wording, drift-tested. Never varies, by design.</text>
+  <!-- skills wall -->
+  <rect class="bar-warn" x="20" y="94" width="852" height="34" rx="4"/>
+  <text x="30" y="115" class="t-b" style="fill:#fff">skills wall — up to 48,000 chars · 36 skills · ALL of them · EVERY cycle</text>
+  <text x="880" y="115" class="t-warn t-b">~97%</text>
+  <text x="20" y="146" class="t-small t-warn">zero variance by construction → the daemon can learn NOTHING about the skills. The original Plan 22 §1 problem — still unsolved. This is Phase 4's territory, and the profit lever.</text>
+  <!-- recall -->
+  <rect class="bar-accent" x="20" y="160" width="26" height="34" rx="4"/>
+  <text x="54" y="176" class="t-b t-accent">recall line — ≤2 chunks × 700 chars ≈ 1,400 chars</text>
+  <text x="880" y="176" class="t-accent t-b">~3%</text>
+  <text x="54" y="192" class="t-small">the ONLY channel Phase 3 varies — cheap to explore (small blast radius), but the learnable profit is bounded by the same smallness</text>
+</svg>
+<p class="legend">Finding 1 of the deep analysis: the loop under construction learns over the smallest channel. Finding 2: "Phase 1" shipped as the desk_memory corpus — the designed atomisation of the skills wall was never done, so 97% of what the desk reads still never varies.</p>
+</div>
+
+<h2>3. How the learning loop works — end to end</h2>
+<p class="kr">학습 루프 전체 흐름 — 상황 → 검색(+탐험, 성향점수 기록) → 브리프 → 판단 → 저널 → 결과 조인 → 행동 대리지표 → 그림자 점수(하향만) → 승격 게이트 → 가중 검색. 자동 채굴 교훈은 격리 후 입장.</p>
+<div class="card">
+<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- 1 situation -->
+  <rect class="box" x="20" y="30" width="200" height="86"/>
+  <text x="34" y="52" class="t-b">1 · Situation</text>
+  <text x="34" y="70" class="t-small">market · flat/holding ·</text>
+  <text x="34" y="85" class="t-small">winning/losing · gave-back-peak</text>
+  <text x="34" y="103" class="t-small"><tspan style="font-family:monospace">_recall_query(run, pnl, qty)</tspan></text>
+  <!-- 2 retrieve -->
+  <rect class="box-accent" x="270" y="30" width="220" height="86"/>
+  <text x="284" y="52" class="t-b">2 · Retrieve + EXPLORE</text>
+  <text x="284" y="70" class="t-small">top-K above a relevance floor;</text>
+  <text x="284" y="85" class="t-small">ε-draw below the head (a2, flag off)</text>
+  <text x="284" y="103" class="t-small t-accent">logs PROPENSITY + scheme version</text>
+  <path class="ln" marker-end="url(#ar)" d="M220 73 L 268 73"/>
+  <!-- 3 brief/decision -->
+  <rect class="box" x="540" y="30" width="190" height="86"/>
+  <text x="554" y="52" class="t-b">3 · Brief → Decision</text>
+  <text x="554" y="70" class="t-small">2 chunks, labelled PAST,</text>
+  <text x="554" y="85" class="t-small">capped, fail-soft; the desk</text>
+  <text x="554" y="103" class="t-small">decides inside fixed rails</text>
+  <path class="ln" marker-end="url(#ar)" d="M490 73 L 538 73"/>
+  <!-- 4 journal -->
+  <rect class="box-accent" x="780" y="30" width="160" height="86"/>
+  <text x="794" y="52" class="t-b">4 · Journal</text>
+  <text x="794" y="70" class="t-small">recall event: query,</text>
+  <text x="794" y="85" class="t-small">chunk SHAs, scores,</text>
+  <text x="794" y="103" class="t-small">propensities (LIVE: #340)</text>
+  <path class="ln" marker-end="url(#ar)" d="M730 73 L 778 73"/>
+  <!-- 5 outcomes -->
+  <rect class="box" x="780" y="170" width="160" height="86"/>
+  <text x="794" y="192" class="t-b">5 · Outcomes</text>
+  <text x="794" y="210" class="t-small">closes incl. forced</text>
+  <text x="794" y="225" class="t-small">flattens — pnl_audit</text>
+  <text x="794" y="243" class="t-small">ledger replay, never raw</text>
+  <path class="ln" marker-end="url(#ar)" d="M860 116 L 860 168"/>
+  <!-- 6 surrogates -->
+  <rect class="box-good" x="520" y="170" width="210" height="86"/>
+  <text x="534" y="192" class="t-b">6 · Behavior surrogates</text>
+  <text x="534" y="210" class="t-small">dump-vs-reduce · round-trip ·</text>
+  <text x="534" y="225" class="t-small">add-into-loser · fee hurdle · arm use</text>
+  <text x="534" y="243" class="t-small t-good">each pre-validated by a loss audit</text>
+  <path class="ln" marker-end="url(#ar)" d="M778 213 L 732 213"/>
+  <!-- 7 shadow scores -->
+  <rect class="box-good" x="270" y="170" width="200" height="86"/>
+  <text x="284" y="192" class="t-b">7 · Shadow scores (c)</text>
+  <text x="284" y="210" class="t-small">SNIPS per (class, chunk),</text>
+  <text x="284" y="225" class="t-small">shrunk to prior, discounted;</text>
+  <text x="284" y="243" class="t-small t-warn">weights only FALL on evidence</text>
+  <path class="ln" marker-end="url(#ar)" d="M518 213 L 472 213"/>
+  <!-- 8 gate -->
+  <rect class="box-warn" x="20" y="170" width="200" height="86"/>
+  <text x="34" y="192" class="t-b">8 · Promotion gate (d)</text>
+  <text x="34" y="210" class="t-small">OPE CI excludes zero · replay</text>
+  <text x="34" y="225" class="t-small">non-inferior · no critical-behavior</text>
+  <text x="34" y="243" class="t-small">rise · NET P&amp;L: treat vs control</text>
+  <path class="ln" marker-end="url(#ar)" d="M268 213 L 222 213"/>
+  <!-- loop back -->
+  <path class="ln-accent ln-dash" marker-end="url(#ar)" d="M120 170 C 120 130, 200 120, 300 118"/>
+  <text x="128" y="146" class="t-small t-accent">promoted weights re-rank retrieval (canary runs, default-off flag)</text>
+  <!-- corpus + quarantine lane -->
+  <rect class="box-good" x="270" y="330" width="220" height="92"/>
+  <text x="284" y="352" class="t-b">desk_memory (the pool)</text>
+  <text x="284" y="370" class="t-small">monitoring 562+ · decision 614</text>
+  <text x="284" y="385" class="t-small">· outcome 40 · lesson 0 → grows via</text>
+  <text x="284" y="400" class="t-small">(a3): skills atomised to lessons,</text>
+  <text x="284" y="415" class="t-small">recall reads lesson+outcome kinds</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M380 330 C 380 290, 380 150, 378 118"/>
+  <text x="390" y="300" class="t-small">retrieval reads the pool</text>
+  <!-- automine -->
+  <rect class="box-dim" x="560" y="330" width="230" height="92"/>
+  <text x="574" y="352" class="t-b">Auto-mined lessons (f)</text>
+  <text x="574" y="370" class="t-small">postmortem job: closed run's</text>
+  <text x="574" y="385" class="t-small">decision+outcome → candidate lesson</text>
+  <text x="574" y="400" class="t-small t-bad">QUARANTINED — retrievable only</text>
+  <text x="574" y="415" class="t-small t-bad">after (b) scores it or replay passes</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M558 376 L 492 376"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M860 256 C 860 300, 800 320, 740 330"/>
+  <!-- safety strip -->
+  <rect class="box-bad" x="20" y="460" width="920" height="96"/>
+  <text x="34" y="484" class="t-b t-bad">What the loop can NEVER touch</text>
+  <text x="34" y="503" class="t-small">confidence gates · position sizing · adapt ladder (anti-martingale) · equity rail · −0.99 floor · the mandate — all deterministic code.</text>
+  <text x="34" y="519" class="t-small">Learned weights are a ranking prior over which PAST TEXT the desk reads; every step ships default-off, journal-first,</text>
+  <text x="34" y="535" class="t-small">with a one-flag kill switch back to deterministic top-K. Same safety shape as run_feedback: monotone —</text>
+  <text x="34" y="551" class="t-small">weights fall on evidence, never rise on opinion (tradermonty edge-signal-aggregator decay rule).</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--accent)"></span>live today (collection) · <span class="dot" style="background:var(--good)"></span>next increments (a3, b, c) · <span class="dot" style="background:var(--warn)"></span>gated activation (d) · dashed = quarantined / default-off</p>
+</div>
+
+<h2>4. Why the reward is behavior, not P&amp;L — the identifiability math</h2>
+<p class="kr">보상이 P&amp;L이 아니라 행동인 이유 — 청크별 원시 P&amp;L 귀속은 현재 물량에서 통계적으로 식별 불가(수년). 행동 대리지표는 수주면 판정 가능. P&amp;L은 승격 게이트에서 포트폴리오 단위로만.</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="box-accent" x="20" y="30" width="200" height="60"/>
+  <text x="34" y="55" class="t-b">chunk in context</text>
+  <text x="34" y="74" class="t-small">what retrieval chose to show</text>
+  <rect class="box-good" x="380" y="30" width="200" height="60"/>
+  <text x="394" y="55" class="t-b">desk behavior</text>
+  <text x="394" y="74" class="t-small">reduce? bank? decline? arm?</text>
+  <rect class="box-warn" x="740" y="30" width="200" height="60"/>
+  <text x="754" y="55" class="t-b">realized P&amp;L</text>
+  <text x="754" y="74" class="t-small">heavy-tailed: 6 of 84 closes = 74% of loss</text>
+  <path class="ln-good" marker-end="url(#ar2)" d="M220 60 L 378 60"/>
+  <text x="252" y="50" class="t-small t-good t-b">link 1 — LEARNABLE</text>
+  <path class="ln-warn ln-dash" marker-end="url(#ar2)" d="M580 60 L 738 60"/>
+  <text x="608" y="50" class="t-small t-warn t-b">link 2 — already measured in bulk</text>
+  <!-- sample size bars -->
+  <text x="20" y="132" class="t-b">Decisions needed per arm, per situation class (80% power)</text>
+  <rect class="bar-accent" x="20" y="146" width="75" height="22" rx="4"/>
+  <text x="104" y="162">behavior surrogate (30%→15% shift): <tspan class="t-b">~120–150</tspan> → 3–6 weeks at ~20/day/class</text>
+  <rect class="bar-warn" x="20" y="178" width="800" height="22" rx="4"/>
+  <text x="30" y="194" style="fill:#fff" class="t-b">per-chunk raw P&amp;L (σ/δ ≥ 10): ~1,600+ → years at current volume</text>
+  <text x="20" y="226" class="t-small">Therefore: per-chunk learning runs on surrogates whose dollar cost the book has ALREADY priced (link 2 audits).</text>
+  <text x="20" y="242" class="t-small">Raw NET P&amp;L speaks once, at the promotion gate — treatment runs vs control runs, one number with real power.</text>
+</svg>
+</div>
+
+<h2>5. Schedule — the increment ladder and its gates</h2>
+<p class="kr">일정 — 매일 1 증분(21:00 UTC 상비 스케줄, 계정 로테이션 시 §7 지침으로 재장전). 각 단계는 게이트를 통과해야 다음으로. 날짜는 물량 의존 추정치.</p>
+<div class="card">
+<table>
+  <tr><th>step</th><th>what ships</th><th>gate to proceed</th><th>earliest</th></tr>
+  <tr><td><b>a2</b></td><td>ε-exploration on recall — propensity + scheme-version logging, relevance floor, flat/winning classes first, <code>DESK_RECALL_EXPLORE</code> default-off</td><td>in-container verification; losing classes only after first (d) pass</td><td>next increments</td></tr>
+  <tr><td><b>a3</b></td><td>pool enrichment: 36 skills atomised → <code>lesson</code> chunks (est. 120–180); recall reads lesson+outcome kinds under the same flag</td><td>≥3 above-floor candidates per active class</td><td>with a2</td></tr>
+  <tr><td><b>b</b></td><td>attribution dataset: recall journal ⨝ surrogates ⨝ pnl_audit-replayed closes (flattens included)</td><td>the corrected VARIANCE gate (≥3 distinct chunk-sets for ≥2 classes, ≥30 events/class, ≥20 closed runs)</td><td>+2–3 weeks of exploration</td></tr>
+  <tr><td><b>c</b></td><td>shadow per-chunk scores: SNIPS on surrogates, empirical-Bayes shrinkage, discounted window, fall-only — journal-only</td><td>≥120 events/arm on some (class, surrogate)</td><td>+3–6 weeks</td></tr>
+  <tr><td><b>d</b></td><td>weighted retrieval on canary treatment runs vs control runs, default-off</td><td>ALL of: OPE CI excludes zero · replay non-inferiority · no critical-behavior rise · then NET realized P&amp;L verdict</td><td>gated, not dated</td></tr>
+  <tr><td><b>e</b></td><td><b>Phase 4</b> — the same machinery on the 48,000-char skills wall: mandate + situational top-K lessons</td><td>(d) promoted and stable; deterministic cost win measured</td><td>after d</td></tr>
+  <tr><td><b>f</b></td><td>auto-mined candidate lessons from closed runs — quarantined until scored</td><td>(b) live; quarantine enforced by the retrieval floor</td><td>parallel to c+</td></tr>
+</table>
+<p class="legend">Cadence: one increment per day, fresh worktree, TDD, PR → CI → merge → deploy → prod verification ×2, dated line in the Plan 22 §7 ledger. The schedule's true clock is <b>recall volume</b> (~101/day today) — every new run and market shortens the calendar linearly.</p>
+</div>
+
+<h2>6. Target — where "plus profit" actually comes from</h2>
+<p class="kr">목표 — 플러스 수익의 실제 출처. 확정적 이득(비용)부터, 행동 개선, 그리고 정직하게: 알파는 약속하지 않는다.</p>
+<div class="card">
+<table>
+  <tr><th>source</th><th>nature</th><th>mechanism</th></tr>
+  <tr><td>LLM prompt cost</td><td><span class="ok">deterministic</span></td><td>The skills wall is ~12k tokens per decision prompt, every cycle, every run, forever. Situational top-K (Phase 4 / step e) cuts it 60–80% — a guaranteed, compounding spend reduction. NET P&amp;L by definition.</td></tr>
+  <tr><td>Capacity headroom</td><td><span class="ok">deterministic</span></td><td>The block cap was raised 4× and once had 6 chars of headroom; #287 showed the cap silently costing a lesson. Retrieval ends the recurring tax.</td></tr>
+  <tr><td>Loss-shape reduction</td><td><span class="wr">measured behavioral</span></td><td>74% of measured loss sat in one behavior class. Lessons that demonstrably shift that behavior (link 1) attack the book's largest leak — the daemon's real job.</td></tr>
+  <tr><td>Retrieval alpha</td><td><span class="no">not claimed</span></td><td>Ranking 2 recall chunks better is unlikely to create new alpha. If the promotion gate ever measures positive P&amp;L beyond cost + loss-shape, that is upside, not the plan.</td></tr>
+</table>
+</div>
+
+<h2>7. The boundary of autonomy — what "learns on its own" will mean here</h2>
+<p class="kr">자율성의 경계 — (f) 이후 시스템은 스스로 교훈을 쓰고, 측정된 결과로 가중하고, 증거로 퇴역시킨다. 단 게이트·사이징·레일·맨데이트는 데몬이 만질 수 없는 코드로 남는다.</p>
+<div class="card">
+<table>
+  <tr><th>the system will, on its own</th><th>the system will never</th></tr>
+  <tr><td>write candidate lessons from its own closed runs (f)</td><td>promote its own lesson out of quarantine without a measured score</td></tr>
+  <tr><td>down-weight lessons its outcomes refute (c)</td><td>up-weight on opinion — weights fall on evidence only</td></tr>
+  <tr><td>choose which validated lesson each situation reads (d/e)</td><td>touch confidence gates, sizing, the adapt ladder, the equity rail, or the mandate</td></tr>
+  <tr><td>expand its retrievable pool as runs close (a3/f)</td><td>run without a one-flag kill switch back to deterministic behavior</td></tr>
+</table>
+<p class="legend">Same envelope the platform already trusts: monotone-tightening, flag-gated, journal-first, promoted on NET realized P&amp;L or not at all.</p>
+</div>
+
+<h2>8. Reference</h2>
+<p class="kr">참조 — 문서·모듈·수치 출처.</p>
+<div class="card">
+<table>
+  <tr><th>piece</th><th>where</th></tr>
+  <tr><td>full analysis (this page's source)</td><td><code>docs/plan/22-phase3-learning-to-profit.md</code></td></tr>
+  <tr><td>plan + increment ledger</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7 — the authority; every increment lands there dated</td></tr>
+  <tr><td>corpus + scorer</td><td><code>service/server/desk_memory.py</code> · ingest: <code>desk_memory_ingest.py</code></td></tr>
+  <tr><td>recall + journal</td><td><code>run_engine._recall_query · _recall_line · _recall_capture</code></td></tr>
+  <tr><td>skills wall (Phase 4 target)</td><td><code>trading_skills.skills_block</code> — 36 skills, <code>MAX_BLOCK_LEN</code> 48,000, no retrieval</td></tr>
+  <tr><td>outcome truth</td><td><code>pnl_audit.py</code> ledger replay — raw queries omit <code>run:N:flatten</code> closes</td></tr>
+  <tr><td>external grounding</td><td>OPE/IPS practical guides (arXiv 2010.12470), doubly-robust estimators, safe-exploration bandits, step-level credit assignment for LLM agents — linked in the md analysis</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>
