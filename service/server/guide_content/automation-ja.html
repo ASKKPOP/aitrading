@@ -1,0 +1,419 @@
+<!-- machine-translated from design/automation-page-guide-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オートメーションページ — 初回利用ガイド</title>
+<style>
+:root{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;--ink2:#52514e;
+ --muted:#7a7975;--ai:#2a78d6;--safe:#eb6834;--go:#1baf7a;--warn:#c88a1a;--bd:rgba(11,11,11,.1)}
+@media (prefers-color-scheme:dark){:root{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;--grid:#2c2c2a;
+ --ink:#fff;--ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--safe:#d95926;--go:#199e70;--warn:#e0a53a;
+ --bd:rgba(255,255,255,.1)}}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.72;font-size:14.5px}
+main{max-width:880px;margin:0 auto;padding:38px 22px 80px}
+h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+h3{font-size:15px;margin:22px 0 6px}
+p,li{color:var(--ink2)}strong{color:var(--ink)}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+.lede{font-size:16px;margin-bottom:22px}
+.rule{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 11px 11px 0;padding:15px 18px;margin:16px 0 26px}
+.rule b{display:block;color:var(--ink);margin-bottom:5px;font-size:14.5px}
+.rule p{margin:0;font-size:13.8px}
+.fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+.fig svg{width:100%;height:auto;display:block}
+.ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
+.fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
+.cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
+.flow{display:grid;gap:5px}
+.fr{display:grid;grid-template-columns:30px 1fr;gap:11px;align-items:stretch}
+.fn{display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--ink2);
+ background:var(--surf);border-radius:7px}
+.fb{border:1.5px solid var(--grid);border-left-width:4px;border-radius:9px;background:var(--page);padding:9px 13px}
+.fb.ai{border-left-color:var(--ai)}.fb.sf{border-left-color:var(--safe)}
+.fb.ex{border-left-color:var(--go);background:color-mix(in srgb,var(--go) 8%,var(--page))}
+.fb b{font-size:13.5px;color:var(--ink);display:block}
+.fb span{font-size:12.3px;color:var(--ink2)}
+.ar{grid-column:2;color:var(--muted);font-size:12px;line-height:1;padding:1px 0 1px 12px}
+.sw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.2px;margin:8px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2);vertical-align:top}
+th{font-size:11px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+td strong{color:var(--ink)}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ai{background:color-mix(in srgb,var(--ai) 15%,transparent);color:color-mix(in srgb,var(--ai) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--ai) 42%,transparent)}
+.p-sf{background:color-mix(in srgb,var(--safe) 15%,transparent);color:color-mix(in srgb,var(--safe) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--safe) 42%,transparent)}
+.p-go{background:color-mix(in srgb,var(--go) 15%,transparent);color:color-mix(in srgb,var(--go) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--go) 42%,transparent)}
+.note{border-left:3px solid var(--go);background:var(--card);border-radius:0 10px 10px 0;
+ padding:11px 14px;margin:16px 0;font-size:13.2px;color:var(--ink2)}
+.note b{color:var(--ink)}
+.warnbox{border-left:3px solid var(--warn);background:var(--card);border-radius:0 10px 10px 0;
+ padding:11px 14px;margin:16px 0;font-size:13.2px;color:var(--ink2)}
+.warnbox b{color:var(--ink)}
+.mt{margin-top:30px;padding-top:14px;border-top:1px solid var(--grid);font-size:11.5px;color:var(--muted)}
+@media (max-width:620px){.fr{grid-template-columns:26px 1fr;gap:8px}}
+</style></head>
+<body><main>
+
+<div class="eyebrow">Sooppiy · メンバーガイド</div>
+<h1>オートメーションページ — はじめての訪問</h1>
+<p class="lede">オートメーションページは<strong>AIトレーディングの司令塔</strong>です。AIによるTRADINGを開始し、動作を見守り、停止するための場所です。このガイドではページを上から下まで順に説明します — 各コントロールが何であるか、使い方、開始を押した後に何が起こるか、稼働中に何を見ればよいかを解説します。</p>
+
+<div class="rule"><b>何よりも先に知っておくべき3つのこと</b><p>① ここで開始するものはすべて、<strong>シミュレーションウォレット</strong>で取引されます（デフォルト） — 練習用の資金であり、あなたの資金ではありません。② AIは<strong>サーバー上</strong>で24時間稼働します。タブを閉じても継続します。③ 停止ボタンは常に手元にあります — すべてのTRADING、すべてのフリートは、1〜2クリックで一時停止または停止できます。</p></div>
+
+<h2>1 · ページのひと目でわかる概要</h2>
+<p>上から下まで5つのブロックがあります。そのうち2つは、表示すべき内容がある場合にのみ表示されます。</p>
+
+<div class="fig">
+  <div class="ft">オートメーションページのマップ</div>
+  <div class="fs">青 = 操作する場所 · 緑 = 見守る場所</div>
+  <svg viewBox="0 0 760 430" role="img" aria-label="The Automation page from top to bottom: account switch, summary tiles, create buttons, fleet monitor, and the TRADING grid">
+    <rect x="14" y="10" width="500" height="44" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="1.8"/>
+    <text x="30" y="29" font-size="13" font-weight="700" fill="var(--ink)">◐ シミュレーター · ● 実運用</text>
+    <text x="30" y="45" font-size="11.5" fill="var(--ink2)">アカウント切り替え — 仮想ウォレット、または接続済みの取引所</text>
+
+    <rect x="14" y="64" width="500" height="76" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="30" y="84" font-size="13" font-weight="700" fill="var(--ink)">サマリーストリップ — 4つのタイルと期間チップ</text>
+    <text x="30" y="101" font-size="11.5" fill="var(--ink2)">💰 現在の預金 · 📅 累計 · 📈 利益 · 🛡️ 現在の決済ルール</text>
+    <text x="30" y="118" font-size="11.5" fill="var(--ink2)">今日 / 今週 / 今月 / 今年 — 詳細を見るにはいずれかのタイルをクリック</text>
+    <text x="30" y="133" font-size="11.5" fill="var(--muted)">下部: 🧠 AI分析（30分） — デスクの日誌</text>
+
+    <rect x="14" y="150" width="500" height="44" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="1.8"/>
+    <text x="30" y="169" font-size="13" font-weight="700" fill="var(--ink)">➕ 新規取引で作成 &#160;·&#160; 🧠 AIアナリストで作成</text>
+    <text x="30" y="185" font-size="11.5" fill="var(--ink2)">開始方法は2つ — スケジュールされたTRADING、または先に一度限りの分析を行う方法</text>
+
+    <rect x="14" y="204" width="500" height="58" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8" stroke-dasharray="6 4"/>
+    <text x="30" y="224" font-size="13" font-weight="700" fill="var(--ink)">🚀 フルオート — ライブモニター</text>
+    <text x="30" y="241" font-size="11.5" fill="var(--ink2)">フリート一覧 · 状態 · メンバーチップ · 一時停止 / すべて停止 / フリート編集</text>
+    <text x="30" y="256" font-size="11.5" fill="var(--muted)">フリートが稼働中のときのみ表示されます</text>
+
+    <rect x="14" y="272" width="500" height="118" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="30" y="293" font-size="13" font-weight="700" fill="var(--ink)">📈 AIオートメーションマスター — TRADINGグリッド</text>
+    <text x="30" y="311" font-size="11.5" fill="var(--ink2)">TRADINGごとに1枚のカード: 状態 · 現在のポジション · スパークライン · データの経過時間 ⧗</text>
+    <text x="30" y="328" font-size="11.5" fill="var(--ink2)">カードをクリック → 詳細ドロワー: チャート · イベントログ · 一時停止 / 停止</text>
+    <rect x="30" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <rect x="184" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <rect x="338" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <text x="100" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">BTC · 稼働中</text>
+    <text x="254" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">ETH · 待機中</text>
+    <text x="408" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">SOL · 停止中</text>
+
+    <text x="540" y="34" font-size="11.5" fill="var(--muted)">📖 ガイドボタン（アプリ右上）</text>
+    <text x="540" y="50" font-size="11.5" fill="var(--muted)">このページのクイックガイドを開きます</text>
+    <text x="540" y="96" font-size="11.5" fill="var(--muted)">(?) バッジはホバーすると表示されます</text>
+    <text x="540" y="112" font-size="11.5" fill="var(--muted)">各セクション — それぞれが説明します</text>
+    <text x="540" y="128" font-size="11.5" fill="var(--muted)">その隣にあるコントロール</text>
+  </svg>
+  <p class="cap">このページのほぼすべてのコントロールの隣には、小さな (?) バッジがあります。パソコンではポインタを近づけると表示され、スマートフォンでは常に表示されています。迷ったときは (?) をタップしてください。</p>
+</div>
+
+<h2>2 · アカウント切り替え — シミュレーターかリアルか</h2>
+<p>ページの一番上の行は、双方向スイッチになっています:</p>
+<ul>
+  <li><strong>◐ シミュレーター</strong> — ペーパーウォレットです。仮想資金で練習でき、実際のお金が使われることはありません。これがデフォルトであり、最初の数日間を過ごすのに適した場所です。</li>
+  <li><strong>● リアル</strong> — 実際の取引所アカウントに接続します。まだ接続していない場合は、リアルを押すと次の<strong>アカウント</strong>ページでブローカーを最初にリンクしてください。接続すると、ページには次のように表示されます: <em>接続ゲートウェイ: (ご使用のブローカー)</em>.</li>
+</ul>
+<p>このガイドで説明されているすべて――TRADING、フリート、利益の数値――は、意図的にゲートウェイを接続してライブトレーディングの利用規約に同意しない限り、シミュレーションウォレット上で動作します。実際のお金を使用するルールまたは実行には、常に赤い<strong>⚠ 実際の資金</strong>バッジが付けられるため、ひと目でシミュレーションのように見えることはありません。</p>
+
+<h2>3 · サマリーストリップ――一目でわかるあなたのお金</h2>
+<p>ヘッダーの4つのタイルが、何も開かずに「今どうなっている?」に答えます。期間チップ――<strong>今日・今週・今月・今年</strong>　— 期間の集計範囲を再設定します。デフォルトは今週です。</p>
+<div class="sw"><table>
+<thead><tr><th>タイル</th><th>大きな数値</th><th>クリックすると</th></tr></thead>
+<tbody>
+<tr><td><strong>💰 現在の預入額</strong></td><td>現金 + 使用中の証拠金 + 未実現損益</td><td>預入額の推移グラフと現在の保有ポジション</td></tr>
+<tr><td><strong>📅 累計期間</strong></td><td>AIがその期間内で稼働している時間</td><td>最初の自動売買、期間内の約定、最後の約定</td></tr>
+<tr><td><strong>📈 利益</strong></td><td>期間内の実現損益 + 保有中の未実現損益</td><td>総利益と総損失をそれぞれ分けたもの、および期間内のすべての約定</td></tr>
+<tr><td><strong>🛡️ 現在の決済ルール</strong></td><td>現在の安全構造のもとでの実現損益</td><td>現行ルールと旧ルールの内訳、およびルールのみの約定</td></tr>
+</tbody></table></div>
+<p>2つの数値については説明が必要です：</p>
+<ul>
+  <li><strong>Unrealizedは常に「今」です。</strong> どの期間チップを選んでも、Unrealized（含み損益）部分は現時点で保有しているポジションの時価評価です。</li>
+  <li><strong>「current exit rails」とは？</strong> エグジット安全構造（ポジション連動型ストップとトレーリング利益確定）は2026-07-25に更新されました。🛡️タイルは、現在実際にポジションを保護している構造のもとで得られた結果のみを抽出するため、古い数値が現在のパフォーマンスであるかのように見えることはありません。</li>
+</ul>
+<p>タイルの下には<strong>🧠 AI分析（30分）</strong> があります — セクション7で解説します。「AIは自分が離れている間に何をしていたのか？」への答えです。</p>
+
+<h2>4 · 最初のTRADINGを始める</h2>
+<p>A <strong>TRADING</strong> は1つのAI運用戦略を1つの銘柄に紐づけたものです。AIはスケジュールに従って再分析を行い、その判断があなたの閾値を満たしたときに取引を実行します。開始方法は4通りあり、ここでは手間が少ない順から自由度が高い順に並べています。どれが表示されるかはご利用のプラン（セクション9）によります。</p>
+
+<div class="fig">
+  <div class="ft">どの方法が自分に合っている？</div>
+  <div class="fs">4つの方法はすべて同じ場所に行き着きます：下のグリッドに表示されるTRADINGカードです</div>
+  <svg viewBox="0 0 760 380" role="img" aria-label="Decision flow: choose Agent mode to delegate everything, Simple mode to pick a coin and risk level, Full Auto to run a whole fleet, or AI Analyst to see one analysis first">
+    <defs>
+      <marker id="arw" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="255" y="8" width="250" height="46" rx="10" fill="var(--card)" stroke="var(--ink)" stroke-width="1.6"/>
+    <text x="380" y="28" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">どこまで自分で決めたいですか？</text>
+    <text x="380" y="45" font-size="11.5" fill="var(--ink2)" text-anchor="middle">どの方法でも同じ安全システムが維持されます</text>
+
+    <path d="M310 54 L310 78 L104 78 L104 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M355 54 L355 78 L288 78 L288 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M405 54 L405 78 L472 78 L472 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M450 54 L450 78 L656 78 L656 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+
+    <rect x="12" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="104" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">⓪ エージェント（1銘柄）</text>
+    <text x="104" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">「予算を設定するだけで、</text>
+    <text x="104" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">あとはAIにお任せ」</text>
+    <text x="104" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">予算は$100から</text>
+    <text x="104" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">AIが銘柄を選択</text>
+    <text x="104" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">1ポジション ≤ 25%</text>
+    <text x="104" y="238" font-size="10.5" font-weight="700" fill="var(--go)" text-anchor="middle">全プラン共通</text>
+
+    <rect x="196" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="288" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">① シンプル</text>
+    <text x="288" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">「コインと</text>
+    <text x="288" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">リスクレベルを自分で選ぶ」</text>
+    <text x="288" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">上位5コインまたはAI選定</text>
+    <text x="288" y="197" font-size="10.8" fill="var(--ink2)" text-anchor="middle">Stable（安定型）・Balanced（バランス型）・Aggressive（積極型）</text>
+    <text x="288" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">現物または先物</text>
+    <text x="288" y="238" font-size="10.5" font-weight="700" fill="var(--warn)" text-anchor="middle">PRO以上</text>
+
+    <rect x="380" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="472" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">② フルオート（フリート）</text>
+    <text x="472" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">「TRADINGのチーム全体を</text>
+    <text x="472" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">自分の代わりに運用してもらう」</text>
+    <text x="472" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">N枠 + 予算1つ</text>
+    <text x="472" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">AIがリサーチ&amp;構成</text>
+    <text x="472" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">利益目標達成後に再起動</text>
+    <text x="472" y="238" font-size="10.5" font-weight="700" fill="var(--safe)" text-anchor="middle">PROFESSIONAL以上</text>
+
+    <rect x="564" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="656" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 AIアナリスト</text>
+    <text x="656" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">「決定する前に</text>
+    <text x="656" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">分析結果を1つ見せてほしい」</text>
+    <text x="656" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">4人のアナリストが1回討議</text>
+    <text x="656" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">注文は発注されません</text>
+    <text x="656" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">その後：ワンクリックで開始</text>
+    <text x="656" y="238" font-size="10.5" font-weight="700" fill="var(--warn)" text-anchor="middle">PRO以上</text>
+
+    <path d="M104 254 L104 292 L380 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M288 254 L288 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M472 254 L472 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M656 254 L656 292 L380 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="380" y1="292" x2="380" y2="314" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <rect x="230" y="318" width="300" height="46" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="380" y="338" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">グリッドにTRADINGカードが表示されます</text>
+    <text x="380" y="355" font-size="11.5" fill="var(--ink2)" text-anchor="middle">ワンクリックで作成・開始 — 最初のAIサイクルは1分以内に実行</text>
+  </svg>
+</div>
+
+<h3>⓪ エージェント（1銘柄） — 予算だけを設定</h3>
+<p>押す：<strong>➕ 新規トレードで作成</strong> を押すと、作成ダイアログがモードチップの画面で開きます。⓪では必須入力はちょうど1つだけです：<strong>総予算 ($)</strong>, $100から。AIが有望なシンボルを選び、TRADINGを作成し、サイクルごとにその判断根拠を記録します。1つのポジションが予算の25%を超えて使用することはありません。ボタンの脚注は繰り返す価値があります：キルスイッチは下記のTRADINGリストです — そこで停止すれば即座に停止し、 <strong>リスクゲート、ブレーカー、予算上限はAIによって回避されることはありません</strong>.</p>
+
+<h3>① シンプル — コインとリスクレベルを選択</h3>
+<p>1つではなく2つの選択肢： <strong>シンボル</strong> （出来高上位5件のライブリスト、または <strong>🔍 AI自動選択</strong>、スキャナーが出来高急増や新規上場銘柄から毎サイクル選択します）と <strong>リスクカード</strong>:</p>
+<div class="sw"><table>
+<thead><tr><th>カード</th><th>市場を確認</th><th>確信度が次の場合に取引</th><th>1回のエントリーサイズ</th><th>決済プロファイル</th></tr></thead>
+<tbody>
+<tr><td><strong>🛡 安定型</strong></td><td>4時間ごと</td><td>75%以上</td><td>$200</td><td>ストップ −3%・ターゲット +6%</td></tr>
+<tr><td><strong>⚖️ バランス型</strong></td><td>1時間ごと</td><td>65%以上</td><td>$500</td><td>ストップ −5%・ターゲット +10%</td></tr>
+<tr><td><strong>🔥 積極型</strong></td><td>30分ごと</td><td>55%以上</td><td>$1,000</td><td>ストップ −8%・ターゲット +16%</td></tr>
+</tbody></table></div>
+<p>各カードに表示されるイグジット数値は、そのレベルでサーバーが実際に適用する値であり、確定前に表示されます。カードの下には、先物取引にアクセスできるプランの場合、次の<strong>ブックタイプ</strong>: <em>スポット</em>（全額拠出・ロングオンリー・強制清算なし）または<em>先物</em>（デスクはショートも可能で、1〜10倍の分離証拠金レバレッジを使用します — N倍では、ポジションは100/N%の逆行で強制清算されます）。</p>
+
+<h3>② フルオート — フリートを起動</h3>
+<p>1つの予算で複数のTRADINGを運用します。設定する項目は、<strong>TRADINGの数</strong>（プランの上限まで）、<strong>合計予算</strong>、任意の<strong>利益目標％</strong>（達成するとフリートはすべてを確定し、自動的に再起動します。0の場合は停止するまで実行し続けます）、<strong>利益レベル</strong>（Balance／High Profit／Risk &amp; High Profit — ポジションサイズと自動レバレッジが段階的に大きくなります）、<strong>マーケット</strong>が取引可能な市場（仮想通貨、米国株、先物、外国為替 — またはすべて）、<strong>レバレッジ</strong>ポリシー（オートの場合はリスクレベルが自動的に決定します）。押す<strong>🚀 フリートを起動</strong>AIが市場を調査し、N件のTRADINGを作成し、メンバーが完了するたびに枠を埋め続けます。フリートの監視についてはセクション8をご覧ください。</p>
+
+<h3>🧠 AIアナリストによる作成 — まず1つの分析を見る</h3>
+<p>2番目のヘッダーボタンは、4名のアナリストによるフルデスクを実行します <strong>今すぐ一度</strong> — News、Sentiment、Fundamentals &amp; Macro、Technicalがそれぞれブリーフを作成し、トレーダーとリスクレビュアーがそれらを議論して決定します。パイプラインをライブで確認した後、決定（BUY / SELL / HOLD）、その確信度、レポート、決定の詳細（テーゼの整合性、モメンタム、エントリーの質、リスクコンテキスト、検証）、およびアナリストのブリーフが得られます。 <strong>注文は発注されません。</strong> 読んだ内容が気に入った場合、 <strong>▶ これでオートトレーディングを開始</strong> をクリック1つで、バランスの取れたデフォルト設定のTRADINGに変換します。これは調査目的のみであり、投資助言ではありません。</p>
+
+<div class="note"><b>開始が拒否された場合。</b> 開始は、解決可能な競合によってブロックされることがあります — 例えば、同じ銘柄でのオープンポジションや古い自動実行ルールなどです。TRADINGはグリッド内に下書きとして作成されたままで、その開始ボタンをクリックすると、競合の内容を示し、解決を提案するダイアログが開きます（「閉じて無効化し、開始する」）。何も静かに失敗することはありません。</div>
+
+<h2>5・開始を押した後に起こること</h2>
+<p>ページを開いたままにしておく必要はありません。サーバー上のエンジンが数秒以内にTRADINGを取得し、独自のクロックで実行します。</p>
+
+<div class="fig">
+  <div class="ft">TRADINGのライフサイクル</div>
+  <div class="fs">サイクルは選択した間隔で繰り返され、安全監視は決して休みません</div>
+  <svg viewBox="0 0 760 400" role="img" aria-label="After start, the engine runs a first cycle within about 30 seconds, then repeats at the configured interval. Each cycle either trades or records why it skipped. Between cycles, stop-loss, take-profit and liquidation-defense watchers guard open positions continuously.">
+    <defs>
+      <marker id="arw2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="20" y="10" width="200" height="44" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="120" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">▶ 開始を押す</text>
+    <text x="120" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">カードにReady → Runningと表示されます</text>
+    <line x1="220" y1="32" x2="266" y2="32" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="270" y="10" width="220" height="44" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="380" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">エンジンが取得します</text>
+    <text x="380" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">約1分以内に最初のサイクル</text>
+    <line x1="490" y1="32" x2="536" y2="32" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="540" y="10" width="200" height="44" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="640" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">その後：毎回の間隔で</text>
+    <text x="640" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">30分・1時間・4時間 — 設定によります</text>
+
+    <text x="380" y="86" font-size="12.5" font-weight="700" fill="var(--muted)" text-anchor="middle">1サイクル</text>
+    <rect x="20" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="90" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">収集</text>
+    <text x="90" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">価格・ニュース・群衆の</text>
+    <text x="90" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">ムード・マクロデータ</text>
+    <line x1="160" y1="125" x2="176" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="180" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="250" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">分析</text>
+    <text x="250" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">クイックリード — または</text>
+    <text x="250" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">4名のアナリストによるフルデスク</text>
+    <line x1="320" y1="125" x2="336" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="340" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="410" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">決定</text>
+    <text x="410" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">買い・売り・保有</text>
+    <text x="410" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">＋確信度＋ストップ</text>
+    <line x1="480" y1="125" x2="496" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="500" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--safe)" stroke-width="2"/>
+    <text x="570" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">安全チェック</text>
+    <text x="570" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">リスクゲート・予算上限</text>
+    <text x="570" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">手数料・リワード対リスク</text>
+
+    <path d="M605 154 L605 182 L658 182 L658 206" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <path d="M535 154 L535 182 L440 182 L440 206" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="330" y="210" width="220" height="52" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="440" y="231" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">✓ 取引が記録されました</text>
+    <text x="440" y="248" font-size="11" fill="var(--ink2)" text-anchor="middle">カードのブックとP&amp;Lはリアルタイムで更新されます</text>
+
+    <rect x="570" y="210" width="176" height="52" rx="10" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="658" y="231" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">— スキップ</text>
+    <text x="658" y="248" font-size="11" fill="var(--ink2)" text-anchor="middle">理由とともにログに記録されます</text>
+
+    <rect x="20" y="292" width="726" height="92" rx="11" fill="var(--surf)" stroke="var(--grid)" stroke-width="1.4"/>
+    <text x="38" y="316" font-size="12.5" font-weight="700" fill="var(--ink)">サイクル間 — すべてのオープンポジションに対して常時稼働</text>
+    <text x="38" y="337" font-size="11.5" fill="var(--ink2)">🛑 ストップロス／テイクプロフィット監視 — およそ30秒ごとにチェック</text>
+    <text x="38" y="355" font-size="11.5" fill="var(--ink2)">🔒 トレーリングプロフィットロック — 利益が伸びるにつれて下限を引き上げます</text>
+    <text x="38" y="373" font-size="11.5" fill="var(--ink2)">🛡 強制決済防止 — レバレッジポジションの強制決済価格に達する前に介入します</text>
+  </svg>
+  <p class="cap">「スキップ」で終わるサイクルは、システムが正常に機能している証であり、失敗ではありません。判断が確信度のしきい値を超えなかった、市場が休場だった、または安全チェックが注文を拒否した、といった理由が毎回イベントログに記録されます。</p>
+</div>
+
+<h3>最初の1時間 — 何が正常か</h3>
+<ul>
+  <li><strong>「ポジションなし — 現金保有中」は正常な状態です。</strong> AIは、判断が確信度のしきい値とすべての安全チェックを通過した場合にのみエントリーします。特にStable設定では、注文が成立しない時間が続くこともよくあります。</li>
+  <li><strong>スキップされた行は正常です。</strong> 想定してください <em>決定</em>, <em>注文設計</em> および <em>スキップ</em> のエントリーが、最初の<em>取引</em>.</li>
+  <li><strong>わずかな負のProfitは正常です</strong>  最初のエントリー直後：オープンポジションはクローズするまでエントリー手数料を保持し続けます。</li>
+  <li><strong>フリートメンバーは時間差で開始します。</strong> 各TRADINGのサイクルは、すべてが同時に発火しないよう、兄弟から数分ずらされています。</li>
+</ul>
+
+<h2>6 · TRADINGを監視する — グリッドとドロワー</h2>
+<p>内の各カードは <strong>📈 AI自動化マスター</strong> は1つのTRADINGです。カードは「動作しているか、何を保有しているか？」に答え、その背後のドロワーは「具体的に何をしたか、そしてなぜか？」に答えます。</p>
+
+<div class="fig">
+  <div class="ft">何をどこで確認するか</div>
+  <div class="fs">5つの質問、5つの画面 — すべてこの1ページに</div>
+  <svg viewBox="0 0 760 330" role="img" aria-label="Map from questions to page surfaces: is it running goes to the card status dot; why no trade goes to the event log; how is the money goes to the summary tiles; what happened overnight goes to AI Analysis 30 min; how is the fleet goes to the fleet monitor.">
+    <defs>
+      <marker id="arw3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="16" y="14" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="42" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">「動作していますか？」</text>
+    <rect x="16" y="76" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="104" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"なぜ取引されなかったのか?"</text>
+    <rect x="16" y="138" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="166" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"資金の状況はどうか?"</text>
+    <rect x="16" y="200" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="228" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"夜間に何が起きたか?"</text>
+    <rect x="16" y="262" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="290" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"フリート全体の状況はどうか?"</text>
+
+    <line x1="286" y1="37" x2="452" y2="37" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="99" x2="452" y2="99" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="161" x2="452" y2="161" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="223" x2="452" y2="223" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="285" x2="452" y2="285" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+
+    <rect x="456" y="14" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="34" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">カードのステータス + 点滅するドット</text>
+    <text x="600" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">実行中・待機中・一時停止・停止、および⧗データの経過時間</text>
+    <rect x="456" y="76" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="96" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">ドロワーのイベントログ</text>
+    <text x="600" y="112" font-size="10.8" fill="var(--ink2)" text-anchor="middle">理由とステージを伴う、すべての判断とスキップ</text>
+    <rect x="456" y="138" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="158" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">4つのサマリータイル</text>
+    <text x="600" y="174" font-size="10.8" fill="var(--ink2)" text-anchor="middle">期間チップ + クリックで詳細グラフを表示</text>
+    <rect x="456" y="200" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="220" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 AIによる分析（30分）</text>
+    <text x="600" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">30分周期でつづられる、日々のデスクの日誌</text>
+    <rect x="456" y="262" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="282" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">🚀 フルオート — ライブモニター</text>
+    <text x="600" y="298" font-size="10.8" fill="var(--ink2)" text-anchor="middle">フリート一覧・レール・メンバーチップ・すべて停止</text>
+  </svg>
+</div>
+
+<h3>カードの読み方</h3>
+<ul>
+  <li><strong>ステータスライン</strong> — <em>準備完了</em>（下書き、未開始）、<em>待機中</em>（設定済み、次のサイクルを予約）、<em>実行中</em>（点滅するドット）、<em>一時停止</em>, <em>停止処理中</em>, <em>停止済み</em>（理由付き）。カード上の（?）をクリックすると「TRADINGカードの読み方」が開き、各項目をその場で説明します。</li>
+  <li><strong>機能チップ</strong> — 🟡 <em>市場クローズ</em>は次のセッションで再開することを意味し、🔴 <em>取引不可</em>は設定により取引が恒久的に不可能であることを意味します（例えば、手数料を上回ることが決してないほど小さすぎる目標変動幅など）。🔴のカードが資金を保有している場合、グリッド上部のバナーがそれらの件数を表示し、<strong>すべて解放</strong>をワンクリックで資金を解放できます。</li>
+  <li><strong>4つの事実</strong> — 最大ベット額・インターバル（信頼度バー付き、例：<em>45m・≥50%</em>）・タイプ（現物、またはレバレッジ付き先物）・どのAIが運用しているか。</li>
+  <li><strong>ライブブック</strong> — 「ポジションなし — 現金保有」か、あるいはポジションの詳細：LONG/SHORT、数量、エントリー価格、現在の気配値、未実現・実現損益、そして先物の場合はレバレッジ、証拠金、清算価格、それを保護する清算防衛ティア。</li>
+  <li><strong>アクティビティライン</strong>は数秒ごとに、TRADINGが現在行っていることと次のサイクルまでのカウントダウンとの間で表示を切り替えます。イベントが到着すると⚡で点滅表示されます。</li>
+  <li><strong>⧗ データ経過時間</strong> — 最後の価格がどれだけ古いかを示します。ポーリングで更新される市場は一定間隔で更新され、このバッジはその陳腐化の度合いを正直に示す指標です。</li>
+</ul>
+
+<h3>詳細ドロワー</h3>
+<p>カードをクリックすると、全体像を示すドロワーがスライドインします：P&amp;Lヘッダー（実現損益、取引数、現在の気配値）、資産推移のスパークライン、ライフサイクルボタン、そして<strong>イベントログ</strong> — 直近60件の<em>判断</em>, <em>取引</em>, <em>スキップ</em>, <em>オーダー設計</em>, <em>オーダー意図</em>, <em>ステータス</em>, <em>資産</em>, <em>アラート</em>などが含まれます。スキップにはその段階と理由が記録されます（例：<em>手数料エッジ</em>, <em>リスク・リワード下限</em>, <em>予算</em>, <em>信頼度ランク</em>) — このログは、何も起きなかった理由を知りたいときに最初に確認する場所です。</p>
+
+<h3>自動再起動</h3>
+<p>TRADING が独自の目標——利益目標の達成、または取引上限への到達——により停止すると、 <strong>同じ設定の新しい TRADING が自動的に引き継ぎます</strong>、イベントログには「TRADING #N として再起動」と記録されます。自分で停止した場合は、当然ながら再起動されません。</p>
+
+<h2>7 · 🧠 AI分析（30分）— デスクの日誌</h2>
+<p>サマリータイルの下のボタンをクリックすると、AI が記録したすべての内容をまとめたレビューが開きます <strong>30分ごとのサイクル — サインインしていなかった時間帯も含む</strong>。日付の矢印で日を選択します。各行が1つのサイクルです。「何も動きませんでした」か、1行の集計（<em>判断 · スキップ · オープン · クローズ</em>）と実現した結果が表示されます。サイクルを展開すると、TRADINGごとに、選択したアクションとその確信度、デスクが作成したレポート、理由付きのステータス遷移、そして何がスキップされたかとその理由が表示されます。フリートを1日1回確認するなら、このチェックすべき画面です。</p>
+
+<h2>8 · フリートの監視 — 🚀 フルオート ライブモニター</h2>
+<p>フリートが稼働中の間、そのモニターはグリッドの上に表示されます：</p>
+<ul>
+  <li><strong>🎯 フリートインデックス</strong> — フリート全体を1つの数値として表し、開始時に100を基準とします。103.42は、フリートが予算に対して3.42%上昇していることを意味します。カードにはドル建てのP&amp;Lと開始日も表示されます。(?)は、その計算方法を正確に説明します。</li>
+  <li><strong>ステータス行</strong> — フリートの状態とその理由を平易な言葉で示します(<em>構築済み 4/5</em>, <em>補充中 (2/5)</em>, <em>ドローダウン警告 — 新規エントリー停止中</em>…)、その<strong>マーク済み残高</strong>、そして2本のライン：<strong>−warn%</strong> で新規エントリーが一時停止 ⚠︎、<strong>−ストップ%</strong> で全ポジションが決済されます ⏹。警告ラインが発動すると、次の内容を含むバーが表示されます：<strong>取引を再開する（自己責任）</strong>.</li>
+  <li><strong>メンバーチップ</strong>  — TRADINGごとに1つ表示され、実行中は点滅するドットとマークされたP&amp;Lが表示されます。変更があるとチップが緑色に点滅します。チップをクリックすると、そのTRADINGのドロワーが開きます。トグルで完了したメンバーの表示/非表示を切り替えられます。</li>
+  <li><strong>取引アクティビティタブ</strong> — 直近の約定をテーブル形式で表示します(種別、シンボル、数量、価格、P&amp;L、日付)。市場でフィルタリングできます。</li>
+  <li><strong>ライフサイクル</strong> — <strong>一時停止</strong> 新規エントリーのみを停止します(保有ポジションはストップロス/テイクプロフィットの保護を維持します。再開すると続行します)。 <strong>⏹ すべて停止(フラット化)</strong> フリートを停止し、すべてのポジションを直ちにクローズします — 停止したフリートは再起動できないため、新しいフリートを起動してください。</li>
+  <li><strong>フリートを編集</strong> — 実行中に<strong>利益目標</strong>と<strong>スロット数</strong>を変更できます。入力すると、パネルはドル建て目標と各スロットの予算をリアルタイムで表示し、予算に応じた🤖AI推奨の最大スロット数も表示します。予算に余裕ができると自動的にスロットが追加され、縮小時は<strong>ドレイン</strong>します — 余剰スロットは、そのポジションが自然に終了したときにのみ解消され、リサイズによって強制的にクローズされることはありません。</li>
+</ul>
+
+<h2>9・あなたのプランで利用できる機能</h2>
+<div class="sw"><table>
+<thead><tr><th>このページの内容</th><th>ジュニア</th><th>Pro</th><th>プロフェッショナル</th></tr></thead>
+<tbody>
+<tr><td><strong>⓪ エージェント(1シンボル)</strong></td><td>✓ (現物、レバレッジなし)</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>① シンプルモード</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>先物ブック&amp;レバレッジ</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>🧠 AIアナリスト</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>AIプロバイダーの選択</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>② フルオートフリート</strong></td><td>—</td><td>—</td><td>✓ (最大10 TRADINGs)</td></tr>
+</tbody></table></div>
+<p>プランに含まれていないコントロールは単に表示されません — ①チップやAnalystボタンが見えない場合、それはプランの仕様であり、不具合ではありません。</p>
+
+<h2>10 · 停止する — すべてのキルスイッチ</h2>
+<div class="sw"><table>
+<thead><tr><th>停止するには…</th><th>この操作を行う</th><th>何が起こるか</th></tr></thead>
+<tbody>
+<tr><td><strong>1つのTRADINGを完全に終了</strong></td><td>カード → ドロワー → <strong>停止 &amp; フラット化</strong></td><td>現在の価格で停止しポジションをクローズします</td></tr>
+<tr><td><strong>1つのTRADINGを停止、ポジションは維持</strong></td><td>カード → ドロワー → <strong>停止 &amp; ホールド</strong></td><td>停止しますが、オープンポジションは自分で管理することになります</td></tr>
+<tr><td><strong>1つのTRADINGを一時的に休止</strong></td><td>カード → ドロワー → <strong>一時停止</strong></td><td>新規エントリーはなし；保護的なエグジットは有効のまま；いつでも再開可能</td></tr>
+<tr><td><strong>フリート全体</strong></td><td>フリートモニター → <strong>⏹ すべて停止 (フラット化)</strong></td><td>すべてのメンバーが停止し、すべてのポジションが即座に決済されます</td></tr>
+<tr><td><strong>従来型の自動化ルール</strong></td><td>ルール一覧 → <strong>削除</strong></td><td>ルールは次のサイクルから停止します — 削除がその唯一の操作です</td></tr>
+</tbody></table></div>
+<p>AIの見立てにまだ時間的猶予が残っているTRADINGを停止しようとすると、ページはその旨を伝え、一度だけ確認を求めます — 早期に停止すると、その時点の価格で損益が確定します。判断はお客様に委ねられており、ボタンは常に機能します。</p>
+
+<h2>11 · 次に読むべきもの</h2>
+<ul>
+  <li><strong>AIトレーディングの仕組み</strong> — 30分ループの内部で実際に何が起きているか：誰が注文を作成し、機械が何を強制するか。</li>
+  <li><strong>意思決定が注文になるまで</strong> — AIデスクと安全システムの間の権限分担について、詳しく解説します。</li>
+  <li><strong>完全ガイド</strong> — データ収集から取引ジャーナルまで、パイプライン全体を解説します。</li>
+  <li><strong>あなたの市場が開いている時間</strong> — ご自身の時計でのセッション時間なので、🟡 <em>市場休止</em> に驚かされることはありません。</li>
+</ul>
+<p>これらはすべて、このページと同じドキュメントレールにあります。また、Automationページ自体にも、2つの小さなヘルパーがあることを覚えておいてください：右上の<strong>📖 ガイド</strong> ボタンはこのドキュメントの簡易版で、各コントロールの横にある<strong>(?)</strong> バッジは、必要な場所でピンポイントの説明を提供します。</p>
+
+<p class="mt">Sooppiyメンバーガイド · Automationページ · 取引にはリスクが伴います。シミュレーション結果は実際の成果を保証するものではありません。調査のみを目的とし、投資助言ではありません。</p>
+
+</main></body></html>

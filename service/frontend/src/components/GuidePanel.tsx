@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { useLanguage } from '../appShared'
 import { tr } from '../i18n'
@@ -43,6 +43,14 @@ const T = {
     th: 'โหลดคู่มือไม่สำเร็จ ปิดแล้วเปิดแผงใหม่เพื่อลองอีกครั้ง',
     vi: 'Không tải được hướng dẫn. Đóng và mở lại bảng để thử lại.',
     id: 'Tidak dapat memuat panduan. Tutup lalu buka kembali panelnya untuk mencoba lagi.',
+  },
+  fullGuide: {
+    ko: '📖 그림과 함께 보는 전체 가이드 열기 →',
+    en: '📖 Read the full illustrated guide →',
+    ja: '📖 図解つきの完全ガイドを読む →',
+    th: '📖 อ่านคู่มือฉบับเต็มพร้อมภาพประกอบ →',
+    vi: '📖 Đọc hướng dẫn đầy đủ kèm hình minh họa →',
+    id: '📖 Baca panduan lengkap bergambar →',
   },
 }
 
@@ -126,9 +134,23 @@ export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => vo
 
           {guide && (
             <>
-              <p style={{ fontSize: 13, lineHeight: 1.65, color: 'var(--text-secondary)', margin: '0 0 20px' }}>
+              <p style={{ fontSize: 13, lineHeight: 1.65, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
                 {tr(language, guide.summary)}
               </p>
+
+              {guide.docsSlug && (
+                <Link
+                  to={`/docs/${guide.docsSlug}`}
+                  onClick={onClose}
+                  style={{
+                    display: 'inline-block', marginBottom: 20, fontSize: 12.5, fontWeight: 600,
+                    color: 'var(--accent-primary,#c26a45)', textDecoration: 'none',
+                    border: '1px solid var(--border-color)', borderRadius: 8, padding: '7px 11px',
+                  }}
+                >
+                  {tr(language, T.fullGuide)}
+                </Link>
+              )}
 
               {guide.sections.map((section, i) => (
                 <section key={i} style={{ marginBottom: 20 }}>

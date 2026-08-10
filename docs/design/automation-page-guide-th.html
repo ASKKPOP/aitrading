@@ -1,0 +1,419 @@
+<!-- machine-translated from design/automation-page-guide-en.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>หน้าระบบอัตโนมัติ — คู่มือสำหรับการเข้าใช้งานครั้งแรก</title>
+<style>
+:root{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;--ink2:#52514e;
+ --muted:#7a7975;--ai:#2a78d6;--safe:#eb6834;--go:#1baf7a;--warn:#c88a1a;--bd:rgba(11,11,11,.1)}
+@media (prefers-color-scheme:dark){:root{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;--grid:#2c2c2a;
+ --ink:#fff;--ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--safe:#d95926;--go:#199e70;--warn:#e0a53a;
+ --bd:rgba(255,255,255,.1)}}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.72;font-size:14.5px}
+main{max-width:880px;margin:0 auto;padding:38px 22px 80px}
+h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+h3{font-size:15px;margin:22px 0 6px}
+p,li{color:var(--ink2)}strong{color:var(--ink)}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+.lede{font-size:16px;margin-bottom:22px}
+.rule{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 11px 11px 0;padding:15px 18px;margin:16px 0 26px}
+.rule b{display:block;color:var(--ink);margin-bottom:5px;font-size:14.5px}
+.rule p{margin:0;font-size:13.8px}
+.fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+.fig svg{width:100%;height:auto;display:block}
+.ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
+.fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
+.cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
+.flow{display:grid;gap:5px}
+.fr{display:grid;grid-template-columns:30px 1fr;gap:11px;align-items:stretch}
+.fn{display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--ink2);
+ background:var(--surf);border-radius:7px}
+.fb{border:1.5px solid var(--grid);border-left-width:4px;border-radius:9px;background:var(--page);padding:9px 13px}
+.fb.ai{border-left-color:var(--ai)}.fb.sf{border-left-color:var(--safe)}
+.fb.ex{border-left-color:var(--go);background:color-mix(in srgb,var(--go) 8%,var(--page))}
+.fb b{font-size:13.5px;color:var(--ink);display:block}
+.fb span{font-size:12.3px;color:var(--ink2)}
+.ar{grid-column:2;color:var(--muted);font-size:12px;line-height:1;padding:1px 0 1px 12px}
+.sw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.2px;margin:8px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2);vertical-align:top}
+th{font-size:11px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+td strong{color:var(--ink)}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ai{background:color-mix(in srgb,var(--ai) 15%,transparent);color:color-mix(in srgb,var(--ai) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--ai) 42%,transparent)}
+.p-sf{background:color-mix(in srgb,var(--safe) 15%,transparent);color:color-mix(in srgb,var(--safe) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--safe) 42%,transparent)}
+.p-go{background:color-mix(in srgb,var(--go) 15%,transparent);color:color-mix(in srgb,var(--go) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--go) 42%,transparent)}
+.note{border-left:3px solid var(--go);background:var(--card);border-radius:0 10px 10px 0;
+ padding:11px 14px;margin:16px 0;font-size:13.2px;color:var(--ink2)}
+.note b{color:var(--ink)}
+.warnbox{border-left:3px solid var(--warn);background:var(--card);border-radius:0 10px 10px 0;
+ padding:11px 14px;margin:16px 0;font-size:13.2px;color:var(--ink2)}
+.warnbox b{color:var(--ink)}
+.mt{margin-top:30px;padding-top:14px;border-top:1px solid var(--grid);font-size:11.5px;color:var(--muted)}
+@media (max-width:620px){.fr{grid-template-columns:26px 1fr;gap:8px}}
+</style></head>
+<body><main>
+
+<div class="eyebrow">Sooppiy · คู่มือสมาชิก</div>
+<h1>หน้าระบบอัตโนมัติ — การเข้าใช้งานครั้งแรกของคุณ</h1>
+<p class="lede">หน้าระบบอัตโนมัติคือ <strong>ศูนย์ควบคุมสำหรับการเทรดด้วย AI ของคุณ</strong>: เป็นจุดที่คุณเริ่มการทำงานของ AI-run TRADING เฝ้าดูมันทำงาน และหยุดมัน คู่มือนี้จะพาคุณไล่ดูหน้านี้ตั้งแต่บนลงล่าง — แต่ละส่วนควบคุมคืออะไร ใช้งานอย่างไร เกิดอะไรขึ้นหลังจากคุณกดเริ่ม และควรดูที่ไหนขณะที่มันทำงาน</p>
+
+<div class="rule"><b>สามสิ่งที่ควรรู้ก่อนอื่นใด</b><p>① ทุกอย่างที่คุณเริ่มที่นี่จะเทรดใน <strong>กระเป๋าเงินจำลอง</strong> เป็นค่าเริ่มต้น — เป็นเงินฝึกซ้อม ไม่ใช่เงินจริงของคุณ ② AI ทำงาน <strong>บนเซิร์ฟเวอร์</strong> ตลอด 24 ชั่วโมง คุณสามารถปิดแท็บได้และมันจะยังทำงานต่อไป ③ คุณสามารถกดปุ่มหยุดได้เสมอ — ทุก TRADING และทุกกองเรือ (fleet) สามารถหยุดชั่วคราวหรือหยุดทำงานได้ในหนึ่งหรือสองคลิก</p></div>
+
+<h2>1 · ภาพรวมของหน้า</h2>
+<p>ห้าบล็อก เรียงจากบนลงล่าง สองในนั้นจะปรากฏขึ้นก็ต่อเมื่อมีสิ่งที่ต้องแสดง</p>
+
+<div class="fig">
+  <div class="ft">แผนผังของหน้าระบบอัตโนมัติ</div>
+  <div class="fs">สีน้ำเงิน = จุดที่คุณดำเนินการ · สีเขียว = จุดที่คุณเฝ้าดู</div>
+  <svg viewBox="0 0 760 430" role="img" aria-label="The Automation page from top to bottom: account switch, summary tiles, create buttons, fleet monitor, and the TRADING grid">
+    <rect x="14" y="10" width="500" height="44" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="1.8"/>
+    <text x="30" y="29" font-size="13" font-weight="700" fill="var(--ink)">◐ ตัวจำลอง · ● จริง</text>
+    <text x="30" y="45" font-size="11.5" fill="var(--ink2)">สลับบัญชี — กระเป๋าเงินทดลอง หรือ เอ็กซ์เชนจ์ที่คุณเชื่อมต่อ</text>
+
+    <rect x="14" y="64" width="500" height="76" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="30" y="84" font-size="13" font-weight="700" fill="var(--ink)">Summary strip — สี่การ์ดสรุป + ปุ่มเลือกช่วงเวลา</text>
+    <text x="30" y="101" font-size="11.5" fill="var(--ink2)">💰 เงินฝากปัจจุบัน · 📅 ตลอดอายุการใช้งาน · 📈 กำไร · 🛡️ ราวป้องกันการออกปัจจุบัน</text>
+    <text x="30" y="118" font-size="11.5" fill="var(--ink2)">Today / This week / This month / This year — คลิกที่การ์ดใดก็ได้เพื่อดูรายละเอียด</text>
+    <text x="30" y="133" font-size="11.5" fill="var(--muted)">ด้านล่าง: 🧠 AI Analysis (30 min) — ไดอารี่ของทีมเทรด</text>
+
+    <rect x="14" y="150" width="500" height="44" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="1.8"/>
+    <text x="30" y="169" font-size="13" font-weight="700" fill="var(--ink)">➕ สร้างโดย New Trading &#160;·&#160; 🧠 สร้างโดย AI Analyst</text>
+    <text x="30" y="185" font-size="11.5" fill="var(--ink2)">สองวิธีในการเริ่มต้น — ตั้งเวลา TRADING หรือทำการวิเคราะห์ครั้งเดียวก่อน</text>
+
+    <rect x="14" y="204" width="500" height="58" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8" stroke-dasharray="6 4"/>
+    <text x="30" y="224" font-size="13" font-weight="700" fill="var(--ink)">🚀 Full Auto — จอมอนิเตอร์แบบเรียลไทม์</text>
+    <text x="30" y="241" font-size="11.5" fill="var(--ink2)">รายการ fleet · สถานะ · ป้ายสมาชิก · Pause / Stop all / Edit fleet</text>
+    <text x="30" y="256" font-size="11.5" fill="var(--muted)">จะปรากฏเฉพาะเมื่อมี fleet ทำงานอยู่</text>
+
+    <rect x="14" y="272" width="500" height="118" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="30" y="293" font-size="13" font-weight="700" fill="var(--ink)">📈 AI Automation Master — ตาราง TRADING</text>
+    <text x="30" y="311" font-size="11.5" fill="var(--ink2)">หนึ่งการ์ดต่อหนึ่ง TRADING: สถานะ · โพซิชันสด · sparkline · อายุข้อมูล ⧗</text>
+    <text x="30" y="328" font-size="11.5" fill="var(--ink2)">คลิกที่การ์ด → เปิดแผงรายละเอียด: กราฟ · บันทึกเหตุการณ์ · pause / stop</text>
+    <rect x="30" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <rect x="184" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <rect x="338" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <text x="100" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">BTC · กำลังทำงาน</text>
+    <text x="254" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">ETH · กำลังรอ</text>
+    <text x="408" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">SOL · หยุดทำงาน</text>
+
+    <text x="540" y="34" font-size="11.5" fill="var(--muted)">ปุ่ม 📖 Guide (มุมขวาบนของแอป)</text>
+    <text x="540" y="50" font-size="11.5" fill="var(--muted)">เปิดคู่มือฉบับย่อของหน้านี้</text>
+    <text x="540" y="96" font-size="11.5" fill="var(--muted)">ป้าย (?) จะปรากฏเมื่อคุณเลื่อนเมาส์ไปวาง</text>
+    <text x="540" y="112" font-size="11.5" fill="var(--muted)">หนึ่งส่วน — แต่ละส่วนอธิบาย</text>
+    <text x="540" y="128" font-size="11.5" fill="var(--muted)">ตัวควบคุมที่อยู่ถัดจากมัน</text>
+  </svg>
+  <p class="cap">ป้าย (?) เล็กๆ จะอยู่ถัดจากตัวควบคุมเกือบทุกอันในหน้านี้ บนคอมพิวเตอร์ ป้ายจะค่อยๆ ปรากฏขึ้นเมื่อตัวชี้ของคุณอยู่ใกล้ ส่วนบนโทรศัพท์ ป้ายจะแสดงอยู่ตลอดเวลา หากไม่แน่ใจ ให้แตะที่ (?)</p>
+</div>
+
+<h2>2 · สวิตช์บัญชี — Simulator หรือ Real</h2>
+<p>แถวแรกสุดของหน้าคือสวิตช์แบบสองทาง:</p>
+<ul>
+  <li><strong>◐ ตัวจำลอง</strong> — กระเป๋าเงินจำลอง คุณฝึกฝนด้วยเงินทุนเสมือน โดยไม่มีการใช้เงินจริงเลย นี่คือค่าเริ่มต้น และเป็นที่ที่เหมาะสมสำหรับการใช้เวลาช่วงแรกๆ ของคุณ</li>
+  <li><strong>● จริง</strong> — เชื่อมต่อกับบัญชีตลาดหลักทรัพย์จริง หากคุณยังไม่ได้เชื่อมต่อ การกด Real จะพาคุณไปยังหน้า <strong>บัญชี</strong> เพื่อเชื่อมต่อโบรกเกอร์ก่อน เมื่อเชื่อมต่อแล้ว หน้าจะแสดง <em>เกตเวย์ที่เชื่อมต่อ: (โบรกเกอร์ของคุณ)</em>.</li>
+</ul>
+<p>ทุกสิ่งที่อธิบายในคู่มือนี้ — TRADINGs, กองเรือ, ตัวเลขกำไร — ทำงานบนกระเป๋าเงินจำลอง เว้นแต่คุณจะได้เชื่อมต่อเกตเวย์โดยตั้งใจและยอมรับข้อกำหนดการซื้อขายแบบสด กฎหรือการทำงานที่จะใช้เงินจริงจะถูกทำเครื่องหมายด้วยป้ายสีแดงเสมอ <strong>⚠ เงินจริง</strong> เพื่อไม่ให้ดูเหมือนเป็นการจำลองเมื่อมองผ่านๆ</p>
+
+<h2>3 · แถบสรุป — เงินของคุณ เพียงแค่มอง</h2>
+<p>กระเบื้องสี่ชิ้นในส่วนหัวตอบคำถาม "เป็นอย่างไรบ้าง?" โดยไม่ต้องเปิดอะไรเลย ชิปช่วงเวลา — <strong>วันนี้ · สัปดาห์นี้ · เดือนนี้ · ปีนี้</strong> — ปรับกรอบเวลาของตัวเลขใหม่ ค่าเริ่มต้นคือ This week</p>
+<div class="sw"><table>
+<thead><tr><th>กระเบื้อง</th><th>ตัวเลขใหญ่</th><th>คลิกเพื่อดู</th></tr></thead>
+<tbody>
+<tr><td><strong>💰 เงินฝากปัจจุบัน</strong></td><td>เงินสด + มาร์จิ้นที่ใช้อยู่ + P&amp;L ที่ยังไม่รับรู้</td><td>กราฟเงินฝากตามช่วงเวลาและโพซิชันที่เปิดอยู่ของคุณ</td></tr>
+<tr><td><strong>📅 ตลอดชีพ</strong></td><td>ระยะเวลาที่ AI ดำเนินงานในช่วงนั้น</td><td>การเทรดอัตโนมัติครั้งแรก การเติมเต็มในช่วงเวลานั้น การเติมเต็มครั้งล่าสุด</td></tr>
+<tr><td><strong>📈 กำไร</strong></td><td>P&amp;L ที่รับรู้แล้วในช่วงนั้น + ที่ยังไม่รับรู้ในบัญชีที่เปิดอยู่</td><td>กำไรรวมและขาดทุนรวมแยกกัน พร้อมทั้งการเติมเต็มทุกรายการในช่วงนั้น</td></tr>
+<tr><td><strong>🛡️ กฎการออกจากออเดอร์ปัจจุบัน</strong></td><td>P&amp;L ที่รับรู้แล้วภายใต้โครงสร้างความปลอดภัยปัจจุบัน</td><td>การแบ่งระหว่าง current-rails กับ legacy-rails และการเติมเต็มเฉพาะ rails</td></tr>
+</tbody></table></div>
+<p>มีตัวเลขสองตัวที่ควรอธิบายเพิ่มเติม:</p>
+<ul>
+  <li><strong>Unrealized ต้องเป็น "ปัจจุบัน" เสมอ</strong> ไม่ว่าคุณจะเลือกชิปช่วงเวลาใด ส่วน unrealized คือมูลค่าตามราคาตลาด (mark-to-market) ของโพซิชันที่เปิดอยู่ ณ ขณะนี้</li>
+  <li><strong>ทำไมต้องเป็น "ราวป้องกันการออกปัจจุบัน"?</strong> โครงสร้างความปลอดภัยในการออก (stops ที่ปรับตามขนาดโพซิชัน บวกกับการล็อกกำไรแบบ trailing) ถูกแทนที่เมื่อวันที่ 2026-07-25 ไทล์ 🛡️ แยกผลลัพธ์ที่ได้จากโครงสร้างที่ปกป้องโพซิชันของคุณจริง ๆ ในวันนี้ออกมา เพื่อไม่ให้ตัวเลขเก่ามาปลอมตัวเป็นผลงานปัจจุบัน</li>
+</ul>
+<p>ใต้ไทล์คือ <strong>🧠 การวิเคราะห์ด้วย AI (30 นาที)</strong> — กล่าวถึงในหัวข้อ 7 นี่คือคำตอบของคำถาม "AI ทำอะไรไปบ้างตอนที่ฉันไม่อยู่?"</p>
+
+<h2>4 · เริ่มต้น TRADING แรกของคุณ</h2>
+<p>A <strong>TRADING</strong> คือกลยุทธ์ที่ขับเคลื่อนด้วย AI หนึ่งชุดที่ผูกกับสัญลักษณ์เดียว: AI จะวิเคราะห์ใหม่ตามตารางเวลา และเทรดเมื่อการตัดสินใจของมันผ่านเกณฑ์ที่คุณตั้งไว้ มีสี่วิธีในการเริ่มต้น เรียงจากที่ใช้ความพยายามน้อยที่สุดไปจนถึงควบคุมได้มากที่สุด คุณจะเห็นวิธีไหนบ้างขึ้นอยู่กับแพ็กเกจของคุณ (หัวข้อ 9)</p>
+
+<div class="fig">
+  <div class="ft">เส้นทางไหนเหมาะกับคุณ?</div>
+  <div class="fs">ทั้งสี่เส้นทางจบลงที่จุดเดียวกัน: การ์ด TRADING ในกริดด้านล่างนี้</div>
+  <svg viewBox="0 0 760 380" role="img" aria-label="Decision flow: choose Agent mode to delegate everything, Simple mode to pick a coin and risk level, Full Auto to run a whole fleet, or AI Analyst to see one analysis first">
+    <defs>
+      <marker id="arw" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="255" y="8" width="250" height="46" rx="10" fill="var(--card)" stroke="var(--ink)" stroke-width="1.6"/>
+    <text x="380" y="28" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">คุณต้องการตัดสินใจมากแค่ไหน?</text>
+    <text x="380" y="45" font-size="11.5" fill="var(--ink2)" text-anchor="middle">ทุกเส้นทางยังคงใช้ระบบความปลอดภัยเดียวกัน</text>
+
+    <path d="M310 54 L310 78 L104 78 L104 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M355 54 L355 78 L288 78 L288 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M405 54 L405 78 L472 78 L472 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M450 54 L450 78 L656 78 L656 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+
+    <rect x="12" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="104" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">⓪ Agent (1 สัญลักษณ์)</text>
+    <text x="104" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"ฉันตั้งงบประมาณ,</text>
+    <text x="104" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">AI จัดการที่เหลือ"</text>
+    <text x="104" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">งบประมาณเริ่มต้นที่ $100</text>
+    <text x="104" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">AI เลือกสัญลักษณ์</text>
+    <text x="104" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">หนึ่งโพซิชัน ≤ 25%</text>
+    <text x="104" y="238" font-size="10.5" font-weight="700" fill="var(--go)" text-anchor="middle">ทุกแพ็กเกจ</text>
+
+    <rect x="196" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="288" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">① ง่าย</text>
+    <text x="288" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"ฉันเลือกเหรียญเอง</text>
+    <text x="288" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">และระดับความเสี่ยง"</text>
+    <text x="288" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">เหรียญ top-5 หรือให้ AI เลือก</text>
+    <text x="288" y="197" font-size="10.8" fill="var(--ink2)" text-anchor="middle">มั่นคง · สมดุล · เชิงรุก</text>
+    <text x="288" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">บัญชี spot หรือ futures</text>
+    <text x="288" y="238" font-size="10.5" font-weight="700" fill="var(--warn)" text-anchor="middle">PRO ขึ้นไป</text>
+
+    <rect x="380" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="472" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">② ระบบอัตโนมัติเต็มรูปแบบ (fleet)</text>
+    <text x="472" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"รันทั้งทีม</text>
+    <text x="472" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">ของ TRADING ให้ฉัน"</text>
+    <text x="472" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">N ช่อง + งบประมาณเดียว</text>
+    <text x="472" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">AI ค้นคว้าและจัดพอร์ต</text>
+    <text x="472" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">เป้าหมายกำไร แล้วเริ่มใหม่</text>
+    <text x="472" y="238" font-size="10.5" font-weight="700" fill="var(--safe)" text-anchor="middle">PROFESSIONAL ขึ้นไป</text>
+
+    <rect x="564" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="656" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 นักวิเคราะห์ AI</text>
+    <text x="656" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"แสดงการวิเคราะห์ให้ฉันดู</text>
+    <text x="656" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">ก่อนที่ฉันจะตัดสินใจ"</text>
+    <text x="656" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">นักวิเคราะห์ 4 คนถกกันหนึ่งครั้ง</text>
+    <text x="656" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">ไม่มีการส่งคำสั่งใด ๆ</text>
+    <text x="656" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">จากนั้น: เริ่มต้นได้ด้วยคลิกเดียว</text>
+    <text x="656" y="238" font-size="10.5" font-weight="700" fill="var(--warn)" text-anchor="middle">PRO ขึ้นไป</text>
+
+    <path d="M104 254 L104 292 L380 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M288 254 L288 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M472 254 L472 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M656 254 L656 292 L380 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="380" y1="292" x2="380" y2="314" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <rect x="230" y="318" width="300" height="46" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="380" y="338" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">การ์ด TRADING จะปรากฏในกริด</text>
+    <text x="380" y="355" font-size="11.5" fill="var(--ink2)" text-anchor="middle">สร้างและเริ่มต้นได้ด้วยคลิกเดียว — รอบ AI แรกภายในหนึ่งนาที</text>
+  </svg>
+</div>
+
+<h3>⓪ Agent (1 สัญลักษณ์) — ตั้งค่าเพียงงบประมาณ</h3>
+<p>กด <strong>➕ สร้างโดย New Trading</strong> แล้วกล่องโต้ตอบการสร้างจะเปิดขึ้นที่ชิปโหมด ใน ⓪ มีข้อมูลที่จำเป็นเพียงหนึ่งอย่าง: <strong>งบประมาณทั้งหมด ($)</strong>  จาก $100 AI จะเลือกสัญลักษณ์ที่มีแนวโน้มดี สร้าง TRADING และบันทึกเหตุผลทุกรอบ หนึ่งโพซิชันจะไม่ใช้เกิน 25% ของงบประมาณ หมายเหตุใต้ปุ่มนี้ควรย้ำอีกครั้ง: ปุ่มหยุดฉุกเฉินคือรายการ TRADING ด้านล่าง — หยุดที่นั่นแล้วมันจะหยุดทันที และ <strong>AI ไม่สามารถข้าม risk gate, เบรกเกอร์ และเพดานงบประมาณได้</strong>.</p>
+
+<h3>① ง่าย — เลือกเหรียญและระดับความเสี่ยง</h3>
+<p>สองตัวเลือกแทนหนึ่ง: <strong>สัญลักษณ์</strong> (5 อันดับแรกตามปริมาณการซื้อขายแบบเรียลไทม์ หรือ <strong>🔍 เลือกอัตโนมัติโดย AI</strong>, ที่สแกนเนอร์จะเลือกจากปริมาณการซื้อขายที่พุ่งสูงขึ้นและรายการใหม่ในทุกรอบ) และ <strong>การ์ดความเสี่ยง</strong>:</p>
+<div class="sw"><table>
+<thead><tr><th>การ์ด</th><th>ตรวจสอบตลาด</th><th>เทรดเมื่อความมั่นใจอยู่ที่</th><th>ขนาดต่อการเข้า</th><th>รูปแบบการออก</th></tr></thead>
+<tbody>
+<tr><td><strong>🛡 มั่นคง</strong></td><td>ทุก 4 ชั่วโมง</td><td>75% หรือสูงกว่า</td><td>$200</td><td>หยุดที่ −3% · เป้าหมาย +6%</td></tr>
+<tr><td><strong>⚖️ สมดุล</strong></td><td>ทุกชั่วโมง</td><td>65% หรือสูงกว่า</td><td>$500</td><td>หยุดที่ −5% · เป้าหมาย +10%</td></tr>
+<tr><td><strong>🔥 เชิงรุก</strong></td><td>ทุก 30 นาที</td><td>55% หรือสูงกว่า</td><td>$1,000</td><td>หยุดขาดทุน −8% · เป้าหมาย +16%</td></tr>
+</tbody></table></div>
+<p>ตัวเลขการออกในแต่ละการ์ดคือค่าที่เซิร์ฟเวอร์จะบังคับใช้จริงสำหรับระดับนั้น ซึ่งจะแสดงให้เห็นก่อนที่คุณจะยืนยัน ใต้การ์ด แผนที่มีสิทธิ์เข้าถึงฟิวเจอร์สยังสามารถเลือก <strong>ประเภทบุ๊ค</strong>: <em>สปอต</em> (ระดมทุนเต็มจำนวน เปิดสถานะซื้อได้อย่างเดียว ไม่มีการบังคับปิดสถานะ) หรือ <em>ฟิวเจอร์ส</em> (เดสก์ยังสามารถเปิดสถานะขายได้ ด้วยเลเวอเรจมาร์จิ้นแยก (isolated-margin) 1–10× — ที่ N× สถานะจะถูกบังคับปิดเมื่อราคาเคลื่อนไหวสวนทาง 100/N%)</p>
+
+<h3>② Full Auto — เปิดใช้งานฟลีต</h3>
+<p>หนึ่งงบประมาณ หลาย TRADINGs คุณกำหนด <strong>จำนวน TRADINGs</strong>  (สูงสุดตามขีดจำกัดของแพ็กเกจคุณ) จำนวน <strong>งบประมาณทั้งหมด</strong>, ตัวเลือกเสริม <strong>เป้าหมายกำไร %</strong> (เมื่อถึงเป้าหมายนี้ ระบบจะเก็บกำไรทั้งหมดแล้วรีสตาร์ทตัวเอง; 0 หมายถึงทำงานต่อไปจนกว่าคุณจะหยุด) <strong>ระดับกำไร</strong>  (Balance / High Profit / Risk &amp; High Profit — ขนาดโพซิชันที่เพิ่มขึ้นตามลำดับและเลเวอเรจอัตโนมัติ) <strong>ตลาด</strong> ที่อาจเทรด (คริปโต, หุ้นสหรัฐ, ฟิวเจอร์ส, ฟอเร็กซ์ — หรือทั้งหมด) และ <strong>เลเวอเรจ</strong> นโยบาย (Auto ให้ระดับความเสี่ยงเป็นตัวกำหนด) กด <strong>🚀 เปิดใช้งานฟลีต</strong> และ AI จะวิจัยตลาด จัดทำ N TRADINGs และคอยเติมตำแหน่งให้เต็มเมื่อสมาชิกทำงานเสร็จ การตรวจสอบกลุ่มทั้งหมดอยู่ในส่วนที่ 8</p>
+
+<h3>🧠 Make by AI Analyst — ดูการวิเคราะห์เดียวก่อน</h3>
+<p>ปุ่มหัวข้อที่สองจะรันทีมนักวิเคราะห์ทั้งสี่คนแบบเต็มรูปแบบ <strong>ทันทีในตอนนี้</strong> — News, Sentiment, Fundamentals &amp; Macro และ Technical แต่ละส่วนจะเขียนบทสรุปสั้นๆ จากนั้นเทรดเดอร์และผู้ตรวจสอบความเสี่ยงจะถกกันเพื่อหาข้อสรุป คุณจะเห็นกระบวนการทำงานแบบสด แล้วได้รับผลการตัดสินใจ (BUY / SELL / HOLD) ระดับความมั่นใจ รายงานฉบับเต็ม รายละเอียดการตัดสินใจ (ความสอดคล้องของสมมติฐาน โมเมนตัม คุณภาพจุดเข้า บริบทความเสี่ยง การยืนยันข้อมูล) และบทสรุปของนักวิเคราะห์แต่ละคน <strong>ไม่มีการส่งคำสั่งซื้อขาย</strong> หากคุณพอใจกับสิ่งที่อ่าน <strong>▶ เริ่มเทรดอัตโนมัติด้วยสิ่งนี้</strong> จะเปลี่ยนให้กลายเป็น TRADING ด้วยค่าเริ่มต้นที่สมดุลในคลิกเดียว นี่เป็นเพียงการวิจัย ไม่ใช่คำแนะนำทางการเงิน</p>
+
+<div class="note"><b>หากการเริ่มต้นถูกปฏิเสธ</b> การเริ่มต้นอาจถูกบล็อกได้จากความขัดแย้งที่สามารถแก้ไขได้ — ตัวอย่างเช่น มีตำแหน่งที่เปิดอยู่ หรือมีกฎการเทรดอัตโนมัติเก่าบนสัญลักษณ์เดียวกัน TRADING จะยังคงถูกสร้างเป็นฉบับร่างในกริด และปุ่ม Start ของมันจะเปิดกล่องโต้ตอบที่ระบุความขัดแย้งและเสนอให้แก้ไขให้คุณ ("Close &amp; disable, then start") ไม่มีสิ่งใดล้มเหลวโดยไม่แจ้งให้ทราบ</div>
+
+<h2>5 · เกิดอะไรขึ้นหลังจากคุณกดเริ่มต้น</h2>
+<p>คุณไม่จำเป็นต้องเปิดหน้านี้ค้างไว้ เอนจินบนเซิร์ฟเวอร์จะดึง TRADING ของคุณไปทำงานภายในไม่กี่วินาที และรันตามจังหวะของตัวเอง</p>
+
+<div class="fig">
+  <div class="ft">วงจรชีวิตของ TRADING</div>
+  <div class="fs">วงจรจะทำซ้ำตามช่วงเวลาที่คุณเลือก ระบบเฝ้าระวังความปลอดภัยจะไม่หยุดทำงาน</div>
+  <svg viewBox="0 0 760 400" role="img" aria-label="After start, the engine runs a first cycle within about 30 seconds, then repeats at the configured interval. Each cycle either trades or records why it skipped. Between cycles, stop-loss, take-profit and liquidation-defense watchers guard open positions continuously.">
+    <defs>
+      <marker id="arw2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="20" y="10" width="200" height="44" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="120" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">▶ คุณกดเริ่มต้น (Start)</text>
+    <text x="120" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">การ์ดแสดงสถานะ Ready → Running</text>
+    <line x1="220" y1="32" x2="266" y2="32" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="270" y="10" width="220" height="44" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="380" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">เอนจินดึงงานไปทำ</text>
+    <text x="380" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">รอบแรกภายในประมาณหนึ่งนาที</text>
+    <line x1="490" y1="32" x2="536" y2="32" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="540" y="10" width="200" height="44" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="640" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">จากนั้น: ทุกช่วงเวลา</text>
+    <text x="640" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">30 นาที · 1 ชั่วโมง · 4 ชั่วโมง — ตามการตั้งค่าของคุณ</text>
+
+    <text x="380" y="86" font-size="12.5" font-weight="700" fill="var(--muted)" text-anchor="middle">หนึ่งรอบ</text>
+    <rect x="20" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="90" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">รวบรวมข้อมูล</text>
+    <text x="90" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">ราคา · ข่าว · กระแสฝูงชน</text>
+    <text x="90" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">อารมณ์ตลาด · ข้อมูลเศรษฐกิจมหภาค</text>
+    <line x1="160" y1="125" x2="176" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="180" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="250" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">วิเคราะห์</text>
+    <text x="250" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">อ่านแบบรวดเร็ว — หรือ</text>
+    <text x="250" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">ทีมนักวิเคราะห์เต็มรูปแบบ 4 คน</text>
+    <line x1="320" y1="125" x2="336" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="340" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="410" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">ตัดสินใจ</text>
+    <text x="410" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">ซื้อ · ขาย · ถือ</text>
+    <text x="410" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">+ ความมั่นใจ + จุดตัดขาดทุน</text>
+    <line x1="480" y1="125" x2="496" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="500" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--safe)" stroke-width="2"/>
+    <text x="570" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">ตรวจสอบความปลอดภัย</text>
+    <text x="570" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">เกณฑ์ความเสี่ยง · เพดานงบประมาณ</text>
+    <text x="570" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">ค่าธรรมเนียม · ผลตอบแทนเทียบความเสี่ยง</text>
+
+    <path d="M605 154 L605 182 L658 182 L658 206" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <path d="M535 154 L535 182 L440 182 L440 206" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="330" y="210" width="220" height="52" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="440" y="231" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">✓ บันทึกการเทรดแล้ว</text>
+    <text x="440" y="248" font-size="11" fill="var(--ink2)" text-anchor="middle">card ของบัตรและ P&amp;L อัปเดตแบบเรียลไทม์</text>
+
+    <rect x="570" y="210" width="176" height="52" rx="10" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="658" y="231" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">— ข้าม</text>
+    <text x="658" y="248" font-size="11" fill="var(--ink2)" text-anchor="middle">พร้อมเหตุผล ในบันทึกล็อก</text>
+
+    <rect x="20" y="292" width="726" height="92" rx="11" fill="var(--surf)" stroke="var(--grid)" stroke-width="1.4"/>
+    <text x="38" y="316" font-size="12.5" font-weight="700" fill="var(--ink)">ระหว่างรอบ — เปิดทำงานตลอดเวลา สำหรับทุกโพซิชันที่เปิดอยู่</text>
+    <text x="38" y="337" font-size="11.5" fill="var(--ink2)">🛑 ตัวเฝ้าดู stop-loss / take-profit — ตรวจสอบประมาณทุก 30 วินาที</text>
+    <text x="38" y="355" font-size="11.5" fill="var(--ink2)">🔒 ตัวล็อกกำไรแบบ trailing — ยกระดับพื้นไว้ใต้โพซิชันที่กำลังทำกำไรขณะเคลื่อนไปข้างหน้า</text>
+    <text x="38" y="373" font-size="11.5" fill="var(--ink2)">🛡 การป้องกันการ liquidation — เข้าดำเนินการก่อนถึงราคา liquidation ของโพซิชันที่ใช้ leverage</text>
+  </svg>
+  <p class="cap">รอบที่จบด้วย "skipped" คือระบบกำลังทำงานอย่างถูกต้อง ไม่ใช่ความล้มเหลว: การตัดสินใจไม่ผ่านเกณฑ์ความมั่นใจของคุณ ตลาดปิดทำการ หรือการตรวจสอบความปลอดภัยปฏิเสธคำสั่ง — และเหตุผลจะถูกบันทึกลงในบันทึกเหตุการณ์ทุกครั้ง</p>
+</div>
+
+<h3>ชั่วโมงแรกของคุณ — สิ่งที่ถือว่าปกติ</h3>
+<ul>
+  <li><strong>"ไม่มีโพซิชัน — ถือเงินสดไว้" ถือว่าปกติ</strong> AI จะเข้าซื้อเมื่อการตัดสินใจผ่านเกณฑ์ความมั่นใจของคุณและผ่านการตรวจสอบความปลอดภัยทุกข้อเท่านั้น การไม่มีการจับคู่คำสั่งเป็นเวลาหลายชั่วโมงถือเป็นเรื่องปกติ โดยเฉพาะในการตั้งค่าแบบ Stable</li>
+  <li><strong>แถวที่ skipped ถือว่าปกติ</strong> คาดว่าจะพบ <em>ตัดสินใจ</em>, <em>การออกแบบคำสั่ง</em> และ <em>ข้ามไป</em> รายการในบันทึกเหตุการณ์ก่อนที่จะมี <em>เทรด</em>.</li>
+  <li><strong>ผลกำไร (Profit) ที่เป็นลบเล็กน้อยถือว่าปกติ</strong>ทันทีหลังจากการเข้าครั้งแรก: ตำแหน่งที่เปิดอยู่จะแบกรับค่าธรรมเนียมการเข้าจนกว่าจะปิด</li>
+  <li><strong>สมาชิกกองยานเริ่มทำงานแบบสลับเวลา</strong> รอบการทำงานของแต่ละ TRADING จะเหลื่อมเวลาจากตัวอื่นไม่กี่นาที เพื่อไม่ให้ทำงานพร้อมกันทั้งหมด</li>
+</ul>
+
+<h2>6 · การตรวจสอบ TRADING — กริดและแดรวเวอร์</h2>
+<p>แต่ละการ์ดใน <strong>📈 ผู้เชี่ยวชาญด้านระบบอัตโนมัติ AI</strong> คือ TRADING หนึ่งตัว การ์ดตอบคำถามว่า "มันยังทำงานอยู่ไหมและกำลังถือครองอะไร?"; ส่วนแดรวเวอร์ด้านหลังตอบว่า "มันทำอะไรไปแล้วบ้าง และทำไม?"</p>
+
+<div class="fig">
+  <div class="ft">จะดูอะไรได้ที่ไหน</div>
+  <div class="fs">ห้าคำถาม ห้าจุดแสดงผล — ทั้งหมดอยู่ในหน้าเดียวนี้</div>
+  <svg viewBox="0 0 760 330" role="img" aria-label="Map from questions to page surfaces: is it running goes to the card status dot; why no trade goes to the event log; how is the money goes to the summary tiles; what happened overnight goes to AI Analysis 30 min; how is the fleet goes to the fleet monitor.">
+    <defs>
+      <marker id="arw3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="16" y="14" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="42" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"มันทำงานอยู่ไหม?"</text>
+    <rect x="16" y="76" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="104" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"ทำไมยังไม่มีการเทรด?"</text>
+    <rect x="16" y="138" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="166" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"เงินเป็นยังไง?"</text>
+    <rect x="16" y="200" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="228" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"เกิดอะไรขึ้นเมื่อคืน?"</text>
+    <rect x="16" y="262" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="290" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"กองยานโดยรวมเป็นยังไง?"</text>
+
+    <line x1="286" y1="37" x2="452" y2="37" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="99" x2="452" y2="99" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="161" x2="452" y2="161" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="223" x2="452" y2="223" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="285" x2="452" y2="285" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+
+    <rect x="456" y="14" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="34" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">สถานะของการ์ด + จุดกะพริบ</text>
+    <text x="600" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">Running · Waiting · Paused · Stopped, พร้อม ⧗ อายุของข้อมูล</text>
+    <rect x="456" y="76" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="96" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">บันทึกเหตุการณ์ของแดรวเวอร์</text>
+    <text x="600" y="112" font-size="10.8" fill="var(--ink2)" text-anchor="middle">การตัดสินใจและการข้ามทุกครั้ง พร้อมเหตุผลและขั้นตอน</text>
+    <rect x="456" y="138" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="158" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">การ์ดสรุปทั้งสี่</text>
+    <text x="600" y="174" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ชิปช่วงเวลา + กราฟรายละเอียดที่คลิกเข้าไปดูได้</text>
+    <rect x="456" y="200" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="220" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 การวิเคราะห์ AI (30 นาที)</text>
+    <text x="600" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ไดอารีของโต๊ะเทรด เป็นรอบ 30 นาที ทีละวัน</text>
+    <rect x="456" y="262" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="282" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">🚀 อัตโนมัติเต็มรูปแบบ — มอนิเตอร์แบบสด</text>
+    <text x="600" y="298" font-size="10.8" fill="var(--ink2)" text-anchor="middle">ดัชนีกองทัพ · แถบราง · ชิปสมาชิก · หยุดทั้งหมด</text>
+  </svg>
+</div>
+
+<h3>การอ่านการ์ด</h3>
+<ul>
+  <li><strong>แถบสถานะ</strong> — <em>พร้อม</em> (แบบร่าง ยังไม่เริ่ม), <em>กำลังรอ</em> (พร้อมใช้งาน กำหนดรอบถัดไปแล้ว), <em>กำลังทำงาน</em> (จุดกระพริบ), <em>หยุดชั่วคราว</em>, <em>กำลังหยุด</em>, <em>หยุดแล้ว</em> (พร้อมเหตุผล) ปุ่ม (?) บนการ์ดจะเปิด "วิธีอ่านการ์ด TRADING" ซึ่งอธิบายทุกฟิลด์ในตำแหน่งนั้น</li>
+  <li><strong>ชิปความสามารถ</strong> — 🟡 <em>ตลาดปิด</em> หมายถึงจะกลับมาทำงานในรอบถัดไป; 🔴 <em>ไม่สามารถเทรดได้</em> หมายถึงการตั้งค่าทำให้การเทรดเป็นไปไม่ได้อย่างถาวร (ตัวอย่างเช่น การเคลื่อนไหวที่กำหนดเป้าหมายเล็กเกินกว่าจะครอบคลุมค่าธรรมเนียม) เมื่อการ์ด 🔴 ถือครองเงินทุน แบนเนอร์เหนือกริดจะนับจำนวนและมีปุ่ม <strong>ปลดปล่อยทั้งหมด</strong> เพื่อปลดปล่อยเงินได้ในคลิกเดียว</li>
+  <li><strong>ข้อเท็จจริงสี่ข้อ</strong> — เดิมพันสูงสุด · ช่วงเวลา (พร้อมแถบความมั่นใจ เช่น <em>45m·≥50%</em>) · ประเภท (spot หรือ futures พร้อมเลเวอเรจ) · AI ตัวไหนเป็นผู้ดำเนินการ</li>
+  <li><strong>สมุดบันทึกสด</strong> — แสดง "ไม่มีโพซิชัน — ถือเงินสด" หรือโพซิชัน: LONG/SHORT, จำนวน, ราคาเข้า, ราคาปัจจุบัน, กำไร/ขาดทุนที่ยังไม่เกิดขึ้นจริงและที่เกิดขึ้นจริง และสำหรับ futures จะมีเลเวอเรจ, หลักประกัน, ราคาบังคับขาย และระดับการป้องกันการบังคับขายที่คุ้มครองอยู่</li>
+  <li><strong>แถบกิจกรรม</strong> จะสลับทุกๆ ไม่กี่วินาทีระหว่างสิ่งที่ TRADING กำลังทำอยู่ในขณะนี้ และการนับเวลาถอยหลังสู่รอบถัดไป; เหตุการณ์ที่เข้ามาใหม่จะกระพริบด้วย ⚡</li>
+  <li><strong>⧗ อายุข้อมูล</strong> — ราคาล่าสุดเก่าแค่ไหน ตลาดที่อัปเดตด้วยการโพลลิ่งจะรีเฟรชตามช่วงเวลา; ป้ายนี้คือตัวชี้วัดที่ตรงไปตรงมาของความล้าสมัย</li>
+</ul>
+
+<h3>ลิ้นชักรายละเอียด</h3>
+<p>คลิกที่การ์ดแล้วลิ้นชักจะเลื่อนเข้ามาแสดงภาพรวมทั้งหมด: ส่วนหัวกำไร/ขาดทุน (ที่เกิดขึ้นจริง, การซื้อขาย, ราคาปัจจุบัน), กราฟเส้นเล็กของส่วนทุน, ปุ่มวงจรชีวิต, และ <strong>บันทึกเหตุการณ์</strong> — 60 รายการล่าสุดของ <em>การตัดสินใจ</em>, <em>การซื้อขาย</em>, <em>ถูกข้าม</em>, <em>การออกแบบคำสั่ง</em>, <em>เจตนาคำสั่ง</em>, <em>สถานะ</em>, <em>ส่วนทุน</em>, <em>การแจ้งเตือน</em> และอื่นๆ การข้ามจะระบุขั้นตอนและเหตุผล (ตัวอย่างเช่น <em>ขอบค่าธรรมเนียม</em>, <em>เกณฑ์ขั้นต่ำความเสี่ยง/ผลตอบแทน</em>, <em>งบประมาณ</em>, <em>ระดับความมั่นใจ</em>— บันทึกนี้คือจุดแรกที่ควรดูเมื่อสงสัยว่าทำไมไม่มีอะไรเกิดขึ้น</p>
+
+<h3>รีสตาร์ทอัตโนมัติ</h3>
+<p>เมื่อ TRADING หยุดเพราะบรรลุเป้าหมายของตัวเอง — ถึงเป้ากำไร หรือถึงขีดจำกัดการเทรด — <strong>TRADING ใหม่ที่มีการตั้งค่าเดียวกันจะเข้ามาแทนที่โดยอัตโนมัติ</strong> และบันทึกเหตุการณ์จะบันทึกว่า "Restarted as TRADING #N" การหยุดมันด้วยตัวเองนั้น แน่นอนว่าจะไม่ทำให้เกิดการรีสตาร์ทใดๆ</p>
+
+<h2>7 · 🧠 AI Analysis (30 min) — บันทึกประจำวันของโต๊ะเทรด</h2>
+<p>ปุ่มด้านล่างไทล์สรุปจะเปิดการทบทวนทุกสิ่งที่ AI บันทึกไว้ แบ่งเป็น <strong>รอบละ 30 นาที — รวมถึงชั่วโมงที่คุณไม่ได้ล็อกอินด้วย</strong> เลือกวันด้วยลูกศรวันที่ แต่ละแถวคือหนึ่งรอบ: อาจเป็น "ไม่มีความเคลื่อนไหว" หรือสรุปหนึ่งบรรทัด (<em>ตัดสินใจ · ข้าม · เปิด · ปิด</em>) พร้อมผลลัพธ์ที่เกิดขึ้นจริง ขยายรอบใดรอบหนึ่งเพื่อดูรายละเอียดของแต่ละ TRADING: การกระทำที่เลือกพร้อมระดับความมั่นใจ รายงานที่โต๊ะเทรดเขียนไว้ การเปลี่ยนสถานะใดๆ พร้อมเหตุผล และสิ่งที่ถูกข้ามพร้อมเหตุผล หากคุณตรวจสอบกองเรือของคุณวันละครั้ง นี่คือหน้าจอที่ควรตรวจดู</p>
+
+<h2>8 · การตรวจสอบกองเรือ — 🚀 Full Auto live monitor</h2>
+<p>ขณะที่กองเรือทำงานอยู่ ตัวติดตามจะอยู่เหนือกริด:</p>
+<ul>
+  <li><strong>🎯 ดัชนีกองเรือ</strong>  — กองเรือทั้งหมดในรูปตัวเลขเดียว โดยปรับฐานเป็น 100 เมื่อเริ่มต้น 103.42 หมายความว่ากองเรือมีกำไร 3.42% จากงบประมาณ; การ์ดยังแสดงกำไร/ขาดทุน (P&amp;L) เป็นดอลลาร์และวันที่เริ่มต้นด้วย เครื่องหมาย (?) อธิบายวิธีการคำนวณอย่างละเอียด</li>
+  <li><strong>บรรทัดสถานะ</strong> — สถานะของกองเรือและเหตุผลเป็นคำพูดง่ายๆ (<em>สร้างแล้ว 4/5</em>, <em>กำลังเติมเต็ม (2/5)</em>, <em>คำเตือนการขาดทุน — หยุดการเข้าใหม่ชั่วคราว</em>…), ที่ <strong>อิควิตี้ที่มาร์กไว้</strong>, และเส้นขอบทั้งสอง: ที่ <strong>−เตือน%</strong> รายการใหม่จะหยุดชั่วคราว ⚠︎, ที่ <strong>−stop%</strong> ทุกอย่างจะถูกปิด ⏹ หากเส้นขอบเตือนทำงาน จะมีแถบปรากฏขึ้นพร้อมกับ <strong>กลับมาเทรดต่อ (เป็นความรับผิดชอบของคุณ)</strong>.</li>
+  <li><strong>ชิปสมาชิก</strong>  — หนึ่งรายการต่อ TRADING โดยมีจุดกระพริบขณะทำงานและ P&amp;L ที่บันทึกไว้ ชิปจะกระพริบเป็นสีเขียวเมื่อมีการเปลี่ยนแปลง คลิกชิปเพื่อเปิดแผงควบคุมของ TRADING นั้น สวิตช์ใช้สำหรับแสดงหรือซ่อนสมาชิกที่เสร็จสิ้นแล้ว</li>
+  <li><strong>แท็บกิจกรรมการเทรด</strong> — รายการคำสั่งที่จับคู่ล่าสุดในรูปแบบตาราง (ประเภท, สัญลักษณ์, จำนวน, ราคา, P&amp;L, วันที่) สามารถกรองตามตลาดได้</li>
+  <li><strong>วงจรชีวิต</strong> — <strong>หยุดชั่วคราว</strong> หยุดการเข้าใหม่เท่านั้น (โพซิชันที่เปิดอยู่ยังคงมีการป้องกันด้วย stop-loss/take-profit; การดำเนินการต่อจะทำให้ทำงานต่อ). <strong>⏹ หยุดทั้งหมด (ปิดโพซิชันทั้งหมด)</strong> จะหยุดฟลีตและปิดทุกโพซิชันทันที — ฟลีตที่หยุดแล้วไม่สามารถเริ่มใหม่ได้ คุณต้องเปิดฟลีตใหม่</li>
+  <li><strong>แก้ไขฟลีต</strong> — เปลี่ยน <strong>เป้าหมายกำไร</strong> และ <strong>จำนวนสล็อต</strong> ขณะที่กำลังทำงาน เมื่อคุณพิมพ์ แผงจะแสดงเป้าหมายเป็นดอลลาร์และงบประมาณต่อสล็อตแบบเรียลไทม์ พร้อมด้วยจำนวนสล็อตสูงสุดที่ 🤖 AI แนะนำสำหรับงบประมาณของคุณ การเพิ่มขนาดจะเพิ่มสล็อตเมื่อมีงบประมาณว่างเพิ่มขึ้น การลดขนาด <strong>ระบาย</strong> — สล็อตส่วนเกินจะถูกปลดออกก็ต่อเมื่อโพซิชันของมันเสร็จสิ้นด้วยตัวเอง และจะไม่มีการปิดโพซิชันแบบบังคับจากการปรับขนาดเด็ดขาด</li>
+</ul>
+
+<h2>9 · แผนของคุณปลดล็อกอะไรได้ที่นี่</h2>
+<div class="sw"><table>
+<thead><tr><th>ในหน้านี้</th><th>จูเนียร์</th><th>โปร</th><th>โปรเฟสชันแนล</th></tr></thead>
+<tbody>
+<tr><td><strong>⓪ Agent (1 สัญลักษณ์)</strong></td><td>✓ (สปอต, ไม่มีเลเวอเรจ)</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>① โหมดอย่างง่าย</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>สมุดบันทึกฟิวเจอร์ส &amp; เลเวอเรจ</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>🧠 นักวิเคราะห์ AI</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>การเลือกผู้ให้บริการ AI</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>② ฟลีท Full Auto</strong></td><td>—</td><td>—</td><td>✓ (สูงสุด 10 TRADINGs)</td></tr>
+</tbody></table></div>
+<p>การควบคุมที่แผนของคุณไม่รวมอยู่ด้วยจะไม่ถูกแสดงผล — หากคุณไม่เห็นชิป ① หรือปุ่มนักวิเคราะห์ นั่นคือลักษณะของแผน ไม่ใช่บั๊ก</p>
+
+<h2>10 · การหยุดสิ่งต่าง ๆ — สวิตช์ตัดการทำงานทุกตัว</h2>
+<div class="sw"><table>
+<thead><tr><th>เพื่อหยุด…</th><th>ทำสิ่งนี้</th><th>จะเกิดอะไรขึ้น</th></tr></thead>
+<tbody>
+<tr><td><strong>TRADING เดียว จบเรื่อง</strong></td><td>การ์ด → ลิ้นชัก → <strong>หยุดและปิดสถานะทั้งหมด</strong></td><td>หยุดทำงานและปิดสถานะที่ราคาปัจจุบัน</td></tr>
+<tr><td><strong>TRADING หนึ่งรายการ คงสถานะไว้</strong></td><td>การ์ด → ลิ้นชัก → <strong>หยุดและคงสถานะ</strong></td><td>หยุดทำงาน; สถานะที่เปิดอยู่ยังคงเป็นของคุณให้จัดการ</td></tr>
+<tr><td><strong>TRADING หนึ่งรายการ แค่หยุดพักชั่วคราว</strong></td><td>การ์ด → ลิ้นชัก → <strong>หยุดชั่วคราว</strong></td><td>ไม่มีการเข้าใหม่; การออกเพื่อป้องกันความเสี่ยงยังคงทำงาน; สามารถดำเนินการต่อได้ทุกเมื่อ</td></tr>
+<tr><td><strong>ฟลีททั้งหมด</strong></td><td>ตัวตรวจสอบฟลีท → <strong>⏹ หยุดทั้งหมด (ปิดสถานะ)</strong></td><td>ทุกสมาชิกหยุดทำงานและทุกโพซิชันปิดทันที</td></tr>
+<tr><td><strong>กฎการทำงานอัตโนมัติแบบเดิม</strong></td><td>รายการกฎ → <strong>ลบ</strong></td><td>กฎจะหยุดทำงานตั้งแต่รอบถัดไป — ลบ เป็นสวิตช์เดียวของมัน</td></tr>
+</tbody></table></div>
+<p>หากคุณหยุด TRADING ที่วิทยานิพนธ์ AI ยังมีเวลาให้ดำเนินต่อ หน้านี้จะแจ้งให้คุณทราบและถามหนึ่งครั้ง — การหยุดก่อนกำหนดจะล็อก P&amp;L ไว้ที่ราคาปัจจุบัน นี่เป็นการตัดสินใจของคุณ ปุ่มนี้ทำงานได้เสมอ</p>
+
+<h2>11 · ไปที่ไหนต่อไป</h2>
+<ul>
+  <li><strong>AI Trading ทำงานอย่างไร</strong> — สิ่งที่เกิดขึ้นจริงภายในลูป 30 นาที: ใครเป็นผู้สร้างคำสั่ง และเครื่องบังคับใช้อะไร</li>
+  <li><strong>การตัดสินใจกลายเป็นคำสั่งได้อย่างไร</strong> — การแบ่งอำนาจระหว่างเดสก์ AI และระบบความปลอดภัย โดยละเอียด</li>
+  <li><strong>คู่มือฉบับสมบูรณ์</strong> — กระบวนการทำงานทั้งหมด ตั้งแต่การเก็บข้อมูลไปจนถึงบันทึกการเทรด</li>
+  <li><strong>เวลาที่ตลาดของคุณเปิดทำการ</strong> — เวลาซื้อขายตามนาฬิกาของคุณเอง เพื่อให้ 🟡 <em>ตลาดปิดทำการ</em> ไม่ทำให้คุณประหลาดใจอีกต่อไป</li>
+</ul>
+<p>รายการทั้งหมดนี้อยู่ในราวเอกสารเดียวกันกับหน้านี้ และในหน้า Automation เอง อย่าลืมตัวช่วยเล็ก ๆ สองตัว ได้แก่ปุ่ม <strong>📖 คู่มือ</strong> (ด้านขวาบนสุด) สำหรับเวอร์ชันย่อของเอกสารนี้ และ<strong>(?)</strong> ป้ายกำกับข้างแต่ละตัวควบคุมเพื่อคำอธิบายตรงจุดที่คุณต้องการ</p>
+
+<p class="mt">คู่มือสมาชิก Sooppiy · หน้า Automation · การเทรดมีความเสี่ยง ผลการทดสอบจำลองไม่ได้เป็นการันตีผลลัพธ์จริง ใช้เพื่อการศึกษาเท่านั้น — ไม่ใช่คำแนะนำทางการเงิน</p>
+
+</main></body></html>

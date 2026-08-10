@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Automation Page — First-Visit Guide</title>
+<style>
+:root{--page:#f9f9f7;--card:#fff;--surf:#f1f0ec;--grid:#e1e0d9;--ink:#0b0b0b;--ink2:#52514e;
+ --muted:#7a7975;--ai:#2a78d6;--safe:#eb6834;--go:#1baf7a;--warn:#c88a1a;--bd:rgba(11,11,11,.1)}
+@media (prefers-color-scheme:dark){:root{--page:#0d0d0d;--card:#202020;--surf:#1a1a19;--grid:#2c2c2a;
+ --ink:#fff;--ink2:#c3c2b7;--muted:#8f8d85;--ai:#3987e5;--safe:#d95926;--go:#199e70;--warn:#e0a53a;
+ --bd:rgba(255,255,255,.1)}}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.72;font-size:14.5px}
+main{max-width:880px;margin:0 auto;padding:38px 22px 80px}
+h1{font-size:26px;line-height:1.3;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;padding-top:18px;border-top:1px solid var(--grid)}
+h3{font-size:15px;margin:22px 0 6px}
+p,li{color:var(--ink2)}strong{color:var(--ink)}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+.lede{font-size:16px;margin-bottom:22px}
+.rule{border:1px solid var(--bd);border-left:4px solid var(--ai);background:var(--card);
+ border-radius:0 11px 11px 0;padding:15px 18px;margin:16px 0 26px}
+.rule b{display:block;color:var(--ink);margin-bottom:5px;font-size:14.5px}
+.rule p{margin:0;font-size:13.8px}
+.fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+.fig svg{width:100%;height:auto;display:block}
+.ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
+.fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
+.cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
+.flow{display:grid;gap:5px}
+.fr{display:grid;grid-template-columns:30px 1fr;gap:11px;align-items:stretch}
+.fn{display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--ink2);
+ background:var(--surf);border-radius:7px}
+.fb{border:1.5px solid var(--grid);border-left-width:4px;border-radius:9px;background:var(--page);padding:9px 13px}
+.fb.ai{border-left-color:var(--ai)}.fb.sf{border-left-color:var(--safe)}
+.fb.ex{border-left-color:var(--go);background:color-mix(in srgb,var(--go) 8%,var(--page))}
+.fb b{font-size:13.5px;color:var(--ink);display:block}
+.fb span{font-size:12.3px;color:var(--ink2)}
+.ar{grid-column:2;color:var(--muted);font-size:12px;line-height:1;padding:1px 0 1px 12px}
+.sw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.2px;margin:8px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--ink2);vertical-align:top}
+th{font-size:11px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+td strong{color:var(--ink)}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ai{background:color-mix(in srgb,var(--ai) 15%,transparent);color:color-mix(in srgb,var(--ai) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--ai) 42%,transparent)}
+.p-sf{background:color-mix(in srgb,var(--safe) 15%,transparent);color:color-mix(in srgb,var(--safe) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--safe) 42%,transparent)}
+.p-go{background:color-mix(in srgb,var(--go) 15%,transparent);color:color-mix(in srgb,var(--go) 62%,var(--ink));
+ border:1px solid color-mix(in srgb,var(--go) 42%,transparent)}
+.note{border-left:3px solid var(--go);background:var(--card);border-radius:0 10px 10px 0;
+ padding:11px 14px;margin:16px 0;font-size:13.2px;color:var(--ink2)}
+.note b{color:var(--ink)}
+.warnbox{border-left:3px solid var(--warn);background:var(--card);border-radius:0 10px 10px 0;
+ padding:11px 14px;margin:16px 0;font-size:13.2px;color:var(--ink2)}
+.warnbox b{color:var(--ink)}
+.mt{margin-top:30px;padding-top:14px;border-top:1px solid var(--grid);font-size:11.5px;color:var(--muted)}
+@media (max-width:620px){.fr{grid-template-columns:26px 1fr;gap:8px}}
+</style></head>
+<body><main>
+
+<div class="eyebrow">Sooppiy · Member Guide</div>
+<h1>The Automation page — your first visit</h1>
+<p class="lede">The Automation page is <strong>mission control for your AI trading</strong>: it is where you start an AI-run TRADING, watch it work, and stop it. This guide walks the page top to bottom — what each control is, how to use it, what happens after you press start, and where to look while it runs.</p>
+
+<div class="rule"><b>Three things to know before anything else</b><p>① Everything you start here trades a <strong>simulated wallet</strong> by default — practice money, not yours. ② The AI works <strong>on the server</strong>, around the clock; you can close the tab and it keeps going. ③ You always keep the stop button — every TRADING, and every fleet, can be paused or stopped in one or two clicks.</p></div>
+
+<h2>1 · The page at a glance</h2>
+<p>Five blocks, top to bottom. Two of them only appear when there is something to show.</p>
+
+<div class="fig">
+  <div class="ft">Map of the Automation page</div>
+  <div class="fs">Blue = where you act · Green = where you watch</div>
+  <svg viewBox="0 0 760 430" role="img" aria-label="The Automation page from top to bottom: account switch, summary tiles, create buttons, fleet monitor, and the TRADING grid">
+    <rect x="14" y="10" width="500" height="44" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="1.8"/>
+    <text x="30" y="29" font-size="13" font-weight="700" fill="var(--ink)">◐ Simulator · ● Real</text>
+    <text x="30" y="45" font-size="11.5" fill="var(--ink2)">account switch — paper wallet, or your connected exchange</text>
+
+    <rect x="14" y="64" width="500" height="76" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="30" y="84" font-size="13" font-weight="700" fill="var(--ink)">Summary strip — four tiles + period chips</text>
+    <text x="30" y="101" font-size="11.5" fill="var(--ink2)">💰 Current Deposit · 📅 Lifetime · 📈 Profit · 🛡️ current exit rails</text>
+    <text x="30" y="118" font-size="11.5" fill="var(--ink2)">Today / This week / This month / This year — click any tile for details</text>
+    <text x="30" y="133" font-size="11.5" fill="var(--muted)">underneath: 🧠 AI Analysis (30 min) — the desk's diary</text>
+
+    <rect x="14" y="150" width="500" height="44" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="1.8"/>
+    <text x="30" y="169" font-size="13" font-weight="700" fill="var(--ink)">➕ Make by New Trading &#160;·&#160; 🧠 Make by AI Analyst</text>
+    <text x="30" y="185" font-size="11.5" fill="var(--ink2)">the two ways to start — a scheduled TRADING, or a one-off analysis first</text>
+
+    <rect x="14" y="204" width="500" height="58" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8" stroke-dasharray="6 4"/>
+    <text x="30" y="224" font-size="13" font-weight="700" fill="var(--ink)">🚀 Full Auto — live monitor</text>
+    <text x="30" y="241" font-size="11.5" fill="var(--ink2)">fleet index · status · member chips · Pause / Stop all / Edit fleet</text>
+    <text x="30" y="256" font-size="11.5" fill="var(--muted)">appears only while a fleet is live</text>
+
+    <rect x="14" y="272" width="500" height="118" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="30" y="293" font-size="13" font-weight="700" fill="var(--ink)">📈 AI Automation Master — the TRADING grid</text>
+    <text x="30" y="311" font-size="11.5" fill="var(--ink2)">one card per TRADING: status · live position · sparkline · data-age ⧗</text>
+    <text x="30" y="328" font-size="11.5" fill="var(--ink2)">click a card → detail drawer: chart · event log · pause / stop</text>
+    <rect x="30" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <rect x="184" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <rect x="338" y="340" width="140" height="38" rx="8" fill="var(--page)" stroke="var(--grid)" stroke-width="1.4"/>
+    <text x="100" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">BTC · running</text>
+    <text x="254" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">ETH · waiting</text>
+    <text x="408" y="363" font-size="11" fill="var(--muted)" text-anchor="middle">SOL · stopped</text>
+
+    <text x="540" y="34" font-size="11.5" fill="var(--muted)">📖 Guide button (top right of the app)</text>
+    <text x="540" y="50" font-size="11.5" fill="var(--muted)">opens this page's quick guide</text>
+    <text x="540" y="96" font-size="11.5" fill="var(--muted)">(?) badges appear when you hover</text>
+    <text x="540" y="112" font-size="11.5" fill="var(--muted)">a section — each one explains</text>
+    <text x="540" y="128" font-size="11.5" fill="var(--muted)">the control next to it</text>
+  </svg>
+  <p class="cap">Little (?) badges sit next to almost every control on this page. On a computer they fade in when your pointer is near; on a phone they are always visible. When in doubt, tap the (?).</p>
+</div>
+
+<h2>2 · The account switch — Simulator or Real</h2>
+<p>The very first row of the page is a two-way switch:</p>
+<ul>
+  <li><strong>◐ Simulator</strong> — a paper wallet. You practice with virtual funds; no real money is ever used. This is the default, and the right place to spend your first days.</li>
+  <li><strong>● Real</strong> — connects to a real exchange account. If you have not connected one yet, pressing Real takes you to the <strong>Accounts</strong> page to link a broker first. Once connected, the page shows <em>connected gateway: (your broker)</em>.</li>
+</ul>
+<p>Everything described in this guide — the TRADINGs, the fleet, the profit numbers — runs on the simulated wallet unless you have deliberately connected a gateway and accepted the live-trading terms. A rule or run that would use real money is always marked with a red <strong>⚠ REAL MONEY</strong> badge, so it can never look like a simulation at a glance.</p>
+
+<h2>3 · The summary strip — your money, at a glance</h2>
+<p>Four tiles in the header answer "how is it going?" without opening anything. The period chips — <strong>Today · This week · This month · This year</strong> — re-window the numbers; the default is This week.</p>
+<div class="sw"><table>
+<thead><tr><th>Tile</th><th>Big number</th><th>Click it for</th></tr></thead>
+<tbody>
+<tr><td><strong>💰 Current Deposit</strong></td><td>cash + margin in use + unrealized P&amp;L</td><td>a deposit-over-time graph and your open positions</td></tr>
+<tr><td><strong>📅 Lifetime</strong></td><td>how long the AI has been operating in the period</td><td>first automated trade, fills in the period, last fill</td></tr>
+<tr><td><strong>📈 Profit</strong></td><td>realized P&amp;L in the period + unrealized on the open book</td><td>gross gains and gross losses separately, plus every fill in the period</td></tr>
+<tr><td><strong>🛡️ current exit rails</strong></td><td>realized P&amp;L under the current safety structure</td><td>current-rails vs legacy-rails split, and the rails-only fills</td></tr>
+</tbody></table></div>
+<p>Two numbers deserve a word of explanation:</p>
+<ul>
+  <li><strong>Unrealized is always "now".</strong> Whatever period chip you pick, the unrealized part is the mark-to-market of the positions open at this moment.</li>
+  <li><strong>Why "current exit rails"?</strong> The exit safety structure (position-scaled stops plus a trailing profit lock) was replaced on 2026-07-25. The 🛡️ tile isolates results earned under the structure that actually protects your positions today, so one old number cannot masquerade as current performance.</li>
+</ul>
+<p>Under the tiles sits <strong>🧠 AI Analysis (30 min)</strong> — covered in section 7. It is the answer to "what did the AI do while I was away?"</p>
+
+<h2>4 · Starting your first TRADING</h2>
+<p>A <strong>TRADING</strong> is one AI-run strategy bound to one symbol: the AI re-analyses it on a schedule and trades when its decision clears your thresholds. There are four ways to start one, sorted here from least effort to most control. Which ones you see depends on your plan (section 9).</p>
+
+<div class="fig">
+  <div class="ft">Which path fits you?</div>
+  <div class="fs">All four end in the same place: a TRADING card in the grid below</div>
+  <svg viewBox="0 0 760 380" role="img" aria-label="Decision flow: choose Agent mode to delegate everything, Simple mode to pick a coin and risk level, Full Auto to run a whole fleet, or AI Analyst to see one analysis first">
+    <defs>
+      <marker id="arw" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="255" y="8" width="250" height="46" rx="10" fill="var(--card)" stroke="var(--ink)" stroke-width="1.6"/>
+    <text x="380" y="28" font-size="13.5" font-weight="700" fill="var(--ink)" text-anchor="middle">How much do you want to decide?</text>
+    <text x="380" y="45" font-size="11.5" fill="var(--ink2)" text-anchor="middle">every path keeps the same safety system</text>
+
+    <path d="M310 54 L310 78 L104 78 L104 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M355 54 L355 78 L288 78 L288 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M405 54 L405 78 L472 78 L472 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <path d="M450 54 L450 78 L656 78 L656 100" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+
+    <rect x="12" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="104" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">⓪ Agent (1 symbol)</text>
+    <text x="104" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"I set a budget,</text>
+    <text x="104" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">the AI does the rest"</text>
+    <text x="104" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">budget from $100</text>
+    <text x="104" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">AI picks the symbol</text>
+    <text x="104" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">one position ≤ 25%</text>
+    <text x="104" y="238" font-size="10.5" font-weight="700" fill="var(--go)" text-anchor="middle">EVERY PLAN</text>
+
+    <rect x="196" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="288" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">① Simple</text>
+    <text x="288" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"I pick the coin</text>
+    <text x="288" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">and the risk level"</text>
+    <text x="288" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">top-5 coin or AI pick</text>
+    <text x="288" y="197" font-size="10.8" fill="var(--ink2)" text-anchor="middle">Stable · Balanced · Aggressive</text>
+    <text x="288" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">spot or futures book</text>
+    <text x="288" y="238" font-size="10.5" font-weight="700" fill="var(--warn)" text-anchor="middle">PRO AND ABOVE</text>
+
+    <rect x="380" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="472" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">② Full Auto (fleet)</text>
+    <text x="472" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"Run a whole team</text>
+    <text x="472" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">of TRADINGs for me"</text>
+    <text x="472" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">N slots + one budget</text>
+    <text x="472" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">AI researches &amp; composes</text>
+    <text x="472" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">profit goal, then restart</text>
+    <text x="472" y="238" font-size="10.5" font-weight="700" fill="var(--safe)" text-anchor="middle">PROFESSIONAL+</text>
+
+    <rect x="564" y="104" width="184" height="150" rx="11" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="656" y="126" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 AI Analyst</text>
+    <text x="656" y="146" font-size="11.3" fill="var(--ink2)" text-anchor="middle">"Show me one analysis</text>
+    <text x="656" y="161" font-size="11.3" fill="var(--ink2)" text-anchor="middle">before I commit"</text>
+    <text x="656" y="182" font-size="11.3" fill="var(--ink2)" text-anchor="middle">4 analysts debate once</text>
+    <text x="656" y="197" font-size="11.3" fill="var(--ink2)" text-anchor="middle">no order is placed</text>
+    <text x="656" y="212" font-size="11.3" fill="var(--ink2)" text-anchor="middle">then: start with one click</text>
+    <text x="656" y="238" font-size="10.5" font-weight="700" fill="var(--warn)" text-anchor="middle">PRO AND ABOVE</text>
+
+    <path d="M104 254 L104 292 L380 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M288 254 L288 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M472 254 L472 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <path d="M656 254 L656 292 L380 292" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="380" y1="292" x2="380" y2="314" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw)"/>
+    <rect x="230" y="318" width="300" height="46" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="380" y="338" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">A TRADING card appears in the grid</text>
+    <text x="380" y="355" font-size="11.5" fill="var(--ink2)" text-anchor="middle">created and started in one click — first AI cycle within a minute</text>
+  </svg>
+</div>
+
+<h3>⓪ Agent (1 symbol) — set only a budget</h3>
+<p>Press <strong>➕ Make by New Trading</strong> and the creation dialog opens on the mode chips. In ⓪ there is exactly one required input: <strong>Total budget ($)</strong>, from $100. The AI picks a promising symbol, creates the TRADING, and journals its reasoning every cycle. One position never uses more than 25% of the budget. The footnote on the button is worth repeating: the kill switch is the TRADING list below — stop it there and it halts instantly, and <strong>the risk gate, breakers and budget cap cannot be bypassed by the AI</strong>.</p>
+
+<h3>① Simple — pick a coin and a risk level</h3>
+<p>Two choices instead of one: the <strong>symbol</strong> (the live top-5 by volume, or <strong>🔍 AI auto-pick</strong>, where a scanner chooses from volume surges and new listings each cycle) and a <strong>risk card</strong>:</p>
+<div class="sw"><table>
+<thead><tr><th>Card</th><th>Checks the market</th><th>Trades when confidence is</th><th>Size per entry</th><th>Exit profile</th></tr></thead>
+<tbody>
+<tr><td><strong>🛡 Stable</strong></td><td>every 4 hours</td><td>75% or higher</td><td>$200</td><td>stop −3% · target +6%</td></tr>
+<tr><td><strong>⚖️ Balanced</strong></td><td>every hour</td><td>65% or higher</td><td>$500</td><td>stop −5% · target +10%</td></tr>
+<tr><td><strong>🔥 Aggressive</strong></td><td>every 30 minutes</td><td>55% or higher</td><td>$1,000</td><td>stop −8% · target +16%</td></tr>
+</tbody></table></div>
+<p>The exit numbers on each card are what the server will actually enforce for that level, shown before you commit. Below the cards, plans with futures access also choose the <strong>book type</strong>: <em>Spot</em> (fully funded, long-only, no liquidation) or <em>Futures</em> (the desk can also short, with 1–10× isolated-margin leverage — at N× the position liquidates on a 100/N% adverse move).</p>
+
+<h3>② Full Auto — launch a fleet</h3>
+<p>One budget, many TRADINGs. You set the <strong>number of TRADINGs</strong> (up to your plan's cap), the <strong>total budget</strong>, an optional <strong>profit goal %</strong> (reach it and the fleet banks everything, then restarts itself; 0 means run until you stop it), a <strong>profit level</strong> (Balance / High Profit / Risk &amp; High Profit — progressively larger position sizing and automatic leverage), the <strong>markets</strong> it may trade (crypto, US stocks, futures, forex — or all), and a <strong>leverage</strong> policy (Auto lets the risk level decide). Press <strong>🚀 Launch fleet</strong> and the AI researches the markets, composes N TRADINGs, and keeps the roster filled as members finish. Monitoring a fleet is section 8.</p>
+
+<h3>🧠 Make by AI Analyst — see one analysis first</h3>
+<p>The second header button runs the full four-analyst desk <strong>once, right now</strong> — News, Sentiment, Fundamentals &amp; Macro, and Technical each write a brief; a trader and a risk reviewer debate them into a decision. You watch the pipeline live, then get the decision (BUY / SELL / HOLD), its confidence, a written report, a decision detail (thesis alignment, momentum, entry quality, risk context, verification), and the analyst briefs. <strong>No order is placed.</strong> If you like what you read, <strong>▶ Start auto-trading with this</strong> turns it into a TRADING with balanced defaults in one click. It is research only — not financial advice.</p>
+
+<div class="note"><b>If a start is refused.</b> Starting can be blocked by a resolvable conflict — for example an open position or an old auto-executing rule on the same symbol. The TRADING is still created as a draft in the grid, and its Start button opens a dialog that names the conflict and offers to resolve it for you ("Close &amp; disable, then start"). Nothing fails silently.</div>
+
+<h2>5 · What happens after you press start</h2>
+<p>You do not need to keep the page open. The engine on the server picks your TRADING up within seconds and runs it on its own clock.</p>
+
+<div class="fig">
+  <div class="ft">The life of a TRADING</div>
+  <div class="fs">The cycle repeats at your chosen interval; the safety watchers never sleep</div>
+  <svg viewBox="0 0 760 400" role="img" aria-label="After start, the engine runs a first cycle within about 30 seconds, then repeats at the configured interval. Each cycle either trades or records why it skipped. Between cycles, stop-loss, take-profit and liquidation-defense watchers guard open positions continuously.">
+    <defs>
+      <marker id="arw2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="20" y="10" width="200" height="44" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="120" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">▶ You press Start</text>
+    <text x="120" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">card shows Ready → Running</text>
+    <line x1="220" y1="32" x2="266" y2="32" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="270" y="10" width="220" height="44" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="380" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Engine picks it up</text>
+    <text x="380" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">first cycle within ~a minute</text>
+    <line x1="490" y1="32" x2="536" y2="32" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="540" y="10" width="200" height="44" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="640" y="30" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Then: every interval</text>
+    <text x="640" y="46" font-size="11.3" fill="var(--ink2)" text-anchor="middle">30 min · 1 h · 4 h — your setting</text>
+
+    <text x="380" y="86" font-size="12.5" font-weight="700" fill="var(--muted)" text-anchor="middle">ONE CYCLE</text>
+    <rect x="20" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="90" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Gather</text>
+    <text x="90" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">prices · news · crowd</text>
+    <text x="90" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">mood · macro data</text>
+    <line x1="160" y1="125" x2="176" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="180" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="250" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Analyse</text>
+    <text x="250" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">quick read — or the</text>
+    <text x="250" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">full 4-analyst desk</text>
+    <line x1="320" y1="125" x2="336" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="340" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--ai)" stroke-width="2"/>
+    <text x="410" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Decide</text>
+    <text x="410" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">buy · sell · hold</text>
+    <text x="410" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">+ confidence + stops</text>
+    <line x1="480" y1="125" x2="496" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <rect x="500" y="96" width="140" height="58" rx="10" fill="var(--card)" stroke="var(--safe)" stroke-width="2"/>
+    <text x="570" y="118" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Safety checks</text>
+    <text x="570" y="134" font-size="11" fill="var(--ink2)" text-anchor="middle">risk gate · budget cap</text>
+    <text x="570" y="147" font-size="11" fill="var(--ink2)" text-anchor="middle">fees · reward vs risk</text>
+
+    <path d="M605 154 L605 182 L658 182 L658 206" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <path d="M535 154 L535 182 L440 182 L440 206" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw2)"/>
+
+    <rect x="330" y="210" width="220" height="52" rx="10" fill="color-mix(in srgb,var(--go) 10%,var(--card))" stroke="var(--go)" stroke-width="2"/>
+    <text x="440" y="231" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">✓ Trade recorded</text>
+    <text x="440" y="248" font-size="11" fill="var(--ink2)" text-anchor="middle">the card's book and P&amp;L update live</text>
+
+    <rect x="570" y="210" width="176" height="52" rx="10" fill="var(--card)" stroke="var(--warn)" stroke-width="2"/>
+    <text x="658" y="231" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">— Skipped</text>
+    <text x="658" y="248" font-size="11" fill="var(--ink2)" text-anchor="middle">with the reason, in the log</text>
+
+    <rect x="20" y="292" width="726" height="92" rx="11" fill="var(--surf)" stroke="var(--grid)" stroke-width="1.4"/>
+    <text x="38" y="316" font-size="12.5" font-weight="700" fill="var(--ink)">Between cycles — always on, for every open position</text>
+    <text x="38" y="337" font-size="11.5" fill="var(--ink2)">🛑 stop-loss / take-profit watcher — checks roughly every 30 seconds</text>
+    <text x="38" y="355" font-size="11.5" fill="var(--ink2)">🔒 trailing profit lock — ratchets a floor under a winner as it advances</text>
+    <text x="38" y="373" font-size="11.5" fill="var(--ink2)">🛡 liquidation defense — steps in ahead of a leveraged position's liquidation price</text>
+  </svg>
+  <p class="cap">A cycle that ends in "skipped" is the system working, not failing: the decision did not clear your confidence bar, the market was closed, or a safety check refused the order — and the reason is written into the event log every time.</p>
+</div>
+
+<h3>Your first hour — what is normal</h3>
+<ul>
+  <li><strong>"No position — holding cash" is normal.</strong> The AI only enters when a decision clears your confidence threshold and every safety check. Hours without a fill are common, especially on Stable settings.</li>
+  <li><strong>Skipped rows are normal.</strong> Expect <em>decision</em>, <em>order design</em> and <em>skipped</em> entries in the event log long before the first <em>trade</em>.</li>
+  <li><strong>A tiny negative Profit is normal</strong> right after a first entry: an open position carries its entry fee until it closes.</li>
+  <li><strong>Fleet members start staggered.</strong> Each TRADING's cycle is offset a few minutes from its siblings so they do not all fire at once.</li>
+</ul>
+
+<h2>6 · Monitoring a TRADING — the grid and the drawer</h2>
+<p>Each card in <strong>📈 AI Automation Master</strong> is one TRADING. The card answers "is it alive and what is it holding?"; the drawer behind it answers "what exactly has it done, and why?"</p>
+
+<div class="fig">
+  <div class="ft">Where to look for what</div>
+  <div class="fs">Five questions, five surfaces — all on this one page</div>
+  <svg viewBox="0 0 760 330" role="img" aria-label="Map from questions to page surfaces: is it running goes to the card status dot; why no trade goes to the event log; how is the money goes to the summary tiles; what happened overnight goes to AI Analysis 30 min; how is the fleet goes to the fleet monitor.">
+    <defs>
+      <marker id="arw3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+    <rect x="16" y="14" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="42" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"Is it running?"</text>
+    <rect x="16" y="76" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="104" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"Why hasn't it traded?"</text>
+    <rect x="16" y="138" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="166" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"How is the money doing?"</text>
+    <rect x="16" y="200" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="228" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"What happened overnight?"</text>
+    <rect x="16" y="262" width="270" height="46" rx="10" fill="var(--card)" stroke="var(--grid)" stroke-width="1.6"/>
+    <text x="151" y="290" font-size="12.8" font-weight="700" fill="var(--ink)" text-anchor="middle">"How is the fleet overall?"</text>
+
+    <line x1="286" y1="37" x2="452" y2="37" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="99" x2="452" y2="99" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="161" x2="452" y2="161" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="223" x2="452" y2="223" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+    <line x1="286" y1="285" x2="452" y2="285" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arw3)"/>
+
+    <rect x="456" y="14" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="34" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">The card's status + pulsing dot</text>
+    <text x="600" y="50" font-size="10.8" fill="var(--ink2)" text-anchor="middle">Running · Waiting · Paused · Stopped, plus ⧗ data age</text>
+    <rect x="456" y="76" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="96" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">The drawer's event log</text>
+    <text x="600" y="112" font-size="10.8" fill="var(--ink2)" text-anchor="middle">every decision and skip, with its reason and stage</text>
+    <rect x="456" y="138" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="158" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">The four summary tiles</text>
+    <text x="600" y="174" font-size="10.8" fill="var(--ink2)" text-anchor="middle">period chips + click-through detail graphs</text>
+    <rect x="456" y="200" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="220" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">🧠 AI Analysis (30 min)</text>
+    <text x="600" y="236" font-size="10.8" fill="var(--ink2)" text-anchor="middle">the desk's diary, in 30-minute cycles, day by day</text>
+    <rect x="456" y="262" width="288" height="46" rx="10" fill="var(--card)" stroke="var(--go)" stroke-width="1.8"/>
+    <text x="600" y="282" font-size="12.3" font-weight="700" fill="var(--ink)" text-anchor="middle">🚀 Full Auto — live monitor</text>
+    <text x="600" y="298" font-size="10.8" fill="var(--ink2)" text-anchor="middle">fleet index · rails · member chips · Stop all</text>
+  </svg>
+</div>
+
+<h3>Reading a card</h3>
+<ul>
+  <li><strong>Status line</strong> — <em>Ready</em> (a draft, not started), <em>Waiting</em> (armed, next cycle scheduled), <em>Running</em> (pulsing dot), <em>Paused</em>, <em>Stopping</em>, <em>Stopped</em> (with the reason). A (?) on the card opens "How to read a TRADING card", which explains every field in place.</li>
+  <li><strong>Capability chip</strong> — 🟡 <em>Market closed</em> means it resumes at the next session; 🔴 <em>Cannot trade</em> means the settings make trading permanently impossible (for example a target move too small to ever cover fees). When 🔴 cards hold capital, a banner above the grid counts them and offers <strong>Release all</strong> to free the money in one click.</li>
+  <li><strong>The four facts</strong> — Max bet · Interval (with the confidence bar, like <em>45m·≥50%</em>) · Type (spot, or futures with its leverage) · which AI runs it.</li>
+  <li><strong>The live book</strong> — either "No position — holding cash" or the position: LONG/SHORT, quantity, entry, current mark, unrealized and realized P&amp;L, and for futures the leverage, collateral, liquidation price and the liquidation-defense tiers protecting it.</li>
+  <li><strong>The activity line</strong> rotates every few seconds between what the TRADING is doing now and the countdown to its next cycle; an arriving event flashes in with a ⚡.</li>
+  <li><strong>⧗ data age</strong> — how old the last price is. Markets that update by polling refresh on an interval; the badge is the honest measure of staleness.</li>
+</ul>
+
+<h3>The detail drawer</h3>
+<p>Click a card and a drawer slides in with the full picture: a P&amp;L header (realized, trades, current mark), the equity sparkline, the lifecycle buttons, and the <strong>event log</strong> — the newest 60 entries of <em>decision</em>, <em>trade</em>, <em>skipped</em>, <em>order design</em>, <em>order intent</em>, <em>status</em>, <em>equity</em>, <em>alert</em> and more. Skips name their stage and reason (for example <em>fee edge</em>, <em>risk/reward floor</em>, <em>budget</em>, <em>confidence rank</em>) — this log is the first place to look whenever you wonder why nothing happened.</p>
+
+<h3>Auto-restart</h3>
+<p>When a TRADING stops because it reached its own goal — profit target hit, or its trade limit — <strong>a new TRADING with the same settings takes over automatically</strong>, and the event log records "Restarted as TRADING #N". Stopping it yourself, of course, does not restart anything.</p>
+
+<h2>7 · 🧠 AI Analysis (30 min) — the desk's diary</h2>
+<p>The button under the summary tiles opens a review of everything the AI recorded, folded into <strong>30-minute cycles — including the hours you were not signed in</strong>. Pick a day with the date arrows; each row is one cycle: either "nothing moved", or a one-line tally (<em>decisions · skipped · opened · closed</em>) with the realized result. Expand a cycle and you get, per TRADING: the action it chose with its confidence, the desk's written report, any status transitions with reasons, and what was skipped and why. If you check your fleet once a day, this is the screen to check.</p>
+
+<h2>8 · Monitoring a fleet — 🚀 Full Auto live monitor</h2>
+<p>While a fleet is live, its monitor sits above the grid:</p>
+<ul>
+  <li><strong>🎯 Fleet index</strong> — the whole fleet as one number, rebased to 100 at launch. 103.42 means the fleet is up 3.42% on its budget; the card also shows the P&amp;L in dollars and the launch date. The (?) explains exactly how it is computed.</li>
+  <li><strong>Status line</strong> — the fleet state and its reason in plain words (<em>Built 4/5</em>, <em>Replenishing (2/5)</em>, <em>Drawdown warning — new entries paused</em>…), the <strong>marked equity</strong>, and the two rails: at <strong>−warn%</strong> new entries pause ⚠︎, at <strong>−stop%</strong> everything is closed ⏹. If the warning rail fires, a strip appears with <strong>Resume trading (your responsibility)</strong>.</li>
+  <li><strong>Member chips</strong> — one per TRADING, with a pulsing dot while it runs and its marked P&amp;L; a chip flashes green when something changed. Click a chip to open that TRADING's drawer. A toggle shows or hides finished members.</li>
+  <li><strong>Trading activity tab</strong> — the recent fills as a table (type, symbol, amount, price, P&amp;L, date), filterable by market.</li>
+  <li><strong>Lifecycle</strong> — <strong>Pause</strong> stops new entries only (open positions keep their stop-loss/take-profit protection; Resume continues). <strong>⏹ Stop all (flatten)</strong> halts the fleet and closes every position immediately — a stopped fleet cannot be restarted, you launch a new one.</li>
+  <li><strong>Edit fleet</strong> — change the <strong>profit goal</strong> and the <strong>slot count</strong> while it runs. As you type, the panel shows the dollar target and per-slot budget live, along with the 🤖 AI-recommended maximum slot count for your budget. Growing adds slots as budget headroom frees up; shrinking <strong>drains</strong> — excess slots retire only when their positions finish on their own, and nothing is ever force-closed by a resize.</li>
+</ul>
+
+<h2>9 · What your plan unlocks here</h2>
+<div class="sw"><table>
+<thead><tr><th>On this page</th><th>Junior</th><th>Pro</th><th>Professional</th></tr></thead>
+<tbody>
+<tr><td><strong>⓪ Agent (1 symbol)</strong></td><td>✓ (spot, no leverage)</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>① Simple mode</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>Futures book &amp; leverage</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>🧠 AI Analyst</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>Choosing the AI provider</strong></td><td>—</td><td>✓</td><td>✓</td></tr>
+<tr><td><strong>② Full Auto fleets</strong></td><td>—</td><td>—</td><td>✓ (up to 10 TRADINGs)</td></tr>
+</tbody></table></div>
+<p>A control your plan does not include simply is not rendered — if you do not see the ① chip or the Analyst button, that is the plan, not a bug.</p>
+
+<h2>10 · Stopping things — every kill switch</h2>
+<div class="sw"><table>
+<thead><tr><th>To stop…</th><th>Do this</th><th>What happens</th></tr></thead>
+<tbody>
+<tr><td><strong>One TRADING, done with it</strong></td><td>card → drawer → <strong>Stop &amp; flatten</strong></td><td>halts and closes its position at the current price</td></tr>
+<tr><td><strong>One TRADING, keep the position</strong></td><td>card → drawer → <strong>Stop &amp; hold</strong></td><td>halts; the open position stays yours to manage</td></tr>
+<tr><td><strong>One TRADING, just a break</strong></td><td>card → drawer → <strong>Pause</strong></td><td>no new entries; protective exits stay active; Resume any time</td></tr>
+<tr><td><strong>The whole fleet</strong></td><td>fleet monitor → <strong>⏹ Stop all (flatten)</strong></td><td>every member halts and every position closes immediately</td></tr>
+<tr><td><strong>A legacy automation rule</strong></td><td>rules list → <strong>Remove</strong></td><td>the rule stops from the next cycle — Remove is its only switch</td></tr>
+</tbody></table></div>
+<p>If you stop a TRADING whose AI thesis still has time to run, the page tells you so and asks once — stopping early locks in the P&amp;L at the current price. That is your call to make; the button always works.</p>
+
+<h2>11 · Where to go next</h2>
+<ul>
+  <li><strong>How AI Trading Works</strong> — what actually happens inside the 30-minute loop: who authors the order, and what the machine enforces.</li>
+  <li><strong>How Decisions Become Orders</strong> — the division of power between the AI desk and the safety system, in detail.</li>
+  <li><strong>Full Guide</strong> — the complete pipeline, from data collection to the trade journal.</li>
+  <li><strong>When Your Markets Are Open</strong> — session hours in your own clock, so 🟡 <em>Market closed</em> never surprises you.</li>
+</ul>
+<p>All of these live in the same documentation rail as this page. And on the Automation page itself, remember the two smallest helpers: the <strong>📖 Guide</strong> button (top right) for the quick version of this document, and the <strong>(?)</strong> badges beside each control for an explanation exactly where you need it.</p>
+
+<p class="mt">Sooppiy member guide · the Automation page · Trading involves risk; simulated performance does not guarantee real results. Research only — not financial advice.</p>
+
+</main></body></html>

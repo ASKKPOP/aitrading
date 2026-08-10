@@ -39,4 +39,10 @@ export type PageGuide = {
   sections: GuideSection[]
   /** Common questions and gotchas. Optional. */
   faq?: GuideFaq[]
+  /**
+   * Slug of a long-form document in the docs rail (/docs/:slug) that covers
+   * this page in full. When set, the panel links to it under the summary —
+   * the drawer stays the quick reference, the document carries the diagrams.
+   */
+  docsSlug?: string
 }

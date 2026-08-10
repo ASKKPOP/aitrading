@@ -7,6 +7,7 @@ import { tr, type PartialTrMap } from '../i18n'
 // URL slugs are stable product names; manifest groups are the build keys.
 const SLUG_TO_GROUP: Record<string, string> = {
   'guide': 'guide',
+  'automation': 'automation',
   'gateway': 'gateway',
   'smart-features': 'smart',
   'strategy': 'hybrid',

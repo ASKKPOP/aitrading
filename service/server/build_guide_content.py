@@ -80,6 +80,12 @@ SOURCES: list[dict] = [
     # engineering cross-links removed (they cannot resolve inside the guide).
     {"key": "how-it-works-en", "src": "design/how-ai-trading-works-en.html", "kind": "html",
      "lang": "en", "group": "how-it-works", "title": "How AI Automated Trading Works"},
+    # The /automation page manual (2026-08-09, owner ask): a first-visit
+    # walkthrough of the page itself — every control, the four start paths,
+    # what runs after Start, and where to monitor it. Member-facing; the
+    # engine internals stay in `how-it-works`.
+    {"key": "automation-en", "src": "design/automation-page-guide-en.html", "kind": "html",
+     "lang": "en", "group": "automation", "title": "The Automation Page — First-Visit Guide"},
     # Engineering analysis behind the smart-routing + hot-issue features. Kept
     # owner_only alongside architecture: it carries file-level implementation
     # plans, LLM cost modelling and merge sequencing. The member-facing version
@@ -161,6 +167,7 @@ _TRANSLATED_SOURCES = {
     "hybrid": ("research/parameters/2-hybrid-strategy-{lang}.html", "html"),
     "decisions": ("design/decisions-guide-{lang}.html", "html"),
     "how-it-works": ("design/how-ai-trading-works-{lang}.html", "html"),
+    "automation": ("design/automation-page-guide-{lang}.html", "html"),
     "psych-report": ("research/parameters/2-chart-vs-human-psychology-report-{lang}.md", "md"),
     "framework": ("research/parameters/2-hybrid-strategy-framework-{lang}.md", "md"),
     "backtest-report": ("research/parameters/3-phase4-backtest-report-{lang}.md", "md"),
@@ -244,6 +251,12 @@ _TRANSLATED_TITLES = {
         "th": "การเทรดอัตโนมัติด้วย AI ทำงานอย่างไร",
         "vi": "Giao dịch tự động bằng AI hoạt động thế nào",
         "id": "Bagaimana Trading Otomatis AI Bekerja"},
+    "automation": {
+        "ko": "자동화 페이지 — 첫 방문 가이드",
+        "ja": "自動売買ページ — はじめてガイド",
+        "th": "หน้าเทรดอัตโนมัติ — คู่มือสำหรับการเข้าชมครั้งแรก",
+        "vi": "Trang Tự động hóa — Hướng dẫn cho lần đầu",
+        "id": "Halaman Otomatisasi — Panduan Kunjungan Pertama"},
     "psych-report": {
         "ja": "チャート分析 vs 人間心理 — 検証済みの数値",
         "th": "การวิเคราะห์กราฟ vs จิตวิทยามนุษย์ — ตัวเลขที่ตรวจสอบแล้ว",
@@ -281,6 +294,9 @@ for _group, _titles in _TRANSLATED_TITLES.items():
 GROUPS = [
     {"group": "guide", "ko": "완전 가이드", "en": "Full Guide", "ja": "完全ガイド",
      "th": "คู่มือฉบับสมบูรณ์", "vi": "Hướng dẫn đầy đủ", "id": "Panduan Lengkap"},
+    {"group": "automation", "ko": "자동화 페이지 가이드", "en": "Automation Page Guide",
+     "ja": "自動売買ページガイド", "th": "คู่มือหน้าเทรดอัตโนมัติ",
+     "vi": "Hướng dẫn trang Tự động hóa", "id": "Panduan Halaman Otomatisasi"},
     {"group": "gateway", "ko": "실거래 게이트웨이", "en": "Live Trading Gateway",
      "ja": "実取引ゲートウェイ", "th": "เกตเวย์เทรดจริง",
      "vi": "Cổng giao dịch thật", "id": "Gerbang Trading Live"},
