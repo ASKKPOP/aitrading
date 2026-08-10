@@ -117,6 +117,17 @@ class CacheAndWarmTests(unittest.TestCase):
         self._set.start()
         self.addCleanup(self._get.stop)
         self.addCleanup(self._set.stop)
+        # Same isolation for the durable DB layer — these tests are about the
+        # mem/KV tiers and must not touch whatever database is configured.
+        self._dbstore: dict = {}
+        self._dbg = patch.object(market_i18n, "_db_get", self._dbstore.get)
+        self._dbp = patch.object(
+            market_i18n, "_db_put",
+            lambda k, v: self._dbstore.__setitem__(k, v))
+        self._dbg.start()
+        self._dbp.start()
+        self.addCleanup(self._dbg.stop)
+        self.addCleanup(self._dbp.stop)
         # Clear the process-global in-flight set + in-process cache between tests.
         with market_i18n._inflight_lock:
             market_i18n._inflight.clear()
@@ -365,6 +376,98 @@ class PayloadLocalizerTests(unittest.TestCase):
     def test_en_request_returns_payload_unchanged(self):
         payload = {"signals": [{"label": "BTC trend"}], "meta": {}}
         self.assertIs(market_i18n.localize_macro_payload(payload, "en"), payload)
+
+
+class DbCacheLayerTests(unittest.TestCase):
+    """The durable tier under the mem/KV caches.
+
+    Prod runs Redis-less with TWO processes (worker journals, backend serves),
+    so without this layer a warm in one process is invisible to the other and
+    a restart wipes everything. The layer must survive a memory wipe, expire
+    by age, and fail soft when the database is unavailable.
+    """
+
+    def setUp(self):
+        import os
+        import tempfile
+
+        import database
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.database = database
+        # KV inert (the prod condition) and mem cache empty.
+        self._get = patch.object(market_i18n, "get_json", lambda k: None)
+        self._set = patch.object(market_i18n, "set_json",
+                                 lambda k, v, ttl_seconds=None: False)
+        self._get.start()
+        self._set.start()
+        self.addCleanup(self._get.stop)
+        self.addCleanup(self._set.stop)
+        market_i18n._MEM_CACHE.clear()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_put_survives_a_memory_wipe(self):
+        key = market_i18n._cache_key("Some headline", "ko")
+        market_i18n._cache_put(key, "어떤 헤드라인")
+        market_i18n._MEM_CACHE.clear()          # "another process"
+        self.assertEqual(market_i18n._cache_get(key), "어떤 헤드라인")
+        # …and the hit re-warmed the memory tier.
+        self.assertIn(key, market_i18n._MEM_CACHE)
+
+    def test_expired_row_is_a_miss(self):
+        key = market_i18n._cache_key("Old headline", "ko")
+        market_i18n._cache_put(key, "옛 헤드라인")
+        market_i18n._MEM_CACHE.clear()
+        conn = self.database.get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE i18n_xlate_cache SET created_at = created_at - ? "
+                "WHERE cache_key = ?",
+                (market_i18n._DB_TTL_SECONDS + 60, key))
+            conn.commit()
+        finally:
+            conn.close()
+        self.assertIsNone(market_i18n._cache_get(key))
+
+    def test_put_prunes_expired_rows(self):
+        old_key = market_i18n._cache_key("Old headline", "ko")
+        market_i18n._cache_put(old_key, "옛 헤드라인")
+        conn = self.database.get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE i18n_xlate_cache SET created_at = created_at - ? "
+                "WHERE cache_key = ?",
+                (market_i18n._DB_TTL_SECONDS + 60, old_key))
+            conn.commit()
+        finally:
+            conn.close()
+        market_i18n._cache_put(market_i18n._cache_key("New", "ko"), "새것")
+        conn = self.database.get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) AS n FROM i18n_xlate_cache WHERE cache_key = ?",
+                (old_key,))
+            self.assertEqual(cursor.fetchone()["n"], 0)
+        finally:
+            conn.close()
+
+    def test_database_failure_is_soft(self):
+        # A broken DB must cost nothing but the durability: put still lands in
+        # memory, get still reads memory, and neither raises.
+        key = market_i18n._cache_key("Fragile", "ko")
+        with patch.object(market_i18n, "get_db_connection",
+                          side_effect=RuntimeError("db down")):
+            market_i18n._cache_put(key, "연약함")
+            self.assertEqual(market_i18n._cache_get(key), "연약함")
+            market_i18n._MEM_CACHE.clear()
+            self.assertIsNone(market_i18n._cache_get(key))
 
 
 if __name__ == "__main__":

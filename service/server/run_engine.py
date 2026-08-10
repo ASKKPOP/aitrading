@@ -2302,6 +2302,42 @@ def _horizon_gate_enabled() -> bool:
         "1", "true", "yes", "on")
 
 
+def _warm_report_i18n(agent_id: int, report: Any) -> None:
+    """Schedule the owner's-language translation of a just-journaled report.
+
+    The journal stays English (the desk_memory corpus contract); the
+    AI-analysis panel localizes at read time through market_i18n's cached
+    translator. Warming HERE — in the worker, the moment the report exists —
+    is what makes the panel's first read come back localized, because the
+    cache's DB tier carries the translation across the worker->backend
+    process boundary. Cache-only and non-blocking: localize_texts returns
+    immediately and runs the model in a background thread. Fail-soft: a
+    localization problem must never touch a trading cycle.
+    """
+    try:
+        text = report.strip() if isinstance(report, str) else ""
+        if not text:
+            return
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT u.lang FROM users u JOIN agents a ON a.user_id = u.id "
+                "WHERE a.id = ?", (agent_id,))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        from analysis_agents import normalize_lang
+        lang = normalize_lang(row["lang"] if row else None)
+        if lang == "en":
+            return
+        import market_i18n
+        market_i18n.localize_texts([text], lang)
+    except Exception:  # noqa: BLE001 — i18n warm must never break a cycle
+        logger.debug("desk report i18n warm skipped for agent %s", agent_id,
+                     exc_info=True)
+
+
 def _conviction_divergence(confidence: Any, conviction: Any) -> dict:
     """Telemetry only: how far apart the two numbers are, and whether the
     computed one exists at all.
@@ -4129,6 +4165,15 @@ def run_cycle(run_id: int) -> dict:
                               # there is a count before anyone argues from it.
                               **_conviction_divergence(confidence, conviction),
                               "report": (decision.get("report") or "")[:1000]})
+
+        # The report just journaled is English on purpose (it is the corpus
+        # desk_memory retrieves from), and the AI-analysis panel localizes it
+        # at read time through a cached translator. Warm the OWNER's language
+        # now, at write time, so the panel's first read is already localized —
+        # before this, the cache was only ever populated by a read, so every
+        # new report's first view was English. Non-blocking: the helper only
+        # schedules a background translation.
+        _warm_report_i18n(run["agent_id"], (decision.get("report") or "")[:1000])
 
         # Phase 3(a): what the desk was shown from its own corpus when it made
         # that call. Absent when this cycle never recalled (a flat run has no
