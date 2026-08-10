@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { API_BASE, useLanguage } from '../appShared'
+import { injectSiteTheme, siteIsDark } from '../components/docTheme'
 import { tr, type PartialTrMap } from '../i18n'
 
 // Login-gated guide & research documents (backend: routes_guide.py).
@@ -44,13 +45,6 @@ interface Manifest { groups: ManifestGroup[]; docs: ManifestDoc[] }
 interface Props {
   token?: string | null
   userToken?: string | null
-}
-
-/** Is the SITE currently dark? 'signal' and 'claude' are dark, 'light' is not;
- *  before the theme is applied fall back to the OS. */
-function siteIsDark(): boolean {
-  const t = document.documentElement.getAttribute('data-theme')
-  return t ? t !== 'light' : matchMedia('(prefers-color-scheme: dark)').matches
 }
 
 export function DocsPage({ token, userToken }: Props) {
@@ -100,89 +94,14 @@ export function DocsPage({ token, userToken }: Props) {
   }, [manifest, group, docLang, auth])
 
   // srcdoc iframes are same-origin: size the frame to the document, and hand
-  // the document the SITE's palette.
-  //
-  // Documents ship their own light/dark palette keyed on prefers-color-scheme,
-  // which follows the OS — not this app's theme. On the 'claude' theme (always
-  // dark) with a light OS that produced dark text on a dark surface. So push
-  // the resolved theme variables in and let the document paint with them.
-  //
-  // The page background is PAINTED, not left transparent: a transparent page
-  // under color-scheme:dark makes the browser fall back to its own black
-  // canvas, which on the warm-charcoal 'claude' surface reads as a black box
-  // around the document. Two of the documents (hybrid, top10) set no body
-  // background at all, so they hit the same canvas. Painting html/body with
-  // the site's page colour removes the box everywhere, whatever the document
-  // happens to call its own variables.
-  //
-  // Documents disagree on variable names — --page/--bg/--ground for the page,
-  // --card/--panel/--surface for a raised surface, --ink-2/--ink2/--ink-3 for
-  // secondary text — so every alias in guide_content/ is mapped here. A name
-  // no document uses simply goes unread.
-  //
-  // hybrid and top10 scope their palette to .viz-root rather than :root, and a
-  // variable set on that element beats one inherited from :root — so those two
-  // kept painting their own #0d0d0d page inside ours, a black box with the
-  // wrong accent. Both selectors carry the palette, and .viz-root's own
-  // background is overridden alongside html/body. Their dark/light choice is
-  // separate again: it is hardcoded behind prefers-color-scheme, which inside
-  // a nested browsing context resolves against color-scheme on the IFRAME
-  // ELEMENT — see the `dark` state and the iframe style below.
-  //
-  // Every document also brought its OWN measure (860 / 880 / 980 / 1020 /
-  // 1040 / 1120 px, each self-centred with its own gutter), so no two guide
-  // pages lined up and none of them lined up with the page heading above the
-  // frame. The page container is already the measure; the documents' is
-  // removed so all of them share one column and one left edge.
+  // the document the SITE's palette. The injection itself — palette aliases,
+  // painted background, border tokens, neutralised measures, and the traps
+  // that shaped each rule — lives in components/docTheme.ts, shared with the
+  // in-page GuideDocOverlay so the two renderers cannot drift.
   const applySiteTheme = () => {
     const doc = frameRef.current?.contentDocument
     if (!doc?.body) return
-    try {
-      const root = getComputedStyle(document.documentElement)
-      const v = (name: string) => root.getPropertyValue(name).trim()
-      const dark = siteIsDark()
-      setDark(dark)
-      const page = v('--bg-primary')
-      const card = v('--bg-card')
-      const surface = v('--bg-secondary')
-      // Borders come from the site's border tokens, NOT --bg-tertiary: on the
-      // 'claude' theme --bg-tertiary (#35342f) is a fill barely one shade off
-      // the card (#30302e), so every box outline and diagram stroke painted
-      // with it disappeared. --grid stays a hairline (chart gridlines, table
-      // row rules — subtle by design); every other border alias gets
-      // --border-strong, because each of them is some document's diagram-box
-      // outline (--line in trading-skills, --hair in architecture, --border in
-      // guide/gateway/ops-keys, --axis in the plan-16-style reports).
-      const hairline = v('--border-color')
-      const strong = v('--border-strong')
-      const ink = v('--text-primary')
-      const ink2 = v('--text-secondary')
-      const muted = v('--text-muted')
-      const accent = v('--accent-primary')
-      let style = doc.getElementById('site-theme') as HTMLStyleElement | null
-      if (!style) {
-        style = doc.createElement('style')
-        style.id = 'site-theme'
-        doc.head.appendChild(style)
-      }
-      style.textContent = `
-        :root,.viz-root{color-scheme:${dark ? 'dark' : 'light'};
-          --page:${page}; --bg:${page}; --ground:${page}; --surface-0:${page};
-          --card:${card}; --panel:${card}; --surface-1:${card};
-          --surface:${surface}; --surf:${surface}; --panel-2:${surface}; --surface-2:${surface};
-          --grid:${hairline};
-          --border:${strong}; --bd:${strong}; --hair:${strong}; --line:${strong};
-          --axis:${strong}; --baseline:${strong}; --border-strong:${strong};
-          --ink:${ink}; --text-primary:${ink};
-          --ink2:${ink2}; --ink-2:${ink2}; --ink-3:${muted}; --text-secondary:${ink2};
-          --muted:${muted}; --text-muted:${muted};
-          --accent:${accent}; --ai:${accent};}
-        html,body,.viz-root{background:${page}}
-        .wrap,main,.viz-root{max-width:none; padding-left:0; padding-right:0}
-        main,.viz-root{padding-top:0}`
-    } catch {
-      /* styling is a nicety — never let it stop the document rendering */
-    }
+    setDark(injectSiteTheme(doc))
     setFrameH(Math.max(600, doc.body.scrollHeight + 40))
   }
 

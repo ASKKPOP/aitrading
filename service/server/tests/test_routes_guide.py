@@ -318,6 +318,20 @@ class EnterpriseGateTests(unittest.TestCase):
                                 headers=self._h(tok))
             self.assertEqual(r.status_code, 200, "gwsetup blocked for a member")
 
+    def test_automation_page_manual_stays_open_to_every_member(self):
+        """The /automation page manual opens IN PLACE from that page's guide
+        drawer (owner ask 2026-08-10) — every signed-in member and agent can
+        fetch it by key, in any language, while the /docs rail (manifest) and
+        the rest of the library stay Enterprise."""
+        junior = _make_user_token("junior-am@member.com", plan="junior")
+        for tok in (junior, self.agent_token):
+            for key in ("automation-en", "automation-ko"):
+                r = self.client.get(f"/api/guide/doc/{key}", headers=self._h(tok))
+                self.assertEqual(r.status_code, 200, f"{key} blocked for a member")
+        self.assertEqual(
+            self.client.get("/api/guide/docs", headers=self._h(junior)).status_code,
+            403, "the /docs rail must stay enterprise-gated")
+
     def test_gate_is_403_not_404_for_member_keys(self):
         """403 (upgrade) for real member keys, 404 for owner-only keys — the
         owner-only existence-hiding rule survives the gate."""

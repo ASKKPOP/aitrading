@@ -154,9 +154,14 @@ def register_guide_routes(app: FastAPI, ctx: RouteContext) -> None:
         entry = next((d for d in manifest["docs"] if d["key"] == key), None)
         if entry is None:
             raise HTTPException(status_code=404, detail="Unknown document")
-        # gwsetup connection guides open from /accounts for EVERY member with
-        # a gateway — the enterprise gate covers the /docs/guide library only.
-        if not str(entry.get("group") or "").startswith("gwsetup"):
+        # Two kinds of docs are fetched BY KEY from the page they document,
+        # not from the /docs rail, and stay open to every signed-in member:
+        # the gwsetup connection guides on /accounts, and the /automation
+        # page manual, which opens in place from that page's guide drawer
+        # (owner ask 2026-08-10). The enterprise gate covers the /docs/guide
+        # library only.
+        group = str(entry.get("group") or "")
+        if not (group.startswith("gwsetup") or group == "automation"):
             _require_enterprise(authorization, is_owner)
         path = _CONTENT_DIR / f"{key}.html"   # keys come from the manifest, never the path
         if not path.exists():

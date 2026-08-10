@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 import { useLanguage } from '../appShared'
 import { tr } from '../i18n'
 import { matchGuideRoute, resolveGuide, type PageGuide } from '../guides'
+import { GuideDocOverlay } from './GuideDocOverlay'
 
 // Per-page user guide.
 //
@@ -54,7 +55,10 @@ const T = {
   },
 }
 
-export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function GuidePanel({ open, onClose, token, userToken }: {
+  open: boolean; onClose: () => void
+  token?: string | null; userToken?: string | null
+}) {
   const { language } = useLanguage()
   const { pathname } = useLocation()
 
@@ -63,6 +67,9 @@ export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => vo
   const routeKey = matchGuideRoute(pathname)
   const [guide, setGuide] = useState<PageGuide | null>(null)
   const [failed, setFailed] = useState(false)
+  // Full-document reader opened from the link below — an overlay on the
+  // SAME page, not a navigation to the enterprise-gated /docs rail.
+  const [showDoc, setShowDoc] = useState(false)
 
   useEffect(() => {
     if (!open || !routeKey) return
@@ -76,15 +83,15 @@ export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => vo
 
   // Drop stale content when navigating, so the previous page's guide is never
   // shown under the new page's title while the new chunk is in flight.
-  useEffect(() => { setGuide(null) }, [routeKey])
+  useEffect(() => { setGuide(null); setShowDoc(false) }, [routeKey])
 
   // Escape closes the panel, matching the drawer convention elsewhere.
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !showDoc) onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, onClose, showDoc])
 
   if (!open) return null
 
@@ -139,17 +146,16 @@ export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => vo
               </p>
 
               {guide.docsSlug && (
-                <Link
-                  to={`/docs/${guide.docsSlug}`}
-                  onClick={onClose}
+                <button
+                  onClick={() => setShowDoc(true)}
                   style={{
                     display: 'inline-block', marginBottom: 20, fontSize: 12.5, fontWeight: 600,
-                    color: 'var(--accent-primary,#c26a45)', textDecoration: 'none',
+                    color: 'var(--accent-primary,#c26a45)', background: 'transparent', cursor: 'pointer',
                     border: '1px solid var(--border-color)', borderRadius: 8, padding: '7px 11px',
                   }}
                 >
                   {tr(language, T.fullGuide)}
-                </Link>
+                </button>
               )}
 
               {guide.sections.map((section, i) => (
@@ -186,6 +192,14 @@ export function GuidePanel({ open, onClose }: { open: boolean; onClose: () => vo
           )}
         </div>
       </aside>
+
+      {showDoc && guide?.docsSlug && (
+        <GuideDocOverlay
+          slug={guide.docsSlug}
+          auth={userToken || token || ''}
+          onClose={() => setShowDoc(false)}
+        />
+      )}
     </>
   )
 }
