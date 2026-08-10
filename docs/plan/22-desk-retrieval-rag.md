@@ -332,6 +332,40 @@ Every increment lands here as a dated line, in the same PR that ships it.
       then (a3) pool enrichment, since the deep analysis's ≥3-above-floor
       precondition is only just met (3–4 alternates) on today's frozen
       563-chunk monitoring pool.
+  - **2026-08-10 — ε-exploration ENABLED on prod by the owner (23:30Z).
+    Retrieval variance exists for the first time.** `DESK_RECALL_EXPLORE=1`
+    added to `/home/ec2-user/sooppiy/.env` (backup `.env.bak-preexplore-*`),
+    both `sooppiy-worker` and `sooppiy-backend` recreated — **both**, because
+    `routes_automation.py` can also invoke `run_cycle`, and a split policy
+    would log two schemes for the same run.
+    - First three live cycles under the new policy, three markets, two
+      situation classes:
+
+      | run | class | explored | slot 1 | slot 2 | propensity | pool |
+      |---|---|---|---|---|---|---|
+      | 1047 futures | gave-back+winning | no | `9d8b125b` | `c8559767` (22.48) | 0.75 | 3 |
+      | 1044 crypto | gave-back+winning | **yes** | `9d8b125b` | **`595eac1b`** (21.97) | 0.0833 | 3 |
+      | 1053 forex | winning | **yes** | `161f2451` | **`6f8f522e`** (9.93) | **0.125** | 2 |
+
+    - **3 distinct chunk-pairs where the previous 262 consecutive events had
+      exactly 1.** The head is preserved in every row; propensities are
+      exactly ε/pool for each observed pool size.
+    - Row 1053 is the useful independent check: the *winning* class has pool
+      **2**, not 3, because its rank-5 chunk (8.94) falls below
+      0.60 × 15.03 = 9.02. The relative floor reproduces on live data exactly
+      what the measured score table predicted — which is the evidence that
+      0.60-of-head is a real threshold and not a number that happened to fit.
+    - Health after the recreate: both containers up, `/` and
+      `/api/subscriptions/plans` 200, no worker exceptions.
+    - **Still open, to check on the next pass:** no *losing*-class recall has
+      been written since the cutover, so `_recall_explore_allowed`'s exclusion
+      is verified only by unit test and an in-container probe, not yet by a
+      live row. The expected signature is a losing-class row carrying
+      `deterministic-top2` / propensity 1.0 **while the flag is on** — if one
+      ever appears with `eps-head-fixed-v1`, the class gate has failed and the
+      flag comes straight back off.
+    - Rollback remains one line: delete `DESK_RECALL_EXPLORE=1` from `.env`
+      and `docker compose --profile prod up -d --no-build`.
   - **2026-08-09 — deep analysis shipped:**
     [22-phase3-learning-to-profit.md](22-phase3-learning-to-profit.md) — the
     owner-requested full analysis of the path from retrieval variance to
