@@ -121,6 +121,12 @@ SOURCES: list[dict] = [
     {"key": "desk-rag-en", "src": "plan/22-desk-retrieval-rag.html",
      "kind": "html", "lang": "en", "group": "desk-rag",
      "title": "Plan 22 — How RAG Works with the Sooppiy AI", "owner_only": True},
+    # Plan 22 Phase 3 explainer (2026-08-10, owner ask): the learning daemon —
+    # how the loop works, the identifiability math, the increment schedule and
+    # where plus profit comes from. Operator material, same as desk-rag.
+    {"key": "desk-learning-en", "src": "plan/22-phase3-learning-to-profit.html",
+     "kind": "html", "lang": "en", "group": "desk-learning",
+     "title": "Plan 22 · Phase 3 — Learning to Profit", "owner_only": True},
 ]
 
 # ── machine-translated bodies (2026-07-29) ─────────────────────────────────
@@ -138,7 +144,7 @@ SOURCES: list[dict] = [
 # are a property of the GROUP, and repeating them per language is how the group
 # title and the file it points at drift apart.
 _OWNER_GROUPS = {"ops-keys", "architecture", "extensions", "liq-defense",
-                 "trading-skills", "desk-rag"}
+                 "trading-skills", "desk-rag", "desk-learning"}
 _TRANSLATED_SOURCES = {
     # group: (path template, kind)
     "ops-keys": ("design/api-keys-reference-{lang}.html", "html"),
@@ -147,6 +153,7 @@ _TRANSLATED_SOURCES = {
     "liq-defense": ("plan/16-liquidation-defense-daemon-{lang}.html", "html"),
     "trading-skills": ("plan/20-trading-skills-{lang}.html", "html"),
     "desk-rag": ("plan/22-desk-retrieval-rag-{lang}.html", "html"),
+    "desk-learning": ("plan/22-phase3-learning-to-profit-{lang}.html", "html"),
     "guide": ("design/ai-trading-guide-{lang}.html", "html"),
     "gateway": ("design/live-trading-gateway-guide-{lang}.html", "html"),
     "smart": ("design/smart-trading-features-{lang}.html", "html"),
@@ -191,6 +198,12 @@ _TRANSLATED_TITLES = {
         "th": "แผน 22 — RAG ทำงานร่วมกับ Sooppiy AI อย่างไร",
         "vi": "Kế hoạch 22 — RAG hoạt động với Sooppiy AI như thế nào",
         "id": "Rencana 22 — Cara Kerja RAG dengan AI Sooppiy"},
+    "desk-learning": {
+        "ko": "플랜 22 · 3단계 — 수익을 향한 학습",
+        "ja": "プラン22・フェーズ3 — 収益につながる学習",
+        "th": "แผน 22 · เฟส 3 — การเรียนรู้สู่กำไร",
+        "vi": "Kế hoạch 22 · Giai đoạn 3 — Học để sinh lợi nhuận",
+        "id": "Rencana 22 · Fase 3 — Belajar untuk Profit"},
     "trading-skills": {
         "ko": "플랜 20 — 트레이딩 스킬: 작동 원리",
         "ja": "プラン20 — トレーディングスキル：その仕組み",
@@ -320,6 +333,11 @@ GROUPS = [
      "th": "RAG ของเดสก์ (ผู้ดูแล)",
      "vi": "RAG của desk (quản trị)",
      "id": "RAG Desk (admin)"},
+    {"group": "desk-learning", "ko": "데스크 학습 데몬 (관리자)",
+     "en": "Desk Learning (owner)", "ja": "デスク学習デーモン（管理者）",
+     "th": "เดมอนการเรียนรู้ของเดสก์ (ผู้ดูแล)",
+     "vi": "Daemon học của desk (quản trị)",
+     "id": "Daemon Pembelajaran Desk (admin)"},
     {"group": "trading-skills", "ko": "트레이딩 스킬 (관리자)",
      "en": "Trading Skills (owner)", "ja": "トレーディングスキル（管理者）",
      "th": "ทักษะการเทรด (ผู้ดูแล)",

@@ -145,6 +145,15 @@
       "id": "RAG Desk (admin)"
     },
     {
+      "group": "desk-learning",
+      "ko": "데스크 학습 데몬 (관리자)",
+      "en": "Desk Learning (owner)",
+      "ja": "デスク学習デーモン（管理者）",
+      "th": "เดมอนการเรียนรู้ของเดสก์ (ผู้ดูแล)",
+      "vi": "Daemon học của desk (quản trị)",
+      "id": "Daemon Pembelajaran Desk (admin)"
+    },
+    {
       "group": "trading-skills",
       "ko": "트레이딩 스킬 (관리자)",
       "en": "Trading Skills (owner)",
@@ -450,6 +459,13 @@
       "owner_only": true
     },
     {
+      "key": "desk-learning-en",
+      "lang": "en",
+      "group": "desk-learning",
+      "title": "Plan 22 · Phase 3 — Learning to Profit",
+      "owner_only": true
+    },
+    {
       "key": "ops-keys-ko",
       "lang": "ko",
       "group": "ops-keys",
@@ -622,6 +638,41 @@
       "lang": "id",
       "group": "desk-rag",
       "title": "Rencana 22 — Cara Kerja RAG dengan AI Sooppiy",
+      "owner_only": true
+    },
+    {
+      "key": "desk-learning-ko",
+      "lang": "ko",
+      "group": "desk-learning",
+      "title": "플랜 22 · 3단계 — 수익을 향한 학습",
+      "owner_only": true
+    },
+    {
+      "key": "desk-learning-ja",
+      "lang": "ja",
+      "group": "desk-learning",
+      "title": "プラン22・フェーズ3 — 収益につながる学習",
+      "owner_only": true
+    },
+    {
+      "key": "desk-learning-th",
+      "lang": "th",
+      "group": "desk-learning",
+      "title": "แผน 22 · เฟส 3 — การเรียนรู้สู่กำไร",
+      "owner_only": true
+    },
+    {
+      "key": "desk-learning-vi",
+      "lang": "vi",
+      "group": "desk-learning",
+      "title": "Kế hoạch 22 · Giai đoạn 3 — Học để sinh lợi nhuận",
+      "owner_only": true
+    },
+    {
+      "key": "desk-learning-id",
+      "lang": "id",
+      "group": "desk-learning",
+      "title": "Rencana 22 · Fase 3 — Belajar untuk Profit",
       "owner_only": true
     },
     {

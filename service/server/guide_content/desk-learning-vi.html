@@ -1,0 +1,306 @@
+<!-- machine-translated from plan/22-phase3-learning-to-profit.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kế hoạch 22 · Giai đoạn 3 — Học để Sinh lời</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .t-good { fill: var(--good); } svg .t-warn { fill: var(--warn); } svg .t-bad { fill: var(--bad); }
+  svg .t-accent { fill: var(--accent); }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .bar-warn { fill: var(--warn); opacity: .75; }
+  svg .bar-accent { fill: var(--accent); opacity: .8; }
+  svg .bar-dim { fill: var(--muted); opacity: .45; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kế hoạch 22 · Giai đoạn 3 — Học để Sinh lời</h1>
+<p class="kr">Thiết kế tổng thể của daemon tự học — nó hoạt động như thế nào, mục đích là gì, mục tiêu là gì, và lịch trình ra sao. Các số liệu là đo lường thực tế trên production vào 2026-08-09 23:33Z. Phân tích nguyên văn: <code>docs/plan/22-phase3-learning-to-profit.md</code></p>
+
+<div class="quote">Chủ sở hữu, 2026-08-09: <i>"mục tiêu: triển khai học tự động sao cho nó tạo ra lợi nhuận dương."</i> — Bài kiểm tra chấp nhận không phải là "daemon có học được không." Mà là "những gì nó học được có thể hiện trong <b>P&amp;L thực hiện RÒNG</b>."</div>
+
+<div class="chips">
+  <div class="chip"><b>109</b><span>sự kiện recall đã được ghi nhật ký (14 lần chạy)</span></div>
+  <div class="chip"><b>1,216</b><span>khối corpus (614/562/40/0 theo loại)</span></div>
+  <div class="chip"><b>0</b><span>khối bài học — nhóm dữ liệu daemon cần</span></div>
+  <div class="chip"><b>~3%</b><span>văn bản học thuyết mà vòng lặp có thể thay đổi hôm nay</span></div>
+  <div class="chip"><b>48,000</b><span>ký tự kỹ năng được gửi nguyên vẹn, mỗi chu kỳ</span></div>
+  <div class="chip"><b>~101/ngày</b><span>khối lượng recall — thiết lập đồng hồ học tập</span></div>
+</div>
+
+<h2>1. Mục đích — điều này tồn tại để làm gì</h2>
+<p class="kr">Mục đích — làm cho desk chỉ đọc những nguyên tắc mà nó đã có, ngay trong đúng tình huống mà nguyên tắc đó áp dụng, và đã được kiểm chứng. Không phải để khám phá alpha mới mà để ngăn chặn các dạng thua lỗ đã được đo lường.</p>
+<div class="card">
+<p style="margin:6px 0">Desk đã có sẵn học thuyết: 36 kỹ năng, được viết từ các sự kiện đã đo lường. Vấn đề nằm ở <b>khâu truyền tải</b> — mọi thứ đều được gửi đến mọi quyết định, nên bài học riêng cho từng tình huống phải cạnh tranh với 48.000 ký tự học thuyết không áp dụng được. Mục đích của learning daemon là khép lại một vòng lặp mà nền tảng không thể tự khép lại bằng tay:</p>
+<table>
+  <tr><th>câu hỏi</th><th>câu trả lời</th></tr>
+  <tr><td>Nó học được gì?</td><td>Bài học nào, được hiển thị trong <b>tình huống</b> nào, sẽ thay đổi <b>hành vi</b> của desk theo hướng mà các đợt kiểm toán loss-shape đã định giá sẵn (dump→giảm, round-trip→chốt lời, không add thêm vào lệnh lỗ, kỷ luật fee-hurdle, cách dùng arm).</td></tr>
+  <tr><td>Nó KHÔNG học được gì?</td><td>Alpha. Việc xếp hạng 2 recall chunks tốt hơn không giúp tìm ra giao dịch mới. Nó cũng không bao giờ động chạm đến gates, sizing, risk rails hay mandate — những thứ đó vẫn nằm trong code.</td></tr>
+  <tr><td>Tại sao đây là con đường sinh lời?</td><td>74% tổng số thua lỗ đã đo lường đến từ MỘT nhóm hành vi (full-book dumps trên các biến động dưới 2%, 6 trên 84 lần đóng lệnh). Việc khiến desk áp dụng học thuyết sẵn có một cách đáng tin cậy ngay tại thời điểm nó áp dụng sẽ tấn công vào điểm rò rỉ lớn nhất đã đo lường — cộng thêm một khoản tiết kiệm chi phí LLM mang tính xác định (§6).</td></tr>
+</table>
+</div>
+
+<h2>2. Câu hỏi hôm nay — nơi có sự biến thiên và nơi không có</h2>
+<p class="kr">Cấu hình prompt hiện tại — vòng lặp học chỉ có thể thay đổi khoảng 3% toàn bộ văn bản nguyên tắc (dòng recall). Bức tường kỹ năng 48.000 ký tự có phương sai bằng 0 về mặt cấu trúc.</p>
+<div class="card">
+<svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="24" class="t-b">Một prompt quyết định, ba kênh học thuyết</text>
+  <!-- mandate -->
+  <rect class="bar-dim" x="20" y="44" width="24" height="34" rx="4"/>
+  <text x="52" y="60">tiêu đề nhiệm vụ — vô điều kiện, áp dụng cho mọi quyết định</text>
+  <text x="52" y="76" class="t-small">MANDATE_CORE, cách diễn đạt duy nhất, đã kiểm tra độ trôi. Không bao giờ thay đổi, theo thiết kế.</text>
+  <!-- skills wall -->
+  <rect class="bar-warn" x="20" y="94" width="852" height="34" rx="4"/>
+  <text x="30" y="115" class="t-b" style="fill:#fff">bức tường kỹ năng — tối đa 48,000 ký tự · 36 kỹ năng · TẤT CẢ các kỹ năng · MỌI chu kỳ</text>
+  <text x="880" y="115" class="t-warn t-b">~97%</text>
+  <text x="20" y="146" class="t-small t-warn">phương sai bằng không theo cấu trúc → daemon không thể học được GÌ về các kỹ năng. Vấn đề Plan 22 §1 ban đầu — vẫn chưa được giải quyết. Đây là lãnh địa của Phase 4, và là đòn bẩy lợi nhuận.</text>
+  <!-- recall -->
+  <rect class="bar-accent" x="20" y="160" width="26" height="34" rx="4"/>
+  <text x="54" y="176" class="t-b t-accent">dòng thu hồi — ≤2 đoạn × 700 ký tự ≈ 1,400 ký tự</text>
+  <text x="880" y="176" class="t-accent t-b">~3%</text>
+  <text x="54" y="192" class="t-small">kênh DUY NHẤT mà Phase 3 thay đổi — chi phí khám phá thấp (bán kính ảnh hưởng nhỏ), nhưng lợi nhuận có thể học được bị giới hạn bởi chính sự nhỏ bé đó</text>
+</svg>
+<p class="legend">Phát hiện 1 của phân tích sâu: vòng lặp đang được xây dựng học trên kênh nhỏ nhất. Phát hiện 2: "Phase 1" được triển khai dưới dạng kho ngữ liệu desk_memory — quá trình phân rã có thiết kế của bức tường kỹ năng chưa từng được thực hiện, vì vậy 97% những gì desk đọc vẫn không bao giờ thay đổi.</p>
+</div>
+
+<h2>3. Cách vòng lặp học hoạt động — từ đầu đến cuối</h2>
+<p class="kr">Toàn bộ luồng của vòng lặp học tập — Tình huống → Tìm kiếm (+khám phá, ghi lại điểm khuynh hướng) → Tóm tắt → Phán đoán → Nhật ký → Kết hợp kết quả → Chỉ số đại diện hành vi → Điểm ẩn (chỉ giảm) → Cổng thăng cấp → Tìm kiếm có trọng số. Bài học khai thác tự động được cách ly trước khi được đưa vào.</p>
+<div class="card">
+<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- 1 situation -->
+  <rect class="box" x="20" y="30" width="200" height="86"/>
+  <text x="34" y="52" class="t-b">1 · Tình huống</text>
+  <text x="34" y="70" class="t-small">thị trường · đi ngang/giữ nguyên ·</text>
+  <text x="34" y="85" class="t-small">đang thắng/đang thua · mất lại đỉnh</text>
+  <text x="34" y="103" class="t-small"><tspan style="font-family:monospace">_recall_query(run, pnl, qty)</tspan></text>
+  <!-- 2 retrieve -->
+  <rect class="box-accent" x="270" y="30" width="220" height="86"/>
+  <text x="284" y="52" class="t-b">2 · Truy xuất + KHÁM PHÁ</text>
+  <text x="284" y="70" class="t-small">top-K trên ngưỡng liên quan;</text>
+  <text x="284" y="85" class="t-small">rút ε bên dưới nhóm đầu (a2, cờ tắt)</text>
+  <text x="284" y="103" class="t-small t-accent">ghi log PROPENSITY + phiên bản scheme</text>
+  <path class="ln" marker-end="url(#ar)" d="M220 73 L 268 73"/>
+  <!-- 3 brief/decision -->
+  <rect class="box" x="540" y="30" width="190" height="86"/>
+  <text x="554" y="52" class="t-b">3 · Brief → Quyết định</text>
+  <text x="554" y="70" class="t-small">2 đoạn, gán nhãn PAST,</text>
+  <text x="554" y="85" class="t-small">giới hạn, an toàn khi lỗi; desk</text>
+  <text x="554" y="103" class="t-small">quyết định trong khuôn khổ cố định</text>
+  <path class="ln" marker-end="url(#ar)" d="M490 73 L 538 73"/>
+  <!-- 4 journal -->
+  <rect class="box-accent" x="780" y="30" width="160" height="86"/>
+  <text x="794" y="52" class="t-b">4 · Nhật ký</text>
+  <text x="794" y="70" class="t-small">sự kiện thu hồi: truy vấn,</text>
+  <text x="794" y="85" class="t-small">SHA đoạn, điểm số,</text>
+  <text x="794" y="103" class="t-small">propensity (LIVE: #340)</text>
+  <path class="ln" marker-end="url(#ar)" d="M730 73 L 778 73"/>
+  <!-- 5 outcomes -->
+  <rect class="box" x="780" y="170" width="160" height="86"/>
+  <text x="794" y="192" class="t-b">5 · Kết quả</text>
+  <text x="794" y="210" class="t-small">đóng vị thế bao gồm cả</text>
+  <text x="794" y="225" class="t-small">đóng bắt buộc — pnl_audit</text>
+  <text x="794" y="243" class="t-small">phát lại sổ cái, không bao giờ dùng dữ liệu thô</text>
+  <path class="ln" marker-end="url(#ar)" d="M860 116 L 860 168"/>
+  <!-- 6 surrogates -->
+  <rect class="box-good" x="520" y="170" width="210" height="86"/>
+  <text x="534" y="192" class="t-b">6 · Đại lượng thay thế hành vi</text>
+  <text x="534" y="210" class="t-small">xả bỏ so với giảm bớt · giao dịch khứ hồi ·</text>
+  <text x="534" y="225" class="t-small">thêm vào lệnh thua · ngưỡng phí · sử dụng arm</text>
+  <text x="534" y="243" class="t-small t-good">mỗi loại được kiểm chứng trước bằng kiểm toán tổn thất</text>
+  <path class="ln" marker-end="url(#ar)" d="M778 213 L 732 213"/>
+  <!-- 7 shadow scores -->
+  <rect class="box-good" x="270" y="170" width="200" height="86"/>
+  <text x="284" y="192" class="t-b">7 · Điểm số bóng (c)</text>
+  <text x="284" y="210" class="t-small">SNIPS cho mỗi (class, chunk),</text>
+  <text x="284" y="225" class="t-small">co lại về ưu tiên trước, chiết khấu;</text>
+  <text x="284" y="243" class="t-small t-warn">trọng số chỉ GIẢM theo bằng chứng</text>
+  <path class="ln" marker-end="url(#ar)" d="M518 213 L 472 213"/>
+  <!-- 8 gate -->
+  <rect class="box-warn" x="20" y="170" width="200" height="86"/>
+  <text x="34" y="192" class="t-b">8 · Cổng thăng cấp (d)</text>
+  <text x="34" y="210" class="t-small">OPE CI loại trừ zero · replay</text>
+  <text x="34" y="225" class="t-small">không kém hơn · không có hành vi tới hạn</text>
+  <text x="34" y="243" class="t-small">tăng · NET P&amp;L: đối xử vs đối chứng</text>
+  <path class="ln" marker-end="url(#ar)" d="M268 213 L 222 213"/>
+  <!-- loop back -->
+  <path class="ln-accent ln-dash" marker-end="url(#ar)" d="M120 170 C 120 130, 200 120, 300 118"/>
+  <text x="128" y="146" class="t-small t-accent">trọng số được thăng cấp xếp hạng lại truy xuất (chạy canary, cờ mặc định tắt)</text>
+  <!-- corpus + quarantine lane -->
+  <rect class="box-good" x="270" y="330" width="220" height="92"/>
+  <text x="284" y="352" class="t-b">desk_memory (nhóm)</text>
+  <text x="284" y="370" class="t-small">giám sát 562+ · quyết định 614</text>
+  <text x="284" y="385" class="t-small">· kết quả 40 · bài học 0 → phát triển qua</text>
+  <text x="284" y="400" class="t-small">(a3): kỹ năng được phân rã thành bài học,</text>
+  <text x="284" y="415" class="t-small">truy hồi đọc các loại bài học+kết quả</text>
+  <path class="ln-good" marker-end="url(#ar)" d="M380 330 C 380 290, 380 150, 378 118"/>
+  <text x="390" y="300" class="t-small">truy xuất đọc từ nhóm</text>
+  <!-- automine -->
+  <rect class="box-dim" x="560" y="330" width="230" height="92"/>
+  <text x="574" y="352" class="t-b">Bài học tự khai thác (f)</text>
+  <text x="574" y="370" class="t-small">công việc hậu kiểm: của phiên chạy đã đóng</text>
+  <text x="574" y="385" class="t-small">quyết định+kết quả → bài học ứng viên</text>
+  <text x="574" y="400" class="t-small t-bad">BỊ CÁCH LY — chỉ có thể truy xuất được</text>
+  <text x="574" y="415" class="t-small t-bad">sau khi (b) chấm điểm hoặc replay đạt</text>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M558 376 L 492 376"/>
+  <path class="ln ln-dash" marker-end="url(#ar)" d="M860 256 C 860 300, 800 320, 740 330"/>
+  <!-- safety strip -->
+  <rect class="box-bad" x="20" y="460" width="920" height="96"/>
+  <text x="34" y="484" class="t-b t-bad">Những gì vòng lặp KHÔNG BAO GIỜ được chạm vào</text>
+  <text x="34" y="503" class="t-small">cổng độ tin cậy · định cỡ vị thế · thang thích ứng (anti-martingale) · giới hạn vốn · sàn −0.99 · nhiệm vụ — toàn bộ là mã xác định.</text>
+  <text x="34" y="519" class="t-small">Trọng số đã học là một ưu tiên xếp hạng cho việc VĂN BẢN QUÁ KHỨ nào mà bàn giao dịch đọc; mỗi bước đều triển khai mặc định tắt, ghi nhật ký trước,</text>
+  <text x="34" y="535" class="t-small">với một công tắc ngắt bằng một cờ để quay lại top-K xác định. Cùng hình dạng an toàn như run_feedback: đơn điệu —</text>
+  <text x="34" y="551" class="t-small">trọng số giảm theo bằng chứng, không bao giờ tăng theo ý kiến (quy tắc suy giảm tradermonty edge-signal-aggregator).</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--accent)"></span>hoạt động hôm nay (thu thập) · <span class="dot" style="background:var(--good)"></span>các bước tiếp theo (a3, b, c) · <span class="dot" style="background:var(--warn)"></span>kích hoạt có kiểm soát (d) · gạch ngang = bị cách ly / mặc định tắt</p>
+</div>
+
+<h2>4. Tại sao phần thưởng là hành vi, không phải P&amp;L — toán học về khả năng nhận dạng</h2>
+<p class="kr">Lý do phần thưởng là hành động chứ không phải P&amp;L — Việc phân bổ P&amp;L thô theo từng chunk hiện không thể xác định được về mặt thống kê với khối lượng hiện tại (mất nhiều năm). Chỉ số đại diện cho hành động có thể đánh giá được trong vài tuần. P&amp;L chỉ được xét ở cấp danh mục tại cổng thăng cấp (promotion gate).</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="box-accent" x="20" y="30" width="200" height="60"/>
+  <text x="34" y="55" class="t-b">đoạn trong ngữ cảnh</text>
+  <text x="34" y="74" class="t-small">những gì truy xuất đã chọn để hiển thị</text>
+  <rect class="box-good" x="380" y="30" width="200" height="60"/>
+  <text x="394" y="55" class="t-b">hành vi của bàn giao dịch</text>
+  <text x="394" y="74" class="t-small">giảm? giữ lại? từ chối? kích hoạt?</text>
+  <rect class="box-warn" x="740" y="30" width="200" height="60"/>
+  <text x="754" y="55" class="t-b">P&amp;L đã thực hiện</text>
+  <text x="754" y="74" class="t-small">đuôi nặng: 6 trong số 84 lần đóng = 74% tổng lỗ</text>
+  <path class="ln-good" marker-end="url(#ar2)" d="M220 60 L 378 60"/>
+  <text x="252" y="50" class="t-small t-good t-b">liên kết 1 — CÓ THỂ HỌC ĐƯỢC</text>
+  <path class="ln-warn ln-dash" marker-end="url(#ar2)" d="M580 60 L 738 60"/>
+  <text x="608" y="50" class="t-small t-warn t-b">liên kết 2 — đã được đo lường hàng loạt</text>
+  <!-- sample size bars -->
+  <text x="20" y="132" class="t-b">Số quyết định cần thiết cho mỗi nhánh, mỗi lớp tình huống (công suất 80%)</text>
+  <rect class="bar-accent" x="20" y="146" width="75" height="22" rx="4"/>
+  <text x="104" y="162">chỉ báo thay thế hành vi (dịch chuyển 30%→15%): <tspan class="t-b">~120–150</tspan> → 3–6 tuần với khoảng 20/ngày/lớp</text>
+  <rect class="bar-warn" x="20" y="178" width="800" height="22" rx="4"/>
+  <text x="30" y="194" style="fill:#fff" class="t-b">P&amp;L thô theo từng đoạn (σ/δ ≥ 10): ~1.600+ → nhiều năm ở khối lượng hiện tại</text>
+  <text x="20" y="226" class="t-small">Do đó: việc học theo từng chunk chạy trên các surrogate mà chi phí bằng đô la của chúng đã ĐƯỢC book định giá (link 2 kiểm toán).</text>
+  <text x="20" y="242" class="t-small">NET P&amp;L thô chỉ lên tiếng một lần, tại cổng promotion — các lượt chạy treatment so với các lượt chạy control, một con số với sức mạnh thống kê thực sự.</text>
+</svg>
+</div>
+
+<h2>5. Lịch trình — bậc thang increment và các cổng của nó</h2>
+<p class="kr">Lịch trình — mỗi ngày tăng 1 (lịch cố định 21:00 UTC, khi luân chuyển tài khoản nạp lại theo hướng dẫn §7). Mỗi giai đoạn phải vượt qua cổng kiểm soát mới chuyển sang giai đoạn tiếp theo. Ngày là ước tính phụ thuộc vào khối lượng.</p>
+<div class="card">
+<table>
+  <tr><th>step</th><th>những gì được cung cấp</th><th>cổng để tiếp tục</th><th>earliest</th></tr>
+  <tr><td><b>a2</b></td><td>ε-exploration trên recall — propensity + scheme-version logging, sàn relevance, các lớp flat/winning trước, <code>DESK_RECALL_EXPLORE</code>Mặc định là tắt</td><td>xác minh in-container; các lớp losing chỉ sau khi vượt lần (d) đầu tiên</td><td>các mức tăng tiếp theo</td></tr>
+  <tr><td><b>a3</b></td><td>làm giàu pool: 36 skills được atomize → <code>lesson</code> chunks (est. 120–180); recall đọc các loại lesson+outcome dưới cùng flag</td><td>≥3 candidate trên sàn cho mỗi lớp active</td><td>with a2</td></tr>
+  <tr><td><b>b</b></td><td>attribution dataset: recall journal ⨝ surrogates ⨝ các lượt close được replay bằng pnl_audit (bao gồm flatten)</td><td>cổng VARIANCE đã sửa (≥3 chunk-set khác biệt cho ≥2 lớp, ≥30 events/lớp, ≥20 lượt chạy đã đóng)</td><td>+2–3 tuần exploration</td></tr>
+  <tr><td><b>c</b></td><td>shadow per-chunk scores: SNIPS trên surrogates, shrinkage empirical-Bayes, window chiết khấu, fall-only — chỉ journal</td><td>≥120 events/arm trên một số (class, surrogate)</td><td>+3–6 tuần</td></tr>
+  <tr><td><b>d</b></td><td>weighted retrieval trên các lượt chạy treatment canary so với các lượt chạy control, default-off</td><td>TẤT CẢ điều kiện: OPE CI loại trừ zero · replay non-inferiority · không tăng critical-behavior · sau đó là kết quả NET P&amp;L thực nhận</td><td>có điều kiện, không có thời hạn</td></tr>
+  <tr><td><b>e</b></td><td><b>Phase 4</b> — cùng cơ chế trên bức tường skills 48.000 ký tự: mandate + các lesson top-K theo tình huống</td><td>(d) đã promoted và ổn định; chiến thắng chi phí xác định được đo lường</td><td>after d</td></tr>
+  <tr><td><b>f</b></td><td>các lesson candidate được auto-mine từ các lượt chạy đã đóng — bị quarantine cho đến khi được scored</td><td>(b) live; quarantine được enforced bởi sàn retrieval</td><td>song song với c+</td></tr>
+</table>
+<p class="legend">Nhịp độ: mỗi ngày một bước tăng, worktree mới, TDD, PR → CI → merge → deploy → xác minh production ×2, dòng ghi ngày trong sổ cái Plan 22 §7. Đồng hồ thực sự của lịch trình là <b>khối lượng recall</b> (~101/ngày hiện tại) — mỗi lần chạy mới và mỗi thị trường mới đều rút ngắn lịch trình một cách tuyến tính.</p>
+</div>
+
+<h2>6. Mục tiêu — lợi nhuận "cộng thêm" thực sự đến từ đâu</h2>
+<p class="kr">Mục tiêu — nguồn gốc thực sự của lợi nhuận cộng thêm. Bắt đầu từ lợi ích xác định (chi phí), đến cải thiện hành vi, và một cách trung thực: không hứa hẹn alpha.</p>
+<div class="card">
+<table>
+  <tr><th>nguồn</th><th>bản chất</th><th>cơ chế</th></tr>
+  <tr><td>chi phí prompt LLM</td><td><span class="ok">xác định</span></td><td>Bức tường kỹ năng là ~12k tokens cho mỗi decision prompt, mỗi chu kỳ, mỗi lần chạy, mãi mãi. Top-K theo ngữ cảnh (Phase 4 / step e) cắt giảm 60–80% — một sự giảm chi phí đảm bảo, tích lũy. NET P&amp;L theo định nghĩa.</td></tr>
+  <tr><td>Dư địa công suất</td><td><span class="ok">xác định</span></td><td>Giới hạn block đã được nâng lên 4× và từng chỉ còn dư 6 ký tự; #287 cho thấy giới hạn này âm thầm gây ra một bài học đắt giá. Retrieval chấm dứt khoản phí lặp lại này.</td></tr>
+  <tr><td>Giảm hình dạng thua lỗ</td><td><span class="wr">hành vi được đo lường</span></td><td>74% tổn thất được đo lường nằm trong một nhóm hành vi. Các bài học chứng minh được khả năng thay đổi hành vi đó (liên kết 1) tấn công vào điểm rò rỉ lớn nhất của sổ giao dịch — đây chính là công việc thực sự của daemon.</td></tr>
+  <tr><td>Alpha truy xuất</td><td><span class="no">không được khẳng định</span></td><td>Việc xếp hạng 2 đoạn truy xuất tốt hơn khó có thể tạo ra alpha mới. Nếu cổng thăng cấp từng đo được P&amp;L dương vượt quá chi phí + hình dạng tổn thất, đó là phần lợi thêm, không phải là kế hoạch.</td></tr>
+</table>
+</div>
+
+<h2>7. Ranh giới của quyền tự chủ — "tự học" ở đây nghĩa là gì</h2>
+<p class="kr">Ranh giới của quyền tự chủ — sau (f), hệ thống sẽ tự viết ra các bài học, gán trọng số theo kết quả đã đo lường, và loại bỏ chúng dựa trên bằng chứng. Tuy nhiên, các cổng, việc định cỡ, các rào chắn và nhiệm vụ vẫn là mã mà daemon không thể chạm vào.</p>
+<div class="card">
+<table>
+  <tr><th>hệ thống sẽ, tự nó</th><th>hệ thống sẽ không bao giờ</th></tr>
+  <tr><td>viết các bài học ứng viên từ các lượt chạy đã đóng của chính nó (f)</td><td>tự thăng cấp bài học của chính nó ra khỏi khu cách ly mà không có điểm số đo lường</td></tr>
+  <tr><td>giảm trọng số các bài học mà kết quả của nó bác bỏ (c)</td><td>tăng trọng số dựa trên ý kiến — trọng số chỉ đặt trên bằng chứng</td></tr>
+  <tr><td>chọn bài học đã được xác thực nào mà mỗi tình huống sẽ đọc (d/e)</td><td>chạm vào các cổng độ tin cậy, kích thước, thang thích ứng, đường ray vốn, hoặc nhiệm vụ</td></tr>
+  <tr><td>mở rộng nhóm có thể truy xuất khi các run kết thúc (a3/f)</td><td>chạy mà không có nút chuyển đổi một-cờ để khôi phục hành vi tất định</td></tr>
+</table>
+<p class="legend">Cùng lớp bọc mà nền tảng đã tin tưởng: monotone-tightening, flag-gated, journal-first, chỉ được thăng cấp dựa trên NET realized P&amp;L hoặc không gì cả.</p>
+</div>
+
+<h2>8. Tham chiếu</h2>
+<p class="kr">Tài liệu tham khảo — nguồn tài liệu, mô-đun, số liệu.</p>
+<div class="card">
+<table>
+  <tr><th>phần</th><th>nơi</th></tr>
+  <tr><td>phân tích đầy đủ (nguồn của trang này)</td><td><code>docs/plan/22-phase3-learning-to-profit.md</code></td></tr>
+  <tr><td>kế hoạch + sổ cái gia tăng</td><td><code>docs/plan/22-desk-retrieval-rag.md</code> §7 — cơ quan có thẩm quyền; mỗi gia tăng được ghi nhận tại đó kèm ngày</td></tr>
+  <tr><td>corpus + bộ chấm điểm</td><td><code>service/server/desk_memory.py</code> · ingest: <code>desk_memory_ingest.py</code></td></tr>
+  <tr><td>nhớ lại + nhật ký</td><td><code>run_engine._recall_query · _recall_line · _recall_capture</code></td></tr>
+  <tr><td>tường kỹ năng (mục tiêu Giai đoạn 4)</td><td><code>trading_skills.skills_block</code> — 36 kỹ năng, <code>MAX_BLOCK_LEN</code> 48.000, không truy xuất</td></tr>
+  <tr><td>sự thật kết quả</td><td><code>pnl_audit.py</code> ledger replay — các truy vấn thô bỏ qua <code>run:N:flatten</code> đóng</td></tr>
+  <tr><td>cơ sở thực tế bên ngoài</td><td>các hướng dẫn thực hành OPE/IPS (arXiv 2010.12470), bộ ước lượng doubly-robust, bandit khai thác an toàn, phân bổ tín nhiệm theo cấp bước cho các agent LLM — được liên kết trong phân tích md</td></tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>
