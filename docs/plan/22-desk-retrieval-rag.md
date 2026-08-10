@@ -260,6 +260,78 @@ Every increment lands here as a dated line, in the same PR that ships it.
       output was re-checked after that deploy and the pairs were unchanged.
       Recorded here so a later session does not read a moved count as this
       entry being wrong.
+  - **2026-08-10 — increment (a2) SHIPPED: ε-exploration with logged
+    propensities, default-off.** Retrieval can now differ from its own
+    ranking, and every `recall` row records the policy that produced it.
+    `run_engine._recall_select(hits, explore)` chooses what the brief
+    carries; `DESK_RECALL_EXPLORE` (default **off**) and
+    `_recall_explore_allowed` gate it.
+    - **First, the 08-09 finding re-measured at scale — it held exactly.**
+      262 `recall` events (was 101), 14 (market × situation) cells, and
+      `COUNT(DISTINCT sha)` = **1 for both slots in every one of the 14
+      cells**. A day of extra volume produced zero extra variance, which is
+      what "unidentifiable, not weak" predicted.
+    - **Scheme `eps-head-fixed-v1`.** The rank-1 chunk is never displaced;
+      with ε=0.25 the SECOND slot is drawn uniformly from the above-floor
+      candidates ranked below the incumbent pair (search widens to 5 only
+      when exploring). Consequences, all deliberate:
+      - min propensity = ε/|alts| ≈ **0.083** on the measured pools. IPS
+        blows up on small propensities, so the design is few arms and a fat
+        ε — never a long tail of rarely-drawn options.
+      - the head is common to every arm, so **the head chunk is not
+        scoreable under v1**. That is the price of bounding exploration to
+        one slot, and it is exactly why the scheme VERSION is journaled: a
+        later v2 that also drops the head is a *different dataset*, not more
+        of this one.
+      - up to **1 + |alts| distinct pairs per class**; measured pools give
+        3–4, so the corrected variance gate for (b) becomes reachable.
+    - **The relevance floor is a FRACTION OF THE HEAD (0.60), not an
+      absolute score** — and the measurement is why. Retrieval scores for
+      the four live classes, probed in-container 2026-08-10:
+
+      | class | r1 | r2 | r3 | r4 | r5 |
+      |---|---|---|---|---|---|
+      | gave-back + losing | 26.83 | 20.99 | 18.78 | 18.24 | 18.06 |
+      | gave-back + winning | 30.27 | 22.48 | 21.97 | 21.19 | 18.57 |
+      | losing | 11.92 | 10.97 | 10.02 | 9.90 | 9.80 |
+      | winning | 15.03 | 14.34 | 11.18 | 9.93 | 8.94 |
+
+      Scales differ 2–3× across classes: the gave-back class's **eighth**
+      chunk (17.2) outscores the winning class's **first** (15.0). One
+      absolute floor would mean two different things in two situations —
+      admitting near-duplicates in one class while starving another.
+    - **Losing classes are excluded** (`_recall_explore_allowed`): the
+      mandate's asymmetry — never loosen an unproven thing on the losing
+      side — applies to advice as much as to rails. They join after the
+      first §7 promotion gate passes. Flat is unreachable from this call
+      site (`_recall_line` runs only inside the holding branch), so in
+      practice (a2) explores the winning and gave-back-while-positive
+      classes.
+    - **The propensity and scheme are journaled on EVERY row, including
+      when exploration is off** (`deterministic-top2`, propensity 1.0).
+      Pooling deterministic rows with ε-scheme rows unlabelled would
+      silently corrupt every estimate (c) computes, and it cannot be
+      retrofitted onto rows already written.
+    - Fail-soft at a third level: a selector that raises falls back to the
+      **incumbent ranking**, not to no recall — reaching `_recall_line`'s
+      outer handler would strip the desk's brief, a degradation rather than
+      the no-op fail-soft requires. Pinned by
+      `test_a_broken_draw_never_costs_the_desk_its_brief`.
+    - Tests: `RecallExploreTests` (10) + `RecallExploreWiringTests` (4) in
+      `tests/test_run_engine.py`. **Mutation-checked ×7** — floor removed,
+      never-explores, losing-class explored, head displaced, propensity
+      dropped from the emit, fail-soft guard removed, off-rows unlabelled.
+      The propensity-drop mutation initially **survived**: the wiring test
+      grepped `run_cycle`'s source and the word appeared in a *comment*.
+      The test now strips comments before grepping — a source grep that
+      prose satisfies is not a wiring test.
+    - **Next: turn the flag on for a measurement window, then (a3).** (a2)
+      shipping default-off means the dataset is still degenerate until
+      `DESK_RECALL_EXPLORE=1` is set on prod. Sequence: enable → confirm
+      ≥2 distinct second-slot shas per active class in `run_events` →
+      then (a3) pool enrichment, since the deep analysis's ≥3-above-floor
+      precondition is only just met (3–4 alternates) on today's frozen
+      563-chunk monitoring pool.
   - **2026-08-09 — deep analysis shipped:**
     [22-phase3-learning-to-profit.md](22-phase3-learning-to-profit.md) — the
     owner-requested full analysis of the path from retrieval variance to
