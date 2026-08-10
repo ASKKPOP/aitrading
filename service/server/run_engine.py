@@ -4710,4 +4710,17 @@ async def tick() -> dict:
             counters["memory_ingested"] = ingested
     except Exception:  # noqa: BLE001
         logger.warning("desk memory ingest failed", exc_info=True)
+    # Daily compounding of the fleet's working capital rides the same tick,
+    # throttled to once per UTC day and equally forbidden from failing it:
+    # a budget that does not compound is a missed adjustment, a dead tick is
+    # an unmanaged position. It only moves the allocation budget, never a
+    # position.
+    try:
+        import fleet_budget_daily
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        compounded = await asyncio.to_thread(fleet_budget_daily.maybe_compound, today)
+        if compounded and compounded.get("changed"):
+            counters["budget_compounded"] = compounded["changed"]
+    except Exception:  # noqa: BLE001
+        logger.warning("fleet budget compound failed", exc_info=True)
     return counters
