@@ -36,14 +36,17 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import logging
 import os
 import re
 import threading
+import time
 from collections import OrderedDict
 from typing import Any, Optional
 
 from analysis_agents import LANG_NAMES, normalize_lang
 from cache import get_json, set_json
+from database import get_db_connection, using_mysql
 from desk_i18n_data import DESK_PHRASES
 from llm_client import (
     LlmContext,
@@ -134,6 +137,72 @@ _MEM_CACHE: "OrderedDict[str, str]" = OrderedDict()
 _MEM_CACHE_MAX = 5000
 _MEM_CACHE_LOCK = threading.Lock()
 
+logger = logging.getLogger(__name__)
+
+# Durable third tier under mem/KV, and the only one that crosses both prod
+# boundaries at once: worker -> backend (two processes, Redis inert) and
+# restart -> restart. Without it, the desk-report warm that run_engine fires
+# at journal time lands in the WORKER's memory and the backend never sees it,
+# and every backend restart resets the whole panel to English-first. Longer
+# TTL than the KV tier on purpose: the desk-cycles panel has a date filter
+# that walks back through old days, and model-authored report prose will
+# never gain a catalogue entry the way a recurring headline phrasing can.
+_DB_TTL_SECONDS = 30 * 24 * 3600
+
+
+def _db_get(key: str) -> Optional[str]:
+    """Read a translation from the durable tier. None on miss, expiry, or any
+    database trouble — the caller falls back exactly as for a cache miss."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT value, created_at FROM i18n_xlate_cache "
+                "WHERE cache_key = ?", (key,))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001 — durability must never break a request
+        return None
+    if not row:
+        return None
+    if time.time() - float(row["created_at"] or 0) > _DB_TTL_SECONDS:
+        return None
+    return row["value"]
+
+
+def _db_put(key: str, val: str) -> None:
+    try:
+        now = int(time.time())
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            if using_mysql():
+                cursor.execute(
+                    "INSERT INTO i18n_xlate_cache (cache_key, value, created_at)"
+                    " VALUES (?, ?, ?)"
+                    " ON DUPLICATE KEY UPDATE"
+                    "     value = VALUES(value), created_at = VALUES(created_at)",
+                    (key, val, now))
+            else:
+                cursor.execute(
+                    "INSERT INTO i18n_xlate_cache (cache_key, value, created_at)"
+                    " VALUES (?, ?, ?)"
+                    " ON CONFLICT(cache_key) DO UPDATE SET"
+                    "     value = excluded.value, created_at = excluded.created_at",
+                    (key, val, now))
+            # Opportunistic prune: writes are low-volume (a handful of warmed
+            # strings per cycle), so expiring here keeps the table bounded
+            # without a sweeper.
+            cursor.execute("DELETE FROM i18n_xlate_cache WHERE created_at < ?",
+                           (now - _DB_TTL_SECONDS,))
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001 — losing durability, not the translation
+        logger.warning("i18n_xlate_cache write failed for %s", key, exc_info=True)
+
 
 def _cache_get(key: str) -> Optional[str]:
     with _MEM_CACHE_LOCK:
@@ -147,6 +216,12 @@ def _cache_get(key: str) -> Optional[str]:
             _MEM_CACHE[key] = kv
             _MEM_CACHE.move_to_end(key)
         return kv
+    db = _db_get(key)  # the durable tier: crosses processes and restarts
+    if isinstance(db, str):
+        with _MEM_CACHE_LOCK:
+            _MEM_CACHE[key] = db
+            _MEM_CACHE.move_to_end(key)
+        return db
     return None
 
 
@@ -157,6 +232,7 @@ def _cache_put(key: str, val: str) -> None:
         while len(_MEM_CACHE) > _MEM_CACHE_MAX:
             _MEM_CACHE.popitem(last=False)
     set_json(key, val, ttl_seconds=_XLATE_TTL_SECONDS)  # inert without Redis
+    _db_put(key, val)
 
 
 def _parse_numbered(reply: str, count: int) -> dict[int, str]:

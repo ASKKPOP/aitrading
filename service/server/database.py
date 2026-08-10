@@ -2809,6 +2809,26 @@ def init_database():
         ON desk_memory(run_id)
     """)
 
+    # Durable tier of the market_i18n translation cache. Prod is Redis-less
+    # and two-process (worker journals, backend serves), so an in-memory or
+    # KV cache cannot carry a warmed translation from the write side to the
+    # read side, and a restart wiped everything — this table is what makes
+    # the AI-analysis panel's FIRST read of a desk report come back already
+    # localized. cache_key is market_i18n._cache_key (mktxlate:{lang}:{sha16});
+    # created_at is epoch seconds so TTL math needs no dialect-sensitive
+    # datetime parsing.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS i18n_xlate_cache (
+            cache_key  VARCHAR(64) PRIMARY KEY,
+            value      TEXT    NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_i18n_xlate_created
+        ON i18n_xlate_cache(created_at)
+    """)
+
     # Report delivery journal — the row is written BEFORE the external send
     # (status pending -> sent) so a worker restart can neither double-send a
     # digest nor permanently swallow a run_stopped alert (a sweep retries
