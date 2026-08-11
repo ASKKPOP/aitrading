@@ -164,9 +164,13 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
     golden_cross_state = (ma50 > ma200) if (ma50 is not None and ma200 is not None) else None
 
     sigma_pct = volume_ratio = None
+    manip_shapes: list[str] = []
     try:
         hourly = fetch_candles(okx, bar="1H", limit=HOURLY_CANDLES)
         sigma_pct, volume_ratio = compute_sigma_and_volume(hourly)
+        # Research 04: manipulation-shape read on the same candles.
+        from manipulation import signals_from_hourly
+        manip_shapes = signals_from_hourly(hourly)
     except Exception:  # noqa: BLE001
         pass
 
@@ -235,6 +239,14 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
         elif rsi <= 30:
             score += 2
             bullish.append(f"RSI(14) {_fmt(rsi, 1)} oversold (≤30, contrarian)")
+    if "manipulation:pump_ignition" in manip_shapes:
+        score -= 2
+        risks.append("pump-shaped spike: vertical hourly move on anomalous "
+                     "volume — engineered-move shape, do not chase")
+    elif "manipulation:cascade_shock" in manip_shapes:
+        score -= 1
+        risks.append("cascade-shape shock: outsized move on forced-flow "
+                     "volume — judge only after exhaustion + reclaim")
     if funding_rate is not None:
         if funding_rate > FUNDING_CROWDED:
             score -= 1

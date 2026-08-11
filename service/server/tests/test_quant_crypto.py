@@ -151,6 +151,44 @@ class BuildAnalysisTests(unittest.TestCase):
                                  "ts": None}):
             return build_crypto_analysis("BTC")
 
+    def test_pump_shaped_hourly_tape_lands_in_the_risk_lines(self):
+        # Research 04: the manipulation-shape read rides the SAME hourly
+        # candles the sigma/volume stats use, and a pump-shaped bar must
+        # surface as a risk line (this is what research theses and desk
+        # briefs actually quote) with a score penalty.
+        closes = [100.0 + i * 0.1 for i in range(120)]
+        daily = _candles(closes)
+        hourly = _candles([100.0] * 30)
+        hourly[-1]["open"] = 100.0
+        hourly[-1]["close"] = 108.0
+        hourly[-1]["volume"] = 500.0   # 10x the 50.0 baseline
+
+        def fake_candles(symbol, bar="1H", limit=100):
+            return daily if bar == "1D" else hourly
+
+        from quant_crypto import build_crypto_analysis
+        with patch("crypto_feed.fetch_candles", side_effect=fake_candles), \
+             patch("crypto_feed.fetch_funding_rate",
+                   return_value={"symbol": "BTCUSDT", "funding_rate": 0.0001,
+                                 "next_funding_time": None}), \
+             patch("crypto_feed.fetch_ticker",
+                   return_value={"symbol": "BTCUSDT", "last_price": "108.0"}), \
+             patch("crypto_feed.fetch_spot_ticker",
+                   return_value={"symbol": "BTCUSDT", "last_price": 108.0}), \
+             patch("crypto_feed.fetch_open_interest",
+                   return_value={"symbol": "BTCUSDT", "open_interest": 1000.0,
+                                 "open_interest_ccy": 1000.0}), \
+             patch("crypto_feed.fetch_long_short_ratio",
+                   return_value={"symbol": "BTCUSDT", "long_short_ratio": 1.0,
+                                 "ts": None}):
+            analysis = build_crypto_analysis("BTC")
+        joined = " | ".join(analysis["risk_factors"])
+        self.assertIn("pump-shaped spike", joined)
+        # And the quiet fixture (flat hourly) must NOT carry the line.
+        quiet = self._build(closes)
+        self.assertNotIn("pump-shaped spike",
+                         " | ".join(quiet["risk_factors"]))
+
     def test_long_window_fields_populated_with_400_closes(self):
         closes = [100.0 + i * 0.5 for i in range(400)]  # steady uptrend
         analysis = self._build(closes)

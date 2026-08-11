@@ -83,6 +83,7 @@ SOURCES: dict[str, tuple[str, str]] = {
     "trading-skills": ("plan/20-trading-skills.html", "en"),
     "desk-rag": ("plan/22-desk-retrieval-rag.html", "en"),
     "desk-learning": ("plan/22-phase3-learning-to-profit.html", "en"),
+    "manipulation": ("research/04-market-manipulation-detection.html", "en"),
 }
 
 # Markdown-sourced groups: the build converts these to HTML, so translate the
@@ -110,6 +111,7 @@ OUT_PATTERN: dict[str, str] = {
     "trading-skills": "plan/20-trading-skills-{lang}.html",
     "desk-rag": "plan/22-desk-retrieval-rag-{lang}.html",
     "desk-learning": "plan/22-phase3-learning-to-profit-{lang}.html",
+    "manipulation": "research/04-market-manipulation-detection-{lang}.html",
     "psych-report": "research/parameters/2-chart-vs-human-psychology-report-{lang}.md",
     "framework": "research/parameters/2-hybrid-strategy-framework-{lang}.md",
     "backtest-report": "research/parameters/3-phase4-backtest-report-{lang}.md",
@@ -135,6 +137,7 @@ EXISTING: dict[str, set[str]] = {
     "backtest-report": {"en", "ko"},
     "desk-rag": {"en"},
     "desk-learning": {"en"},
+    "manipulation": {"en"},
 }
 
 SKIP_PARENTS = {"script", "style", "pre", "samp", "kbd"}

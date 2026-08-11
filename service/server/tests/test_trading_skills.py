@@ -498,6 +498,29 @@ class RegistryTests(_Db):
             self.assertNotIn("pead-drift", slugs)
             self.assertNotIn("parabolic-exhaustion", slugs)
 
+    def test_manipulation_skills_ride_their_blocks(self):
+        # Research 04 (2026-08-10, owner: "fully implement for sooppiy AI"):
+        # three manipulation-defense judgments. pump-ignition-veto rides the
+        # crypto entry paths (light + trader); stop-hunt-discipline rides
+        # where exits are decided (trader + verifier) on the leveraged books;
+        # manipulated-book-hygiene rides symbol choice (planner) and trader,
+        # crypto only. None may leak onto us-stock.
+        for site in ("light", "trader"):
+            block = trading_skills.skills_block(site, "crypto")
+            self.assertIn("### Pump Ignition Veto\n", block, site)
+        for market in ("crypto", "futures"):
+            block = trading_skills.skills_block("trader", market)
+            self.assertIn("### Stop-Hunt Discipline\n", block, market)
+            verifier = trading_skills.skills_block("verifier", market)
+            self.assertIn("### Stop-Hunt Discipline\n", verifier, market)
+        for site in ("planner", "trader"):
+            block = trading_skills.skills_block(site, "crypto")
+            self.assertIn("### Manipulated Book Hygiene\n", block, site)
+        us = trading_skills.skills_block("trader", "us-stock")
+        for name in ("Pump Ignition Veto", "Stop-Hunt Discipline",
+                     "Manipulated Book Hygiene"):
+            self.assertNotIn(f"### {name}\n", us)
+
     def test_selection_by_market(self):
         trading_skills.create_skill(
             "crypto-only", "Crypto Only", "crypto body", prompts=["trader"],

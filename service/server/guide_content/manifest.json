@@ -163,6 +163,15 @@
       "id": "Daemon Pembelajaran Desk (admin)"
     },
     {
+      "group": "manipulation",
+      "ko": "시장 조작 탐지 (관리자)",
+      "en": "Manipulation Detection (owner)",
+      "ja": "相場操縦の検出（管理者）",
+      "th": "การตรวจจับการปั่นราคา (ผู้ดูแล)",
+      "vi": "Phát hiện thao túng thị trường (quản trị)",
+      "id": "Deteksi Manipulasi Pasar (admin)"
+    },
+    {
       "group": "trading-skills",
       "ko": "트레이딩 스킬 (관리자)",
       "en": "Trading Skills (owner)",
@@ -481,6 +490,13 @@
       "owner_only": true
     },
     {
+      "key": "manipulation-en",
+      "lang": "en",
+      "group": "manipulation",
+      "title": "Research 04 — Catching the Manipulators: Small-Cap Crypto Rings and How Sooppiy Turns Them Into Edge",
+      "owner_only": true
+    },
+    {
       "key": "ops-keys-ko",
       "lang": "ko",
       "group": "ops-keys",
@@ -688,6 +704,41 @@
       "lang": "id",
       "group": "desk-learning",
       "title": "Rencana 22 · Fase 3 — Belajar untuk Profit",
+      "owner_only": true
+    },
+    {
+      "key": "manipulation-ko",
+      "lang": "ko",
+      "group": "manipulation",
+      "title": "리서치 04 — 시장 조작 세력 잡아내기: 소형 코인 조작 링과 Sooppiy의 대응 전략",
+      "owner_only": true
+    },
+    {
+      "key": "manipulation-ja",
+      "lang": "ja",
+      "group": "manipulation",
+      "title": "リサーチ04 — 相場操縦の検出：小型コインの操作リングとSooppiyの対応戦略",
+      "owner_only": true
+    },
+    {
+      "key": "manipulation-th",
+      "lang": "th",
+      "group": "manipulation",
+      "title": "งานวิจัย 04 — จับกลุ่มปั่นราคา: วงปั่นเหรียญเล็กและกลยุทธ์รับมือของ Sooppiy",
+      "owner_only": true
+    },
+    {
+      "key": "manipulation-vi",
+      "lang": "vi",
+      "group": "manipulation",
+      "title": "Nghiên cứu 04 — Bắt kẻ thao túng: các nhóm thao túng coin nhỏ và cách Sooppiy biến chúng thành lợi thế",
+      "owner_only": true
+    },
+    {
+      "key": "manipulation-id",
+      "lang": "id",
+      "group": "manipulation",
+      "title": "Riset 04 — Menangkap Manipulator: Sindikat Koin Kecil dan Cara Sooppiy Mengubahnya Menjadi Keunggulan",
       "owner_only": true
     },
     {

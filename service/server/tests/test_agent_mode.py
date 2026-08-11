@@ -75,6 +75,30 @@ class PlannerClampTests(AgentModeTestCase):
         self.assertEqual(plan["risk_level"], "balanced")       # invalid -> default
         self.assertEqual(plan["planner"], "llm")
 
+    def test_planner_prompt_carries_market_scoped_skills(self):
+        # Research 04 wiring fix: skills_block("planner") without a market
+        # silently excluded every market-scoped planner skill (e.g. the
+        # crypto-only manipulated-book-hygiene judgment). The rule's market
+        # must ride into the skills selection.
+        import agent_planner
+        seen = {}
+
+        def fake_block(site, market=None):
+            seen["args"] = (site, market)
+            return ""
+        wild = json.dumps({"symbol": "BTCUSDT", "interval_minutes": 60,
+                           "min_confidence": 0.65, "size_usd": 500,
+                           "risk_level": "balanced", "rationale": "ok"})
+        with patch.object(agent_planner, "_gather_context",
+                          return_value={"scanner_candidates": [],
+                                        "budget_usd": 10000.0}), \
+             patch("llm_client.llm_configured", return_value=True), \
+             patch("trading_skills.skills_block", side_effect=fake_block), \
+             patch("llm_client.generate_text", return_value=wild), \
+             patch("llm_client.active_provider_model", return_value="m"):
+            agent_planner.plan_agent_cycle(self._config())
+        self.assertEqual(seen["args"], ("planner", "crypto"))
+
     def test_fallback_plan_without_llm(self):
         import agent_planner
         with patch.dict(os.environ, _NO_LLM_ENV), \

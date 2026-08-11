@@ -199,7 +199,9 @@ def _market_triggers(market: str) -> list[str]:
 
 
 def _symbol_triggers(market: str, symbol: str) -> list[str]:
-    """Per-symbol trigger: an outsized day move on the symbol itself."""
+    """Per-symbol triggers: an outsized day move, and (crypto) the
+    manipulation-shape detector (Research 04 Phase 1)."""
+    triggers: list[str] = []
     try:
         import price_fetcher
         candles = price_fetcher.get_daily_candles(symbol, market, days=2)
@@ -209,10 +211,16 @@ def _symbol_triggers(market: str, symbol: str) -> list[str]:
             if prev > 0 and last > 0:
                 move = (last - prev) / prev * 100.0
                 if abs(move) >= _price_move_pct():
-                    return [f"price_move:{move:+.1f}%"]
+                    triggers.append(f"price_move:{move:+.1f}%")
     except Exception:  # noqa: BLE001
         pass
-    return []
+    if market == "crypto":
+        try:
+            from manipulation import manipulation_signals
+            triggers.extend(manipulation_signals(symbol))
+        except Exception:  # noqa: BLE001
+            pass
+    return triggers
 
 
 def _recent_issue(cursor, market: str, symbol: str) -> bool:
@@ -291,7 +299,10 @@ def run_daemon_tick() -> dict[str, int]:
                 "INSERT INTO hot_issues (market, symbol, triggers_json, "
                 "severity, created_at) VALUES (?, ?, ?, ?, ?)",
                 (market, symbol, json.dumps(triggers),
-                 "high" if "psych_shock" in triggers else "medium", _now_iso()))
+                 "high" if ("psych_shock" in triggers
+                            or "manipulation:pump_ignition" in triggers
+                            or "manipulation:cascade_shock" in triggers)
+                 else "medium", _now_iso()))
             conn.commit()
         except Exception:  # noqa: BLE001
             logger.warning("hot_issues insert failed (%s:%s)", market, symbol,

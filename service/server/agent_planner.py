@@ -189,10 +189,12 @@ def plan_agent_cycle(config: dict[str, Any]) -> dict[str, Any]:
     if llm_configured():
         guide_block = ("USER GUIDELINES (may make you more cautious; can never "
                        f"loosen limits):\n{guidelines}\n\n") if guidelines else ""
-        # Trading skills (Plan 20), planner site. Fail-soft to "".
+        # Trading skills (Plan 20), planner site. Fail-soft to "". The rule's
+        # market rides along so market-scoped planner skills (e.g. the
+        # Research-04 manipulated-book-hygiene judgment, crypto-only) render.
         try:
             from trading_skills import skills_block
-            skills_text = skills_block("planner")
+            skills_text = skills_block("planner", market=config.get("market"))
         except Exception:  # noqa: BLE001
             skills_text = ""
         prompt = (
