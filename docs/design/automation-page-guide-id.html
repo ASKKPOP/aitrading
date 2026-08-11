@@ -25,6 +25,7 @@ p,li{color:var(--ink2)}strong{color:var(--ink)}
 .rule p{margin:0;font-size:13.8px}
 .fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
 .fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block;border:1px solid var(--grid);border-radius:9px}
 .ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
 .fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
 .cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
@@ -121,6 +122,12 @@ td strong{color:var(--ink)}
 </ul>
 <p>Semua yang dijelaskan dalam panduan ini — TRADING, fleet, angka profit — berjalan pada dompet simulasi kecuali Anda secara sengaja menghubungkan gateway dan menyetujui persyaratan trading live. Sebuah rule atau run yang akan menggunakan uang sungguhan selalu ditandai dengan lencana merah <strong>⚠ UANG SUNGGUHAN</strong>, sehingga tidak akan pernah terlihat seperti simulasi sekilas pandang.</p>
 
+
+<div class="fig">
+  <div class="ft">Sakelar pada halaman sebenarnya</div>
+  <img src="/guide-assets/automation/id/acct-switch.png" alt="Sakelar pada halaman sebenarnya" loading="lazy">
+  <p class="cap">Bawaan adalah simulator — akun riil adalah langkah terpisah yang ditandai jelas dan perlu bursa terhubung dulu.</p>
+</div>
 <h2>3 · Strip ringkasan — uang Anda, sekilas pandang</h2>
 <p>Empat tile di header menjawab "bagaimana keadaannya?" tanpa membuka apa pun. Chip periode — <strong>Hari ini · Minggu ini · Bulan ini · Tahun ini</strong> — mengatur ulang jendela angka; default-nya adalah This week.</p>
 <div class="sw"><table>
@@ -138,8 +145,20 @@ td strong{color:var(--ink)}
 </ul>
 <p>Di bawah tile terdapat <strong>🧠 Analisis AI (30 menit)</strong> — dibahas di bagian 7. Ini adalah jawaban untuk "apa yang dilakukan AI selama saya pergi?"</p>
 
+
+<div class="fig">
+  <div class="ft">Strip ringkasan pada halaman sebenarnya</div>
+  <img src="/guide-assets/automation/id/summary.png" alt="Strip ringkasan pada halaman sebenarnya" loading="lazy">
+  <p class="cap">Empat ubin plus chip periode; tombol 🧠 Analisis AI (30 mnt) ada di bawahnya. Klik ubin mana pun untuk angka di baliknya.</p>
+</div>
 <h2>4 · Memulai TRADING pertama Anda</h2>
 <p>A <strong>TRADING</strong> adalah satu strategi yang dijalankan AI dan terikat pada satu simbol: AI menganalisisnya ulang sesuai jadwal dan melakukan trading saat keputusannya melewati ambang batas Anda. Ada empat cara untuk memulainya, diurutkan di sini dari yang paling sedikit usaha hingga yang paling banyak kontrol. Mana yang Anda lihat bergantung pada paket Anda (bagian 9).</p>
+<div class="fig">
+  <div class="ft">Dua tombol mulai</div>
+  <img src="/guide-assets/automation/id/create-buttons.png" alt="Dua tombol mulai" loading="lazy">
+  <p class="cap">➕ Make by New Trading membuka dialog pembuatan; 🧠 Make by AI Analyst menjalankan satu analisis lebih dulu.</p>
+</div>
+
 
 <div class="fig">
   <div class="ft">Jalur mana yang cocok untuk Anda?</div>
@@ -209,6 +228,12 @@ td strong{color:var(--ink)}
 <h3>⓪ Agent (1 symbol) — cukup atur budget</h3>
 <p>Tekan <strong>➕ Dibuat oleh New Trading</strong> dan dialog pembuatan terbuka pada chip mode. Pada ⓪ hanya ada satu input yang wajib diisi: <strong>Total anggaran ($)</strong>, dari $100. AI memilih simbol yang menjanjikan, membuat TRADING, dan mencatat alasannya setiap siklus. Satu posisi tidak pernah menggunakan lebih dari 25% dari anggaran. Catatan kaki pada tombol ini patut diulang: kill switch adalah daftar TRADING di bawah — hentikan di sana dan itu langsung berhenti, dan <strong>gerbang risiko, pemutus (breakers) dan batas anggaran tidak dapat dilewati oleh AI</strong>.</p>
 
+
+<div class="fig">
+  <div class="ft">Mode ⓪ Agent di dialog pembuatan</div>
+  <img src="/guide-assets/automation/id/create-agent.png" alt="Mode ⓪ Agent di dialog pembuatan" loading="lazy">
+  <p class="cap">Satu input wajib — total anggaran. AI memilih simbol; satu posisi tidak pernah memakai lebih dari 25% anggaran.</p>
+</div>
 <h3>① Sederhana — pilih koin dan tingkat risiko</h3>
 <p>Dua pilihan alih-alih satu: <strong>symbol</strong> (top-5 langsung berdasarkan volume, atau <strong>🔍 Pilihan otomatis AI</strong>, di mana pemindai memilih dari lonjakan volume dan listing baru setiap siklus) dan <strong>kartu risiko</strong>:</p>
 <div class="sw"><table>
@@ -220,12 +245,30 @@ td strong{color:var(--ink)}
 </tbody></table></div>
 <p>Angka keluar pada setiap kartu adalah yang akan benar-benar diterapkan oleh server untuk tingkat tersebut, ditampilkan sebelum Anda melakukan komitmen. Di bawah kartu-kartu tersebut, paket dengan akses futures juga memilih <strong>jenis buku</strong>: <em>Spot</em> (didanai penuh, hanya beli, tanpa likuidasi) atau <em>Futures</em> (desk juga dapat melakukan short, dengan leverage margin terisolasi 1–10× — pada N× posisi dilikuidasi pada pergerakan merugikan 100/N%).</p>
 
+
+<div class="fig">
+  <div class="ft">Mode ① Sederhana — simbol dan kartu risiko</div>
+  <img src="/guide-assets/automation/id/create-simple.png" alt="Mode ① Sederhana — simbol dan kartu risiko" loading="lazy">
+  <p class="cap">Simbol top-5 (atau pilihan otomatis AI) dan tiga kartu risiko. SL/TP pada kartu adalah nilai yang benar-benar ditegakkan server.</p>
+</div>
 <h3>② Full Auto — luncurkan armada</h3>
 <p>Satu anggaran, banyak TRADING. Anda mengatur <strong>jumlah TRADING</strong> (hingga batas paket Anda), <strong>total anggaran</strong>, opsional <strong>target keuntungan %</strong> (mencapainya dan armada akan mengamankan semuanya, lalu memulai ulang sendiri; 0 berarti berjalan sampai Anda menghentikannya), sebuah <strong>tingkat keuntungan</strong> (Balance / High Profit / Risk &amp; High Profit — ukuran posisi yang semakin besar dan leverage otomatis), <strong>pasar</strong> yang dapat diperdagangkan (kripto, saham AS, futures, forex — atau semua), dan kebijakan <strong>leverage</strong> (Auto membiarkan tingkat risiko yang menentukan). Tekan <strong>🚀 Luncurkan armada</strong>dan AI meneliti pasar, menyusun N TRADINGs, dan menjaga agar roster tetap terisi saat anggota selesai. Memantau armada dijelaskan di bagian 8.</p>
 
+
+<div class="fig">
+  <div class="ft">② Full Auto — formulir peluncuran armada</div>
+  <img src="/guide-assets/automation/id/create-fleet.png" alt="② Full Auto — formulir peluncuran armada" loading="lazy">
+  <p class="cap">Jumlah TRADING, total anggaran, target profit, level profit, pasar, dan leverage — lalu 🚀 luncurkan armada.</p>
+</div>
 <h3>🧠 Dibuat oleh AI Analyst — lihat satu analisis terlebih dahulu</h3>
 <p>Tombol header kedua menjalankan seluruh desk empat-analis secara penuh <strong>sekali, sekarang juga</strong> — News, Sentiment, Fundamentals &amp; Macro, dan Technical masing-masing menulis ringkasan; seorang trader dan seorang risk reviewer mendiskusikannya menjadi sebuah keputusan. Anda dapat menyaksikan proses ini secara langsung, lalu mendapatkan keputusan (BUY / SELL / HOLD), tingkat keyakinannya, laporan tertulis, detail keputusan (keselarasan tesis, momentum, kualitas entri, konteks risiko, verifikasi), dan ringkasan dari para analis. <strong>Tidak ada order yang ditempatkan.</strong> Jika Anda menyukai apa yang Anda baca, <strong>▶ Mulai auto-trading dengan ini</strong> mengubahnya menjadi TRADING dengan default yang seimbang dalam satu klik. Ini hanya riset — bukan nasihat keuangan.</p>
 
+
+<div class="fig">
+  <div class="ft">Dialog Analis AI</div>
+  <img src="/guide-assets/automation/id/analyst.png" alt="Dialog Analis AI" loading="lazy">
+  <p class="cap">Pilih simbol dan pasar, tekan Jalankan analisis — desk berdebat sekali, dan tidak ada order yang dikirim.</p>
+</div>
 <div class="note"><b>Jika permulaan ditolak.</b> Memulai dapat terhalang oleh konflik yang dapat diselesaikan — misalnya posisi terbuka atau aturan auto-executing lama pada simbol yang sama. TRADING tetap dibuat sebagai draft di grid, dan tombol Start-nya membuka dialog yang menyebutkan konflik tersebut dan menawarkan solusi untuk Anda ("Close &amp; disable, then start"). Tidak ada yang gagal secara diam-diam.</div>
 
 <h2>5 · Apa yang terjadi setelah Anda menekan start</h2>
@@ -350,6 +393,12 @@ td strong{color:var(--ink)}
   </svg>
 </div>
 
+
+<div class="fig">
+  <div class="ft">Kartu TRADING yang berjalan</div>
+  <img src="/guide-assets/automation/id/run-card.png" alt="Kartu TRADING yang berjalan" loading="lazy">
+  <p class="cap">Status dengan titik berdenyut, empat fakta, buku langsung (di sini long futures 3× dengan pertahanan likuidasi), sparkline ekuitas, dan lencana ⧗ usia data.</p>
+</div>
 <h3>Membaca sebuah kartu</h3>
 <ul>
   <li><strong>Baris status</strong> — <em>Ready</em> (sebuah draf, belum dimulai), <em>Waiting</em> (siap, siklus berikutnya terjadwal), <em>Running</em> (titik berdenyut), <em>Paused</em>, <em>Stopping</em>, <em>Stopped</em> (beserta alasannya). Tanda (?) pada kartu membuka "Cara membaca kartu TRADING", yang menjelaskan setiap kolom di tempatnya.</li>
@@ -363,12 +412,24 @@ td strong{color:var(--ink)}
 <h3>Panel detail</h3>
 <p>Klik sebuah kartu dan panel akan meluncur masuk dengan gambaran lengkap: header P&amp;L (realized, trades, current mark), sparkline ekuitas, tombol lifecycle, dan <strong>log peristiwa</strong> — 60 entri terbaru dari <em>keputusan</em>, <em>transaksi</em>, <em>dilewati</em>, <em>desain order</em>, <em>intensi order</em>, <em>status</em>, <em>ekuitas</em>, <em>peringatan</em> dan lainnya. Skip menyebutkan tahap dan alasan mereka (misalnya <em>margin biaya</em>, <em>batas bawah risiko/imbalan</em>, <em>anggaran</em>, <em>peringkat keyakinan</em>") — log ini adalah tempat pertama yang harus dilihat setiap kali Anda bertanya-tanya mengapa tidak ada yang terjadi.</p>
 
+
+<div class="fig">
+  <div class="ft">Laci detail</div>
+  <img src="/guide-assets/automation/id/run-drawer.png" alt="Laci detail" loading="lazy">
+  <p class="cap">Header P&L, kurva ekuitas, tombol siklus hidup, dan log peristiwa — setiap keputusan, transaksi, dan lewatan beserta alasannya.</p>
+</div>
 <h3>Mulai ulang otomatis</h3>
 <p>Ketika sebuah TRADING berhenti karena telah mencapai tujuannya sendiri — target profit tercapai, atau batas trade-nya — <strong>TRADING baru dengan pengaturan yang sama akan otomatis mengambil alih</strong>, dan log peristiwa mencatat "Restarted as TRADING #N". Menghentikannya sendiri, tentu saja, tidak me-restart apa pun.</p>
 
 <h2>7 · 🧠 AI Analysis (30 min) — buku harian desk</h2>
 <p>Tombol di bawah tile ringkasan membuka ulasan atas semua yang dicatat AI, dilipat menjadi <strong>siklus 30 menit — termasuk jam-jam ketika Anda tidak sedang masuk</strong>. Pilih hari dengan panah tanggal; setiap baris adalah satu siklus: baik "tidak ada pergerakan", atau ringkasan satu baris (<em>keputusan · dilewati · dibuka · ditutup</em>) dengan hasil yang terealisasi. Perluas satu siklus dan Anda akan mendapatkan, per TRADING: aksi yang dipilihnya beserta tingkat keyakinannya, laporan tertulis dari desk, setiap transisi status beserta alasannya, dan apa yang dilewati serta alasannya. Jika Anda memeriksa armada Anda sekali sehari, inilah layar yang harus diperiksa.</p>
 
+
+<div class="fig">
+  <div class="ft">Buku harian desk saat dibuka</div>
+  <img src="/guide-assets/automation/id/ai-analysis.png" alt="Buku harian desk saat dibuka" loading="lazy">
+  <p class="cap">Pilih hari dengan panah tanggal; tiap baris adalah satu siklus 30 menit — bentangkan untuk keputusan, laporan, dan lewatan di baliknya.</p>
+</div>
 <h2>8 · Memantau sebuah armada — 🚀 Full Auto live monitor</h2>
 <p>Selagi sebuah armada aktif, monitornya berada di atas grid:</p>
 <ul>
@@ -380,6 +441,12 @@ td strong{color:var(--ink)}
   <li><strong>Edit armada</strong> — ubah <strong>target profit</strong> dan <strong>jumlah slot</strong> saat sedang berjalan. Saat Anda mengetik, panel menampilkan target dolar dan anggaran per slot secara langsung, beserta jumlah slot maksimum yang direkomendasikan 🤖 AI untuk anggaran Anda. Menambah ukuran akan menambah slot seiring tersedianya ruang anggaran; mengecilkan ukuran akan <strong>menguras</strong> — slot berlebih akan pensiun hanya saat posisinya selesai dengan sendirinya, dan tidak ada yang pernah ditutup paksa oleh perubahan ukuran.</li>
 </ul>
 
+
+<div class="fig">
+  <div class="ft">Monitor langsung armada yang berjalan</div>
+  <img src="/guide-assets/automation/id/fleet-monitor.png" alt="Monitor langsung armada yang berjalan" loading="lazy">
+  <p class="cap">Indeks armada berbasis 100, baris status dengan ekuitas dan dua rel pengaman, satu chip per anggota, serta Jeda · Hentikan semua · Edit armada.</p>
+</div>
 <h2>9 · Apa yang dibuka paket Anda di sini</h2>
 <div class="sw"><table>
 <thead><tr><th>Di halaman ini</th><th>Junior</th><th>Pro</th><th>Professional</th></tr></thead>

@@ -24,6 +24,7 @@ p,li{color:var(--ink2)}strong{color:var(--ink)}
 .rule p{margin:0;font-size:13.8px}
 .fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
 .fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block;border:1px solid var(--grid);border-radius:9px}
 .ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
 .fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
 .cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
@@ -120,6 +121,12 @@ td strong{color:var(--ink)}
 </ul>
 <p>Everything described in this guide — the TRADINGs, the fleet, the profit numbers — runs on the simulated wallet unless you have deliberately connected a gateway and accepted the live-trading terms. A rule or run that would use real money is always marked with a red <strong>⚠ REAL MONEY</strong> badge, so it can never look like a simulation at a glance.</p>
 
+
+<div class="fig">
+  <div class="ft">The switch on the real page</div>
+  <img src="/guide-assets/automation/en/acct-switch.png" alt="The switch on the real page" loading="lazy">
+  <p class="cap">Simulator is the default — Real is a separate, clearly marked step that first requires a connected exchange.</p>
+</div>
 <h2>3 · The summary strip — your money, at a glance</h2>
 <p>Four tiles in the header answer "how is it going?" without opening anything. The period chips — <strong>Today · This week · This month · This year</strong> — re-window the numbers; the default is This week.</p>
 <div class="sw"><table>
@@ -137,8 +144,20 @@ td strong{color:var(--ink)}
 </ul>
 <p>Under the tiles sits <strong>🧠 AI Analysis (30 min)</strong> — covered in section 7. It is the answer to "what did the AI do while I was away?"</p>
 
+
+<div class="fig">
+  <div class="ft">The summary strip on the real page</div>
+  <img src="/guide-assets/automation/en/summary.png" alt="The summary strip on the real page" loading="lazy">
+  <p class="cap">Four tiles plus the period chips; the 🧠 AI Analysis (30 min) button sits underneath. Click any tile for the numbers behind it.</p>
+</div>
 <h2>4 · Starting your first TRADING</h2>
 <p>A <strong>TRADING</strong> is one AI-run strategy bound to one symbol: the AI re-analyses it on a schedule and trades when its decision clears your thresholds. There are four ways to start one, sorted here from least effort to most control. Which ones you see depends on your plan (section 9).</p>
+<div class="fig">
+  <div class="ft">The two start buttons</div>
+  <img src="/guide-assets/automation/en/create-buttons.png" alt="The two start buttons" loading="lazy">
+  <p class="cap">➕ Make by New Trading opens the creation dialog; 🧠 Make by AI Analyst runs one analysis first.</p>
+</div>
+
 
 <div class="fig">
   <div class="ft">Which path fits you?</div>
@@ -208,6 +227,12 @@ td strong{color:var(--ink)}
 <h3>⓪ Agent (1 symbol) — set only a budget</h3>
 <p>Press <strong>➕ Make by New Trading</strong> and the creation dialog opens on the mode chips. In ⓪ there is exactly one required input: <strong>Total budget ($)</strong>, from $100. The AI picks a promising symbol, creates the TRADING, and journals its reasoning every cycle. One position never uses more than 25% of the budget. The footnote on the button is worth repeating: the kill switch is the TRADING list below — stop it there and it halts instantly, and <strong>the risk gate, breakers and budget cap cannot be bypassed by the AI</strong>.</p>
 
+
+<div class="fig">
+  <div class="ft">⓪ Agent mode in the creation dialog</div>
+  <img src="/guide-assets/automation/en/create-agent.png" alt="⓪ Agent mode in the creation dialog" loading="lazy">
+  <p class="cap">One required input — the total budget. The AI picks the symbol; one position never uses more than 25% of the budget.</p>
+</div>
 <h3>① Simple — pick a coin and a risk level</h3>
 <p>Two choices instead of one: the <strong>symbol</strong> (the live top-5 by volume, or <strong>🔍 AI auto-pick</strong>, where a scanner chooses from volume surges and new listings each cycle) and a <strong>risk card</strong>:</p>
 <div class="sw"><table>
@@ -219,12 +244,30 @@ td strong{color:var(--ink)}
 </tbody></table></div>
 <p>The exit numbers on each card are what the server will actually enforce for that level, shown before you commit. Below the cards, plans with futures access also choose the <strong>book type</strong>: <em>Spot</em> (fully funded, long-only, no liquidation) or <em>Futures</em> (the desk can also short, with 1–10× isolated-margin leverage — at N× the position liquidates on a 100/N% adverse move).</p>
 
+
+<div class="fig">
+  <div class="ft">① Simple mode — symbol and risk card</div>
+  <img src="/guide-assets/automation/en/create-simple.png" alt="① Simple mode — symbol and risk card" loading="lazy">
+  <p class="cap">The top-5 symbols (or AI auto-pick) and the three risk cards. The SL/TP on each card is exactly what the server will enforce.</p>
+</div>
 <h3>② Full Auto — launch a fleet</h3>
 <p>One budget, many TRADINGs. You set the <strong>number of TRADINGs</strong> (up to your plan's cap), the <strong>total budget</strong>, an optional <strong>profit goal %</strong> (reach it and the fleet banks everything, then restarts itself; 0 means run until you stop it), a <strong>profit level</strong> (Balance / High Profit / Risk &amp; High Profit — progressively larger position sizing and automatic leverage), the <strong>markets</strong> it may trade (crypto, US stocks, futures, forex — or all), and a <strong>leverage</strong> policy (Auto lets the risk level decide). Press <strong>🚀 Launch fleet</strong> and the AI researches the markets, composes N TRADINGs, and keeps the roster filled as members finish. Monitoring a fleet is section 8.</p>
 
+
+<div class="fig">
+  <div class="ft">② Full Auto — the fleet launch form</div>
+  <img src="/guide-assets/automation/en/create-fleet.png" alt="② Full Auto — the fleet launch form" loading="lazy">
+  <p class="cap">Slot count, total budget, profit goal, profit level, markets and leverage — then 🚀 Launch fleet.</p>
+</div>
 <h3>🧠 Make by AI Analyst — see one analysis first</h3>
 <p>The second header button runs the full four-analyst desk <strong>once, right now</strong> — News, Sentiment, Fundamentals &amp; Macro, and Technical each write a brief; a trader and a risk reviewer debate them into a decision. You watch the pipeline live, then get the decision (BUY / SELL / HOLD), its confidence, a written report, a decision detail (thesis alignment, momentum, entry quality, risk context, verification), and the analyst briefs. <strong>No order is placed.</strong> If you like what you read, <strong>▶ Start auto-trading with this</strong> turns it into a TRADING with balanced defaults in one click. It is research only — not financial advice.</p>
 
+
+<div class="fig">
+  <div class="ft">The AI Analyst dialog</div>
+  <img src="/guide-assets/automation/en/analyst.png" alt="The AI Analyst dialog" loading="lazy">
+  <p class="cap">Pick a symbol and market, press Run analysis — the desk debates once, and no order is placed.</p>
+</div>
 <div class="note"><b>If a start is refused.</b> Starting can be blocked by a resolvable conflict — for example an open position or an old auto-executing rule on the same symbol. The TRADING is still created as a draft in the grid, and its Start button opens a dialog that names the conflict and offers to resolve it for you ("Close &amp; disable, then start"). Nothing fails silently.</div>
 
 <h2>5 · What happens after you press start</h2>
@@ -349,6 +392,12 @@ td strong{color:var(--ink)}
   </svg>
 </div>
 
+
+<div class="fig">
+  <div class="ft">A live TRADING card</div>
+  <img src="/guide-assets/automation/en/run-card.png" alt="A live TRADING card" loading="lazy">
+  <p class="cap">Status with the pulsing dot, the four facts, the live book (here a 3× futures long with its liquidation-defense readout), the equity sparkline, and the ⧗ data-age badge.</p>
+</div>
 <h3>Reading a card</h3>
 <ul>
   <li><strong>Status line</strong> — <em>Ready</em> (a draft, not started), <em>Waiting</em> (armed, next cycle scheduled), <em>Running</em> (pulsing dot), <em>Paused</em>, <em>Stopping</em>, <em>Stopped</em> (with the reason). A (?) on the card opens "How to read a TRADING card", which explains every field in place.</li>
@@ -362,12 +411,24 @@ td strong{color:var(--ink)}
 <h3>The detail drawer</h3>
 <p>Click a card and a drawer slides in with the full picture: a P&amp;L header (realized, trades, current mark), the equity sparkline, the lifecycle buttons, and the <strong>event log</strong> — the newest 60 entries of <em>decision</em>, <em>trade</em>, <em>skipped</em>, <em>order design</em>, <em>order intent</em>, <em>status</em>, <em>equity</em>, <em>alert</em> and more. Skips name their stage and reason (for example <em>fee edge</em>, <em>risk/reward floor</em>, <em>budget</em>, <em>confidence rank</em>) — this log is the first place to look whenever you wonder why nothing happened.</p>
 
+
+<div class="fig">
+  <div class="ft">The detail drawer</div>
+  <img src="/guide-assets/automation/en/run-drawer.png" alt="The detail drawer" loading="lazy">
+  <p class="cap">P&L header, equity curve, the lifecycle buttons, and the event log — every decision, trade, and skip with its reason.</p>
+</div>
 <h3>Auto-restart</h3>
 <p>When a TRADING stops because it reached its own goal — profit target hit, or its trade limit — <strong>a new TRADING with the same settings takes over automatically</strong>, and the event log records "Restarted as TRADING #N". Stopping it yourself, of course, does not restart anything.</p>
 
 <h2>7 · 🧠 AI Analysis (30 min) — the desk's diary</h2>
 <p>The button under the summary tiles opens a review of everything the AI recorded, folded into <strong>30-minute cycles — including the hours you were not signed in</strong>. Pick a day with the date arrows; each row is one cycle: either "nothing moved", or a one-line tally (<em>decisions · skipped · opened · closed</em>) with the realized result. Expand a cycle and you get, per TRADING: the action it chose with its confidence, the desk's written report, any status transitions with reasons, and what was skipped and why. If you check your fleet once a day, this is the screen to check.</p>
 
+
+<div class="fig">
+  <div class="ft">The desk's diary, opened</div>
+  <img src="/guide-assets/automation/en/ai-analysis.png" alt="The desk's diary, opened" loading="lazy">
+  <p class="cap">Pick a day with the date arrows; each row is one 30-minute cycle — expand it for the decisions, reports and skips behind it.</p>
+</div>
 <h2>8 · Monitoring a fleet — 🚀 Full Auto live monitor</h2>
 <p>While a fleet is live, its monitor sits above the grid:</p>
 <ul>
@@ -379,6 +440,12 @@ td strong{color:var(--ink)}
   <li><strong>Edit fleet</strong> — change the <strong>profit goal</strong> and the <strong>slot count</strong> while it runs. As you type, the panel shows the dollar target and per-slot budget live, along with the 🤖 AI-recommended maximum slot count for your budget. Growing adds slots as budget headroom frees up; shrinking <strong>drains</strong> — excess slots retire only when their positions finish on their own, and nothing is ever force-closed by a resize.</li>
 </ul>
 
+
+<div class="fig">
+  <div class="ft">The live monitor of a running fleet</div>
+  <img src="/guide-assets/automation/en/fleet-monitor.png" alt="The live monitor of a running fleet" loading="lazy">
+  <p class="cap">Fleet index rebased to 100, the status line with marked equity and the two rails, one chip per member, and Pause · Stop all · Edit fleet.</p>
+</div>
 <h2>9 · What your plan unlocks here</h2>
 <div class="sw"><table>
 <thead><tr><th>On this page</th><th>Junior</th><th>Pro</th><th>Professional</th></tr></thead>

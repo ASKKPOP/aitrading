@@ -25,6 +25,7 @@ p,li{color:var(--ink2)}strong{color:var(--ink)}
 .rule p{margin:0;font-size:13.8px}
 .fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
 .fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block;border:1px solid var(--grid);border-radius:9px}
 .ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
 .fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
 .cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
@@ -121,6 +122,12 @@ td strong{color:var(--ink)}
 </ul>
 <p>Mọi thứ được mô tả trong hướng dẫn này — các TRADING, đội hình, các số liệu lợi nhuận — đều chạy trên ví mô phỏng trừ khi bạn đã chủ động kết nối một gateway và chấp nhận các điều khoản giao dịch thực. Một quy tắc hoặc lượt chạy sử dụng tiền thật luôn được đánh dấu bằng huy hiệu đỏ <strong>⚠ TIỀN THẬT</strong>, để không thể nào bị nhầm là mô phỏng dù chỉ nhìn qua.</p>
 
+
+<div class="fig">
+  <div class="ft">Công tắc trên trang thực tế</div>
+  <img src="/guide-assets/automation/vi/acct-switch.png" alt="Công tắc trên trang thực tế" loading="lazy">
+  <p class="cap">Mặc định là mô phỏng — Tài khoản thật là bước riêng, được đánh dấu rõ và cần kết nối sàn trước.</p>
+</div>
 <h2>3 · Thanh tổng quan — số tiền của bạn, nhìn thoáng qua</h2>
 <p>Bốn ô trong phần đầu trang trả lời câu hỏi "tình hình thế nào?" mà không cần mở gì cả. Các thẻ khoảng thời gian — <strong>Hôm nay · Tuần này · Tháng này · Năm này</strong> — thay đổi khung thời gian của các số liệu; mặc định là This week.</p>
 <div class="sw"><table>
@@ -138,8 +145,20 @@ td strong{color:var(--ink)}
 </ul>
 <p>Bên dưới các ô là <strong>🧠 Phân tích AI (30 phút)</strong> — được đề cập ở phần 7. Đây là câu trả lời cho "AI đã làm gì trong lúc tôi vắng mặt?"</p>
 
+
+<div class="fig">
+  <div class="ft">Dải tóm tắt trên trang thực tế</div>
+  <img src="/guide-assets/automation/vi/summary.png" alt="Dải tóm tắt trên trang thực tế" loading="lazy">
+  <p class="cap">Bốn ô cùng chip chu kỳ; nút 🧠 Phân tích AI (30 phút) nằm bên dưới. Nhấp vào ô bất kỳ để xem chi tiết.</p>
+</div>
 <h2>4 · Bắt đầu TRADING đầu tiên của bạn</h2>
 <p>A <strong>TRADING</strong> là một chiến lược do AI vận hành, gắn với một symbol duy nhất: AI phân tích lại nó theo lịch trình và giao dịch khi quyết định của nó vượt qua các ngưỡng bạn đặt ra. Có bốn cách để bắt đầu một chiến lược như vậy, được sắp xếp ở đây từ ít công sức nhất đến nhiều quyền kiểm soát nhất. Bạn thấy những cách nào tùy thuộc vào gói của bạn (phần 9).</p>
+<div class="fig">
+  <div class="ft">Hai nút bắt đầu</div>
+  <img src="/guide-assets/automation/vi/create-buttons.png" alt="Hai nút bắt đầu" loading="lazy">
+  <p class="cap">➕ Make by New Trading mở hộp thoại tạo; 🧠 Make by AI Analyst chạy một lần phân tích trước.</p>
+</div>
+
 
 <div class="fig">
   <div class="ft">Con đường nào phù hợp với bạn?</div>
@@ -209,6 +228,12 @@ td strong{color:var(--ink)}
 <h3>⓪ Agent (1 symbol) — chỉ cần đặt ngân sách</h3>
 <p>Nhấn <strong>➕ Được tạo bởi New Trading</strong> và hộp thoại tạo mới sẽ mở ra ở các chip chế độ. Ở ⓪ chỉ có đúng một trường bắt buộc: <strong>Tổng ngân sách ($)</strong>, từ $100. AI chọn một symbol tiềm năng, tạo TRADING, và ghi lại lý do vào nhật ký mỗi chu kỳ. Một vị thế không bao giờ sử dụng quá 25% ngân sách. Chú thích trên nút đáng được nhắc lại: nút dừng khẩn cấp là danh sách TRADING dưới đây — dừng nó ở đó và nó sẽ ngừng ngay lập tức, và <strong>cổng kiểm soát rủi ro, breaker và giới hạn ngân sách không thể bị AI vượt qua</strong>.</p>
 
+
+<div class="fig">
+  <div class="ft">Chế độ ⓪ Agent trong hộp thoại tạo</div>
+  <img src="/guide-assets/automation/vi/create-agent.png" alt="Chế độ ⓪ Agent trong hộp thoại tạo" loading="lazy">
+  <p class="cap">Chỉ một trường bắt buộc — tổng ngân sách. AI tự chọn mã; một vị thế không bao giờ dùng quá 25% ngân sách.</p>
+</div>
 <h3>① Đơn giản — chọn một coin và một mức độ rủi ro</h3>
 <p>Hai lựa chọn thay vì một: <strong>symbol</strong> (top-5 theo khối lượng trực tiếp, hoặc <strong>🔍 AI tự chọn</strong>, nơi một scanner chọn từ các đợt tăng khối lượng và các niêm yết mới mỗi chu kỳ) và một <strong>thẻ rủi ro</strong>:</p>
 <div class="sw"><table>
@@ -220,12 +245,30 @@ td strong{color:var(--ink)}
 </tbody></table></div>
 <p>Các số liệu thoát trên mỗi card là những gì server sẽ thực thi thực tế cho mức độ đó, được hiển thị trước khi bạn xác nhận. Bên dưới các card, các plan có quyền truy cập futures cũng chọn <strong>loại sổ lệnh</strong>: <em>Spot</em> (được cấp vốn đầy đủ, chỉ long, không có thanh lý) hoặc <em>Futures</em> (bàn giao dịch cũng có thể short, với đòn bẩy ký quỹ độc lập 1–10× — tại N× vị thế sẽ bị thanh lý khi có biến động bất lợi 100/N%).</p>
 
+
+<div class="fig">
+  <div class="ft">Chế độ ① Đơn giản — mã và thẻ rủi ro</div>
+  <img src="/guide-assets/automation/vi/create-simple.png" alt="Chế độ ① Đơn giản — mã và thẻ rủi ro" loading="lazy">
+  <p class="cap">Top-5 mã (hoặc AI tự chọn) và ba thẻ rủi ro. SL/TP trên mỗi thẻ đúng là mức máy chủ sẽ thực thi.</p>
+</div>
 <h3>② Full Auto — khởi chạy một fleet</h3>
 <p>Một ngân sách, nhiều TRADING. Bạn đặt <strong>số lượng TRADING</strong> (tối đa theo giới hạn plan của bạn), <strong>tổng ngân sách</strong>, một <strong>mục tiêu lợi nhuận %</strong> tùy chọn (đạt được nó và fleet sẽ chốt lời tất cả, sau đó tự khởi động lại; 0 nghĩa là chạy cho đến khi bạn dừng nó), một <strong>mức lợi nhuận</strong> (Balance / High Profit / Risk &amp; High Profit — kích thước vị thế và đòn bẩy tự động tăng dần), <strong>markets</strong> mà nó có thể giao dịch (crypto, US stocks, futures, forex — hoặc tất cả), và một chính sách <strong>leverage</strong> (Auto để mức độ rủi ro quyết định). Nhấn <strong>🚀 Khởi chạy fleet</strong>và AI nghiên cứu thị trường, tạo ra N TRADING, và duy trì đội hình đầy đủ khi các thành viên hoàn tất. Việc giám sát một đội được trình bày ở phần 8.</p>
 
+
+<div class="fig">
+  <div class="ft">② Tự động hoàn toàn — biểu mẫu khởi chạy đội</div>
+  <img src="/guide-assets/automation/vi/create-fleet.png" alt="② Tự động hoàn toàn — biểu mẫu khởi chạy đội" loading="lazy">
+  <p class="cap">Số TRADING, tổng ngân sách, mục tiêu lợi nhuận, mức lợi nhuận, thị trường và đòn bẩy — rồi 🚀 khởi chạy đội.</p>
+</div>
 <h3>🧠 Tạo bởi AI Analyst — xem một phân tích trước</h3>
 <p>Nút tiêu đề thứ hai chạy toàn bộ bộ phận bốn nhà phân tích <strong>ngay lập tức</strong> — News, Sentiment, Fundamentals &amp; Macro, và Technical mỗi bên viết một bản tóm tắt; một trader và một risk reviewer thảo luận để đưa ra quyết định. Bạn theo dõi trực tiếp toàn bộ quy trình, sau đó nhận được quyết định (BUY / SELL / HOLD), độ tin cậy của nó, một báo cáo bằng văn bản, chi tiết quyết định (sự phù hợp với luận điểm, động lượng, chất lượng điểm vào, bối cảnh rủi ro, xác minh), và các bản tóm tắt của các nhà phân tích. <strong>Không có lệnh nào được đặt.</strong> Nếu bạn thích những gì bạn đọc, <strong>▶ Bắt đầu tự động giao dịch với cái này</strong> biến nó thành một TRADING với các thiết lập mặc định cân bằng chỉ trong một lần nhấn. Đây chỉ là nghiên cứu — không phải lời khuyên tài chính.</p>
 
+
+<div class="fig">
+  <div class="ft">Hộp thoại Nhà phân tích AI</div>
+  <img src="/guide-assets/automation/vi/analyst.png" alt="Hộp thoại Nhà phân tích AI" loading="lazy">
+  <p class="cap">Chọn mã và thị trường, nhấn Chạy phân tích — bàn phân tích tranh luận một lần, không lệnh nào được đặt.</p>
+</div>
 <div class="note"><b>Nếu việc khởi động bị từ chối.</b> Việc khởi động có thể bị chặn bởi một xung đột có thể giải quyết được — ví dụ như một vị thế đang mở hoặc một quy tắc tự động thực thi cũ trên cùng một mã. TRADING vẫn được tạo dưới dạng bản nháp trong lưới, và nút Start của nó sẽ mở một hộp thoại nêu rõ xung đột và đề xuất giải quyết giúp bạn ("Đóng &amp; tắt, rồi bắt đầu"). Không có gì thất bại một cách âm thầm.</div>
 
 <h2>5 · Điều gì xảy ra sau khi bạn nhấn start</h2>
@@ -350,6 +393,12 @@ td strong{color:var(--ink)}
   </svg>
 </div>
 
+
+<div class="fig">
+  <div class="ft">Thẻ TRADING đang chạy</div>
+  <img src="/guide-assets/automation/vi/run-card.png" alt="Thẻ TRADING đang chạy" loading="lazy">
+  <p class="cap">Trạng thái với chấm nhấp nháy, bốn thông tin chính, sổ lệnh trực tiếp (ở đây là long futures 3× với phòng thủ thanh lý), đường equity và huy hiệu ⧗ tuổi dữ liệu.</p>
+</div>
 <h3>Đọc một thẻ</h3>
 <ul>
   <li><strong>Dòng trạng thái</strong> — <em>Ready</em> (một bản nháp, chưa bắt đầu), <em>Waiting</em> (đã sẵn sàng, chu kỳ tiếp theo đã được lên lịch), <em>Running</em> (dấu chấm nhấp nháy), <em>Paused</em>, <em>Stopping</em>, <em>Stopped</em> (kèm lý do). Nút (?) trên thẻ mở "Cách đọc thẻ TRADING", giải thích từng trường tại chỗ.</li>
@@ -363,12 +412,24 @@ td strong{color:var(--ink)}
 <h3>Ngăn chi tiết</h3>
 <p>Nhấp vào một thẻ và một ngăn sẽ trượt vào với đầy đủ thông tin: tiêu đề P&amp;L (đã thực hiện, giao dịch, giá đánh dấu hiện tại), biểu đồ đường vốn chủ sở hữu (equity sparkline), các nút vòng đời, và <strong>nhật ký sự kiện</strong> — 60 mục nhập mới nhất của <em>quyết định</em>, <em>giao dịch</em>, <em>bị bỏ qua</em>, <em>thiết kế lệnh</em>, <em>ý định lệnh</em>, <em>trạng thái</em>, <em>vốn chủ sở hữu</em>, <em>cảnh báo</em> và nhiều hơn nữa. Các lượt bị bỏ qua sẽ nêu tên giai đoạn và lý do (ví dụ <em>biên phí</em>, <em>sàn rủi ro/lợi nhuận</em>, <em>ngân sách</em>, <em>hạng độ tin cậy</em>) — đây là nơi đầu tiên cần xem mỗi khi bạn thắc mắc vì sao không có gì xảy ra.</p>
 
+
+<div class="fig">
+  <div class="ft">Ngăn chi tiết</div>
+  <img src="/guide-assets/automation/vi/run-drawer.png" alt="Ngăn chi tiết" loading="lazy">
+  <p class="cap">Đầu mục P&L, đường equity, các nút vòng đời, và nhật ký sự kiện — mọi quyết định, giao dịch và lần bỏ qua kèm lý do.</p>
+</div>
 <h3>Tự động khởi động lại</h3>
 <p>Khi một TRADING dừng lại vì đã đạt được mục tiêu riêng của nó — chạm mục tiêu lợi nhuận, hoặc đạt giới hạn giao dịch — <strong>một TRADING mới với cùng cài đặt sẽ tự động thay thế</strong>, và nhật ký sự kiện ghi lại "Restarted as TRADING #N". Việc bạn tự dừng nó, tất nhiên, sẽ không khởi động lại gì cả.</p>
 
 <h2>7 · 🧠 Phân tích AI (30 phút) — nhật ký của bàn giao dịch</h2>
 <p>Nút bên dưới các ô tổng hợp mở ra một bản xem lại mọi thứ AI đã ghi nhận, được gói gọn trong <strong>các chu kỳ 30 phút — bao gồm cả những giờ bạn không đăng nhập</strong>. Chọn một ngày bằng các mũi tên ngày; mỗi hàng là một chu kỳ: hoặc là "không có gì thay đổi", hoặc một dòng tổng kết (<em>quyết định · bỏ qua · mở · đóng</em>) kèm kết quả đã thực hiện. Mở rộng một chu kỳ và bạn sẽ thấy, với từng TRADING: hành động nó chọn kèm độ tin cậy, báo cáo viết bởi bàn giao dịch, mọi chuyển đổi trạng thái kèm lý do, và những gì đã bị bỏ qua cùng lý do. Nếu bạn kiểm tra đội của mình một lần mỗi ngày, đây là màn hình cần xem.</p>
 
+
+<div class="fig">
+  <div class="ft">Nhật ký của bàn phân tích khi mở ra</div>
+  <img src="/guide-assets/automation/vi/ai-analysis.png" alt="Nhật ký của bàn phân tích khi mở ra" loading="lazy">
+  <p class="cap">Chọn ngày bằng mũi tên; mỗi hàng là một chu kỳ 30 phút — mở rộng để xem quyết định, báo cáo và lần bỏ qua phía sau.</p>
+</div>
 <h2>8 · Giám sát một đội — 🚀 Giám sát trực tiếp Full Auto</h2>
 <p>Khi một đội đang hoạt động, bộ giám sát của nó nằm phía trên lưới:</p>
 <ul>
@@ -380,6 +441,12 @@ td strong{color:var(--ink)}
   <li><strong>Chỉnh sửa đội</strong> — thay đổi <strong>mục tiêu lợi nhuận</strong> và <strong>số lượng slot</strong> trong khi đang chạy. Khi bạn nhập, bảng điều khiển sẽ hiển thị mục tiêu tính bằng đô la và ngân sách mỗi slot theo thời gian thực, cùng với số lượng slot tối đa được 🤖 AI đề xuất cho ngân sách của bạn. Tăng sẽ thêm slot khi có dư ngân sách; giảm <strong>sẽ rút dần</strong> — các slot dư chỉ ngừng hoạt động khi vị thế của chúng tự kết thúc, và không có gì bị đóng ép buộc do việc thay đổi kích thước.</li>
 </ul>
 
+
+<div class="fig">
+  <div class="ft">Màn hình trực tiếp của đội đang chạy</div>
+  <img src="/guide-assets/automation/vi/fleet-monitor.png" alt="Màn hình trực tiếp của đội đang chạy" loading="lazy">
+  <p class="cap">Chỉ số đội gốc 100, dòng trạng thái với equity và hai thanh chắn, mỗi thành viên một chip, cùng Tạm dừng · Dừng tất cả · Sửa đội.</p>
+</div>
 <h2>9 · Gói của bạn mở khóa những gì ở đây</h2>
 <div class="sw"><table>
 <thead><tr><th>Trên trang này</th><th>Junior</th><th>Pro</th><th>Professional</th></tr></thead>

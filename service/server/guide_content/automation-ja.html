@@ -25,6 +25,7 @@ p,li{color:var(--ink2)}strong{color:var(--ink)}
 .rule p{margin:0;font-size:13.8px}
 .fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
 .fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block;border:1px solid var(--grid);border-radius:9px}
 .ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
 .fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
 .cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
@@ -121,6 +122,12 @@ td strong{color:var(--ink)}
 </ul>
 <p>このガイドで説明されているすべて――TRADING、フリート、利益の数値――は、意図的にゲートウェイを接続してライブトレーディングの利用規約に同意しない限り、シミュレーションウォレット上で動作します。実際のお金を使用するルールまたは実行には、常に赤い<strong>⚠ 実際の資金</strong>バッジが付けられるため、ひと目でシミュレーションのように見えることはありません。</p>
 
+
+<div class="fig">
+  <div class="ft">実際のページの切替スイッチ</div>
+  <img src="/guide-assets/automation/ja/acct-switch.png" alt="実際のページの切替スイッチ" loading="lazy">
+  <p class="cap">デフォルトはシミュレーターです。リアルは明確に区別された別ステップで、先に取引所の接続が必要です。</p>
+</div>
 <h2>3 · サマリーストリップ――一目でわかるあなたのお金</h2>
 <p>ヘッダーの4つのタイルが、何も開かずに「今どうなっている?」に答えます。期間チップ――<strong>今日・今週・今月・今年</strong>　— 期間の集計範囲を再設定します。デフォルトは今週です。</p>
 <div class="sw"><table>
@@ -138,8 +145,20 @@ td strong{color:var(--ink)}
 </ul>
 <p>タイルの下には<strong>🧠 AI分析（30分）</strong> があります — セクション7で解説します。「AIは自分が離れている間に何をしていたのか？」への答えです。</p>
 
+
+<div class="fig">
+  <div class="ft">実際のページのサマリーストリップ</div>
+  <img src="/guide-assets/automation/ja/summary.png" alt="実際のページのサマリーストリップ" loading="lazy">
+  <p class="cap">4つのタイルと期間チップ、その下に 🧠 AI 分析（30分）ボタン。タイルをクリックすると内訳が開きます。</p>
+</div>
 <h2>4 · 最初のTRADINGを始める</h2>
 <p>A <strong>TRADING</strong> は1つのAI運用戦略を1つの銘柄に紐づけたものです。AIはスケジュールに従って再分析を行い、その判断があなたの閾値を満たしたときに取引を実行します。開始方法は4通りあり、ここでは手間が少ない順から自由度が高い順に並べています。どれが表示されるかはご利用のプラン（セクション9）によります。</p>
+<div class="fig">
+  <div class="ft">2つの開始ボタン</div>
+  <img src="/guide-assets/automation/ja/create-buttons.png" alt="2つの開始ボタン" loading="lazy">
+  <p class="cap">➕ Make by New Trading は作成ダイアログを開き、🧠 Make by AI Analyst は先に分析を1回実行します。</p>
+</div>
+
 
 <div class="fig">
   <div class="ft">どの方法が自分に合っている？</div>
@@ -209,6 +228,12 @@ td strong{color:var(--ink)}
 <h3>⓪ エージェント（1銘柄） — 予算だけを設定</h3>
 <p>押す：<strong>➕ 新規トレードで作成</strong> を押すと、作成ダイアログがモードチップの画面で開きます。⓪では必須入力はちょうど1つだけです：<strong>総予算 ($)</strong>, $100から。AIが有望なシンボルを選び、TRADINGを作成し、サイクルごとにその判断根拠を記録します。1つのポジションが予算の25%を超えて使用することはありません。ボタンの脚注は繰り返す価値があります：キルスイッチは下記のTRADINGリストです — そこで停止すれば即座に停止し、 <strong>リスクゲート、ブレーカー、予算上限はAIによって回避されることはありません</strong>.</p>
 
+
+<div class="fig">
+  <div class="ft">作成ダイアログの ⓪ エージェントモード</div>
+  <img src="/guide-assets/automation/ja/create-agent.png" alt="作成ダイアログの ⓪ エージェントモード" loading="lazy">
+  <p class="cap">必須入力は総予算のみ。銘柄はAIが選び、1ポジションは予算の25%を超えません。</p>
+</div>
 <h3>① シンプル — コインとリスクレベルを選択</h3>
 <p>1つではなく2つの選択肢： <strong>シンボル</strong> （出来高上位5件のライブリスト、または <strong>🔍 AI自動選択</strong>、スキャナーが出来高急増や新規上場銘柄から毎サイクル選択します）と <strong>リスクカード</strong>:</p>
 <div class="sw"><table>
@@ -220,12 +245,30 @@ td strong{color:var(--ink)}
 </tbody></table></div>
 <p>各カードに表示されるイグジット数値は、そのレベルでサーバーが実際に適用する値であり、確定前に表示されます。カードの下には、先物取引にアクセスできるプランの場合、次の<strong>ブックタイプ</strong>: <em>スポット</em>（全額拠出・ロングオンリー・強制清算なし）または<em>先物</em>（デスクはショートも可能で、1〜10倍の分離証拠金レバレッジを使用します — N倍では、ポジションは100/N%の逆行で強制清算されます）。</p>
 
+
+<div class="fig">
+  <div class="ft">① シンプルモード — 銘柄とリスクカード</div>
+  <img src="/guide-assets/automation/ja/create-simple.png" alt="① シンプルモード — 銘柄とリスクカード" loading="lazy">
+  <p class="cap">上位5銘柄（またはAI自動選択）と3枚のリスクカード。カードのSL/TPはサーバーが実際に執行する値です。</p>
+</div>
 <h3>② フルオート — フリートを起動</h3>
 <p>1つの予算で複数のTRADINGを運用します。設定する項目は、<strong>TRADINGの数</strong>（プランの上限まで）、<strong>合計予算</strong>、任意の<strong>利益目標％</strong>（達成するとフリートはすべてを確定し、自動的に再起動します。0の場合は停止するまで実行し続けます）、<strong>利益レベル</strong>（Balance／High Profit／Risk &amp; High Profit — ポジションサイズと自動レバレッジが段階的に大きくなります）、<strong>マーケット</strong>が取引可能な市場（仮想通貨、米国株、先物、外国為替 — またはすべて）、<strong>レバレッジ</strong>ポリシー（オートの場合はリスクレベルが自動的に決定します）。押す<strong>🚀 フリートを起動</strong>AIが市場を調査し、N件のTRADINGを作成し、メンバーが完了するたびに枠を埋め続けます。フリートの監視についてはセクション8をご覧ください。</p>
 
+
+<div class="fig">
+  <div class="ft">② フルオート — フリート起動フォーム</div>
+  <img src="/guide-assets/automation/ja/create-fleet.png" alt="② フルオート — フリート起動フォーム" loading="lazy">
+  <p class="cap">TRADING数・総予算・利益目標・利益レベル・市場・レバレッジを設定し、🚀 フリートを起動します。</p>
+</div>
 <h3>🧠 AIアナリストによる作成 — まず1つの分析を見る</h3>
 <p>2番目のヘッダーボタンは、4名のアナリストによるフルデスクを実行します <strong>今すぐ一度</strong> — News、Sentiment、Fundamentals &amp; Macro、Technicalがそれぞれブリーフを作成し、トレーダーとリスクレビュアーがそれらを議論して決定します。パイプラインをライブで確認した後、決定（BUY / SELL / HOLD）、その確信度、レポート、決定の詳細（テーゼの整合性、モメンタム、エントリーの質、リスクコンテキスト、検証）、およびアナリストのブリーフが得られます。 <strong>注文は発注されません。</strong> 読んだ内容が気に入った場合、 <strong>▶ これでオートトレーディングを開始</strong> をクリック1つで、バランスの取れたデフォルト設定のTRADINGに変換します。これは調査目的のみであり、投資助言ではありません。</p>
 
+
+<div class="fig">
+  <div class="ft">AIアナリストのダイアログ</div>
+  <img src="/guide-assets/automation/ja/analyst.png" alt="AIアナリストのダイアログ" loading="lazy">
+  <p class="cap">銘柄と市場を選んで分析を実行すると、デスクが1回討議します — 注文は出されません。</p>
+</div>
 <div class="note"><b>開始が拒否された場合。</b> 開始は、解決可能な競合によってブロックされることがあります — 例えば、同じ銘柄でのオープンポジションや古い自動実行ルールなどです。TRADINGはグリッド内に下書きとして作成されたままで、その開始ボタンをクリックすると、競合の内容を示し、解決を提案するダイアログが開きます（「閉じて無効化し、開始する」）。何も静かに失敗することはありません。</div>
 
 <h2>5・開始を押した後に起こること</h2>
@@ -350,6 +393,12 @@ td strong{color:var(--ink)}
   </svg>
 </div>
 
+
+<div class="fig">
+  <div class="ft">稼働中のTRADINGカード</div>
+  <img src="/guide-assets/automation/ja/run-card.png" alt="稼働中のTRADINGカード" loading="lazy">
+  <p class="cap">ステータスと点滅ドット、4つの基本情報、ライブブック（ここでは3×先物ロングと清算防衛の表示）、資産スパークライン、⧗ データ経過バッジ。</p>
+</div>
 <h3>カードの読み方</h3>
 <ul>
   <li><strong>ステータスライン</strong> — <em>準備完了</em>（下書き、未開始）、<em>待機中</em>（設定済み、次のサイクルを予約）、<em>実行中</em>（点滅するドット）、<em>一時停止</em>, <em>停止処理中</em>, <em>停止済み</em>（理由付き）。カード上の（?）をクリックすると「TRADINGカードの読み方」が開き、各項目をその場で説明します。</li>
@@ -363,12 +412,24 @@ td strong{color:var(--ink)}
 <h3>詳細ドロワー</h3>
 <p>カードをクリックすると、全体像を示すドロワーがスライドインします：P&amp;Lヘッダー（実現損益、取引数、現在の気配値）、資産推移のスパークライン、ライフサイクルボタン、そして<strong>イベントログ</strong> — 直近60件の<em>判断</em>, <em>取引</em>, <em>スキップ</em>, <em>オーダー設計</em>, <em>オーダー意図</em>, <em>ステータス</em>, <em>資産</em>, <em>アラート</em>などが含まれます。スキップにはその段階と理由が記録されます（例：<em>手数料エッジ</em>, <em>リスク・リワード下限</em>, <em>予算</em>, <em>信頼度ランク</em>) — このログは、何も起きなかった理由を知りたいときに最初に確認する場所です。</p>
 
+
+<div class="fig">
+  <div class="ft">詳細ドロワー</div>
+  <img src="/guide-assets/automation/ja/run-drawer.png" alt="詳細ドロワー" loading="lazy">
+  <p class="cap">損益ヘッダー、資産カーブ、ライフサイクルボタン、そして各判断・取引・スキップと理由を記録するイベントログ。</p>
+</div>
 <h3>自動再起動</h3>
 <p>TRADING が独自の目標——利益目標の達成、または取引上限への到達——により停止すると、 <strong>同じ設定の新しい TRADING が自動的に引き継ぎます</strong>、イベントログには「TRADING #N として再起動」と記録されます。自分で停止した場合は、当然ながら再起動されません。</p>
 
 <h2>7 · 🧠 AI分析（30分）— デスクの日誌</h2>
 <p>サマリータイルの下のボタンをクリックすると、AI が記録したすべての内容をまとめたレビューが開きます <strong>30分ごとのサイクル — サインインしていなかった時間帯も含む</strong>。日付の矢印で日を選択します。各行が1つのサイクルです。「何も動きませんでした」か、1行の集計（<em>判断 · スキップ · オープン · クローズ</em>）と実現した結果が表示されます。サイクルを展開すると、TRADINGごとに、選択したアクションとその確信度、デスクが作成したレポート、理由付きのステータス遷移、そして何がスキップされたかとその理由が表示されます。フリートを1日1回確認するなら、このチェックすべき画面です。</p>
 
+
+<div class="fig">
+  <div class="ft">開いたデスクの日誌</div>
+  <img src="/guide-assets/automation/ja/ai-analysis.png" alt="開いたデスクの日誌" loading="lazy">
+  <p class="cap">日付矢印で日を選ぶと、各行が30分サイクルです — 展開すると判断・レポート・スキップが見られます。</p>
+</div>
 <h2>8 · フリートの監視 — 🚀 フルオート ライブモニター</h2>
 <p>フリートが稼働中の間、そのモニターはグリッドの上に表示されます：</p>
 <ul>
@@ -380,6 +441,12 @@ td strong{color:var(--ink)}
   <li><strong>フリートを編集</strong> — 実行中に<strong>利益目標</strong>と<strong>スロット数</strong>を変更できます。入力すると、パネルはドル建て目標と各スロットの予算をリアルタイムで表示し、予算に応じた🤖AI推奨の最大スロット数も表示します。予算に余裕ができると自動的にスロットが追加され、縮小時は<strong>ドレイン</strong>します — 余剰スロットは、そのポジションが自然に終了したときにのみ解消され、リサイズによって強制的にクローズされることはありません。</li>
 </ul>
 
+
+<div class="fig">
+  <div class="ft">稼働中フリートのライブモニター</div>
+  <img src="/guide-assets/automation/ja/fleet-monitor.png" alt="稼働中フリートのライブモニター" loading="lazy">
+  <p class="cap">100基準のフリート指数、評価資産と2本のレールを示すステータス行、メンバーごとのチップ、一時停止・全停止・フリート編集。</p>
+</div>
 <h2>9・あなたのプランで利用できる機能</h2>
 <div class="sw"><table>
 <thead><tr><th>このページの内容</th><th>ジュニア</th><th>Pro</th><th>プロフェッショナル</th></tr></thead>

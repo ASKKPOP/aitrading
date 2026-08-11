@@ -25,6 +25,7 @@ p,li{color:var(--ink2)}strong{color:var(--ink)}
 .rule p{margin:0;font-size:13.8px}
 .fig{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
 .fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block;border:1px solid var(--grid);border-radius:9px}
 .ft{font-weight:650;font-size:14px;margin-bottom:2px;color:var(--ink)}
 .fs{font-size:12.3px;color:var(--muted);margin-bottom:15px}
 .cap{font-size:12.3px;color:var(--muted);margin:11px 0 0}
@@ -121,6 +122,12 @@ td strong{color:var(--ink)}
 </ul>
 <p>이 안내서에서 설명하는 모든 것 — TRADING들, 플릿, 수익 수치 — 은 게이트웨이를 의도적으로 연결하고 실전 거래 약관에 동의하지 않은 경우 시뮬레이션 지갑에서 실행됩니다. 실제 돈을 사용하게 되는 규칙이나 실행은 항상 빨간색 <strong>⚠ 실제 자금</strong> 배지로 표시되므로, 한눈에 시뮬레이션처럼 보일 수 없습니다.</p>
 
+
+<div class="fig">
+  <div class="ft">실제 페이지의 전환 스위치</div>
+  <img src="/guide-assets/automation/ko/acct-switch.png" alt="실제 페이지의 전환 스위치" loading="lazy">
+  <p class="cap">기본값은 시뮬레이터입니다 — 실전은 별도의 명확히 표시된 단계로, 먼저 거래소 연결이 필요합니다.</p>
+</div>
 <h2>3 · 요약 스트립 — 한눈에 보는 내 자금</h2>
 <p>헤더에 있는 네 개의 타일은 아무것도 열지 않고도 "어떻게 되고 있나?"에 답해줍니다. 기간 칩 — <strong>오늘 · 이번 주 · 이번 달 · 올해</strong> — 은 수치의 기간을 다시 설정합니다. 기본값은 이번 주입니다.</p>
 <div class="sw"><table>
@@ -138,8 +145,20 @@ td strong{color:var(--ink)}
 </ul>
 <p>타일 아래에는 <strong>🧠 AI 분석 (30분)</strong> — 7절에서 다룹니다. "내가 자리를 비운 사이 AI가 무엇을 했는가?"에 대한 답입니다.</p>
 
+
+<div class="fig">
+  <div class="ft">실제 페이지의 요약 스트립</div>
+  <img src="/guide-assets/automation/ko/summary.png" alt="실제 페이지의 요약 스트립" loading="lazy">
+  <p class="cap">네 개의 타일과 기간 칩, 그 아래 🧠 AI 분석 (30분) 버튼이 있습니다. 타일을 누르면 상세 수치가 열립니다.</p>
+</div>
 <h2>4 · 첫 TRADING 시작하기</h2>
 <p><strong>TRADING</strong>은 하나의 심볼에 묶인 하나의 AI 운영 전략입니다: AI가 일정에 따라 재분석하고, 그 결정이 당신의 기준을 충족하면 거래를 실행합니다. 시작하는 방법은 네 가지이며, 여기서는 노력이 적은 순에서 통제력이 큰 순으로 정렬되어 있습니다. 어떤 것이 보이는지는 당신의 플랜에 따라 다릅니다(9절).</p>
+<div class="fig">
+  <div class="ft">두 개의 시작 버튼</div>
+  <img src="/guide-assets/automation/ko/create-buttons.png" alt="두 개의 시작 버튼" loading="lazy">
+  <p class="cap">➕ Make by New Trading은 생성 대화상자를 열고, 🧠 Make by AI Analyst는 먼저 분석을 한 번 실행합니다.</p>
+</div>
+
 
 <div class="fig">
   <div class="ft">어떤 경로가 당신에게 맞나요?</div>
@@ -209,6 +228,12 @@ td strong{color:var(--ink)}
 <h3>⓪ 에이전트 (심볼 1개) — 예산만 설정</h3>
 <p>누르세요 <strong>➕ Make by New Trading</strong> 그러면 생성 대화상자가 모드 칩에서 열립니다. ⓪에서는 정확히 하나의 필수 입력값이 있습니다: <strong>총 예산 ($)</strong>에서 시작, $100부터. AI가 유망한 심볼을 선택하고 TRADING을 생성하며, 매 주기마다 그 근거를 기록합니다. 하나의 포지션은 예산의 25%를 초과하여 사용하지 않습니다. 버튼의 각주는 다시 강조할 가치가 있습니다: 킬 스위치는 아래의 TRADING 목록입니다 — 여기서 중지하면 즉시 멈추며, <strong>리스크 게이트, 브레이커, 예산 한도는 AI가 우회할 수 없습니다</strong>.</p>
 
+
+<div class="fig">
+  <div class="ft">생성 대화상자의 ⓪ 에이전트 모드</div>
+  <img src="/guide-assets/automation/ko/create-agent.png" alt="생성 대화상자의 ⓪ 에이전트 모드" loading="lazy">
+  <p class="cap">필수 입력은 총예산 하나뿐입니다. AI가 심볼을 고르고, 한 포지션은 예산의 25%를 넘지 않습니다.</p>
+</div>
 <h3>① 간단함 — 코인과 리스크 수준을 선택하세요</h3>
 <p>하나가 아닌 두 가지 선택: <strong>symbol</strong> (거래량 기준 실시간 상위 5개, 또는 <strong>🔍 AI auto-pick</strong>, 매 주기마다 거래량 급증 및 신규 상장 종목 중에서 스캐너가 선택) 그리고 <strong>risk card</strong>:</p>
 <div class="sw"><table>
@@ -220,12 +245,30 @@ td strong{color:var(--ink)}
 </tbody></table></div>
 <p>각 카드에 표시된 청산 수치는 서버가 해당 레벨에 실제로 적용할 값으로, 실행 전에 미리 표시됩니다. 카드 아래에서 선물 거래가 가능한 플랜은 <strong>북 타입</strong>: <em>현물</em> (전액 예치, 롱 전용, 청산 없음) 또는 <em>선물</em> (데스크에서 숏 포지션도 가능하며, 1–10× 격리 마진 레버리지를 사용합니다 — N×일 경우 100/N%의 불리한 변동에서 포지션이 청산됩니다).</p>
 
+
+<div class="fig">
+  <div class="ft">① 간단함 모드 — 심볼과 리스크 카드</div>
+  <img src="/guide-assets/automation/ko/create-simple.png" alt="① 간단함 모드 — 심볼과 리스크 카드" loading="lazy">
+  <p class="cap">상위 5개 심볼(또는 AI 자동 선택)과 세 개의 리스크 카드. 카드의 SL/TP는 서버가 실제로 집행하는 값입니다.</p>
+</div>
 <h3>② 완전 자동 — 플릿 실행</h3>
 <p>하나의 예산으로 여러 TRADINGs를 운영합니다. 설정하는 <strong>TRADINGs 수</strong>(플랜의 상한까지), <strong>총 예산</strong>, 선택적으로 <strong>목표 수익률 %</strong> (도달하면 플릿이 모든 수익을 정리한 뒤 자동으로 재시작합니다; 0이면 직접 중지할 때까지 계속 실행됩니다), <strong>수익 레벨</strong>  (밸런스 / 하이 프로핏 / 리스크 &amp; 하이 프로핏 — 점진적으로 커지는 포지션 크기와 자동 레버리지), 거래할 <strong>시장</strong>을 정할 수 있습니다 (암호화폐, 미국 주식, 선물, 외환 — 또는 전체), 그리고 <strong>레버리지</strong> 정책(자동은 리스크 레벨이 결정하도록 함)을 설정합니다. <strong>🚀 Launch fleet</strong>그리고 AI가 시장을 조사하고, N개의 TRADING을 구성하며, 멤버가 완료되면 명단을 채워 유지합니다. 함대 모니터링은 8장에서 다룹니다.</p>
 
+
+<div class="fig">
+  <div class="ft">② 완전 자동 — 플릿 실행 폼</div>
+  <img src="/guide-assets/automation/ko/create-fleet.png" alt="② 완전 자동 — 플릿 실행 폼" loading="lazy">
+  <p class="cap">TRADING 수, 총예산, 수익 목표, 수익 수준, 시장, 레버리지를 정하고 🚀 플릿을 실행합니다.</p>
+</div>
 <h3>🧠 Make by AI Analyst — 먼저 하나의 분석 보기</h3>
 <p>두 번째 헤더 버튼은 4인 분석가 데스크 전체를 실행합니다 <strong>지금 즉시 한 번</strong> — News, Sentiment, Fundamentals &amp; Macro, Technical이 각각 브리프를 작성하고, 트레이더와 리스크 검토자가 이를 토론하여 결정을 내립니다. 파이프라인을 실시간으로 지켜본 뒤, 결정(BUY / SELL / HOLD), 신뢰도, 작성된 리포트, 결정 세부사항(논지 부합성, 모멘텀, 진입 품질, 리스크 컨텍스트, 검증), 그리고 분석가 브리프를 받게 됩니다. <strong>주문은 실행되지 않습니다.</strong> 읽은 내용이 마음에 든다면, <strong>▶ 이것으로 자동매매 시작하기</strong> 버튼을 클릭하면 균형 잡힌 기본값으로 TRADING이 한 번에 생성됩니다. 이는 리서치일 뿐이며 재정적 조언이 아닙니다.</p>
 
+
+<div class="fig">
+  <div class="ft">AI 애널리스트 대화상자</div>
+  <img src="/guide-assets/automation/ko/analyst.png" alt="AI 애널리스트 대화상자" loading="lazy">
+  <p class="cap">심볼과 시장을 고르고 분석 실행을 누르면 데스크가 한 번 토론합니다 — 주문은 전송되지 않습니다.</p>
+</div>
 <div class="note"><b>시작이 거부되는 경우.</b> 시작은 해결 가능한 충돌로 인해 차단될 수 있습니다 — 예를 들어 동일 종목에 대한 미결 포지션이나 오래된 자동 실행 규칙이 있는 경우입니다. TRADING은 여전히 그리드에 초안으로 생성되며, Start 버튼을 누르면 충돌 내용을 명시하고 해결을 제안하는 대화창이 열립니다("닫고 비활성화한 뒤 시작"). 아무것도 조용히 실패하지 않습니다.</div>
 
 <h2>5 · 시작 버튼을 누른 후 일어나는 일</h2>
@@ -350,6 +393,12 @@ td strong{color:var(--ink)}
   </svg>
 </div>
 
+
+<div class="fig">
+  <div class="ft">실시간 TRADING 카드</div>
+  <img src="/guide-assets/automation/ko/run-card.png" alt="실시간 TRADING 카드" loading="lazy">
+  <p class="cap">상태와 점멸 점, 네 가지 기본 정보, 실시간 북(여기서는 3× 선물 롱과 청산 방어 표시), 자산 스파크라인, ⧗ 데이터 경과 배지.</p>
+</div>
 <h3>카드 읽기</h3>
 <ul>
   <li><strong>상태 라인</strong> — <em>준비됨</em> (초안, 시작되지 않음), <em>대기 중</em> (준비 완료, 다음 사이클 예약됨), <em>실행 중</em> (맥동하는 점), <em>일시정지됨</em>, <em>정지 중</em>, <em>정지됨</em> (사유 포함). 카드의 (?)를 클릭하면 "TRADING 카드 읽는 법"이 열리며, 모든 필드를 현장에서 설명합니다.</li>
@@ -363,12 +412,24 @@ td strong{color:var(--ink)}
 <h3>상세 드로어</h3>
 <p>카드를 클릭하면 전체 그림이 담긴 드로어가 슬라이드되어 나타납니다: 손익 헤더 (실현, 거래, 현재 마크), 자산 스파크라인, 라이프사이클 버튼, 그리고 <strong>이벤트 로그</strong> — 최신 60개 항목의 <em>decision</em>, <em>trade</em>, <em>skipped</em>, <em>order design</em>, <em>order intent</em>, <em>status</em>, <em>equity</em>, <em>alert</em> 등. Skip은 해당 단계와 이유를 명시합니다 (예를 들어 <em>fee edge</em>, <em>risk/reward floor</em>, <em>budget</em>, <em>confidence rank</em>) — 이 로그는 아무 일도 일어나지 않았을 때 가장 먼저 확인해야 할 곳입니다.</p>
 
+
+<div class="fig">
+  <div class="ft">상세 드로어</div>
+  <img src="/guide-assets/automation/ko/run-drawer.png" alt="상세 드로어" loading="lazy">
+  <p class="cap">P&L 헤더, 자산 곡선, 라이프사이클 버튼, 그리고 모든 결정·거래·건너뜀과 그 이유가 담긴 이벤트 로그.</p>
+</div>
 <h3>자동 재시작</h3>
 <p>TRADING이 자체 목표에 도달하여 중지될 때 — 수익 목표 달성, 또는 거래 한도 도달 — <strong>동일한 설정의 새 TRADING이 자동으로 그 자리를 이어받습니다</strong>, 그리고 이벤트 로그에는 "Restarted as TRADING #N"이 기록됩니다. 직접 중지한 경우에는 당연히 아무것도 재시작되지 않습니다.</p>
 
 <h2>7 · 🧠 AI 분석 (30분) — 데스크의 일기</h2>
 <p>요약 타일 아래의 버튼을 누르면 AI가 기록한 모든 내용을 검토할 수 있으며, <strong>30분 단위 사이클로 정리되어 있습니다 — 로그인하지 않았던 시간대도 포함됩니다</strong>. 날짜 화살표로 날짜를 선택하세요. 각 행은 하나의 사이클입니다: "변동 없음" 또는 한 줄 집계(<em>판단 · 건너뜀 · 진입 · 청산</em>)와 실현 결과가 표시됩니다. 사이클을 펼치면 TRADING별로 다음을 확인할 수 있습니다: 신뢰도와 함께 선택한 행동, 데스크의 작성된 보고서, 이유가 있는 모든 상태 전환, 그리고 무엇이 건너뛰어졌고 그 이유는 무엇인지. 하루에 한 번 함대를 확인한다면, 바로 이 화면을 확인하세요.</p>
 
+
+<div class="fig">
+  <div class="ft">열어 본 데스크의 일기</div>
+  <img src="/guide-assets/automation/ko/ai-analysis.png" alt="열어 본 데스크의 일기" loading="lazy">
+  <p class="cap">날짜 화살표로 하루를 고르면 각 행이 30분 사이클입니다 — 펼치면 그 뒤의 결정·리포트·건너뜀이 보입니다.</p>
+</div>
 <h2>8 · 함대 모니터링 — 🚀 Full Auto 실시간 모니터</h2>
 <p>함대가 실행 중일 때, 모니터는 그리드 위에 표시됩니다:</p>
 <ul>
@@ -380,6 +441,12 @@ td strong{color:var(--ink)}
   <li><strong>플릿 편집</strong> — 실행 중에 <strong>목표 수익</strong>과 <strong>슬롯 수</strong>를 변경합니다. 입력하는 동안 패널에 달러 목표치와 슬롯당 예산이 실시간으로 표시되며, 예산에 맞는 🤖 AI 추천 최대 슬롯 수도 함께 표시됩니다. 늘리면 예산 여유가 생길 때마다 슬롯이 추가되고, 줄이면 <strong>드레인</strong> — 초과 슬롯은 해당 포지션이 스스로 종료될 때만 정리되며, 크기 조정으로 인해 강제 종료되는 경우는 없습니다.</li>
 </ul>
 
+
+<div class="fig">
+  <div class="ft">가동 중인 플릿의 실시간 모니터</div>
+  <img src="/guide-assets/automation/ko/fleet-monitor.png" alt="가동 중인 플릿의 실시간 모니터" loading="lazy">
+  <p class="cap">100 기준의 플릿 지수, 평가 자산과 두 안전 레일이 있는 상태 줄, 멤버별 칩, 일시정지 · 전체 정지 · 플릿 수정.</p>
+</div>
 <h2>9 · 플랜별로 이용할 수 있는 기능</h2>
 <div class="sw"><table>
 <thead><tr><th>이 페이지에서</th><th>Junior</th><th>Pro</th><th>Professional</th></tr></thead>
