@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 23 v2 — The Swing Block: PEAD First, the Crowd-Fade Second, Everything Gated</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 14px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Plan 23 v2 — The Swing Block</h1>
+<p class="kr">스윙 블록 v2 — 플래너 5 + 적대적 QA 5 에이전트 패널(총 10, 레포 대조 ~196 툴콜) 이후 재계획. PEAD 우선, 군중 페이드는 그다음, 모든 것은 게이트 뒤에 (2026-08-11)</p>
+
+<div class="quote">The one question is unchanged: <b>can our read tell a real signal from the crowd's overshoot — better than the crowd, after fees?</b> The panel's job was to find where v1's answer machinery was wrong. It found a blocker, a mis-scoped build list, and a statistically meaningless gate — all corrected here.</div>
+
+<div class="quote" style="border-left-color: var(--bad)"><b style="color:var(--bad)">STATUS (2026-08-11): GATE 0 FAILED — the plan is HALTED at step 0.</b> The historical PEAD event-study (1,539 real earnings events, 104 large-caps, walk-forward) shows no after-fee edge in the untouched test window, in any variant — including the pullback entry the strategy actually specifies. Phases A–E were never started; total spend was one reusable research harness. See §12.</div>
+
+<div class="chips">
+  <div class="chip"><b>10</b><span>agents: 5 planning lenses + 5 paired adversarial QA</span></div>
+  <div class="chip"><b>1</b><span>blocker caught: v1 conflated two OPPOSITE edges</span></div>
+  <div class="chip"><b>2</b><span>claims refuted by QA (both fee-arithmetic)</span></div>
+  <div class="chip"><b>Gate 0</b><span>historical PEAD backtest — can kill the plan for ~$0</span></div>
+  <div class="chip"><b>60+</b><span>closed trades &amp; 2 earnings seasons before promotion</span></div>
+</div>
+
+<h2>1. The blocker: v1 mixed two OPPOSITE edges — split them</h2>
+<p class="kr">차단급 발견: v1은 반대 방향의 두 엣지를 섞었다. PEAD는 과소반응(드리프트 합류) 엣지, 페이드는 과잉반응(소진된 군중 반대) 엣지 — PEAD 시험 통과는 페이드를 전혀 검증하지 않으며, contrarian 게이트를 PEAD 프롬프트에 넣으면 모든 드리프트 진입이 거부된다. 각자 게이트를 가진 v1/v2로 분리.</p>
+<div class="card">
+<svg viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="box" x="20" y="120" width="180" height="70"/>
+  <text x="110" y="148" text-anchor="middle" class="t-b">catalyst hits</text>
+  <text x="110" y="166" text-anchor="middle" class="t-small">earnings · news · macro</text>
+  <text x="110" y="181" text-anchor="middle" class="t-small">the crowd reacts</text>
+
+  <rect class="box-good" x="330" y="30" width="330" height="110"/>
+  <text x="350" y="56" class="t-b">v1 · PEAD — UNDERreaction edge</text>
+  <text x="350" y="78" class="t-small">crowd moves too LITTLE → JOIN the drift</text>
+  <text x="350" y="96" class="t-small">rules: pead-drift skill (trading_skills.py:1254)</text>
+  <text x="350" y="114" class="t-small">data: earnings dates + surprise + daily bars — free</text>
+  <text x="350" y="132" class="t-small">backtestable NOW · LONG-ONLY (no us-stock short path)</text>
+
+  <rect class="box-accent" x="330" y="180" width="330" height="110"/>
+  <text x="350" y="206" class="t-b">v2 · fade — OVERreaction edge</text>
+  <text x="350" y="228" class="t-small">crowd moves too MUCH → OPPOSE when exhausted</text>
+  <text x="350" y="246" class="t-small">rules: contrarian-crowding-gate (v2 prompts ONLY)</text>
+  <text x="350" y="264" class="t-small">data: positioning — no vendor history exists</text>
+  <text x="350" y="282" class="t-small">live-forward only · after v1's gate + 3mo self-accrued data</text>
+
+  <path class="ln-good" marker-end="url(#ar)" d="M200 140 C 260 120, 270 95, 328 85"/>
+  <path class="ln-accent" marker-end="url(#ar)" d="M200 170 C 260 190, 270 220, 328 232"/>
+
+  <rect class="box-bad" x="720" y="105" width="220" height="100"/>
+  <text x="830" y="131" text-anchor="middle" class="t-b" style="fill:var(--bad)">the v1-plan mistake</text>
+  <text x="830" y="153" text-anchor="middle" class="t-small">one trial "validating" both edges;</text>
+  <text x="830" y="171" text-anchor="middle" class="t-small">contrarian gate in the PEAD prompt</text>
+  <text x="830" y="189" text-anchor="middle" class="t-small">would veto every drift entry</text>
+  <path class="ln-bad ln-dash" marker-end="url(#ar)" d="M660 155 L 718 155"/>
+</svg>
+<p class="legend">Two sub-strategies, two prompts, two gates. Passing one says <b>nothing</b> about the other.</p>
+</div>
+
+<h2>2. Architecture — locked, plus where the archetype lives</h2>
+<p class="kr">아키텍처(확정 유지) — 아키타입은 플릿에 산다: fleets.archetype(short|swing) 마이그레이션, market_scope=["us-stock"] 고정, compose_run_settings로 스레딩, 런 스냅샷에 스탬프. 수수료 프레이밍 수정: "고정 수수료" 산술은 QA가 반박 — 실제 요금 체계 숫자를 빌드 전 부록으로 공표.</p>
+<div class="card">
+<table>
+  <tr><th>slot type</th><th>horizon</th><th>market</th><th>status</th></tr>
+  <tr><td><b>1 · short</b></td><td>intraday</td><td>crypto only</td><td>live, untouched</td></tr>
+  <tr><td><b>2 · swing</b></td><td>≥1–2 days, holds overnight</td><td>US equities — swing only, <b>never intraday</b></td><td>this plan</td></tr>
+</table>
+<p class="legend">Archetype homes on the fleet (<code>fleets.archetype</code>, migration) → threaded through <code>compose_run_settings</code> (fleet_planner.py:908) → stamped into each run's config snapshot, so run_engine conditions cadence, briefs, and rails per-run. Feasibility appendix required before build: the active fee-regime numbers (<code>FEE_PER_MARKET</code> ships dark), minimum notional at round-trip ≤0.5%, and the gap-safe notional — three published numbers, so feasibility is arithmetic, not judgment.</p>
+</div>
+
+<h2>3. v1 · PEAD — executable rules (v1-plan had philosophy, no numbers)</h2>
+<p class="kr">v1 · PEAD 실행 규칙 — 유니버스는 fleet_planner에 코드로 강제(달러거래량 ≥$50M · 가격 ≥$10 · 상장 ≥12개월 · 옵션 존재 · 일봉 ≥180 · 실적일 확인 가능 · 희석/조사 헤드라인 없음), 진입은 첫 실적 후 세션부터 갭을 지키는 첫 눌림의 재개 돌파, 청산은 눌림 저점 아래 스톱 + 15일 정체/25일 하드 타임박스 + 2R에서 절반 + 트레일.</p>
+<div class="card">
+<svg viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-accent" x="20" y="40" width="180" height="76"/>
+  <text x="110" y="64" text-anchor="middle" class="t-b">universe filter</text>
+  <text x="110" y="82" text-anchor="middle" class="t-small">coded at fleet build,</text>
+  <text x="110" y="97" text-anchor="middle" class="t-small">fail-closed (SPCX trap</text>
+  <text x="110" y="111" text-anchor="middle" class="t-small">→ mechanical filter)</text>
+
+  <rect class="box-accent" x="240" y="40" width="180" height="76"/>
+  <text x="330" y="64" text-anchor="middle" class="t-b">event qualifies?</text>
+  <text x="330" y="82" text-anchor="middle" class="t-small">real surprise + decisive gap</text>
+  <text x="330" y="97" text-anchor="middle" class="t-small">+ volume shock;</text>
+  <text x="330" y="111" text-anchor="middle" class="t-small">disqualifiers per skill</text>
+
+  <rect class="box-good" x="460" y="40" width="200" height="76"/>
+  <text x="560" y="64" text-anchor="middle" class="t-b">entry</text>
+  <text x="560" y="82" text-anchor="middle" class="t-small">first post-print session on;</text>
+  <text x="560" y="97" text-anchor="middle" class="t-small">first pullback that HOLDS the gap,</text>
+  <text x="560" y="111" text-anchor="middle" class="t-small">on resumption — never into the print</text>
+
+  <rect class="box-warn" x="700" y="40" width="240" height="76"/>
+  <text x="820" y="64" text-anchor="middle" class="t-b">exits (all pre-authored)</text>
+  <text x="820" y="82" text-anchor="middle" class="t-small">stop below pullback low · ½ off at +2R</text>
+  <text x="820" y="97" text-anchor="middle" class="t-small">· trail under higher pullback lows</text>
+  <text x="820" y="111" text-anchor="middle" class="t-small">· day-15 stall exit · day-25 hard exit</text>
+
+  <path class="ln" marker-end="url(#ar)" d="M200 78 L 238 78"/>
+  <path class="ln-good" marker-end="url(#ar)" d="M420 78 L 458 78"/>
+  <path class="ln-warn" marker-end="url(#ar)" d="M660 78 L 698 78"/>
+
+  <rect class="box-bad" x="240" y="160" width="460" height="56"/>
+  <text x="470" y="184" text-anchor="middle" class="t-b" style="fill:var(--bad)">overnight stops are DECISION LEVELS, not fills</text>
+  <text x="470" y="202" text-anchor="middle" class="t-small">a gap through the stop exits at the OPEN price; slippage recorded; every new stop_conditions key whitelisted + wire-tested</text>
+</svg>
+</div>
+
+<h2>4. Risk rails — now formulas, not adjectives</h2>
+<p class="kr">리스크 레일 — 형용사가 아니라 공식. 갭 사이징은 손실 예산에서 베팅을 도출: R=자본의 1%, G=max(250일 갭 P99, 2×ATR20/가격, 이벤트 내재변동 ×1.25), notional_max=R/G. 북 레벨 오버나잇 캡 Σ(notional×G)≤2.5%(주말 60%), 실적 전날 기본 청산, 스윙 전용 스톱 지오메트리(USD 레일=가격 스톱 동일 숫자), 장 마감 중 청산은 큐잉.</p>
+<div class="card">
+<svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-good" x="20" y="30" width="440" height="120"/>
+  <text x="40" y="56" class="t-b">gap-sizing: derive the bet from the loss budget</text>
+  <text x="40" y="80" class="t-small">R = 1.0% of fleet equity  (per-slot overnight risk budget)</text>
+  <text x="40" y="98" class="t-small">G = max( P99 |close→open| 250d ,  2×ATR20/price ,</text>
+  <text x="40" y="113" class="t-small">          1.25 × implied event move if a print is inside the hold )</text>
+  <text x="40" y="131" class="t-small">floor G at 3% · ×1.25 into Friday/holiday closes  →  notional_max = R / G</text>
+
+  <rect class="box-good" x="500" y="30" width="440" height="120"/>
+  <text x="520" y="56" class="t-b">book-level overnight caps (15:45 ET pass)</text>
+  <text x="520" y="80" class="t-small">Σ (notionalᵢ × Gᵢ) ≤ 2.5% of fleet equity — the modeled</text>
+  <text x="520" y="95" class="t-small">P99 one-night book loss · weekend entry: tighten to 60%</text>
+  <text x="520" y="113" class="t-small">excess is REDUCED before the close, never dumped</text>
+  <text x="520" y="131" class="t-small">skew: |long − short| ≤ ⌈n/2⌉ (the #359 brake pattern)</text>
+
+  <rect class="box-warn" x="20" y="170" width="440" height="110"/>
+  <text x="40" y="196" class="t-b">swing stop-geometry tier (new — intraday tier kills swings)</text>
+  <text x="40" y="218" class="t-small">stop = max(2×ATR20, 1.5×G) · max_loss_usd = notional × stop%</text>
+  <text x="40" y="234" class="t-small">→ USD rail and price stop are the SAME number (closes the</text>
+  <text x="40" y="250" class="t-small">desk-vs-rail gap, run_engine.py:3131 by construction)</text>
+  <text x="40" y="268" class="t-small">retire on DAILY-CLOSE equity · intraday brakes off · 3×-stop catastrophe rail</text>
+
+  <rect class="box-warn" x="500" y="170" width="440" height="110"/>
+  <text x="520" y="196" class="t-b">session-aware machinery</text>
+  <text x="520" y="218" class="t-small">earnings rule: flat by 15:45 ET before any print (unless thesis</text>
+  <text x="520" y="234" class="t-small">names it + gap formula at 1.25×implied + half budget)</text>
+  <text x="520" y="250" class="t-small">flattens while closed → QUEUED to next open, never stale-price fills</text>
+  <text x="520" y="268" class="t-small">stops dormant when closed, fire on first fresh mark · halt detector freezes</text>
+</svg>
+</div>
+
+<h2>5. v2 · fade — numeric definitions on latency-correct feeds</h2>
+<p class="kr">v2 · 페이드 — 지연 시간을 존중하는 피드 위의 숫자 정의. 핵심 발견: 공매도 잔량은 격주 공표 + ~9일 지연 → 트리거 불가, 배경 맥락 전용. 일 단위로 갱신되는 프록시로 교체: 풋/콜 OI 백분위(야후 체인, 이미 코드 존재), FINRA 일별 공매도 비율(T+1), StockTwits 틸트. 포지셔닝 이력은 벤더가 없다 → 1단계부터 자체 기록 시작.</p>
+<div class="card">
+<table>
+  <tr><th>gate leg</th><th>numeric definition</th><th>feed &amp; latency</th></tr>
+  <tr><td rowspan="3"><b>crowded</b><br>(need ≥2 of 3)</td><td>put/call OI ratio beyond its own 60-day 10th/90th percentile</td><td>Yahoo option chain (price_fetcher.py:936 — exists), EOD</td></tr>
+  <tr><td>daily short-sale volume ratio elevated</td><td>FINRA, free, <b>T+1</b> — the honest "crowd just acted" read</td></tr>
+  <tr><td>StockTwits tilt |t| ≥ 0.6, n ≥ 30</td><td>live (drop the crypto <code>.X</code> suffix — factor_snapshots.py:35)</td></tr>
+  <tr><td><b>context only</b></td><td>SI%float ≥ 15% / days-to-cover ≥ 5 — <span class="no">never the sole trigger</span></td><td>biweekly short interest, <b>~9-day settlement lag</b></td></tr>
+  <tr><td><b>failing</b></td><td>within 2 sessions of a favorable catalyst: close &lt; catalyst-day open OR &gt;50% retrace on ≥1.5× 20-day volume; <i>silence is not failure</i></td><td>daily candles — computable today</td></tr>
+</table>
+<p class="legend"><b>v2 is live-forward only</b> — no vendor sells positioning history. So <code>us_stock_factor_snapshots</code> starts recording at build step 1 and every paper trade stores the positioning it saw, making v2's future gate auditable. Paid options-flow feeds ($50–150+/mo) stay excluded until a gate is cleared: the whole book's realized profit is ~$6.5 — any recurring feed fails the mandate's cost test.</p>
+</div>
+
+<h2>6. Build list — corrected in both directions</h2>
+<p class="kr">빌드 목록 — 양방향 수정. 세션 타이밍은 ~80% 이미 존재(markets.py:282/311/325, 소비처 포함) → 빠진 20%만: 개장까지-분 트윈 + 프리오픈 딥패스 + 마감 전 결정 + NYSE 휴일/반일 캘린더. 반대로 기존 엔진은 스윙 보유와 적극적으로 싸운다: 30분 캐던스 하드캡, 브리프가 반대를 지시, 다크 상태의 호라이즌 게이트, 휴장 사이클을 세던 idle-retire, 인트라데이 트레일.</p>
+<div class="card">
+<svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <text x="240" y="28" text-anchor="middle" class="t-b" style="fill:var(--good)">SMALLER than v1 claimed</text>
+  <rect class="box-good" x="20" y="44" width="440" height="80"/>
+  <text x="36" y="66" class="t-small">session clock ~80% built: is_session_open / is_market_open /</text>
+  <text x="36" y="82" class="t-small">session_minutes_left (markets.py:282/311/325) already consumed by</text>
+  <text x="36" y="98" class="t-small">run_engine (3680, 2780) + fleet_planner (349) — build only the</text>
+  <text x="36" y="114" class="t-small">missing 20%: until-open twin · pre-open pass · near-close decision</text>
+  <rect class="box-warn" x="20" y="136" width="440" height="52"/>
+  <text x="36" y="158" class="t-small" style="fill:var(--warn)">mandatory before any swing run: NYSE holiday + half-day</text>
+  <text x="36" y="174" class="t-small">calendar — markets.py's clock is weekday+time only today</text>
+
+  <text x="720" y="28" text-anchor="middle" class="t-b" style="fill:var(--bad)">LARGER than v1 admitted</text>
+  <rect class="box-bad" x="500" y="44" width="440" height="196"/>
+  <text x="516" y="66" class="t-small">desk cadence HARD-CAPPED at 30 min (run_engine.py:2040/2087) —</text>
+  <text x="516" y="82" class="t-small">per-archetype 240-min cap needed · ⚠ relaxes a recorded owner rule</text>
+  <text x="516" y="100" class="t-small">briefs command the OPPOSITE of swing ("closing soon", "banking</text>
+  <text x="516" y="116" class="t-small">first-class", run_engine.py:3682-3705) → archetype-conditioned + wiring tests</text>
+  <text x="516" y="134" class="t-small">horizon gate already built, DARK (run_engine.py:2286-2436) — arm for</text>
+  <text x="516" y="150" class="t-small">swing only; reconcile the at_time/horizon_until collision</text>
+  <text x="516" y="168" class="t-small">idle-retire counted CLOSED-session cycles (prod runs 127/128,</text>
+  <text x="516" y="184" class="t-small">run_engine.py:562-577) → session exemption for swing</text>
+  <text x="516" y="202" class="t-small">stops stay on the ~60s control scan — slower thinking</text>
+  <text x="516" y="218" class="t-small">never delays an exit · intraday trails/cooldowns conditioned too</text>
+</svg>
+<p class="legend">Phase-1 data is nearly free: earnings calendar, daily bars, StockTwits all live; set the free FINNHUB key; the ONE missing feed is earnings surprise (actual vs estimate, ~100 lines in the fmp_feed union pattern). Step 0 = prod key audit (AV tier · FINNHUB · FMP has never been keyed — fmp_feed.py:15).</p>
+</div>
+
+<h2>7. Measurement — the gate that replaces "beat −$0.29"</h2>
+<p class="kr">측정 — "−$0.29를 이겨라"를 대체하는 게이트. 패널의 가장 뼈아픈 확정 발견: v1 게이트는 통계적 검정력이 없어 음의 기대값 전략도 통과 가능했다. 게이트 0(과거 PEAD 이벤트 스터디, 빌드 전, ~$0로 계획 전체를 죽일 수 있음) → 사전 등록 페이퍼 트라이얼(60건 + 실적 시즌 2회) → CI 게이트 승격/프로베이션 → 체크포인트 킬 규칙 + 12개월 타임박스.</p>
+<div class="card">
+<svg viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-accent" x="20" y="30" width="280" height="110"/>
+  <text x="40" y="54" class="t-b">GATE 0 · historical event-study</text>
+  <text x="40" y="74" class="t-small">new backtest_catalyst.py — ≥300 earnings</text>
+  <text x="40" y="90" class="t-small">events, ≥100 names, 3y, walk-forward</text>
+  <text x="40" y="106" class="t-small">(train 2y / test 1y, no test tuning)</text>
+  <text x="40" y="124" class="t-small">pass: after-fee expectancy bootstrap 90% LB &gt; 0 · PF ≥ 1.2</text>
+
+  <rect class="box-accent" x="360" y="30" width="280" height="110"/>
+  <text x="380" y="54" class="t-b">paper trial · pre-registered</text>
+  <text x="380" y="74" class="t-small">100+ large-caps (≥$100M ADV, optionable)</text>
+  <text x="380" y="90" class="t-small">≥60 closed trades AND 2 earnings seasons</text>
+  <text x="380" y="106" class="t-small">fills pinned to settled bars; gaps fill at open</text>
+  <text x="380" y="124" class="t-small">both brake regimes: new live, old in shadow (logged)</text>
+
+  <rect class="box-good" x="700" y="30" width="240" height="110"/>
+  <text x="720" y="54" class="t-b">promotion (ALL required)</text>
+  <text x="720" y="74" class="t-small">expectancy bootstrap 90% LB &gt; 0</text>
+  <text x="720" y="90" class="t-small">Wilson 90% LB hit-rate &gt; .50 or PF ≥ 1.3</text>
+  <text x="720" y="106" class="t-small">max DD &lt; 15% · worst gap loss &lt; 5%</text>
+  <text x="720" y="124" class="t-small">→ PROBATION: 1 live slot, min size; scale at 150+</text>
+
+  <path class="ln-accent" marker-end="url(#ar)" d="M300 85 L 358 85"/>
+  <path class="ln-good" marker-end="url(#ar)" d="M640 85 L 698 85"/>
+
+  <rect class="box-bad" x="20" y="180" width="620" height="110"/>
+  <text x="40" y="204" class="t-b" style="fill:var(--bad)">kill rules — fixed checkpoints only (30 / 60 / 90 closed trades; no peeking)</text>
+  <text x="40" y="226" class="t-small">Wilson 90% UPPER bound of hit-rate &lt; 0.50 (demonstrably worse than a coin flip) · cumulative net</text>
+  <text x="40" y="242" class="t-small">expectancy negative beyond fee noise at 90% confidence · paper drawdown &gt; 20%</text>
+  <text x="40" y="264" class="t-small" style="fill:var(--bad)">UNCONDITIONAL KILL at 12 months without promotion — timeboxed hypotheses, per the garbage rule</text>
+
+  <rect class="box-dim" x="700" y="180" width="240" height="110"/>
+  <text x="720" y="204" class="t-b">every checkpoint reports</text>
+  <text x="720" y="224" class="t-small">n · hit-rate + CI · expectancy · PF +</text>
+  <text x="720" y="240" class="t-small">bootstrap · avg win/loss · max DD ·</text>
+  <text x="720" y="256" class="t-small">worst gap loss · setups-seen vs taken</text>
+  <text x="720" y="272" class="t-small">(detects gates starving the trial)</text>
+
+  <path class="ln-bad ln-dash" marker-end="url(#ar)" d="M490 140 L 490 178"/>
+</svg>
+<p class="legend">Engineered-in caveats: survivorship bias in the historical universe (reported, point-in-time where possible) · earnings-season trades cluster, violating independence → block-bootstrap by week · the timeline is quarters, not weeks, and the plan says so.</p>
+</div>
+
+<h2>8. Build order — first proof off the critical path of everything else</h2>
+<p class="kr">빌드 순서 — 첫 증명이 다른 무엇의 크리티컬 패스에도 걸리지 않게. 0단계(키 감사+수수료 부록+게이트 0)가 플랫폼 작업 전에 계획을 죽일 수 있다. 이후 A(아키타입+캘린더) → B(캐던스·브리프·호라이즌·오버나잇 스톱) → C(갭 사이징·유니버스·북 캡) → D(팩터 기록, 1일차부터 병행) → E(페이퍼 플릿) → 프로베이션 → 스케일. v2 페이드는 v1 게이트 + 자체 축적 포지셔닝 이력 3개월 이후.</p>
+<div class="card">
+<svg viewBox="0 0 960 150" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-warn" x="20" y="40" width="130" height="66"/>
+  <text x="85" y="63" text-anchor="middle" class="t-b">0 · kill-cheap</text>
+  <text x="85" y="80" text-anchor="middle" class="t-small">key audit · fee appendix</text>
+  <text x="85" y="95" text-anchor="middle" class="t-small">· GATE 0 backtest</text>
+  <rect class="box" x="170" y="40" width="120" height="66"/>
+  <text x="230" y="63" text-anchor="middle" class="t-b">A (~2d)</text>
+  <text x="230" y="80" text-anchor="middle" class="t-small">archetype col ·</text>
+  <text x="230" y="95" text-anchor="middle" class="t-small">NYSE calendar</text>
+  <rect class="box" x="310" y="40" width="130" height="66"/>
+  <text x="375" y="63" text-anchor="middle" class="t-b">B (~3d)</text>
+  <text x="375" y="80" text-anchor="middle" class="t-small">cadence · briefs ·</text>
+  <text x="375" y="95" text-anchor="middle" class="t-small">horizon · overnight stops</text>
+  <rect class="box" x="460" y="40" width="130" height="66"/>
+  <text x="525" y="63" text-anchor="middle" class="t-b">C (~3d)</text>
+  <text x="525" y="80" text-anchor="middle" class="t-small">gap sizing · universe ·</text>
+  <text x="525" y="95" text-anchor="middle" class="t-small">book caps · queued flatten</text>
+  <rect class="box-accent" x="610" y="40" width="130" height="66"/>
+  <text x="675" y="63" text-anchor="middle" class="t-b">D (∥ from day 1)</text>
+  <text x="675" y="80" text-anchor="middle" class="t-small">factor recording ·</text>
+  <text x="675" y="95" text-anchor="middle" class="t-small">surprise feed</text>
+  <rect class="box-good" x="760" y="40" width="180" height="66"/>
+  <text x="850" y="63" text-anchor="middle" class="t-b">E · paper → probation</text>
+  <text x="850" y="80" text-anchor="middle" class="t-small">§7 gate → 1 live slot →</text>
+  <text x="850" y="95" text-anchor="middle" class="t-small">scale at 150+ · then v2</text>
+  <path class="ln-warn" marker-end="url(#ar)" d="M150 73 L 168 73"/>
+  <path class="ln" marker-end="url(#ar)" d="M290 73 L 308 73"/>
+  <path class="ln" marker-end="url(#ar)" d="M440 73 L 458 73"/>
+  <path class="ln" marker-end="url(#ar)" d="M590 73 L 608 73"/>
+  <path class="ln-good" marker-end="url(#ar)" d="M740 73 L 758 73"/>
+  <text x="480" y="135" text-anchor="middle" class="t-small">Gate 0 failing = the plan dies before any platform work is paid for — the correct order under "spent nothing real learning it"</text>
+</svg>
+</div>
+
+<h2>9. Traps — v1's table plus what the panel added</h2>
+<div class="card">
+<table>
+  <tr><th>trap</th><th>discipline</th></tr>
+  <tr><td>Volatility ≠ edge</td><td>a fast move hits the stop as easily as the target</td></tr>
+  <tr><td>Hindsight ($113→$135)</td><td>every visible winner has an invisible loser beside it</td></tr>
+  <tr><td>Great tech ≠ great trade</td><td>priced-for-perfection: good news can still drop the stock</td></tr>
+  <tr><td>Trend ≠ catalyst</td><td>trade the dated event, not the diffuse trend</td></tr>
+  <tr><td>Verify the instrument</td><td>now a <b>coded</b> universe filter at fleet build, not prose</td></tr>
+  <tr><td>"We can tell" is a hypothesis</td><td>true only when measured after fees</td></tr>
+  <tr><td><b>Two edges conflated</b> <span class="wr">(new)</span></td><td>PEAD joins the crowd's underreaction; the fade opposes its overreaction — one trial cannot validate both</td></tr>
+  <tr><td><b>Stale positioning data</b> <span class="wr">(new)</span></td><td>biweekly short interest with ~9-day lag is context, never a trigger</td></tr>
+  <tr><td><b>A weak gate flatters</b> <span class="wr">(new)</span></td><td>"beat −$0.29 on 6 runs" would pass noise; only CI-gated absolute thresholds count</td></tr>
+  <tr><td><b>Peeking bias</b> <span class="wr">(new)</span></td><td>evaluate at pre-registered checkpoints only; unconditional 12-month timebox</td></tr>
+  <tr><td><b>Phantom paper edge</b> <span class="wr">(new)</span></td><td>stale-quote fills fake profit; fills pin to settled bars, gaps fill at the open</td></tr>
+</table>
+</div>
+
+<h2>10. Decisions — RESOLVED (owner, 2026-08-11) + step-0 audit</h2>
+<div class="card">
+<p><b>1 · Swing cadence: APPROVED — US-stock swing archetype only.</b> 240 min applies solely to <code>archetype=swing</code> (pinned <code>["us-stock"]</code>); crypto short slots keep 30 min unchanged; the ~60s stop scan is untouched for both.<br>
+<b>2 · Keys: platform-level, default free</b> (owner: "default is open key use"). Prod audit 2026-08-11: AV <span class="ok">SET</span> (tier unconfirmable; Yahoo-first routing compensates) · FINNHUB <span class="no">UNSET</span> (free signup = owner action) · FMP <span class="wr">SET but legacy-403'd</span> on the earnings calendar (post-2025 keys barred from v3) — <b>do not pay FMP</b>; the free AV <code>EARNINGS</code> path carries surprises.<br>
+<b>3 · Paid positioning feeds: CONFIRMED excluded</b> until a gate is cleared — $50–150+/mo against a book whose lifetime realized profit is ~$6.5 fails the mandate's cost test by an order of magnitude.</p>
+<p class="legend"><b>Fee feasibility (step 0b, audited):</b> prod runs <code>FEE_PER_MARKET=true</code>; us-stock = <b>0.005%/side, proportional</b> → round trip 0.01% of notional at any size — no fee-driven minimum notional exists (v1-plan's flat-fee worry formally dead, as QA refuted). Binding swing costs are spread + gap slippage, priced by the paper-trial fill rules. Example at $10k fleet equity: R=$100, G floor 3% → notional_max ≈ $3,333; round-trip fee ≈ $0.33.</p>
+</div>
+
+<h2>11. What this plan is <i>not</i></h2>
+<div class="card">
+<p>— Not a promise US equities out-earn crypto: the book says the opposite today, on a tiny sample.<br>
+— Not a fast-trading strategy: the 1–2 day floor is load-bearing.<br>
+— Not "our AI is smarter": the edge is checkable differentiators and a measured hit-rate, or it is nothing.<br>
+— <b>Not one strategy:</b> v1-PEAD and v2-fade are two edges with two gates — passing one says nothing about the other.</p>
+</div>
+
+<h2>12. GATE 0 VERDICT (2026-08-11): FAIL — the plan halts at step 0</h2>
+<p class="kr">게이트 0 판정: 실패 — 계획은 0단계에서 정지. 실제 실적 이벤트 1,539건(대형주 104종목, 2023-01→2026-08), 워크포워드(훈련→2025-08-11, 시험=최근 12개월), 프로드 감사 수수료 적용. 훈련 구간은 건강해 보였으나(+1.12%/건, PF 1.84) 아웃오브샘플에서 소멸 — 소멸했거나 국면 의존적인 엣지의 전형. 사전 등록된 정제 1회(명시된 눌림 진입)만 실행했고 더 작은 표본에서 더 크게 실패 — 통과할 때까지 변형을 캐는 것은 §9가 금지한 피킹 편향.</p>
+<div class="card">
+<table>
+  <tr><th>variant (test window, untouched)</th><th>n</th><th>hit%</th><th>expectancy/trade</th><th>PF</th><th>bootstrap LB90</th></tr>
+  <tr><td>long next-open</td><td>46</td><td>45.7</td><td class="no">−0.26%</td><td>0.90</td><td>−1.47</td></tr>
+  <tr><td>long next-open + 5% stop</td><td>51</td><td>41.2</td><td class="no">−0.70%</td><td>0.74</td><td>−1.60</td></tr>
+  <tr><td>both directions (info; shorts inexpressible)</td><td>85</td><td>52.9</td><td class="wr">+0.51%</td><td>1.29</td><td>−0.08 ≈ 0</td></tr>
+  <tr><td><b>long pullback (the strategy as specified)</b></td><td><b>9</b></td><td><b>33.3</b></td><td class="no"><b>−1.93%</b></td><td><b>0.35</b></td><td><b>−3.89</b></td></tr>
+  <tr><td>long pullback + 5% stop</td><td>37</td><td>43.2</td><td class="no">−0.37%</td><td>0.79</td><td>−1.11</td></tr>
+  <tr><td>both pullback</td><td>78</td><td>46.2</td><td class="no">−0.27%</td><td>0.84</td><td>−0.96</td></tr>
+</table>
+<p class="legend"><b>Honest reading:</b> on deep liquid large-caps — the only universe our hygiene rules allow — mechanically-implementable PEAD shows no after-fee edge in the last 12 months. Consistent with the literature: PEAD concentrates in thin small/mid-caps, precisely the manipulable zone the universe filter exists to keep the desk out of. That tension is now <i>measured</i>, not assumed. Caveat: this tested price-reaction PEAD (gap+volume); SUE-based PEAD (surprise magnitude) was untestable — the surprise feed was Phase D of the plan this gate killed.<br>
+<b>Spent:</b> one reusable event-study harness (<code>backtest_catalyst.py</code>, 18 tests) + a cached dataset. <b>Not spent:</b> phases A–E. The gate did its job.<br>
+<b>Revival paths (each needs a fresh gate pass):</b> ① wire the free AV earnings-surprise feed, re-run gate 0 SUE-qualified · ② build only the cheap positioning-recording table so the v2-fade option accrues history for later (owner's call) · ③ re-test after a regime change, criteria unchanged.</p>
+</div>
+
+<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/23-swing-block-news-fade.md</code> (v2) · replanned 2026-08-11 after a 5-planner + 5-adversarial-QA panel (10 agents; ~27 findings confirmed, 2 refuted, remainder weakened — refuted items removed above) · Gate 0 run same day: <b>FAIL, plan halted at step 0</b> (artifact: <code>research/gate0_pead_backtest.result.json</code>) · no trading code changed.</p>
+
+</div>
+</body>
+</html>
