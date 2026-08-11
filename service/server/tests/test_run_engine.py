@@ -1971,6 +1971,52 @@ class RecallExploreTests(unittest.TestCase):
             {"unrealized": 0.42}, 3.0))
         self.assertTrue(run_engine._recall_explore_allowed({}, 0))
 
+    def test_the_label_and_the_gate_cannot_disagree_about_losing(self):
+        """The safety property is a COUPLING, and nothing pinned it.
+
+        `_recall_query` decides what a decision is CALLED and
+        `_recall_explore_allowed` decides whether it may be explored. They were
+        written separately and both read `pnl["unrealized"]`. The test above
+        checks the gate on three hand-picked values; that cannot catch the two
+        drifting apart — and the drift is exactly the bug that matters, because
+        a run journalled as `losing` while being explored would corrupt the
+        attribution dataset with the one class the mandate forbids loosening.
+
+        Verified on prod 2026-08-11 00:53Z (run 1056, unrealized −1.33 →
+        `deterministic-top2`, propensity 1.0), but one live row samples one
+        input. Sweep it instead, including the values a live book rarely
+        reaches.
+        """
+        upnls = [-100.0, -1.0, -0.01, -1e-9, 0.0, 1e-9, 0.01, 1.0, 100.0,
+                 None, "", "abc", float("nan")]
+        checked = 0
+        for upnl in upnls:
+            for peak in (None, 0.0, 5.0):
+                for qty in (3.0, -3.0, 0.0):     # long, SHORT, flat
+                    pnl = {"unrealized": upnl}
+                    run = {"market": "crypto", "peak_pnl_usd": peak}
+                    query = run_engine._recall_query(run, pnl, qty)
+                    allowed = run_engine._recall_explore_allowed(pnl, qty)
+                    checked += 1
+                    if "losing" in query:
+                        self.assertFalse(
+                            allowed,
+                            f"query says losing but exploration is allowed "
+                            f"(unrealized={upnl!r} peak={peak!r} qty={qty!r})")
+        self.assertEqual(checked, len(upnls) * 9)
+
+    def test_a_short_is_holding_not_flat(self):
+        """`positions.quantity` is SIGNED. A gate written `pos_qty > 0` would
+        read every short as flat and hand the whole short book to the explorer
+        — including shorts that are underwater. The falsy test is load-bearing,
+        so pin it rather than trusting it to survive an edit."""
+        self.assertFalse(run_engine._recall_explore_allowed(
+            {"unrealized": -0.42}, -3.0),
+            "a LOSING short must be excluded exactly like a losing long")
+        self.assertTrue(run_engine._recall_explore_allowed(
+            {"unrealized": 0.42}, -3.0),
+            "a winning short is still explorable")
+
     def test_no_alternatives_is_an_honest_propensity_of_one(self):
         chosen, meta = run_engine._recall_select(self._hits(30.0, 22.0), True)
         self.assertEqual(meta["pool"], 0)
