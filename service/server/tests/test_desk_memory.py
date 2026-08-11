@@ -7,6 +7,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import database
 import desk_memory
@@ -241,6 +242,125 @@ class IngestTests(_Db):
         out = desk_memory_ingest.ingest_all()
         self.assertEqual(out["outcomes"], 1)
         self.assertEqual(out["decisions"], 0)
+
+
+class SkillLessonTests(_Db):
+    """Plan 22 §7 increment (a3)(i) — the skills catalogue as `lesson` chunks.
+
+    Recall reads a monitoring pool that has been frozen at ~560 chunks since
+    08-08, and several situation classes cannot offer the >=3 above-floor
+    candidates the attribution model needs. This is pool work only: nothing
+    retrieves `lesson` yet, and that no-op is pinned below."""
+
+    _BODY = (
+        "Size from risk, not from conviction alone. Per-unit risk is the "
+        "entry-to-stop distance plus expected friction, and the position must "
+        "keep total risk inside the run's budget even if the stop fills with "
+        "slippage. Round size DOWN, and when several constraints apply the "
+        "strictest constraint wins every time it is consulted. Never size "
+        "with full-Kelly aggression: half measures capture most of the growth "
+        "with far less ruin risk in a book this small. If a key input is "
+        "unknown, that is a reason to defer or shrink, never to guess bigger."
+    )
+
+    def _catalogue(self, *skills):
+        import trading_skills
+        return patch.object(trading_skills, "all_skills",
+                            return_value=list(skills))
+
+    def _skill(self, **cols):
+        return {"slug": cols.get("slug", "position-sizing-discipline"),
+                "name": cols.get("name", "Position Sizing Discipline"),
+                "body": cols.get("body", self._BODY),
+                "prompts": cols.get("prompts", ["trader", "planner"]),
+                "markets": cols.get("markets"),
+                "enabled": cols.get("enabled", True)}
+
+    def test_a_skill_becomes_several_atomic_lessons(self):
+        with self._catalogue(self._skill()):
+            self.assertGreater(desk_memory_ingest.ingest_skill_lessons(), 1)
+        self.assertGreater(desk_memory.stats()["by_kind"]["lesson"], 1)
+
+    def test_an_atom_keeps_whole_sentences_and_loses_no_text(self):
+        """A half claim is not doctrine — and a splitter that drops a clause
+        would teach the desk something its author never wrote."""
+        atoms = desk_memory_ingest._atomise(self._BODY)
+        self.assertGreater(len(atoms), 1)
+        self.assertEqual(" ".join(atoms), self._BODY)
+        for atom in atoms:
+            self.assertTrue(atom.endswith((".", "!", "?")), atom)
+
+    def test_a_short_tail_is_folded_back_rather_than_stored_as_noise(self):
+        """A body whose LAST sentence lands just after a chunk boundary — the
+        only case where the fold-back does anything."""
+        body = (self._BODY + " An aggressive stop or an oversized conviction "
+                "cannot be repaired afterwards by sizing at all. Round down.")
+        atoms = desk_memory_ingest._atomise(body)
+        self.assertTrue(all(len(a) >= desk_memory_ingest._LESSON_MIN
+                            for a in atoms), [len(a) for a in atoms])
+        self.assertTrue(atoms[-1].endswith("Round down."))
+
+    def test_a_body_shorter_than_the_floor_is_still_kept(self):
+        """Unlike a markdown heading, a short skill body IS the doctrine."""
+        self.assertEqual(desk_memory_ingest._atomise("Cut a loser small."),
+                         ["Cut a loser small."])
+
+    def test_a_multi_market_skill_is_reachable_from_each_of_its_markets(self):
+        with self._catalogue(self._skill(markets=["crypto", "futures"])):
+            desk_memory_ingest.ingest_skill_lessons()
+        for market in ("crypto", "futures"):
+            hits = desk_memory.search("size from risk not conviction",
+                                      kind="lesson", market=market)
+            self.assertTrue(hits, f"unreachable from {market}")
+
+    def test_a_market_scoped_lesson_does_not_leak_into_another_market(self):
+        with self._catalogue(self._skill(markets=["crypto"])):
+            desk_memory_ingest.ingest_skill_lessons()
+        self.assertFalse(desk_memory.search("size from risk not conviction",
+                                            kind="lesson", market="forex"))
+
+    def test_a_disabled_skill_teaches_nothing(self):
+        with self._catalogue(self._skill(enabled=False)):
+            self.assertEqual(desk_memory_ingest.ingest_skill_lessons(), 0)
+
+    def test_reingest_is_idempotent(self):
+        with self._catalogue(self._skill()):
+            first = desk_memory_ingest.ingest_skill_lessons()
+            self.assertGreater(first, 0)
+            self.assertEqual(desk_memory_ingest.ingest_skill_lessons(), 0)
+        self.assertEqual(desk_memory.stats()["by_kind"]["lesson"], first)
+
+    def test_lessons_stay_out_of_the_pool_recall_actually_reads(self):
+        """No behavior change today: `_recall_line` searches kind=monitoring,
+        so a lesson must not be able to reach a live position brief."""
+        desk_memory.remember("monitoring", "n.md#x", "T",
+                             "Size from risk and not from conviction alone, "
+                             "because conviction is not a risk measure.")
+        with self._catalogue(self._skill()):
+            desk_memory_ingest.ingest_skill_lessons()
+        hits = desk_memory.search("size from risk not conviction",
+                                  kind="monitoring")
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["kind"], "monitoring")
+
+    def test_the_real_catalogue_fills_the_pool(self):
+        """The whole point of (a3): a pool big enough that a class can offer
+        alternates. Measured on the shipped catalogue, not a fixture."""
+        import trading_skills
+        trading_skills.invalidate_trading_skills_cache()
+        try:
+            stored = desk_memory_ingest.ingest_skill_lessons()
+        finally:
+            trading_skills.invalidate_trading_skills_cache()
+        self.assertGreater(stored, 100, "expected ~120-180 lessons")
+
+    def test_a_broken_catalogue_never_costs_the_tick_its_other_ingests(self):
+        import trading_skills
+        with patch.object(trading_skills, "all_skills",
+                          side_effect=RuntimeError("skills are on fire")):
+            out = desk_memory_ingest.ingest_all()
+        self.assertEqual(out["lessons"], 0)
+        self.assertIn("decisions", out)
 
 
 class DaemonTests(_Db):
