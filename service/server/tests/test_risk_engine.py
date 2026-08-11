@@ -30,12 +30,20 @@ def _iso(dt: datetime) -> str:
 
 # Anchor test timestamps at 01:00 UTC so a few hours of offsets never cross a
 # UTC day boundary (realized_today is bucketed by UTC date).
-TODAY = datetime.now(timezone.utc).replace(hour=1, minute=0, second=0, microsecond=0)
-YESTERDAY = TODAY - timedelta(days=1)
+#
+# Resolved per call, NEVER cached at import: trade_stats derives its own date
+# on every call, the backend suite runs ~15 minutes, and a constant fixed at
+# import went stale the moment collection and execution straddled 00:00 UTC —
+# every seeded row dated YESTERDAY while the gate asked for TODAY, so every
+# money assertion read 0.0 (CI 2026-08-11 00:08Z).
+def _day_anchor() -> datetime:
+    return datetime.now(timezone.utc).replace(hour=1, minute=0, second=0, microsecond=0)
 
 
 class RiskEngineTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        self.today = _day_anchor()
+        self.yesterday = self.today - timedelta(days=1)
         self.tmp = tempfile.TemporaryDirectory()
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
@@ -150,9 +158,9 @@ class TradeStatsTests(RiskEngineTestCase):
         daily-loss breaker 49 times in a week."""
         from risk_engine import trade_stats
         # CL carries contract_multiplier 1000; a $10 loss must stay $10.
-        self._insert_signal("buy", 100.0, 1.0, _iso(TODAY),
+        self._insert_signal("buy", 100.0, 1.0, _iso(self.today),
                             symbol="CL", market="futures")
-        self._insert_signal("sell", 90.0, 1.0, _iso(TODAY + timedelta(minutes=1)),
+        self._insert_signal("sell", 90.0, 1.0, _iso(self.today + timedelta(minutes=1)),
                             symbol="CL", market="futures")
         stats = trade_stats(self.agent_id)
         self.assertAlmostEqual(stats["realized_today"], -10.0)
@@ -160,9 +168,9 @@ class TradeStatsTests(RiskEngineTestCase):
     def test_replay_win_rate_payoff_and_daily_pnl(self):
         from risk_engine import trade_stats
         # Two wins of +20 yesterday, one loss of −10 today.
-        self._round_trip(100.0, 120.0, YESTERDAY)
-        self._round_trip(100.0, 120.0, YESTERDAY + timedelta(hours=1))
-        self._round_trip(100.0, 90.0, TODAY)
+        self._round_trip(100.0, 120.0, self.yesterday)
+        self._round_trip(100.0, 120.0, self.yesterday + timedelta(hours=1))
+        self._round_trip(100.0, 90.0, self.today)
         stats = trade_stats(self.agent_id)
         self.assertEqual(stats["n_trades"], 3)
         self.assertAlmostEqual(stats["win_rate"], 2 / 3)
@@ -172,9 +180,9 @@ class TradeStatsTests(RiskEngineTestCase):
     def test_replay_averages_cost_basis(self):
         from risk_engine import trade_stats
         # Buy 1 @100 and 1 @200 (avg 150), sell 2 @180 → pnl +60, one winning trade.
-        self._insert_signal("buy", 100.0, 1.0, _iso(TODAY))
-        self._insert_signal("buy", 200.0, 1.0, _iso(TODAY + timedelta(minutes=1)))
-        self._insert_signal("sell", 180.0, 2.0, _iso(TODAY + timedelta(minutes=2)))
+        self._insert_signal("buy", 100.0, 1.0, _iso(self.today))
+        self._insert_signal("buy", 200.0, 1.0, _iso(self.today + timedelta(minutes=1)))
+        self._insert_signal("sell", 180.0, 2.0, _iso(self.today + timedelta(minutes=2)))
         stats = trade_stats(self.agent_id)
         self.assertEqual(stats["n_trades"], 1)
         self.assertAlmostEqual(stats["realized_today"], 60.0)
@@ -189,11 +197,11 @@ class TradeStatsTests(RiskEngineTestCase):
         # Run 2's open buy lands FIRST, so a merged book would average it into
         # run 1's cost basis before run 1's exit replays.
         self._insert_signal("buy", 9000.0, 1.0,                   # run 2: open, no exit
-                            _iso(TODAY), run_id=2)
+                            _iso(self.today), run_id=2)
         self._insert_signal("buy", 100.0, 1.0,
-                            _iso(TODAY + timedelta(minutes=1)), run_id=1)
+                            _iso(self.today + timedelta(minutes=1)), run_id=1)
         self._insert_signal("sell", 110.0, 1.0,                   # run 1 exits: +10
-                            _iso(TODAY + timedelta(minutes=2)), run_id=1)
+                            _iso(self.today + timedelta(minutes=2)), run_id=1)
         stats = trade_stats(self.agent_id)
         self.assertEqual(stats["n_trades"], 1, "run 2's open buy must not close run 1")
         # Merged books would price the exit against avg(9000, 100) = 4550 and
@@ -204,11 +212,32 @@ class TradeStatsTests(RiskEngineTestCase):
         """Per-run books, but realized_today still aggregates every run — the
         daily-loss breaker is an account-level rail and must stay agent-wide."""
         from risk_engine import trade_stats
-        self._round_trip(100.0, 110.0, TODAY, run_id=1)                       # +10
-        self._round_trip(100.0, 70.0, TODAY + timedelta(minutes=5), run_id=2)  # −30
+        self._round_trip(100.0, 110.0, self.today, run_id=1)                       # +10
+        self._round_trip(100.0, 70.0, self.today + timedelta(minutes=5), run_id=2)  # −30
         stats = trade_stats(self.agent_id)
         self.assertEqual(stats["n_trades"], 2)
         self.assertAlmostEqual(stats["realized_today"], -20.0)
+
+    def test_seed_anchor_follows_the_clock_across_a_utc_midnight(self):
+        """Regression (CI 2026-08-11 00:08Z, run 31444036339 on a docs-only PR).
+
+        The seed anchor used to be a module constant fixed at import, while
+        trade_stats derives its date on every call. The backend suite runs ~15
+        minutes, so importing before 00:00 UTC and reaching this case after it
+        dated every seeded row YESTERDAY against a gate asking for TODAY, and
+        five money assertions here read 0.0. Walk both clocks past a UTC
+        midnight: a per-call anchor follows, an import-time constant does not.
+        """
+        import risk_engine
+        from risk_engine import trade_stats
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
+        with patch(f"{__name__}.datetime") as harness_clock, \
+                patch.object(risk_engine, "datetime") as engine_clock:
+            harness_clock.now.return_value = tomorrow
+            engine_clock.now.return_value = tomorrow
+            self._round_trip(100.0, 90.0, _day_anchor())   # −10, on the NEW day
+            stats = trade_stats(self.agent_id)
+        self.assertAlmostEqual(stats["realized_today"], -10.0)
 
 
 # ── the gate ──────────────────────────────────────────────────────────────
@@ -246,7 +275,7 @@ class GateTests(RiskEngineTestCase):
     def test_gate_rejects_after_daily_loss_limit(self):
         from risk_engine import evaluate_order
         # Realize a −1500 loss today; default limit is 1000.
-        self._round_trip(2000.0, 500.0, TODAY)
+        self._round_trip(2000.0, 500.0, self.today)
         decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 1.0, 100.0)
         self.assertFalse(decision.allowed)
         self.assertIn("daily loss", decision.reason)
@@ -265,9 +294,9 @@ class GateTests(RiskEngineTestCase):
         put_risk_limits(self.agent_id, {"max_symbol_exposure_usd": 1_000_000})
         # 12 closed trades: 8 wins +20, 4 losses −10 → W=2/3, R=2, f*=1/2, ½f*=1/4.
         for i in range(8):
-            self._round_trip(100.0, 120.0, YESTERDAY + timedelta(minutes=10 * i))
+            self._round_trip(100.0, 120.0, self.yesterday + timedelta(minutes=10 * i))
         for i in range(4):
-            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (8 + i)))
+            self._round_trip(100.0, 90.0, self.yesterday + timedelta(minutes=10 * (8 + i)))
         # Equity = 100000 cash (signals inserted directly — no cash/position moved).
         # Request $50k at $100/unit.
         decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 500.0, 100.0)
@@ -280,9 +309,9 @@ class GateTests(RiskEngineTestCase):
         from risk_engine import evaluate_order
         # 12 closed trades: 3 wins +10, 9 losses −10 → W=0.25, R=1, f*=−0.5.
         for i in range(3):
-            self._round_trip(100.0, 110.0, YESTERDAY + timedelta(minutes=10 * i))
+            self._round_trip(100.0, 110.0, self.yesterday + timedelta(minutes=10 * i))
         for i in range(9):
-            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (3 + i)))
+            self._round_trip(100.0, 90.0, self.yesterday + timedelta(minutes=10 * (3 + i)))
         decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 10.0, 100.0)
         self.assertFalse(decision.allowed)
         self.assertIn("kelly", decision.reason)
@@ -291,7 +320,7 @@ class GateTests(RiskEngineTestCase):
         from risk_engine import evaluate_order
         # Only 3 closed trades — not enough history, no Kelly adjustment.
         for i in range(3):
-            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * i))
+            self._round_trip(100.0, 90.0, self.yesterday + timedelta(minutes=10 * i))
         decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0)
         self.assertTrue(decision.allowed)
         self.assertEqual(decision.quantity, 5.0)
@@ -311,9 +340,9 @@ class GateTests(RiskEngineTestCase):
         from risk_engine import evaluate_order
         # Agent-wide history (run_id NULL) is a net loser: 3 wins, 9 losses.
         for i in range(3):
-            self._round_trip(100.0, 110.0, YESTERDAY + timedelta(minutes=10 * i))
+            self._round_trip(100.0, 110.0, self.yesterday + timedelta(minutes=10 * i))
         for i in range(9):
-            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (3 + i)))
+            self._round_trip(100.0, 90.0, self.yesterday + timedelta(minutes=10 * (3 + i)))
         # Agent-wide (run_id=None): still blocked — behaviour preserved.
         blocked = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0)
         self.assertFalse(blocked.allowed)
@@ -330,10 +359,10 @@ class GateTests(RiskEngineTestCase):
         from risk_engine import evaluate_order
         rid = 7777
         for i in range(3):
-            self._round_trip(100.0, 110.0, YESTERDAY + timedelta(minutes=10 * i),
+            self._round_trip(100.0, 110.0, self.yesterday + timedelta(minutes=10 * i),
                              run_id=rid)
         for i in range(9):
-            self._round_trip(100.0, 90.0, YESTERDAY + timedelta(minutes=10 * (3 + i)),
+            self._round_trip(100.0, 90.0, self.yesterday + timedelta(minutes=10 * (3 + i)),
                              run_id=rid)
         decision = evaluate_order(self.agent_id, "BTC", "crypto", "buy", 5.0, 100.0,
                                   run_id=rid)
@@ -457,7 +486,7 @@ class AutomationGateIntegrationTests(RiskEngineTestCase):
         self.assertIn("breaker", row["skip_reason"])
 
     def test_run_rule_daily_loss_records_skip_reason(self):
-        self._round_trip(2000.0, 500.0, TODAY)  # −1500 realized today > 1000 limit
+        self._round_trip(2000.0, 500.0, self.today)  # −1500 realized today > 1000 limit
         config_id = self._make_config()
         result = self._run_rule(config_id)
         self.assertFalse(result["executed"])
