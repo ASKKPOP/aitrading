@@ -447,14 +447,24 @@ Every increment lands here as a dated line, in the same PR that ships it.
     - Fail-soft: `_lessons_fail_soft` returns 0 on any catalogue error, so a
       corpus that cannot read the skills table never costs the tick its
       other three ingests.
-    - **The (a3) gate — ≥3 above-floor chunks per active class — is met by
-      the lesson pool alone, measured on the real catalogue.** Query
-      `"crypto holding position gave back peak give-back bank the gain arm
-      the level"` against `kind="lesson"`: 10.44 / 8.50 / 7.21 / 6.27 /
-      6.18 / 5.92 — with the shipped 0.60-of-head relative floor
-      (0.60 × 10.44 = 6.26) that is **4 above-floor candidates from lessons
-      alone**, before the monitoring pool is added. This is what (ii) has to
-      work with, and it is why (ii) is worth doing.
+    - **The (a3) gate — ≥3 above-floor chunks per active class — is met in
+      all EIGHT live cells by the lesson pool alone.** Measured on the real
+      catalogue with the exact strings `_recall_query` builds, scored with
+      the shipped 0.60-of-head relative floor:
+
+      | market | gave-back+winning | winning |
+      |---|---|---|
+      | crypto | head 14.93, floor 8.96 → **3** | head 6.42 → **13** |
+      | forex | head 14.18, floor 8.51 → **3** | head 6.49 → **8** |
+      | futures | head 14.38, floor 8.63 → **3** | head 6.43 → **9** |
+      | us-stock | head 15.23, floor 9.14 → **3** | head 6.92 → **5** |
+
+      The gave-back cells sit at exactly 3 because that query is long and
+      specific — its head scores 14–15 and drags the relative floor up with
+      it. Three is the gate, not a comfortable margin, so **(ii) must count
+      lessons AND monitoring together**, which is what it was always going
+      to do. The plain winning cells are 5–13. This is what (ii) has to work
+      with, and it is why (ii) is worth doing.
     - **Known debt, to be resolved before (ii) promotes anything:** an
       EDITED skill stores a new lesson and the stale one is not deleted
       (`desk_memory` has no delete; the same is already true of edited
