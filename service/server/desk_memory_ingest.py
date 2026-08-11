@@ -14,7 +14,12 @@ it end?".
 traps. Chunked per `##` heading, because a whole day's note is too coarse to
 retrieve and a paragraph loses the heading that says what it is about.
 
-All three are idempotent (see `desk_memory._sha`), so they are safe to re-run
+`ingest_skill_lessons()` — the doctrine the desk is already given, atomised.
+The skills catalogue arrives as ~40 whole bodies in every prompt; split into
+single claims it becomes a retrievable pool instead, which is what plan 22's
+attribution needs before it can rank anything (§7 increment a3).
+
+All four are idempotent (see `desk_memory._sha`), so they are safe to re-run
 on every cycle; an edited chunk stores a new memory rather than keeping a stale
 one, which matters because monitoring notes are corrected in place.
 """
@@ -135,6 +140,87 @@ def ingest_run_outcomes(known: Optional[set[str]] = None) -> int:
     return stored
 
 
+_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+# One claim, one situation, one evidence clause — about the length of a
+# monitoring finding, which is what the pool is already made of.
+_LESSON_TARGET = 280
+_LESSON_MIN = 120
+
+
+def _atomise(body: str) -> list[str]:
+    """Split one skill body into atomic claims.
+
+    Whole sentences only: half a claim is not doctrine, and a splitter that
+    dropped a clause would teach the desk something its author never wrote
+    (the join of the atoms is asserted equal to the body). A trailing
+    fragment below the floor is folded back into the previous claim rather
+    than stored on its own — a two-line atom retrieves as noise. A body that
+    is short in its ENTIRETY is still kept, unlike a markdown heading with
+    two lines under it: a short skill body IS the doctrine."""
+    atoms: list[str] = []
+    buf = ""
+    for sentence in _SENTENCE.split((body or "").strip()):
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        buf = f"{buf} {sentence}".strip()
+        if len(buf) >= _LESSON_TARGET:
+            atoms.append(buf)
+            buf = ""
+    if buf:
+        if atoms and len(buf) < _LESSON_MIN:
+            atoms[-1] = f"{atoms[-1]} {buf}"
+        else:
+            atoms.append(buf)
+    return atoms
+
+
+def ingest_skill_lessons(known: Optional[set[str]] = None) -> int:
+    """Atomise the trading-skills catalogue into `lesson` chunks.
+
+    Plan 22 §7 increment (a3)(i). Recall reads a `monitoring` pool that has
+    been frozen at ~560 chunks since 08-08 while `lesson` sat at zero, so
+    several situation classes cannot offer the >=3 above-floor candidates
+    the attribution model needs. This only FILLS the pool: `_recall_line`
+    still searches `kind="monitoring"`, so no prompt, gate, size or order
+    changes today.
+
+    A skill scoped to several markets is stored once PER market. The
+    candidate filter matches a single `market` column, so one row carrying
+    only the first would make a crypto+futures lesson unreachable from
+    futures — silently, and only at retrieval time."""
+    import trading_skills
+    stored = 0
+    for skill in trading_skills.all_skills():
+        if not skill.get("enabled"):
+            continue
+        atoms = _atomise(skill.get("body") or "")
+        tags = [f"skill:{skill['slug']}"]
+        tags += [f"prompt:{p}" for p in (skill.get("prompts") or [])]
+        for market in (skill.get("markets") or [None]):
+            for i, atom in enumerate(atoms):
+                source = f"skill:{skill['slug']}#{i}"
+                if market:
+                    source = f"{source}:{market}"
+                if remember("lesson", source,
+                            skill.get("name") or skill["slug"], atom,
+                            market=market,
+                            tags=tags + ([f"market:{market}"] if market else []),
+                            known=known):
+                    stored += 1
+    return stored
+
+
+def _lessons_fail_soft(seen: set[str]) -> int:
+    """The catalogue is loaded on the trading tick's path; a corpus that
+    cannot read it must not cost the tick its other ingests."""
+    try:
+        return ingest_skill_lessons(known=seen)
+    except Exception:  # noqa: BLE001
+        logger.warning("desk_memory: skill lesson ingest failed", exc_info=True)
+        return 0
+
+
 _HEADING = re.compile(r"^(#{2,3})\s+(.*)$")
 
 
@@ -226,7 +312,8 @@ def maybe_ingest(now_epoch: Optional[float] = None) -> Optional[dict[str, int]]:
     # on prod: a no-op ingest took 26-33s of pure round-trips before this.
     seen = known_shas()
     out = {"decisions": ingest_decisions(limit=500, known=seen),
-           "outcomes": ingest_run_outcomes(known=seen)}
+           "outcomes": ingest_run_outcomes(known=seen),
+           "lessons": _lessons_fail_soft(seen)}
     # Relative on purpose: both the container and a local checkout run from
     # the project root, so one default works in both without a prod env edit.
     # Absent directory is a no-op, so this is safe wherever it does not apply.
@@ -239,7 +326,8 @@ def maybe_ingest(now_epoch: Optional[float] = None) -> Optional[dict[str, int]]:
 def ingest_all(reports_root: Optional[str] = None) -> dict[str, int]:
     seen = known_shas()
     out = {"decisions": ingest_decisions(known=seen),
-           "outcomes": ingest_run_outcomes(known=seen)}
+           "outcomes": ingest_run_outcomes(known=seen),
+           "lessons": _lessons_fail_soft(seen)}
     if reports_root and os.path.isdir(reports_root):
         out["reports"] = ingest_reports(reports_root, known=seen)
     return out

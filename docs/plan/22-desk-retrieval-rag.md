@@ -399,6 +399,91 @@ Every increment lands here as a dated line, in the same PR that ships it.
         next increment that touches either function.
     - Rollback remains one line: delete `DESK_RECALL_EXPLORE=1` from `.env`
       and `docker compose --profile prod up -d --no-build`.
+  - **2026-08-11 23:1xZ — the (b) variance gate re-measured on prod, one day
+    after exploration went on. It is 1 class of the 2 it needs.** 130
+    `recall` rows, 14 runs (9 closed), window 08-10 23:39Z → 08-11 21:11Z:
+
+    | class | events | distinct pairs | distinct slot-2 |
+    |---|---|---|---|
+    | crypto gave-back+winning | **37** | **4** | 4 |
+    | forex gave-back+winning | 24 | 3 | 3 |
+    | futures gave-back+winning | 23 | 3 | 3 |
+    | crypto winning | 9 | 2 | 2 |
+    | every losing class | 10 / 7 / 6 / 1 | **1** | 1 |
+
+    The gate is *≥3 distinct pairs for each of ≥2 classes with ≥30 events
+    per class, and ≥20 closed runs*. Only crypto gave-back+winning clears
+    both legs; forex and futures have the pairs and are 6–7 events short.
+    Closed runs are 9 of the 20 wanted. **Both shortfalls are volume, not
+    structure — which is the opposite of the 08-09 finding, and the reason
+    waiting is the right move this time.** Every losing class sits at
+    exactly 1 pair, as designed (`_recall_explore_allowed`), so the losing
+    side contributes no variance and cannot until the first promotion gate
+    passes. Projected at the observed ~5.4 recall/h: the two 30-event legs
+    land ~08-12, the 20-closed-run leg is the binding one.
+  - **2026-08-11 — increment (a3)(i) SHIPPED: the skills catalogue is now a
+    retrievable pool.** `desk_memory_ingest.ingest_skill_lessons()` atomises
+    every enabled skill body into single claims stored as `kind="lesson"`;
+    it rides the same ~30-min ingest tick as the other three sources.
+    **132 lessons from 39 enabled skills** (the deep analysis estimated
+    120–180), against a `lesson` count that had been **zero** since the kind
+    was defined.
+    - **No behavior change, and that is pinned.** `_recall_line` still
+      searches `kind="monitoring"`, so nothing a lesson says can reach a
+      live position brief today
+      (`test_lessons_stay_out_of_the_pool_recall_actually_reads`). Letting
+      recall read `lesson`+`outcome` is (a3)(ii), tomorrow.
+    - **A multi-market skill is stored once PER market.** `_candidates`
+      filters on a single `market` column, so one row carrying only the
+      first of `["crypto","futures"]` would make that lesson unreachable
+      from futures — silently, and only at retrieval time. Two tests pin
+      both directions (reachable from each; does not leak into a third).
+    - **Atoms are whole sentences.** The join of a body's atoms is asserted
+      equal to the body, so a splitter can never teach the desk a clause its
+      author did not write. A trailing fragment below 120 chars folds back
+      into the previous claim (a two-line atom retrieves as noise); a body
+      short in its ENTIRETY is still kept, unlike a markdown heading — a
+      short skill body IS the doctrine.
+    - Fail-soft: `_lessons_fail_soft` returns 0 on any catalogue error, so a
+      corpus that cannot read the skills table never costs the tick its
+      other three ingests.
+    - **The (a3) gate — ≥3 above-floor chunks per active class — is met in
+      all EIGHT live cells by the lesson pool alone.** Measured on the real
+      catalogue with the exact strings `_recall_query` builds, scored with
+      the shipped 0.60-of-head relative floor:
+
+      | market | gave-back+winning | winning |
+      |---|---|---|
+      | crypto | head 14.93, floor 8.96 → **3** | head 6.42 → **13** |
+      | forex | head 14.18, floor 8.51 → **3** | head 6.49 → **8** |
+      | futures | head 14.38, floor 8.63 → **3** | head 6.43 → **9** |
+      | us-stock | head 15.23, floor 9.14 → **3** | head 6.92 → **5** |
+
+      The gave-back cells sit at exactly 3 because that query is long and
+      specific — its head scores 14–15 and drags the relative floor up with
+      it. Three is the gate, not a comfortable margin, so **(ii) must count
+      lessons AND monitoring together**, which is what it was always going
+      to do. The plain winning cells are 5–13. This is what (ii) has to work
+      with, and it is why (ii) is worth doing.
+    - **Known debt, to be resolved before (ii) promotes anything:** an
+      EDITED skill stores a new lesson and the stale one is not deleted
+      (`desk_memory` has no delete; the same is already true of edited
+      monitoring notes). Harmless while nothing retrieves `lesson`;
+      once (ii) is on, a retired claim could still be recalled. The fix
+      belongs with (ii), not here.
+    - Tests: `SkillLessonTests` (11) in `tests/test_desk_memory.py`.
+      **Mutation-checked ×8** — enabled-check removed, only the first market
+      stored, fold-back removed, kind written as `monitoring`, market
+      dropped to NULL, fail-soft guard removed, sentence split replaced by a
+      hard 150-char slice. Every one was caught.
+  - **2026-08-11 — owner directive, binding on this ladder:** *"everything
+    for sooppiy AI"* / *"if we find that we must be implement trading logic
+    and sooppiy AI"*. Journal-only and default-off increments are a STAGING
+    step, never the destination: every rung of this ladder must name the
+    trading judgment it will eventually change, and (d)/(e) — weighted
+    retrieval, then the skills wall — are where that lands. An increment
+    that cannot state which desk decision it will alter does not belong on
+    the ladder. See memory `decisions-become-skills`.
   - **2026-08-09 — deep analysis shipped:**
     [22-phase3-learning-to-profit.md](22-phase3-learning-to-profit.md) — the
     owner-requested full analysis of the path from retrieval variance to
