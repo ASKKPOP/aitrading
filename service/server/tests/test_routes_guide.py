@@ -142,6 +142,10 @@ class GuideRoutesTests(unittest.TestCase):
         self.assertIn("guide-ko", keys)
         self.assertIn("backtest-report-en", keys)
         self.assertIn("api-keys-en", keys)   # owner sees everything
+        # Research 04 (2026-08-10): the manipulation explainer ships in all
+        # six languages, owner-gated.
+        for lang in ("en", "ko", "ja", "th", "vi", "id"):
+            self.assertIn(f"manipulation-{lang}", keys)
 
     def test_doc_requires_login_and_serves_members(self):
         self.assertEqual(self.client.get("/api/guide/doc/guide-ko").status_code, 401)

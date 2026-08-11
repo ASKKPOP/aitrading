@@ -1331,6 +1331,126 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "top is not in."
         ),
     },
+    # Research 04 manipulation defense (2026-08-10, owner: "fully implement
+    # for sooppiy AI"). Small-cap crypto price-setting is routinely done by
+    # coordinated rings; the desk's edge is refusing to be their exit
+    # liquidity, then judging engineered moves for what they are.
+    {
+        "slug": "pump-ignition-veto",
+        "name": "Pump Ignition Veto",
+        "description": ("A vertical spike + volume anomaly on a thin book "
+                        "is pump-shaped: entries are vetoed (late buyers "
+                        "fund the ring), and a held winner spiking this "
+                        "way is a gift exit, not confirmation."),
+        "prompts": ["light", "trader"],
+        "markets": ["crypto"],
+        "priority": 29,
+        "body": (
+            "When a coin is suddenly vertical on a volume anomaly — the "
+            "latest move many times its ordinary per-cycle range, volume "
+            "many times its own trailing average, with no named catalyst "
+            "in the brief — NAME the shape before you touch it: this is "
+            "how an organized pump prints, and on organized pumps the "
+            "measured result is that only the ring profits. The average "
+            "manipulated spike distorts price ~65% and retraces to "
+            "baseline within hours; whoever buys after ignition holds "
+            "that retrace. So the entry rule is a veto, not a caution: "
+            "do not chase a pump-shaped candle, whatever the conviction "
+            "number says — a move engineered to attract buyers has "
+            "negative expectancy for every buyer who is not the ring. "
+            "The smaller and thinner the book, the stronger the veto; on "
+            "a deep major, verticality with a real catalyst is momentum, "
+            "not manipulation — the veto keys on ANOMALY plus THINNESS "
+            "plus NO NAMED CAUSE, not on strength alone. If you already "
+            "HOLD the coin when it goes pump-shaped in your favor, that "
+            "spike is a gift: banking into engineered strength is "
+            "exactly selling where the ring sells, and waiting for 'more' "
+            "is volunteering for the retrace. And never re-read the veto "
+            "as a short signal — the same thin book that pumps can be "
+            "squeezed; standing aside from a manipulated tape costs "
+            "nothing and is usually the whole edge."
+        ),
+    },
+    {
+        "slug": "stop-hunt-discipline",
+        "name": "Stop-Hunt Discipline",
+        "description": ("An engineered sweep — burst of size into an "
+                        "obvious level, long wick, fast reclaim — is "
+                        "forced flow, not information; do not panic-exit "
+                        "into the wick, and judge reversals only after "
+                        "exhaustion + reclaim."),
+        "prompts": ["trader", "verifier"],
+        "markets": ["crypto", "futures"],
+        "priority": 30,
+        "body": (
+            "Leveraged books are hunted where the stops visibly cluster: "
+            "obvious swing lows, round numbers, liquidation shelves. The "
+            "hunt has a signature — a sudden burst of size into the "
+            "level, a spike through it that triggers forced sellers, "
+            "then a fast reclaim once the forced flow is spent, leaving "
+            "a long wick. Read that flow for what it is: positions that "
+            "MUST trade at any price, not a repricing of value. Two "
+            "duties follow. First, with a position on: when price "
+            "sweeps through a level on a move that is still a fraction "
+            "of an ordinary day's range and nothing named in your "
+            "thesis broke, dumping the whole book into the wick is "
+            "donating to the hunter — the book's own history shows "
+            "full-book dumps on sub-2% moves carrying almost all loss. "
+            "State the move against an ordinary day first; if it is "
+            "noise-scale, the honest options are hold or a small "
+            "reduce, never a panic close at the extreme. Second, as a "
+            "setup: a swept level is only a reversal candidate AFTER "
+            "the exhaustion evidence is in — the wick has printed, the "
+            "reclaim has held, and where positioning is shown the "
+            "crowded side has been flushed (open interest down, funding "
+            "off its extreme). Entering before the reclaim is catching "
+            "the cascade, not fading it. And if your stops keep sitting "
+            "exactly where hunts happen — at the round number, at the "
+            "obvious low — the recurring loss is your placement, not "
+            "bad luck: anchor stops to structure the tape has actually "
+            "shown, offset from the level everyone can see."
+        ),
+    },
+    {
+        "slug": "manipulated-book-hygiene",
+        "name": "Manipulated Book Hygiene",
+        "description": ("Reported volume is a claim, not a fact: treat "
+                        "thin/small-cap books as controlled until proven "
+                        "otherwise, size for the real book, and never "
+                        "short a cornerable float without rails."),
+        "prompts": ["trader", "planner"],
+        "markets": ["crypto"],
+        "priority": 31,
+        "body": (
+            "On small crypto books, reported volume is a claim, not a "
+            "fact — on unregulated venues the measured majority of "
+            "printed volume is wash-traded, fabricated precisely to "
+            "make a controlled book look alive. So apply hygiene before "
+            "conviction: a symbol whose activity appeared from nowhere, "
+            "whose volume is large while its real depth is thin, or "
+            "whose price pins and jumps in staircase moves is a "
+            "controlled book, and on a controlled book your fills, your "
+            "stops, and your exits all happen at the controller's "
+            "prices. Prefer the deep, proven majors; when a smaller "
+            "name is on the table, demand a reason it must be THIS "
+            "book, because slippage on a thin book is a fee you pay "
+            "both ways and dwarfs the edge of an ordinary thesis. Two "
+            "hard cases deserve naming. Shorting a small-cap 'because "
+            "it is obviously manipulated' is the trade that looks "
+            "smartest and dies worst: a cornered float can be squeezed "
+            "hundreds of percent in an hour by the same actor you "
+            "diagnosed, and the squeeze feeds on shorts exactly like "
+            "you — if the exhaustion evidence for a short is not "
+            "overwhelming AND the book deep enough to exit, the "
+            "diagnosis is a reason to stand aside, not to fade. And "
+            "position size on any thin book must be sized to the REAL "
+            "book — what you could actually exit into during a fast "
+            "move against you — not to the reported volume; if "
+            "unwinding your size would itself move the price, you are "
+            "not holding a position, you are holding an auction with "
+            "one bidder."
+        ),
+    },
 ]
 
 _BASE_BY_SLUG = {s["slug"]: s for s in BASE_SKILLS}

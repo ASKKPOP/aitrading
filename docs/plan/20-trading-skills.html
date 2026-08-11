@@ -55,7 +55,7 @@
 <h1>Plan 20 — Trading Skills: How It Works</h1>
 
 <div class="chips">
-  <div class="chip"><b>36</b><span>base skills (kept, editable, never deletable)</span></div>
+  <div class="chip"><b>39</b><span>base skills (kept, editable, never deletable)</span></div>
   <div class="chip"><b>4</b><span>decision prompts injected</span></div>
   <div class="chip"><b>0</b><span>LLM calls spent selecting skills</span></div>
   <div class="chip"><b>48,000</b><span>char budget per prompt</span></div>
@@ -241,6 +241,9 @@
   <tr><td><code>mean-reversion-guard</code></td><td>fading a move requires proof of a RANGE, an entry at its extreme, a mid-range target and a time budget; persistence is the default; never add on "better price"</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs mean-reversion (Hurst · half-life · z-score)</td></tr>
   <tr><td><code>news-reaction-evidence</code></td><td>price reaction to news outweighs the news; exhaustion = a move AGAINST favorable news, never mere silence</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty news-reaction-failure (Shapiro step 2)</td></tr>
   <tr><td><code>parabolic-exhaustion</code></td><td>shorting a vertical needs exhaustion EVIDENCE (accelerating slope · stretch vs own volatility · volume climax · range expansion · crowding) AND a failure trigger; stop above the blow-off high, reduced size, cover into the first flush; never add into a squeeze <b>(crypto · futures only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty parabolic-short-trade-planner</td></tr>
+  <tr><td><code>pump-ignition-veto</code></td><td>a vertical spike on anomalous volume with no named catalyst on a thin book is PUMP-SHAPED: never chase it (only the ring profits; the spike retraces within hours); a held winner spiking this way is a gift exit, not confirmation; never re-read the veto as a short signal <b>(crypto only)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Research 04 pump anatomy (Dhawan &amp; Putniņš, La Morgia et al.)</td></tr>
+  <tr><td><code>stop-hunt-discipline</code></td><td>an engineered sweep (burst of size into an obvious level · long wick · fast reclaim) is forced flow, not information: never panic-exit the whole book into the wick on a noise-scale move; a swept level is a reversal candidate only AFTER exhaustion + reclaim; recurring stop-outs at obvious levels = placement problem <b>(crypto · futures only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>Research 04 stop-hunt anatomy + loss forensics #245</td></tr>
+  <tr><td><code>manipulated-book-hygiene</code></td><td>reported volume is a claim, not a fact (wash trading dominates unregulated small caps): prefer deep proven majors, demand a reason a thin book must be THIS book, size to the REAL exitable depth, and never short a cornerable float without overwhelming evidence — the JELLY squeeze is the cautionary tale <b>(crypto only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>Research 04 wash-trading / corner-squeeze evidence</td></tr>
   <tr><td><code>risk-reward-structure</code></td><td>stop = objective invalidation, target = reachable level, ratio ≥ 2×, good ratio ≠ good trade</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R sanity check</td></tr>
   <tr><td><code>exit-discipline</code></td><td>banking is first-class, never add to a loser, invalidation = close not renegotiate</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy exit rails + Senpi</td></tr>
   <tr><td><code>horizon-discipline</code></td><td>a fresh position gets its stated horizon; small adverse drift is NOT invalidation; sub-horizon exits need one named trigger from a closed set — "protect capital" is not one</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (intra-horizon churn, 2026-08-03)</td></tr>
@@ -340,13 +343,13 @@
 <div class="card">
 <table>
   <tr><th>check</th><th>how</th><th>proves</th></tr>
-  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 36 base skills seeded</td></tr>
+  <tr><td>registry live</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>table reachable, 39 base skills seeded</td></tr>
   <tr><td>selection correct</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slug sets</td><td>site + market scoping as designed</td></tr>
   <tr><td>injection real</td><td>exec <code>_light_analysis</code> in the worker with <code>generate_text</code> stubbed</td><td>the actual prod code path builds prompts carrying the skills block — works even with 0 active runs</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 36 skills via #186, #193, #215, #221, #222, #224, #226, #232, #233 and #331 (2026-08-07).</p>
+<p class="legend" style="margin-top:28px">Companion spec: <code>docs/plan/20-trading-skills.md</code> · shipped in PR #179 (squash <code>ba43060</code>) · live on sooppiy.com since 2026-08-01 · catalogue grown to 39 skills via #186, #193, #215, #221, #222, #224, #226, #232, #233, #331 (2026-08-07) and the Research-04 manipulation defense trio (2026-08-10).</p>
 
 </div>
 </body>

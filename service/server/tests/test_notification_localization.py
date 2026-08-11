@@ -168,7 +168,9 @@ class Triggers(unittest.TestCase):
 
     def test_every_trigger_in_every_language(self):
         vocab = ["event_window", "psych_shock", "regime:event", "regime:panic",
-                 "regime:euphoria", "price_move:-3.1%"]
+                 "regime:euphoria", "price_move:-3.1%",
+                 "manipulation:pump_ignition", "manipulation:cascade_shock",
+                 "manipulation:crowded_funding"]
         for lang in LANGS:
             t = n.triggers_text(vocab, lang)
             for code in vocab:

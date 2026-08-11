@@ -32,6 +32,7 @@ QUIET = {
     "event": ("market_events.active_event_window", None),
     "psych": ("psych_feed.get_psych_payload", {"available": False}),
     "regime": ("regime.current_regime_state", None),
+    "manip": ("manipulation.manipulation_signals", []),
 }
 
 
@@ -150,6 +151,42 @@ class DetectionTests(DaemonBase):
         rows = self._issues()
         self.assertEqual(rows[0]["symbol"], "ETH")
         self.assertIn("price_move", rows[0]["triggers_json"])
+
+    def test_manipulation_shape_flags_only_the_shaped_symbol(self):
+        # Research 04 Phase 1: the detector's signals ride _symbol_triggers
+        # for crypto symbols. Pump ignition is severity HIGH — a held
+        # position on a pump-shaped tape is the most urgent state the
+        # daemon knows about.
+        def manip(symbol):
+            return (["manipulation:pump_ignition"] if symbol == "BTC" else [])
+        patches = dict(QUIET)
+        del patches["manip"]
+        ctxs = [patch(t, return_value=v) for t, v in patches.values()]
+        ctxs.append(patch("manipulation.manipulation_signals",
+                          side_effect=manip))
+        ctxs.append(patch("price_fetcher.get_daily_candles",
+                          return_value=_flat_candles()))
+        ctxs.append(patch("alerts.send_alert", return_value={}))
+        for c in ctxs:
+            c.start()
+        try:
+            out = hid.run_daemon_tick()
+        finally:
+            for c in ctxs:
+                c.stop()
+        self.assertEqual(out["hot"], 1)
+        rows = self._issues()
+        self.assertEqual(rows[0]["symbol"], "BTC")
+        self.assertIn("manipulation:pump_ignition", rows[0]["triggers_json"])
+        self.assertEqual(rows[0]["severity"], "high")
+
+    def test_crowded_funding_alone_is_medium_severity(self):
+        out, _ = self._tick(overrides={"manip": (
+            "manipulation.manipulation_signals",
+            ["manipulation:crowded_funding"])})
+        self.assertEqual(out["hot"], 2)                    # BTC + ETH
+        for row in self._issues():
+            self.assertEqual(row["severity"], "medium")
 
     def test_cooldown_suppresses_repeat_issue(self):
         shock = {"psych": ("psych_feed.get_psych_payload",

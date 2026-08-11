@@ -1,0 +1,443 @@
+<!-- machine-translated from research/04-market-manipulation-detection.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>리서치 04 — 조작자 잡아내기: 소형 코인 조작 링과 Sooppiy가 이를 우위로 바꾸는 방법</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  h3 { font-size: 15.5px; margin: 22px 0 6px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .fill-warn { fill: var(--warn); opacity: 0.14; }
+  svg .fill-bad { fill: var(--bad); opacity: 0.12; }
+  svg .fill-good { fill: var(--good); opacity: 0.12; }
+  svg .vol { fill: var(--muted); opacity: 0.45; }
+  svg .vol-hot { fill: var(--bad); opacity: 0.7; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+  pre.sample { background: var(--code); border-radius: 8px; padding: 12px 14px;
+               font-size: 12px; line-height: 1.5; white-space: pre-wrap; margin: 8px 0 0; }
+  .srcs { font-size: 12.5px; color: var(--muted); }
+  .srcs a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>조작자 잡아내기 — 소형 코인 조작 링, 그 흔적, 그리고 Sooppiy가 이를 우위로 바꾸는 방법</h1>
+<p class="kr">시장 조작 세력 잡아내기 — 소형 코인을 지배하는 조작 링의 수법, 데이터에 남는 지문, 그리고 Sooppiy가 이를 플러스 수익으로 바꾸는 방법 (2026-08-10, 연구 문서 04)</p>
+
+<div class="quote">오너의 질문: <i>"대부분의 코인(유명한 공공 신뢰 코인인 BTC, ETH, SOL, XRP, PUMP 제외)은 시장 조작자들에 의해 통제된다. 그들이 자신들의 이익을 위해 하는 행동을 잡아내는 방법은 어떻게 작동하는가? 그리고 그것을 내 플러스 수익을 위해 어떻게 활용할 수 있는가?"</i><br>
+학계의 증거는 이 전제에 동의한다: 깊은 유동성을 가진 메이저 코인을 제외하면, 조직적인 조작 링은 예외적인 사례가 아니라 많은 소형 페어에서 가격을 결정하는 지배적인 힘이다. 좋은 소식은: <b>가격을 움직이는 모든 수법은 공개 시장 데이터에 흔적을 남긴다는 것이다</b>, 그리고 탐지를 통해 얻을 수 있는 가장 크고 가장 신뢰할 수 있는 수익은 <b>그들의 탈출 유동성이 되기를 거부함</b> — 그 위에 선택적 공격을 더함.</div>
+
+<div class="chips">
+  <div class="chip"><b>+65%</b><span>조직적 펌프당 평균 가격 왜곡 (Dhawan &amp; Putniņš)</span></div>
+  <div class="chip"><b>355</b><span>6개월 동안 펌프 → 팔로워로부터 약 $6M 추출</span></div>
+  <div class="chip"><b>77.5%</b><span>비규제 거래소 거래량 중 워시 트레이딩 비율 (Cong et al.)</span></div>
+  <div class="chip"><b>25초</b><span>실시간 펌프 탐지 지연 시간 (La Morgia et al.)</span></div>
+  <div class="chip"><b>98.2%</b><span>25초 단위 탐지 정밀도</span></div>
+  <div class="chip"><b>−$13.5M</b><span>Hyperliquid HLP 홀 - JELLY 스퀴즈 사태 (2025)</span></div>
+</div>
+
+<h2>1. 조작 세력의 수익 루프 — 왜 소형 코인인가, 그리고 누가 돈을 잃는가</h2>
+<p class="kr">조작 세력의 수익 루프 — 왜 소형 코인인가, 그리고 누가 돈을 잃는가. 유동성이 얕을수록 적은 돈으로 가격을 만들 수 있고, 손실은 항상 늦게 들어온 추격 매수자가 부담한다.</p>
+<div class="card">
+<svg viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- loop boxes -->
+  <rect class="box" x="30" y="40" width="190" height="78"/>
+  <text x="44" y="64" class="t-b">1. 얇은 주문서를 고른다</text>
+  <text x="44" y="82" class="t-small">낮은 유통량 · 낮은 실질 거래량 ·</text>
+  <text x="44" y="97" class="t-small">몇만 달러로 가격을 움직인다</text>
+
+  <rect class="box-warn" x="270" y="40" width="200" height="78"/>
+  <text x="284" y="64" class="t-b">2. 조용히 매집한다</text>
+  <text x="284" y="82" class="t-small">며칠간 소액 매수 · 때로는</text>
+  <text x="284" y="97" class="t-small">현물 물량을 장악 (JELLY 방식)</text>
+
+  <rect class="box-bad" x="520" y="40" width="200" height="78"/>
+  <text x="534" y="64" class="t-b">3. 불을 붙인다</text>
+  <text x="534" y="82" class="t-small">가짜 거래량 · 스푸핑 벽 ·</text>
+  <text x="534" y="97" class="t-small">텔레그램/X 시그널 · 가짜 뉴스</text>
+
+  <rect class="box-bad" x="760" y="40" width="180" height="78"/>
+  <text x="774" y="64" class="t-b">4. 대중의 FOMO</text>
+  <text x="774" y="82" class="t-small">리테일이 상승 캔들을 쫓는다</text>
+  <text x="774" y="97" class="t-small">(평균 +65% 왜곡, 몇 분 만에)</text>
+
+  <rect class="box-warn" x="520" y="200" width="200" height="78"/>
+  <text x="534" y="224" class="t-b">5. 강세 속에서 물량을 넘긴다</text>
+  <text x="534" y="242" class="t-small">조작 세력이 물량 전체를 매도한다</text>
+  <text x="534" y="257" class="t-small">늦게 진입한 이들에게 고점 근처에서</text>
+
+  <rect class="box" x="270" y="200" width="200" height="78"/>
+  <text x="284" y="224" class="t-b">6. 붕괴 &amp; 재설정</text>
+  <text x="284" y="242" class="t-small">가격이 기준선으로 되돌아가는 데 걸리는</text>
+  <text x="284" y="257" class="t-small">시간 · 링이 다음 코인으로 이동</text>
+
+  <!-- arrows -->
+  <path class="ln" marker-end="url(#ar1)" d="M220 79 L 268 79"/>
+  <path class="ln-warn" marker-end="url(#ar1)" d="M470 79 L 518 79"/>
+  <path class="ln-bad" marker-end="url(#ar1)" d="M720 79 L 758 79"/>
+  <path class="ln-bad" marker-end="url(#ar1)" d="M850 118 C 850 170, 760 239, 722 239"/>
+  <path class="ln-warn" marker-end="url(#ar1)" d="M520 239 L 472 239"/>
+  <path class="ln ln-dash" marker-end="url(#ar1)" d="M270 239 C 120 239, 125 155, 125 120"/>
+
+  <!-- who pays -->
+  <rect class="box-dim" x="30" y="200" width="190" height="78"/>
+  <text x="44" y="224" class="t-b">누가 손해를 보는가</text>
+  <text x="44" y="242" class="t-small">점화 후 매수하는 팔로워:</text>
+  <text x="44" y="257" class="t-small">기대수익률 마이너스 —</text>
+  <text x="44" y="272" class="t-small">내부자만 이익을 얻음 (연구 결과)</text>
+
+  <text x="30" y="315" class="t-small">각 라운드가 링에 거의 비용이 들지 않고(얇은 주문장) 군중이 다시 형성되기 때문에(과신 + 도박 선호 — Dhawan &amp; Putniņš) 이 루프는 반복된다.</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--bad)"></span>조작 단계 &nbsp; <span class="dot" style="background:var(--warn)"></span>포지셔닝 단계 &nbsp; <span class="dot" style="background:var(--line)"></span>시장 구조</p>
+</div>
+
+<h3>거의 모든 것을 다루는 여섯 가지 수법</h3>
+<p class="kr">거의 모든 조작이 이 여섯 가지 수법의 조합이다.</p>
+<div class="card">
+<table>
+<tr><th>수법</th><th>수익을 내는 방식</th><th>어디서 발생하는가</th></tr>
+<tr><td><b>펌프 앤 덤프(pump-and-dump) 조직</b></td><td>매집 → 조율된 매수 신호(텔레그램/디스코드/X) → 급등분을 팔로워들에게 매도. 6개월간 355건의 문서화된 펌프가 약 $350M의 거래량을 발생시켰으며, 조직은 다른 참여자들로부터 약 $6M을 챙겼다.</td><td>모든 거래소의 소형/중형주; 발표는 종종 <i>공개적</i> — 어차피 대중이 따라붙기 때문에 숨길 필요가 없다.</td></tr>
+<tr><td><b>워시 트레이딩(Wash trading)</b></td><td>가짜 거래량은 상장, 랭킹 사이트의 관심, 그리고 실제 트레이더들을 끌어들인다. 비규제 거래소가 보고한 거래량의 약 77.5%가 통계적 진위성 검증(벤포드 법칙, 거래 규모의 반올림성)을 통과하지 못한다.</td><td>거래소 단위 및 토큰 단위; 죽은 코인을 살아있는 것처럼 보이게 하여 조직이 "활동성"으로 위장해 분산 매도할 수 있게 한다.</td></tr>
+<tr><td><b>스푸핑 / 레이어링(Spoofing / layering)</b></td><td>거대한 대기 주문이 가짜 수요/공급 벽을 만들어 가격을 조직의 실제 주문 방향으로 유도한 뒤, 체결 전에 취소한다.</td><td>오더북(L2). 캔들에서는 보이지 않으나 depth 스냅샷에서는 완전히 드러난다.</td></tr>
+<tr><td><b>스탑 헌트 → 청산 캐스케이드(Stop hunt → liquidation cascade)</b></td><td>가시적인 스탑/청산 레벨 군집을 향해 대량 물량을 급격히 밀어넣는다; 강제 매도자들이 나머지 움직임을 대신 만들어준다; 조직은 패닉 속에서 포지션을 정리한다.</td><td>메이저를 포함한 모든 무기한 선물(perps). 레버리지 데이터(OI, 펀딩, 청산 맵)가 공개되어 있으므로, "먹잇감 지도" 역시 공개되어 있는 셈이다.</td></tr>
+<tr><td><b>저유통량 코너링 / OI 스퀴즈</b></td><td>유동성이 얕은 현물 물량을 사들인 뒤, 퍼프(perp) 숏 포지션(또는 거래소의 볼트)이 상승하는 가격에 강제로 청산되도록 만든다. JELLY 2025: $4.1M 규모의 자기 청산 숏 포지션이 Hyperliquid의 HLP 볼트에 한 시간 만에 −$13.5M의 손실을 입혔다.</td><td>신규 상장 토큰, 저유동성(low-float) / 고FDV 토큰, 청산 엔진이 포지션을 그대로 승계하는 거래소.</td></tr>
+<tr><td><b>펀딩비 수취</b></td><td>현물 가격을 고정(스팟 통제)한 상태로, 반대편에 갇힌 퍼프 롱/숏 포지션으로부터 극단적인 펀딩비를 수취한다.</td><td>한쪽 방향에 포지션이 몰린 퍼프 페어. 지속적인 극단적 펀딩비와 정체된 가격으로 나타난다.</td></tr>
+</table>
+</div>
+
+<h2>2. 펌핑의 해부도 — 분 단위로 테이프가 어떻게 보이는가</h2>
+<p class="kr">펌핑의 해부도 — 분 단위로 테이프(체결·거래량)에 남는 모양. 학계가 1,100건 이상의 실제 펌핑을 분석해 얻은 전형적 패턴.</p>
+<div class="card">
+<svg viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- phase shading -->
+  <rect class="fill-warn" x="60" y="30" width="250" height="240"/>
+  <rect class="fill-bad" x="310" y="30" width="180" height="240"/>
+  <rect class="fill-warn" x="490" y="30" width="130" height="240"/>
+  <rect class="fill-good" x="620" y="30" width="280" height="240"/>
+  <!-- axes -->
+  <path class="ln" d="M60 270 L 900 270"/>
+  <path class="ln" d="M60 30 L 60 270"/>
+  <text x="20" y="55" class="t-small">가격</text>
+  <!-- price path: accumulation flat, pump vertical, top, dump, retrace -->
+  <path class="ln-accent" stroke-width="2.2" d="M60 235 C 120 233, 180 230, 250 226 L 310 222
+    C 330 200, 345 150, 360 95 L 385 60
+    C 400 55, 415 58, 430 70
+    C 450 95, 470 140, 490 165
+    C 530 200, 570 215, 620 222
+    C 700 230, 800 233, 900 234"/>
+  <!-- baseline dashes -->
+  <path class="ln ln-dash" d="M60 235 L 900 235"/>
+  <text x="820" y="230" class="t-small">기준선</text>
+  <!-- +65% marker -->
+  <path class="ln-bad ln-dash" d="M385 60 L 385 235"/>
+  <text x="398" y="112" class="t-small">+65% 평균 고점</text>
+  <!-- volume bars -->
+  <g>
+    <rect class="vol" x="80" y="330" width="16" height="12"/>
+    <rect class="vol" x="110" y="328" width="16" height="14"/>
+    <rect class="vol" x="140" y="330" width="16" height="12"/>
+    <rect class="vol" x="170" y="326" width="16" height="16"/>
+    <rect class="vol" x="200" y="329" width="16" height="13"/>
+    <rect class="vol" x="230" y="325" width="16" height="17"/>
+    <rect class="vol" x="260" y="327" width="16" height="15"/>
+    <rect class="vol-hot" x="315" y="292" width="16" height="50"/>
+    <rect class="vol-hot" x="345" y="278" width="16" height="64"/>
+    <rect class="vol-hot" x="375" y="285" width="16" height="57"/>
+    <rect class="vol-hot" x="405" y="295" width="16" height="47"/>
+    <rect class="vol-hot" x="435" y="302" width="16" height="40"/>
+    <rect class="vol" x="465" y="312" width="16" height="30"/>
+    <rect class="vol" x="500" y="318" width="16" height="24"/>
+    <rect class="vol" x="540" y="322" width="16" height="20"/>
+    <rect class="vol" x="590" y="326" width="16" height="16"/>
+    <rect class="vol" x="650" y="328" width="16" height="14"/>
+    <rect class="vol" x="720" y="329" width="16" height="13"/>
+    <rect class="vol" x="790" y="330" width="16" height="12"/>
+    <rect class="vol" x="860" y="330" width="16" height="12"/>
+  </g>
+  <text x="20" y="320" class="t-small">거래량</text>
+  <path class="ln" d="M60 342 L 900 342"/>
+  <!-- phase labels -->
+  <text x="85" y="48" class="t-b">매집</text>
+  <text x="85" y="64" class="t-small">며칠 · 소액 매수 · 가격 서서히 상승</text>
+  <text x="85" y="79" class="t-small">내부자 사전 포지셔닝(탐지 가능!)</text>
+  <text x="320" y="48" class="t-b">점화 + 펌핑</text>
+  <text x="320" y="64" class="t-small">시그널 발생 · 몰림 주문 ·</text>
+  <text x="320" y="79" class="t-small">몇 분, 드물게 몇 시간</text>
+  <text x="497" y="48" class="t-b">덤핑</text>
+  <text x="497" y="64" class="t-small">조직이 빠져나가는 대상은</text>
+  <text x="497" y="79" class="t-small">FOMO 매수자</text>
+  <text x="640" y="48" class="t-b">되돌림</text>
+  <text x="640" y="64" class="t-small">몇 시간 내 기준선으로 복귀 —</text>
+  <text x="640" y="79" class="t-small">늦게 매수한 사람이 손실 전액을 떠안는다</text>
+  <!-- time axis -->
+  <text x="60" y="365" class="t-small">t − 일</text>
+  <text x="310" y="365" class="t-small">t = 0 (신호)</text>
+  <text x="490" y="365" class="t-small">t + 분</text>
+  <text x="620" y="365" class="t-small">t + 시간</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--bad);opacity:.7"></span>거래량 이상 구간(탐지기의 목표) — La Morgia 외 연구진은 <b>25초</b> 이내에 98.2%의 정밀도로 러시 주문과 거래량 이동 통계량을 이용해 점화를 탐지한다.</p>
+</div>
+
+<div class="card">
+<b>효과가 입증된 탐지 피처 (동료 심사 완료, 재현됨)</b>
+<p class="kr">검증된 탐지 피처 — 실시간 분류기가 실제로 쓰는 값들.</p>
+<table>
+<tr><th>피처 패밀리</th><th>정의</th><th>발동 이유</th></tr>
+<tr><td><b>러시 주문</b> (중요도 1위: 0.251)</td><td>25초 구간당 "러시" 시장가 주문 거래량의 이동 σ와 평균</td><td>작전 세력과 추종자들은 신호 발생 후 몇 초 안에 모두 시장가 매수에 나섭니다 — 자연스러운 거래에서는 이런 모습이 나타나지 않습니다</td></tr>
+<tr><td><b>거래량 이동 통계</b></td><td>7시간 이동 구간 대비 거래량과 거래 건수의 σ와 평균</td><td>얇은 호가창이 자체 기준 거래량의 10–100×로 급증하는 것은 가장 강력한 신호입니다 (Kamps &amp; Kleinberg의 최초 임계값 쌍: 가격 이상과 거래량 이상이 함께 나타남)</td></tr>
+<tr><td><b>가격 이동 통계</b></td><td>종가와 구간 최고가의 σ / 평균</td><td>수직성: 자연스러운 랠리는 되돌림이 있지만, 펌프는 몇 분간 한 방향으로만 움직인다</td></tr>
+<tr><td><b>워시 트레이드 진위성</b></td><td>벤포드 첫째 자리 편차; 거래 규모의 라운드성/클러스터링 (사람은 2.0을 거래하고, 봇은 1.2345를 거래한다)</td><td>보고된 거래량이 조작된 거래소/페어를 표시함 — 다른 모든 것을 위한 사전 필터</td></tr>
+<tr><td><b>북/테이프 다이버전스</b></td><td>높은 보고 거래량 + 얕은 L2 뎁스; 접근 시 취소되는 큰 벽(월)</td><td>워시 볼륨은 뎁스를 늘리지 않으며, 스푸핑 벽은 실제 거래 의도가 없다</td></tr>
+</table>
+</div>
+
+<h2>3. 스탑 헌트 / 청산 캐스케이드 — 메이저 코인까지 노리는 수법</h2>
+<p class="kr">스탑 헌트와 청산 캐스케이드 — 메이저 코인까지 당하는 유일한 수법. 레버리지 지도(청산 밀집 구간)가 공개 데이터라서, 사냥꾼의 지도를 우리도 볼 수 있다.</p>
+<div class="card">
+<svg viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- liq cluster band -->
+  <rect class="fill-bad" x="60" y="200" width="840" height="46"/>
+  <text x="70" y="218" class="t-small t-b">청산 클러스터 — 누구나 OI + 청산 맵에서 볼 수 있는 뚜렷한 스윙 로우/라운드 넘버</text>
+  <!-- axes -->
+  <path class="ln" d="M60 300 L 900 300"/>
+  <path class="ln" d="M60 30 L 60 300"/>
+  <!-- price path: drift down, spike through band (wick), reclaim, rally -->
+  <path class="ln-accent" stroke-width="2.2" d="M60 90 C 140 100, 220 120, 300 150 C 350 168, 390 185, 420 196
+    L 450 240 L 462 262 L 474 230 L 486 196
+    C 530 175, 600 140, 680 115 C 760 95, 830 85, 900 78"/>
+  <!-- annotations -->
+  <rect class="box-bad" x="330" y="40" width="230" height="78"/>
+  <text x="344" y="64" class="t-b">헌트 (몇 초~몇 분)</text>
+  <text x="344" y="82" class="t-small">매도 규모 폭증 → 스탑 트리거 →</text>
+  <text x="344" y="97" class="t-small">강제 청산이 공짜로 매도됨</text>
+  <path class="ln-bad ln-dash" marker-end="url(#ar3)" d="M445 118 L 458 220"/>
+
+  <rect class="box-good" x="620" y="170" width="270" height="92"/>
+  <text x="634" y="194" class="t-b">소진 + 회복 (신호)</text>
+  <text x="634" y="212" class="t-small">밴드를 뚫는 긴 꼬리 · OI 급감 ·</text>
+  <text x="634" y="227" class="t-small">청산 명목가 급등 후 멈춤 · 펀딩비 급변</text>
+  <text x="634" y="242" class="t-small">0을 향해 되돌아감 · 가격이 밴드 위로 마감</text>
+  <path class="ln-good ln-dash" marker-end="url(#ar3)" d="M640 170 C 560 150, 510 180, 488 198"/>
+
+  <text x="455" y="290" class="t-small t-b" fill="var(--bad)">꼬리</text>
+  <text x="60" y="325" class="t-small">강제 흐름은 어떤 가격이든 반드시 거래되어야 하는 유일한 흐름이다 — 소진된 후 가격은 평균회귀한다. 이는 딥리퀴디티 메이저 코인에서 명확하고 백테스트 가능한 역추세 매매로 대응할 수 있는 유일한 조작 패턴이다.</text>
+</svg>
+</div>
+
+<h2>4. Sooppiy가 이미 보유한 것 — 코드베이스 내 탐지 원시 기능</h2>
+<p class="kr">Sooppiy가 이미 보유한 탐지 재료 — 코드에 이미 있는 원시 신호들. 조작 탐지의 절반은 이미 구현돼 있고, 나머지 절반은 "받아놓고 버리는" 데이터를 저장하기만 하면 된다.</p>
+
+<div class="card">
+<table>
+<tr><th>원시 기능</th><th>위치</th><th>주기 / 범위</th><th>탐지 대상</th></tr>
+<tr><td>거래량 비율 (최근 1시간 ÷ 24시간 평균)</td><td><code>quant_crypto.compute_sigma_and_volume</code></td><td>필요 시, 심볼별</td><td>펌프 발화 (Kamps &amp; Kleinberg 핵심 기능)</td></tr>
+<tr><td>쇼크 지표: |수익률| ÷ σ ≥ 3 그리고 거래량 ≥ 2배</td><td><code>psych_feed.compute_shock_proxy</code> + 72 h <code>shock_series</code></td><td>시간별, BTC/ETH만</td><td>비정상적 움직임 분류 — 이미 가격+거래량 결합 이상 탐지기</td></tr>
+<tr><td>실제 청산 테이프 (가격, 규모, 방향)</td><td><code>crypto_feed.fetch_liquidation_orders</code> → <code>psych_feed.aggregate_liquidations</code></td><td>시간별, BTC/ETH; $5M 쇼크 임계값</td><td>진행 중인 캐스케이드 / 소진</td></tr>
+<tr><td>펀딩, OI, 롱/숏 비율, 스팟-퍼프 베이시스</td><td><code>quant_crypto.build_crypto_analysis</code>; 히스토리 in <code>factor_snapshots</code></td><td>6시간 히스토리 × BTC/ETH/SOL; 호출당 실시간</td><td>혼잡한 방향, 스퀴즈 설정, 펀딩 하베스팅</td></tr>
+<tr><td>L2 오더북 (50단계)</td><td><code>crypto_feed.fetch_order_book</code></td><td>터미널 UI용으로만 가져옴 — <b>분석 소비자 없음</b></td><td>스푸프 월, 깊이/볼륨 다이버전스</td></tr>
+<tr><td>틱 트레이드 테이프 (≤100건 거래)</td><td><code>crypto_feed.fetch_trades</code></td><td>터미널 UI용으로만 가져옴 — <b>분석 소비자 없음</b></td><td>러시 주문, 거래 크기 라운드성 (워시 탐지)</td></tr>
+<tr><td>볼륨 급증 스캐너 (24시간 ÷ 7일 ≥ 2배) + 신규 상장 diff</td><td><code>scanner.py</code></td><td>시간별, 상위 30개 유니버스</td><td>후보 노출 — 펌프 스크리닝과 동일한 수학</td></tr>
+<tr><td>유동성 하한 $5M 20일 달러 볼륨</td><td><code>symbol_research.LIQUIDITY_FLOOR_USD</code></td><td>모든 리서치 패스마다</td><td>유니버스 관리 (이미 가장 얇은 오더북은 거부함)</td></tr>
+<tr><td>핫이슈 데몬: 감지 → 홀더별 검증 → 에스컬레이션</td><td><code>hot_issue_daemon._market_triggers / _symbol_triggers</code></td><td>시간별, 4시간 쿨다운</td><td><b>자연스러운 호스트</b> for a <code>manipulation:{type}</code> 트리거</td></tr>
+</table>
+<p class="legend">이 위에 구축하는 모든 설계에 대한 두 가지 플래그: (1) 이 피드 대부분은 <b>기본값은 꺼짐</b> (<code>QUANT_CRYPTO_ENABLED</code>, <code>PSYCH_FEED_ENABLED</code>, <code>SCANNER_ENABLED</code>, <code>HOT_ISSUE_DAEMON_ENABLED</code>…) — 오직 <code>factor_snapshots</code> 는 제한이 없음; (2) <b>거래소 분할</b>: Hyperliquid에서 체결가, OKX에서 분석 데이터를 읽음 — 거래소 간 다이버전스 신호는 단순히 호가창이 다르기 때문에 발생하는 경우를 통제해야 하며, 그렇지 않으면 거짓 양성(false positive)이 발생한다.</p>
+</div>
+
+<div class="card">
+<b>오늘 네트워크로 수신되었지만 버려지는 데이터</b> — 코드베이스에서 가장 저렴한 업그레이드
+<p class="kr">이미 수신하고 버리는 데이터 — 저장만 하면 되는 가장 싼 업그레이드.</p>
+<table>
+<tr><th>오늘 버려짐</th><th>증거</th><th>잠금 해제</th></tr>
+<tr><td>Hyperliquid 전체 L2 래더 (레벨별 크기 + 주문 수)</td><td><code>price_fetcher._get_hyperliquid_mid_price</code> 게시 <code>l2Book</code>, 최상위 두 호가만 읽음</td><td>실제로 체결하는 거래소에서의 스푸핑/레이어링 탐지</td></tr>
+<tr><td>Hyperliquid 1분 OHLCV</td><td><code>_get_hyperliquid_candle_close</code> 게시 <code>candleSnapshot</code>, 다음만 유지 <code>c</code></td><td>분 단위 펌프 탐지 (OKX는 1H/1D에서만 호출됨 — 몇 분간 지속되는 펌프에는 너무 느림)</td></tr>
+<tr><td>Hyperliquid 자산별 펀딩 / OI / mark-vs-oracle (<code>metaAndAssetCtxs</code>)</td><td>오직 <code>meta</code> (종목)만 호출됨</td><td>체결과 동일한 거래소의 펀딩/OI; mark-vs-oracle 괴리 — JELLY의 정확한 신호</td></tr>
+<tr><td>OKX 펀딩비율 히스토리 + OI 히스토리 엔드포인트</td><td>절대 호출되지 않음; 포인트 읽기만 수행</td><td>펀딩/OI <i>변화량</i> — 핵심 스퀴즈 신호들 — 6시간 스냅샷을 몇 달씩 기다리지 않고도</td></tr>
+</table>
+</div>
+
+<h2>5. 탐지에서 플러스 수익까지 — 방어가 먼저, 그다음 선별적 공격</h2>
+<p class="kr">탐지를 플러스 수익으로 — 수익의 제1원천은 "조작의 반대편(exit liquidity)이 되지 않는 것"이고, 그 위에 검증 가능한 역방향 전략을 선별적으로 얹는다. 연구가 일관되게 보여주는 사실: 펌핑에서 돈을 버는 쪽은 내부자뿐이며, 신호를 보고 추격한 사람의 기대수익은 마이너스다.</p>
+
+<div class="card">
+<svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- inputs -->
+  <rect class="box" x="20" y="30" width="215" height="88"/>
+  <text x="34" y="54" class="t-b">기존 프리미티브</text>
+  <text x="34" y="72" class="t-small">volume_ratio · sigma_multiple ·</text>
+  <text x="34" y="87" class="t-small">liq notional · funding · OI ·</text>
+  <text x="34" y="102" class="t-small">L/S ratio · basis · shock_series</text>
+  <rect class="box-dim" x="20" y="138" width="215" height="72"/>
+  <text x="34" y="162" class="t-b">2단계 추가 항목</text>
+  <text x="34" y="180" class="t-small">1분봉 · L2 depth history ·</text>
+  <text x="34" y="195" class="t-small">trade-tape 통계 · funding 변화량</text>
+
+  <!-- score -->
+  <rect class="box-accent" x="295" y="72" width="215" height="104"/>
+  <text x="309" y="96" class="t-b">조작 체크리스트</text>
+  <text x="309" y="114" class="t-small">순수 함수, null을 정직하게 처리 —</text>
+  <text x="309" y="129" class="t-small">하우스 패턴: confluence.py의</text>
+  <text x="309" y="144" class="t-small">set_cond(key, value, null_reason)</text>
+  <text x="309" y="162" class="t-small">→ 심볼별 리스크 태그, LLM 없음</text>
+  <path class="ln" marker-end="url(#ar4)" d="M235 74 L 293 100"/>
+  <path class="ln ln-dash" marker-end="url(#ar4)" d="M235 174 L 293 148"/>
+
+  <!-- three outputs -->
+  <rect class="box-good" x="590" y="20" width="350" height="86"/>
+  <text x="604" y="44" class="t-b">A. 진입 거부(방어 — 항상 작동)</text>
+  <text x="604" y="62" class="t-small">"펌프 형태의 테이프"는 매수를 차단한다: 수직 급등 +</text>
+  <text x="604" y="77" class="t-small">얇은 호가창에서의 거래량 이상 = 추격 금지.</text>
+  <text x="604" y="92" class="t-small">확실한 우위: 기대값이 마이너스인 거래는 거부한다.</text>
+  <path class="ln-good" marker-end="url(#ar4)" d="M510 100 C 550 90, 555 70, 588 60"/>
+
+  <rect class="box-accent" x="590" y="126" width="350" height="86"/>
+  <text x="604" y="150" class="t-b">B. 데스크 스킬(판단, 게이트가 아님)</text>
+  <text x="604" y="168" class="t-small">짧은 라인 + 스킬이 데스크에게 상황을</text>
+  <text x="604" y="183" class="t-small">이름 붙이는 법을 가르친다: "이 급등은 펌프 형태다", "이 꼬리는</text>
+  <text x="604" y="198" class="t-small">스탑 헌트다" — 소유자의 규칙에 따라 AI-FIRST.</text>
+  <path class="ln-accent" marker-end="url(#ar4)" d="M510 124 L 588 155"/>
+
+  <rect class="box-warn" x="590" y="232" width="350" height="86"/>
+  <text x="604" y="256" class="t-b">C. 역방향 거래(공격 — 백테스트로 게이트됨)</text>
+  <text x="604" y="274" class="t-small">메이저 코인의 캐스케이드 반전 · funding 극단값</text>
+  <text x="604" y="289" class="t-small">역발상 매매 · 펌프 후 되돌림 매매(소규모, 엄격한 제한선).</text>
+  <text x="604" y="304" class="t-small">기대값 게이트를 통과한 것만 배포한다.</text>
+  <path class="ln-warn" marker-end="url(#ar4)" d="M510 150 C 550 170, 550 245, 588 262"/>
+
+  <!-- delivery -->
+  <rect class="box" x="295" y="232" width="215" height="86"/>
+  <text x="309" y="256" class="t-b">전달 경로</text>
+  <text x="309" y="274" class="t-small">hot_issue_daemon 트리거</text>
+  <text x="309" y="289" class="t-small">manipulation:{type} · research</text>
+  <text x="309" y="304" class="t-small">오버레이 라인 · 데스크 브리프 라인</text>
+  <path class="ln ln-dash" marker-end="url(#ar4)" d="M400 232 L 400 178"/>
+
+  <text x="20" y="360" class="t-small t-b">우위의 우선순위(확실성이 높은 순):</text>
+  <text x="20" y="380" class="t-small">1. 거부 — 얇은 호가창에서의 점화 캔들은 절대 매수하지 않는다(조직이 당신을 위해 설계한 손실을 제거한다).</text>
+  <text x="20" y="396" class="t-small">2. 메이저 코인의 캐스케이드 반전 — 강제 청산 흐름의 소진은 백테스트가 가능하고 유동성이 있으며, 기존의 shock 및 liquidation 프리미티브를 활용한다.</text>
+  <text x="20" y="412" class="t-small">3. funding 극단값 역발상 매매(이미 데스크의 관점) · 4. 펌프 후 되돌림 매매 — 실재하지만 위험함(JELLY: 코너에 몰린 호가창을 숏하는 것 = 스퀴즈 연료). 소규모, 메이저 코인 인접 종목에서만.</text>
+</svg>
+</div>
+
+<h3>방어가 가장 큰 숫자인 이유</h3>
+<p class="kr">왜 "안 당하는 것"이 가장 큰 수익인가 — 조작이 설계하는 손실의 모양이 정확히 우리의 과거 손실 모양과 일치한다.</p>
+<div class="card">
+<p>Sooppiy의 자체 손실 포렌식(보고서 #245)에서 발견한 바로는 <b>84건의 청산 중 6건이 전체 손실의 74%를 만들어냈다 — 모두 2% 미만 변동에서 발생한 전체 포지션 투매</b>: 이는 정확히 스톱 헌트가 설계하는 모양이다. 조작 렌즈와 손실 형태 렌즈는 동일한 해법을 가리킨다: 설계된 움직임을 인식하고 <i>그 진행 중에</i> 거래를 거부하는 것 — 점화를 쫓지 말고, 캐스케이드 위크에 패닉 청산하지 말고, 소진/회복 신호가 확인될 때까지 기다려라. 여기서 회피한 −$X는 실행 위험이 전혀 없는 +$X의 알파와 동일하다.</p>
+<p>보완적인 위생 규칙은 이미 절반쯤 존재한다: 리서치 패스의 $5M 유동성 하한선이 그것이다. 여기에 거래량 진위 확인(워시 트레이드 비중 추정치)을 추가하면 "충분히 유동적"이 "유동적이고 <i>실제로</i> 유동적"으로 바뀐다 — 이는 조작된 종목을 아예 유니버스에서 배제하는 필터다. 소유자의 신뢰 등급 본능(BTC/ETH/SOL/XRP와 검증된 몇몇 종목)은 화이트리스트로 표현된 동일한 필터이며, 탐지기는 이를 목록이 아닌 측정치로 만든다.</p>
+</div>
+
+<h3>제안된 빌드 단계 (각 단계는 그 자체로 완결되며, 작은 것부터 출시)</h3>
+<p class="kr">제안 빌드 단계 — 각 단계는 그 자체로 완결되며, 작은 것부터.</p>
+<div class="card">
+<table>
+<tr><th>단계</th><th>출시물</th><th>기반</th><th>비용</th></tr>
+<tr><td><b>0 — 스킬 문구</b></td><td>데스크에 세 가지 상황 이름을 가르치세요: 펌프 점화(추격 금지), 스탑헌트 위크(패닉 청산 금지; 리클레임 대기), 크라우디드 펀딩 스퀴즈 설정. 순수 <code>BASE_SKILLS</code> 편집.</td><td>기존 skills 레지스트리 + catalog_hash 자동 업그레이드</td><td>시간</td></tr>
+<tr><td><b>1 — 기존 데이터 기반 탐지기</b></td><td>volume_ratio / sigma_multiple / liq notional / funding / OI / basis 기반 조작 체크리스트(합류 패턴 순수 함수) → <code>manipulation:{type}</code> 트리거 안에 <code>hot_issue_daemon._symbol_triggers</code> + 리서치 오버레이 위험 라인.</td><td>hot_issue_daemon (감지→검증→에스컬레이션 이미 구축됨), quant_crypto, psych_feed</td><td>일</td></tr>
+<tr><td><b>2 — 데이터 폐기 중단</b></td><td>Hyperliquid 1분봉 캔들 + L2 뎁스 통계 + <code>metaAndAssetCtxs</code>funding/OI(체결과 동일한 거래소), 그리고 OKX funding/OI 히스토리. 새로운 <code>manipulation_snapshots</code> 위의 테이블 <code>factor_snapshots</code> 템플릿.</td><td>이미 호출된 엔드포인트; 페이로드만 유지하세요</td><td>일</td></tr>
+<tr><td><b>3 — 게이트 뒤의 오펜스</b></td><td>캐스케이드 반전(Cascade-reversal) 및 펌프 후 페이드(post-pump-fade) 전략 후보는 Phase-4 백테스트 기대값 게이트를 통과해야 하며, 재현(replay) 기대값이 수수료를 제외하고 양수인 경우에만 라이브로 전환합니다.</td><td>backtest_gate, 플릿 플래너</td><td>주, 증거 기반</td></tr>
+</table>
+<p class="legend">소유자 규칙과 일치: 수익은 모든 계층에서 목표이다(음의 기대값 로직은 쓸모없다 — 이는 정확히 펌프를 쫓는 것과 같다); 결정은 기술이 된다(AI-FIRST: 데스크는 어떤 플랫폼 게이트보다 먼저 판단력을 배운다); 공격은 재현된 증거를 통해서만 출시된다.</p>
+</div>
+
+<h2>6. 정직한 한계 — 탐지가 할 수 없는 것</h2>
+<p class="kr">정직한 한계 — 탐지가 할 수 없는 것. 과신은 그 자체로 손실 요인이다.</p>
+<div class="card">
+<table>
+<tr><th>한계</th><th>결과</th></tr>
+<tr><td>우리는 그 <b>테이프</b>, 이 아니라 <b>링</b></td><td>지갑 클러스터링이나 텔레그램 모니터링은 범위에 포함되지 않습니다 — 우리는 <i>형태</i>를 감지할 뿐, 신원을 감지하지 않습니다. 거부/역추세 매매에는 충분하지만 증거로는 절대 사용할 수 없습니다.</td></tr>
+<tr><td>정당한 뉴스 급등은 펌프처럼 보입니다</td><td>실제 상장/파트너십도 동일한 거래량+가격 이상 현상을 만들어냅니다. 분류기 관련 문헌에서도 이를 인정합니다: 탐지 결과는 "이것은 사기다"가 아니라 "추격 매매 금지 / 구조를 기다려라"로 취급해야 합니다.</td></tr>
+<tr><td>거래소 분리 (체결: Hyperliquid · 분석: OKX)</td><td>Phase 2에서 동일 거래소 데이터가 도입되기 전까지는, 거래소 간 차이로 인해 조작과 일반적인 호가창 차이가 혼동될 수 있습니다.</td></tr>
+<tr><td>조작된 호가창에서 숏 포지션을 잡는 것은 위험합니다</td><td>되돌림은 통계적으로 신뢰할 수 있지만, 매집된 유통 물량은 먼저 한 시간 만에 +400%까지 스퀴즈될 수 있습니다(JELLY). 공격적 포지션은 소규모로, 레일로 보호되며, 주요 종목 우선으로 진행해야 합니다.</td></tr>
+<tr><td>피드는 기본적으로 꺼져 있습니다</td><td>Phase 1에서는 <code>QUANT_CRYPTO_ENABLED</code>, <code>PSYCH_FEED_ENABLED</code>, <code>HOT_ISSUE_DAEMON_ENABLED</code>이 프로덕션 워커 역할에 필요합니다 — 설계는 반드시 해당 게이트를 명시해야 합니다.</td></tr>
+<tr><td>우리는 탐지할 뿐, 절대 모방하지 않습니다</td><td>여기 있는 모든 것은 공개 데이터를 읽는 것입니다. Sooppiy는 절대로 스푸핑, 워시트레이딩, 또는 조작을 하지 않습니다 — 불법일 뿐만 아니라, 소유자의 지침에 따르면 플랫폼 규모에서 음의 기댓값을 갖는 쓸모없는 행위입니다.</td></tr>
+</table>
+</div>
+
+<h2>출처</h2>
+<p class="kr">출처 — 학술 연구와 사건 기록.</p>
+<div class="card srcs">
+<ul>
+<li>Dhawan &amp; Putniņš — <a href="https://academic.oup.com/rof/article-abstract/27/3/935/6655707">A New Wolf in Town? Pump-and-Dump Manipulation in Cryptocurrency Markets</a> (Review of Finance): 355건의 펌프 / 6개월, 평균 왜곡 +65%, 약 $6M 추출; 참여는 과신 + 도박 선호로 설명됨.</li>
+<li>La Morgia et al. — <a href="https://arxiv.org/html/2105.00733v2">The Doge of Wall Street: Analysis and Detection of Pump and Dump Cryptocurrency Manipulations</a> (ACM): 1,100건 이상의 확인된 텔레그램 펌프; 25초 탐지, 정밀도 98.2% / 재현율 91.2%; 러시 주문 특징.</li>
+<li>Kamps &amp; Kleinberg — 최초의 결합 가격+거래량 이상치 임계값 탐지기 (<a href="https://arxiv.org/pdf/2003.06551">Hybrid Pump-and-Dump Detection</a> 서베이 참조).</li>
+<li>Cong, Li, Tang, Yang — <a href="https://cowles.yale.edu/sites/default/files/2022-11/cryptowashtrading040521-crypto-wash-trading.pdf">Crypto Wash Trading</a>: 비규제 거래소 거래량의 77.5%; Benford + 거래 규모 라운드성 테스트; 규제 거래소는 통과, 비규제 거래소는 실패.</li>
+<li>QuantPedia — <a href="https://quantpedia.com/detecting-wash-trading-in-major-crypto-exchanges/">Detecting Wash Trading in Major Crypto Exchanges</a>; <a href="https://cepr.org/voxeu/columns/wash-trading-centralised-crypto-exchanges-need-transparency-and-accountability">CEPR column</a> 워시트레이딩 요인에 관한.</li>
+<li>JELLY 사건 (2025년 3월) — <a href="https://www.halborn.com/blog/post/explained-the-hyperliquid-hack-march-2025">Halborn post-mortem</a>, <a href="https://www.coindesk.com/markets/2025/03/26/hyperliquid-delists-jellyjelly-after-vault-squeezed-in-usd13m-tussle">CoinDesk</a>: 저유동성 코너링 → 자기청산 → HLP 볼트 −$13.5M.</li>
+<li>파생상품 신호 배경 — <a href="https://www.gate.com/crypto-wiki/article/how-to-interpret-crypto-derivatives-market-signals-funding-rates-open-interest-and-liquidation-data-explained-20251227">funding / OI / liquidation interpretation</a>; <a href="https://www.certik.com/resources/blog/unmasking-crypto-market-manipulation-wash-trading-spoofing-and-more">CertiK on spoofing and wash trading</a>.</li>
+<li>코드베이스 기반 — <code>crypto_feed.py</code>, <code>quant_crypto.py</code>, <code>psych_feed.py</code>, <code>factor_snapshots.py</code>, <code>scanner.py</code>, <code>hot_issue_daemon.py</code>, <code>confluence.py</code>, <code>symbol_research.py</code> (2026-08-10 확인됨).</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>

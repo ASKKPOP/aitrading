@@ -1,0 +1,443 @@
+<!-- machine-translated from research/04-market-manipulation-detection.html by docs/design/_gen_doc_translations.py — pending native review -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riset 04 — Menangkap Manipulator: Ring Crypto Small-Cap dan Cara Sooppiy Mengubahnya Menjadi Edge</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
+    --accent: #2563eb; --good: #0e9f6e; --warn: #d97706; --bad: #dc2626;
+    --chip: #eef2ff; --line: #e4e2dc; --code: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191917; --card: #22221f; --ink: #e8e6e1; --muted: #898781;
+      --accent: #60a5fa; --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+      --chip: #26304a; --line: #383835; --code: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; }
+  h3 { font-size: 15.5px; margin: 22px 0 6px; }
+  .kr { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 18px 20px; margin: 14px 0; overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 10px 16px; min-width: 130px; }
+  .chip b { display: block; font-size: 20px; color: var(--accent); }
+  .chip span { font-size: 12px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code); }
+  code { background: var(--code); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; }
+  .quote { border-left: 3px solid var(--accent); padding: 6px 14px; margin: 10px 0;
+           background: var(--code); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  svg { display: block; max-width: 100%; height: auto; color: var(--muted); }
+  svg text { font: 12.5px -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .t-small { font-size: 11px; fill: var(--muted); }
+  svg .t-b { font-weight: 600; }
+  svg .box { fill: var(--card); stroke: var(--line); rx: 8; }
+  svg .box-accent { fill: var(--chip); stroke: var(--accent); rx: 8; }
+  svg .box-good { fill: var(--chip); stroke: var(--good); rx: 8; }
+  svg .box-warn { fill: var(--chip); stroke: var(--warn); rx: 8; }
+  svg .box-bad { fill: var(--chip); stroke: var(--bad); rx: 8; }
+  svg .box-dim { fill: var(--code); stroke: var(--line); rx: 8; stroke-dasharray: 4 3; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+  svg .ln-good { stroke: var(--good); stroke-width: 1.6; fill: none; }
+  svg .ln-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+  svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+  svg .ln-dash { stroke-dasharray: 5 4; }
+  svg .fill-warn { fill: var(--warn); opacity: 0.14; }
+  svg .fill-bad { fill: var(--bad); opacity: 0.12; }
+  svg .fill-good { fill: var(--good); opacity: 0.12; }
+  svg .vol { fill: var(--muted); opacity: 0.45; }
+  svg .vol-hot { fill: var(--bad); opacity: 0.7; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .wr { color: var(--warn); }
+  pre.sample { background: var(--code); border-radius: 8px; padding: 12px 14px;
+               font-size: 12px; line-height: 1.5; white-space: pre-wrap; margin: 8px 0 0; }
+  .srcs { font-size: 12.5px; color: var(--muted); }
+  .srcs a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Menangkap Manipulator — Ring Crypto Small-Cap, Sidik Jari Mereka, dan Cara Sooppiy Mengubahnya Menjadi Edge</h1>
+<p class="kr">Menangkap Kekuatan Manipulasi Pasar — Taktik cincin manipulasi yang mendominasi koin kecil, jejak yang tertinggal dalam data, dan cara Sooppiy mengubahnya menjadi keuntungan positif (2026-08-10, Dokumen Riset 04)</p>
+
+<div class="quote">Pertanyaan Owner: <i>"Sebagian besar coin (kecuali coin public-trust yang terkenal — BTC, ETH, SOL, XRP, PUMP) dikendalikan oleh manipulator pasar. Bagaimana cara menangkap apa yang mereka lakukan untuk keuntungan mereka bekerja? Dan bagaimana kita bisa memanfaatkannya untuk plus profit saya?"</i><br>
+Bukti akademis sejalan dengan premis ini: di luar major dengan likuiditas dalam, ring yang terkoordinasi bukanlah kasus tepi — mereka adalah kekuatan penentu harga yang dominan di banyak pair kecil. Kabar baiknya: <b>setiap skema yang menggerakkan harga meninggalkan sidik jari di data pasar publik</b>, dan profit terbesar dan paling andal dari deteksi adalah <b>menolak menjadi likuiditas keluar mereka</b> — dengan serangan selektif di atasnya.</div>
+
+<div class="chips">
+  <div class="chip"><b>+65%</b><span>distorsi harga rata-rata per pump yang terorganisir (Dhawan &amp; Putniņš)</span></div>
+  <div class="chip"><b>355</b><span>pump dalam 6 bulan → ~$6M diekstrak dari follower</span></div>
+  <div class="chip"><b>77.5%</b><span>dari volume unregulated-exchange adalah wash trading (Cong et al.)</span></div>
+  <div class="chip"><b>25 s</b><span>latensi deteksi pump real-time (La Morgia et al.)</span></div>
+  <div class="chip"><b>98.2%</b><span>presisi deteksi pada chunk 25 s</span></div>
+  <div class="chip"><b>−$13.5M</b><span>lubang Hyperliquid HLP dalam squeeze JELLY (2025)</span></div>
+</div>
+
+<h2>1. Loop profit manipulator — mengapa small coin, dan siapa yang membayar</h2>
+<p class="kr">Loop keuntungan kelompok manipulator — mengapa koin berkapitalisasi kecil, dan siapa yang merugi. Semakin dangkal likuiditasnya, semakin sedikit dana yang dibutuhkan untuk membentuk harga, dan kerugian selalu ditanggung oleh pembeli yang mengejar harga (chasing) dan masuk belakangan.</p>
+<div class="card">
+<svg viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- loop boxes -->
+  <rect class="box" x="30" y="40" width="190" height="78"/>
+  <text x="44" y="64" class="t-b">1. Pilih book yang tipis</text>
+  <text x="44" y="82" class="t-small">low float · low volume nyata ·</text>
+  <text x="44" y="97" class="t-small">beberapa $10k menggerakkan harga</text>
+
+  <rect class="box-warn" x="270" y="40" width="200" height="78"/>
+  <text x="284" y="64" class="t-b">2. Akumulasi secara diam-diam</text>
+  <text x="284" y="82" class="t-small">hari-hari pembelian kecil · terkadang</text>
+  <text x="284" y="97" class="t-small">corner spot supply (gaya JELLY)</text>
+
+  <rect class="box-bad" x="520" y="40" width="200" height="78"/>
+  <text x="534" y="64" class="t-b">3. Nyalakan</text>
+  <text x="534" y="82" class="t-small">volume wash-trade · spoof wall ·</text>
+  <text x="534" y="97" class="t-small">sinyal Telegram/X · berita palsu</text>
+
+  <rect class="box-bad" x="760" y="40" width="180" height="78"/>
+  <text x="774" y="64" class="t-b">4. FOMO kerumunan</text>
+  <text x="774" y="82" class="t-small">retail mengejar candle hijau</text>
+  <text x="774" y="97" class="t-small">(+65% distorsi rata-rata, dalam hitungan menit)</text>
+
+  <rect class="box-warn" x="520" y="200" width="200" height="78"/>
+  <text x="534" y="224" class="t-b">5. Distribusikan saat kekuatan</text>
+  <text x="534" y="242" class="t-small">ring menjual seluruh book kepada</text>
+  <text x="534" y="257" class="t-small">pemain yang masuk terlambat mendekati puncak</text>
+
+  <rect class="box" x="270" y="200" width="200" height="78"/>
+  <text x="284" y="224" class="t-b">6. Runtuh &amp; reset</text>
+  <text x="284" y="242" class="t-small">harga kembali ke garis dasar dalam</text>
+  <text x="284" y="257" class="t-small">jam · sindikat pindah ke koin berikutnya</text>
+
+  <!-- arrows -->
+  <path class="ln" marker-end="url(#ar1)" d="M220 79 L 268 79"/>
+  <path class="ln-warn" marker-end="url(#ar1)" d="M470 79 L 518 79"/>
+  <path class="ln-bad" marker-end="url(#ar1)" d="M720 79 L 758 79"/>
+  <path class="ln-bad" marker-end="url(#ar1)" d="M850 118 C 850 170, 760 239, 722 239"/>
+  <path class="ln-warn" marker-end="url(#ar1)" d="M520 239 L 472 239"/>
+  <path class="ln ln-dash" marker-end="url(#ar1)" d="M270 239 C 120 239, 125 155, 125 120"/>
+
+  <!-- who pays -->
+  <rect class="box-dim" x="30" y="200" width="190" height="78"/>
+  <text x="44" y="224" class="t-b">Siapa yang membayar</text>
+  <text x="44" y="242" class="t-small">pengikut yang membeli setelah pemicu:</text>
+  <text x="44" y="257" class="t-small">ekspektasi imbal hasil negatif —</text>
+  <text x="44" y="272" class="t-small">hanya orang dalam yang untung (penelitian)</text>
+
+  <text x="30" y="315" class="t-small">Siklus ini berulang karena setiap putaran menghabiskan sedikit biaya bagi sindikat (thin books) dan kerumunan terbentuk kembali (overconfidence + gambling preference — Dhawan &amp; Putniņš).</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--bad)"></span>fase manipulasi &nbsp; <span class="dot" style="background:var(--warn)"></span>fase positioning &nbsp; <span class="dot" style="background:var(--line)"></span>struktur pasar</p>
+</div>
+
+<h3>Enam skema yang mencakup hampir semua hal</h3>
+<p class="kr">Hampir semua manipulasi adalah kombinasi dari enam skema ini.</p>
+<div class="card">
+<table>
+<tr><th>Skema</th><th>Bagaimana cara ini menghasilkan uang bagi mereka</th><th>Di mana ini terjadi</th></tr>
+<tr><td><b>Sindikat pump-and-dump</b></td><td>Akumulasi → sinyal beli terkoordinasi (Telegram/Discord/X) → jual lonjakan harga ke pengikut. 355 aksi pump terdokumentasi dalam 6 bulan menggerakkan ~$350M volume; sindikat ini meraup ~$6M dari peserta lain.</td><td>Small/mid cap di exchange mana pun; pengumumannya sering kali <i>publik</i> — mereka tidak perlu bersembunyi karena orang banyak akan ikut bergabung.</td></tr>
+<tr><td><b>Wash trading</b></td><td>Volume palsu menarik listing, perhatian situs peringkat, dan trader sungguhan. ~77,5% volume yang dilaporkan exchange tak teregulasi gagal lolos uji statistik keaslian (hukum Benford, kebulatan ukuran transaksi).</td><td>Berlaku di level exchange dan level token; membuat koin mati terlihat hidup sehingga sindikat bisa mendistribusikannya ke dalam "aktivitas".</td></tr>
+<tr><td><b>Spoofing / layering</b></td><td>Order tidur berukuran raksasa menciptakan dinding supply/demand palsu yang mengarahkan harga menuju order asli sindikat — lalu dibatalkan sebelum tereksekusi.</td><td>Order book (L2). Tidak terlihat di candle; sepenuhnya terlihat di snapshot depth.</td></tr>
+<tr><td><b>Stop hunt → cascade likuidasi</b></td><td>Mendorong harga ke kluster stop/level likuidasi yang terlihat dengan lonjakan ukuran besar; penjual paksa melanjutkan sisa pergerakan secara gratis; sindikat masuk saat panik terjadi.</td><td>Perps ada di mana-mana — termasuk pada aset major. Data leverage (OI, funding, peta likuidasi) bersifat publik, sehingga "peta mangsa" pun ikut publik.</td></tr>
+<tr><td><b>Penguasaan low-float / OI squeeze</b></td><td>Beli habis spot float yang tipis, lalu paksa short perp (atau vault sebuah venue) untuk melakukan likuidasi saat harga naik. JELLY 2025: short senilai $4.1M yang melikuidasi diri sendiri membuat HLP vault Hyperliquid rugi −$13.5M dalam satu jam.</td><td>Listing baru, token dengan float rendah / FDV tinggi, venue yang mesin likuidasinya mewarisi posisi.</td></tr>
+<tr><td><b>Panen funding rate</b></td><td>Tahan harga tetap terpaku (kontrol spot) sambil mengumpulkan funding ekstrem dari long/short perp yang terjebak di sisi lain.</td><td>Pasangan perp di mana satu sisi ramai/padat; terlihat sebagai funding ekstrem yang persisten + harga datar.</td></tr>
+</table>
+</div>
+
+<h2>2. Anatomi sebuah pump — seperti apa tampilan tape, menit demi menit</h2>
+<p class="kr">Anatomi pump — bentuk yang tertinggal di tape (transaksi·volume) menit demi menit. Pola tipikal yang diperoleh dari analisis akademis terhadap lebih dari 1.100 kasus pump nyata.</p>
+<div class="card">
+<svg viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- phase shading -->
+  <rect class="fill-warn" x="60" y="30" width="250" height="240"/>
+  <rect class="fill-bad" x="310" y="30" width="180" height="240"/>
+  <rect class="fill-warn" x="490" y="30" width="130" height="240"/>
+  <rect class="fill-good" x="620" y="30" width="280" height="240"/>
+  <!-- axes -->
+  <path class="ln" d="M60 270 L 900 270"/>
+  <path class="ln" d="M60 30 L 60 270"/>
+  <text x="20" y="55" class="t-small">harga</text>
+  <!-- price path: accumulation flat, pump vertical, top, dump, retrace -->
+  <path class="ln-accent" stroke-width="2.2" d="M60 235 C 120 233, 180 230, 250 226 L 310 222
+    C 330 200, 345 150, 360 95 L 385 60
+    C 400 55, 415 58, 430 70
+    C 450 95, 470 140, 490 165
+    C 530 200, 570 215, 620 222
+    C 700 230, 800 233, 900 234"/>
+  <!-- baseline dashes -->
+  <path class="ln ln-dash" d="M60 235 L 900 235"/>
+  <text x="820" y="230" class="t-small">baseline</text>
+  <!-- +65% marker -->
+  <path class="ln-bad ln-dash" d="M385 60 L 385 235"/>
+  <text x="398" y="112" class="t-small">+65% puncak rata-rata</text>
+  <!-- volume bars -->
+  <g>
+    <rect class="vol" x="80" y="330" width="16" height="12"/>
+    <rect class="vol" x="110" y="328" width="16" height="14"/>
+    <rect class="vol" x="140" y="330" width="16" height="12"/>
+    <rect class="vol" x="170" y="326" width="16" height="16"/>
+    <rect class="vol" x="200" y="329" width="16" height="13"/>
+    <rect class="vol" x="230" y="325" width="16" height="17"/>
+    <rect class="vol" x="260" y="327" width="16" height="15"/>
+    <rect class="vol-hot" x="315" y="292" width="16" height="50"/>
+    <rect class="vol-hot" x="345" y="278" width="16" height="64"/>
+    <rect class="vol-hot" x="375" y="285" width="16" height="57"/>
+    <rect class="vol-hot" x="405" y="295" width="16" height="47"/>
+    <rect class="vol-hot" x="435" y="302" width="16" height="40"/>
+    <rect class="vol" x="465" y="312" width="16" height="30"/>
+    <rect class="vol" x="500" y="318" width="16" height="24"/>
+    <rect class="vol" x="540" y="322" width="16" height="20"/>
+    <rect class="vol" x="590" y="326" width="16" height="16"/>
+    <rect class="vol" x="650" y="328" width="16" height="14"/>
+    <rect class="vol" x="720" y="329" width="16" height="13"/>
+    <rect class="vol" x="790" y="330" width="16" height="12"/>
+    <rect class="vol" x="860" y="330" width="16" height="12"/>
+  </g>
+  <text x="20" y="320" class="t-small">volume</text>
+  <path class="ln" d="M60 342 L 900 342"/>
+  <!-- phase labels -->
+  <text x="85" y="48" class="t-b">Akumulasi</text>
+  <text x="85" y="64" class="t-small">hari · pembelian kecil · harga merayap naik</text>
+  <text x="85" y="79" class="t-small">orang dalam memposisikan diri lebih awal (dapat dideteksi!)</text>
+  <text x="320" y="48" class="t-b">Penyulutan + pump</text>
+  <text x="320" y="64" class="t-small">sinyal turun · order buru-buru ·</text>
+  <text x="320" y="79" class="t-small">menit, jarang berjam-jam</text>
+  <text x="497" y="48" class="t-b">Dump</text>
+  <text x="497" y="64" class="t-small">kelompok keluar ke dalam</text>
+  <text x="497" y="79" class="t-small">pembeli FOMO</text>
+  <text x="640" y="48" class="t-b">Retrace</text>
+  <text x="640" y="64" class="t-small">kembali ke baseline dalam hitungan jam —</text>
+  <text x="640" y="79" class="t-small">Pembeli yang terlambat menanggung seluruh kerugian</text>
+  <!-- time axis -->
+  <text x="60" y="365" class="t-small">t − hari</text>
+  <text x="310" y="365" class="t-small">t = 0 (sinyal)</text>
+  <text x="490" y="365" class="t-small">t + menit</text>
+  <text x="620" y="365" class="t-small">t + jam</text>
+</svg>
+<p class="legend"><span class="dot" style="background:var(--bad);opacity:.7"></span>jendela anomali volume (target detektor) — La Morgia et al. mendeteksi ignition dalam <b>25 detik</b> dengan presisi 98.2% menggunakan statistik bergerak order rush dan volume.</p>
+</div>
+
+<div class="card">
+<b>Fitur deteksi yang berhasil (ditinjau sejawat, direplikasi)</b>
+<p class="kr">Fitur deteksi yang telah diverifikasi — nilai-nilai yang benar-benar digunakan oleh pengklasifikasi real-time.</p>
+<table>
+<tr><th>Keluarga fitur</th><th>Definisi</th><th>Mengapa ini terpicu</th></tr>
+<tr><td><b>Order rush</b> (kepentingan teratas: 0.251)</td><td>σ bergerak dan rata-rata volume order pasar "rush" per potongan 25 s</td><td>Ring tersebut dan pengikutnya semua melakukan market-buy dalam beberapa detik setelah sinyal — tidak ada pergerakan organik yang terlihat seperti ini</td></tr>
+<tr><td><b>Statistik bergerak volume</b></td><td>σ dan rata-rata volume perdagangan + jumlah perdagangan dibandingkan jendela trailing 7 jam</td><td>Sebuah order book yang tipis yang melonjak menjadi 10–100× volume dasarnya sendiri adalah indikator terkuat (pasangan ambang batas asli dari Kamps &amp; Kleinberg: anomali harga DAN anomali volume secara bersamaan)</td></tr>
+<tr><td><b>Statistik bergerak harga</b></td><td>σ / rata-rata dari harga penutupan dan harga maksimum potongan</td><td>Vertikalitas: reli organik memiliki pullback; pump bersifat satu arah selama beberapa menit</td></tr>
+<tr><td><b>Keaslian wash-trade</b></td><td>Deviasi digit pertama Benford; kebulatan/pengelompokan ukuran perdagangan (manusia berdagang 2.0, bot berdagang 1.2345)</td><td>Menandai venue/pair yang volume yang dilaporkannya dipalsukan — filter awal untuk semua hal lainnya</td></tr>
+<tr><td><b>Divergensi book/tape</b></td><td>Volume yang dilaporkan tinggi + kedalaman L2 yang dangkal; dinding besar yang dibatalkan saat didekati</td><td>Volume wash tidak menambah kedalaman; dinding spoof tidak dimaksudkan untuk diperdagangkan</td></tr>
+</table>
+</div>
+
+<h2>3. Stop hunt / cascade likuidasi — skema yang juga menyerang koin-koin utama</h2>
+<p class="kr">Stop hunt dan cascade likuidasi — satu-satunya skema yang bahkan menyerang koin-koin utama. Karena peta leverage (zona konsentrasi likuidasi) merupakan data publik, kita juga bisa melihat peta yang digunakan pemburu.</p>
+<div class="card">
+<svg viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- liq cluster band -->
+  <rect class="fill-bad" x="60" y="200" width="840" height="46"/>
+  <text x="70" y="218" class="t-small t-b">cluster likuidasi — swing low yang jelas / angka bulat, terlihat oleh semua orang di OI + peta likuidasi</text>
+  <!-- axes -->
+  <path class="ln" d="M60 300 L 900 300"/>
+  <path class="ln" d="M60 30 L 60 300"/>
+  <!-- price path: drift down, spike through band (wick), reclaim, rally -->
+  <path class="ln-accent" stroke-width="2.2" d="M60 90 C 140 100, 220 120, 300 150 C 350 168, 390 185, 420 196
+    L 450 240 L 462 262 L 474 230 L 486 196
+    C 530 175, 600 140, 680 115 C 760 95, 830 85, 900 78"/>
+  <!-- annotations -->
+  <rect class="box-bad" x="330" y="40" width="230" height="78"/>
+  <text x="344" y="64" class="t-b">Perburuan (detik–menit)</text>
+  <text x="344" y="82" class="t-small">lonjakan ukuran jual → stop terpicu →</text>
+  <text x="344" y="97" class="t-small">likuidasi paksa terjual secara gratis</text>
+  <path class="ln-bad ln-dash" marker-end="url(#ar3)" d="M445 118 L 458 220"/>
+
+  <rect class="box-good" x="620" y="170" width="270" height="92"/>
+  <text x="634" y="194" class="t-b">Kelelahan + pemulihan (penandanya)</text>
+  <text x="634" y="212" class="t-small">sumbu panjang menembus band · OI terkuras turun ·</text>
+  <text x="634" y="227" class="t-small">nosional likuidasi melonjak lalu berhenti · funding menyentak</text>
+  <text x="634" y="242" class="t-small">kembali menuju 0 · harga ditutup kembali di atas band</text>
+  <path class="ln-good ln-dash" marker-end="url(#ar3)" d="M640 170 C 560 150, 510 180, 488 198"/>
+
+  <text x="455" y="290" class="t-small t-b" fill="var(--bad)">sumbu</text>
+  <text x="60" y="325" class="t-small">Forced flow adalah satu-satunya flow yang HARUS diperdagangkan pada harga berapa pun — setelah flow tersebut habis, harga akan mean-revert. Ini adalah satu-satunya pola manipulasi yang memiliki counter-trade yang jelas dan dapat di-backtest pada aset-aset major dengan likuiditas tinggi.</text>
+</svg>
+</div>
+
+<h2>4. Apa yang sudah dimiliki Sooppiy — primitif deteksi dalam codebase saat ini</h2>
+<p class="kr">Materi deteksi yang sudah dimiliki Sooppiy — sinyal-sinyal mentah yang sudah ada dalam kode. Separuh dari deteksi manipulasi sudah terimplementasi, dan separuh sisanya hanya perlu menyimpan data yang "diterima lalu dibuang".</p>
+
+<div class="card">
+<table>
+<tr><th>Primitif</th><th>Di mana letaknya</th><th>Kadensi / lingkup</th><th>Mendeteksi</th></tr>
+<tr><td>Rasio volume (jam terakhir ÷ rata-rata 24 jam)</td><td><code>quant_crypto.compute_sigma_and_volume</code></td><td>sesuai permintaan, per simbol</td><td>pemicu pump (fitur inti Kamps &amp; Kleinberg)</td></tr>
+<tr><td>Proksi shock: |return| ÷ σ ≥ 3 DAN volume ≥ 2×</td><td><code>psych_feed.compute_shock_proxy</code> + 72 h <code>shock_series</code></td><td>setiap jam, hanya BTC/ETH</td><td>klasifikasi gerakan abnormal — sudah menjadi detektor anomali gabungan harga+volume</td></tr>
+<tr><td>Tape likuidasi real (harga, ukuran, sisi)</td><td><code>crypto_feed.fetch_liquidation_orders</code> → <code>psych_feed.aggregate_liquidations</code></td><td>setiap jam, BTC/ETH; ambang shock $5M</td><td>cascade sedang berlangsung / exhaustion</td></tr>
+<tr><td>Funding, OI, rasio long/short, basis spot-perp</td><td><code>quant_crypto.build_crypto_analysis</code>; riwayat di <code>factor_snapshots</code></td><td>riwayat 6 jam × BTC/ETH/SOL; langsung per panggilan</td><td>sisi ramai, setup squeeze, panen funding</td></tr>
+<tr><td>Order book L2 (50 level)</td><td><code>crypto_feed.fetch_order_book</code></td><td>diambil hanya untuk UI terminal — <b>tidak ada konsumen analitik</b></td><td>dinding spoof, divergensi kedalaman/volume</td></tr>
+<tr><td>Tape perdagangan tick (≤100 transaksi)</td><td><code>crypto_feed.fetch_trades</code></td><td>diambil hanya untuk UI terminal — <b>tidak ada konsumen analitik</b></td><td>order terburu-buru, kebulatan ukuran transaksi (deteksi wash)</td></tr>
+<tr><td>Pemindai lonjakan volume (24 j ÷ 7 h ≥ 2×) + diff listing baru</td><td><code>scanner.py</code></td><td>setiap jam, universe top-30</td><td>pemunculan kandidat — matematika sama seperti penyaringan pump</td></tr>
+<tr><td>Batas likuiditas $5M volume dolar 20 hari</td><td><code>symbol_research.LIQUIDITY_FLOOR_USD</code></td><td>setiap pass riset</td><td>kebersihan universe (sudah menolak order book paling tipis)</td></tr>
+<tr><td>Daemon isu-panas: deteksi → verifikasi per holder → eskalasi</td><td><code>hot_issue_daemon._market_triggers / _symbol_triggers</code></td><td>setiap jam, cooldown 4 jam</td><td><b>host alami</b> untuk <code>manipulation:{type}</code> trigger</td></tr>
+</table>
+<p class="legend">Dua bendera untuk desain apa pun yang dibangun di atas ini: (1) sebagian besar feed ini <b>mati secara default</b> (<code>QUANT_CRYPTO_ENABLED</code>, <code>PSYCH_FEED_ENABLED</code>, <code>SCANNER_ENABLED</code>, <code>HOT_ISSUE_DAEMON_ENABLED</code>…) — hanya <code>factor_snapshots</code> yang tidak dibatasi; (2) <b>pemisahan venue</b>: harga fill di Hyperliquid, analitik membaca OKX — sinyal divergensi lintas-venue harus mengontrol kemungkinan order book yang memang berbeda, jika tidak akan salah-positif.</p>
+</div>
+
+<div class="card">
+<b>Data yang diterima lewat jaringan hari ini dan dibuang</b> — upgrade termurah dalam codebase
+<p class="kr">Data yang sudah diterima dan dibuang — upgrade termurah yang hanya perlu disimpan.</p>
+<table>
+<tr><th>Dibuang hari ini</th><th>Bukti</th><th>Membuka</th></tr>
+<tr><td>Ladder L2 penuh Hyperliquid (ukuran + jumlah order per level)</td><td><code>price_fetcher._get_hyperliquid_mid_price</code> mengirim <code>l2Book</code>, hanya membaca dua harga top-of-book</td><td>deteksi spoof/layer di venue tempat kita benar-benar fill</td></tr>
+<tr><td>OHLCV 1 menit Hyperliquid</td><td><code>_get_hyperliquid_candle_close</code> mengirim <code>candleSnapshot</code>, hanya menyimpan <code>c</code></td><td>deteksi pump level menit (OKX hanya dipanggil pada 1H/1D — terlalu lambat untuk pump yang berlangsung beberapa menit)</td></tr>
+<tr><td>Funding / OI / mark-vs-oracle per aset Hyperliquid (<code>metaAndAssetCtxs</code>)</td><td>hanya <code>meta</code> (nama) yang dipanggil</td><td>funding/OI dari venue yang sama dengan fill; divergensi mark-vs-oracle — tanda persis JELLY</td></tr>
+<tr><td>Endpoint riwayat funding-rate + riwayat OI OKX</td><td>tidak pernah dipanggil; hanya pembacaan titik</td><td>pendanaan/OI <i>delta</i>— sinyal squeeze inti — tanpa perlu menunggu berbulan-bulan snapshot 6 jam</td></tr>
+</table>
+</div>
+
+<h2>5. Dari deteksi ke profit tambahan — pertahanan dulu, baru ofensif selektif</h2>
+<p class="kr">Dari deteksi ke profit tambahan — sumber utama profit adalah "tidak menjadi pihak sebaliknya dari manipulasi (exit liquidity)", dan di atas itu, strategi arah-berlawanan yang dapat diverifikasi ditambahkan secara selektif. Fakta yang konsisten ditunjukkan oleh riset: pihak yang menghasilkan uang dari pump hanyalah insider, dan ekspektasi return bagi mereka yang mengejar berdasarkan sinyal adalah negatif.</p>
+
+<div class="card">
+<svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- inputs -->
+  <rect class="box" x="20" y="30" width="215" height="88"/>
+  <text x="34" y="54" class="t-b">Primitif yang sudah ada</text>
+  <text x="34" y="72" class="t-small">volume_ratio · sigma_multiple ·</text>
+  <text x="34" y="87" class="t-small">liq notional · funding · OI ·</text>
+  <text x="34" y="102" class="t-small">Rasio L/S · basis · shock_series</text>
+  <rect class="box-dim" x="20" y="138" width="215" height="72"/>
+  <text x="34" y="162" class="t-b">Penambahan Fase-2</text>
+  <text x="34" y="180" class="t-small">1m candles · riwayat depth L2 ·</text>
+  <text x="34" y="195" class="t-small">statistik trade-tape · delta funding</text>
+
+  <!-- score -->
+  <rect class="box-accent" x="295" y="72" width="215" height="104"/>
+  <text x="309" y="96" class="t-b">Daftar periksa manipulasi</text>
+  <text x="309" y="114" class="t-small">fungsi murni, null-honest —</text>
+  <text x="309" y="129" class="t-small">pola internal: milik confluence.py</text>
+  <text x="309" y="144" class="t-small">set_cond(key, value, null_reason)</text>
+  <text x="309" y="162" class="t-small">→ tag risiko per simbol, tanpa LLM</text>
+  <path class="ln" marker-end="url(#ar4)" d="M235 74 L 293 100"/>
+  <path class="ln ln-dash" marker-end="url(#ar4)" d="M235 174 L 293 148"/>
+
+  <!-- three outputs -->
+  <rect class="box-good" x="590" y="20" width="350" height="86"/>
+  <text x="604" y="44" class="t-b">A. Veto entry (pertahanan — selalu aktif)</text>
+  <text x="604" y="62" class="t-small">"tape berbentuk pump" memblokir pembelian: pergerakan vertikal +</text>
+  <text x="604" y="77" class="t-small">anomali volume pada order book yang tipis = jangan mengejar.</text>
+  <text x="604" y="92" class="t-small">Certain edge: menolak trading dengan ekspektansi negatif.</text>
+  <path class="ln-good" marker-end="url(#ar4)" d="M510 100 C 550 90, 555 70, 588 60"/>
+
+  <rect class="box-accent" x="590" y="126" width="350" height="86"/>
+  <text x="604" y="150" class="t-b">B. Keterampilan desk (penilaian, bukan gerbang)</text>
+  <text x="604" y="168" class="t-small">baris singkat + skill mengajarkan desk untuk MENAMAI</text>
+  <text x="604" y="183" class="t-small">situasi: "lonjakan ini berbentuk pump", "wick ini adalah</text>
+  <text x="604" y="198" class="t-small">stop hunt" — AI-FIRST sesuai aturan owner.</text>
+  <path class="ln-accent" marker-end="url(#ar4)" d="M510 124 L 588 155"/>
+
+  <rect class="box-warn" x="590" y="232" width="350" height="86"/>
+  <text x="604" y="256" class="t-b">C. Counter-trade (ofensif — backtest-gated)</text>
+  <text x="604" y="274" class="t-small">cascade-reversal pada major · funding-extreme</text>
+  <text x="604" y="289" class="t-small">contrarian · post-pump fade (ukuran kecil, rail ketat).</text>
+  <text x="604" y="304" class="t-small">Kirim hanya melalui expectancy gate.</text>
+  <path class="ln-warn" marker-end="url(#ar4)" d="M510 150 C 550 170, 550 245, 588 262"/>
+
+  <!-- delivery -->
+  <rect class="box" x="295" y="232" width="215" height="86"/>
+  <text x="309" y="256" class="t-b">Jalur pengiriman</text>
+  <text x="309" y="274" class="t-small">trigger hot_issue_daemon</text>
+  <text x="309" y="289" class="t-small">manipulasi:{type} · riset</text>
+  <text x="309" y="304" class="t-small">overlay line · garis brief desk</text>
+  <path class="ln ln-dash" marker-end="url(#ar4)" d="M400 232 L 400 178"/>
+
+  <text x="20" y="360" class="t-small t-b">Prioritas edge (kepastian tertinggi lebih dulu):</text>
+  <text x="20" y="380" class="t-small">1. Veto — jangan pernah membeli ignition candle pada thin book (menghilangkan kerugian yang sedang direkayasa oleh ring untuk Anda).</text>
+  <text x="20" y="396" class="t-small">2. Cascade-reversal pada major — forced-flow exhaustion dapat di-backtest dan likuid; ini menunggangi shock dan liquidation primitives yang sudah ada.</text>
+  <text x="20" y="412" class="t-small">3. Funding-extreme contrarian (sudah menjadi lensa desk) · 4. Post-pump fade — nyata namun berbahaya (JELLY: shorting book yang sudah cornered = squeeze fuel). Hanya ukuran kecil, dekat major.</text>
+</svg>
+</div>
+
+<h3>Mengapa defense adalah angka terbesar</h3>
+<p class="kr">Mengapa "tidak terkena" adalah keuntungan terbesar — bentuk kerugian yang dirancang oleh manipulasi persis sama dengan bentuk kerugian kita di masa lalu.</p>
+<div class="card">
+<p>Forensik kerugian milik Sooppiy sendiri (laporan #245) menemukan bahwa <b>6 dari 84 penutupan menghasilkan 74% dari total kerugian — semua pembuangan buku penuh pada pergerakan di bawah 2%</b>: persis bentuk yang direkayasa oleh stop hunt. Lensa manipulasi dan lensa bentuk-kerugian menunjuk pada solusi yang sama: mengenali pergerakan yang direkayasa dan menolak untuk bertransaksi <i>selama</i> itu — jangan mengejar ignition, jangan panic-exit ke dalam cascade wick, dan biarkan sinyal exhaustion/reclaim mengonfirmasi sebelum bertindak. Setiap −$X yang terhindar di sini identik dengan +$X alpha, dengan risiko eksekusi nol.</p>
+<p>Aturan kebersihan pelengkap sudah setengah ada: batas likuiditas $5M pada research pass. Memperluasnya dengan pemeriksaan keaslian volume (estimasi porsi wash-trade) mengubah "cukup likuid" menjadi "likuid <i>dan nyata</i>" — filter universe yang menjaga fleet sepenuhnya keluar dari buku yang terkontrol. Instink trust-tier pemilik (BTC/ETH/SOL/XRP + beberapa nama yang sudah terbukti) adalah filter yang sama yang diekspresikan sebagai whitelist; detektor menjadikannya sebuah pengukuran, bukan sebuah daftar.</p>
+</div>
+
+<h3>Fase pembangunan yang diusulkan (masing-masing dikirim utuh, terkecil dahulu)</h3>
+<p class="kr">Fase pembangunan yang diusulkan — setiap fase lengkap dengan sendirinya, dimulai dari yang terkecil.</p>
+<div class="card">
+<table>
+<tr><th>Fase</th><th>Dikirim</th><th>Bergantung pada</th><th>Biaya</th></tr>
+<tr><td><b>0 — Perumusan skill</b></td><td>Ajarkan desk tiga nama situasi: pump-ignition (jangan mengejar), stop-hunt wick (jangan panic-exit; tunggu reclaim), crowded-funding squeeze setup. Pure <code>BASE_SKILLS</code> edit.</td><td>Registry skill yang sudah ada + catalog_hash auto-upgrade</td><td>jam</td></tr>
+<tr><td><b>1 — Detektor pada data yang sudah ada</b></td><td>Checklist manipulasi (confluence-pattern pure function) atas volume_ratio / sigma_multiple / liq notional / funding / OI / basis → <code>manipulation:{type}</code> trigger di <code>hot_issue_daemon._symbol_triggers</code> + baris risiko research-overlay.</td><td>hot_issue_daemon (detect→verify→escalate sudah dibangun), quant_crypto, psych_feed</td><td>hari</td></tr>
+<tr><td><b>2 — Berhenti membuang data</b></td><td>Simpan Hyperliquid 1m candles + statistik L2 depth + <code>metaAndAssetCtxs</code> funding/OI (same-venue-as-fills), dan riwayat funding/OI OKX. Baru <code>manipulation_snapshots</code> tabel pada <code>factor_snapshots</code> templat.</td><td>Endpoint sudah dipanggil; cukup pertahankan payload</td><td>hari</td></tr>
+<tr><td><b>3 — Ofensif di belakang gate</b></td><td>Kandidat strategi cascade-reversal dan post-pump-fade melalui gate ekspektasi backtest Fase-4; live hanya jika ekspektasi replay positif net dari biaya.</td><td>backtest_gate, perencana armada</td><td>minggu, evidence-gated</td></tr>
+</table>
+<p class="legend">Konsisten dengan aturan pemilik: profit adalah target di setiap lapisan (logika negative-expectancy adalah sampah — yang justru itulah mengejar pump); keputusan menjadi skill (AI-FIRST: desk belajar penilaian sebelum ada gate platform apa pun); ofensif hanya rilis melalui evidence yang direproduksi.</p>
+</div>
+
+<h2>6. Batasan yang jujur — apa yang tidak bisa dilakukan deteksi</h2>
+<p class="kr">Batasan yang jujur — apa yang tidak bisa dilakukan deteksi. Overconfidence itu sendiri adalah faktor kerugian.</p>
+<div class="card">
+<table>
+<tr><th>Limit</th><th>Konsekuensi</th></tr>
+<tr><td>Kami melihat <b>tape</b>, bukan <b>ring</b></td><td>Tidak ada wallet clustering, tidak ada pemantauan Telegram dalam scope — kami mendeteksi <i>bentuk</i> manipulasi, bukan identitasnya. Cukup baik untuk veto/fade; bukan bukti.</td></tr>
+<tr><td>Lonjakan berita yang legitimate terlihat seperti pump</td><td>Listing/partnership yang nyata menghasilkan anomali volume+price yang sama. Literatur classifier menerima ini: perlakukan deteksi sebagai "jangan mengejar / tunggu struktur", bukan "ini adalah fraud".</td></tr>
+<tr><td>Pembagian venue (fills: Hyperliquid · analytics: OKX)</td><td>Divergensi cross-venue mencampurkan manipulasi dengan perbedaan book yang biasa sampai Fase 2 menghadirkan data same-venue.</td></tr>
+<tr><td>Short pada book yang termanipulasi berbahaya</td><td>Retrace secara statistik reliable, tapi float yang cornered bisa squeeze +400% dalam satu jam lebih dulu (JELLY). Ofensif harus kecil, rail-guarded, majors-first.</td></tr>
+<tr><td>Feed default off</td><td>Fase 1 memerlukan <code>QUANT_CRYPTO_ENABLED</code>, <code>PSYCH_FEED_ENABLED</code>, <code>HOT_ISSUE_DAEMON_ENABLED</code> pada role worker prod — desain harus menyatakan gate-nya.</td></tr>
+<tr><td>Kami mendeteksi; kami tidak pernah menirunya</td><td>Semua di sini adalah pembacaan data publik. Sooppiy tidak pernah melakukan spoofing, wash trading, atau koordinasi — keduanya ilegal dan, sesuai mandat pemilik, sampah dengan ekspektasi negatif dalam skala platform.</td></tr>
+</table>
+</div>
+
+<h2>Sumber</h2>
+<p class="kr">Sumber — penelitian akademis dan catatan kejadian.</p>
+<div class="card srcs">
+<ul>
+<li>Dhawan &amp; Putniņš — <a href="https://academic.oup.com/rof/article-abstract/27/3/935/6655707">Serigala Baru di Kota? Manipulasi Pump-and-Dump di Pasar Cryptocurrency</a> (Review of Finance): 355 pumps / 6 bulan, distorsi rata-rata +65%, ~$6M diekstraksi; partisipasi dijelaskan oleh overconfidence + preferensi berjudi.</li>
+<li>La Morgia et al. — <a href="https://arxiv.org/html/2105.00733v2">The Doge of Wall Street: Analisis dan Deteksi Manipulasi Cryptocurrency Pump and Dump</a> (ACM): 1.100+ pump Telegram terkonfirmasi; deteksi 25 s, presisi 98,2% / recall 91,2%; fitur rush-order.</li>
+<li>Kamps &amp; Kleinberg — detektor ambang anomali harga+volume gabungan yang asli (via <a href="https://arxiv.org/pdf/2003.06551">Deteksi Pump-and-Dump Hibrida</a> survei).</li>
+<li>Cong, Li, Tang, Yang — <a href="https://cowles.yale.edu/sites/default/files/2022-11/cryptowashtrading040521-crypto-wash-trading.pdf">Wash Trading Kripto</a>: 77.5% dari volume bursa tidak teregulasi; uji Benford + uji kebulatan ukuran transaksi; bursa teregulasi lolos, tidak teregulasi gagal.</li>
+<li>QuantPedia — <a href="https://quantpedia.com/detecting-wash-trading-in-major-crypto-exchanges/">Mendeteksi Wash Trading di Bursa Kripto Utama</a>; <a href="https://cepr.org/voxeu/columns/wash-trading-centralised-crypto-exchanges-need-transparency-and-accountability">kolom CEPR</a> tentang pendorong wash trading.</li>
+<li>Insiden JELLY (Maret 2025) — <a href="https://www.halborn.com/blog/post/explained-the-hyperliquid-hack-march-2025">Post-mortem Halborn</a>, <a href="https://www.coindesk.com/markets/2025/03/26/hyperliquid-delists-jellyjelly-after-vault-squeezed-in-usd13m-tussle">CoinDesk</a>: sudut low-float → likuidasi-mandiri → vault HLP −$13.5M.</li>
+<li>Latar belakang sinyal derivatif — <a href="https://www.gate.com/crypto-wiki/article/how-to-interpret-crypto-derivatives-market-signals-funding-rates-open-interest-and-liquidation-data-explained-20251227">interpretasi funding / OI / liquidation</a>; <a href="https://www.certik.com/resources/blog/unmasking-crypto-market-manipulation-wash-trading-spoofing-and-more">CertiK tentang spoofing dan wash trading</a>.</li>
+<li>Landasan basis kode — <code>crypto_feed.py</code>, <code>quant_crypto.py</code>, <code>psych_feed.py</code>, <code>factor_snapshots.py</code>, <code>scanner.py</code>, <code>hot_issue_daemon.py</code>, <code>confluence.py</code>, <code>symbol_research.py</code> (diverifikasi 2026-08-10).</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>

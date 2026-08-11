@@ -133,6 +133,16 @@ SOURCES: list[dict] = [
     {"key": "desk-learning-en", "src": "plan/22-phase3-learning-to-profit.html",
      "kind": "html", "lang": "en", "group": "desk-learning",
      "title": "Plan 22 · Phase 3 — Learning to Profit", "owner_only": True},
+    # Research 04 explainer (2026-08-10, owner ask): how small-cap crypto
+    # manipulation rings profit, the data fingerprints that catch them, and
+    # the detection→veto→counter-trade path. Operator material — it cites
+    # internal loss forensics and build phases.
+    {"key": "manipulation-en",
+     "src": "research/04-market-manipulation-detection.html",
+     "kind": "html", "lang": "en", "group": "manipulation",
+     "title": ("Research 04 — Catching the Manipulators: Small-Cap Crypto "
+               "Rings and How Sooppiy Turns Them Into Edge"),
+     "owner_only": True},
 ]
 
 # ── machine-translated bodies (2026-07-29) ─────────────────────────────────
@@ -150,7 +160,8 @@ SOURCES: list[dict] = [
 # are a property of the GROUP, and repeating them per language is how the group
 # title and the file it points at drift apart.
 _OWNER_GROUPS = {"ops-keys", "architecture", "extensions", "liq-defense",
-                 "trading-skills", "desk-rag", "desk-learning"}
+                 "trading-skills", "desk-rag", "desk-learning",
+                 "manipulation"}
 _TRANSLATED_SOURCES = {
     # group: (path template, kind)
     "ops-keys": ("design/api-keys-reference-{lang}.html", "html"),
@@ -160,6 +171,8 @@ _TRANSLATED_SOURCES = {
     "trading-skills": ("plan/20-trading-skills-{lang}.html", "html"),
     "desk-rag": ("plan/22-desk-retrieval-rag-{lang}.html", "html"),
     "desk-learning": ("plan/22-phase3-learning-to-profit-{lang}.html", "html"),
+    "manipulation": ("research/04-market-manipulation-detection-{lang}.html",
+                     "html"),
     "guide": ("design/ai-trading-guide-{lang}.html", "html"),
     "gateway": ("design/live-trading-gateway-guide-{lang}.html", "html"),
     "smart": ("design/smart-trading-features-{lang}.html", "html"),
@@ -211,6 +224,12 @@ _TRANSLATED_TITLES = {
         "th": "แผน 22 · เฟส 3 — การเรียนรู้สู่กำไร",
         "vi": "Kế hoạch 22 · Giai đoạn 3 — Học để sinh lợi nhuận",
         "id": "Rencana 22 · Fase 3 — Belajar untuk Profit"},
+    "manipulation": {
+        "ko": "리서치 04 — 시장 조작 세력 잡아내기: 소형 코인 조작 링과 Sooppiy의 대응 전략",
+        "ja": "リサーチ04 — 相場操縦の検出：小型コインの操作リングとSooppiyの対応戦略",
+        "th": "งานวิจัย 04 — จับกลุ่มปั่นราคา: วงปั่นเหรียญเล็กและกลยุทธ์รับมือของ Sooppiy",
+        "vi": "Nghiên cứu 04 — Bắt kẻ thao túng: các nhóm thao túng coin nhỏ và cách Sooppiy biến chúng thành lợi thế",
+        "id": "Riset 04 — Menangkap Manipulator: Sindikat Koin Kecil dan Cara Sooppiy Mengubahnya Menjadi Keunggulan"},
     "trading-skills": {
         "ko": "플랜 20 — 트레이딩 스킬: 작동 원리",
         "ja": "プラン20 — トレーディングスキル：その仕組み",
@@ -354,6 +373,11 @@ GROUPS = [
      "th": "เดมอนการเรียนรู้ของเดสก์ (ผู้ดูแล)",
      "vi": "Daemon học của desk (quản trị)",
      "id": "Daemon Pembelajaran Desk (admin)"},
+    {"group": "manipulation", "ko": "시장 조작 탐지 (관리자)",
+     "en": "Manipulation Detection (owner)", "ja": "相場操縦の検出（管理者）",
+     "th": "การตรวจจับการปั่นราคา (ผู้ดูแล)",
+     "vi": "Phát hiện thao túng thị trường (quản trị)",
+     "id": "Deteksi Manipulasi Pasar (admin)"},
     {"group": "trading-skills", "ko": "트레이딩 스킬 (관리자)",
      "en": "Trading Skills (owner)", "ja": "トレーディングスキル（管理者）",
      "th": "ทักษะการเทรด (ผู้ดูแล)",

@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan 20 — 트레이딩 스킬: 작동 방식</title>
+<title>플랜 20 — 트레이딩 스킬: 작동 방식</title>
 <style>
   :root {
     --bg: #f7f6f3; --card: #ffffff; --ink: #1c1c1a; --muted: #898781;
@@ -53,17 +53,17 @@
 <body>
 <div class="wrap">
 
-<h1>Plan 20 — 트레이딩 스킬: 작동 방식</h1>
+<h1>플랜 20 — 트레이딩 스킬: 작동 방식</h1>
 
 <div class="chips">
-  <div class="chip"><b>36</b><span>기본 스킬(유지되며 편집 가능, 삭제 불가)</span></div>
-  <div class="chip"><b>4</b><span>삽입된 결정 프롬프트</span></div>
+  <div class="chip"><b>39</b><span>기본 스킬(유지되며, 편집 가능하고, 삭제 불가)</span></div>
+  <div class="chip"><b>4</b><span>주입된 의사결정 프롬프트</span></div>
   <div class="chip"><b>0</b><span>스킬 선택에 사용된 LLM 호출</span></div>
   <div class="chip"><b>48,000</b><span>프롬프트당 문자 예산</span></div>
-  <div class="chip"><b>30s</b><span>워커 캐시 TTL</span></div>
+  <div class="chip"><b>30초</b><span>워커 캐시 TTL</span></div>
 </div>
 
-<h2>1. 큰 그림 — 스킬이 존재하는 곳과 작동하는 곳</h2>
+<h2>1. 큰 그림 — 스킬이 존재하는 위치와 작동하는 위치</h2>
 <div class="card">
 <svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -82,17 +82,17 @@
 
   <rect class="box" x="20" y="130" width="200" height="64"/>
   <text x="120" y="155" text-anchor="middle" class="t-b">관리자 콘솔 / API</text>
-  <text x="120" y="174" text-anchor="middle" class="t-small">/api/admin/skills — 감사 대상 쓰기</text>
+  <text x="120" y="174" text-anchor="middle" class="t-small">/api/admin/skills — 감사되는 쓰기 작업</text>
 
   <rect class="box-dim" x="20" y="230" width="200" height="64"/>
   <text x="120" y="252" text-anchor="middle" class="t-b">저장소 skills/ 디렉터리</text>
   <text x="120" y="270" text-anchor="middle" class="t-small">외부 에이전트 문서 전용 — 포함되지 않음</text>
-  <text x="120" y="284" text-anchor="middle" class="t-small">docker 이미지, AI가 읽지 않음</text>
+  <text x="120" y="284" text-anchor="middle" class="t-small">도커 이미지, AI가 읽지 않음</text>
 
   <!-- DB -->
   <rect class="box" x="300" y="80" width="190" height="90"/>
   <text x="395" y="108" text-anchor="middle" class="t-b">trading_skills 테이블</text>
-  <text x="395" y="127" text-anchor="middle" class="t-small">MySQL(운영) / SQLite(개발)</text>
+  <text x="395" y="127" text-anchor="middle" class="t-small">MySQL (운영) / SQLite (개발)</text>
   <text x="395" y="145" text-anchor="middle" class="t-small">slug · body · prompts · markets</text>
   <text x="395" y="161" text-anchor="middle" class="t-small">priority · enabled · is_base</text>
 
@@ -104,12 +104,12 @@
   <!-- skills_block -->
   <rect class="box-accent" x="760" y="86" width="180" height="78"/>
   <text x="850" y="112" text-anchor="middle" class="t-b">skills_block(site)</text>
-  <text x="850" y="131" text-anchor="middle" class="t-small">결정론적 필터 + 예산</text>
+  <text x="850" y="131" text-anchor="middle" class="t-small">결정적 필터 + 예산</text>
   <text x="850" y="148" text-anchor="middle" class="t-small">실패 시 완화 → ""</text>
 
   <!-- prompts row -->
   <rect class="box" x="300" y="250" width="640" height="70"/>
-  <text x="620" y="272" text-anchor="middle" class="t-b">4개의 결정 프롬프트</text>
+  <text x="620" y="272" text-anchor="middle" class="t-b">4개의 의사결정 프롬프트</text>
   <text x="380" y="300" text-anchor="middle">light</text>
   <text x="540" y="300" text-anchor="middle">trader</text>
   <text x="700" y="300" text-anchor="middle">verifier</text>
@@ -117,7 +117,7 @@
 
   <!-- gates -->
   <rect class="box" x="300" y="350" width="640" height="40"/>
-  <text x="620" y="375" text-anchor="middle" class="t-small">LLM 답변 → JSON 출력 계약(액션 화이트리스트, 클램프, 가격 권한) → 결정론적 리스크/실행 게이트 → 주문</text>
+  <text x="620" y="375" text-anchor="middle" class="t-small">LLM 응답 → JSON 출력 계약(액션 화이트리스트, 클램프, 가격 권한) → 결정적 리스크/실행 게이트 → 주문</text>
 
   <!-- arrows -->
   <path class="ln" d="M220,62 C260,62 260,100 300,105" marker-end="url(#ar)"/>
@@ -127,13 +127,13 @@
   <path class="ln" d="M490,125 L560,125" marker-end="url(#ar)"/>
   <path class="ln" d="M710,125 L760,125" marker-end="url(#ar)"/>
   <path class="ln-good" d="M850,164 L850,250" marker-end="url(#ar-g)"/>
-  <text x="842" y="205" text-anchor="end" class="t-small">테두리 처리된 텍스트, 주의 사항 전용</text>
+  <text x="842" y="205" text-anchor="end" class="t-small">테두리 표시된 텍스트, 주의사항 전용</text>
   <path class="ln" d="M620,320 L620,350" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">점선 박스는 이 설계가 깨야 했던 기존의 전제입니다: 저장소 <code>skills/</code>는 외부 에이전트를 위한 게시 표면이며 Docker 이미지에서 제외됩니다 — 따라서 스킬 본문은 DB에 저장되고, 기본 카탈로그는 코드에 포함되어 배포되며 스스로 시드됩니다.</p>
+<p class="legend">점선 상자는 이 설계가 깨야 했던 기존 가정입니다: 저장소 <code>skills/</code> 는 외부 에이전트를 위한 게시 표면이며 도커 이미지에서 제외됩니다 — 따라서 스킬 본문은 DB에 저장되고, 기본 카탈로그는 코드에 포함되어 배포되며 스스로 시드됩니다.</p>
 </div>
 
-<h2>2. 결정 주기 흐름 — 스킬이 실제 트레이딩 주기에 진입하는 지점</h2>
+<h2>2. 의사결정 사이클 흐름 — 스킬이 실시간 트레이딩 사이클에 진입하는 지점</h2>
 <div class="card">
 <svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="30" width="170" height="56"/>
@@ -142,33 +142,33 @@
 
   <rect class="box" x="250" y="30" width="200" height="56"/>
   <text x="350" y="53" text-anchor="middle" class="t-b">E1 _classify_situation</text>
-  <text x="350" y="71" text-anchor="middle" class="t-small">LLM 미사용 · 여기서는 스킬 없음(의도된 설계)</text>
+  <text x="350" y="71" text-anchor="middle" class="t-small">제로-LLM · 여기서는 스킬 없음(설계상)</text>
 
   <!-- light path -->
   <rect class="box-accent" x="540" y="10" width="400" height="96"/>
   <text x="740" y="32" text-anchor="middle" class="t-b">LIGHT 경로 — LLM 호출 1회</text>
-  <text x="740" y="52" text-anchor="middle" class="t-small">가격 + 논지 + 종가 + 재고 규칙</text>
-  <text x="740" y="72" text-anchor="middle">💡 11개의 light 스킬(us-stock에서는 12개: earnings-preview도 여기 포함)</text>
-  <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction-calibration은 제외 — light는 자체 기준을 가짐)</text>
+  <text x="740" y="52" text-anchor="middle" class="t-small">가격 + 테제 + 청산 + 인벤토리 규칙</text>
+  <text x="740" y="72" text-anchor="middle">💡 라이트 스킬 11개(us-stock에서는 12개: earnings-preview도 여기에 포함)</text>
+  <text x="740" y="92" text-anchor="middle" class="t-small">(regime + conviction-calibration 제외 — light는 자체 루브릭을 가짐)</text>
 
   <!-- full path -->
   <rect class="box" x="540" y="140" width="400" height="230"/>
   <text x="740" y="162" text-anchor="middle" class="t-b">FULL 경로 — LLM 호출 6회</text>
   <rect class="box" x="560" y="176" width="360" height="40"/>
-  <text x="740" y="200" text-anchor="middle" class="t-small">4개의 애널리스트 브리프(뉴스 · 심리 · 매크로 · 기술적) — 스킬 없이 데이터만 사용</text>
+  <text x="740" y="200" text-anchor="middle" class="t-small">애널리스트 브리핑 4개(news · sentiment · macro · technical) — 스킬 없음, 데이터만</text>
   <rect class="box-accent" x="560" y="228" width="360" height="52"/>
   <text x="740" y="248" text-anchor="middle" class="t-b">Trader + Risk 결정</text>
-  <text x="740" y="268" text-anchor="middle">💡 시장 무관 trader 스킬 전체 26개(us-stock에서는 31개 · crypto에서는 28개)</text>
+  <text x="740" y="268" text-anchor="middle">💡 시장 무관 trader 스킬 26개 전체(us-stock에서는 31개 · crypto에서는 28개)</text>
   <rect class="box-accent" x="560" y="292" width="360" height="52"/>
-  <text x="740" y="312" text-anchor="middle" class="t-b">적대적 검증자(REFUTE를 시도함)</text>
+  <text x="740" y="312" text-anchor="middle" class="t-b">적대적 verifier(REFUTE를 시도함)</text>
   <text x="740" y="332" text-anchor="middle">💡 conviction · news-reaction · contrarian-gate · honesty</text>
   <text x="740" y="360" text-anchor="middle" class="t-small">메모리 + 사용자 가이드라인 + 스킬이 두 프롬프트 모두에 함께 배치됨</text>
 
   <!-- planner -->
   <rect class="box-accent" x="20" y="150" width="200" height="70"/>
-  <text x="120" y="174" text-anchor="middle" class="t-b">에이전트 모드 플래너</text>
-  <text x="120" y="192" text-anchor="middle" class="t-small">심볼 / 규모 / 주기를 선택</text>
-  <text x="120" y="210" text-anchor="middle">💡 사이징 · 워치리스트 · 카탈리스트-맵 · 집중도 · 정직성</text>
+  <text x="120" y="174" text-anchor="middle" class="t-b">Agent-mode 플래너</text>
+  <text x="120" y="192" text-anchor="middle" class="t-small">심볼 / 사이즈 / 주기 선택</text>
+  <text x="120" y="210" text-anchor="middle">💡 사이징 · 워치리스트 · 카탈리스트-맵 · 집중도 · honesty</text>
 
   <!-- output -->
   <rect class="box" x="250" y="390" width="690" height="34"/>
@@ -184,7 +184,7 @@
   <path class="ln" d="M740,370 L740,390" marker-end="url(#ar)"/>
   <path class="ln" d="M940,58 C952,58 952,380 942,395" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">💡 네 곳의 주입 지점을 표시합니다. E1 라우터 프롬프트는 의도적으로 절대 커지지 않습니다 — 여섯 번의 비용이 큰 호출을 피하기 위해 존재하는 것이므로, 일곱 번째가 되어서는 안 됩니다.</p>
+<p class="legend">💡 네 곳의 주입 지점을 표시합니다. E1 라우터 프롬프트는 의도적으로 절대 커지지 않습니다 — 여섯 번의 값비싼 호출을 피하기 위해 존재하는 것이므로, 일곱 번째가 되어서는 안 됩니다.</p>
 </div>
 
 <h2>3. Selection &amp; budget — 블록이 구성되는 방식 (zero-LLM)</h2>
@@ -220,51 +220,54 @@
   <path class="ln-bad" d="M505,140 L505,180" marker-end="url(#ar)"/>
   <text x="515" y="170" class="t-small">오버플로우 → 전체 스킬 건너뜀, 본문 중간에서 잘리지 않음</text>
 </svg>
-<p class="legend">어느 단계에서든 레지스트리 오류가 발생하면 빈 블록으로 저하됩니다 — 손상된 skills table이 트레이딩 사이클을 손상시키는 일은 결코 없습니다.</p>
+<p class="legend">어느 단계에서든 레지스트리 오류가 발생하면 빈 블록으로 저하됩니다 — 손상된 스킬 테이블이 트레이딩 사이클을 손상시킬 수는 없습니다.</p>
 </div>
 
-<h2>4. 36개의 기본 스킬 — 어디에 적용되는가</h2>
+<h2>4. 서른여섯 개 기본 스킬 — 어디에 적용되는가</h2>
 <div class="card">
 <table>
   <tr><th>skill</th><th>essence</th><th>light</th><th>trader</th><th>verifier</th><th>planner</th><th>다음에서 추출</th></tr>
   <tr><td><code>market-regime-lens</code></td><td>4개 기준점(추세 · 변동성 · 참여도 · 이벤트) → 보수적 폐쇄형 라벨 → 전술</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js regime analysis</td></tr>
   <tr><td><code>market-topping-evidence</code></td><td>분산일 클러스터, 주도주 붕괴, 방어적 로테이션 → 근거 개수에 따라 노출 축소</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-top + IBD DD monitor</td></tr>
   <tr><td><code>crypto-regime-lens</code></td><td>6개 기준점(BTC 추세 · 알트 폭 · 도미넌스 로테이션 · 펀딩 쏠림 · 사이클 위치 · 추력); 충돌 시 노출 축소 <b>(암호화폐 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty crypto-regime-analyzer</td></tr>
-  <tr><td><code>breadth-context</code></td><td>주입된 미국 시장 브레드스(breadth) 라인을 환경 증거로 읽기: 8일 평균 임계값 (70% 이상은 광범위한 랠리 → 40% 미만은 극단적 약세), 장기 추세가 레벨의 의미를 결정; 구조적 약세 구간은 방어적 국면; 브레드스 라인이 없으면 시장 건강은 UNKNOWN — 결코 건강하다는 뜻이 아님 <b>(us-stock only)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ 실시간 CSV 피드)</td></tr>
-  <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: 랠리 시도 4일차 이상, 거래량 증가를 동반한 대형 지수 상승이 재진입을 확인시켜줌; 언더컷 발생 시 카운트 리셋; 확인 전 스카우팅 규모로 진입<b>(미국 주식 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
-  <tr><td><code>thesis-validation</code></td><td>반증 가능한 주장, 사실 대 가정, 시간대 적합성, 의존도 부하, 구체적 무효화 조건</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js thesis validation</td></tr>
-  <tr><td><code>stage-discipline</code></td><td>제시된 데이터에서 읽는 4단계: 오직 Stage 2만 신규 롱 진입 가치가 있음(Stage 4는 신규 숏); 4번째 이후 베이스는 규모 축소; 베이스로부터 확장된 상태는 대기; 판단 불가능한 단계는 차단 신호이며 절대 Stage 2로 가정하지 않음<b>(미국 주식 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (Minervini stages)</td></tr>
-  <tr><td><code>level-integrity</code></td><td>레벨은 반드시 작동 가능해야 함: 현재가 기준 우측, 반나절 노이즈 범위 밖, 최근 레인지 내부; 사용 불가능한 레벨은 그렇다고 명시하고 눈에 보이는 구조에 고정</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy monitoring (wrong-side levels, 2026-08-03)</td></tr>
-  <tr><td><code>pead-drift</code></td><td>시장은 실질적인 실적 서프라이즈에 과소반응함: 이벤트를 검증(명확한 촉매 + 결정적 움직임 + 거래량 급증; 증자/공모/조사 이슈는 자격 상실)하고, 갭을 지켜내는 첫 눌림목에 진입, 눌림목 저점 아래에 손절 설정; 우위는 5~6주차에 소진됨; 하락 갭에도 대칭적으로 적용<b>(미국 주식 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty episodic-pivot + pead-screener + earnings-trade-analyzer</td></tr>
-  <tr><td><code>position-sizing-discipline</code></td><td>리스크 기반 규모 산정, 가장 엄격한 제약이 우선, 내림 처리, 하프-켈리 주의</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
-  <tr><td><code>volatility-context</code></td><td>레인지, 손절, 규모를 해당 자산 자체의 변동성 이력에 비추어 판단; 압축은 부하가 걸린 상태이며, 극단값은 회귀함; 동일한 규모에서 손절 폭을 넓히지 말 것</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs volatility-modeling + regime-detection</td></tr>
-  <tr><td><code>macro-event-analysis</code></td><td>의사결정 영향력(민감도 · 서프라이즈 가능성 · 전달력 · 타이밍) 기준으로 이벤트 순위화; 이벤트는 신호가 아니라 리스크임</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js macro-event analysis</td></tr>
-  <tr><td><code>mean-reversion-guard</code></td><td>움직임에 대한 페이딩(fading)을 하려면 RANGE의 증거, 그 극단에서의 진입, 중간 범위 목표, 그리고 시간 예산이 필요합니다; 지속성이 기본값입니다; "더 나은 가격"에서는 절대 추가하지 마십시오</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs 평균회귀 (Hurst · 반감기 · z-score)</td></tr>
-  <tr><td><code>news-reaction-evidence</code></td><td>뉴스에 대한 가격 반응이 뉴스 자체보다 더 중요합니다; 소진(exhaustion) = 유리한 뉴스와 반대되는 움직임이며, 단순한 침묵만으로는 성립하지 않습니다</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty 뉴스-반응-실패 (Shapiro 2단계)</td></tr>
-  <tr><td><code>parabolic-exhaustion</code></td><td>수직 상승을 숏하려면 소진 증거(가속하는 기울기 · 자체 변동성 대비 스트레치 · 거래량 클라이맥스 · 레인지 확장 · 크라우딩)와 실패 트리거가 필요하다; 스탑은 블로우오프 고점 위에, 사이즈는 축소, 첫 플러시에서 커버; 스퀴즈에서는 절대 추가하지 말 것 <b>(암호화폐 · 선물만)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty parabolic-short-trade-planner</td></tr>
-  <tr><td><code>risk-reward-structure</code></td><td>스탑 = 객관적 무효화 지점, 타겟 = 도달 가능한 레벨, 비율 ≥ 2×, 좋은 비율 ≠ 좋은 트레이드</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R 정합성 점검</td></tr>
-  <tr><td><code>exit-discipline</code></td><td>수익 확보(banking)가 최우선이며, 손실 포지션에는 절대 추가 매수하지 않고, 무효화(invalidation) = 청산이며 재협상이 아니다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 청산 레일 + Senpi</td></tr>
-  <tr><td><code>horizon-discipline</code></td><td>신규 포지션에는 명시된 기간(horizon)이 부여된다; 작은 역방향 변동은 무효화(invalidation)가 아니다; 기간 도달 전 청산에는 정해진 집합에서 명명된 트리거가 하나 필요하다 — "자본 보호"는 그중 하나가 아니다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (기간 내 반복 매매(churn), 2026-08-03)</td></tr>
-  <tr><td><code>reentry-discipline</code></td><td>한 방향으로 두 번 손실 청산이 발생하면 입증 책임이 뒤바뀐다 — 방금 두 번 손실을 낸 판단(read)으로 재진입하려면 확신을 더하는 것이 아니라 실질적으로 새로운 근거가 필요하다; 지속적인 무판단(no-read) 연속은 은퇴(retire)를 받을 자격이 있지만, 이는 Streak 라인이 이를 입증한 이후에만 가능하며 처음부터는 결코 아니다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (−57일차의 재진입 반복 매매(churn), 2026-08-05)</td></tr>
-  <tr><td><code>loss-aging</code></td><td>오래된 손실은 점점 커지는 결정이다: 일반적인 승리 약 2회 분을 넘기면 보유에는 명명된 확인 가능한 이유와 명시된 오류 중단 지점(stop-being-wrong point)이 필요하다; 여러 번을 넘기면 "지금이라면 이 포지션을 열겠는가"를 자문한다; 3회 이상 악화되는 주기를 방치하면 그것이 곧 기본값에 의한 결정(decision by default)이다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (HYPE 보유 시퀀스, 2026-08-05)</td></tr>
-  <tr><td><code>position-management</code></td><td>원래 계획을 기준으로 관리하고, P&amp;L이 아니라; 보유 / 적극적으로 관리 / 결단력 있게 청산 + 이를 변화시키는 조건</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 포지션 관리</td></tr>
-  <tr><td><code>reachable-exits</code></td><td>모든 진입마다 스탑, 목표, 트레일을 직접 설정하며, 각각은 예측한 움직임 안에서 도달 가능해야 한다; 이를 생략하면 거래는 보이지 않는 기본값에 맡겨진다; 표현할 수 없는 구조 → 슬롯을 폐기한다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (도달 불가능한 트레일, 2026-08-03)</td></tr>
-  <tr><td><code>drawdown-circuit-breaker</code></td><td>실현된 손실이 새로운 리스크를 결정한다; 연속 손실 → 쿨다운(관리하되, 신규 진입은 하지 않는다); 생존이 우선이다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
-  <tr><td><code>confidence-resolution</code></td><td>자신의 네 가지 구성 요소 점수로부터 신뢰도를 도출한다; 평가 기준은 참조점을 나열한 것일 뿐, 선택 메뉴가 아니다; 기준점이나 중간값을 고르는 것은 도출이 아니다 — 소수점 둘째 자리가 정보를 담아야 한다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (양자화된 신뢰도, 2026-08-03)</td></tr>
+  <tr><td><code>breadth-context</code></td><td>주입된 미국 시장 breadth 라인을 환경적 증거로 해석합니다: 8일 평균 임계값(70% 이상 broad rally → 40% 미만 extreme weakness), 장기 트렌드가 그 레벨의 성격을 규정하며, 구조적 bearish zone은 defensive regime입니다; breadth 라인이 없으면 시장 건강 상태는 UNKNOWN이며, 절대 healthy로 간주하지 않습니다 <b>(미국 주식 한정)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty market-breadth-analyzer (+ 실시간 CSV 피드)</td></tr>
+  <tr><td><code>bottom-confirmation</code></td><td>O'Neil follow-through: 4일차 이상 랠리 시도에서 거래량 증가를 동반한 지수의 큰 상승이 재진입을 확인시켜줌; 언더컷 발생 시 카운트 리셋; 확인 전에는 소량으로 정찰 <b>(미국 주식 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty ftd-detector (O'Neil)</td></tr>
+  <tr><td><code>thesis-validation</code></td><td>반증 가능한 주장, 사실 대 가정, 시간대 적합성, 의존도 부하, 구체적 무효화 조건</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 논제 검증</td></tr>
+  <tr><td><code>stage-discipline</code></td><td>표시된 데이터로부터 4단계 판독: Stage 2만 신규 매수 진입 자격이 있음(Stage 4는 신규 매도); 네 번째 이후 베이스는 사이즈 축소; 베이스에서 확장된 상태는 대기; 판별 불가능한 단계는 차단 갭이며, 절대 Stage 2로 가정하지 않음 <b>(미국 주식 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>himself65/finance-skills sepa-strategy (Minervini 단계)</td></tr>
+  <tr><td><code>level-integrity</code></td><td>레벨은 발동 가능해야 함: 현재가 오른쪽에 위치, 반나절 노이즈에서 벗어남, 최근 범위 내부; 사용 불가능한 레벨은 그렇다고 명시하고 눈에 보이는 구조에 고정할 것</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (잘못된 방향의 레벨, 2026-08-03)</td></tr>
+  <tr><td><code>pead-drift</code></td><td>시장은 실제 실적 서프라이즈에 과소 반응함: 이벤트를 검증할 것(명확한 촉매 + 결정적 움직임 + 거래량 급증; 희석/증자/조사는 자격 박탈), 갭을 지지하는(HOLDS) 첫 번째 되돌림에서 진입, 되돌림 저점 아래에 손절; 엣지는 5~6주 차에 소진됨; 하락 갭에서도 대칭적으로 적용 <b>(미국 주식 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty episodic-pivot + pead-screener + earnings-trade-analyzer</td></tr>
+  <tr><td><code>position-sizing-discipline</code></td><td>리스크로부터 사이즈 산출, 가장 엄격한 제약 조건이 우선, 내림 처리, 하프 켈리 방식의 신중함</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>marian2js + mph position-sizer</td></tr>
+  <tr><td><code>volatility-context</code></td><td>레인지, 손절, 사이즈는 해당 자산 고유의 변동성 이력을 기준으로 판단할 것; 압축은 잠재 에너지가 쌓인 상태이며, 극단값은 회귀함; 동일한 사이즈에서 손절을 넓히지 말 것</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs volatility-modeling + regime-detection</td></tr>
+  <tr><td><code>macro-event-analysis</code></td><td>의사결정 영향력에 따라 이벤트 순위를 매길 것(민감도 · 서프라이즈 발생 가능성 · 전달력 · 타이밍); 이벤트는 신호가 아니라 리스크임</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 거시 이벤트 분석</td></tr>
+  <tr><td><code>mean-reversion-guard</code></td><td>되돌림을 노리는 매매는 RANGE의 증거, 극단에서의 진입, 중간 범위 목표, 시간 예산을 필요로 한다; 지속성이 기본이며, "더 나은 가격"을 이유로 절대 추가하지 않는다</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>agiprolabs 평균회귀 (Hurst · half-life · z-score)</td></tr>
+  <tr><td><code>news-reaction-evidence</code></td><td>뉴스에 대한 가격 반응이 뉴스 자체보다 중요하다; 소진(exhaustion)이란 유리한 뉴스에 반하는 움직임을 의미하며, 단순한 무반응이 아니다</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty 뉴스-반응-실패 (Shapiro 2단계)</td></tr>
+  <tr><td><code>parabolic-exhaustion</code></td><td>수직 상승 구간에서 숏을 잡으려면 소진 증거(가속하는 기울기 · 자체 변동성 대비 신장 · 거래량 절정 · 레인지 확장 · 쏠림)와 실패 트리거가 모두 필요하다; 블로우오프 고점 위에 손절을 두고, 사이즈를 줄이며, 첫 번째 급락에서 커버한다; 스퀴즈 구간에서는 절대 추가하지 않는다 <b>(암호화폐 · 선물만)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty parabolic-short-trade-planner</td></tr>
+  <tr><td><code>pump-ignition-veto</code></td><td>얇은 호가창에서 명확한 촉매 없이 이례적인 거래량과 함께 발생하는 수직 스파이크는 PUMP-SHAPED다: 절대 쫓아가지 마라(내부자만 이익을 본다; 스파이크는 몇 시간 내에 되돌려진다); 이런 식으로 스파이크하는 보유 중인 수익 포지션은 선물 같은 청산 기회이지 확인 신호가 아니다; 이 거부 신호를 숏 신호로 재해석하지 마라 <b>(암호화폐 전용)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>Research 04 펌프 구조 (Dhawan &amp; Putniņš, La Morgia et al.)</td></tr>
+  <tr><td><code>stop-hunt-discipline</code></td><td>의도된 스윕(명백한 레벨로의 대량 물량 유입 · 긴 꼬리 · 빠른 회복)은 정보가 아니라 강제된 흐름이다: 노이즈 수준의 움직임에서 꼬리를 보고 전체 포지션을 패닉 청산하지 마라; 스윕된 레벨은 소진과 회복 이후에만 반전 후보가 된다; 명백한 레벨에서 반복적으로 손절당하는 것은 진입 위치 문제다 <b>(암호화폐 · 선물만)</b></td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>Research 04 stop-hunt anatomy + loss forensics #245</td></tr>
+  <tr><td><code>manipulated-book-hygiene</code></td><td>보고된 거래량은 사실이 아니라 주장에 불과하다(규제되지 않은 소형주에서는 워시 트레이딩이 지배적이다): 깊고 검증된 메이저 종목을 선호하고, 얇은 호가창이 반드시 이 종목이어야 하는 이유를 요구하며, 실제로 청산 가능한 깊이에 맞춰 사이즈를 조절하고, 압도적인 증거 없이는 코너링 가능한 유통량을 절대 숏하지 마라 — JELLY 스퀴즈가 그 교훈적 사례다 <b>(암호화폐 전용)</b></td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="ok">✓</td><td>Research 04 wash-trading / corner-squeeze evidence</td></tr>
+  <tr><td><code>risk-reward-structure</code></td><td>stop = 목표 무효화, target = 도달 가능한 레벨, ratio ≥ 2×, 좋은 ratio ≠ 좋은 거래</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js R:R 정합성 점검</td></tr>
+  <tr><td><code>exit-discipline</code></td><td>banking은 최우선 원칙이며, 손실 포지션에는 절대 추가하지 않는다, invalidation = 종료이지 재협상이 아니다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 청산 레일 + Senpi</td></tr>
+  <tr><td><code>horizon-discipline</code></td><td>새 포지션은 명시된 horizon을 부여받는다; 작은 역행 움직임은 invalidation이 아니다; sub-horizon exit에는 정해진 집합에서 나온 하나의 명명된 trigger가 필요하다 — "자본 보호"는 그 집합에 포함되지 않는다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (기간 내 반복 매매(churn), 2026-08-03)</td></tr>
+  <tr><td><code>reentry-discipline</code></td><td>한 방향으로 두 번 손실 마감되면 입증 책임이 뒤바뀐다 — 방금 두 번 패배한 판단으로의 재진입에는 더 큰 확신이 아니라 실질적으로 NEW한 근거가 필요하다; 지속적인 no-read streak은 retire를 받을 자격이 있지만, 이는 Streak 항목이 그것을 입증한 이후에만 가능하며 시작 시점에는 결코 아니다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (−57일차의 재진입 반복 매매(churn), 2026-08-05)</td></tr>
+  <tr><td><code>loss-aging</code></td><td>오래된 손실은 점점 커지는 결정이다: 일반적인 승리 약 2회 분을 넘어선 hold에는 명명된 확인 가능한 이유와 명시된 stop-being-wrong 지점이 필요하다; 여러 번을 넘어서면 "지금 이걸 열겠는가"를 자문하라; 3회 이상 악화되는 cycle에 대해 조치하지 않는 것은 기본값에 의한 결정이다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (HYPE 보유 시퀀스, 2026-08-05)</td></tr>
+  <tr><td><code>position-management</code></td><td>P&amp;L이 아니라 ORIGINAL plan에 대비해 관리하라; hold / 적극적으로 관리 / 단호하게 종료 + 그것을 바꾸는 조건</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 포지션 관리</td></tr>
+  <tr><td><code>reachable-exits</code></td><td>모든 entry마다 자신만의 stop, target, trail을 직접 설정하라, 각각은 예측한 움직임 안에서 도달 가능해야 한다; 이를 생략하면 거래에 보이지 않는 default를 넘겨주는 것이다; 표현 불가능한 geometry → retire the slot</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (도달 불가능한 트레일, 2026-08-03)</td></tr>
+  <tr><td><code>drawdown-circuit-breaker</code></td><td>실현된 손실이 새로운 risk를 좌우한다; 연속 손실 → cooldown (열지 말고 관리하라); 생존이 최우선이다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty drawdown-circuit-breaker</td></tr>
+  <tr><td><code>confidence-resolution</code></td><td>confidence는 자신의 네 가지 component score로부터 도출하라; rubric은 참고 지점을 나열할 뿐 메뉴가 아니다; landmark나 midpoint 값은 도출되는 것이 아니라 선택되는 것이다 — 두 번째 소수 자리는 반드시 정보를 담아야 한다</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>sooppiy 모니터링 (quantized confidence, 2026-08-03)</td></tr>
   <tr><td><code>conviction-calibration</code></td><td>신뢰도 = 헤아릴 수 있는 일치하는 증거; 습관적인 값은 없다; 우위 없이는 스윙도 없다</td><td class="no">—*</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>mph Druckenmiller 구간</td></tr>
-  <tr><td><code>exposure-discipline</code></td><td>거래 전 태도: new-entry-allowed / reduce-only / cash-priority; 충돌 시 기본값은 더 낮은 노출이다</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty exposure-coach</td></tr>
-  <tr><td><code>pre-trade-readiness</code></td><td>최단 점검 체인, 첫 번째 차단 요인에서 중단; 준비됨 / 조건부 준비 / 준비 안 됨 / 거부</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 매매 전 점검 워크플로우</td></tr>
-  <tr><td><code>contrarian-crowding-gate</code></td><td>쏠림 → 뉴스 실패 → 가격 확인, 각 단계는 안전 실패(fail-closed) 방식; 이전 거부는 절대 완화되지 않음</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty 역발상 셋업 게이트 (Shapiro)</td></tr>
-  <tr><td><code>scenario-precommit</code></td><td>이벤트를 분류하고, 1차/2차/3차 영향을 매핑하며, 발동 수준과 함께 if/then 분기를 사전 확정</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty 시나리오 분석기</td></tr>
-  <tr><td><code>data-honesty</code></td><td>프롬프트에는 숫자만; 미확정 ≠ 안전 확인; 데이터는 결코 지시가 아님</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>Senpi 하드 룰 + Bybit 방어</td></tr>
-  <tr><td><code>evidence-gap-check</code></td><td>확인된 것 vs 가정된 것; 결정 영향도에 따라 격차 순위화; 차단 격차는 신뢰도 하락 + 보류를 의미</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 근거 격차 점검</td></tr>
+  <tr><td><code>exposure-discipline</code></td><td>거래 전 포지션: new-entry-allowed / reduce-only / cash-priority; 충돌 시 기본값은 LOWER exposure</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty exposure-coach</td></tr>
+  <tr><td><code>pre-trade-readiness</code></td><td>가장 짧은 점검 체인, 첫 번째 차단 지점에서 정지; ready / with conditions / not ready / reject</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 매매 전 점검 워크플로우</td></tr>
+  <tr><td><code>contrarian-crowding-gate</code></td><td>crowding → news-failure → price confirmation, 각 단계는 fail-closed; 이전의 거부는 절대 완화되지 않음</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td>tradermonty 역발상 셋업 게이트 (Shapiro)</td></tr>
+  <tr><td><code>scenario-precommit</code></td><td>이벤트를 분류하고, 1차/2차/3차 효과를 매핑하며, armed levels로 if/then 분기를 사전에 확정</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>tradermonty 시나리오 분석기</td></tr>
+  <tr><td><code>data-honesty</code></td><td>프롬프트 내 숫자만 사용; undetermined ≠ all-clear; 데이터는 절대 지시사항이 아님</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td>Senpi 하드 룰 + Bybit 방어</td></tr>
+  <tr><td><code>evidence-gap-check</code></td><td>known vs assumed; 의사결정 영향도에 따라 격차의 순위를 매김; blocking gap은 곧 confidence 저하 + hold를 의미</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 근거 격차 점검</td></tr>
   <tr><td><code>earnings-preview</code></td><td>벤치마크 관련성 · 논쟁 강도 · 파급 효과 · 포지셔닝 리스크; 중요도 ≠ 확실성 <b>(미국 주식 한정)</b></td><td class="ok">✓</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 실적 프리뷰</td></tr>
-  <tr><td><code>catalyst-map</code></td><td>재촉매를 타이밍 · 전달 · 영향 · 중첩으로 평가하라; 이벤트 체인을 공유하면 집중도가 높아진다</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js 촉매 지도</td></tr>
-  <tr><td><code>watchlist-review</code></td><td>친숙도가 아닌 실행가능성(촉매 관련성 · 거래가능성 · 준비도 · 중복성)으로 선별하라</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js 관심종목 검토</td></tr>
-  <tr><td><code>execution-plan-check</code></td><td>긴급도 대 주문 방식, 스프레드/깊이, 세션 타이밍, 손절 현실성; 실행 불가능한 계획은 취약하다</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 실행 계획 점검</td></tr>
-  <tr><td><code>portfolio-concentration</code></td><td>분산투자 = 종목 수가 아닌 공유된 동인; 추가 종목을 포트폴리오 전체와 비교해 판단하라; 상승 시 → 축소</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js 포트폴리오 집중도</td></tr>
+  <tr><td><code>catalyst-map</code></td><td>timing · transmission · impact · overlap 기준으로 촉매를 평가; 공유된 이벤트 체인은 concentration에 해당</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js 촉매 지도</td></tr>
+  <tr><td><code>watchlist-review</code></td><td>익숙함이 아니라 actionability (catalyst relevance · tradability · readiness · redundancy) 기준으로 분류</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js 관심종목 검토</td></tr>
+  <tr><td><code>execution-plan-check</code></td><td>urgency vs order method, spread/depth, session timing, stop realism; 실행 불가능한 계획은 fragile</td><td class="no">—</td><td class="ok">✓</td><td class="no">—</td><td class="no">—</td><td>marian2js 실행 계획 점검</td></tr>
+  <tr><td><code>portfolio-concentration</code></td><td>diversification = 티커 수가 아니라 공유된 driver; 추가 종목을 전체 포트폴리오 대비 평가; elevated → smaller</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td><td>marian2js 포트폴리오 집중도</td></tr>
 </table>
-<p class="legend">* 라이트 프롬프트에는 이미 자체 인라인 보정 기준이 포함되어 있으므로, 여기에 스킬을 주입하면 하나의 프롬프트 안에서 중복이 발생한다.</p>
+<p class="legend">* light 프롬프트에는 이미 자체 inline calibration rubric이 포함되어 있으므로 — 여기에 skill을 주입하면 하나의 프롬프트 안에서 중복이 발생함.</p>
 </div>
 
 <h2>5. 스킬 수명주기 — 기본 대 사용자 지정</h2>
@@ -279,75 +282,75 @@
   <text x="420" y="72" text-anchor="middle" class="t-small">is_base = 1</text>
 
   <rect class="box" x="630" y="30" width="180" height="60"/>
-  <text x="720" y="54" text-anchor="middle" class="t-b">수정됨 / 비활성화됨</text>
-  <text x="720" y="72" text-anchor="middle" class="t-small">관리자의 버전이 우선한다</text>
+  <text x="720" y="54" text-anchor="middle" class="t-b">편집됨 / 비활성화됨</text>
+  <text x="720" y="72" text-anchor="middle" class="t-small">관리자 버전이 우선함</text>
 
   <rect class="box" x="330" y="160" width="180" height="60"/>
-  <text x="420" y="184" text-anchor="middle" class="t-b">DB 행 (사용자 지정)</text>
+  <text x="420" y="184" text-anchor="middle" class="t-b">DB 행 (커스텀)</text>
   <text x="420" y="202" text-anchor="middle" class="t-small">is_base = 0</text>
 
   <path class="ln" d="M210,60 L330,60" marker-end="url(#ar)"/>
-  <text x="228" y="52" class="t-small">시드 + 자동 업그레이드 미변경</text>
+  <text x="228" y="52" class="t-small">시드 + 자동 업그레이드 유지됨</text>
   <path class="ln" d="M510,50 L630,50" marker-end="url(#ar)"/>
   <text x="540" y="42" class="t-small">PATCH / 비활성화</text>
   <path class="ln" d="M630,80 L510,80" marker-end="url(#ar)"/>
   <text x="537" y="98" class="t-small">POST /reset → 기본값</text>
   <path class="ln-bad" d="M420,90 L420,124"/>
-  <text x="430" y="112" class="t-small">DELETE → 400 "비활성화 또는 리셋을 대신 사용하세요"</text>
+  <text x="430" y="112" class="t-small">DELETE → 400 "비활성화하거나 리셋하세요"</text>
   <path class="ln" d="M160,190 L330,190" marker-end="url(#ar)"/>
   <text x="175" y="182" class="t-small">POST /api/admin/skills</text>
   <path class="ln-good" d="M510,190 L620,190" marker-end="url(#ar-g)"/>
   <text x="530" y="182" class="t-small">DELETE → 삭제됨</text>
 </svg>
-<p class="legend">카탈로그 동기화 (2026-08-02): 카탈로그에서 원본 기본 스킬이 업데이트되면, 카탈로그가 마지막으로 작성한 그대로인 모든 프로덕션 행은 다음 레지스트리 읽기 시 자동으로 업그레이드된다 — 지문(catalog_hash)이 둘을 구분한다. 관리자가 수정한 행은 더 이상 일치하지 않으며, 명시적으로 리셋할 때까지 수정 내용을 유지하고, 리셋 시 자동 업그레이드도 다시 활성화된다. 스킬 비활성화는 수정이 아닌 운영자 상태다: 비활성화된 미수정 스킬도 본문 업그레이드는 계속 받지만 비활성 상태를 유지한다.</p>
+<p class="legend">카탈로그 동기화 (2026-08-02): 카탈로그에서 원본 베이스 스킬이 업데이트되면, 카탈로그가 마지막으로 기록한 그대로인 모든 운영 행은 다음 레지스트리 읽기 시 자동으로 업그레이드됩니다 — 핑거프린트(catalog_hash)가 둘을 구분합니다. 관리자가 편집한 행은 더 이상 매칭되지 않으며, 명시적으로 리셋하기 전까지 편집 내용이 유지되고, 리셋 시 자동 업그레이드도 다시 활성화됩니다. 스킬을 비활성화하는 것은 편집이 아니라 운영자 상태입니다 — 편집되지 않은 비활성화 스킬도 본문 업그레이드는 계속 받지만 꺼진 상태를 유지합니다.</p>
 </div>
 
-<h2>6. 안전 계층 — 프롬프트 텍스트가 직접 주문에 도달할 수 없는 이유</h2>
+<h2>6. 안전 계층 — 프롬프트 텍스트가 주문에 직접 도달할 수 없는 이유</h2>
 <div class="card">
 <svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
   <rect class="box" x="20" y="35" width="200" height="60"/>
   <text x="120" y="59" text-anchor="middle" class="t-b">1 · 주의 전용 프레이밍</text>
-  <text x="120" y="77" text-anchor="middle" class="t-small">스킬은 강화만 가능하며 완화는 불가능하다</text>
+  <text x="120" y="77" text-anchor="middle" class="t-small">스킬은 제한을 강화할 수만 있고 완화할 수는 없음</text>
   <rect class="box" x="262" y="35" width="200" height="60"/>
   <text x="362" y="59" text-anchor="middle" class="t-b">2 · 출력 계약</text>
-  <text x="362" y="77" text-anchor="middle" class="t-small">액션 화이트리스트 · 클램프 · JSON 전용</text>
+  <text x="362" y="77" text-anchor="middle" class="t-small">액션 화이트리스트 · 클램프 · JSON만 허용</text>
   <rect class="box" x="504" y="35" width="200" height="60"/>
   <text x="604" y="59" text-anchor="middle" class="t-b">3 · 가격 권한</text>
-  <text x="604" y="77" text-anchor="middle" class="t-small">모델 입력값은 강등되고; 실시간 가격이 채워진다</text>
+  <text x="604" y="77" text-anchor="middle" class="t-small">모델이 입력한 값은 강등되고, 실시간 가격이 채워짐</text>
   <rect class="box-accent" x="746" y="35" width="194" height="60"/>
   <text x="843" y="59" text-anchor="middle" class="t-b">4 · 결정론적 게이트</text>
-  <text x="843" y="77" text-anchor="middle" class="t-small">예산 · 리스크 · 수수료 · 자격 요건</text>
+  <text x="843" y="77" text-anchor="middle" class="t-small">예산 · 리스크 · 수수료 · 이용 권한</text>
   <path class="ln" d="M220,65 L262,65" marker-end="url(#ar)"/>
   <path class="ln" d="M462,65 L504,65" marker-end="url(#ar)"/>
   <path class="ln" d="M704,65 L746,65" marker-end="url(#ar)"/>
 </svg>
-<p class="legend">스킬 본문은 v1에서 관리자만 작성할 수 있으며 크기가 두 번 제한됩니다(라우트에서 본문당 4,000, 빌더에서 프롬프트당 48,000). 악의적인 본문이라 하더라도 레이어 2–4를 우회할 수 없습니다 — 이들은 프롬프트 외부에서 실행됩니다.</p>
+<p class="legend">스킬 본문은 v1에서 관리자만 작성할 수 있으며, 두 단계로 크기가 제한됩니다 (라우트에서 본문당 4,000, 빌더에서 프롬프트당 48,000). 악의적인 본문이라도 계층 2–4를 우회할 수 없습니다 — 이는 프롬프트 밖에서 실행됩니다.</p>
 </div>
 
-<h2>7. 운영하기 — 관리자 API 및 전파 타이밍</h2>
+<h2>7. 운영 방법 — 관리자 API + 전파 타이밍</h2>
 <div class="card">
 <table>
-  <tr><th>call</th><th>does</th><th>notes</th></tr>
-  <tr><td><code>GET /api/admin/skills</code></td><td>모든 스킬 목록 조회 (base + custom)</td><td>최신 읽기, 캐시 우회</td></tr>
-  <tr><td><code>POST /api/admin/skills</code></td><td>커스텀 스킬 생성</td><td>slug <code>[a-z0-9-]</code> ≤48 · body ≤4,000 · prompts ⊆ {light, trader, verifier, planner} · 중복 시 409</td></tr>
-  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>name/description/body/prompts/markets/priority/enabled 편집</td><td>base 스킬은 편집 가능; slug는 변경 불가</td></tr>
-  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>카탈로그 기본값 복원 + 재활성화</td><td>base 전용 — custom은 400</td></tr>
-  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>커스텀 스킬 제거</td><td>base → 400 "disable or reset instead"</td></tr>
+  <tr><th>호출</th><th>동작</th><th>비고</th></tr>
+  <tr><td><code>GET /api/admin/skills</code></td><td>모든 스킬 목록 조회 (베이스 + 커스텀)</td><td>최신 읽기, 캐시를 우회함</td></tr>
+  <tr><td><code>POST /api/admin/skills</code></td><td>커스텀 스킬 생성</td><td>슬러그 <code>[a-z0-9-]</code> ≤48 · 본문 ≤4,000 · 프롬프트 ⊆ {light, trader, verifier, planner} · 중복 시 409</td></tr>
+  <tr><td><code>PATCH /api/admin/skills/{slug}</code></td><td>이름/설명/본문/프롬프트/시장/우선순위/활성화 여부 편집</td><td>베이스 스킬은 편집 가능; 슬러그는 변경 불가</td></tr>
+  <tr><td><code>POST /api/admin/skills/{slug}/reset</code></td><td>카탈로그 기본값으로 복원 + 재활성화</td><td>베이스 전용 — 커스텀은 400</td></tr>
+  <tr><td><code>DELETE /api/admin/skills/{slug}</code></td><td>커스텀 스킬 제거</td><td>베이스 → 400 "비활성화하거나 리셋하세요"</td></tr>
 </table>
-<p class="legend">모든 쓰기 작업은 <code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>)에 기록되며 API 프로세스의 캐시를 즉시 무효화합니다. <b>워커는 별도의 프로세스입니다</b>: 레지스트리의 30초 TTL을 통해 수렴합니다 — 편집 사항은 ~30초 이내에 다음 결정 사이클에 반영되며, 실행 중인 플릿은 다음 사이클에서 이를 반영합니다(v1은 실행 단위로 스킬을 고정하지 않도록 의도적으로 설계되었습니다; 설계 문서의 비목표 참조).</p>
+<p class="legend">모든 쓰기는 <code>admin_audit_log</code> (<code>skill.create / update / reset / delete</code>에 기록되며, API 프로세스의 캐시를 즉시 무효화합니다. <b> 워커는 별도의 프로세스입니다</b>: 레지스트리의 30초 TTL을 통해 수렴합니다 — 수정 사항은 ~30 s 이내에 다음 결정 주기에 반영되며, 실행 중인 플릿은 다음 주기에 이를 적용합니다 (v1은 실행마다 스킬을 고정하지 않도록 의도적으로 설계되었습니다; 설계 문서의 비목표 항목을 참조하세요).</p>
 </div>
 
 <h2>8. 프로덕션에서 검증하기</h2>
 <div class="card">
 <table>
-  <tr><th>check</th><th>how</th><th>proves</th></tr>
-  <tr><td>레지스트리 라이브</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>테이블 접근 가능, 36개 base 스킬 시딩됨</td></tr>
-  <tr><td>선택 정확함</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> slug 세트</td><td>설계된 대로 site + market 범위 지정</td></tr>
-  <tr><td>주입 실제</td><td>exec <code>_light_analysis</code>를 워커에서 <code>generate_text</code> 스텁으로 실행</td><td>실제 프로덕션 코드 경로가 스킬 블록을 포함한 프롬프트를 생성함 — 활성 실행이 0건이어도 작동함</td></tr>
+  <tr><th>확인</th><th>방법</th><th>증명</th></tr>
+  <tr><td>레지스트리 라이브</td><td><code>docker exec … python -c "import trading_skills; …all_skills(fresh=True)"</code></td><td>테이블 접근 가능, 39개 기본 스킬 시드됨</td></tr>
+  <tr><td>선택 정확함</td><td><code>skills_for_prompt("trader")</code> / <code>("light")</code> 슬러그 집합</td><td>설계된 대로 사이트 + 마켓 스코핑</td></tr>
+  <tr><td>실제 주입</td><td>exec <code>_light_analysis</code> 워커에서 <code>generate_text</code> 스텁 처리됨</td><td>실제 프로덕션 코드 경로는 스킬 블록을 포함한 프롬프트를 생성합니다 — 활성 실행이 0개여도 작동합니다</td></tr>
 </table>
 </div>
 
-<p class="legend" style="margin-top:28px">관련 스펙: <code>docs/plan/20-trading-skills.md</code> · PR #179에서 배포됨 (squash <code>ba43060</code>) · 2026-08-01부터 sooppiy.com에서 라이브 · #186, #193, #215, #221, #222, #224, #226, #232, #233, #331을 통해 카탈로그가 36개 스킬로 성장함 (2026-08-07).</p>
+<p class="legend" style="margin-top:28px">동반 스펙: <code>docs/plan/20-trading-skills.md</code> · PR #179에서 배포됨 (스쿼시 <code>ba43060</code>) · 2026-08-01부터 sooppiy.com에서 라이브 중 · #186, #193, #215, #221, #222, #224, #226, #232, #233, #331 (2026-08-07)을 통해 카탈로그가 39개 스킬로 성장했으며, Research-04 조작 방어 트리오 (2026-08-10)도 추가되었습니다.</p>
 
 </div>
 </body>

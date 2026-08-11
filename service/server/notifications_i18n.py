@@ -1071,25 +1071,45 @@ def verdict_sentence(stance: str, side: str, urgency: str, note: str,
 
 
 # Hot-issue trigger labels. Closed vocabulary from hot_issue_daemon:
-# event_window, psych_shock, regime:{event|panic|euphoria}, and the
-# parameterized price_move:{+N.N%} whose number is kept verbatim.
+# event_window, psych_shock, regime:{event|panic|euphoria}, the
+# parameterized price_move:{+N.N%} whose number is kept verbatim, and the
+# Research-04 manipulation shapes (pump_ignition, cascade_shock,
+# crowded_funding).
 _TRIGGER: dict[str, dict[str, str]] = {
     'en': {'event_window': 'macro event window', 'psych_shock': 'sentiment shock',
            'regime:event': 'event regime', 'regime:panic': 'panic regime',
-           'regime:euphoria': 'euphoria regime', 'price_move': '{v} price move'},
+           'regime:euphoria': 'euphoria regime', 'price_move': '{v} price move',
+           'manipulation:pump_ignition': 'pump-shaped spike (do not chase)',
+           'manipulation:cascade_shock': 'forced-flow cascade shock',
+           'manipulation:crowded_funding': 'crowded funding extreme'},
     'ko': {'event_window': '거시 이벤트 구간', 'psych_shock': '심리 충격',
            'regime:event': '이벤트 국면', 'regime:panic': '패닉 국면',
-           'regime:euphoria': '과열 국면', 'price_move': '{v} 가격 변동'},
+           'regime:euphoria': '과열 국면', 'price_move': '{v} 가격 변동',
+           'manipulation:pump_ignition': '펌핑형 급등 (추격 금지)',
+           'manipulation:cascade_shock': '강제 청산 연쇄 충격',
+           'manipulation:crowded_funding': '펀딩비 쏠림 극단'},
     'ja': {'event_window': 'マクロイベント期間', 'psych_shock': 'センチメント・ショック',
            'regime:event': 'イベント局面', 'regime:panic': 'パニック局面',
-           'regime:euphoria': '過熱局面', 'price_move': '{v} の価格変動'},
+           'regime:euphoria': '過熱局面', 'price_move': '{v} の価格変動',
+           'manipulation:pump_ignition': 'ポンプ型急騰（追いかけ禁止）',
+           'manipulation:cascade_shock': '強制清算カスケード・ショック',
+           'manipulation:crowded_funding': '資金調達率の極端な偏り'},
     'th': {'event_window': 'ช่วงเหตุการณ์มหภาค', 'psych_shock': 'ความผันผวนด้านจิตวิทยา',
            'regime:event': 'ภาวะเหตุการณ์', 'regime:panic': 'ภาวะตื่นตระหนก',
-           'regime:euphoria': 'ภาวะร้อนแรงเกินไป', 'price_move': 'ราคาเคลื่อนไหว {v}'},
+           'regime:euphoria': 'ภาวะร้อนแรงเกินไป', 'price_move': 'ราคาเคลื่อนไหว {v}',
+           'manipulation:pump_ignition': 'ราคาพุ่งแบบปั่น (อย่าไล่ซื้อ)',
+           'manipulation:cascade_shock': 'แรงเทขายต่อเนื่องจากการบังคับปิดสถานะ',
+           'manipulation:crowded_funding': 'อัตราฟันดิงเอียงสุดขั้ว'},
     'vi': {'event_window': 'khung sự kiện vĩ mô', 'psych_shock': 'cú sốc tâm lý',
            'regime:event': 'trạng thái sự kiện', 'regime:panic': 'trạng thái hoảng loạn',
-           'regime:euphoria': 'trạng thái hưng phấn', 'price_move': 'biến động giá {v}'},
-    'id': {'event_window': 'jendela peristiwa makro', 'psych_shock': 'guncangan sentimen', 'regime:event': 'rezim peristiwa', 'regime:panic': 'rezim panik', 'regime:euphoria': 'rezim euforia', 'price_move': 'pergerakan harga {v}'},
+           'regime:euphoria': 'trạng thái hưng phấn', 'price_move': 'biến động giá {v}',
+           'manipulation:pump_ignition': 'tăng vọt kiểu bơm giá (đừng đuổi theo)',
+           'manipulation:cascade_shock': 'cú sốc thanh lý dây chuyền',
+           'manipulation:crowded_funding': 'phí funding lệch cực đoan'},
+    'id': {'event_window': 'jendela peristiwa makro', 'psych_shock': 'guncangan sentimen', 'regime:event': 'rezim peristiwa', 'regime:panic': 'rezim panik', 'regime:euphoria': 'rezim euforia', 'price_move': 'pergerakan harga {v}',
+           'manipulation:pump_ignition': 'lonjakan pola pump (jangan dikejar)',
+           'manipulation:cascade_shock': 'guncangan likuidasi beruntun',
+           'manipulation:crowded_funding': 'funding ekstrem satu arah'},
 }
 
 
