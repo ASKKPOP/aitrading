@@ -157,6 +157,20 @@
 > **A test that fails during every macro event window teaches people to ignore
 > failures.** If a suite that was green this morning goes red, check whether the
 > WORLD changed before assuming the CODE did.
+>
+> **Same family, 2026-08-11 (#372 → fixed in #373): MONEY ASSERTIONS READING
+> `0.0` NEAR 00:00 UTC.** `tests/test_risk_engine.py` computed its seed
+> timestamps at MODULE IMPORT (`TODAY = datetime.now(...)`), but
+> `risk_engine.trade_stats` derives the comparison date at CALL time and matches
+> `executed_at.startswith(today)`. The backend suite runs ~15 min, so an import
+> before 00:00Z and execution after it dated every seeded row YESTERDAY while the
+> gate asked for TODAY — `realized_today` fell to `0.0` and 7 tests failed on a
+> **docs-only PR** (CI run 31444036339, 00:08Z). Prod was never affected.
+>
+> **The signature: a green suite goes red near a UTC midnight, and the failures
+> are money assertions reading exactly `0.0`.** Look for a constant captured at
+> import that the code under test re-derives per call. The fix is to resolve the
+> anchor per test (`_day_anchor()` in `setUp`), never at import.
 
 > ### ⚠️ `slippage_pct` ON AN ARM IS FAVOURABLE, NOT A COST — 2026-08-07
 >
