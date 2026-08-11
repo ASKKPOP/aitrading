@@ -357,13 +357,46 @@ Every increment lands here as a dated line, in the same PR that ships it.
       0.60-of-head is a real threshold and not a number that happened to fit.
     - Health after the recreate: both containers up, `/` and
       `/api/subscriptions/plans` 200, no worker exceptions.
-    - **Still open, to check on the next pass:** no *losing*-class recall has
-      been written since the cutover, so `_recall_explore_allowed`'s exclusion
-      is verified only by unit test and an in-container probe, not yet by a
-      live row. The expected signature is a losing-class row carrying
-      `deterministic-top2` / propensity 1.0 **while the flag is on** — if one
-      ever appears with `eps-head-fixed-v1`, the class gate has failed and the
-      flag comes straight back off.
+    - **✅ CLOSED 2026-08-11 00:53Z — the losing-class exclusion is verified on
+      live data.** Recorded as open above at 23:5xZ because the whole book was
+      in profit; run 1056 (SI, futures) then went to −1.33 and its next cycle
+      produced the first losing-class recall since cutover:
+
+      ```
+      1056  00:53:25Z  deterministic-top2  explore=false  prop=1.0  pool=NULL  LOSING
+      ```
+
+      …with `DESK_RECALL_EXPLORE=1` confirmed in **both** containers at that
+      moment, so the row reads "deterministic *despite* the flag being on".
+      Alongside it, all 7 win/flat rows carried `eps-head-fixed-v1` (2 of them
+      explored).
+      - **`pool: NULL` is the load-bearing detail, not a missing value.** The
+        deterministic branch returns only `{scheme, explore, propensity}`,
+        while the ε branch always writes `eps` and `pool`. So a row with no
+        `pool` key proves `_recall_select`'s `if not explore:` early return
+        fired. Had the class gate wrongly *allowed* the run and simply found
+        no alternates, the row would instead read `eps-head-fixed-v1` with
+        `pool: 0`. The two failure modes are distinguishable in the journal —
+        which is worth knowing for every future gate audit.
+    - **Also proved exhaustively, because one live row only samples the
+      space.** In-container probe over 117 combinations of
+      (unrealized × peak × quantity) — including shorts, ±1e-9, exact 0.0,
+      `None`, `""`, `"abc"`, `NaN` — found **0 violations** of the invariant
+      *"if `_recall_query` says losing, `_recall_explore_allowed` must be
+      False."* Two findings from it worth keeping:
+      - the gate tests `if not pos_qty`, **not `pos_qty > 0`**, so a SHORT
+        (negative quantity) is correctly treated as holding rather than flat.
+        This is the same family as the documented `quantity > 0` monitoring
+        trap; this code does not have it.
+      - malformed input (`NaN`, `"abc"`) makes the query say *winning* while
+        the gate still returns False — divergent, but conservative in the
+        safe direction (no exploration). Recorded so a later reader does not
+        "fix" the divergence into an unsafe agreement.
+      - The invariant is a COUPLING between two functions written separately
+        that both read `pnl["unrealized"]`. Nothing in the unit suite pins the
+        coupling itself, only each side — the standing "brief-line wiring is
+        untested by default" shape. A regression test for it belongs with the
+        next increment that touches either function.
     - Rollback remains one line: delete `DESK_RECALL_EXPLORE=1` from `.env`
       and `docker compose --profile prod up -d --no-build`.
   - **2026-08-09 — deep analysis shipped:**
