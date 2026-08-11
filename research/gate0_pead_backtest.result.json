@@ -1,0 +1,214 @@
+{
+ "universe": 105,
+ "symbols_with_data": 104,
+ "events_total": 1539,
+ "skipped": [
+  "MMC:bars"
+ ],
+ "fee_side": 5e-05,
+ "split_date": "2025-08-11",
+ "runs": {
+  "long_only": {
+   "chosen": {
+    "hold_days": 5,
+    "gap_min_pct": 6.0,
+    "vol_mult_min": 1.5,
+    "stop_pct": null,
+    "long_only": true,
+    "entry_mode": "next_open"
+   },
+   "split_date": "2025-08-11",
+   "train": {
+    "n": 131,
+    "hit_rate": 0.5496,
+    "expectancy_pct": 1.1235,
+    "profit_factor": 1.843,
+    "avg_win_pct": 4.468311904158508,
+    "avg_loss_pct": -2.958226195987124,
+    "max_drawdown_pct": 33.876,
+    "bootstrap_lb90_pct": 0.3617,
+    "worst_trade_pct": -10.1038
+   },
+   "test": {
+    "n": 46,
+    "hit_rate": 0.4565,
+    "expectancy_pct": -0.2571,
+    "profit_factor": 0.903,
+    "avg_win_pct": 5.240533947677363,
+    "avg_loss_pct": -4.8751805195772695,
+    "max_drawdown_pct": 48.542,
+    "bootstrap_lb90_pct": -1.4711,
+    "worst_trade_pct": -10.5531
+   }
+  },
+  "long_only_stop5": {
+   "chosen": {
+    "hold_days": 3,
+    "gap_min_pct": 6.0,
+    "vol_mult_min": 1.5,
+    "stop_pct": 5.0,
+    "long_only": true,
+    "entry_mode": "next_open"
+   },
+   "split_date": "2025-08-11",
+   "train": {
+    "n": 131,
+    "hit_rate": 0.542,
+    "expectancy_pct": 0.9364,
+    "profit_factor": 1.713,
+    "avg_win_pct": 4.150268028150855,
+    "avg_loss_pct": -2.8666585402069322,
+    "max_drawdown_pct": 33.34,
+    "bootstrap_lb90_pct": 0.2432,
+    "worst_trade_pct": -8.7119
+   },
+   "test": {
+    "n": 51,
+    "hit_rate": 0.4118,
+    "expectancy_pct": -0.6981,
+    "profit_factor": 0.739,
+    "avg_win_pct": 4.806238483265854,
+    "avg_loss_pct": -4.551084659913991,
+    "max_drawdown_pct": 47.746,
+    "bootstrap_lb90_pct": -1.598,
+    "worst_trade_pct": -11.9719
+   }
+  },
+  "both_directions": {
+   "chosen": {
+    "hold_days": 3,
+    "gap_min_pct": 6.0,
+    "vol_mult_min": 2.5,
+    "stop_pct": null,
+    "long_only": false,
+    "entry_mode": "next_open"
+   },
+   "split_date": "2025-08-11",
+   "train": {
+    "n": 202,
+    "hit_rate": 0.5545,
+    "expectancy_pct": 0.4858,
+    "profit_factor": 1.34,
+    "avg_win_pct": 3.452471563745591,
+    "avg_loss_pct": -3.2059836692950188,
+    "max_drawdown_pct": 33.45,
+    "bootstrap_lb90_pct": 0.0476,
+    "worst_trade_pct": -15.7945
+   },
+   "test": {
+    "n": 85,
+    "hit_rate": 0.5294,
+    "expectancy_pct": 0.509,
+    "profit_factor": 1.294,
+    "avg_win_pct": 4.235351149314859,
+    "avg_loss_pct": -3.6831133602751778,
+    "max_drawdown_pct": 35.402,
+    "bootstrap_lb90_pct": -0.0825,
+    "worst_trade_pct": -12.1263
+   }
+  },
+  "long_only_pullback": {
+   "chosen": {
+    "hold_days": 5,
+    "gap_min_pct": 6.0,
+    "vol_mult_min": 1.5,
+    "stop_pct": null,
+    "long_only": true,
+    "entry_mode": "pullback"
+   },
+   "split_date": "2025-08-11",
+   "train": {
+    "n": 41,
+    "hit_rate": 0.561,
+    "expectancy_pct": 0.5959,
+    "profit_factor": 1.386,
+    "avg_win_pct": 3.811880689512274,
+    "avg_loss_pct": -3.5134978610746135,
+    "max_drawdown_pct": 20.877,
+    "bootstrap_lb90_pct": -0.4444,
+    "worst_trade_pct": -15.1615
+   },
+   "test": {
+    "n": 9,
+    "hit_rate": 0.3333,
+    "expectancy_pct": -1.9283,
+    "profit_factor": 0.353,
+    "avg_win_pct": 3.1570447449040793,
+    "avg_loss_pct": -4.470909285363969,
+    "max_drawdown_pct": 21.907,
+    "bootstrap_lb90_pct": -3.8945,
+    "worst_trade_pct": -9.5054
+   }
+  },
+  "long_only_pullback_stop5": {
+   "chosen": {
+    "hold_days": 5,
+    "gap_min_pct": 2.0,
+    "vol_mult_min": 1.5,
+    "stop_pct": 5.0,
+    "long_only": true,
+    "entry_mode": "pullback"
+   },
+   "split_date": "2025-08-11",
+   "train": {
+    "n": 105,
+    "hit_rate": 0.4857,
+    "expectancy_pct": 0.1241,
+    "profit_factor": 1.091,
+    "avg_win_pct": 3.0556400691056655,
+    "avg_loss_pct": -2.644566004534598,
+    "max_drawdown_pct": 35.889,
+    "bootstrap_lb90_pct": -0.392,
+    "worst_trade_pct": -6.6023
+   },
+   "test": {
+    "n": 37,
+    "hit_rate": 0.4324,
+    "expectancy_pct": -0.3662,
+    "profit_factor": 0.787,
+    "avg_win_pct": 3.1324946776251115,
+    "avg_loss_pct": -3.031910482079068,
+    "max_drawdown_pct": 21.568,
+    "bootstrap_lb90_pct": -1.1066,
+    "worst_trade_pct": -6.6981
+   }
+  },
+  "both_pullback": {
+   "chosen": {
+    "hold_days": 5,
+    "gap_min_pct": 2.0,
+    "vol_mult_min": 1.5,
+    "stop_pct": null,
+    "long_only": false,
+    "entry_mode": "pullback"
+   },
+   "split_date": "2025-08-11",
+   "train": {
+    "n": 208,
+    "hit_rate": 0.5096,
+    "expectancy_pct": 0.0063,
+    "profit_factor": 1.004,
+    "avg_win_pct": 2.8532642745902,
+    "avg_loss_pct": -2.952360135534393,
+    "max_drawdown_pct": 48.272,
+    "bootstrap_lb90_pct": -0.3887,
+    "worst_trade_pct": -17.1959
+   },
+   "test": {
+    "n": 78,
+    "hit_rate": 0.4615,
+    "expectancy_pct": -0.2706,
+    "profit_factor": 0.838,
+    "avg_win_pct": 3.022587860008139,
+    "avg_loss_pct": -3.0933456411828284,
+    "max_drawdown_pct": 38.054,
+    "bootstrap_lb90_pct": -0.963,
+    "worst_trade_pct": -12.6643
+   }
+  }
+ },
+ "gate0": {
+  "criteria": "test(long_only_pullback): n>=50, expectancy>0, bootstrap LB90>0, PF>=1.2",
+  "pass": false
+ }
+}
