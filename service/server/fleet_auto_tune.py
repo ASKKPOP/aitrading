@@ -116,7 +116,8 @@ def auto_tune_fleets() -> list[dict[str, Any]]:
         cur = conn.cursor()
         placeholders = ", ".join("?" for _ in _NON_TERMINAL)
         cur.execute(
-            f"""SELECT f.id, f.n_runs, f.total_budget_usd, f.profit_target_frac,
+            f"""SELECT f.id, f.agent_id, f.n_runs, f.total_budget_usd,
+                       f.profit_target_frac,
                        f.started_at, f.created_at,
                        COALESCE((SELECT SUM(r.realized_pnl_usd) FROM trading_runs r
                                  WHERE r.fleet_id = f.id), 0) AS realized,
@@ -142,6 +143,23 @@ def auto_tune_fleets() -> list[dict[str, Any]]:
         try:
             rec_slots = recommended_max_slots(budget)
             cur_slots = int(row["n_runs"])
+            # Clamp to the plan's entitlement cap (live 2026-08-12, fleet
+            # 32: rec 25 vs cap 10 raised EntitlementDenied every pass — log
+            # churn, and the resize never landed). cap==0 means the plan has
+            # no fleet entitlement at all (grandfathered fleet): never RAISE,
+            # lowering stays allowed.
+            import entitlements
+            cconn = get_db_connection()
+            try:
+                _, limits = entitlements.limits_for_agent(
+                    cconn.cursor(), int(row["agent_id"]))
+            finally:
+                cconn.close()
+            cap = int(limits.get("max_fleet_size") or 0)
+            if cap > 0:
+                rec_slots = min(rec_slots, cap)
+            elif rec_slots > cur_slots:
+                rec_slots = cur_slots
             if rec_slots != cur_slots:
                 set_fleet_size(fleet_id, rec_slots)
                 emit_fleet_event(fleet_id, "auto_tune_slots",

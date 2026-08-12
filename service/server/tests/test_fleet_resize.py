@@ -83,8 +83,10 @@ class ResizeApiTests(unittest.TestCase):
         fid = self._fleet(n=2)
         r = self.client.get(f"/api/fleets/{fid}")
         self.assertEqual(r.status_code, 200, r.text)
-        # $2,000 budget -> 20 viable slots
-        self.assertEqual(r.json()["fleet"]["recommended_max_n_runs"], 20)
+        # $2,000 budget -> 20 viable slots, clamped to the professional plan
+        # cap (10) — recommending above the cap only ever leads to a denial
+        # (live 2026-08-12: the dialog said 25 to a plan capped at 10).
+        self.assertEqual(r.json()["fleet"]["recommended_max_n_runs"], 10)
 
     def test_raise_updates_target_and_journals(self):
         fid = self._fleet(n=2)

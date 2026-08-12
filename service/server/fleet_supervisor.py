@@ -630,6 +630,14 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
         if state == "closed":
             continue
         member = by_id.get(slot.get("current_run_id") or -1)
+        # Vol-parity slots (live 2026-08-12, fleet 32): allocations can sit
+        # far below the equal share ($500–$1,580 on a $99,999/10 fleet whose
+        # equal-share floor is $5,000) while being fully fundable. The floor
+        # a slot must clear is the smaller of the equal-share floor and half
+        # its OWN designed allocation — dormancy means "headroom can't fund
+        # this slot", never "this slot was designed small".
+        slot_floor = min(floor_usd,
+                         float(slot["original_allocation_usd"]) / 2.0)
 
         if drain_excess > 0 and (
                 member is None
@@ -654,7 +662,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
 
         # dormancy re-evaluates EVERY tick — never sticky
         if state == "dormant":
-            if headroom >= floor_usd:
+            if headroom >= slot_floor:
                 fp._bind_slot(fleet["id"], slot["slot_index"],
                               slot.get("current_run_id"), "waiting")
                 state = "waiting"
@@ -675,7 +683,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
                                   "waiting")
                 continue
             funding = min(float(slot["original_allocation_usd"]), headroom)
-            if funding < floor_usd:
+            if funding < slot_floor:
                 fp._bind_slot(fleet["id"], slot["slot_index"], None, "dormant")
                 fp.emit_fleet_event(fleet["id"], "slot_dormant",
                                     {"slot": slot["slot_index"],
@@ -766,7 +774,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
 
         # funding: min(original allocation, headroom), sequential
         funding = min(float(slot["original_allocation_usd"]), headroom)
-        if funding < floor_usd:
+        if funding < slot_floor:
             fp._bind_slot(fleet["id"], slot["slot_index"], member["id"],
                           "dormant")
             fp.emit_fleet_event(fleet["id"], "slot_dormant",
@@ -1003,9 +1011,30 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
         # VZ, T, SPCX, 601288.SS, 601899.SS) sat below the cut and were never
         # looked at. Same lesson as E3's junk-top-pick fix, one layer up: the
         # FETCH has to be deeper than the rejection rate, not just the retry.
-        theses = symbol_research.select_targets(
-            cursor, agent_id, _replacement_depth(), exclude=exclude,
-            markets_scope=fp._open_markets_scope())
+        #
+        # Scope (live 2026-08-12, fleet 31): the fleet's explicit market
+        # scope is part of the mandate. Passing only the open-markets bias
+        # offered a us-stock fleet crypto/forex candidates every tick — all
+        # rejected downstream, 2/25 forever. Explicit scope intersects the
+        # open-markets bias; an empty intersection means the fleet's market
+        # is closed right now, and the slot WAITS instead of cross-building.
+        scope = None
+        if fleet.get("market_scope_json"):
+            try:
+                scope = json.loads(fleet["market_scope_json"]) or None
+            except (ValueError, TypeError):
+                scope = None
+        open_scope = fp._open_markets_scope()
+        if scope and open_scope:
+            effective_scope = [m for m in scope if m in open_scope]
+        else:
+            effective_scope = scope or open_scope
+        if scope and not effective_scope:
+            theses = []          # fleet's market closed — wait, never cross-build
+        else:
+            theses = symbol_research.select_targets(
+                cursor, agent_id, _replacement_depth(), exclude=exclude,
+                markets_scope=effective_scope)
     finally:
         conn.close()
     # Fee feasibility, the third gate the initial build applies
