@@ -66,7 +66,9 @@ untouched.
   business do?" copy for Stripe onboarding.
 - `service-rules.html` — the owner's three service rules. **Sections 1 and 3 describe
   the card-up-front trial and are now stale** (see §4).
-- `legal-compliance-review.html` — 8-jurisdiction gap audit (US, CA, AU, KR, JP, VN, ID, TH).
+- `legal-compliance-review.html` — 6-jurisdiction gap audit (US, CA, AU, VN, ID, TH). **Korea and Japan were
+  removed on owner instruction 2026-08-05** — not target markets. See the "Markets excluded" section for the
+  condition that exclusion depends on.
 - `HANDOFF-billing-trial.md` — this file.
 
 ---
@@ -178,20 +180,27 @@ one-line change to `billing_sync.TRIAL_PLAN_CODE`.
 
 1. **Fix the stale trial docs** (§4). User-facing false billing statements.
 2. **Publish the legal entity** — company name, registration number, registered address,
-   phone. Absent from both legal documents. Mandatory to sell to consumers in Korea
-   (전자상거래법) and Japan (特定商取引法); Stripe onboarding will ask. *Only the owner has this.*
+   phone. Absent from both legal documents. Stripe onboarding will ask, and no data-protection
+   regime in scope accepts an unnamed controller. *Only the owner has this.*
 3. **Seed the billing IDs** — now doable in the admin console (§3b) instead of SQL. Stripe
    key is set; PayPal was in progress at session end.
 4. **Financial-services licensing opinion**, or geo-restrict signup to markets with an
-   opinion. The largest risk in the compliance review — regulated activity in all 8 target
+   opinion. The largest risk in the compliance review — regulated activity in all 6 target
    markets. Not a documentation problem.
-5. Refund/cancellation policy is published on `/pricing`, but Terms §15 (California law +
+
+5. **Geo-restriction is now load-bearing twice.** Korea and Japan are declared out of scope,
+   but the platform ships ko/ja as first-class languages, guesses country at signup
+   (`users.geo_country`), and has **no country blocking anywhere in the codebase**. These
+   regimes attach obligations by conduct, not intent, so the exclusion is only real once
+   signup/payment from those countries is actually refused. Same mechanism would serve
+   item 4.
+6. Refund/cancellation policy is published on `/pricing`, but Terms §15 (California law +
    AAA arbitration + class waiver) is **void against consumers in Quebec** and an
-   unfair-terms risk in Australia and Korea. Needs counsel.
-6. Not built, from the service-rules doc: checkout consent checkbox (immediate
+   unfair-terms risk in Australia. Needs counsel.
+7. Not built, from the service-rules doc: checkout consent checkbox (immediate
    commencement + no-refund acknowledgment, recorded with timestamp), **"Export my data"**
    (rule 3.3 is unfair to publish without it), and the 6 site strings still saying "free".
-7. PayPal has **no trial** — irrelevant now, since the trial no longer touches a provider.
+8. PayPal has **no trial** — irrelevant now, since the trial no longer touches a provider.
 
 ---
 
