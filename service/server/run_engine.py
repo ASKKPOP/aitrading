@@ -4866,4 +4866,16 @@ async def tick() -> dict:
             counters["budget_compounded"] = compounded["changed"]
     except Exception:  # noqa: BLE001
         logger.warning("fleet budget compound failed", exc_info=True)
+    # AI auto-tuning of slot count + take-profit goal rides the same tick,
+    # AFTER the compound so slots scale to the fresh budget. Throttled, isolated
+    # per fleet, and never allowed to fail the tick: it only moves allocation
+    # config (never a position).
+    try:
+        import fleet_auto_tune
+        now_epoch = datetime.now(timezone.utc).timestamp()
+        tuned = await asyncio.to_thread(fleet_auto_tune.maybe_tune, now_epoch)
+        if tuned and tuned.get("changed"):
+            counters["auto_tuned"] = tuned["changed"]
+    except Exception:  # noqa: BLE001
+        logger.warning("fleet auto-tune failed", exc_info=True)
     return counters
