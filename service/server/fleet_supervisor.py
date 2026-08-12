@@ -1015,26 +1015,22 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
         # Scope (live 2026-08-12, fleet 31): the fleet's explicit market
         # scope is part of the mandate. Passing only the open-markets bias
         # offered a us-stock fleet crypto/forex candidates every tick — all
-        # rejected downstream, 2/25 forever. Explicit scope intersects the
-        # open-markets bias; an empty intersection means the fleet's market
-        # is closed right now, and the slot WAITS instead of cross-building.
+        # rejected downstream, 2/25 forever. Explicit scope is honoured
+        # VERBATIM, exactly like the initial build (owner 2026-08-12: the
+        # fleet keeps its defined slot count even while its market is
+        # closed) — a run built overnight is safe by design: idle-retire
+        # counts only open-market cycles (_closed_market_cycles), stops go
+        # dormant on frozen marks, and flattens queue to the next open. The
+        # open-markets bias applies only to unrestricted fleets.
         scope = None
         if fleet.get("market_scope_json"):
             try:
                 scope = json.loads(fleet["market_scope_json"]) or None
             except (ValueError, TypeError):
                 scope = None
-        open_scope = fp._open_markets_scope()
-        if scope and open_scope:
-            effective_scope = [m for m in scope if m in open_scope]
-        else:
-            effective_scope = scope or open_scope
-        if scope and not effective_scope:
-            theses = []          # fleet's market closed — wait, never cross-build
-        else:
-            theses = symbol_research.select_targets(
-                cursor, agent_id, _replacement_depth(), exclude=exclude,
-                markets_scope=effective_scope)
+        theses = symbol_research.select_targets(
+            cursor, agent_id, _replacement_depth(), exclude=exclude,
+            markets_scope=scope or fp._open_markets_scope())
     finally:
         conn.close()
     # Fee feasibility, the third gate the initial build applies

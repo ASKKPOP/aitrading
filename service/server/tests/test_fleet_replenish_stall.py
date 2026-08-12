@@ -104,17 +104,22 @@ class ReplacementScopeTests(SupervisionBase):
         self.assertEqual(len(members), 1, "slot must refill")
         self.assertEqual(members[0]["market"], "us-stock")
 
-    def test_scoped_fleet_waits_while_its_market_is_closed(self):
-        """us-stock fleet, only crypto open ⇒ NO cross-market build; the
-        slot waits for the market to open."""
+    def test_scoped_fleet_builds_even_while_its_market_is_closed(self):
+        """Owner (2026-08-12): the fleet keeps its DEFINED slot count even
+        while its market is closed. us-stock fleet, only crypto open ⇒ the
+        slot still builds — a us-stock run, never a crypto one (the run
+        then waits for the session; idle-retire counts only open-market
+        cycles, so it survives the night)."""
         fleet_id = self._scoped_fleet(["us-stock"])
         self._orphan_slot(fleet_id)
         with patch.object(fp, "_open_markets_scope",
                           return_value=["crypto"]):
             fs.supervise_fleet(fp.get_fleet(fleet_id))
         members = _live(fleet_id)
-        self.assertEqual(len(members), 0,
-                         "must not build a crypto run into a us-stock fleet")
+        self.assertEqual(len(members), 1,
+                         "slot must refill even while the market is closed")
+        self.assertEqual(members[0]["market"], "us-stock",
+                         "never a cross-market build")
 
 
 class VolParityDormancyTests(SupervisionBase):
@@ -222,3 +227,21 @@ class AutoTuneEntitlementClampTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeepDefinedCountTests(ReplacementScopeTests):
+    """Owner (2026-08-12): 'fleet keep defined even on market [close]' —
+    the defined slot count holds at ALL times; only the sooppiy AI's own
+    verdicts (gates, retire decisions, dormancy on real dust) may leave a
+    slot empty, never the market clock."""
+
+    def test_overnight_pass_restores_the_count_immediately(self):
+        fleet_id = self._scoped_fleet(["us-stock"])
+        self._orphan_slot(fleet_id)
+        # Overnight (only crypto open): the very first pass refills.
+        with patch.object(fp, "_open_markets_scope", return_value=["crypto"]):
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+        members = _live(fleet_id)
+        self.assertEqual(len(members), 1,
+                         "defined count must hold while the market is closed")
+        self.assertEqual(members[0]["market"], "us-stock")
