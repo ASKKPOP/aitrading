@@ -309,9 +309,15 @@ class StripeCheckoutTests(unittest.TestCase):
         self.assertEqual(kwargs["line_items"], [{"price": "price_jr", "quantity": 1}])
         self.assertEqual(kwargs["metadata"],
                          {"user_id": str(self.user_id), "plan_code": "junior"})
+        # Junior carries the 7-day trial for a first-time subscriber (service
+        # rules 2026-08-12), so subscription_data holds the trial too. The
+        # metadata must survive alongside it — the activation webhook resolves
+        # the member from exactly these fields. Trial specifics live in
+        # tests/test_trial_reminder.py.
         self.assertEqual(kwargs["subscription_data"],
                          {"metadata": {"user_id": str(self.user_id),
-                                       "plan_code": "junior"}})
+                                       "plan_code": "junior"},
+                          "trial_period_days": 7})
         cc_kwargs = cc.call_args.kwargs
         self.assertEqual(cc_kwargs["email"], "pay@t.dev")
         self.assertEqual(cc_kwargs["metadata"], {"user_id": str(self.user_id)})

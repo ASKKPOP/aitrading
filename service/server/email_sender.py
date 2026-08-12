@@ -108,19 +108,19 @@ def send_welcome_email(to_email: str, lang: str = "en") -> bool:
     return _deliver(to_email, subject, text, html)
 
 
-def send_trial_notice_email(*, kind: str, to_email: str, lang: str = "en",
-                            amount_usd: float, on_date: str) -> bool:
-    """Free-trial notice: `kind` is 'reminder' (day 4) or 'ended' (expiry).
+def send_trial_reminder_email(*, to_email: str, lang: str = "en",
+                              amount_usd: float, charge_on: str) -> bool:
+    """Pre-charge notice before the free trial converts to a paid subscription.
 
     Keyword-only on purpose: the payload is an amount and a date that both
     render into money-facing copy, and a positional swap would ship a notice
     quoting the wrong figure to every trialling member.
 
-    The trial holds no payment method, so neither notice announces a charge —
-    the reminder asks the member to subscribe, and 'ended' tells them their
-    automation has stopped.
+    The caller treats False as a hard failure (the webhook 500s so Stripe
+    redelivers) — an undelivered pre-charge notice is a compliance gap, not a
+    cosmetic one.
     """
-    from email_i18n import trial_email, trial_email_text
-    subject, html = trial_email(kind, lang, amount_usd, on_date)
-    text = trial_email_text(kind, lang, amount_usd, on_date)
+    from email_i18n import trial_reminder_email, trial_reminder_email_text
+    subject, html = trial_reminder_email(lang, amount_usd, charge_on)
+    text = trial_reminder_email_text(lang, amount_usd, charge_on)
     return _deliver(to_email, subject, text, html)

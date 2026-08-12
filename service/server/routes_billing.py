@@ -42,6 +42,13 @@ logger = logging.getLogger("routes_billing")
 ALREADY_AUTORENEW = ("An auto-renewing subscription is already active — "
                      "manage or cancel it first")
 
+# Service rules 2026-08-12: a card is collected at sign-up, the first 7 days
+# are free, and the subscription then converts automatically. Junior only,
+# once per account. Stripe owns the clock — trial_period_days on the Checkout
+# Session — so there is no trial state of ours to keep in step.
+TRIAL_PLAN_CODE = "junior"
+TRIAL_DAYS = 7
+
 
 def _alert_webhook_failure(provider: str, event_id: str, exc: Exception) -> None:
     """Spec §4: processing failure → 500 (provider retries) + owner alert.
@@ -131,7 +138,43 @@ def _handle_stripe_event(event: dict) -> None:
     elif etype == "customer.subscription.deleted":
         if obj.get("id"):
             billing_sync.end_subscription("stripe", obj["id"])
+    elif etype == "customer.subscription.trial_will_end":
+        _send_trial_reminder(obj)
     # anything else: recorded in billing_events, deliberately ignored
+
+
+def _send_trial_reminder(obj: dict) -> None:
+    """Pre-charge notice before the free trial converts to a paid subscription.
+
+    Stripe fires trial_will_end three days out, which on a 7-day trial lands on
+    day 4 — so there is no scheduler of ours to run or to drift.
+
+    Required, not courteous: California's Automatic Renewal Law expects the
+    member to be told before the first charge WHEN it lands, HOW MUCH it is and
+    HOW to stop it. Delivery failure RAISES so the caller answers 500 and Stripe
+    redelivers — a duplicate notice is an annoyance, a missing one is a
+    disclosure gap and the most common reason a first charge is disputed as
+    fraud. An unknown subscription returns quietly instead: nothing to notify,
+    so retrying forever would be pointless.
+    """
+    sub_id = obj.get("id") or ""
+    if not sub_id:
+        return
+    sub = billing_sync.subscriber_for_external_id("stripe", sub_id)
+    if not sub:
+        logger.warning("trial_will_end for unknown subscription %s", sub_id)
+        return
+    trial_end = obj.get("trial_end")
+    charge_on = ""
+    if trial_end:
+        charge_on = datetime.fromtimestamp(int(trial_end),
+                                           tz=timezone.utc).strftime("%Y-%m-%d")
+    import email_sender
+    ok = email_sender.send_trial_reminder_email(
+        to_email=sub["email"], lang=sub.get("lang") or "en",
+        amount_usd=float(sub.get("price_usd") or 0.0), charge_on=charge_on)
+    if not ok:
+        raise RuntimeError(f"trial reminder delivery failed for {sub_id}")
 
 
 def _parse_paypal_time(value: str) -> datetime | None:
@@ -198,6 +241,14 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=503,
                                 detail="This plan is not configured for card payments")
         customer_id = _stripe_customer_id(user)
+        # The trial rides on subscription_data ALONGSIDE the metadata — the
+        # activation webhook resolves the member from that metadata, so it has
+        # to survive rather than be replaced.
+        sub_data: dict = {"metadata": {"user_id": str(user["id"]),
+                                       "plan_code": plan["code"]}}
+        if (plan["code"] == TRIAL_PLAN_CODE
+                and not billing_sync.has_prior_subscription(user["id"])):
+            sub_data["trial_period_days"] = TRIAL_DAYS
         try:
             session = _stripe().checkout.Session.create(
                 mode="subscription",
@@ -205,8 +256,7 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
                 client_reference_id=str(user["id"]),
                 line_items=[{"price": price_id, "quantity": 1}],
                 metadata={"user_id": str(user["id"]), "plan_code": plan["code"]},
-                subscription_data={"metadata": {"user_id": str(user["id"]),
-                                                "plan_code": plan["code"]}},
+                subscription_data=sub_data,
                 success_url=f"{_frontend_url()}/subscribe?stripe=success",
                 cancel_url=f"{_frontend_url()}/subscribe?stripe=cancel",
             )

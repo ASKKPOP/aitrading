@@ -489,12 +489,6 @@ async def _grant_signup_side_effects(user_id: int, email: str, lang: str, provid
     seconds) and fail soft — the account row is already committed, so a
     provider outage must not turn a successful signup into a 5xx.
     """
-    try:
-        from billing_sync import grant_trial
-        await asyncio.to_thread(grant_trial, user_id)
-    except Exception:  # noqa: BLE001
-        _logger.warning("trial grant failed for %s signup user_id=%s",
-                        provider, user_id, exc_info=True)
     if email:
         try:
             await asyncio.to_thread(send_welcome_email, email, lang)
