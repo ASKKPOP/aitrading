@@ -147,9 +147,21 @@ def _public_fleet(fleet: dict) -> dict:
     out.pop("idempotency_key", None)
     # The AI's slot recommendation for this budget — the resize confirm
     # dialog shows it so the user decides with the fee evidence in view.
+    # Clamped to the plan cap (live 2026-08-12: the dialog recommended 25 to
+    # a plan capped at 10, and following it could only ever be denied).
     try:
-        out["recommended_max_n_runs"] = fleet_planner.recommended_max_slots(
+        rec = fleet_planner.recommended_max_slots(
             float(fleet.get("total_budget_usd") or 0))
+        import entitlements
+        from database import get_db_connection as _gdc
+        _conn = _gdc()
+        try:
+            _, _limits = entitlements.limits_for_agent(
+                _conn.cursor(), int(fleet["agent_id"]))
+        finally:
+            _conn.close()
+        _cap = int(_limits.get("max_fleet_size") or 0)
+        out["recommended_max_n_runs"] = min(rec, _cap) if _cap > 0 else rec
     except Exception:  # noqa: BLE001
         out["recommended_max_n_runs"] = None
     try:
