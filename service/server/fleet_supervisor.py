@@ -569,6 +569,27 @@ def _note_build_attempt(fleet_id: int, slot_index: int, built: bool) -> None:
         _LAST_EMPTY_ATTEMPT[key] = time.monotonic()
 
 
+def _scope_all_closed(fleet: dict) -> bool:
+    """True when the fleet's explicit market scope has NO market open right
+    now. Building is impossible by design then, so the slot pass must skip
+    WITHOUT booking a failed attempt — owner (2026-08-12): at market open
+    the fleet is back at its defined slot count on the FIRST pass, and an
+    overnight of closed-market 'attempts' must not leave retry cooldowns
+    standing in the way."""
+    scope = None
+    if fleet.get("market_scope_json"):
+        try:
+            scope = json.loads(fleet["market_scope_json"]) or None
+        except (ValueError, TypeError):
+            scope = None
+    if not scope:
+        return False          # unrestricted fleets always have an open market
+    open_scope = fp._open_markets_scope()
+    if open_scope is None:
+        return False          # bias off / indeterminate — never block on it
+    return not any(m in open_scope for m in scope)
+
+
 def _slots(fleet_id: int) -> list[dict]:
     conn = get_db_connection()
     try:
@@ -613,6 +634,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
     headroom = eq["equity"] - active_budget - float(eq.get("zombie_basis") or 0)
 
     suspended = _replacements_suspended(fleet)
+    scope_closed = _scope_all_closed(fleet)
     replaced = 0
     non_terminal_symbols = {(m["market"], m["symbol"]) for m in members
                             if m["status"] != trading_runs.STATUS_STOPPED}
@@ -674,6 +696,13 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             # (build-time skip — unpriceable symbol, start conflict) stayed
             # empty forever; "kept at N" must hold for under-fills too.
             if state not in ("active", "waiting"):
+                continue
+            if scope_closed:
+                # closed market ≠ failed attempt: no cooldown is booked, so
+                # the open tick fills every slot on its first pass
+                if state != "waiting":
+                    fp._bind_slot(fleet["id"], slot["slot_index"], None,
+                                  "waiting")
                 continue
             if _retry_cooling(fleet["id"], slot["slot_index"]):
                 continue
@@ -766,7 +795,9 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             # cooldowns exclude the symbol inside select_targets — a liquidated
             # symbol simply won't be picked until its window expires
 
-        if suspended:
+        if suspended or scope_closed:
+            # scope_closed: closed market ≠ failed attempt — no cooldown, so
+            # the open tick replaces every eligible slot on its first pass
             if state != "waiting":
                 fp._bind_slot(fleet["id"], slot["slot_index"],
                               member["id"], "waiting")
@@ -799,7 +830,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
     # pass — equal-share allocation, same sequential-headroom discipline —
     # and try to build into it immediately; an unfilled new slot becomes the
     # member-None back-fill case next pass.
-    if not suspended:
+    if not suspended and not scope_closed:
         while True:
             slots_now = _slots(fleet["id"])
             if len(slots_now) >= n:

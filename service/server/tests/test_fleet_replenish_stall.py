@@ -222,3 +222,30 @@ class AutoTuneEntitlementClampTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MarketOpenPromptFillTests(ReplacementScopeTests):
+    """Owner (2026-08-12): 'on market open time always keep slot count to
+    defined'. A closed market is NOT a failed build attempt — overnight
+    closed-market passes must not start retry cooldowns, so every empty
+    slot builds on the FIRST pass after the market opens."""
+
+    def test_closed_market_passes_do_not_delay_the_open_fill(self):
+        fleet_id = self._scoped_fleet(["us-stock"])
+        self._orphan_slot(fleet_id)
+        # Overnight: two supervision passes while the market is closed.
+        with patch.object(fp, "_open_markets_scope", return_value=["crypto"]):
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertEqual(len(_live(fleet_id)), 0)
+        self.assertFalse(
+            any(k[0] == fleet_id for k in fs._LAST_EMPTY_ATTEMPT),
+            "a closed market must not be booked as a failed attempt")
+        # The open tick: the slot must build IMMEDIATELY (no cooldown).
+        with patch.object(fp, "_open_markets_scope",
+                          return_value=["crypto", "us-stock"]):
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+        members = _live(fleet_id)
+        self.assertEqual(len(members), 1,
+                         "slot must fill on the first open-market pass")
+        self.assertEqual(members[0]["market"], "us-stock")
