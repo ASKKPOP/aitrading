@@ -809,6 +809,19 @@ def generate_theses(survivors: list[dict[str, Any]],
                         row["days_to_earnings"] = dte
                 except Exception:  # noqa: BLE001
                     pass
+            # Research 04: manipulation-shape read for crypto candidates —
+            # fleet symbols come from THESE theses, so the picker must see
+            # an engineered tape before a thesis is written on it. Fail-soft
+            # and quiet-absent: no signal, no field, byte-identical prompt.
+            if s["market"] == "crypto":
+                try:
+                    from manipulation import manipulation_signals
+                    sigs = manipulation_signals(s["symbol"])
+                    if sigs:
+                        row["manipulation_shape"] = [
+                            x.split(":", 1)[1] for x in sigs]
+                except Exception:  # noqa: BLE001
+                    pass
             rows.append(row)
         prompt = (
             _research_mandate() +
@@ -833,6 +846,15 @@ def generate_theses(survivors: list[dict[str, Any]],
                "candidate's next earnings print — weigh holding-through-print "
                "risk in the horizon and confidence you assign. "
                if any("days_to_earnings" in r for r in rows) else "")
+            + ("`manipulation_shape` flags an engineered-move fingerprint on "
+               "that candidate's hourly tape right now: pump_ignition is a "
+               "vertical spike on anomalous volume — never write a "
+               "chase-the-spike thesis into it, and any thesis must survive "
+               "the retrace; cascade_shock is forced-flow, judged only after "
+               "exhaustion and reclaim; crowded_funding is squeeze-prone "
+               "positioning. Lower confidence accordingly or pass on the "
+               "candidate. "
+               if any("manipulation_shape" in r for r in rows) else "")
             + "Respond with ONLY a JSON array covering every candidate.\n\n"
             + (composite_line if any(r["market"] == "crypto" for r in rows) else "")
             + f"CANDIDATES:\n{json.dumps(rows, default=str)}"
