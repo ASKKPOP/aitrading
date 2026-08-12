@@ -455,6 +455,15 @@ trades no real money, and it is the one instrument that can resolve a +0.18%
 whose confidence band spans zero. Real-broker execution additionally remains
 behind the platform's per-user gateway + consent rails, unchanged.
 
-**Build status:** Phase A (fleets.archetype migration 0049, swing bounds +
-240-min compose cadence, snapshot stamping, NYSE holiday/half-day calendar)
-— IN PROGRESS 2026-08-11. Phases B–E follow in sequence per §8.
+**Build status:**
+- Phase A — SHIPPED #382 (2026-08-12, prod-verified ×2): fleets.archetype
+  (alembic 0049, default 'short' = inert), swing pins ["us-stock"], compose
+  stamps archetype + 240-min swing cadence, NYSE holiday/half-day calendar.
+- Phase B — run_engine learns the archetype: per-archetype cadence cap in
+  due_run_ids; closing-soon + banking brief lines archetype-conditioned
+  (wiring test per line); horizon gate ARMED for swing (shadow-rule satisfied
+  by the paper trial); overnight stop dormancy (closed market = frozen marks
+  expected; the gap fires on the first fresh mark at the open). The panel's
+  fifth item (idle-retire counting closed-session cycles) was already fixed
+  platform-wide via _closed_market_cycles.
+- Phases C–E follow per §8.

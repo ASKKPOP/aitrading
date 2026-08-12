@@ -1083,6 +1083,20 @@ def _evaluate_stop(run: dict) -> Optional[str]:
 
     needs_pnl = ("max_loss_usd" in conditions or "profit_target_usd" in conditions)
     if needs_pnl and has_position and not pnl["mark_age_ok"]:
+        # Plan 23 Phase B: a CLOSED market's frozen marks are expected, not a
+        # fault — P&L stops go dormant and re-evaluate on the first fresh
+        # mark after the open, where a gap through max_loss flattens at the
+        # gapped price. Raising here would spam every overnight hold's ~60s
+        # scan all night. The raise remains for the genuinely broken case:
+        # an OPEN market serving stale prices.
+        try:
+            import markets as _mkts
+            if not _mkts.is_market_open(run.get("market")):
+                logger.debug("stops dormant (run %s): market closed",
+                             run["id"])
+                return None
+        except Exception:  # noqa: BLE001
+            pass
         raise RuntimeError(
             f"marks stale beyond {_mark_staleness_max()}s — refusing to evaluate "
             "P&L stops on frozen prices")
@@ -2085,7 +2099,12 @@ def due_run_ids() -> list[int]:
     for row in rows:
         try:
             cfg = json.loads(row.get("config_snapshot_json") or "{}")
-            interval_min = max(5, min(_interval_cap_min(),
+            # Plan 23 Phase B: the swing archetype thinks on a 240-min clock
+            # (owner-approved relaxation of the 30-min rule, swing only).
+            # Stops stay on the ~60s control scan either way — slower
+            # thinking never delays an exit.
+            cap = 240 if cfg.get("archetype") == "swing" else _interval_cap_min()
+            interval_min = max(5, min(cap,
                                        int(cfg.get("interval_minutes") or 60)))
             last = row.get("last_cycle_at")
             if not last:
@@ -2427,10 +2446,24 @@ def _horizon_state(run: dict, route: Any, has_position: bool) -> Optional[str]:
     return f"desk horizon holds until {until}"
 
 
+def _run_archetype(run: dict) -> str:
+    """'swing' | 'short' from the run's config snapshot (Plan 23 Phase A
+    stamps it at compose). Fail-soft to 'short' — the pre-archetype default."""
+    try:
+        cfg = json.loads(run.get("config_snapshot_json") or "{}")
+        return "swing" if cfg.get("archetype") == "swing" else "short"
+    except (ValueError, TypeError):
+        return "short"
+
+
 def _horizon_skip(run: dict, route: Any, has_position: bool) -> Optional[str]:
     """Skip reason ONLY when the gate is armed. Off by default — see
-    _horizon_gate_enabled for why the evidence does not yet support arming it."""
-    if not _horizon_gate_enabled():
+    _horizon_gate_enabled for why the evidence does not yet support arming it.
+    Plan 23 Phase B: armed for the SWING archetype specifically — a 1-2 day
+    thesis re-litigated every cycle is the churn the swing design exists to
+    remove, and the swing paper trial doubles as the shadow-vs-outcome
+    measurement the global arming rule demands."""
+    if not (_horizon_gate_enabled() or _run_archetype(run) == "swing"):
         return None
     return _horizon_state(run, route, has_position)
 
@@ -3679,11 +3712,23 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
         import markets
         left = markets.session_minutes_left(run.get("market"))
         if 0 < left <= _closing_soon_minutes():
-            bits.append(
-                f"This market closes in about {left} minute(s) and you cannot "
-                f"act again until it reopens. If you would not want to carry "
-                f"this position through the gap unattended, close or reduce it "
-                f"NOW — after the close the choice is no longer yours.")
+            # Plan 23 Phase B: for the SWING archetype the overnight hold is
+            # the DESIGN, not a hazard — the intraday warning would order the
+            # desk to undo its own strategy at every close.
+            if _run_archetype(run) == "swing":
+                bits.append(
+                    f"This market closes in about {left} minute(s). Holding "
+                    f"through the close is this run's DESIGN — a swing thesis "
+                    f"is paid over days, not sessions. Use this window only "
+                    f"if the thesis is broken or the position exceeds your "
+                    f"overnight gap-risk budget; otherwise carrying it is the "
+                    f"plan, not a failure to act.")
+            else:
+                bits.append(
+                    f"This market closes in about {left} minute(s) and you cannot "
+                    f"act again until it reopens. If you would not want to carry "
+                    f"this position through the gap unattended, close or reduce it "
+                    f"NOW — after the close the choice is no longer yours.")
     except Exception:  # noqa: BLE001 — a missing calendar must not block the desk
         pass
     # The verb, stated once, for whichever path is asking. Those four component
@@ -3695,13 +3740,27 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
     # reports read "...rather than adding". The rails cannot cover it either —
     # every one is indexed to max_loss, so a run whose peak never clears
     # 0.70x max_loss has no profit exit at all.
-    bits.append(
-        "Banking is a first-class action, not merely the absence of an add. "
-        "If the move your thesis was paid for has largely happened, or open "
-        "P&L is rolling over from its high-water mark, then reducing or "
-        "closing is the correct answer THIS cycle even while the thesis still "
-        "technically holds — a thesis that is still valid is not a reason to "
-        "keep giving back a gain.")
+    if _run_archetype(run) == "swing":
+        # Plan 23 Phase B: the intraday banking pressure ("this cycle") is
+        # exactly the churn a 1-2 day thesis must not inherit — but banking
+        # itself stays first-class per the mandate: a completed move is
+        # never allowed to round-trip.
+        bits.append(
+            "You are a SWING desk: this thesis is paid over days, and the "
+            "first red or green hours are noise, not a verdict. Index "
+            "banking to the thesis — if MOST of the expected move has "
+            "arrived, or open P&L is giving back its high-water mark after "
+            "the move largely completed, reduce or close: a completed move "
+            "is never allowed to round-trip. Short of that, re-deciding the "
+            "position every cycle is churn, not diligence.")
+    else:
+        bits.append(
+            "Banking is a first-class action, not merely the absence of an add. "
+            "If the move your thesis was paid for has largely happened, or open "
+            "P&L is rolling over from its high-water mark, then reducing or "
+            "closing is the correct answer THIS cycle even while the thesis still "
+            "technically holds — a thesis that is still valid is not a reason to "
+            "keep giving back a gain.")
     return " ".join(bits) + "\n" + _margin_state_line(run, pnl, pos_qty)
 
 
