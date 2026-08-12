@@ -141,6 +141,53 @@ class Age(unittest.TestCase):
         self.assertEqual(orc._age_minutes(None, "2026-07-28T06:00:00Z"), 0.0)
 
 
+class GhostRows(unittest.TestCase):
+    """Plan 24 fix 2 residue: a zero-quantity unowned row is bookkeeping
+    debris — the sweep deletes it; owned rows and real orphans are kept."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO positions (id,agent_id,symbol,market,side,quantity,"
+            "entry_price,opened_at,run_id) VALUES (1,6,'USDKRW','forex','long',"
+            "0.0,1412.38,'2026-08-11T23:41:43Z',NULL)")
+        cur.execute(
+            "INSERT INTO positions (id,agent_id,symbol,market,side,quantity,"
+            "entry_price,opened_at,run_id) VALUES (2,6,'CRM','us-stock','long',"
+            "0.633,196.78,'2026-08-11T18:46:50Z',NULL)")
+        cur.execute(
+            "INSERT INTO positions (id,agent_id,symbol,market,side,quantity,"
+            "entry_price,opened_at,run_id) VALUES (3,6,'BTC','crypto','long',"
+            "0.0,100.0,'2026-08-11T18:46:50Z',7)")
+        conn.commit(); conn.close()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _ids(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM positions ORDER BY id")
+        out = [r["id"] for r in cur.fetchall()]
+        conn.close()
+        return out
+
+    def test_sweep_deletes_unowned_zero_rows_only(self):
+        os.environ["ORPHAN_RECLAIM_ENABLED"] = "true"
+        try:
+            out = orc.sweep()
+        finally:
+            os.environ.pop("ORPHAN_RECLAIM_ENABLED", None)
+        self.assertEqual(out.get("ghosts_deleted"), 1)
+        # the real orphan (2) and the RUN-owned zero row (3) both survive
+        self.assertEqual(self._ids(), [2, 3])
+
+
 class Sweep(unittest.TestCase):
     def test_disabled_by_default(self):
         os.environ.pop("ORPHAN_RECLAIM_ENABLED", None)
