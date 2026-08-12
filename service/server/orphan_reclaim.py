@@ -206,6 +206,7 @@ def sweep(read_desk=None, execute=None, blocking=None) -> dict[str, Any]:
            "skipped": 0, "blocking": 0}
     if not enabled():
         return {**out, "disabled": True}
+    out["ghosts_deleted"] = _delete_ghost_rows()
     blocked = blocking_symbols() if blocking is None else blocking
     if not isinstance(blocked, dict):        # a bare set from a caller/test
         blocked = {s: 0 for s in blocked}
@@ -249,6 +250,31 @@ def sweep(read_desk=None, execute=None, blocking=None) -> dict[str, Any]:
         else:
             out["held"] += 1
     return out
+
+
+def _delete_ghost_rows() -> int:
+    """Plan 24 fix 2 residue: an unowned position row at exactly zero
+    quantity carries no risk and no decision content — it is bookkeeping
+    debris (live 2026-08-12: agent 6 held a 0E-8 USDKRW row that every
+    monitoring query tripped over). Owned rows are left alone: a run's own
+    zero row is the run engine's to manage."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            "DELETE FROM positions WHERE run_id IS NULL AND quantity = 0")
+        n = cursor.rowcount
+        conn.commit()
+        return max(0, int(n or 0))
+    except Exception:  # noqa: BLE001 — hygiene must never break the sweep
+        logger.debug("ghost-row cleanup failed", exc_info=True)
+        return 0
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 BLOCKING_REASON = "an open position already exists for this symbol"

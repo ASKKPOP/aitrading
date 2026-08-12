@@ -122,11 +122,19 @@ decision must go to zero.
 
 ## Fix 4 — Orphan position recovery (고아 포지션 회수): every open risk gets a desk
 
-**Evidence.** Agent 6 book: CRM 3× long, `run_id NULL`, −$2.2 and drifting
-(liq-health 0.751 when logged, TTL ~3 h at the observed velocity); two USDKRW
-fragments; one zero-qty ghost row. The liquidation daemon *watches* them (correct,
-plan 16 working) but nothing can *decide* on them — no desk owns the book, so the only
-possible outcomes are luck or liquidation.
+**Correction (2026-08-12, implementation):** the original finding overstated the gap.
+`orphan_reclaim` already exists and is LIVE on prod (`ORPHAN_RECLAIM_ENABLED=true`,
+`ORPHAN_RECLAIM_EXIT=true`): every orphan carries a protective stop (CRM 189.99 —
+the SL/TP watcher owns its exit, capping the tail at ~−3.4%), and the desk is
+consulted for any orphan that blocks a fleet slot. The module's own design decision
+— protect + desk-verdict-exit, never run-adoption ("runs never adopt a book they did
+not open") — stands. What actually remained: zero-quantity ghost rows lived forever;
+the sweep now deletes unowned zero rows each pass (owned zero rows stay the run
+engine's).
+
+**Original evidence (kept for the record).** Agent 6 book: CRM 3× long, `run_id
+NULL`, −$2.2 and drifting (liq-health 0.751 when logged); two USDKRW fragments; one
+zero-qty ghost row.
 
 **Design (the owner's routing rule: forced situations get a path to the desk):**
 - *Sweep (supervisor):* detect orphan rows — `run_id` NULL, or pointing at a stopped
