@@ -466,4 +466,16 @@ behind the platform's per-user gateway + consent rails, unchanged.
   expected; the gap fires on the first fresh mark at the open). The panel's
   fifth item (idle-retire counting closed-session cycles) was already fixed
   platform-wide via _closed_market_cycles.
-- Phases C–E follow per §8.
+- Phase C1 — SHIPPED #384: swing universe filter as code (≥180 bars ·
+  ≥$10 · ADV20 ≥$50M), G = max(P99 overnight gap, 2×ATR20, 3% floor),
+  compose max_bet ≤ 1%·budget/G with leverage pinned 1.0, earnings-window
+  build guard, wired at both build paths, fail-closed.
+- Phase C2 — session-QUEUED flattens: every terminal path funnels through
+  `stopping`, so one check in _control_stopping queues a closed-market
+  flatten to the first scan after the open (fresh mark), without advancing
+  the positions_held timeout (a Friday stop survives to Monday). Crypto
+  (24/7) is untouched by construction. DEFERRED with reason: the book-level
+  Σ notional·G ≤ 2.5% pass — C1's per-slot 1%·budget/G cap already bounds a
+  small paper fleet (N slots ⇒ ≤N% modeled one-night loss), so the book cap
+  binds only at scale; it ships pre-probation, before live capital.
+- Phases D–E follow per §8.

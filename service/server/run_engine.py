@@ -2012,6 +2012,23 @@ def _control_stopping(run: dict, out: dict) -> None:
             out["stopping_finished"] += 1
         return
 
+    # Plan 23 Phase C2: a flatten on a CLOSED market would fill at the last
+    # (stale) mark — the paper book would book a phantom price no live order
+    # could get. Queue instead: stay `stopping`, touch neither the flatten
+    # nor the timeout clock (a Friday-evening stop must not strand its
+    # position as positions_held before Monday's open), and execute on the
+    # first scan after the open, at a fresh mark.
+    try:
+        import markets as _mkts
+        if not _mkts.is_market_open(run.get("market")):
+            emit_telemetry_event(run["id"], "gate_skip",
+                                 {"stage": "flatten",
+                                  "reason": "market closed — flatten queued "
+                                            "to the next open"})
+            return
+    except Exception:  # noqa: BLE001 — a missing calendar must not block a stop
+        pass
+
     ok, why = _flatten_run(run)
     if ok:
         if _simple_transition(run, STATUS_STOPPED,
