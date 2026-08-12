@@ -49,6 +49,30 @@ class SessionMinutesLeft(unittest.TestCase):
         t = _CLOSE - timedelta(hours=5)
         self.assertLessEqual(markets.session_minutes_left("us-stock", t, 30), 30)
 
+    def test_before_the_open_is_zero(self):
+        """Pre-market. The early exit was fed the MARKET name where the
+        SESSION name belongs ("us-stock" vs "nyse"); is_session_open() answers
+        True for anything it does not recognise, so the guard never fired and
+        the bisection below it measured a session that had not started —
+        587 minutes on prod at 2026-08-12 10:12 UTC."""
+        t = _CLOSE - timedelta(hours=14)  # 06:00 ET Monday, 3.5h before the open
+        self.assertFalse(markets.is_market_open("us-stock", t))
+        self.assertEqual(markets.session_minutes_left("us-stock", t, 24 * 60), 0)
+
+    def test_forex_before_the_sunday_reopen_is_zero(self):
+        """Every market's name differs from its session key, so forex/24x5 and
+        futures/cme carried the same defect. Sunday 12:00 ET — 24x5 reopens at
+        17:00 ET, and the unguarded bisection returned the whole horizon."""
+        t = _CLOSE + timedelta(days=6) - timedelta(hours=4)
+        self.assertFalse(markets.is_market_open("forex", t))
+        self.assertEqual(markets.session_minutes_left("forex", t, 24 * 60), 0)
+
+    def test_futures_maintenance_halt_is_zero(self):
+        # 2026-07-27 17:30 ET — inside the daily CME 17:00–18:00 halt.
+        t = _CLOSE + timedelta(minutes=90)
+        self.assertFalse(markets.is_market_open("futures", t))
+        self.assertEqual(markets.session_minutes_left("futures", t, 24 * 60), 0)
+
 
 class ScopeExcludesAClosingMarket(unittest.TestCase):
     def setUp(self):
