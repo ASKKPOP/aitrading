@@ -40,6 +40,17 @@ class FleetIn(BaseModel):
     idempotency_key: Optional[str] = None
     name: Optional[str] = None
     leverage: Optional[float] = None   # None ⇒ auto by tier; 1–10 ⇒ override
+    # Plan 23: 'short' = today's intraday behavior (default); 'swing' = the
+    # US-stock overnight-hold archetype (market scope pinned server-side).
+    archetype: str = "short"
+
+    @field_validator("archetype")
+    @classmethod
+    def _archetype(cls, v: str) -> str:
+        v = (v or "short").strip().lower()
+        if v not in ("short", "swing"):
+            raise ValueError("archetype must be short|swing")
+        return v
 
     @field_validator("risk_appetite")
     @classmethod
@@ -259,7 +270,7 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
                 stop_loss_frac=data.stop_loss_frac,
                 profit_target_frac=data.profit_target_frac,
                 idempotency_key=data.idempotency_key, name=data.name,
-                leverage=data.leverage)
+                leverage=data.leverage, archetype=data.archetype)
         except trading_runs.EntitlementDenied as exc:
             raise HTTPException(status_code=403, detail=str(exc))
         except fleet_planner.FleetConflict as exc:
