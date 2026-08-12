@@ -1139,6 +1139,18 @@ async def factor_snapshot_loop():
             )
         except Exception as e:
             print(f"[Factor Snapshots Error] {e}")
+        # Plan 23 Phase D: the US-equity positioning recorder rides the same
+        # cadence — self-accrued history for the v2 crowd-fade.
+        try:
+            from us_stock_factors import record_us_stock_factor_snapshots
+            result = await asyncio.to_thread(record_us_stock_factor_snapshots)
+            print(
+                "[US Factor Snapshots] stored: "
+                f"written={result.get('written')} "
+                f"errors={len(result.get('errors') or [])}"
+            )
+        except Exception as e:
+            print(f"[US Factor Snapshots Error] {e}")
 
         await asyncio.sleep(refresh_interval)
 

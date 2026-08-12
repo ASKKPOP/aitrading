@@ -163,6 +163,54 @@ def upcoming_earnings(force: bool = False) -> dict[str, str]:
     return by_symbol
 
 
+# Plan 23 Phase D: latest reported earnings SURPRISE (actual vs estimate) —
+# the one feed v1-PEAD was missing. AV's EARNINGS endpoint (free tier), one
+# symbol per call, so cached generously: a print happens 4x/year.
+_SURPRISE_TTL_SECONDS = 6 * 3600
+_surprise_cache: dict[str, tuple[float, "dict | None"]] = {}
+
+
+def latest_earnings_surprise(symbol: str, force: bool = False) -> Optional[dict]:
+    """{'report_date', 'surprise_pct', 'eps_actual', 'eps_estimate'} for the
+    symbol's most recent reported quarter, or None (no key, no data, or a
+    dead feed — null-honest, never a guess)."""
+    sym = (symbol or "").strip().upper()
+    if not sym or not _alphavantage_key():
+        return None
+    now = time.monotonic()
+    hit = _surprise_cache.get(sym)
+    if hit and not force and now - hit[0] < _SURPRISE_TTL_SECONDS:
+        return hit[1]
+    out: Optional[dict] = None
+    try:
+        resp = requests.get(
+            "https://www.alphavantage.co/query",
+            params={"function": "EARNINGS", "symbol": sym,
+                    "apikey": _alphavantage_key()},
+            timeout=30)
+        resp.raise_for_status()
+        rows = (resp.json() or {}).get("quarterlyEarnings") or []
+        for row in rows:                      # newest first per AV docs
+            actual = row.get("reportedEPS")
+            est = row.get("estimatedEPS")
+            sp = row.get("surprisePercentage")
+            if actual in (None, "None") or sp in (None, "None"):
+                continue
+            out = {"report_date": row.get("reportedDate"),
+                   "surprise_pct": float(sp),
+                   "eps_actual": float(actual),
+                   "eps_estimate": (float(est)
+                                    if est not in (None, "None") else None)}
+            break
+    except Exception:  # noqa: BLE001
+        # a dead feed serves the stale cache entry if one exists
+        if hit:
+            return hit[1]
+        return None
+    _surprise_cache[sym] = (now, out)
+    return out
+
+
 def days_to_earnings(symbol: str) -> Optional[int]:
     """Whole days until the symbol's next print, None when unknown/no key."""
     date = upcoming_earnings().get((symbol or "").strip().upper())
