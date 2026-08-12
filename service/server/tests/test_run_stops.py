@@ -407,6 +407,22 @@ class RunStopsTests(unittest.TestCase):
         self.assertEqual(out["stops_fired"], 1)
         self.assertEqual(self._row(run_id)["status_reason"], "idle_retired")
 
+    def test_idle_retire_yields_to_an_in_flight_decision(self):
+        """Plan 24 fix 3 (live run 1085, 2026-08-12): idle-retire fired one
+        second before the run's FIRST actionable decision, which then died
+        on the stopped-run fence. While a decision cycle holds the claim the
+        run is not idle by definition — defer, and re-fire next scan if the
+        desk held again."""
+        run_id = self._run()
+        self._set_run(run_id, cycle_seq=12, claimed_by="cycle-worker",
+                      claim_expires_at=_ts(300))
+        self.assertEqual(run_engine.control_pass()["stops_fired"], 0)
+        self.assertEqual(self._row(run_id)["status"], "running")
+        # claim released (the decision was another hold) ⇒ next scan retires
+        self._set_run(run_id, claimed_by=None, claim_expires_at=None)
+        self.assertEqual(run_engine.control_pass()["stops_fired"], 1)
+        self.assertEqual(self._row(run_id)["status_reason"], "idle_retired")
+
     def test_idle_retire_leaves_a_run_that_has_traded(self):
         """Cycle count alone never retires a run with a real book."""
         run_id = self._run()
