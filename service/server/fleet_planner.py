@@ -549,6 +549,17 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
         deny = check_fleet_create(cursor, agent_id, int(n_runs))
         if deny:
             raise trading_runs.EntitlementDenied(deny)
+        if archetype == "swing":
+            # Owner (2026-08-12): the US-stock swing strategy is Professional
+            # and Enterprise only. Today every fleet already needs
+            # Professional+, so this is inherited — stated explicitly so it
+            # survives any future widening of fleet access to lower tiers.
+            from entitlements import plan_code_for_user
+            if plan_code_for_user(cursor, user_id) not in ("professional",
+                                                           "enterprise"):
+                raise trading_runs.EntitlementDenied(
+                    "the US-stock swing strategy needs a Professional or "
+                    "Enterprise plan")
         if idempotency_key:
             cursor.execute(
                 "SELECT id FROM fleets WHERE idempotency_key = ? AND agent_id = ?",

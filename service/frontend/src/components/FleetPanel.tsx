@@ -17,6 +17,7 @@ import { tr } from '../i18n'
 type Fleet = {
   id: number; status: string; status_reason: string | null
   n_runs: number; total_budget_usd: number; risk_appetite: string
+  archetype?: string
   recommended_max_n_runs?: number | null
   profit_target_frac?: number | null; successor_fleet_id?: number | null
   warn_loss_frac: number; stop_loss_frac: number
@@ -207,6 +208,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [n, setN] = useState(3)
   const [budget, setBudget] = useState<number>(0)
   const [risk, setRisk] = useState('balanced')
+  const [archetype, setArchetype] = useState<'short' | 'swing'>('short')
   const [levKey, setLevKey] = useState('auto')
   const [goalPct, setGoalPct] = useState<number>(0)   // 0 = run until I stop
   // Empty = every market, which is what the API means by a null market_scope.
@@ -316,7 +318,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     try {
       const r = await fetch(`${API_BASE}/fleets`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, markets: mkts.length ? mkts : null, leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, profit_target_frac: goalPct > 0 ? goalPct / 100 : null, idempotency_key: `ui-${Date.now()}` }),
+        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, archetype, markets: archetype === 'swing' ? null : (mkts.length ? mkts : null), leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, profit_target_frac: goalPct > 0 ? goalPct / 100 : null, idempotency_key: `ui-${Date.now()}` }),
       })
       const body = await r.json()
       if (!r.ok) { setError(body.detail || 'error'); return }
@@ -445,7 +447,23 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
           </div>
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12.5, marginBottom: 6, fontWeight: 600 }}>{T.profitLevel}</div>
+            <div style={{ fontSize: 12.5, marginBottom: 6, fontWeight: 600 }}>
+              {tr(language, { ko: '전략 유형', en: 'Strategy type', ja: '戦略タイプ', th: 'ประเภทกลยุทธ์', vi: 'Loại chiến lược', id: 'Jenis strategi' })}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button style={chip(archetype === 'short')} onClick={() => setArchetype('short')}>
+                {tr(language, { ko: '단기 (기존 방식)', en: 'Intraday (current)', ja: '短期（従来方式）', th: 'ระยะสั้น (แบบเดิม)', vi: 'Ngắn hạn (hiện tại)', id: 'Intraday (saat ini)' })}
+              </button>
+              <button style={chip(archetype === 'swing')} onClick={() => setArchetype('swing')}>
+                {tr(language, { ko: '미국 주식 스윙 (1–2일 보유)', en: 'US-stock swing (1–2 day holds)', ja: '米国株スイング（1–2日保有）', th: 'สวิงหุ้นสหรัฐ (ถือ 1–2 วัน)', vi: 'Swing cổ phiếu Mỹ (giữ 1–2 ngày)', id: 'Swing saham AS (tahan 1–2 hari)' })}
+              </button>
+            </div>
+            {archetype === 'swing' && (
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
+                {tr(language, { ko: '미국 주식 전용 · 4시간 판단 주기 · 오버나이트 보유가 설계 · 레버리지 1배 고정 · 갭 리스크에 맞춰 자동 사이징 · 실적 발표 직전 종목은 진입하지 않습니다. 페이퍼 검증 단계의 전략입니다.', en: 'US equities only · 4-hour decision cadence · overnight holds by design · leverage pinned 1× · positions auto-sized to gap risk · never enters right before an earnings print. This strategy is in its paper-validation stage.', ja: '米国株専用・4時間の判断サイクル・オーバーナイト保有が設計・レバレッジ1倍固定・ギャップリスクに応じた自動サイジング・決算直前の銘柄には入りません。ペーパー検証段階の戦略です。', th: 'เฉพาะหุ้นสหรัฐ · รอบตัดสินใจ 4 ชม. · ถือข้ามคืนโดยการออกแบบ · เลเวอเรจคงที่ 1 เท่า · ปรับขนาดตามความเสี่ยงแก๊ป · ไม่เข้าก่อนงบ อยู่ในขั้นทดสอบเปเปอร์', vi: 'Chỉ cổ phiếu Mỹ · chu kỳ quyết định 4 giờ · giữ qua đêm theo thiết kế · đòn bẩy cố định 1× · tự định cỡ theo rủi ro gap · không vào lệnh ngay trước báo cáo lợi nhuận. Chiến lược đang ở giai đoạn kiểm chứng paper.', id: 'Khusus saham AS · siklus keputusan 4 jam · tahan semalam sesuai desain · leverage tetap 1× · ukuran posisi otomatis sesuai risiko gap · tidak masuk tepat sebelum laporan laba. Strategi ini dalam tahap validasi paper.' })}
+              </div>
+            )}
+            <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>{T.profitLevel}</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {RISK_TIERS.map(t => (
                 <button key={t.key} style={chip(risk === t.key)} onClick={() => setRisk(t.key)}>
@@ -459,6 +477,12 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
               {tr(language, { ko: '시장', en: 'Markets', ja: '市場', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' })}
             </div>
+            {archetype === 'swing' && (
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', lineHeight: 1.45 }}>
+                {tr(language, { ko: '미국 주식으로 고정됩니다 (스윙 전략의 설계).', en: 'Pinned to US stocks (by the swing design).', ja: '米国株に固定されます（スイング設計）。', th: 'ตรึงเป็นหุ้นสหรัฐ (ตามการออกแบบสวิง)', vi: 'Cố định vào cổ phiếu Mỹ (theo thiết kế swing).', id: 'Dikunci ke saham AS (sesuai desain swing).' })}
+              </div>
+            )}
+            {archetype !== 'swing' && (<>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button style={chip(mkts.length === 0)} onClick={() => setMkts([])}>
                 {tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' })}
@@ -475,6 +499,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                 ? tr(language, { ko: '전체 — AI가 지금 열려 있는 시장 중에서 고릅니다.', en: 'All — the AI picks from whichever markets are open right now.', ja: '全市場 — AIが現在開いている市場から選びます。', th: 'ทั้งหมด — AI เลือกจากตลาดที่เปิดอยู่', vi: 'Tất cả — AI chọn trong các thị trường đang mở.', id: 'Semua — AI memilih dari pasar yang sedang buka.' })
                 : tr(language, { ko: '선택한 시장에서만 종목을 고릅니다. 모두 닫혀 있으면 열릴 때까지 기다립니다.', en: 'Symbols are picked only from the markets you chose. If they are all shut, the fleet waits for a session.', ja: '選択した市場からのみ選びます。全て閉場なら開くまで待機します。', th: 'เลือกเฉพาะตลาดที่คุณเลือก หากปิดทั้งหมดจะรอจนเปิด', vi: 'Chỉ chọn trong các thị trường bạn đã chọn. Nếu đều đóng cửa, hạm đội sẽ chờ.', id: 'Simbol hanya dipilih dari pasar yang Anda pilih. Jika semuanya tutup, armada menunggu sesi berikutnya.' })}
             </div>
+            </>)}
             <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
               {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' })}
             </div>
