@@ -980,7 +980,7 @@ def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
         return False
 
 
-def _cycle_in_flight(run_id: int) -> bool:
+def _cycle_in_flight(run: dict) -> bool:
     """True while a decision cycle holds the run's claim — the idle-retire
     verdict yields to it (plan 24 fix 3). Live 2026-08-12: run 1085 was
     idle-retired at 16:35:55 and its FIRST actionable decision (`sell`)
@@ -988,17 +988,10 @@ def _cycle_in_flight(run_id: int) -> bool:
     paid research forbidden to act by a one-second race. A run whose desk
     is deciding RIGHT NOW is not idle by definition; deferring costs one
     scan interval and the verdict re-fires next scan if the desk held again.
-    Reads fresh — the caller's run dict is a scan-time snapshot."""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT claim_expires_at FROM trading_runs WHERE id = ?",
-            (run_id,))
-        row = cursor.fetchone()
-    finally:
-        conn.close()
-    return bool(row and (row["claim_expires_at"] or "") > _now_iso())
+    Reads the scan's own row snapshot (seconds old — the LLM call the claim
+    covers runs far longer than that), so the check stays DB-free."""
+    return bool(run.get("claimed_by")
+                and (run.get("claim_expires_at") or "") > _now_iso())
 
 
 def _evaluate_stop(run: dict) -> Optional[str]:
@@ -1039,7 +1032,7 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             # _closed_market_cycles for the two runs this rail wrongly
             # collected.
             worked = int(run.get("cycle_seq") or 0) - _closed_market_cycles(run["id"])
-            if worked >= limit and not _cycle_in_flight(run["id"]):
+            if worked >= limit and not _cycle_in_flight(run):
                 return "idle_retired"
         # Thesis invalidation (2026-07-27), a sharper rail than the idle timer.
         # A spot run built on a LONG thesis whose desk keeps reading bearish
