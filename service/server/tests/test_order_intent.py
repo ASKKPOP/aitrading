@@ -114,6 +114,23 @@ class RailTests(unittest.TestCase):
         railed = OI.rail(p, position_notional_usd=0.40)
         self.assertEqual(railed["size_frac"], 1.0)
 
+    def test_dust_remainder_compiles_to_full_close(self):
+        """Plan 24 fix 4 (live run 1083, 2026-08-12): four correct 'cover
+        half' calls left a $4.45 remainder no move can bank. A reduce whose
+        REMAINDER would fall below the manage-worthy floor grows to a full
+        close — shedding risk, so the rail may only grow."""
+        p = OI.parse({"intent": "reduce", "size_frac": 0.5})
+        railed = OI.rail(p, position_notional_usd=40.0)   # remainder $20 < $25
+        self.assertEqual(railed["size_frac"], 1.0)
+        self.assertEqual(railed["railed"]["size_frac"]["why"],
+                         "dust_remainder_closed")
+
+    def test_healthy_remainder_is_untouched(self):
+        p = OI.parse({"intent": "reduce", "size_frac": 0.5})
+        railed = OI.rail(p, position_notional_usd=200.0)  # remainder $100
+        self.assertEqual(railed["size_frac"], 0.5)
+        self.assertEqual(railed["railed"], {})
+
     def test_close_is_never_railed(self):
         p = OI.parse({"intent": "close"})
         railed = OI.rail(p, position_notional_usd=0.01)

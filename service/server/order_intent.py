@@ -149,7 +149,29 @@ def rail(parsed: dict, *, position_notional_usd: float = 0.0) -> dict:
                 out["railed"] = {"size_frac": {"from": frac, "to": grown,
                                                "why": "dust_slice_grown"}}
                 out["size_frac"] = grown
+        # Plan 24 fix 4 (live run 1083, 2026-08-12): repeated "cover half"
+        # decayed a winner to a $4.45 remainder that can never clear its own
+        # round trip — babysat by 30-min desk cycles thereafter. A reduce
+        # whose REMAINDER would fall below the manage-worthy floor grows to
+        # a full close. Still shed-only: the rail may only grow a reduce.
+        frac = float(out["size_frac"])
+        if frac < 1.0 and \
+                position_notional_usd * (1.0 - frac) < _dust_remainder_usd():
+            out["railed"] = {"size_frac": {"from": frac, "to": 1.0,
+                                           "why": "dust_remainder_closed"}}
+            out["size_frac"] = 1.0
     return out
+
+
+def _dust_remainder_usd() -> float:
+    """Notional below which a position is not worth managing: at the R1
+    fee-hurdle geometry (~2.4% favourable move to break even on flat-fee
+    minimums) a remainder under ~$25 cannot pay for its own exit plus the
+    desk attention it consumes. Env-tunable; 0 disables."""
+    try:
+        return max(0.0, float(os.getenv("RUN_DUST_REMAINDER_USD", "25")))
+    except (TypeError, ValueError):
+        return 25.0
 
 
 def compile_intent(kind: str, size_frac: Optional[float], *,
