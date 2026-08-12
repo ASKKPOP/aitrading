@@ -1,7 +1,14 @@
 # Handoff — Billing, trial, legal docs (session of 2026-08-05)
 
-Everything below is **uncommitted work in two separate locations**. Nothing has been
-committed, pushed, or deployed. Read this first, then `git diff` in each location.
+> **Status update 2026-08-12.** This file was written while the work was still
+> uncommitted. Since then a **parallel session committed and pushed most of it to
+> `origin/main`** — the backend trial code, the admin billing-ID fields, the tests, the
+> rewritten Terms §8, the privacy-policy corrections and `docs/ops/` are all upstream.
+> Verify against `origin/main` before trusting any "uncommitted" statement below.
+> Prod deployment was not verified from this session.
+
+Everything below describes work across two locations. Read this first, then check each
+against `origin/main`.
 
 ---
 

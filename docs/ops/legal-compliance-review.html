@@ -113,7 +113,7 @@ data-protection regime below needs an identified controller, and Stripe onboardi
 <tr><td>3</td><td>throughout</td><td>No <b>lawful basis</b> stated per processing purpose (contract / consent / legitimate interest). Every PDPA/PDP-style regime below requires this</td><td class="no">High</td></tr>
 <tr><td>4</td><td>§6 Retention</td><td>"a reasonable period afterward" — no periods given. Thailand, Indonesia and Vietnam expect stated retention per data category</td><td class="no">High</td></tr>
 <tr><td>5</td><td>§10 Transfers</td><td>Does not name destination countries, recipients, or safeguards. Vietnam requires a transfer-impact dossier filed with the MPS; Indonesia and Thailand impose their own transfer conditions</td><td class="no">High</td></tr>
-<tr><td>6</td><td>§8 Rights</td><td>Names only EEA/UK/California. Seven of your eight target markets grant statutory rights not mentioned here</td><td class="no">High</td></tr>
+<tr><td>6</td><td>§8 Rights</td><td>Names only EEA/UK/California. Five of your six target markets grant statutory rights not mentioned here</td><td class="no">High</td></tr>
 <tr><td>7</td><td>missing</td><td>No <b>automated decision-making</b> disclosure. Your product's whole premise is an AI making trading decisions about the user. Quebec Law 25 grants disclosure-on-request; Australia's 2024 amendments add transparency duties <span class="tag wn">verify commencement</span></td><td class="no">High</td></tr>
 <tr><td>8</td><td>missing</td><td>No <b>breach-notification</b> commitment. Indonesia requires 3×24 hours, Thailand 72 hours; the others have their own clocks</td><td class="wn">Medium</td></tr>
 <tr><td>9</td><td>missing</td><td>No privacy officer / DPO / local representative named. Thailand requires a local representative for foreign controllers targeting Thai users; Quebec requires a designated privacy officer</td><td class="no">High</td></tr>
@@ -237,12 +237,12 @@ matters most, treated separately in Part C.
 <div class="card bad">
 You charge a fee. In exchange, an AI produces trading signals and decisions for an identified individual
 user, and — where the user connects a broker — places orders on that user's account. In every one of these
-eight markets, some part of that is a regulated activity. The disclaimer "nothing here is investment advice"
+six markets, some part of that is a regulated activity. The disclaimer "nothing here is investment advice"
 is evidence, not a defence: regulators look at what the service does, not at what it calls itself.
 <p style="margin:8px 0 0">Two features push you toward the heavier end of every regime: the advice is
 <b>personalised</b> (per user, per portfolio, per risk setting) rather than an impersonal newsletter, and the
 system can <b>execute</b> rather than merely suggest.</p>
-<p class="kr" style="margin:8px 0 0">수수료를 받고, 특정 개인 사용자를 위해 AI가 매매 신호·판단을 생성하며, 브로커 연결 시 그 계좌에 주문까지 넣습니다. 8개국 모두에서 이 중 일부는 규제 대상 행위입니다. "투자 자문이 아님" 문구는 방어가 아니라 정황 증거일 뿐이며, 규제기관은 명칭이 아니라 실제 기능을 봅니다. 특히 ① 자문이 <b>개인 맞춤형</b>이고 ② 시스템이 <b>주문 집행</b>까지 한다는 두 가지가 가장 무거운 쪽으로 분류시킵니다.</p>
+<p class="kr" style="margin:8px 0 0">수수료를 받고, 특정 개인 사용자를 위해 AI가 매매 신호·판단을 생성하며, 브로커 연결 시 그 계좌에 주문까지 넣습니다. 6개국 모두에서 이 중 일부는 규제 대상 행위입니다. "투자 자문이 아님" 문구는 방어가 아니라 정황 증거일 뿐이며, 규제기관은 명칭이 아니라 실제 기능을 봅니다. 특히 ① 자문이 <b>개인 맞춤형</b>이고 ② 시스템이 <b>주문 집행</b>까지 한다는 두 가지가 가장 무거운 쪽으로 분류시킵니다.</p>
 </div>
 
 <div class="card">
@@ -252,17 +252,17 @@ system can <b>execute</b> rather than merely suggest.</p>
 <tr><td>Canada</td><td>Provincial securities regulators (CSA) — adviser registration</td><td>Does the service constitute advising in securities in each province where you have users?</td></tr>
 <tr><td>Australia</td><td><b>AFSL</b> under the Corporations Act; ASIC has an active focus on copy trading</td><td>Is this personal advice, general advice, or dealing? Copy-trading has been treated as a financial service</td></tr>
 <tr><td>Vietnam</td><td>Securities Law — advisory licensing; digital-asset status changed in 2025/26 <span class="tag wn">verify</span></td><td>Can a foreign entity provide paid investment advisory to residents at all?</td></tr>
-<tr><td>Indonesia</td><td><b>OJK</b> licensing; crypto supervision moved from Bappebti to OJK in Jan 2025. Indonesia has <b>criminally prosecuted unlicensed "robot trading" operators</b></td><td>Highest enforcement risk of the eight. Get this opinion before accepting a single Indonesian subscriber</td></tr>
+<tr><td>Indonesia</td><td><b>OJK</b> licensing; crypto supervision moved from Bappebti to OJK in Jan 2025. Indonesia has <b>criminally prosecuted unlicensed "robot trading" operators</b></td><td>Highest enforcement risk of the six. Get this opinion before accepting a single Indonesian subscriber</td></tr>
 <tr><td>Thailand</td><td>SEC Thailand — investment advisory licensing; the Digital Asset Business royal decree covers digital-asset advice</td><td>Does the crypto side trigger digital-asset advisory licensing separately from securities?</td></tr>
 </table>
 </div>
 
 <div class="card warn">
-<b>The pragmatic path most platforms take,</b> and the one worth pricing before you build compliance for eight
+<b>The pragmatic path most platforms take,</b> and the one worth pricing before you build compliance for six
 countries: <b>geo-restrict at signup</b> to the markets where you have an opinion, and open others as opinions
-come in. That is a billing-country check plus a terms clause, and it is far cheaper than eight licensing
+come in. That is a billing-country check plus a terms clause, and it is far cheaper than six licensing
 analyses done at once. It also matches what your payment providers will expect you to be able to state.
-<p class="kr" style="margin:8px 0 0">현실적인 경로: 의견서를 확보한 시장만 열고 나머지는 <b>가입 단계에서 지역 제한</b>한 뒤 순차 개방. 결제 국가 확인 + 약관 조항이면 되며, 8개국 인허가 검토를 한꺼번에 하는 것보다 훨씬 저렴합니다.</p>
+<p class="kr" style="margin:8px 0 0">현실적인 경로: 의견서를 확보한 시장만 열고 나머지는 <b>가입 단계에서 지역 제한</b>한 뒤 순차 개방. 결제 국가 확인 + 약관 조항이면 되며, 6개국 인허가 검토를 한꺼번에 하는 것보다 훨씬 저렴합니다.</p>
 </div>
 
 <h2>Part D — What to do, in order</h2>
