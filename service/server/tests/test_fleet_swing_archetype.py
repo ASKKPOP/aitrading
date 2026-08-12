@@ -111,6 +111,24 @@ class CreateFleetArchetypeTests(ArchetypeBase):
         with self.assertRaises(ValueError):
             fp.create_fleet(self.agent["id"], 2, 2000.0, archetype="hyper")
 
+    def test_swing_is_professional_or_enterprise_only(self):
+        # Owner (2026-08-12): explicit tier gate, independent of the general
+        # fleet gate — even with fleet access granted, a non-Pro/Enterprise
+        # plan may not create a swing fleet.
+        import trading_runs
+        with patch("entitlements.check_fleet_create", return_value=None), \
+             patch("entitlements.plan_code_for_user", return_value="pro"):
+            with self.assertRaises(trading_runs.EntitlementDenied):
+                fp.create_fleet(self.agent["id"], 2, 2000.0,
+                                archetype="swing")
+
+    def test_enterprise_plan_may_create_swing(self):
+        with patch("entitlements.plan_code_for_user",
+                   return_value="enterprise"):
+            fid = fp.create_fleet(self.agent["id"], 2, 2000.0,
+                                  archetype="swing")
+        self.assertEqual(fp.get_fleet(fid)["archetype"], "swing")
+
 
 class ComposeArchetypeTests(ArchetypeBase):
     def _thesis(self, market="us-stock"):
