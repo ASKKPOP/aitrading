@@ -185,8 +185,11 @@ Extend candidates that WAIT for data (do not build early):
   `worktree-manipulation-detection` (this PR).
 - **No swing fleet exists yet.** The internal trial (fleet 30, agent 58,
   user 22) was fully stopped at the owner's order with ZERO positions ever
-  opened; the owner also stopped their own fleet 29. The dormant trial
-  agent/user may be deleted if the owner asks.
+  opened, then **deleted entirely at the owner's order 2026-08-12** (full
+  FK graph removed in one transaction: 160 run_events, 145 fleet_events,
+  3 slots, 2 candidates, runs 1077/1078, fleet 30, subscription, agent 58,
+  user 22 — verified zero orphans, owner account untouched). The owner
+  also stopped their own fleet 29.
 - Next expected event: the owner builds a swing fleet at user level via
   sooppiy.com. First session after that: run §2 checks, start the closed-
   trade counter for the §7 checkpoints, and note the fleet id HERE.
