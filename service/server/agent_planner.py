@@ -236,26 +236,7 @@ def plan_agent_cycle(config: dict[str, Any]) -> dict[str, Any]:
             f"ALLOWED_SYMBOLS: {allowed}\n"
             f"CONTEXT (JSON):\n{json.dumps(context, ensure_ascii=False, default=str)[:6000]}\n"
         )
-        # Same attribution contract as run_engine.run_cycle: the planner is a
-        # daemon path, so nothing upstream names the member whose agent this
-        # spend belongs to. Without it the llm_usage row lands user_id NULL.
-        # Fail-soft — metering must never block a plan.
-        ctx_token = None
-        try:
-            from llm_client import LlmContext, set_llm_context
-            from services import user_id_for_agent
-            ctx_token = set_llm_context(LlmContext(
-                source="rule", user_id=user_id_for_agent(agent_id),
-                agent_id=agent_id))
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("planner LLM attribution unavailable (agent %s): %s",
-                           agent_id, exc)
-        try:
-            text = generate_text(prompt, max_tokens=400, temperature=0.2, tier="decision")
-        finally:
-            if ctx_token is not None:
-                from llm_client import reset_llm_context
-                reset_llm_context(ctx_token)
+        text = generate_text(prompt, max_tokens=400, temperature=0.2, tier="decision")
         raw = _parse_plan_json(text or "")
         if raw:
             plan = _clamp_plan(raw, budget_usd, allowed)

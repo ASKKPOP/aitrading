@@ -4226,33 +4226,11 @@ def run_cycle(run_id: int) -> dict:
     Sync; called on the dedicated executor. Never raises."""
     result: dict[str, Any] = {"run_id": run_id, "executed": False, "skip_reason": None}
     run = None
-    ctx_token = None
     try:
         run = _claim(run_id)
         if run is None:
             result["skip_reason"] = "not claimed (lease held elsewhere or not running)"
             return result
-
-        # Name the member this cycle's LLM spend belongs to, for the whole
-        # cycle. The route verdict, the light analysis and run_feedback's
-        # thesis review all call generate_text without setting a context of
-        # their own; without this they inherit nothing and their llm_usage rows
-        # land with user_id NULL. Measured 2026-08-05: that was 64% of all
-        # metered spend, which is why no per-tier cost cap could be built.
-        # analysis_agents.run_analysis sets its own (identical) context — the
-        # inner one simply wins for the analyst pipeline. Fail-soft: metering
-        # identity must never be the thing that breaks a trading cycle.
-        try:
-            from llm_client import LlmContext, set_llm_context
-            from services import user_id_for_agent
-            agent_id = run["agent_id"]
-            ctx_token = set_llm_context(LlmContext(
-                source="rule", user_id=user_id_for_agent(agent_id),
-                agent_id=agent_id))
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("run cycle LLM attribution unavailable (run %s): %s",
-                           run_id, exc)
-
         seq = int(run["cycle_seq"])
         cfg = json.loads(run.get("config_snapshot_json") or "{}")
 
@@ -4892,9 +4870,6 @@ def run_cycle(run_id: int) -> dict:
             pass
         return result
     finally:
-        if ctx_token is not None:
-            from llm_client import reset_llm_context
-            reset_llm_context(ctx_token)
         if run is not None:
             _release(run_id)
 

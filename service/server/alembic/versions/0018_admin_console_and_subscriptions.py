@@ -3,7 +3,7 @@
 New tables: admin_users / admin_tokens / admin_audit_log (real admin accounts
 with email+password replacing the shared ADMIN_TOKEN, plus an audit trail),
 subscription_plans / user_subscriptions / contract_requests (paid membership:
-junior $60, pro $119, professional $199, enterprise = contact), and a
+junior $60, pro $250, professional $500, enterprise = contact), and a
 users.status column for member suspend/ban.
 
 DDL mirrors init_database(). Indexed / unique / timestamp columns use
@@ -119,8 +119,8 @@ def upgrade() -> None:
         SELECT code, name, price_usd, contact_only, sort_order FROM (
             SELECT 'junior' AS code, 'Junior' AS name, 60.0 AS price_usd,
                    0 AS contact_only, 1 AS sort_order
-            UNION ALL SELECT 'pro', 'Pro', 119.0, 0, 2
-            UNION ALL SELECT 'professional', 'Professional', 199.0, 0, 3
+            UNION ALL SELECT 'pro', 'Pro', 250.0, 0, 2
+            UNION ALL SELECT 'professional', 'Professional', 500.0, 0, 3
             UNION ALL SELECT 'enterprise', 'Enterprise', 0.0, 1, 4
         ) AS seed
         WHERE NOT EXISTS (SELECT 1 FROM subscription_plans)
