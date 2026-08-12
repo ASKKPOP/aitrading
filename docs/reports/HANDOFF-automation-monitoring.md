@@ -26,6 +26,29 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 🚨 HOST COMPROMISE — XMRig MINER IN noesis-dashboard, CONTAINED 2026-08-09 00:17Z
+>
+> The EC2 box (2 vCPU) was at **93.6% user CPU, load ~10, 104 zombies** —
+> a cryptominer, not sooppiy load. `/tmp/dashboard --config /tmp/v.json`
+> inside container **noesis-dashboard** was **XMRig 6.26.0** (v.json is the
+> miner config, `worker-id nnjjss2`); dropped 2026-08-05 07:00, burned ~1.5
+> cores for 3.7 days. Root cause: **Next.js 15.2.4 (the container's PID 1)
+> is being actively exploited** — it respawns the miner via sh/base64
+> chains within minutes, so killing the process does nothing.
+>
+> **Contained:** `docker stop noesis-dashboard` + `docker update
+> --restart=no`. Result: CPU **93.6%→4.5% user (91% idle)**, load 9.5→5.5
+> falling, **zombies 104→0**, sooppiy.com 200 in 48ms. Swept the other node
+> containers (noesis-grid, lgbtdb-frontend/administrator, noesis-wiki,
+> guide, steward) — all clean.
+>
+> **STILL OPEN (owner):** noesis-dashboard is STOPPED, not fixed — do NOT
+> restart it until Next.js is patched (≥15.2.5 / the CVE fix) and the image
+> rebuilt clean, or it re-mines immediately. Rotate any secrets that
+> container's env could read. This is the noesis project, not sooppiy, but
+> it shares the box — and it explains the 50-70s scheduler-tick latency
+> seen on run slots for days (sooppiy ran CPU-starved).
+>
 > ### 📋 OWNER ORDER — FULL HTML A/B REPORT DUE ~2026-08-09 08:43Z
 >
 > Owner switched agent 6's desk from local gpt-oss to **anthropic /
