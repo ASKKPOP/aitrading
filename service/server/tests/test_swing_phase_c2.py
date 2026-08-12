@@ -125,3 +125,93 @@ class SupervisorSwingGateWiring(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OvernightCapPass(unittest.TestCase):
+    """Book-level sum(notional x G) <= 2.5% of equity inside the pre-close
+    window; excess reduced from the largest contributor, never dumped."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (email, password_hash, created_at) "
+                    "VALUES ('oc@x.com','x','2026-01-01T00:00:00Z')")
+        uid = cur.lastrowid
+        cur.execute("INSERT INTO agents (name, token_hash, cash, user_id,"
+                    " created_at) VALUES ('oc','th',100000,?,"
+                    "'2026-01-01T00:00:00Z')", (uid,))
+        self.agent_id = cur.lastrowid
+        cur.execute(
+            "INSERT INTO fleets (agent_id, status, n_runs, total_budget_usd,"
+            " archetype, created_at) VALUES (?,?,?,?,?,?)",
+            (self.agent_id, "active", 2, 10000.0, "swing",
+             "2026-01-01T00:00:00Z"))
+        self.fleet_id = cur.lastrowid
+        conn.commit(); conn.close()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run_with_position(self, symbol, qty, price, g):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cfg = {"archetype": "swing", "thesis": {"swing_g_frac": g}}
+        cur.execute(
+            "INSERT INTO trading_runs (agent_id, symbol, market, market_type,"
+            " status, config_snapshot_json, start_condition_json,"
+            " stop_conditions_json, fleet_id, created_at) VALUES "
+            "(?,?,?,'spot','running',?,'{}','{}',?,'2026-01-01T00:00:00Z')",
+            (self.agent_id, symbol, "us-stock", json.dumps(cfg),
+             self.fleet_id))
+        rid = cur.lastrowid
+        cur.execute(
+            "INSERT INTO positions (agent_id, symbol, market, side, quantity,"
+            " entry_price, current_price, opened_at, run_id) VALUES "
+            "(?,?,?,'long',?,?,?,'2026-01-01T00:00:00Z',?)",
+            (self.agent_id, symbol, "us-stock", qty, price, price, rid))
+        conn.commit(); conn.close()
+        return rid
+
+    def _pass(self, minutes_left=15):
+        import fleet_supervisor as fs
+        import fleet_planner as fpm
+        fleet = fpm.get_fleet(self.fleet_id)
+        calls = []
+        with patch("markets.session_minutes_left",
+                   return_value=minutes_left), \
+             patch("automation.execute_paper_trade",
+                   side_effect=lambda *a, **k: (calls.append((a, k)) or
+                                                (len(calls), None))):
+            fs._swing_overnight_cap_pass(fleet, {"ok": True,
+                                                 "equity": 10000.0})
+        return calls
+
+    def test_over_cap_reduces_largest_contributor(self):
+        # risk = 4000 x 0.10 = $400 > cap ($250 weekday / $150 Friday)
+        self._run_with_position("HIGHG", 40, 100.0, 0.10)
+        calls = self._pass()
+        self.assertEqual(len(calls), 1)
+        args = calls[0][0]
+        self.assertEqual(args[3], "sell")              # side
+        self.assertGreater(args[4], 0)                 # cut qty
+
+    def test_under_cap_is_a_noop(self):
+        self._run_with_position("LOWG", 10, 100.0, 0.03)   # risk $30 < cap
+        self.assertEqual(self._pass(), [])
+
+    def test_outside_the_window_is_a_noop(self):
+        self._run_with_position("HIGHG", 40, 100.0, 0.10)
+        self.assertEqual(self._pass(minutes_left=120), [])
+
+    def test_short_archetype_is_untouched(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleets SET archetype='short' WHERE id=?",
+                    (self.fleet_id,))
+        conn.commit(); conn.close()
+        self._run_with_position("HIGHG", 40, 100.0, 0.10)
+        self.assertEqual(self._pass(), [])

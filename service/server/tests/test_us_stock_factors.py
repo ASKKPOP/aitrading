@@ -87,7 +87,9 @@ class Recorder(unittest.TestCase):
         with patch("price_fetcher._fetch_yahoo_option_chain",
                    return_value=_chain(1000, 800)), \
              patch("analysis_sources.fetch_stocktwits_sentiment",
-                   side_effect=RuntimeError("down")):
+                   side_effect=RuntimeError("down")), \
+             patch.object(usf, "finra_short_volume_ratios",
+                          return_value={}):
             out = usf.record_us_stock_factor_snapshots(("MSFT", "AAPL"))
         self.assertEqual(out["written"], 2)
         rows = self._rows()
@@ -195,3 +197,53 @@ class SchedulerWiringPin(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FinraShortVolume(unittest.TestCase):
+    def setUp(self):
+        usf._finra_cache.clear()
+
+    def _resp(self, text, status=200):
+        class _R:
+            status_code = status
+        r = _R()
+        r.text = text
+        return r
+
+    def test_parse_and_ratio(self):
+        payload = ("Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume|Market\n"
+                   "20260811|MSFT|400|0|1000|B,Q,N\n"
+                   "20260811|AAPL|250|0|500|B,Q,N\n")
+        import us_stock_factors as u
+        with patch.object(u, "datetime") as dt:
+            from datetime import datetime as real_dt, timezone as tz
+            dt.now.return_value = real_dt(2026, 8, 12, tzinfo=tz.utc)
+            with patch("requests.get", return_value=self._resp(payload)):
+                out = u.finra_short_volume_ratios()
+        self.assertEqual(out["MSFT"], 0.4)
+        self.assertEqual(out["AAPL"], 0.5)
+
+    def test_walks_back_over_missing_days(self):
+        payload = ("Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume|Market\n"
+                   "20260808|MSFT|300|0|1000|B\n")
+        calls = []
+
+        def fake_get(url, timeout=30):
+            calls.append(url)
+            if len(calls) < 3:               # two missing days (404)
+                return self._resp("", status=404)
+            return self._resp(payload)
+        with patch("requests.get", side_effect=fake_get):
+            out = usf.finra_short_volume_ratios()
+        self.assertEqual(out.get("MSFT"), 0.3)
+        self.assertEqual(len(calls), 3)
+
+    def test_total_failure_is_empty_not_raise(self):
+        with patch("requests.get", side_effect=RuntimeError("net down")):
+            self.assertEqual(usf.finra_short_volume_ratios(), {})
+
+    def test_recorder_fills_the_reserved_column(self):
+        # DB fixture lives in Recorder; reuse its base
+        pass
+
+

@@ -93,10 +93,13 @@ def normalize_account_type(value: Optional[str]) -> str:
     return v if v in ACCOUNT_TYPES else SIMULATOR
 
 
-def active_broker_account(agent_id: int) -> Optional[dict[str, Any]]:
-    """The agent's active broker_accounts row, or None."""
+def active_broker_account(agent_id: int,
+                          market: "str | None" = None) -> Optional[dict[str, Any]]:
+    """The agent's active broker_accounts row (for `market` when given),
+    or None. Several brokers may be active at once — see the router's
+    per-market selection (pre-live TODO #3)."""
     from execution.router import _get_active_broker_account
-    return _get_active_broker_account(agent_id)
+    return _get_active_broker_account(agent_id, market)
 
 
 def _has_usable_credentials(account: dict[str, Any]) -> bool:
@@ -144,14 +147,17 @@ def _has_accepted_live_tcs(agent_id: int, broker: str) -> bool:
         conn.close()
 
 
-def live_refusal_reason(agent_id: int, account_type: Optional[str]) -> Optional[str]:
+def live_refusal_reason(agent_id: int, account_type: Optional[str],
+                        market: "str | None" = None) -> Optional[str]:
     """Why a live rule cannot run, or None when it may proceed.
 
     Only live is gated. simulator and shadow always have somewhere to land.
-    """
+    With `market` given, the gateway must support the RULE'S market — a live
+    us-stock rule needs a stock-capable broker even when a crypto broker is
+    connected (and vice versa)."""
     if normalize_account_type(account_type) != LIVE:
         return None
-    account = active_broker_account(agent_id)
+    account = active_broker_account(agent_id, market)
     if not account:
         return NOT_CONFIGURED
     if not _has_usable_credentials(account):

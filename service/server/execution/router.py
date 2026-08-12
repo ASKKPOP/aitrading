@@ -30,19 +30,32 @@ _logger = logging.getLogger(__name__)
 # DB helpers (keep imports local to avoid circular deps)
 # ---------------------------------------------------------------------------
 
-def _get_active_broker_account(agent_id: int) -> Optional[dict]:
+def _get_active_broker_account(agent_id: int,
+                               market: "str | None" = None) -> Optional[dict]:
+    """The agent's active broker account for `market` (most recent first).
+
+    Pre-live TODO #3: several brokers may be active at once — a stock broker
+    and a crypto broker side by side. With `market` given, only an account
+    whose broker supports that market is returned; none matching -> None,
+    which the router lands on the paper ledger (fail-closed: an order is
+    never mis-routed to a venue that cannot trade it). market=None keeps the
+    legacy most-recent selection for market-blind callers."""
     from database import get_db_connection
+    from execution.base import broker_supports_market
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         """SELECT * FROM broker_accounts
            WHERE agent_id = ? AND is_active = 1
-           ORDER BY updated_at DESC LIMIT 1""",
+           ORDER BY updated_at DESC""",
         (agent_id,),
     )
-    row = cursor.fetchone()
+    rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
-    return dict(row) if row else None
+    for row in rows:
+        if broker_supports_market(row.get("broker") or "", market):
+            return row
+    return None
 
 
 def _persist_order(order: Order) -> int:
@@ -245,7 +258,7 @@ class ExecutionRouter:
         from execution.paper import PaperBroker
         from routes_shared import utc_now_iso_z
 
-        account = _get_active_broker_account(agent_id)
+        account = _get_active_broker_account(agent_id, order.market)
         execution_mode = ExecutionMode(account["execution_mode"]) if account else ExecutionMode.PAPER
 
         order.execution_mode = execution_mode

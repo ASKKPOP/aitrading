@@ -12,6 +12,7 @@
 > | file | role |
 > |---|---|
 > | **this file** | operating rules, cadence, access, ship pipeline, open decisions, traps |
+> | `HANDOFF-n-slot-monitoring.md` | the TWO-BLOCK fleet playbook (crypto short + US-stock swing): per-block checks, fix evidence bar, §7 extend gates — read it whenever a swing fleet exists |
 > | `YYYY-MM-DD-automation-monitoring.md` | per-UTC-day cycle notes, newest-first |
 > | `automation-snapshot.json` | machine-readable state carried between cycles |
 >

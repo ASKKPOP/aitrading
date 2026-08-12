@@ -145,7 +145,109 @@ def supervise_fleet(fleet: dict) -> dict:
 
     # ── slot bookkeeping + replacement (suspended while warned/paused/held)
     _slot_pass(fleet, members, eq)
+
+    # ── Plan 23 pre-live: swing book-level overnight cap (no-op for short
+    # fleets and outside the pre-close window)
+    try:
+        _swing_overnight_cap_pass(fleet, eq)
+    except Exception:  # noqa: BLE001
+        logger.exception("overnight cap pass failed (fleet %s)", fleet["id"])
     return out
+
+
+# ── Plan 23: swing book-level overnight cap ────────────────────────────────
+OVERNIGHT_CAP_FRAC = 0.025          # Σ notional_i × G_i ≤ 2.5% of equity
+OVERNIGHT_CAP_WEEKEND_FACTOR = 0.6  # entering Fri/holiday close: tighten
+OVERNIGHT_CAP_WINDOW_MIN = 20       # act inside the last N session minutes
+
+
+def _swing_overnight_cap_pass(fleet: dict, eq: dict) -> None:
+    """Near the close, bound the swing book's modeled one-night loss:
+    Σ(notionalᵢ × Gᵢ) ≤ 2.5% of marked equity (×0.6 into a Friday close).
+    Excess is REDUCED from the largest contributor down — never dumped.
+    Idempotent within the window: once under the cap, later passes no-op.
+    G comes from each run's frozen thesis (swing_g_frac), floored at the
+    build-time 3% so a missing stamp can only OVERSTATE risk, not hide it."""
+    if (fleet.get("archetype") or "short") != "swing":
+        return
+    import markets as _mkts
+    left = _mkts.session_minutes_left("us-stock")
+    if not (0 < left <= OVERNIGHT_CAP_WINDOW_MIN):
+        return
+    equity = float((eq or {}).get("equity") or 0)
+    if equity <= 0:
+        return
+    limit = OVERNIGHT_CAP_FRAC * equity
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _zi
+    if _dt.now(_zi("America/New_York")).weekday() >= 4:   # Fri (holidays: the
+        limit *= OVERNIGHT_CAP_WEEKEND_FACTOR             # calendar shuts them)
+    contributions = []
+    for m in fp.list_members(fleet["id"]):
+        if m["status"] not in (trading_runs.STATUS_RUNNING,
+                               trading_runs.STATUS_PAUSED):
+            continue
+        run = trading_runs.get_run(m["id"], fleet["agent_id"])
+        if not run:
+            continue
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """SELECT quantity, current_price FROM positions
+                   WHERE agent_id = ? AND market = ? AND symbol = ?
+                     AND run_id = ? AND quantity != 0""",
+                (fleet["agent_id"], run["market"], run["symbol"], run["id"]))
+            pos = cur.fetchone()
+        finally:
+            conn.close()
+        if not pos or not pos["current_price"]:
+            continue
+        qty = float(pos["quantity"])
+        price = float(pos["current_price"])
+        notional = abs(qty) * price
+        try:
+            g = float(json.loads(run.get("config_snapshot_json") or "{}")
+                      .get("thesis", {}).get("swing_g_frac") or 0)
+        except (ValueError, TypeError):
+            g = 0.0
+        g = max(g, fp.SWING_G_FLOOR)
+        contributions.append({"run": run, "qty": qty, "price": price,
+                              "notional": notional, "g": g,
+                              "risk": notional * g})
+    total_risk = sum(c["risk"] for c in contributions)
+    if total_risk <= limit:
+        return
+    excess = total_risk - limit
+    reduced = []
+    from automation import execute_paper_trade
+    for c in sorted(contributions, key=lambda x: -x["risk"]):
+        if excess <= 0:
+            break
+        cut_risk = min(c["risk"], excess)
+        cut_qty = min(abs(c["qty"]), cut_risk / (c["price"] * c["g"]))
+        if cut_qty <= 0:
+            continue
+        side = "cover" if c["qty"] < 0 else "sell"
+        run = c["run"]
+        sig, skip = execute_paper_trade(
+            fleet["agent_id"], run["symbol"], run["market"], side,
+            cut_qty, c["price"],
+            content=f"Fleet #{fleet['id']} overnight gap-risk cap: reducing "
+                    f"before the close (never dumped)",
+            run_id=run["id"],
+            client_order_id=f"fleet:{fleet['id']}:overnight-cap:{run['id']}:"
+                            f"{_now_iso()[:10]}")
+        if sig:
+            excess -= cut_qty * c["price"] * c["g"]
+            reduced.append({"run_id": run["id"], "symbol": run["symbol"],
+                            "cut_qty": round(cut_qty, 6),
+                            "side": side})
+    if reduced:
+        fp.emit_fleet_event(fleet["id"], "overnight_cap",
+                            {"limit_usd": round(limit, 2),
+                             "risk_before_usd": round(total_risk, 2),
+                             "reduced": reduced})
 
 
 def ack_warning(fleet_id: int, agent_id: int) -> dict:

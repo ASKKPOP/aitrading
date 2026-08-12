@@ -402,15 +402,17 @@ def _entitlement_blocks(agent_id: int) -> Optional[str]:
         return "entitlement check unavailable"
 
 
-def _gateway_blocks(agent_id: int, account_type: Optional[str]) -> Optional[str]:
+def _gateway_blocks(agent_id: int, account_type: Optional[str],
+                    market: Optional[str] = None) -> Optional[str]:
     """Refusal reason for a live rule with no usable trading gateway.
 
     Fail-closed: if the gateway cannot be inspected we refuse rather than fall
     through, because the alternative is routing real money on an unverified
-    configuration."""
+    configuration. The rule's market rides along so a live rule needs a
+    gateway that can trade ITS market (pre-live TODO #3)."""
     try:
         from execution.gateway import live_refusal_reason
-        return live_refusal_reason(agent_id, account_type)
+        return live_refusal_reason(agent_id, account_type, market=market)
     except Exception:  # noqa: BLE001
         logger.exception("gateway check failed for agent %s", agent_id)
         return "trading gateway check unavailable"
@@ -496,7 +498,8 @@ def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
     out: dict[str, Any] = {"skip_reason": None, "gate": None, "regime_size_multiplier": None}
     if not config.get("auto_execute"):
         out["skip_reason"] = "auto_execute off"
-    elif (_gateway_deny := _gateway_blocks(agent_id, config.get("account_type"))):
+    elif (_gateway_deny := _gateway_blocks(agent_id, config.get("account_type"),
+                                           market=config.get("market"))):
         # account_type decides where the fill lands (execution/gateway.py):
         # simulator and shadow always have somewhere to go; live is refused
         # unless the user has actually configured a trading gateway. Never
