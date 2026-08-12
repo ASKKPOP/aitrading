@@ -424,3 +424,37 @@ The gate did its job.
    `us_stock_factor_snapshots` recording could be built standalone so the
    option exists later (owner's call — the plan that justified it is halted).
 3. Re-test after a regime change, unchanged criteria.
+
+### §12.1 — SUE-qualified re-run (path 1, executed 2026-08-11): FAIL, but materially closer
+
+yfinance's earnings dates already carry `Surprise(%)` — no new feed was
+needed (1,537 of 1,539 events had it). Same walk-forward, same criteria,
+judged on `sue_long`'s untouched test window:
+
+| variant (test) | n | hit% | expectancy | PF | bootstrap LB90 |
+|---|---|---|---|---|---|
+| **sue_long** (≥10% surprise + gap-confirm + 5d hold, chosen on train) | 61 ✓ | 49.2 | **+0.18%** ✓ | 1.09 ✗ | **−0.67** ✗ |
+| sue_long + 5% stop | 61 | 47.5 | +0.20% | 1.11 | −0.58 |
+| sue_both (info) | 71 | 53.5 | +0.27% | 1.15 | −0.54 |
+
+Surprise-conditioning was the right variable — expectancy flipped from
+negative to slightly positive with exactly the combo the literature predicts —
+but PF < 1.2 and the 90% band **spans zero**: an underpowered *maybe*, not a
+proven edge. Third pre-registered fail (price-gap, pullback, SUE). No fourth
+variant will be mined.
+
+### §12.2 — OWNER DECISION (2026-08-11): paper-gated build, BOTH paper + live
+
+Presented with (A) accept the verdict or (B) build paper-gated, the owner
+chose **"both (paper + live)"**. Resolution that honors both the order and
+the mandate: **phases A–E are built; the swing block ships with paper AND
+live capability; live capital is entered ONLY through the §7 promotion
+pipeline** — paper trial (≥60 closed trades, 2 earnings seasons, CI-cleared)
+→ probation (1 live slot, minimum size) → scale at 150+ trades. A paper trial
+trades no real money, and it is the one instrument that can resolve a +0.18%
+whose confidence band spans zero. Real-broker execution additionally remains
+behind the platform's per-user gateway + consent rails, unchanged.
+
+**Build status:** Phase A (fleets.archetype migration 0049, swing bounds +
+240-min compose cadence, snapshot stamping, NYSE holiday/half-day calendar)
+— IN PROGRESS 2026-08-11. Phases B–E follow in sequence per §8.

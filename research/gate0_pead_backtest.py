@@ -72,10 +72,20 @@ def fetch(universe: list[str]):
                 continue
             last_bar = bars[-1]["date"]
             n_ev = 0
-            for ts in ed.index:
+            for ts, erow in ed.iterrows():
                 d = ts.strftime("%Y-%m-%d")
                 if BARS_START < d < last_bar:
-                    events.append({"symbol": sym, "event_date": d})
+                    # yfinance carries the surprise inline — keep it for the
+                    # SUE-qualified gate (plan section 12, revival path 1)
+                    sp = erow.get("Surprise(%)")
+                    try:
+                        sp = float(sp)
+                        if sp != sp:            # NaN
+                            sp = None
+                    except (TypeError, ValueError):
+                        sp = None
+                    events.append({"symbol": sym, "event_date": d,
+                                   "surprise_pct": sp})
                     n_ev += 1
             if n_ev == 0:
                 skipped.append(f"{sym}:no-past-events")
@@ -130,16 +140,29 @@ def main() -> int:
         print("train:", json.dumps(r["train"]), flush=True)
         print("test: ", json.dumps(r["test"]), flush=True)
 
-    # the gate is judged on the SPECIFIED strategy (pullback entry);
-    # the naive next-open chase is reported for contrast
-    g = result["runs"]["long_only_pullback"]["test"]
+    n_sue = sum(1 for e in events if e.get("surprise_pct") is not None)
+    print(f"\nevents with surprise data: {n_sue}/{len(events)}", flush=True)
+    for name, kwargs in (
+            ("sue_long", {"long_only": True}),
+            ("sue_long_stop5", {"long_only": True, "stop_pct": 5.0}),
+            ("sue_both", {"long_only": False})):
+        r = bc.walk_forward_sue(events, bars, split_date=SPLIT_DATE,
+                                fee_side=FEE_SIDE, **kwargs)
+        result["runs"][name] = r
+        print(f"\n=== {name} ===", flush=True)
+        print("chosen:", json.dumps(r["chosen"]), flush=True)
+        print("train:", json.dumps(r["train"]), flush=True)
+        print("test: ", json.dumps(r["test"]), flush=True)
+
+    # SUE gate (plan section 12 path 1): judged on sue_long's untouched test
+    g = result["runs"]["sue_long"]["test"]
     gate_pass = bool(
         g["n"] and g["n"] >= 50
         and (g["expectancy_pct"] or 0) > 0
         and (g["bootstrap_lb90_pct"] or 0) > 0
         and (g["profit_factor"] or 0) >= 1.2)
     result["gate0"] = {
-        "criteria": ("test(long_only_pullback): n>=50, expectancy>0, "
+        "criteria": ("test(sue_long): n>=50, expectancy>0, "
                      "bootstrap LB90>0, PF>=1.2"),
         "pass": gate_pass}
     OUT.write_text(json.dumps(result, indent=1))

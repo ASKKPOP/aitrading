@@ -134,6 +134,57 @@ class Replay(unittest.TestCase):
                                           fee_side=0.0))
 
 
+class SueQualification(unittest.TestCase):
+    """Revival path #1 (plan §12): qualify on the EARNINGS SURPRISE itself —
+    direction from the surprise sign, magnitude threshold, optional
+    reaction-gap confirmation. Missing surprise data is null, never neutral."""
+
+    def _bars_with_gap(self, gap_pct=6.0):
+        return _gap_up(_bars(), 25, gap_pct=gap_pct, vol_mult=3.0)
+
+    def test_surprise_magnitude_and_direction(self):
+        bars = self._bars_with_gap()
+        ev = bc.qualify_event_sue(bars, bars[25]["date"], surprise_pct=12.0,
+                                  s_min_pct=5.0)
+        self.assertIsNotNone(ev)
+        self.assertEqual(ev["direction"], 1)          # sign of the SURPRISE
+        neg = bc.qualify_event_sue(bars, bars[25]["date"], surprise_pct=-12.0,
+                                   s_min_pct=5.0)
+        self.assertEqual(neg["direction"], -1)
+
+    def test_small_surprise_does_not_qualify(self):
+        bars = self._bars_with_gap()
+        self.assertIsNone(bc.qualify_event_sue(bars, bars[25]["date"],
+                                               surprise_pct=2.0, s_min_pct=5.0))
+
+    def test_missing_surprise_is_null(self):
+        bars = self._bars_with_gap()
+        self.assertIsNone(bc.qualify_event_sue(bars, bars[25]["date"],
+                                               surprise_pct=None, s_min_pct=5.0))
+
+    def test_gap_confirm_requires_agreeing_reaction(self):
+        # positive surprise but the tape gapped DOWN -> confirm mode refuses
+        bars = self._bars_with_gap(gap_pct=-6.0)
+        self.assertIsNone(bc.qualify_event_sue(
+            bars, bars[25]["date"], surprise_pct=12.0, s_min_pct=5.0,
+            require_gap_confirm=True))
+        # without confirm mode the surprise alone qualifies (direction +1)
+        ev = bc.qualify_event_sue(bars, bars[25]["date"], surprise_pct=12.0,
+                                  s_min_pct=5.0)
+        self.assertEqual(ev["direction"], 1)
+
+    def test_sue_walk_forward_shape(self):
+        bars = _gap_up(_bars(), 22, gap_pct=6.0, vol_mult=3.0, drift_pct=1.5)
+        data = {"AAA": bars}
+        events = [{"symbol": "AAA", "event_date": bars[22]["date"],
+                   "surprise_pct": 15.0}]
+        res = bc.walk_forward_sue(events, data, split_date="2025-01-01",
+                                  fee_side=0.00005, long_only=True)
+        self.assertEqual(res["test"]["n"], 1)
+        self.assertGreater(res["test"]["expectancy_pct"], 0)
+        self.assertIn("s_min_pct", res["chosen"])
+
+
 class PullbackEntry(unittest.TestCase):
     """entry_mode='pullback' — the strategy as pead-drift actually states it:
     enter the first orderly pullback that HOLDS the gap area, on resumption.

@@ -93,6 +93,109 @@ def qualify_event(bars: list[dict[str, Any]], event_date: str,
             "gap_pct": gap_pct, "vol_ratio": vol_ratio}
 
 
+def qualify_event_sue(bars: list[dict[str, Any]], event_date: str,
+                      surprise_pct: Optional[float], s_min_pct: float,
+                      require_gap_confirm: bool = False) -> Optional[dict[str, Any]]:
+    """Plan §12 revival path #1 — qualify on the EARNINGS SURPRISE itself.
+
+    Direction comes from the surprise's sign (the PEAD literature's actual
+    conditioning variable), magnitude must clear s_min_pct, and in confirm
+    mode the reaction-day gap must AGREE with the surprise (a positive
+    surprise the tape sold is a failed reaction, not a drift candidate).
+    Missing surprise data is null, never neutral."""
+    if surprise_pct is None:
+        return None
+    try:
+        s = float(surprise_pct)
+    except (TypeError, ValueError):
+        return None
+    if abs(s) < s_min_pct:
+        return None
+    i0 = _idx_on_or_after(bars, event_date)
+    if i0 is None:
+        return None
+    candidates = []
+    for i in (i0, i0 + 1):
+        if i < len(bars):
+            gv = _gap_and_vol(bars, i)
+            if gv is not None:
+                candidates.append((abs(gv[0]), i, gv))
+    if not candidates:
+        return None
+    _, idx, (gap_pct, vol_ratio) = max(candidates)
+    direction = 1 if s > 0 else -1
+    if require_gap_confirm and (gap_pct == 0 or (gap_pct > 0) != (s > 0)):
+        return None
+    return {"reaction_date": str(bars[idx]["date"]), "reaction_idx": idx,
+            "direction": direction, "gap_pct": gap_pct,
+            "vol_ratio": vol_ratio, "surprise_pct": s}
+
+
+# SUE grid: surprise floor x gap-confirm x hold days (24 combos, same size
+# as the price grid — pre-registered, chosen on train only).
+SUE_GRID = tuple((h, s, c) for h in (1, 2, 3, 5)
+                 for s in (5.0, 10.0, 20.0) for c in (False, True))
+SUE_DEFAULT = (2, 10.0, False)
+
+
+def _run_sue_combo(events: list[dict[str, Any]],
+                   bars_by_symbol: dict[str, list[dict[str, Any]]],
+                   combo: tuple[int, float, bool], fee_side: float,
+                   stop_pct: Optional[float], long_only: bool,
+                   entry_mode: str) -> list[dict[str, Any]]:
+    hold_days, s_min, confirm = combo
+    trades = []
+    for e in events:
+        bars = bars_by_symbol.get(e["symbol"])
+        if not bars:
+            continue
+        ev = qualify_event_sue(bars, e["event_date"], e.get("surprise_pct"),
+                               s_min, require_gap_confirm=confirm)
+        if not ev or (long_only and ev["direction"] < 0):
+            continue
+        ev["symbol"] = e["symbol"]
+        tr = replay_event(bars, ev, hold_days, fee_side, stop_pct=stop_pct,
+                          entry_mode=entry_mode)
+        if tr:
+            trades.append(tr)
+    return trades
+
+
+def walk_forward_sue(events: list[dict[str, Any]],
+                     bars_by_symbol: dict[str, list[dict[str, Any]]],
+                     split_date: str, fee_side: float,
+                     grid: tuple = SUE_GRID,
+                     stop_pct: Optional[float] = None,
+                     long_only: bool = False,
+                     entry_mode: str = "next_open") -> dict[str, Any]:
+    """SUE-qualified walk-forward: same discipline as walk_forward — combo
+    chosen on the train window only, judged on the untouched test window."""
+    best_key: Optional[tuple[float, int, int]] = None
+    chosen = SUE_DEFAULT
+    for combo in grid:
+        trades = _run_sue_combo(events, bars_by_symbol, combo, fee_side,
+                                stop_pct, long_only, entry_mode)
+        train = [t for t in trades if t["reaction_date"] <= split_date]
+        if not train:
+            continue
+        exp = sum(t["net_ret_pct"] for t in train) / len(train)
+        key = (exp, len(train), -combo[0])
+        if best_key is None or key > best_key:
+            best_key, chosen = key, combo
+    trades = _run_sue_combo(events, bars_by_symbol, chosen, fee_side,
+                            stop_pct, long_only, entry_mode)
+    train = [t for t in trades if t["reaction_date"] <= split_date]
+    test = [t for t in trades if t["reaction_date"] > split_date]
+    return {
+        "chosen": {"hold_days": chosen[0], "s_min_pct": chosen[1],
+                   "gap_confirm": chosen[2], "stop_pct": stop_pct,
+                   "long_only": long_only, "entry_mode": entry_mode},
+        "split_date": split_date,
+        "train": metrics_panel(train),
+        "test": metrics_panel(test),
+    }
+
+
 def _pullback_entry_idx(bars: list[dict[str, Any]], reaction_idx: int,
                         direction: int, window: int) -> Optional[int]:
     """pead-drift's stated entry, daily-bar approximation: the first

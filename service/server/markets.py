@@ -271,6 +271,26 @@ _ET = ZoneInfo('America/New_York')
 # NYSE regular hours, as minutes past midnight ET.
 _NYSE_OPEN_MIN = 9 * 60 + 30
 _NYSE_CLOSE_MIN = 16 * 60
+# Plan 23 Phase A: the clock alone called Thanksgiving an ordinary Thursday —
+# fatal for a swing archetype that holds overnight and queues terminal actions
+# for "the next open". Static tables, extended yearly (they change annually);
+# a date missing from BOTH tables is an ordinary session, so an out-of-date
+# table degrades to the old weekday-only behavior, never to a stuck market.
+_NYSE_HOLIDAYS = {
+    # 2026: New Year, MLK, Presidents, Good Friday, Memorial, Juneteenth,
+    # July-4th observed (Sat → Fri 7/3, FULL close), Labor, Thanksgiving,
+    # Christmas.
+    "2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25",
+    "2026-06-19", "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25",
+    # 2027: Juneteenth observed Fri 6/18 (Sat), July-4th observed Mon 7/5
+    # (Sun), Christmas observed Fri 12/24 (Sat).
+    "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31",
+    "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24",
+}
+# 13:00-ET early closes: the Friday after Thanksgiving; Christmas Eve when
+# it is a trading day.
+_NYSE_HALF_DAYS = {"2026-11-27", "2026-12-24", "2027-11-26"}
+_NYSE_HALF_CLOSE_MIN = 13 * 60
 # Forex trades continuously from Sunday 17:00 ET to Friday 17:00 ET.
 _FX_WEEK_BOUNDARY_MIN = 17 * 60
 
@@ -287,7 +307,13 @@ def is_session_open(session: str, now: datetime | None = None) -> bool:
     if session == '24x7':
         return True
     if session == 'nyse':
-        return weekday < 5 and _NYSE_OPEN_MIN <= minutes < _NYSE_CLOSE_MIN
+        if weekday >= 5:
+            return False
+        day = now_et.strftime('%Y-%m-%d')
+        if day in _NYSE_HOLIDAYS:
+            return False
+        close = _NYSE_HALF_CLOSE_MIN if day in _NYSE_HALF_DAYS else _NYSE_CLOSE_MIN
+        return _NYSE_OPEN_MIN <= minutes < close
     if session == '24x5':
         if weekday == 5:  # Saturday — closed all day
             return False

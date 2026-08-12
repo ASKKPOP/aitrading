@@ -429,10 +429,18 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                  idempotency_key: Optional[str] = None,
                  name: Optional[str] = None,
                  leverage: Optional[float] = None,
-                 profit_target_frac: Optional[float] = None) -> int:
+                 profit_target_frac: Optional[float] = None,
+                 archetype: str = "short") -> int:
     """Insert a draft fleet. Raises ValueError on bad inputs, FleetConflict
     when the user already has a non-terminal fleet, EntitlementDenied per the
     ALWAYS-ON tier gate."""
+    archetype = (archetype or "short").strip().lower()
+    if archetype not in ("short", "swing"):
+        raise ValueError("archetype must be short|swing")
+    if archetype == "swing":
+        # Plan 23: the swing archetype is US-equities only, by design —
+        # whatever scope was passed is overridden, not merged.
+        market_scope = ["us-stock"]
     n_lo, n_hi = FLEET_BOUNDS["n_runs"]
     if not (n_lo <= int(n_runs) <= n_hi):
         raise ValueError(f"n_runs must be between {n_lo} and {n_hi}")
@@ -477,14 +485,15 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                    (agent_id, name, status, active_fleet_key, idempotency_key,
                     n_runs, total_budget_usd, risk_appetite, market_scope_json,
                     warn_loss_frac, stop_loss_frac, provider, lang, created_at,
-                    leverage, profit_target_frac)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    leverage, profit_target_frac, archetype)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent_id, name, STATUS_DRAFT, f"user:{user_id}", idempotency_key,
                  int(n_runs), float(total_budget_usd), risk_appetite,
                  json.dumps(market_scope) if market_scope else None,
                  float(warn_loss_frac), float(stop_loss_frac),
                  provider, lang, _now_iso(), lev,
-                 float(profit_target_frac) if profit_target_frac else None))
+                 float(profit_target_frac) if profit_target_frac else None,
+                 archetype))
         except trading_runs.EntitlementDenied:
             raise
         except Exception as exc:  # noqa: BLE001 — UNIQUE(active_fleet_key)
@@ -914,9 +923,16 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     direction = (thesis.get("direction") or "long").strip().lower()
     market_type = "futures" if (direction == "short" and market == "crypto") else \
         thesis.get("market_type") or "spot"
-    interval = max(_tier("interval_minutes", risk),
-                   FLEET_BOUNDS["interval_floor_by_market"].get(
-                       market, FLEET_BOUNDS["interval_floor_default"]))
+    archetype = (fleet.get("archetype") or "short").strip().lower()
+    if archetype == "swing":
+        # Plan 23: a 1-2 day thesis re-decided every 30-60 minutes is churn
+        # pressure, not diligence. Desk cadence 240 min; the ~60s stop scan
+        # is untouched, so slower thinking never delays an exit.
+        interval = 240
+    else:
+        interval = max(_tier("interval_minutes", risk),
+                       FLEET_BOUNDS["interval_floor_by_market"].get(
+                           market, FLEET_BOUNDS["interval_floor_default"]))
     g_lo, g_hi = FLEET_BOUNDS["profit_target_frac_bounds"]
     # Higher tiers bank later: multiply the thesis move, then re-clamp so a
     # 2× on a big expected move can't exceed the 50% run-budget target cap.
@@ -957,6 +973,9 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     max_loss_usd = round(max_bet * _tier("stop_loss_frac_of_bet", risk), 2)
     return {
         "symbol": thesis["symbol"], "market": market, "market_type": market_type,
+        # Plan 23: stamped into the run's config snapshot so run_engine can
+        # condition cadence, briefs and rails per-run without new columns.
+        "archetype": archetype,
         "max_bet_usd": max_bet,
         "run_budget_usd": round(float(run_budget), 2),
         "interval_minutes": int(interval),

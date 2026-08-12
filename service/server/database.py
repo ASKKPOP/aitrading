@@ -2991,6 +2991,7 @@ def init_database():
             n_runs              INTEGER NOT NULL,
             total_budget_usd    REAL NOT NULL,
             risk_appetite       TEXT NOT NULL DEFAULT 'balanced',
+            archetype           TEXT NOT NULL DEFAULT 'short',
             market_scope_json   TEXT,
             warn_loss_frac      REAL NOT NULL DEFAULT 0.30,
             stop_loss_frac      REAL NOT NULL DEFAULT 0.40,
@@ -3152,6 +3153,10 @@ def init_database():
         # reaching the gain the fleet banks everything and spawns a successor.
         "ALTER TABLE fleets ADD COLUMN profit_target_frac REAL",
         "ALTER TABLE fleets ADD COLUMN successor_fleet_id INTEGER",
+        # Plan 23 Phase A (2026-08-11): slot archetype — 'short' (intraday
+        # crypto, today's behavior) | 'swing' (us-stock, holds overnight).
+        # MySQL mirror: alembic 0049.
+        "ALTER TABLE fleets ADD COLUMN archetype TEXT NOT NULL DEFAULT 'short'",
         "ALTER TABLE users ADD COLUMN ai_automation_state TEXT NOT NULL DEFAULT 'active'",
         "ALTER TABLE users ADD COLUMN ai_automation_held_at TEXT",
         "ALTER TABLE automation_configs ADD COLUMN held_by_master INTEGER NOT NULL DEFAULT 0",
