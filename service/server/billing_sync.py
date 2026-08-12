@@ -206,6 +206,15 @@ def active_autorenew(user_id: int) -> dict | None:
         conn.close()
 
 
+# LEGACY. The card-free trial that wrote method='trial' rows was replaced on
+# 2026-08-12 by the Stripe-native trial (trial_period_days), so nothing creates
+# these any more. The constant stays because the rows do: members onboarded
+# during that week still hold one, and routes_subscriptions' manual-change guard
+# must keep refusing them the proration path — they paid $0, so prorating
+# against list price would sell them credit they never bought.
+TRIAL_METHOD = "trial"
+
+
 def has_prior_subscription(user_id: int) -> bool:
     """True if this member has ever had a subscription row, in any state.
 
