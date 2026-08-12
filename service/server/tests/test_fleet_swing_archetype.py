@@ -137,11 +137,24 @@ class ComposeArchetypeTests(ArchetypeBase):
                 "confidence": 0.7, "thesis": "t", "risks": "r",
                 "invalidation": "below the recent swing low"}
 
-    def test_swing_settings_stamp_archetype_and_240min(self):
+    def test_swing_settings_stamp_archetype_and_cadence(self):
+        # Owner spec 2026-08-12: 30-min analysis cadence with a 60-min entry
+        # spacing rail and open−2h/close+2h analysis shoulders (was a single
+        # 240-min knob conflating looking with acting).
         fid = fp.create_fleet(self.agent["id"], 2, 2000.0, archetype="swing")
         s = fp.compose_run_settings(self._thesis(), 1000.0, fp.get_fleet(fid))
         self.assertEqual(s["archetype"], "swing")
-        self.assertEqual(s["interval_minutes"], 240)
+        self.assertEqual(s["interval_minutes"], 30)
+        self.assertEqual(s["entry_spacing_minutes"], 60)
+        self.assertEqual(s["analysis_window"],
+                         {"pre_open_minutes": 120, "post_close_minutes": 120})
+
+    def test_short_fleets_carry_no_swing_order_policy(self):
+        fid = fp.create_fleet(self.agent["id"], 2, 2000.0)
+        s = fp.compose_run_settings(self._thesis("crypto"), 1000.0,
+                                    fp.get_fleet(fid))
+        self.assertNotIn("entry_spacing_minutes", s)
+        self.assertNotIn("analysis_window", s)
 
     def test_short_fleets_are_byte_identical_to_before(self):
         fid = fp.create_fleet(self.agent["id"], 2, 2000.0)

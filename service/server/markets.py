@@ -374,3 +374,27 @@ def session_minutes_left(market: str | None, now: datetime | None = None,
         else:
             hi = mid - 1
     return lo
+
+
+def extended_session_state(market: str | None, now: datetime | None = None,
+                           pre_minutes: int = 120,
+                           post_minutes: int = 120) -> str:
+    """Where `now` sits relative to the market's session, with a shoulder on
+    each side: 'open' (session live), 'analysis' (closed, but within
+    pre_minutes before the next open or post_minutes after the last close),
+    or 'closed' (outside both shoulders).
+
+    Owner spec 2026-08-12 (us-stock swing cadence): the desk ANALYZES through
+    the shoulders — pre-open context building, post-close review — but orders
+    fill only while 'open'. A 24×7 market is always 'open' and never sees a
+    shoulder. Pure clock arithmetic, same as the calendar it rides on."""
+    at = (now or datetime.now(_ET))
+    if is_market_open(market, at):
+        return "open"
+    for m in range(1, max(0, int(pre_minutes)) + 1):
+        if is_market_open(market, at + timedelta(minutes=m)):
+            return "analysis"
+    for m in range(1, max(0, int(post_minutes)) + 1):
+        if is_market_open(market, at - timedelta(minutes=m)):
+            return "analysis"
+    return "closed"

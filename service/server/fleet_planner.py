@@ -1017,10 +1017,16 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
         thesis.get("market_type") or "spot"
     archetype = (fleet.get("archetype") or "short").strip().lower()
     if archetype == "swing":
-        # Plan 23: a 1-2 day thesis re-decided every 30-60 minutes is churn
-        # pressure, not diligence. Desk cadence 240 min; the ~60s stop scan
-        # is untouched, so slower thinking never delays an exit.
-        interval = 240
+        # Owner spec 2026-08-12: decouple LOOKING from ACTING. The desk
+        # analyzes every 30 min from 2h before the open to 2h after the
+        # close (context building; run_engine gates orders to the live
+        # session), entries land at least 60 min apart, and the fee_edge
+        # gate still refuses any entry whose edge cannot pay its round
+        # trip. The prior 240-min cadence conflated observation frequency
+        # with action frequency; 30/60 keeps the diligence without the
+        # churn Plan 23 feared. The ~60s stop scan is untouched, so
+        # faster thinking still never delays an exit.
+        interval = 30
     else:
         interval = max(_tier("interval_minutes", risk),
                        FLEET_BOUNDS["interval_floor_by_market"].get(
@@ -1085,6 +1091,15 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
         # Plan 23: stamped into the run's config snapshot so run_engine can
         # condition cadence, briefs and rails per-run without new columns.
         "archetype": archetype,
+        # Swing order policy (owner spec 2026-08-12): entries ≥ 60 min apart,
+        # analysis shoulders open−2h/close+2h with orders in-session only.
+        # Consumed by run_engine (_pre_gate_skip, _order_gate_skip,
+        # due_run_ids); carried past validate_run_payload by
+        # carry_snapshot_stamps — see that helper's warning.
+        **({"entry_spacing_minutes": 60,
+            "analysis_window": {"pre_open_minutes": 120,
+                                "post_close_minutes": 120}}
+           if archetype == "swing" else {}),
         "max_bet_usd": max_bet,
         "run_budget_usd": round(float(run_budget), 2),
         "interval_minutes": int(interval),
@@ -1130,6 +1145,21 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
         },
         "feedback": True,
     }
+
+
+def carry_snapshot_stamps(core: dict, settings: dict) -> None:
+    """Copy compose-time stamps that RunIn does not model into the validated
+    config, in place. Both build paths (fleet_planner._do_build and
+    fleet_supervisor._build_replacement) rebuild the snapshot through
+    routes_runs.validate_run_payload, which only knows RunIn's fields — any
+    compose-time key not explicitly re-copied afterwards is SILENTLY absent
+    from the persisted snapshot. The Plan 23 `archetype` stamp shipped
+    2026-08-11 and died exactly this way: composed, validated away, never
+    stored (prod fleet 31's swing runs carry archetype: NULL). Every new
+    compose-time stamp must be added HERE, not just to the compose dict."""
+    for key in ("archetype", "entry_spacing_minutes", "analysis_window"):
+        if settings.get(key) is not None:
+            core[key] = settings[key]
 
 
 # ── marked equity (§6.3.0 — the ONE equity) ─────────────────────────────────
@@ -1568,6 +1598,7 @@ def _do_build(fleet: dict) -> None:
                                                              core["market"])
             core["feedback"] = True
             core["add_limits"] = dict(settings.get("add_limits") or {})
+            carry_snapshot_stamps(core, settings)
             run_id = trading_runs.create_run(agent_id, core, start_c, stop_c,
                                              True, fleet_id=fleet["id"],
                                              created_via="fleet")
