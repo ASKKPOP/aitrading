@@ -930,6 +930,13 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
                                  "kept": [t["symbol"] for t in feasible],
                                  "dropped": infeasible})
         theses = feasible
+    # Plan 23 Phase C: swing universe + gap gate (no-op for short fleets).
+    if theses:
+        theses, sw_dropped = fp.swing_gate_candidates(fleet, theses)
+        if sw_dropped:
+            fp.emit_fleet_event(fleet["id"], "swing_gate",
+                                {"context": "replacement",
+                                 "dropped": sw_dropped})
     import backtest_gate
     if theses and backtest_gate.gate_enabled():
         kept, dropped = backtest_gate.gate_candidates(theses)
