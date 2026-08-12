@@ -239,14 +239,17 @@ def build_crypto_analysis(symbol: str) -> dict[str, Any]:
         elif rsi <= 30:
             score += 2
             bullish.append(f"RSI(14) {_fmt(rsi, 1)} oversold (≤30, contrarian)")
+    # Research 04 shapes go FIRST: the technical brief renders risks[:2],
+    # so anything appended after two ordinary lines is invisible to the
+    # desk — and an engineered tape outranks any indicator reading.
     if "manipulation:pump_ignition" in manip_shapes:
         score -= 2
-        risks.append("pump-shaped spike: vertical hourly move on anomalous "
-                     "volume — engineered-move shape, do not chase")
+        risks.insert(0, "pump-shaped spike: vertical hourly move on anomalous "
+                        "volume — engineered-move shape, do not chase")
     elif "manipulation:cascade_shock" in manip_shapes:
         score -= 1
-        risks.append("cascade-shape shock: outsized move on forced-flow "
-                     "volume — judge only after exhaustion + reclaim")
+        risks.insert(0, "cascade-shape shock: outsized move on forced-flow "
+                        "volume — judge only after exhaustion + reclaim")
     if funding_rate is not None:
         if funding_rate > FUNDING_CROWDED:
             score -= 1

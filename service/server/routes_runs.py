@@ -502,7 +502,22 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         if data.risk_level:
             from routes_automation import _apply_risk_level
             applied_limits = _apply_risk_level(agent["id"], data.risk_level)
+        # Research 04: the user picked this symbol — ADVISE (never block)
+        # when its hourly tape is manipulation-shaped right now, in the
+        # user's language. Fail-soft: a dead detector adds nothing.
+        advisory = None
+        if data.market == "crypto":
+            try:
+                from manipulation import manipulation_signals
+                sigs = manipulation_signals(data.symbol)
+                if sigs:
+                    from notifications_i18n import triggers_text
+                    advisory = {"signals": sigs,
+                                "text": triggers_text(sigs, data.lang)}
+            except Exception:  # noqa: BLE001
+                advisory = None
         return {"id": run_id, "ok": True, "risk_limits": applied_limits,
+                "manipulation_advisory": advisory,
                 "run": _public(_run_or_404(run_id, agent["id"]))}
 
     @app.put("/api/runs/{run_id}")

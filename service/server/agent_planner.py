@@ -56,6 +56,28 @@ def _allowed_symbols(candidates: list[dict[str, Any]],
     return symbols[:5]
 
 
+def _screen_manipulated(symbols: list[str]) -> list[str]:
+    """Research 04: drop symbols whose hourly tape is pump-shaped RIGHT NOW
+    from the planner's pickable universe — a fully-delegated rule must not
+    be handed a candle the pump-ignition-veto skill exists to refuse.
+
+    Zero-LLM and deliberately narrow: only `pump_ignition` drops (the
+    unambiguous do-not-chase shape); cascade/crowded-funding stay in the
+    universe as judgment inputs for the prompt's skills. Fail-OPEN per
+    symbol: a dead detector must never brick planning."""
+    out = []
+    for s in symbols:
+        try:
+            from manipulation import manipulation_signals
+            if "manipulation:pump_ignition" in manipulation_signals(s):
+                logger.info("planner universe: %s dropped (pump-shaped)", s)
+                continue
+        except Exception:  # noqa: BLE001
+            pass
+        out.append(s)
+    return out or symbols
+
+
 def _gather_context(agent_id: int, budget_usd: float) -> dict[str, Any]:
     """Everything the planner sees. Fail-soft per source."""
     ctx: dict[str, Any] = {"budget_usd": budget_usd}
@@ -177,6 +199,8 @@ def plan_agent_cycle(config: dict[str, Any]) -> dict[str, Any]:
     budget_usd = float(config.get("budget_usd") or 0)
     context = _gather_context(agent_id, budget_usd)
     allowed = _allowed_symbols(context["scanner_candidates"], context.get("top_symbols"))
+    if (config.get("market") or "crypto") == "crypto":
+        allowed = _screen_manipulated(allowed)
 
     guidelines = None
     try:

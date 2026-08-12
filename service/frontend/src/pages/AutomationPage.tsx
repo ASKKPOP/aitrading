@@ -119,6 +119,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   const [runType, setRunType] = useState<'spot' | 'futures'>('spot')
   const [agentBudget, setAgentBudget] = useState<number>(5000)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [removeError, setRemoveError] = useState('')
   const [removingId, setRemovingId] = useState<number | null>(null)
   // Simulator / real-account context switch (top of page). Shares the
@@ -413,6 +414,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     // ── run creation from the two rule-panel modes ──
     createFailed: tr(language, { ko: 'TRADING을 만들지 못했습니다.', en: 'Could not create the TRADING.', ja: 'TRADING を作成できませんでした。', th: 'สร้าง TRADING ไม่สำเร็จ', vi: 'Không tạo được TRADING.', id: 'Tidak dapat membuat TRADING.' }),
     startFailed: tr(language, { ko: 'TRADING을 시작하지 못했습니다 — 아래 목록에서 확인하세요.', en: 'Could not start the TRADING — see the list below.', ja: 'TRADING を開始できませんでした — 下の一覧を確認してください。', th: 'เริ่ม TRADING ไม่สำเร็จ — ดูรายการด้านล่าง', vi: 'Không khởi động được TRADING — xem danh sách bên dưới.', id: 'Tidak dapat memulai TRADING — lihat daftar di bawah.' }),
+    manipWarn: tr(language, { ko: '조작 의심 형태 감지 — AI가 신중히 진입합니다', en: 'Manipulation-shaped tape detected — the AI will enter cautiously', ja: '相場操縦の疑いがある形状を検出 — AIは慎重にエントリーします', th: 'ตรวจพบรูปแบบต้องสงสัยว่าปั่นราคา — AI จะเข้าอย่างระมัดระวัง', vi: 'Phát hiện hình thái nghi thao túng — AI sẽ vào lệnh thận trọng', id: 'Terdeteksi pola dicurigai manipulasi — AI akan masuk dengan hati-hati' }),
     pickFailed: tr(language, { ko: '종목을 고르지 못했습니다 — 직접 선택하세요.', en: 'Could not pick a symbol — choose one yourself.', ja: '銘柄を選べませんでした — 手動で選択してください。', th: 'เลือกสัญลักษณ์ไม่สำเร็จ — เลือกเอง', vi: 'Không chọn được mã — hãy tự chọn.', id: 'Tidak dapat memilih simbol — pilih sendiri.' }),
   }
 
@@ -519,7 +521,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // both would also deadlock on itself: start refuses when an auto-executing
   // rule targets the same symbol (trading_runs.list_start_conflicts).
   async function createAndStartRun(body: Record<string, unknown>) {
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setNotice('')
     try {
       const res = await fetch(`${API_BASE}/runs`, {
         method: 'POST', headers: authHeaders,
@@ -530,6 +532,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         const detail = data.detail
         throw new Error((typeof detail === 'string' ? detail : detail?.message) || T.createFailed)
       }
+      // Research 04: server-side manipulation advisory (localized) — the run
+      // is created either way; the user is informed, never blocked.
+      if (data.manipulation_advisory?.text) setNotice(`${T.manipWarn}: ${data.manipulation_advisory.text}`)
       const start = await fetch(`${API_BASE}/runs/${data.id}/start`, { method: 'POST', headers: authHeaders })
       // The draft survives a refused start, so reload the grid either way —
       // it is where the conflict is resolved.
@@ -699,6 +704,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
               {busy ? '⏳' : '🤖'} {T.startAgent}
             </button>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
+            {notice && <span style={{ color: '#d9a334', fontSize: 12.5 }}>⚠️ {notice}</span>}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>{T.agentKillNote}</div>
         </>
@@ -741,6 +747,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>{T.simpleNote}</span>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
+            {notice && <span style={{ color: '#d9a334', fontSize: 12.5 }}>⚠️ {notice}</span>}
             <button onClick={addSimple} disabled={busy} style={{ marginLeft: 'auto', padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? '⏳' : '▶'} {T.startAuto}</button>
           </div>
         </>
