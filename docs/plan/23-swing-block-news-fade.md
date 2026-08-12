@@ -478,4 +478,18 @@ behind the platform's per-user gateway + consent rails, unchanged.
   Σ notional·G ≤ 2.5% pass — C1's per-slot 1%·budget/G cap already bounds a
   small paper fleet (N slots ⇒ ≤N% modeled one-night loss), so the book cap
   binds only at scale; it ships pre-probation, before live capital.
-- Phases D–E follow per §8.
+- Phase D — SHIPPED #386: us_stock_factor_snapshots (alembic 0050) +
+  recorder on the 6h factor loop (put/call OI from the existing Yahoo
+  chain — OI populates in-session, off-hours sweeps write NULL by design;
+  bare-symbol StockTwits tilt; short_volume_ratio reserved for the FINRA
+  fetcher) + fmp_feed.latest_earnings_surprise (free AV EARNINGS; verified
+  live: AAPL 2026-07-30 +1.6%).
+- Phase E — LAUNCHED 2026-08-12: paper fleet #30 ("Plan23 paper trial"),
+  dedicated internal account (agent 58 / user 22, professional entitlement,
+  owner-approved), archetype swing, scope ["us-stock"], 3 slots, $10,000
+  SIMULATOR budget. The §7 clock runs from the first composed slot:
+  checkpoints at 30/60/90 closed trades, promotion needs ≥60 closed trades
+  AND 2 earnings seasons with the CI criteria, kill rules as pre-registered,
+  12-month unconditional timebox. Live capital remains locked behind
+  probation. Pre-probation TODO: the book-level Σ notional·G pass (deferred
+  above) and the FINRA short-volume fetcher.
