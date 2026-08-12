@@ -471,11 +471,48 @@ Every increment lands here as a dated line, in the same PR that ships it.
       monitoring notes). Harmless while nothing retrieves `lesson`;
       once (ii) is on, a retired claim could still be recalled. The fix
       belongs with (ii), not here.
+    - **Verified on prod, image `20260811-rag-lessons` (23:33Z).** Code
+      present in the running image; corpus went 1201/564/81 with **no
+      `lesson` kind at all** → **132 lessons covering all 39 enabled
+      skills**, the same count as local, which also proves prod's catalogue
+      carries no admin drift from `BASE_SKILLS`. The no-op held: an
+      in-container `search(kind="monitoring")` for all four markets returns
+      **only monitoring chunks**, headed by sha `9d8b125b` — the exact
+      incumbent recorded in the 08-10 table above, so the retrieval path is
+      byte-for-byte what it was before the deploy.
+    - **⚠️ FINDING THAT RE-SPECS (ii): a naive lesson+monitoring UNION
+      admits ZERO lessons.** Probed on the live prod pool with the same
+      queries: the combined head is a **monitoring** chunk at **30.44**, so
+      the shipped 0.60-of-head floor sits at **18.3** — above the best
+      lesson in every class (max 15.23). Six chunks clear it, all
+      monitoring.
+      - The cause is scale, not quality: monitoring chunks are long
+        multi-paragraph findings and score 2× what a single-sentence claim
+        can, for the same relevance. This is the SAME failure the 08-10
+        entry documented across situation classes ("the gave-back class's
+        eighth chunk outscores the winning class's first"), reappearing
+        across *kinds* — and the fix has to rhyme: the floor must be
+        relative to the head **of its own kind**, or the pools get a
+        per-kind quota, not one merged ranking.
+      - **If (ii) had shipped as `kind in (monitoring, lesson)`, it would
+        have deployed clean, changed nothing, and read as working.** That is
+        exactly the class of silent no-op this ladder exists to avoid;
+        writing it down before building is why the pool step came first.
     - Tests: `SkillLessonTests` (11) in `tests/test_desk_memory.py`.
-      **Mutation-checked ×8** — enabled-check removed, only the first market
+      **Mutation-checked ×9** — enabled-check removed, only the first market
       stored, fold-back removed, kind written as `monitoring`, market
       dropped to NULL, fail-soft guard removed, sentence split replaced by a
-      hard 150-char slice. Every one was caught.
+      hard 150-char slice, no split at all. Every one was caught.
+    - **Next: (a3)(ii) — let recall read `lesson` (and `outcome`) behind the
+      explore flag, per-kind scored.** It is NOT a widened `kind` filter:
+      the finding above shows that merges to a no-op. The shape it has to
+      take is one retrieval per kind, each floored against its OWN head,
+      with a per-kind slot budget — and the acceptance test is that a live
+      `recall` row carries a `skill:` source, which no row can do today. The
+      trading judgment it changes, stated as the owner directive below
+      requires: which doctrine the desk is holding in mind at the moment it
+      decides to bank, hold or add on a position that has given back its
+      peak — the single behaviour that carried 74% of measured loss.
   - **2026-08-11 — owner directive, binding on this ladder:** *"everything
     for sooppiy AI"* / *"if we find that we must be implement trading logic
     and sooppiy AI"*. Journal-only and default-off increments are a STAGING
