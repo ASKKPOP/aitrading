@@ -301,6 +301,7 @@ def candle_factors(candles: list[dict[str, Any]], market: str) -> Optional[dict[
 
     return {
         "last": last,
+        "mom_2d": _ret(2),
         "mom_5d": _ret(5), "mom_20d": _ret(20),
         "sma20_dist": ((last / sma20 - 1.0) * 100.0) if sma20 else None,
         "sma50_dist": ((last / sma50 - 1.0) * 100.0) if sma50 else None,
@@ -794,6 +795,7 @@ def generate_theses(survivors: list[dict[str, Any]],
             row = {
                 "symbol": s["symbol"], "market": s["market"],
                 "last": f.get("last"),
+                "mom_2d": f.get("mom_2d"),
                 "mom_5d": f.get("mom_5d"), "mom_20d": f.get("mom_20d"),
                 "vol_daily_pct": f.get("vol_daily_pct"), "vol_ratio": f.get("vol_ratio"),
                 "eps_raw": s["eps_raw"],
@@ -1250,7 +1252,50 @@ def select_targets(cursor, agent_id: int, n: int,
     eligible = [t for t in theses
                 if (t["market"], t["symbol"]) not in busy
                 and (not markets_scope or t["market"] in markets_scope)]
+    _mover_rank_us_stock(eligible)
     return _select_from_eligible(eligible, n, _dir_balance_enabled())
+
+
+def _mover_rank_us_stock(eligible: list[dict[str, Any]]) -> None:
+    """Plan 24 fix 5 — owner algorithm (2026-08-12): "AI choose target USA
+    stock — main algorithm is high price changed for 2 days."
+
+    The trend blend (mom_5d/mom_20d/SMA) kept nominating sleepy names for a
+    30-minute desk — three runs idle-retired after 12 hold cycles, and GLD
+    (−$300.66/trade over 7 closed runs) topped the list every pass. A large
+    2-day move on elevated volume is also the institutional footprint the
+    desk is meant to follow.
+
+    In-place, WITHIN-market: us-stock theses are reordered among their own
+    slots by |mom_2d| × volume confirmation (final_score tiebreak), so which
+    us-stock symbol leads is mover-driven while the cross-market ordering —
+    and every other market's ranking — is untouched. Theses from batches
+    predating mom_2d score 0 and keep their final_score order."""
+    idxs = [i for i, t in enumerate(eligible) if t.get("market") == "us-stock"]
+    if len(idxs) < 2:
+        return
+
+    def _key(t: dict[str, Any]) -> tuple[float, float]:
+        score = 0.0
+        try:
+            fs = json.loads(t.get("factor_scores_json") or "{}")
+            f = fs.get("factors") or {}
+            m2 = f.get("mom_2d")
+            if m2 is not None:
+                vr = f.get("vol_ratio")
+                conf = max(0.5, min(float(vr), 3.0)) if vr else 0.5
+                score = abs(float(m2)) * conf
+        except (ValueError, TypeError):
+            score = 0.0
+        try:
+            final = float(t.get("final_score") or 0)
+        except (ValueError, TypeError):
+            final = 0.0
+        return (score, final)
+
+    ranked = sorted((eligible[i] for i in idxs), key=_key, reverse=True)
+    for i, t in zip(idxs, ranked):
+        eligible[i] = t
 
 
 def latest_batch_payload(limit: int = 40) -> dict[str, Any]:
