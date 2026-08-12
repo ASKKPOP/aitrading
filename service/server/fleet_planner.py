@@ -175,6 +175,87 @@ def _trail_config(max_bet: float, leverage: float,
         "tighten_giveback_frac": FLEET_BOUNDS["trail_tighten_giveback_frac"],
     }
 
+SWING_MIN_BARS = 180
+SWING_MIN_PRICE = 10.0
+SWING_MIN_ADV_USD = 50_000_000.0
+SWING_G_FLOOR = 0.03
+SWING_EARNINGS_GUARD_DAYS = 2
+
+
+def swing_symbol_check(symbol: str) -> "tuple[float | None, str | None]":
+    """(G, None) when the symbol is swing-eligible, (None, why) otherwise.
+
+    Plan 23 Phase C. Eligibility is the plan's coded universe filter — deep,
+    seasoned, exitable names only (>=180 daily bars, price >= $10, 20-day
+    average dollar volume >= $50M) — and G is the expected worst overnight
+    gap: max(P99 of |open vs prior close| over ~250 sessions, 2xATR20/price,
+    3% floor). Fail-closed by contract: any data problem is a `why`, never a
+    silent pass — an unsizable overnight hold must not be built.
+    """
+    try:
+        import price_fetcher
+        bars = price_fetcher.get_daily_candles(symbol, "us-stock", days=260) or []
+    except Exception as exc:  # noqa: BLE001
+        return None, f"swing_data_unavailable: {type(exc).__name__}"
+    if len(bars) < SWING_MIN_BARS:
+        return None, f"swing_history_thin: {len(bars)} bars < {SWING_MIN_BARS}"
+    try:
+        closes = [float(b.get("close") or 0) for b in bars]
+        opens = [float(b.get("open") or b.get("close") or 0) for b in bars]
+        highs = [float(b.get("high") or b.get("close") or 0) for b in bars]
+        lows = [float(b.get("low") or b.get("close") or 0) for b in bars]
+        vols = [float(b.get("volume") or 0) for b in bars]
+        price = closes[-1]
+        if price < SWING_MIN_PRICE:
+            return None, f"swing_price_low: {price:.2f} < {SWING_MIN_PRICE:.0f}"
+        adv = sum(c * v for c, v in zip(closes[-20:], vols[-20:])) / 20.0
+        if adv < SWING_MIN_ADV_USD:
+            return None, f"swing_adv_thin: ${adv:,.0f} < ${SWING_MIN_ADV_USD:,.0f}"
+        gaps = sorted(abs(o / c - 1.0) for c, o in zip(closes[:-1], opens[1:])
+                      if c > 0 and o > 0)
+        if len(gaps) < 60:
+            return None, f"swing_gap_history_thin: {len(gaps)} gaps"
+        p99 = gaps[min(len(gaps) - 1, int(0.99 * len(gaps)))]
+        trs = [max(h - l, abs(h - pc), abs(l - pc))
+               for h, l, pc in zip(highs[-20:], lows[-20:], closes[-21:-1])]
+        atr_frac = (sum(trs) / len(trs)) / price if price > 0 else 0.0
+        g = max(p99, 2.0 * atr_frac, SWING_G_FLOOR)
+        return round(g, 5), None
+    except (TypeError, ValueError, ZeroDivisionError) as exc:
+        return None, f"swing_data_unreadable: {type(exc).__name__}"
+
+
+def swing_gate_candidates(fleet: dict, theses: list[dict]) -> "tuple[list, dict]":
+    """Pre-build swing gate over research theses: (kept, dropped_reasons).
+
+    Same shape as the fee gate: kept theses carry `swing_g_frac` so compose
+    never re-fetches; dropped carries symbol -> reason. Also refuses a build
+    into an imminent earnings print (PEAD entries are only legal AFTER the
+    print) when the earnings feed can see one — an unknown date is allowed
+    and journaled by absence, not guessed (the feed gap is Phase D's fix)."""
+    if (fleet.get("archetype") or "short") != "swing":
+        return theses, {}
+    kept, dropped = [], {}
+    for t in theses:
+        sym = t.get("symbol") or ""
+        g, why = swing_symbol_check(sym)
+        if why:
+            dropped[sym] = why
+            continue
+        try:
+            import fmp_feed
+            dte = fmp_feed.days_to_earnings(sym)
+            if dte is not None and dte <= SWING_EARNINGS_GUARD_DAYS:
+                dropped[sym] = f"earnings_window: {dte}d"
+                continue
+        except Exception:  # noqa: BLE001
+            pass
+        t = dict(t)
+        t["swing_g_frac"] = g
+        kept.append(t)
+    return kept, dropped
+
+
 def _thesis_fee_infeasible(thesis: dict) -> "str | None":
     """Reason a thesis can never pay for its own round trip, or None.
 
@@ -965,6 +1046,23 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     fleet_lev = fleet.get("leverage")
     leverage = float(fleet_lev) if fleet_lev else _tier("auto_leverage", risk)
     leverage = max(1.0, min(10.0, leverage))
+    if archetype == "swing":
+        # Plan 23 Phase C: gap-sized risk — derive the bet from the overnight
+        # loss budget, not the loss from the bet. R = 1% of the fleet budget;
+        # G = the symbol's expected worst overnight gap (P99 of 250 sessions,
+        # 2xATR20, floored at 3%). A hold that cannot stop out through a gap
+        # must be small enough that the gap is survivable. Leverage pinned
+        # 1.0. Fail-closed: no gap history -> the slot does not build.
+        leverage = 1.0
+        g_frac = thesis.get("swing_g_frac")
+        if g_frac is None:
+            g_frac, why = swing_symbol_check(thesis["symbol"])
+            if why:
+                raise ValueError(f"swing slot refused: {why}")
+        budget = float(fleet.get("total_budget_usd") or 0)
+        if budget > 0 and g_frac:
+            notional_cap = round(0.01 * budget / float(g_frac), 2)
+            max_bet = min(max_bet, notional_cap)
     # Exposure feasibility: after leverage is known and BEFORE the stop is
     # scaled, so max_loss/trail size to the bet the run can actually deploy.
     max_bet = _clamp_bet_to_exposure_cap(max_bet, leverage, fleet)
@@ -1421,6 +1519,18 @@ def _do_build(fleet: dict) -> None:
                               "reason": negative})
             skipped += 1
             continue
+        # Plan 23 Phase C: swing universe + gap gate, decided once at build
+        # (the exposure-feasibility precedent — an unsizable overnight hold
+        # must never become a run that churns).
+        kept, sw_dropped = swing_gate_candidates(fleet, [thesis])
+        if sw_dropped:
+            _mark_candidate(fleet["id"], cand["id"], "skipped")
+            emit_fleet_event(fleet["id"], "candidate_skipped",
+                             {"thesis_key": cand["thesis_key"],
+                              "reason": next(iter(sw_dropped.values()))})
+            skipped += 1
+            continue
+        thesis = kept[0]
 
         settings = compose_run_settings(thesis, float(cand["allocation_usd"] or 0),
                                         fleet)
