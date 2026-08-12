@@ -34,7 +34,8 @@ the loop.
 |---|---|---|
 | `fleets.archetype` | `short` (default) | `swing` |
 | markets | crypto (+futures/forex per fleet) | **us-stock only** |
-| cadence | 30-min cap (`RUN_INTERVAL_CAP_MIN`) | **240-min** cap (per-archetype) |
+| cadence | 30-min cap (`RUN_INTERVAL_CAP_MIN`) | **30-min analysis** through open−2h→close+2h shoulders; dormant outside (owner spec 2026-08-12; was 240-min) |
+| order policy | per cycle | **session-only fills · entries ≥60 min apart · exits exempt** (`entry_spacing_minutes` / `analysis_window` snapshot stamps) |
 | leverage | fleet setting (spot/futures) | **pinned 1.0** |
 | tier | per fleet gates | **Professional / Enterprise only** |
 | horizon | intraday, give-back defense | 1–2+ days, holds overnight by design |
@@ -64,9 +65,18 @@ filters use the full ISO form (`ts >= "2026-08-12T00:00:00Z"`).
    snapshot should be ≥ 0.03 (the floor). A missing stamp is tolerated by
    the cap pass (floors at `SWING_G_FLOOR`, overstating risk = safe) but is
    still a defect — report it.
-3. **Cadence** — swing runs must NOT cycle at 30-min spacing. `cycle_seq`
-   deltas ≈ 240 min during the session. A swing run cycling like a short run
-   means the archetype never reached the scheduler — high-priority fix.
+3. **Cadence** (owner spec 2026-08-12 — supersedes the 240-min contract) —
+   swing runs analyze on a 30-min clock from 2h before the open to 2h after
+   the close, and are DORMANT outside that window: zero cycles overnight and
+   on weekends (not even `market closed` skips — `due_run_ids` never
+   dispatches them). ORDER legs are the rail to watch, not cycle spacing:
+   entry signals (`side` buy/short) on one run must sit ≥60 min apart, every
+   fill must land inside the NYSE session, and `order_policy` gate_skips
+   ("analysis shoulder — orders resume at the open", "entry spacing") are
+   the proof the rails engaged. Exits are exempt from spacing by design.
+   A swing run cycling at 30-min WITHOUT these stamps in its snapshot
+   (`entry_spacing_minutes`, `analysis_window`) predates the change —
+   composed before deploy — and still trades under the old 240 contract.
 4. **Overnight cap events** — fleet event `overnight_cap`; the reduce trades
    carry `client_order_id` prefix `fleet:{fleet_id}:overnight-cap:`. Verify:
    fired only in the last ~20 min before close, reduced the LARGEST

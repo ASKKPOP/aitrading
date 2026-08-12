@@ -1138,6 +1138,7 @@ def _try_build(fleet: dict, thesis: dict, funding: float) -> int:
                                                          core["market"])
         core["feedback"] = True
         core["add_limits"] = dict(settings.get("add_limits") or {})
+        fp.carry_snapshot_stamps(core, settings)
         run_id = trading_runs.create_run(agent_id, core, start_c, stop_c, True,
                                          fleet_id=fleet["id"],
                                          created_via="fleet")

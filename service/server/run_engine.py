@@ -2107,8 +2107,8 @@ def due_run_ids() -> list[int]:
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, config_snapshot_json, last_cycle_at FROM trading_runs "
-            "WHERE status = ?", (STATUS_RUNNING,))
+            "SELECT id, market, config_snapshot_json, last_cycle_at "
+            "FROM trading_runs WHERE status = ?", (STATUS_RUNNING,))
         rows = [dict(r) for r in cursor.fetchall()]
     finally:
         conn.close()
@@ -2116,6 +2116,24 @@ def due_run_ids() -> list[int]:
     for row in rows:
         try:
             cfg = json.loads(row.get("config_snapshot_json") or "{}")
+            # Swing dormancy (owner spec 2026-08-12): a run stamped with an
+            # analysis_window cycles only from pre_open before the open to
+            # post_close after the close. Outside that it is not merely
+            # skipped — it is never dispatched, so overnight/weekend produce
+            # zero cycles and zero journal noise. Fail-open on calendar
+            # trouble: a broken clock must not silence a live run.
+            win = cfg.get("analysis_window") or {}
+            if win:
+                try:
+                    import markets as _mkts
+                    if _mkts.extended_session_state(
+                            row.get("market"),
+                            pre_minutes=int(win.get("pre_open_minutes") or 0),
+                            post_minutes=int(win.get("post_close_minutes") or 0),
+                    ) == "closed":
+                        continue
+                except Exception:  # noqa: BLE001
+                    pass
             # Plan 23 Phase B: the swing archetype thinks on a 240-min clock
             # (owner-approved relaxation of the 30-min rule, swing only).
             # Stops stay on the ~60s control scan either way — slower
@@ -4063,7 +4081,22 @@ def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
         return "master-hold check unavailable"
 
     if not is_market_open(run["market"]):
-        return "market closed"
+        # Swing cadence (owner spec 2026-08-12): a run stamped with an
+        # analysis_window may THINK through the session shoulders (open−2h,
+        # close+2h) — context building only; _order_gate_skip refuses every
+        # order while the market is shut, so these cycles can never fill at
+        # a stale mark. Outside the shoulders the run is dormant as before.
+        win = (cfg or {}).get("analysis_window") or {}
+        if win:
+            import markets as _mkts
+            state = _mkts.extended_session_state(
+                run["market"],
+                pre_minutes=int(win.get("pre_open_minutes") or 0),
+                post_minutes=int(win.get("post_close_minutes") or 0))
+            if state != "analysis":
+                return "market closed"
+        else:
+            return "market closed"
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -4147,6 +4180,45 @@ def _position_quantity(agent_id: int, market: str, symbol: str,
         return float(pos["quantity"]) if pos else 0.0
     finally:
         conn.close()
+
+
+def _last_entry_at(run_id: int) -> Optional[str]:
+    """created_at of this run's most recent ENTRY leg (buy/short), None when
+    the run has never opened. Exits (sell/cover) deliberately excluded — they
+    must never push the next entry's spacing window."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT MAX(created_at) AS ts FROM signals
+               WHERE run_id = ? AND side IN ('buy', 'short')""", (run_id,))
+        row = cursor.fetchone()
+        return row["ts"] if row and row["ts"] else None
+    finally:
+        conn.close()
+
+
+def _order_gate_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
+    """Swing order policy (owner spec 2026-08-12), read from the per-run
+    stamps compose wrote: (1) orders fill only while the market is OPEN — an
+    analysis-shoulder cycle may decide, log and plan, but a fill would land
+    on the stale last mark, the phantom-price class Plan 23 C2 exists to
+    prevent; (2) entries land at least entry_spacing_minutes apart. Exits
+    are exempt from spacing by design — a risk brake must never delay
+    getting OUT. Runs without the stamps are untouched."""
+    if cfg.get("analysis_window"):
+        from routes_shared import is_market_open
+        if not is_market_open(run["market"]):
+            return "analysis shoulder — orders resume at the open"
+    spacing = int(cfg.get("entry_spacing_minutes") or 0)
+    if spacing > 0 and action in ("buy", "short"):
+        last = _last_entry_at(run["id"])
+        if last:
+            age_min = _age_seconds(last) / 60.0
+            if age_min < spacing:
+                return (f"entry spacing: last entry {age_min:.0f}m ago "
+                        f"< {spacing}m minimum (exits unaffected)")
+    return None
 
 
 def run_cycle(run_id: int) -> dict:
@@ -4672,6 +4744,18 @@ def run_cycle(run_id: int) -> dict:
             emit_telemetry_event(run_id, "gate_skip",
                                  {"cycle": seq, "stage": "risk",
                                   "reason": result["skip_reason"]})
+            return result
+
+        # Swing order policy: session-only fills + entry spacing (exits
+        # exempt). Checked AFTER the risk gate so the journaled decision
+        # still records what the desk wanted; the skip reason says why the
+        # order itself did not land.
+        order_gate = _order_gate_skip(run, cfg, action)
+        if order_gate:
+            result["skip_reason"] = order_gate
+            emit_telemetry_event(run_id, "gate_skip",
+                                 {"cycle": seq, "stage": "order_policy",
+                                  "reason": order_gate})
             return result
 
         # Plan 15 overnight (2026-07-23): dust guard on the FINAL sized order.
