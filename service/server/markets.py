@@ -359,7 +359,10 @@ def session_minutes_left(market: str | None, now: datetime | None = None,
     if spec is None:
         return horizon_min
     start = (now or datetime.now(_ET))
-    if not is_session_open(market, start):
+    # spec.session, not market: is_session_open() keys on the SESSION name and
+    # returns True for anything else, so passing "us-stock" here silently
+    # skipped this exit and left the bisection measuring a shut clock.
+    if not is_session_open(spec.session, start):
         return 0
     lo, hi = 0, max(0, int(horizon_min))
     # The open window is contiguous forward from an open `now`, so the first
