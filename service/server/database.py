@@ -2420,6 +2420,21 @@ def init_database():
             created_at        TEXT NOT NULL
         )
     """)
+
+    # Plan 23 Phase D: US-equity positioning history, self-accrued (no vendor
+    # sells it). short_volume_ratio reserved NULL until the FINRA fetcher
+    # lands. MySQL mirror: alembic 0050.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS us_stock_factor_snapshots (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol            TEXT NOT NULL,
+            putcall_oi_ratio  REAL,
+            short_volume_ratio REAL,
+            stocktwits_tilt   REAL,
+            tilt_n            INTEGER,
+            created_at        TEXT NOT NULL
+        )
+    """)
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_factor_snapshots_symbol_created
         ON factor_snapshots(symbol, created_at)
