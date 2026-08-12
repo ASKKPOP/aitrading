@@ -225,3 +225,34 @@ class Broker(ABC):
         minimum: symbol, qty (float), side ('long'|'short').
         Used by the reconciler to detect drift.
         """
+
+
+# ---------------------------------------------------------------------------
+# Broker -> market capability map (pre-live TODO #3, 2026-08-12).
+# The router uses this to pick, among an agent's SIMULTANEOUSLY active
+# accounts, the one that can actually trade the order's market — a stock
+# broker and a crypto broker connected side by side, each order routed to
+# its own venue. Unknown brokers support nothing (fail-closed: an order must
+# never be sent to a venue whose capabilities we have not stated).
+# ---------------------------------------------------------------------------
+
+BROKER_MARKETS: dict = {
+    "alpaca": ("us-stock",),
+    "ibkr": ("us-stock",),
+    "binance": ("crypto",),
+    "kraken": ("crypto",),
+    "coinbase": ("crypto",),
+    "okx": ("crypto",),
+    "bybit": ("crypto",),
+    "kucoin": ("crypto",),
+    "cryptocom": ("crypto",),
+    "upbit": ("crypto",),
+    "paper": ("crypto", "us-stock", "futures", "forex", "polymarket"),
+}
+
+
+def broker_supports_market(broker: str, market: "str | None") -> bool:
+    """True when `broker` can execute orders in `market` (None = any)."""
+    if market is None:
+        return True
+    return market in BROKER_MARKETS.get((broker or "").strip().lower(), ())

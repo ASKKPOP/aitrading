@@ -149,6 +149,8 @@ class ComposeGapSizing(unittest.TestCase):
         self.assertEqual(s["max_bet_usd"], 500.0)
         self.assertEqual(s["leverage"], 1.0)
         self.assertEqual(s["archetype"], "swing")
+        # the overnight-cap pass reads G from the frozen snapshot thesis
+        self.assertEqual(s["thesis"]["swing_g_frac"], 0.20)
 
     def test_swing_without_g_fetches_and_fails_closed_on_dead_feed(self):
         with patch("price_fetcher.get_daily_candles",

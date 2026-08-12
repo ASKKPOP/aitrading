@@ -1115,6 +1115,9 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
             "expected_move_pct": float(thesis.get("expected_move_pct") or 0),
             "horizon_hours": horizon_h,
             "entry_ref_price": None,  # stamped at build from the probe price
+            # Plan 23: the symbol's expected worst overnight gap, frozen at
+            # build — the supervisor's book-level overnight cap reads it.
+            "swing_g_frac": thesis.get("swing_g_frac"),
             "rationale": (thesis.get("thesis") or "")[:1000],
             "invalidation": (thesis.get("invalidation") or "")[:300],
             "batch_id": thesis.get("batch_id"),

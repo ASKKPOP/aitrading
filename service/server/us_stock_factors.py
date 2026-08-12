@@ -13,9 +13,11 @@ resolved):
                        (price_fetcher._fetch_yahoo_option_chain)
   stocktwits_tilt      (bullish - bearish) / scored, BARE symbol (the
                        crypto recorder's '.X' suffix deliberately dropped)
-  short_volume_ratio   reserved NULL — the FINRA daily short-volume fetcher
-                       lands separately; the column exists so history is
-                       not re-keyed later
+  short_volume_ratio   FINRA daily consolidated short-sale volume
+                       (ShortVolume / TotalVolume), T+1 publication — the
+                       fetcher walks back over weekends/holidays and the
+                       whole day is cached per process; NULL when FINRA
+                       has no row for the symbol
 
 Universe: US_FACTOR_WATCHLIST env (comma list) or a fixed mega-cap default,
 plus every symbol with an active us-stock run.
@@ -91,12 +93,62 @@ def stocktwits_tilt(symbol: str) -> "tuple[Optional[float], Optional[int]]":
     return (st["bullish"] - st["bearish"]) / scored, scored
 
 
+# FINRA consolidated daily short-sale volume (free, T+1). The fade's honest
+# "crowd just acted" read — the biweekly short INTEREST report is context
+# only (plan §5). One file per trading day, pipe-delimited:
+# Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume|Market
+_FINRA_URL = "https://cdn.finra.org/equity/regsho/daily/CNMSshvol{date}.txt"
+_finra_cache: dict[str, dict[str, float]] = {}
+
+
+def finra_short_volume_ratios(lookback_days: int = 5) -> dict[str, float]:
+    """symbol -> ShortVolume/TotalVolume for the most recent published file.
+
+    Walks back up to `lookback_days` calendar days (weekends/holidays have no
+    file). {} on total failure — null-honest, the recorder writes NULLs."""
+    import requests
+    from datetime import timedelta
+    today = datetime.now(timezone.utc).date()
+    for back in range(1, lookback_days + 1):
+        day = (today - timedelta(days=back)).strftime("%Y%m%d")
+        if day in _finra_cache:
+            return _finra_cache[day]
+        try:
+            resp = requests.get(_FINRA_URL.format(date=day), timeout=30)
+            if resp.status_code != 200 or not resp.text.strip():
+                continue
+            out: dict[str, float] = {}
+            for line in resp.text.splitlines()[1:]:
+                parts = line.split("|")
+                if len(parts) < 5:
+                    continue
+                try:
+                    total = float(parts[4])
+                    if total > 0:
+                        out[parts[1].strip().upper()] = round(
+                            float(parts[2]) / total, 4)
+                except (TypeError, ValueError):
+                    continue
+            if out:
+                _finra_cache.clear()          # keep exactly one day cached
+                _finra_cache[day] = out
+                return out
+        except Exception:  # noqa: BLE001
+            logger.debug("FINRA short-volume fetch failed (%s)", day,
+                         exc_info=True)
+    return {}
+
+
 def record_us_stock_factor_snapshots(symbols: "tuple[str, ...] | None" = None
                                      ) -> dict[str, Any]:
     """One snapshot row per symbol. Fail-soft per source AND per symbol —
     a dead feed writes NULLs, never blocks the sweep."""
     syms = symbols if symbols is not None else watchlist()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        short_ratios = finra_short_volume_ratios()
+    except Exception:  # noqa: BLE001
+        short_ratios = {}
     written, errors = 0, []
     for sym in syms:
         try:
@@ -111,7 +163,7 @@ def record_us_stock_factor_snapshots(symbols: "tuple[str, ...] | None" = None
                        (symbol, putcall_oi_ratio, short_volume_ratio,
                         stocktwits_tilt, tilt_n, created_at)
                        VALUES (?, ?, ?, ?, ?, ?)""",
-                    (sym, pc, None, tilt, tilt_n, now))
+                    (sym, pc, short_ratios.get(sym), tilt, tilt_n, now))
                 conn.commit()
                 written += 1
             finally:
