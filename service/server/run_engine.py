@@ -3696,6 +3696,53 @@ def _floor_status_line(run: dict, pnl: dict, peak: "float | None") -> str:
         return ""
 
 
+def _fresh_armed_order(run_id: int) -> Optional[dict]:
+    """The CURRENT armed order, read fresh — the cycle's run dict is a
+    snapshot, so an arm stored earlier in this same cycle is invisible in
+    it. The contradiction rail must treat a just-placed arm as a standing
+    plan, not silence."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT armed_order_json FROM trading_runs "
+                       "WHERE id = ?", (run_id,))
+        row = cursor.fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return None
+    try:
+        blob = json.loads(row["armed_order_json"] or "null")
+    except (ValueError, TypeError):
+        return None
+    return blob or None
+
+
+def _contradiction_line(run: dict, pos_qty: float) -> str:
+    """Plan 24 fix 1 prompt line: a held position may not silently ignore
+    the desk's own reading. Rendered from the adapt-state streak the full
+    path maintains (run_feedback.note_contradiction); "" while flat, absent
+    or at streak 0."""
+    if not pos_qty:
+        return ""
+    try:
+        state = json.loads(run.get("adapt_state_json") or "{}")
+        streak = int(state.get("contradiction_streak") or 0)
+    except (ValueError, TypeError):
+        streak = 0
+    if streak < 1:
+        return ""
+    side = "long" if pos_qty > 0 else "short"
+    line = (f"Your own reading (technical + news together) has OPPOSED this "
+            f"{side} for {streak} consecutive cycle(s).")
+    if streak >= 2:
+        line += (" A silent hold is not an available action: either reduce, "
+                 "or explicitly re-underwrite the thesis with fresh evidence "
+                 "in your report. At 3 straight cycles the platform reduces "
+                 "half of this position itself.")
+    return line + "\n"
+
+
 def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                          thesis: dict) -> str:
     """The open position's own trajectory, for the desk's exit decision.
@@ -3927,6 +3974,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     can_sell = bool(trading_runs.is_futures_book(run.get("market"), market_type)
                     or pos_qty > 0)
     position_state = (_position_state_line(run, cfg, pos_qty, thesis)
+                      + _contradiction_line(run, pos_qty)
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
                       + _hold_streak_line(run, pos_qty)
@@ -4372,6 +4420,7 @@ def run_cycle(run_id: int) -> dict:
                                         (cfg.get("thesis") or {})
                                         if isinstance(cfg.get("thesis"), dict)
                                         else {})
+                                        + _contradiction_line(run, held)
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
                                         + _hold_streak_line(run, held)
@@ -4390,6 +4439,26 @@ def run_cycle(run_id: int) -> dict:
         analysts = analysis.get("analysts") if isinstance(analysis.get("analysts"), dict) else {}
         tech_block = analysts.get("technical")
         technical = tech_block.get("data") if isinstance(tech_block, dict) else None
+        # Plan 24 fix 1: the full path carries the desk's structured reading
+        # (technical signal + news balance) — track it against the held side.
+        # Best-effort persist: a lost fence here only loses one streak tick,
+        # never the trade (the advisory counter must not gate the cycle).
+        if adapt_state is not None and isinstance(technical, dict):
+            news_block = analysts.get("news")
+            news_data = (news_block.get("data")
+                         if isinstance(news_block, dict) else None) or {}
+            bd = news_data.get("sentiment_breakdown")
+            if isinstance(bd, dict):
+                c_bull = (bd.get("bullish", 0) or 0) + \
+                    (bd.get("somewhat-bullish", 0) or 0)
+                c_bear = (bd.get("bearish", 0) or 0) + \
+                    (bd.get("somewhat-bearish", 0) or 0)
+            else:
+                c_bull = c_bear = None
+            run_feedback.note_contradiction(
+                adapt_state, held, (technical or {}).get("signal"),
+                c_bull, c_bear)
+            run_feedback.save_state(run, adapt_state, [], WORKER_IDENTITY)
         decision = (analysis.get("decision") or {})
         action = decision.get("action")
         confidence = decision.get("confidence")
@@ -4613,6 +4682,29 @@ def run_cycle(run_id: int) -> dict:
                     intent_exit = {"size_frac": step["size_frac"],
                                    "position_qty": oi_pos,
                                    "intent": oi_railed["intent"]}
+
+        # Plan 24 fix 1 backstop: at 3 straight cycles of the desk's own
+        # reading opposing the held side, a SILENT hold (no exit intent, no
+        # arm) forces a half reduce. Shed-only — never a full close, and
+        # never while the desk has any standing plan. The streak resets so
+        # continued contradiction de-risks progressively (0.5 → 0.25 → the
+        # dust-remainder rail closes the rest). Live 2026-08-12, run 1086:
+        # three silent contradicted cycles rode ZEC to −$5.55.
+        if intent_exit is None and action == "hold" \
+                and adapt_state is not None \
+                and int(adapt_state.get("contradiction_streak") or 0) >= 3 \
+                and _fresh_armed_order(run_id) is None:
+            c_pos = _position_quantity(run["agent_id"], run["market"],
+                                       run["symbol"], run["id"])
+            if c_pos:
+                action = "sell" if c_pos > 0 else "cover"
+                intent_exit = {"size_frac": 0.5, "position_qty": c_pos,
+                               "intent": "reduce"}
+                adapt_state["contradiction_streak"] = 0
+                run_feedback.save_state(run, adapt_state, [], WORKER_IDENTITY)
+                emit_telemetry_event(run_id, "contradiction_reduce",
+                                     {"cycle": seq, "side": action,
+                                      "position_qty": c_pos})
 
         # Plan 14 §7: same-direction re-entry block after a losing close
         # (whipsaw/fee-churn guard) — deterministic, before the gates.

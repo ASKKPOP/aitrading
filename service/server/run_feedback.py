@@ -300,6 +300,42 @@ def blocked_reentry(state: dict, action: Optional[str]) -> bool:
     return last.get("direction") == entry_dir
 
 
+def note_contradiction(state: dict, position_qty: float,
+                       tech_signal: Optional[str],
+                       news_bull: Optional[int],
+                       news_bear: Optional[int]) -> int:
+    """Plan 24 fix 1: consecutive cycles where the desk's OWN reading —
+    technical signal AND news balance together — opposes the held side.
+
+    Live 2026-08-12, run 1086: short ZEC while the desk's own report read
+    "technical 'buy', news 10 bullish vs 1 bearish" for three straight
+    cycles, holding silently to −$5.55. The flat-run version of this signal
+    already retires (thesis invalidation); this is the held-position
+    counter it never had.
+
+    Rules: flat resets to 0; a full opposing reading (both families present,
+    agreeing with each other, against the held side) increments; an aligned
+    or mixed reading resets; a PARTIAL reading (either family missing)
+    leaves the streak untouched — absence of data proves nothing."""
+    streak = int(state.get("contradiction_streak") or 0)
+    side = 1 if position_qty > 0 else (-1 if position_qty < 0 else 0)
+    if not side:
+        state["contradiction_streak"] = 0
+        return 0
+    tech = {"buy": 1, "sell": -1}.get((tech_signal or "").strip().lower(), 0)
+    if news_bull is None or news_bear is None:
+        news = 0
+    elif news_bull == news_bear:
+        news = 0
+    else:
+        news = 1 if news_bull > news_bear else -1
+    if not tech or not news:
+        return streak                    # partial reading — unchanged
+    streak = streak + 1 if (tech == news and tech != side) else 0
+    state["contradiction_streak"] = streak
+    return streak
+
+
 def in_cooldown(state: dict) -> bool:
     until = state.get("cooldown_until")
     if not until:
