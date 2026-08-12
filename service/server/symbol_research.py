@@ -141,16 +141,70 @@ def _research_mandate() -> str:
         "you would actually pay to hold over a full list of plausible ones.\n\n")
 
 
+# Demand-aware ceiling: never write more theses than this per market however
+# large the fleets get — the tail of a 100-symbol wish list is noise.
+_SURVIVOR_HARD_CAP = 40
+
+
+def _fleet_demand_by_market() -> dict[str, int]:
+    """Σ n_runs of non-terminal fleets, per market. A fleet with no explicit
+    scope may draw from any market, so it counts toward every one. Fail-soft:
+    any error means {} and the static defaults stand."""
+    out: dict[str, int] = {}
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT n_runs, market_scope_json FROM fleets
+               WHERE status IN ('researching','building','active','paused',
+                                'stopping')""")
+        for row in cursor.fetchall():
+            try:
+                n = int(row["n_runs"] or 0)
+                scope = json.loads(row["market_scope_json"] or "null") or None
+            except (ValueError, TypeError):
+                continue
+            for market in (scope or list(_SURVIVOR_DEFAULTS)):
+                out[market] = out.get(market, 0) + n
+    except Exception:  # noqa: BLE001 — research must never break on this
+        return {}
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
 def _survivors_per_market() -> dict[str, int]:
-    """Per-market survivor cap, env-overridable so the pool can be tuned
-    against fleet size without a deploy."""
+    """Per-market survivor cap: env override wins outright; otherwise the
+    static default RAISED to live fleet demand (+default as exclusion
+    headroom — running symbols are excluded from selection, so the pool must
+    exceed the slot count to keep refilling), bounded by _SURVIVOR_HARD_CAP.
+
+    Live 2026-08-12 (fleet 31): a 25-slot us-stock fleet against a fixed cap
+    of 8 — the batch carried FOUR us-stock theses, three already running, so
+    the fleet crawled 2→3→4 while 21 slots waited on a pool that could
+    never feed them. Fresh-LLM thesis calls are capped separately
+    (MAX_LLM_CALLS_PER_REFRESH), so widening survivors widens choice, not
+    spend."""
+    demand = _fleet_demand_by_market()
     out: dict[str, int] = {}
     for market, default in _SURVIVOR_DEFAULTS.items():
         key = "FLEET_RESEARCH_SURVIVORS_" + market.replace("-", "_").upper()
-        try:
-            out[market] = max(1, int(os.environ.get(key, default)))
-        except ValueError:
-            out[market] = default
+        env = os.environ.get(key)
+        if env is not None:
+            try:
+                out[market] = max(1, int(env))
+                continue
+            except ValueError:
+                pass
+        want = demand.get(market, 0)
+        out[market] = max(default,
+                          min(_SURVIVOR_HARD_CAP, want + default) if want
+                          else default)
     return out
 
 
