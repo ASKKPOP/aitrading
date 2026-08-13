@@ -119,6 +119,21 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## FIRST LIVE ORDER-DISCUSSIONS — the rule is operating (22:08Z, n=8)
+
+Within 30 min of deploy, 8 `order_discussion` events. The panel
+CONFIRMED 2 proposals with HIGHER conviction (PLTR sell 0.60→0.62,
+JPM sell 0.58→0.66) and REVERSED 6 to hold — including PYPL buy@0.68
+→ hold@0.57 and UBER buy@0.54 → hold. In-scope finals carry varied
+confidences (genuine deliberation); the flat `hold 0.5` finals are all
+fleet 32 (out of scope — signature of that agent's panel falling back
+to rule-based; note only). No stop hits yet, 0 tracebacks, image
+current, docs 200, P&L unchanged (agent 59 +7.26 / agent 6 −7.64).
+
+**Named watch:** panel conservatism — 6/8 reversals to hold on night
+one. If the discussion systematically starves entries over the coming
+sessions, that is an OWNER conversation with numbers, not a quiet tune.
+
 ## AI-FINAL-AUTHOR SHIPPED — #413 deployed + verified 3× (21:36Z)
 
 Owner rule (STRONG, all trading orders, five messages verbatim in the
