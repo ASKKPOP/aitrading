@@ -119,6 +119,14 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## SCOPE → THREE USERS (22:14Z, owner)
+
+yoojinbe (crypto) + info@askkpop (us-stock) + henry.j (crypto+forex).
+Fleet 32 baselined: −169.75 since 08-12, tail = SOLUSDT −69.56 (#404
+ghost-book, fixed) / SPCX −35.98 / KAITOUSDT −22.71; open book ~$3.6k
+slightly green. Its crypto slots are the priority watch. Crons re-armed
+three-user.
+
 ## FIRST LIVE ORDER-DISCUSSIONS — the rule is operating (22:08Z, n=8)
 
 Within 30 min of deploy, 8 `order_discussion` events. The panel

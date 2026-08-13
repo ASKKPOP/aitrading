@@ -229,6 +229,19 @@ if it explodes, tell the owner before tuning anything).
 
 ## 7a. ▶️ THE FLEET EXISTS — fleet 31, loop LIVE (2026-08-13 05:46Z)
 
+- **SCOPE = THREE USERS (owner 2026-08-13 ~22:10Z), each with a focus
+  market:** yoojinbe@gmail.com (user 4, agent 5, fleet 32 — **CRYPTO**),
+  info@askkpop.com (user 5, agent 6, fleet 31 — **US STOCK**),
+  henry.j@eklotho.com (user 23, agent 59, fleet 33 — **CRYPTO + FOREX**).
+  Fleet 32 baseline at entry into scope: 10 slots ~$100k, archetype
+  short, market scope NULL (trades all markets: 5 futures / 2 crypto /
+  2 us-stock / 1 forex at baseline), **realized since 08-12: −169.75**,
+  worst legs SOLUSDT −69.56 (the #404 ghost-book incident, platform side
+  fixed), SPCX −35.98, KAITOUSDT −22.71 — its crypto slots are where the
+  catastrophic tail lived; that is the focus. Open book modest (~$3.6k,
+  slightly green). Note: focus labels are the OWNER'S watch priorities,
+  not the fleets' scopes — report per focus market but never ignore the
+  rest of a fleet's book.
 - **SCOPE EXTENDED (owner 2026-08-13): henry.j@eklotho.com (user 23,
   agent 59, fleet 33) is monitored for US STOCK.** Fleet 33: archetype
   `short`, scope ["us-stock","forex"], 10 slots, budget ~$100k, profit
