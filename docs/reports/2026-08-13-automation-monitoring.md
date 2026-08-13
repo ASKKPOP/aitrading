@@ -93,6 +93,35 @@ and journalled — measure them in run_events before tuning anything.
 
 # Monitoring loop log (newest first)
 
+## Cycle 2 — scope + the night-notification defect (2026-08-13 09:0x–10:0xZ)
+
+**Owner: add henry.j@eklotho.com for US stock.** Fleet 33 (user 23, agent
+59) is now in scope — archetype `short`, ["us-stock","forex"], 10 slots,
+~$100k, profit target 10%. Baseline: P&L ~flat; us-stock runs correctly
+skip overnight (`gate_skip: market closed`, no LLM spend). ⚠️ Standing
+watch: it trades the thin-history small caps the swing gate refuses
+(QNT 48 / CBRS 62 / SPCX 42 bars) — no small-cap screen covers us-stock
+shorts (swing_symbol_check is swing-only, manipulation.py crypto-only).
+
+**Owner: "why working now (not market time)?" + "make clean this time" —
+run 1128 CBRS.** Diagnosis: nothing traded and no AI ran overnight (only
+market-closed skips). What fired was the 24/7 safety scan retiring the
+run on `at_time` — composed 01:09Z with a 6h thesis horizon added as WALL
+hours (fleet_planner:1053), so its whole lifetime burned against a shut
+NYSE: zero cycles, zero trades, a confusing 12:10 AM email, slot rebuilt
+(1146, same symbol). The replacement loop running while closed is the
+owner's own 08-12 rule (defined slot count holds) — correct.
+
+**Fix (same cycle): `_deadline_after_open_hours`** — a composed horizon
+now means hours of OPEN market: 15-min calendar walk (90-day cap,
+fail-soft to wall clock), wired into compose. Crypto unchanged
+(24/7 ⇒ identical). fail-before 5/5 red → **4,052 passed / 0 failed**;
+mutation (ignore the calendar) caught by exactly the us-stock tests; the
+compose wiring pinned by a sentinel test. Note: runs built BEFORE this
+deploy keep their stored wall-clock at_time — stop_conditions are the
+AI's rows, never edited; today's pre-fix batch may each fire one more
+early at_time before the corrected composes flow through.
+
 ## Cycle 1 DEPLOYED + VERIFIED 3× — #406 live (2026-08-13 07:39Z)
 
 Merged `155e8572` (#406), deployed **`sooppiy-backend:20260813-day-block-trio`**

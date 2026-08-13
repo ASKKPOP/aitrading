@@ -1017,6 +1017,36 @@ def _market_confidence_ceiling(market: str, days: int = 14,
         return None
 
 
+def _deadline_after_open_hours(market: str, start: datetime,
+                               hours: float) -> datetime:
+    """Wall-clock moment by which `hours` of MARKET-OPEN time will have
+    elapsed. For a 24/7 market this is simply start + hours.
+
+    WHY (live 2026-08-13, run 1128 CBRS / owner: "why working now — it's
+    not market time... make clean this time"): the thesis horizon was added
+    as WALL hours, so a us-stock run composed overnight burned its whole
+    6h lifetime while NYSE was closed — zero cycles, zero trades, retired
+    by `at_time` at 07:10Z and rebuilt, with a confusing night
+    notification to the user. A horizon means hours of TRADING time; the
+    same precedent as idle-retire counting only open-market cycles.
+
+    15-minute walk (calendar sessions are pure clock functions), capped at
+    90 calendar days; fail-soft to wall-clock arithmetic."""
+    try:
+        import markets as _mkts
+        need = timedelta(hours=float(hours))
+        step = timedelta(minutes=15)
+        cursor, acc = start, timedelta(0)
+        limit = start + timedelta(days=90)
+        while acc < need and cursor < limit:
+            if _mkts.is_market_open(market, cursor):
+                acc += step
+            cursor += step
+        return cursor
+    except Exception:  # noqa: BLE001 — a deadline must never block a build
+        return start + timedelta(hours=float(hours))
+
+
 def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     """Thesis + slot budget → the run-creation payload. Deterministic clamps
     only — including the §6.4 percent→fraction unit conversion (a 2.5% thesis
@@ -1050,7 +1080,11 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     horizon_h = max(4.0, min(24.0 * 14, float(thesis.get("horizon_hours") or 48)))
     max_bet = round(run_budget * _tier("max_bet_frac_of_run_budget", risk), 2)
     max_bet = min(max_bet, 1_000_000.0)
-    at_time = (_now_dt() + timedelta(hours=horizon_h)).strftime(TS_FMT)
+    # Owner 2026-08-13 ("make clean this time"): horizon hours are hours of
+    # OPEN market, so a session-market run born overnight no longer burns
+    # its lifetime against a shut exchange (run 1128's death shape).
+    at_time = _deadline_after_open_hours(
+        market, _now_dt(), horizon_h).strftime(TS_FMT)
     # Plan 15 P1 (F3): a run whose gate exceeds its own thesis confidence is
     # born unable to trade (fleet 6 built ZC at thesis 0.539 against a 0.65
     # gate — every cycle skipped). The gate never exceeds thesis_conf − 0.05,

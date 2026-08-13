@@ -192,8 +192,19 @@ Extend candidates that WAIT for data (do not build early):
 
 - **Fleet 31 = the owner-built swing fleet for info@askkpop.com** (user 5,
   agent 6): us-stock only, target 25 slots, budget/seed $10,000, built
-  2026-08-12 ~15:13Z. This is the fleet this playbook governs. Fleets 32
-  (user 4) and 33 (user 23) are other users — out of monitoring scope.
+  2026-08-12 ~15:13Z. Fleet 32 (user 4) is out of monitoring scope.
+- **SCOPE EXTENDED (owner 2026-08-13): henry.j@eklotho.com (user 23,
+  agent 59, fleet 33) is monitored for US STOCK.** Fleet 33: archetype
+  `short`, scope ["us-stock","forex"], 10 slots, budget ~$100k, profit
+  target 10%. Its us-stock runs cycle on the 30-min clock and skip with
+  `gate_skip: market closed` overnight (no `analysis_window` stamp — the
+  short archetype uses cheap pre-gate skips, not swing's zero-dispatch
+  dormancy; ~2 journal rows/hour/run, no LLM spend — by design, not a
+  defect). ⚠️ Baseline watch: this fleet trades the THIN-HISTORY small
+  caps the swing gate refuses (QNT 48 bars, CBRS 62, SPCX 42) because
+  `swing_symbol_check` is swing-only and the manipulation detector
+  (#374) is crypto-scoped — no small-cap screen covers us-stock shorts.
+  Judge by tape evidence before proposing any gate.
 - **New owner mandate (2026-08-13):** cycle every **30 min, 6AM–7PM**
   (read as US Eastern — the us-stock session; KST would put every cycle
   in the dormant window). Per cycle: working-per-plan / losses+why (check
