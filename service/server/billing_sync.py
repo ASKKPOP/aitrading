@@ -1,7 +1,7 @@
 """billing_sync.py — auto-renew subscription state, written ONLY by webhooks.
 
 Single owner of user_subscriptions writes for the two auto-renew rails
-(method = 'stripe' | 'paypal'). Checkout endpoints never activate anything;
+(method = 'stripe'). Checkout endpoints never activate anything;
 providers' webhooks land here. `expires_at` stays the one field entitlements
 reads — each paid period pushes it to period_end + GRACE_DAYS so a slow
 webhook or payment retry cannot flicker a member's access off.
@@ -269,18 +269,15 @@ def plan_for_stripe_price(price_id: str) -> str | None:
     return _plan_lookup("stripe_price_id", price_id)
 
 
-def plan_for_paypal_plan(paypal_plan_id: str) -> str | None:
-    return _plan_lookup("paypal_plan_id", paypal_plan_id)
-
 
 def billing_ids_for_plan(plan_code: str) -> dict:
     conn = get_db_connection()
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT stripe_price_id, paypal_plan_id FROM subscription_plans "
+            "SELECT stripe_price_id FROM subscription_plans "
             "WHERE code = ?", (plan_code,))
         row = cur.fetchone()
-        return dict(row) if row else {"stripe_price_id": None, "paypal_plan_id": None}
+        return dict(row) if row else {"stripe_price_id": None}
     finally:
         conn.close()

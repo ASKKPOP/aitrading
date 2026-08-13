@@ -222,13 +222,6 @@ class SubscriptionFlowTests(_Base):
                              json={"note": ""}, headers=self.admin)
         self.assertEqual(r.status_code, 400)
 
-    def test_paypal_unconfigured_503(self):
-        session = self._make_user()
-        user_h = {"Authorization": f"Bearer {session['token']}"}
-        r = self.client.post("/api/subscriptions/paypal/create-order",
-                             json={"plan_code": "junior"}, headers=user_h)
-        self.assertEqual(r.status_code, 503)
-
 
 class UsdtPaymentTests(_Base):
     """USDT is the default rail: same pending -> admin-approve machinery as a
@@ -242,13 +235,6 @@ class UsdtPaymentTests(_Base):
         self.assertTrue(body["usdt_available"])
         self.assertEqual(body["usdt_address"], self.ENV["USDT_ADDRESS"])
         self.assertEqual(body["usdt_network"], "TRC20")
-
-    def test_paypal_button_is_hidden_unless_explicitly_re_enabled(self):
-        configured = {"PAYPAL_CLIENT_ID": "id", "PAYPAL_CLIENT_SECRET": "secret"}
-        with patch.dict(os.environ, configured):
-            self.assertFalse(self.client.get("/api/subscriptions/plans").json()["paypal_available"])
-        with patch.dict(os.environ, {**configured, "PAYPAL_UI_ENABLED": "true"}):
-            self.assertTrue(self.client.get("/api/subscriptions/plans").json()["paypal_available"])
 
     def test_usdt_submission_to_approval(self):
         session = self._make_user()

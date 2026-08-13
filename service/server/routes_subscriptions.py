@@ -17,18 +17,13 @@ enterprise = contact us). Three payment paths:
   * Bank     — user submits a transfer reference; same pending → approve path.
                The destination details are REGISTERED IN THE CONSOLE too
                (bank_transfer_info), with BANK_TRANSFER_INFO as the fallback.
-  * PayPal   — Orders API v2 redirect flow. Server creates the order and
-               returns approve_url; PayPal redirects back to the frontend,
-               which calls capture. Subscription activates instantly.
-               Needs PAYPAL_CLIENT_ID + PAYPAL_CLIENT_SECRET in .env
-               (PAYPAL_API_BASE defaults to the sandbox host).
-               HIDDEN from the Subscribe page unless PAYPAL_UI_ENABLED=true —
-               the routes stay live so existing orders and captures still work.
+
+PayPal was removed on 2026-08-12. It had never been configured on prod (no
+plan ids, sandbox API host) and never carried a subscription, so no member was
+stranded by the removal.
 
   GET  /api/subscriptions/plans               plans + payment availability
   GET  /api/subscriptions/me                  my subscription state
-  POST /api/subscriptions/paypal/create-order start PayPal checkout
-  POST /api/subscriptions/paypal/capture      finish PayPal checkout
   POST /api/subscriptions/usdt                submit a USDT payment (tx hash)
   POST /api/subscriptions/bank-transfer       submit a bank-transfer claim
   POST /api/subscriptions/contract            enterprise contact request
@@ -40,10 +35,9 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Optional
 
-import requests
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
@@ -56,22 +50,6 @@ from utils import _extract_token
 logger = logging.getLogger("routes_subscriptions")
 
 SUBSCRIPTION_DAYS = 30
-
-
-def _paypal_base() -> str:
-    return os.getenv("PAYPAL_API_BASE", "https://api-m.sandbox.paypal.com").rstrip("/")
-
-
-def _paypal_configured() -> bool:
-    return bool(os.getenv("PAYPAL_CLIENT_ID") and os.getenv("PAYPAL_CLIENT_SECRET"))
-
-
-def _paypal_ui_enabled() -> bool:
-    """PayPal is hidden from the Subscribe page by default — USDT is the
-    advertised rail. The ROUTES stay live regardless, so in-flight orders,
-    captures and past PayPal subscriptions keep working; flipping this env
-    var back to true re-exposes the button without a code change."""
-    return os.getenv("PAYPAL_UI_ENABLED", "false").strip().lower() in ("1", "true", "yes")
 
 
 def _usdt_address() -> str:
@@ -130,18 +108,6 @@ def _alert_new_subscription(*, email: Optional[str], plan_code: str,
     except Exception as exc:  # noqa: BLE001
         logger.warning("admin subscription alert failed: %s", exc)
 
-
-def _paypal_token() -> str:
-    resp = requests.post(
-        f"{_paypal_base()}/v1/oauth2/token",
-        auth=(os.getenv("PAYPAL_CLIENT_ID", ""), os.getenv("PAYPAL_CLIENT_SECRET", "")),
-        data={"grant_type": "client_credentials"},
-        timeout=20,
-    )
-    if resp.status_code != 200:
-        logger.error("PayPal token request failed: %s %s", resp.status_code, resp.text[:300])
-        raise HTTPException(status_code=502, detail="PayPal authentication failed")
-    return resp.json()["access_token"]
 
 
 def _require_user(authorization: Optional[str]) -> dict[str, Any]:
@@ -202,9 +168,6 @@ def _manual_change_context(cursor, user: dict[str, Any]) -> tuple[dict, dict]:
     if sub.get("method") == "stripe":
         raise HTTPException(
             status_code=400, detail="Use the Stripe portal to change this subscription")
-    if sub.get("method") == "paypal":
-        raise HTTPException(
-            status_code=400, detail="Use PayPal change-plan to change this subscription")
     # Deliberately NOT _load_plan: a retired (active=0) plan row must still
     # resolve for the member who is on it, and enterprise is contact_only.
     cursor.execute(
@@ -252,10 +215,6 @@ class ChangeUpgradeBody(BaseModel):
     reference: str
 
 
-class PaypalCaptureBody(BaseModel):
-    order_id: str
-
-
 class BankTransferBody(BaseModel):
     plan_code: str
     reference: str
@@ -289,9 +248,6 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
         return {
             "plans": plans,
-            # paypal_available now means "show the PayPal button": configured
-            # AND not hidden. The capture route stays reachable either way.
-            "paypal_available": _paypal_configured() and _paypal_ui_enabled(),
             "stripe_available": billing_sync.stripe_configured(),
             "bank_transfer_info": _bank_info(),
             "usdt_available": bool(_usdt_address()),
@@ -379,112 +335,6 @@ def register_subscription_routes(app: FastAPI, ctx: RouteContext) -> None:
             out.update({"kind": "downgrade", "effective": "at_renewal",
                         "prorated_usd": 0.0})
         return out
-
-    @app.post('/api/subscriptions/paypal/create-order')
-    async def paypal_create_order(body: PlanOrderBody, authorization: str = Header(None)):
-        user = _require_user(authorization)
-        if not _paypal_configured():
-            raise HTTPException(status_code=503, detail="PayPal is not configured")
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        try:
-            plan = _load_plan(cursor, body.plan_code)
-        finally:
-            conn.close()
-
-        access = _paypal_token()
-        resp = requests.post(
-            f"{_paypal_base()}/v2/checkout/orders",
-            headers={"Authorization": f"Bearer {access}"},
-            json={
-                "intent": "CAPTURE",
-                "purchase_units": [{
-                    "reference_id": f"user-{user['id']}-{plan['code']}",
-                    "description": f"Sooppiy {plan['name']} — {SUBSCRIPTION_DAYS} days",
-                    "amount": {"currency_code": "USD", "value": f"{plan['price_usd']:.2f}"},
-                }],
-                "application_context": {
-                    "return_url": f"{_frontend_url()}/subscribe?paypal=return",
-                    "cancel_url": f"{_frontend_url()}/subscribe?paypal=cancel",
-                    "user_action": "PAY_NOW",
-                    "shipping_preference": "NO_SHIPPING",
-                },
-            },
-            timeout=20,
-        )
-        if resp.status_code not in (200, 201):
-            logger.error("PayPal create order failed: %s %s", resp.status_code, resp.text[:300])
-            raise HTTPException(status_code=502, detail="PayPal order creation failed")
-        order = resp.json()
-        approve_url = next(
-            (l["href"] for l in order.get("links", []) if l.get("rel") == "approve"), None)
-        if not approve_url:
-            raise HTTPException(status_code=502, detail="PayPal returned no approval link")
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "INSERT INTO user_subscriptions (user_id, plan_code, status, method, reference, amount_usd) "
-                "VALUES (?, ?, 'pending', 'paypal', ?, ?)",
-                (user["id"], plan["code"], order["id"], plan["price_usd"]),
-            )
-            conn.commit()
-        finally:
-            conn.close()
-        return {"order_id": order["id"], "approve_url": approve_url}
-
-    @app.post('/api/subscriptions/paypal/capture')
-    async def paypal_capture(body: PaypalCaptureBody, authorization: str = Header(None)):
-        user = _require_user(authorization)
-        if not _paypal_configured():
-            raise HTTPException(status_code=503, detail="PayPal is not configured")
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "SELECT id, plan_code, status FROM user_subscriptions "
-                "WHERE user_id = ? AND method = 'paypal' AND reference = ?",
-                (user["id"], body.order_id),
-            )
-            row = cursor.fetchone()
-        finally:
-            conn.close()
-        if not row:
-            raise HTTPException(status_code=404, detail="Unknown PayPal order")
-        if row["status"] == "active":
-            return {"ok": True, "status": "active"}
-
-        access = _paypal_token()
-        resp = requests.post(
-            f"{_paypal_base()}/v2/checkout/orders/{body.order_id}/capture",
-            headers={"Authorization": f"Bearer {access}"},
-            json={},
-            timeout=20,
-        )
-        if resp.status_code not in (200, 201):
-            logger.error("PayPal capture failed: %s %s", resp.status_code, resp.text[:300])
-            raise HTTPException(status_code=502, detail="PayPal capture failed")
-        if resp.json().get("status") != "COMPLETED":
-            raise HTTPException(status_code=402, detail="Payment not completed")
-
-        started = _now()
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "UPDATE user_subscriptions SET status = 'active', started_at = ?, expires_at = ? WHERE id = ?",
-                (_iso(started), _iso(started + timedelta(days=SUBSCRIPTION_DAYS)), row["id"]),
-            )
-            conn.commit()
-        finally:
-            conn.close()
-        logger.info("PayPal subscription activated: user=%s plan=%s order=%s",
-                    user["id"], row["plan_code"], body.order_id)
-        _alert_new_subscription(
-            email=user.get("email"), plan_code=row["plan_code"], amount=None, method="paypal",
-            status_note="auto-activated", reference=body.order_id)
-        return {"ok": True, "status": "active"}
 
     def _submit_manual_payment(authorization: str, plan_code: str, reference: str,
                                method: str, empty_msg: str, duplicate_msg: str,
