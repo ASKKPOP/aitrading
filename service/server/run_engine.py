@@ -2304,18 +2304,22 @@ def _open_cost_basis(agent_id: int, market: str, symbol: str, run_id: int) -> fl
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        # SUM over every lot: a fetchone here read ONE arbitrary row and
+        # under-counted a multi-lot book to near zero (run 1099 stacked
+        # $9,189 of margin basis past a $1,580 run budget that never bit).
         cursor.execute(
             """SELECT quantity, entry_price, leverage FROM positions
                WHERE agent_id = ? AND market = ? AND symbol = ? AND run_id = ?""",
             (agent_id, market, symbol, run_id))
-        row = cursor.fetchone()
-        if not row:
-            return 0.0
-        try:
-            lev = max(1.0, float(row["leverage"])) if row["leverage"] else 1.0
-        except (KeyError, TypeError, ValueError):
-            lev = 1.0
-        return abs(float(row["quantity"] or 0)) * float(row["entry_price"] or 0) / lev
+        basis = 0.0
+        for row in cursor.fetchall():
+            try:
+                lev = max(1.0, float(row["leverage"])) if row["leverage"] else 1.0
+            except (KeyError, TypeError, ValueError):
+                lev = 1.0
+            basis += abs(float(row["quantity"] or 0)) * \
+                float(row["entry_price"] or 0) / lev
+        return basis
     finally:
         conn.close()
 

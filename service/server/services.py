@@ -308,7 +308,41 @@ def _update_position_from_signal(
     query += scope
     params.extend(scope_args)
     cursor.execute(query, params)
-    row = cursor.fetchone()
+    rows = [dict(r) for r in cursor.fetchall()]
+
+    # Lot consolidation (live 2026-08-13, run 1099 / SOL −$62): a cover's
+    # float residue left a DECIMAL-rounded zero row; every later fetchone
+    # returned that stub, so each new short INSERTed another lot — six lots
+    # stacked while every position reader saw "flat" and every add/budget
+    # guard went blind, and a full cover would have failed against a single
+    # lot's quantity. One book per (agent, market, symbol, run) is the
+    # invariant everything downstream assumes, so restore it HERE, inside
+    # the same transaction, before any mutation: zero rows are deleted and
+    # multiple lots merge into the oldest row at summed quantity and
+    # |qty|-weighted entry.
+    live_rows = [r for r in rows if abs(float(r["quantity"] or 0)) > 1e-8]
+    dead_ids = [r["id"] for r in rows
+                if abs(float(r["quantity"] or 0)) <= 1e-8]
+    for _dead in dead_ids:
+        cursor.execute("DELETE FROM positions WHERE id = ?", (_dead,))
+    if len(live_rows) > 1:
+        total_qty = sum(float(r["quantity"]) for r in live_rows)
+        weight = sum(abs(float(r["quantity"])) for r in live_rows)
+        avg_entry = (sum(abs(float(r["quantity"])) * float(r["entry_price"] or 0)
+                         for r in live_rows) / weight) if weight else 0.0
+        keep = live_rows[0]
+        for extra in live_rows[1:]:
+            cursor.execute("DELETE FROM positions WHERE id = ?",
+                           (extra["id"],))
+        cursor.execute(
+            "UPDATE positions SET quantity = ?, entry_price = ? WHERE id = ?",
+            (total_qty, avg_entry, keep["id"]))
+        _logger.info("[Position] %s: consolidated %d lots into row %s "
+                     "(qty %s)", symbol, len(live_rows), keep["id"], total_qty)
+        keep["quantity"], keep["entry_price"] = total_qty, avg_entry
+        row = keep
+    else:
+        row = live_rows[0] if live_rows else None
 
     current_qty = row["quantity"] if row else 0
     position_id = row["id"] if row else None
@@ -356,8 +390,10 @@ def _update_position_from_signal(
         if quantity > current_qty:
             raise ValueError("Insufficient long position quantity")
         new_qty = current_qty - quantity
-        if new_qty <= 0:
-            # Close position
+        if new_qty <= 1e-8:
+            # Close position. The epsilon matters: float residue here once
+            # left a DECIMAL-rounded zero row that poisoned every later
+            # position read (run 1099) — a book within dust of flat IS flat.
             cursor.execute("DELETE FROM positions WHERE id = ?", (position_id,))
             _logger.info("[Position] %s: closed long position", symbol)
         else:
@@ -403,7 +439,8 @@ def _update_position_from_signal(
         if quantity > abs(current_qty):
             raise ValueError("Insufficient short position quantity")
         new_qty = current_qty + quantity
-        if new_qty >= 0:
+        if new_qty >= -1e-8:
+            # Epsilon close — see the sell branch; the SOL stub was born here.
             cursor.execute("DELETE FROM positions WHERE id = ?", (position_id,))
             _logger.info("[Position] %s: closed short position", symbol)
         else:

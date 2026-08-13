@@ -599,11 +599,22 @@ def run_scope_sql(run_id: Any) -> tuple[str, list]:
 
 def get_position_snapshot(cursor: Any, agent_id: int, market: str, symbol: str,
                           token_id: Optional[str], run_id: Any = ANY_RUN):
+    """Aggregated view of the book: SUM of quantity, |qty|-weighted entry.
+
+    A plain fetchone here was the mechanism behind the run-1099 blindness
+    (2026-08-13): a stray zero-quantity lot sat first in PK order, every
+    reader saw "flat", the desk re-opened its short six times and every
+    add/budget guard slept through it. One row is still one row; multiple
+    lots — however they arise — read as ONE book."""
     scope, scope_args = run_scope_sql(run_id)
     if market == 'polymarket':
         cursor.execute(
             """
-            SELECT quantity, entry_price, leverage
+            SELECT SUM(quantity) AS quantity,
+                   CASE WHEN SUM(ABS(quantity)) > 0
+                        THEN SUM(ABS(quantity) * entry_price) / SUM(ABS(quantity))
+                        ELSE MAX(entry_price) END AS entry_price,
+                   MAX(leverage) AS leverage
             FROM positions
             WHERE agent_id = ? AND market = ? AND token_id = ?
             """ + scope,
@@ -612,13 +623,22 @@ def get_position_snapshot(cursor: Any, agent_id: int, market: str, symbol: str,
     else:
         cursor.execute(
             """
-            SELECT quantity, entry_price, leverage
+            SELECT SUM(quantity) AS quantity,
+                   CASE WHEN SUM(ABS(quantity)) > 0
+                        THEN SUM(ABS(quantity) * entry_price) / SUM(ABS(quantity))
+                        ELSE MAX(entry_price) END AS entry_price,
+                   MAX(leverage) AS leverage
             FROM positions
             WHERE agent_id = ? AND symbol = ? AND market = ?
             """ + scope,
             (agent_id, symbol, market, *scope_args),
         )
-    return cursor.fetchone()
+    row = cursor.fetchone()
+    # An aggregate always yields one row; no positions means NULL quantity —
+    # preserve the old "no row ⇒ None" contract for every caller.
+    if row is None or row["quantity"] is None:
+        return None
+    return row
 
 
 async def push_agent_message(
