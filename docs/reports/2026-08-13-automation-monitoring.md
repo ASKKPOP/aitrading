@@ -119,6 +119,12 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 18 — steady late-session drift (18:38Z)
+
+Four small wins (agent 59 ORCL/PFE partials again → +1.50), one small
+loss (agent 6 SLV −0.06 → −9.03). Quiet, healthy; no citations. Session
+close-out cycles and the day verdict next. Image current, 0 TB, docs 200.
+
 ## Cycle 17 — third green window (18:08Z)
 
 Four wins, zero losing legs: agent 59 → **+1.52** (ORCL banked +0.32
