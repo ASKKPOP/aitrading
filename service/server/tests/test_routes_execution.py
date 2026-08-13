@@ -268,5 +268,92 @@ class OrdersEndpointTests(unittest.TestCase):
         self.assertEqual(resp.json()["reconciliations"], [])
 
 
+class StatusEndpointTests(unittest.TestCase):
+    """GET /api/execution/status — the top-bar mode + gateways summary."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.client = TestClient(create_app())
+        self.agent_id, self.token = _create_agent("status-agent", "tok-status")
+        self.auth = {"Authorization": f"Bearer {self.token}"}
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _add_rule(self, account_type: str, enabled: int = 1):
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO automation_configs (agent_id, symbol, market, account_type, enabled)
+               VALUES (?,?,?,?,?)""",
+            (self.agent_id, "BTC", "crypto", account_type, enabled),
+        )
+        conn.commit()
+        conn.close()
+
+    def test_requires_auth(self):
+        resp = self.client.get("/api/execution/status")
+        self.assertEqual(resp.status_code, 401)
+
+    def test_fresh_agent_is_simulator_with_no_gateways(self):
+        resp = self.client.get("/api/execution/status", headers=self.auth)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {"mode": "simulator", "gateways": []})
+
+    def test_live_rule_wins_over_shadow_and_simulator(self):
+        self._add_rule("simulator")
+        self._add_rule("shadow")
+        self._add_rule("live")
+        resp = self.client.get("/api/execution/status", headers=self.auth)
+        self.assertEqual(resp.json()["mode"], "live")
+
+    def test_shadow_rule_without_live_reads_shadow(self):
+        self._add_rule("simulator")
+        self._add_rule("shadow")
+        resp = self.client.get("/api/execution/status", headers=self.auth)
+        self.assertEqual(resp.json()["mode"], "shadow")
+
+    def test_disabled_live_rule_does_not_count(self):
+        self._add_rule("live", enabled=0)
+        resp = self.client.get("/api/execution/status", headers=self.auth)
+        self.assertEqual(resp.json()["mode"], "simulator")
+
+    def test_legacy_real_normalizes_to_live(self):
+        self._add_rule("real")
+        resp = self.client.get("/api/execution/status", headers=self.auth)
+        self.assertEqual(resp.json()["mode"], "live")
+
+    def test_gateways_carry_market_class(self):
+        self.client.post(
+            "/api/execution/accounts",
+            json={"broker": "binance", "api_key": "K", "api_secret": "S"},
+            headers=self.auth,
+        )
+        self.client.post(
+            "/api/execution/accounts",
+            json={"broker": "alpaca", "api_key": "K", "api_secret": "S"},
+            headers=self.auth,
+        )
+        resp = self.client.get("/api/execution/status", headers=self.auth)
+        gateways = {g["broker"]: g for g in resp.json()["gateways"]}
+        self.assertEqual(set(gateways), {"binance", "alpaca"})
+        self.assertEqual(gateways["binance"]["markets"], ["crypto"])
+        self.assertEqual(gateways["alpaca"]["markets"], ["us-stock"])
+        self.assertEqual(gateways["binance"]["execution_mode"], "paper")
+
+    def test_replaced_account_lists_only_the_active_row(self):
+        for _ in range(2):  # reconnecting the same broker deactivates the old row
+            self.client.post(
+                "/api/execution/accounts",
+                json={"broker": "binance", "api_key": "K", "api_secret": "S"},
+                headers=self.auth,
+            )
+        resp = self.client.get("/api/execution/status", headers=self.auth)
+        self.assertEqual(len(resp.json()["gateways"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

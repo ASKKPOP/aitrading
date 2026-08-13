@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { useLanguage, useTheme, THEMES } from './appShared'
+import { AccountStatusPill } from './components/AccountStatusPill'
 import { AiUsagePill } from './components/AiUsagePill'
 import { HelpTip } from './components/HelpTip'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
@@ -259,6 +260,7 @@ export function TopNav({
 
       {/* ── right: account cluster ── */}
       <div className="topnav-right">
+        <AccountStatusPill agentToken={token} userToken={userToken} userInfo={userInfo} />
         <AiUsagePill userToken={userToken} />
         <TopbarControls />
 
