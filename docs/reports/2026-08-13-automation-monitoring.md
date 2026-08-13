@@ -119,6 +119,26 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 20 — SESSION CLOSE: strong finish, agent 59 +7.28 on the day (20:04Z)
+
+**The close delivered the day's best tape.** ORCL (fleet 33, built
+14:50 AFTER all five fixes were live) banked **+5.82** on its final leg
+— four banks total off one mover position (+0.44/+0.32/+0.08/+5.82).
+Agent 6 closed strong too: PYPL +0.55, NFLX +0.54, PLTR +0.45 →
+**−7.64** (from a −9.36 trough). Session P&L, in-scope pair:
+**fleet 33 +7.73 on the day; fleet 31 −3.10; combined +4.63 — the
+monitored pair's first green day.**
+
+- **Overnight cap:** zero events in the 19:40–20:00 window — correct
+  (modeled risk $35 vs $250 cap). Books carried overnight by design.
+- **Tape-citation verdict (pre-registered):** 2 of 385 decisions cited
+  the tape — the zero-trigger did NOT fire, so per the rule no clause
+  ships today. Refinement for tomorrow's sweep: count citations among
+  ENTRY/EXIT decisions only (most of 385 are holds), which is the
+  honest denominator.
+- Stop-authoring ledger continues (mixed but median ~1.0 od, vs 0.5
+  pre-#411); next sweep judges with the full post-fix session.
+
 ## Cycle 19 — pre-close posture (19:08Z)
 
 Quiet: one small loss (MSFT −0.05); agent 6 realized improved → −8.64,
