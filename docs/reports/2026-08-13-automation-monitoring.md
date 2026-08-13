@@ -119,6 +119,14 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 5 — quiet, pre-shoulder (2026-08-13 11:13Z)
+
+Image `20260813-putcall-walk`, 0 tracebacks, docs 200, agents 6/59
+unchanged (−4.54 / −0.41), gate pairs 4 since 11:00 (back-off holding),
+no new composes. Shoulder opens 11:30Z — next cycle should show the
+swing desks' first decisions with the full tape (short-volume + putcall
++ tilt) in their briefs.
+
 ## Cycle 4b — #409 DEPLOYED + VERIFIED 3× (2026-08-13 ~11:2xZ)
 
 Merged `64fb6d70`, deployed **`sooppiy-backend:20260813-putcall-walk`**
