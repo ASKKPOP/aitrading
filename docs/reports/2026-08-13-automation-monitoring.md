@@ -119,6 +119,25 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 14 — FIRST tape citation; stop authoring mixed (16:38Z)
+
+**First big-trader tape usage in a desk report** (MSFT): "Bullish macro
+and short-volume data support the long thesis; price sits above entry
+with a clear swing-low stop ~1% down and a 3% target, offering >2:1
+R:R." — the tape informing a hold-long WITH a sane od-scale stop and
+R:R in one sentence. Citation counter: 1/~120 today; still judging over
+days, but the mechanism is now demonstrably reachable.
+
+**Stop authoring after #411 — honest mixed read (n≈8):** good: PYPL
+1.13% (1.6 od), MSFT 1.0% (0.66), TMO ~1.0 (≈1.0), JPM 1.2 (≈1.2);
+counter-example: **BAC re-authored 0.3% = 0.41 od** — tighter than its
+morning 0.8%. Median moved ~0.5 → ~1.0 od but not uniformly; keep the
+per-entry ledger, judge at the next sweep.
+
+The 15:54 SL/TP closes were fleet 33's CBRS (@224.80) and UBER (@74.54)
+stops. Agent 59 **+0.54** (PFE banked again +0.48); agent 6 −9.36.
+Image current, 0 TB, docs 200.
+
 ## Cycle 13 — first post-#411 stops land at 1.1 and 2.0 ordinary days (16:09Z)
 
 **#411's first tape (n=2, one decision round after deploy):** BAC buy
