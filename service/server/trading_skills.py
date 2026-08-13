@@ -1335,7 +1335,16 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "decided: stand aside until the range breaks. And if price "
             "falls back through the level where the volume appeared, the "
             "footprint failed — the read is void, exit the idea rather "
-            "than argue with it."
+            "than argue with it. When the brief carries a 'Big-trader "
+            "tape' line, read its LEVELS the same way: a FINRA "
+            "short-volume ratio well above ~0.55 is heavy institutional "
+            "short-flow — do not open or add to a long against it, and "
+            "treat an adverse long there as reduce-first; well below "
+            "~0.45 means shorts are light and a long thesis faces less "
+            "supply. Put/call OI well above 1 is hedged or bearish "
+            "positioning; well below 1 is complacency — a crowded-calm "
+            "tape that punishes chasing. A field missing from the line "
+            "means the feed could not see it: never assume a reading."
         ),
     },
     {

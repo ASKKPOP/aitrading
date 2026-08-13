@@ -987,6 +987,19 @@ def _replacement_depth() -> int:
         return 10
 
 
+# fleet_id -> (candidate-pool fingerprint, monotonic-enough wall time of the
+# last attempt that gated to nothing). Process-local by design: a worker
+# restart simply re-gates once, which is the safe direction.
+_REGATE_MEMO: dict[int, tuple[tuple, float]] = {}
+
+
+def _regate_backoff_min() -> float:
+    try:
+        return float(os.environ.get("REPLACEMENT_REGATE_MIN", "15"))
+    except ValueError:
+        return 15.0
+
+
 def _build_replacement(fleet: dict, slot: dict, funding: float,
                        exclude: set, already_waiting: bool = False) -> Optional[int]:
     """One replacement via the same validated path as the initial build."""
@@ -1033,6 +1046,25 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
             markets_scope=scope or fp._open_markets_scope())
     finally:
         conn.close()
+    # Regate back-off (live 2026-08-13, fleet 31): the per-slot
+    # _LAST_EMPTY_ATTEMPT cooldown holds, but nine empty slots each
+    # re-asked the IDENTICAL per-pool question every 300s — 1,342 repeat
+    # gate events in six hours (9 slots × 72 cooldown expiries × 2 events).
+    # The verdict is a function of (pool, gate config), not of the slot, so
+    # it is memoized per fleet: an unchanged pool that gated to nothing is
+    # skipped silently until the window expires or the fingerprint changes.
+    # A new research batch, an expired thesis, a freed symbol, or a gate
+    # being switched re-gates immediately.
+    import backtest_gate
+    pool_key = (tuple(sorted(
+        f"{t.get('thesis_key') or t.get('id')}" for t in theses)),
+        bool(backtest_gate.gate_enabled()))
+    memo = _REGATE_MEMO.get(fleet["id"])
+    if (memo and memo[0] == pool_key
+            and time.time() - memo[1] < _regate_backoff_min() * 60.0):
+        fp._bind_slot(fleet["id"], slot["slot_index"],
+                      slot.get("current_run_id"), "waiting")
+        return None
     # Fee feasibility, the third gate the initial build applies
     # (fleet_planner._do_build). It was missed when E3 ported parity, and the
     # replacement path shipped with only two of three: prod runs 129/130/131
@@ -1064,7 +1096,6 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
             fp.emit_fleet_event(fleet["id"], "swing_gate",
                                 {"context": "replacement",
                                  "dropped": sw_dropped})
-    import backtest_gate
     if theses and backtest_gate.gate_enabled():
         kept, dropped = backtest_gate.gate_candidates(theses)
         if dropped:
@@ -1074,6 +1105,10 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
                                  "dropped": dropped})
         theses = kept
     if not theses:
+        # Everything gated away — remember the pool so the next attempts
+        # (this pass's other slots, and every tick inside the window) skip
+        # the identical re-gate instead of re-emitting the same verdict.
+        _REGATE_MEMO[fleet["id"]] = (pool_key, time.time())
         if not already_waiting:      # journal the transition, not every tick
             fp.emit_fleet_event(fleet["id"], "slot_waiting",
                                 {"slot": slot["slot_index"],
@@ -1081,6 +1116,7 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
         fp._bind_slot(fleet["id"], slot["slot_index"],
                       slot.get("current_run_id"), "waiting")
         return None
+    _REGATE_MEMO.pop(fleet["id"], None)
     # E3: iterate candidates — a junk top pick (unpriceable ALLO, live
     # 2026-07-26) must not block the slot while a buildable one waits below.
     thesis = run_id = None

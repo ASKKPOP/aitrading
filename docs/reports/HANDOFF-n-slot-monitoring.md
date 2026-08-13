@@ -202,16 +202,23 @@ Extend candidates that WAIT for data (do not build early):
   standing feature ask: **a US-stock DAY block, buy/sell each 30 min,
   that FOLLOWS BIG TRADERS ("it's key")** — see R1 in the 08-13 cycle
   note before designing anything.
-- **Findings already on file (2026-08-13 cycle 1 — read that note first):**
-  (1) swing cadence never slowed — compose stamps `interval_minutes: 30`
-  and the 240 in `due_run_ids` is only a CEILING; runs think every ~30 min.
-  Coincidentally matches the owner's day-trade ask ⇒ OWNER DECISION, do
-  not silently "fix" either direction. (2) big-trader factors are
-  RECORD-ONLY (0 refs in run_engine/fleet_planner). (3) replenish churn:
-  ~1,342 gate events <6h against an exhausted pool (9 slots × ~60s tick);
-  back-off is the queued fix (R2). (4) run-less CRM/USDKRW positions on
-  agent 6 are HELD by OrphanReclaim by design — watch. (5) `run_events`
-  column is **`payload`**, and `fleet_events` is **`payload`** — the
+- **Findings from 2026-08-13 cycle 1 — ALL FOUR OWNER-CONFIRMED and
+  shipped the same day (read the 08-13 cycle note for the evidence):**
+  (1) cadence — owner: "yes 30 min, change plan 23" ⇒ the dead
+  `cap = 240` swing special-case in `due_run_ids` is REMOVED (it never
+  slowed a run; compose stamps `interval_minutes: 30` per the 08-12 spec)
+  and plan 23 §10.1 carries the amendment. (2) big-trader factors were
+  RECORD-ONLY (0 refs in the decision layer) ⇒ `_big_trader_line` now
+  renders FINRA short-volume / put-call OI / StockTwits tilt (null-honest,
+  48h age cap, us-stock only) into BOTH prompts, with the level-read
+  clause added to `follow-the-flow`; wiring tests per the standing rule.
+  (3) replenish churn (~1,342 repeat gate events <6h = 9 slots × 300s
+  cooldown expiries × 2) ⇒ per-fleet regate memo keyed on
+  (pool fingerprint, gate config), window `REPLACEMENT_REGATE_MIN`
+  (default 15 min) — complements the per-slot `_LAST_EMPTY_ATTEMPT`
+  cooldown, which was working as designed. (4) run-less CRM/USDKRW
+  positions on agent 6 are HELD by OrphanReclaim by design — watch. Also:
+  `run_events`/`fleet_events` payload column is **`payload`** — the
   `payload_json` in §2's SQL is STALE; errors are silent under 2>/dev/null.
 - First tape: fleet-31 realized −3.81 (UBER −3.53 = one stop-path
   full-book sell on a −0.94% move, `client_order_id: null` — identify

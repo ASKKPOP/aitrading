@@ -65,13 +65,16 @@ class _DBBase(unittest.TestCase):
 
 
 class SwingCadenceCap(_DBBase):
-    def test_swing_240min_is_honored_not_capped_to_30(self):
+    def test_swing_runs_now_share_the_30min_platform_cap(self):
+        # Owner decision 2026-08-13 (amends Plan 23 Phase B): the us-stock
+        # block DAY-trades — buy/sell on the 30-min think clock. A swing run
+        # stamped 240 is therefore capped to 30 exactly like a short run;
+        # the previous 240-min special-case is retired, not tunable back by
+        # a stamp.
         now = datetime.now(timezone.utc)
         rid = self._mk_run("swing", 240, _iso(now - timedelta(minutes=90)))
-        self.assertNotIn(rid, re_.due_run_ids(),
-                         "swing run became due after 90min of a 240min clock")
-        rid2 = self._mk_run("swing", 240, _iso(now - timedelta(minutes=250)))
-        self.assertIn(rid2, re_.due_run_ids())
+        self.assertIn(rid, re_.due_run_ids(),
+                      "swing run must be due on the 30-min day clock")
 
     def test_short_runs_keep_the_30min_platform_cap(self):
         now = datetime.now(timezone.utc)
