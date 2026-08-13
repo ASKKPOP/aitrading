@@ -1017,6 +1017,28 @@ def _market_confidence_ceiling(market: str, days: int = 14,
         return None
 
 
+def _horizon_anchor(market: str) -> datetime:
+    """Where a new run's at_time clock starts: now for an open (or 24×7)
+    market, the NEXT session open when the market is closed — a horizon
+    spent entirely against a closed market is not a horizon. Probes the
+    session calendar forward minute-by-minute (bounded one week — covers
+    any weekend/holiday span); any calendar failure falls back to now,
+    which is exactly the old behavior."""
+    now = _now_dt()
+    try:
+        import markets
+        if markets.is_market_open(market, now):
+            return now
+        probe = now.replace(second=0, microsecond=0)
+        for _ in range(7 * 24 * 60):
+            probe += timedelta(minutes=1)
+            if markets.is_market_open(market, probe):
+                return probe
+    except Exception:  # noqa: BLE001 — a broken calendar must not block builds
+        pass
+    return now
+
+
 def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     """Thesis + slot budget → the run-creation payload. Deterministic clamps
     only — including the §6.4 percent→fraction unit conversion (a 2.5% thesis
@@ -1050,7 +1072,16 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     horizon_h = max(4.0, min(24.0 * 14, float(thesis.get("horizon_hours") or 48)))
     max_bet = round(run_budget * _tier("max_bet_frac_of_run_budget", risk), 2)
     max_bet = min(max_bet, 1_000_000.0)
-    at_time = (_now_dt() + timedelta(hours=horizon_h)).strftime(TS_FMT)
+    # The horizon clock starts when the run can TRADE, not when it was
+    # built (live 2026-08-13: run 1135 SBUX, built 01:11Z with an 8h
+    # horizon, time-expired at 09:11Z — 4.3 hours BEFORE the 13:30Z open —
+    # three us-stock runs burned out flat that night without a single
+    # tradeable minute, each mailing the owner a stop notice). Keep-N
+    # builds runs around the clock by design, so a session-market run
+    # built while closed anchors its at_time to the NEXT open; an open or
+    # 24×7 market anchors to now, exactly as before.
+    at_time = (_horizon_anchor(market) +
+               timedelta(hours=horizon_h)).strftime(TS_FMT)
     # Plan 15 P1 (F3): a run whose gate exceeds its own thesis confidence is
     # born unable to trade (fleet 6 built ZC at thesis 0.539 against a 0.65
     # gate — every cycle skipped). The gate never exceeds thesis_conf − 0.05,
