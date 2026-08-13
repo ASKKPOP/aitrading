@@ -119,6 +119,27 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 6 — shoulder wake-up: all three fixes proven on the live tape (11:38Z)
+
+- **Shoulder works:** all 18 fleet-31 desks decided within ~9 min of the
+  11:30Z shoulder. First reads are sane (SLV buy conf 0.54 w/ ~1.1% stop;
+  T hold citing no viable 2:1 R:R).
+- **#409 CLOSED-VERIFIED end-to-end:** the scheduled 11:12:54Z factor
+  batch wrote non-NULL `putcall_oi_ratio` — recorder, not just probe.
+  The tape line now carries all three fields into the session.
+- **#407 anchor watch CLOSED-VERIFIED on live composes:** 1150 WMT
+  (11:33Z, 72h) → at_time 08-16T13:30Z = next open + 72h; 1151 UBER
+  (96h) → 08-17T13:30Z. ✅ 1145 SBUX (07:41Z, pre-fix) carries the old
+  wall-clock 15:41Z — the documented one-more-early-retire class; it
+  still gets 2h11m of session. Nuance noted, not a defect: an anchored
+  deadline can LAND while closed (08-16 is a Sunday) — the retire then
+  fires flat or queues its flatten to the open per §2.5.
+- Image current, 0 tracebacks, agents 6/59 unchanged.
+
+**Remaining watches:** desk USAGE of the tape once session decisions
+carry reports (judge over days); fleet 33 small caps at the open;
+pre-fix runs' early retires (expected, count them).
+
 ## Cycle 5 — quiet, pre-shoulder (2026-08-13 11:13Z)
 
 Image `20260813-putcall-walk`, 0 tracebacks, docs 200, agents 6/59
