@@ -225,7 +225,7 @@ export function TradePage({ token, agentInfo, onTradeSuccess }: { token: string,
           >
             <option value="us-stock">{tr(language, { ko: '미국 주식', en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ', id: 'Saham AS' })}</option>
             <option value="crypto">{tr(language, { ko: '암호화폐', en: 'Crypto', ja: '暗号通貨', th: 'คริปโต', vi: 'Tiền mã hóa', id: 'Kripto' })}</option>
-            <option value="polymarket">{tr(language, { ko: 'Polymarket (테스트)', en: 'Polymarket (Testing)', ja: 'Polymarket (テスト)', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)', id: 'Polymarket (Uji coba)' })}</option>
+            <option value="polymarket">Polymarket</option>
           </select>
         </div>
 
