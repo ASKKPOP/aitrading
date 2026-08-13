@@ -119,6 +119,23 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 4 — putcall root-caused and fixed (2026-08-13 10:39–11:0xZ)
+
+Steady otherwise: image current, 0 tracebacks, docs 200, agent 6 −4.54 /
+agent 59 −0.41 unchanged, back-off holding (2 gate pairs this window),
+no new composes (anchor watch still open for the first us-stock build).
+
+**putcall_oi_ratio dark → ROOT-CAUSED live and shipped (PR #409).** The
+watch's trigger met (2+ consecutive dark batches). Traced in the prod
+container: chain fetch fine (MSFT 105 calls / 96 puts) but **every front-
+expiry contract carries openInterest 0** — the front rolled to a fresh
+weekly (exp 08-14) and OCC publishes OI next morning, so the front-only
+read is honestly-null ALL day while real positioning sits one expiry out.
+Fix: walk to the first expiry with nonzero call OI (fetcher already takes
+`expiry_epoch`; ≤3 extra fetches; still None when nothing published).
+fail-before red, mutation (refetch-front) caught, 4,054 green. Merge +
+deploy + live re-probe of MSFT pending CI.
+
 ## Cycle 3 — quiet pre-open cycle (2026-08-13 10:08Z)
 
 Image `20260813-open-time-deadline`, 0 tracebacks, docs 200. Agent 6
