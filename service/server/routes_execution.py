@@ -5,6 +5,7 @@ Endpoints:
   GET  /api/execution/brokers                 — list available broker names
   POST /api/execution/accounts                — create / update broker account
   GET  /api/execution/accounts                — list agent's broker accounts
+  GET  /api/execution/status                  — top-bar summary: mode + gateways
   PUT  /api/execution/accounts/{id}/mode      — set paper|shadow|live
   POST /api/execution/tcs-accept              — accept T&Cs for live mode
   GET  /api/execution/orders                  — list agent's broker_orders
@@ -153,6 +154,45 @@ def register_execution_routes(app: FastAPI, ctx: RouteContext) -> None:
         rows = cursor.fetchall()
         conn.close()
         return {"accounts": [dict(r) for r in rows]}
+
+    # ── GET /api/execution/status ─────────────────────────────────────────────
+    @app.get("/api/execution/status")
+    def account_status(req: Request):
+        """Compact account summary for the top bar.
+
+        mode — strongest account_type among ENABLED automation rules
+               (live > shadow > simulator). Rules are the only thing that
+               routes an order, so credentials on file alone never make the
+               account read "live".
+        gateways — active broker_accounts rows, each labelled with the market
+               class it can execute (BROKER_MARKETS: crypto / us-stock).
+        """
+        from execution.base import BROKER_MARKETS
+        from execution.gateway import normalize_account_type
+        agent = _require_agent(req)
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT account_type FROM automation_configs WHERE agent_id=? AND enabled=1",
+                (agent["id"],),
+            )
+            modes = {normalize_account_type(r["account_type"]) for r in cursor.fetchall()}
+            cursor.execute(
+                """SELECT broker, execution_mode FROM broker_accounts
+                   WHERE agent_id=? AND is_active=1 ORDER BY updated_at DESC""",
+                (agent["id"],),
+            )
+            gateways = [
+                {"broker": r["broker"],
+                 "markets": list(BROKER_MARKETS.get(r["broker"], ())),
+                 "execution_mode": r["execution_mode"]}
+                for r in cursor.fetchall()
+            ]
+        finally:
+            conn.close()
+        mode = "live" if "live" in modes else "shadow" if "shadow" in modes else "simulator"
+        return {"mode": mode, "gateways": gateways}
 
     # ── GET /api/execution/health ─────────────────────────────────────────────
     @app.get("/api/execution/health")
