@@ -188,6 +188,45 @@ Extend candidates that WAIT for data (do not build early):
 - Paid positioning feeds — excluded until a gate is cleared (owner decision,
   Plan 23 v2).
 
+## 7b. 🔒 OWNER RULE (2026-08-13, STRONG, all trading orders) — THE AI IS THE FINAL AUTHOR
+
+Owner, verbatim intent across five messages: *"Must be final discussion
+for contract or order by sooppiy AI — NOT any programming logic. It's
+strong rules for all trading order. Must be full scan full analysis; if
+we have order by programming, we must be change to Sooppiy AI. By AI it
+is main; programming decision is optional."*
+
+Shipped in response (PR #412):
+
+1. **Order discussion** (`run_engine._order_discussion`): every
+   order-producing proposal from the cheap tier (buy/sell/retire-with-
+   book) convenes the full 4-analyst + trader discussion, whose decision
+   REPLACES the proposal wholesale — no code arbitration. Holds convene
+   nothing. Fail-open on panel infra errors. Env `ORDER_DISCUSSION`
+   (default on).
+2. **Stop-hit routing** (`stop_router.py` + risk_engine + run_engine):
+   a stop/target HIT on a live FLEET run convenes an immediate emergency
+   discussion (due-now dispatch, forced full route, STOP HIT brief line)
+   instead of the watcher's auto-close; the watcher closes ONLY as the
+   fail-safe (`STOP_DESK_TIMEOUT_S` 180s, desk silent) — "AI main,
+   programming optional" literally. A desk ruling suppresses
+   re-litigation for `STOP_RENOTE_MIN` (30). **Manual users' SL/TP is a
+   promise and executes exactly as before — fleet runs only.**
+
+Still programmatic BY DESIGN (each executes a decision the AI itself
+authored earlier, or is owner-approved safety): armed exits, trailing/
+breakeven locks, max_loss floors, at_time retires, overnight cap,
+liquidation defense, fleet breakers. Next conversions (one at a time,
+each live-verified before the next): trailing/breakeven fire → desk
+ruling; at_time expiry → desk ruling. Do NOT convert in bulk.
+
+**Per-cycle watches for this rule:** `order_discussion` events (proposed
+vs final — count reversals; the panel changing verdicts is the feature
+working); `stop_hit` route triggers + whether desk rulings beat the
+180s fail-safe (log line "SL/TP hit routed to desk" vs "TIMED OUT");
+LLM spend per day (panel calls ≈ order-producing cycles + stop hits —
+if it explodes, tell the owner before tuning anything).
+
 ## 7a. ▶️ THE FLEET EXISTS — fleet 31, loop LIVE (2026-08-13 05:46Z)
 
 - **SCOPE EXTENDED (owner 2026-08-13): henry.j@eklotho.com (user 23,

@@ -1,0 +1,188 @@
+"""Stop-hit routing (owner 2026-08-13: "by AI it is main — programming
+decision is optional"): a stop/target HIT on a live fleet run convenes the
+desk's emergency discussion; the watcher's close is only the fail-safe.
+Manual users' SL/TP semantics are untouched — that is a promise.
+
+Live evidence behind the design: both of the day block's largest losses on
+2026-08-13 (SLV −1.82, UBER −3.53) were watcher full-closes at desk-
+authored levels the desk never got to reconsider at the moment they traded.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+SERVER_DIR = Path(__file__).resolve().parents[1]
+if str(SERVER_DIR) not in sys.path:
+    sys.path.insert(0, str(SERVER_DIR))
+
+import database
+import risk_engine
+import run_engine
+import stop_router
+
+
+class RouterCoreTests(unittest.TestCase):
+    def setUp(self):
+        stop_router._reset()
+
+    def tearDown(self):
+        stop_router._reset()
+
+    def test_first_hit_routes_and_repeat_hits_wait(self):
+        self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58.3))
+        self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58.2),
+                        "the meeting is already convened — keep waiting")
+        self.assertEqual(stop_router.pending(9)["trigger"], "stop_loss")
+
+    def test_timeout_fails_safe_to_the_close(self):
+        with patch.dict(os.environ, {"STOP_DESK_TIMEOUT_S": "0"}):
+            self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58.3))
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 58.1),
+                             "expired window ⇒ programming closes")
+        self.assertIsNone(stop_router.pending(9))
+
+    def test_desk_ruling_clears_and_suppresses_relitigation(self):
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        stop_router.clear(9)
+        self.assertIsNone(stop_router.pending(9))
+        self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58.2),
+                        "suppressed re-note must not close either")
+        self.assertIsNone(stop_router.pending(9),
+                          "suppressed ⇒ no new meeting inside the window")
+
+    def test_kill_switch(self):
+        with patch.dict(os.environ, {"STOP_DESK_ROUTING": "0"}):
+            self.assertFalse(stop_router.enabled())
+
+
+class WatcherRoutingTests(unittest.TestCase):
+    def setUp(self):
+        stop_router._reset()
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO agents (name, cash) VALUES ('r', 10000)")
+        self.agent_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+    def tearDown(self):
+        stop_router._reset()
+        self.tmp.cleanup()
+
+    def _run_row(self, created_via="fleet", status="running"):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO trading_runs (agent_id, symbol, market, market_type,"
+            " status, config_snapshot_json, start_condition_json,"
+            " stop_conditions_json, created_at, created_via) VALUES "
+            "(?,?,?,'spot',?,'{}','{}','{}','2026-08-13T00:00:00Z',?)",
+            (self.agent_id, "SLV", "us-stock", status, created_via))
+        rid = cur.lastrowid
+        conn.commit()
+        conn.close()
+        return rid
+
+    def _pos(self, run_id):
+        return {"id": 501, "run_id": run_id}
+
+    def test_fleet_run_hit_is_routed_not_closed(self):
+        rid = self._run_row()
+        self.assertTrue(risk_engine._route_stop_hit_to_desk(
+            self._pos(rid), "stop_loss", 58.3))
+        self.assertIsNotNone(stop_router.pending(rid))
+
+    def test_manual_position_closes_exactly_as_before(self):
+        self.assertFalse(risk_engine._route_stop_hit_to_desk(
+            {"id": 502, "run_id": None}, "stop_loss", 58.3))
+
+    def test_non_fleet_run_closes_exactly_as_before(self):
+        rid = self._run_row(created_via="user")
+        self.assertFalse(risk_engine._route_stop_hit_to_desk(
+            self._pos(rid), "stop_loss", 58.3))
+
+    def test_dead_run_closes(self):
+        rid = self._run_row(status="stopped")
+        self.assertFalse(risk_engine._route_stop_hit_to_desk(
+            self._pos(rid), "stop_loss", 58.3))
+
+    def test_timeout_falls_back_to_the_close(self):
+        rid = self._run_row()
+        with patch.dict(os.environ, {"STOP_DESK_TIMEOUT_S": "0"}):
+            self.assertTrue(risk_engine._route_stop_hit_to_desk(
+                self._pos(rid), "stop_loss", 58.3))
+            self.assertFalse(risk_engine._route_stop_hit_to_desk(
+                self._pos(rid), "stop_loss", 58.1),
+                "desk silent past the window ⇒ the fail-safe closes")
+
+    def test_disabled_env_closes(self):
+        rid = self._run_row()
+        with patch.dict(os.environ, {"STOP_DESK_ROUTING": "0"}):
+            self.assertFalse(risk_engine._route_stop_hit_to_desk(
+                self._pos(rid), "stop_loss", 58.3))
+
+    def test_watcher_loop_is_actually_WIRED(self):
+        import inspect
+        src = inspect.getsource(risk_engine.run_sltp_watcher_tick)
+        self.assertIn("_route_stop_hit_to_desk(pos, trigger, price)", src,
+                      "routing is not wired into the watcher loop")
+
+
+class EngineSideTests(unittest.TestCase):
+    def setUp(self):
+        stop_router._reset()
+
+    def tearDown(self):
+        stop_router._reset()
+
+    _RUN = {"id": 9, "agent_id": 1, "symbol": "SLV", "market": "us-stock"}
+
+    def test_pending_hit_forces_the_full_discussion(self):
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        route = run_engine._classify_situation(self._RUN, {})
+        self.assertEqual(route["route"], "full")
+        self.assertEqual(route["triggers"], ["stop_hit"])
+
+    def test_pending_hit_makes_the_run_due_now(self):
+        import inspect
+        src = inspect.getsource(run_engine.due_run_ids)
+        self.assertIn("stop_router.pending(row[\"id\"])", src,
+                      "stop-hit dispatch is not wired into due_run_ids")
+
+    def test_stop_hit_line_renders_the_emergency(self):
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        line = run_engine._stop_hit_line(self._RUN)
+        self.assertIn("STOP HIT", line)
+        self.assertIn("stop_loss", line)
+        self.assertIn("58.3", line)
+        self.assertIn("fail-safe closes", line)
+
+    def test_stop_hit_line_silent_without_a_hit(self):
+        self.assertEqual(run_engine._stop_hit_line(self._RUN), "")
+
+    def test_line_is_WIRED_into_both_prompts(self):
+        import inspect
+        self.assertIn("_stop_hit_line(run)",
+                      inspect.getsource(run_engine._light_analysis))
+        self.assertIn("_stop_hit_line(run)",
+                      inspect.getsource(run_engine.run_cycle))
+
+    def test_decision_clears_the_pending_hit(self):
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("stop_router.clear(run_id)", src,
+                      "the desk's ruling must clear the noted hit")
+
+
+if __name__ == "__main__":
+    unittest.main()

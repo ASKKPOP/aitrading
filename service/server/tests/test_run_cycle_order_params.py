@@ -306,7 +306,21 @@ class LightPathOrderBlockTests(RunCycleOrderParamTests):
     shadow dataset therefore stayed empty while the feature looked deployed.
     It now asks for stop_pct/target_pct only — the two fields the flat 5%/10%
     overrides — so the cheap path stays cheap.
+
+    ORDER_DISCUSSION is disabled here on purpose: these tests own the light
+    path's bracket PARSER, and the owner's order-discussion rule (2026-08-13)
+    would escalate every mocked buy to the full panel and replace the very
+    decision under test. The escalation has its own suite
+    (test_order_discussion.py).
     """
+
+    def setUp(self):
+        super().setUp()
+        os.environ["ORDER_DISCUSSION"] = "0"
+
+    def tearDown(self):
+        os.environ.pop("ORDER_DISCUSSION", None)
+        super().tearDown()
 
     def _fleet_light_run(self) -> int:
         """A run the cycle will actually route to _light_analysis.
