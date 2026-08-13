@@ -119,6 +119,16 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## DEEP-MONITORING MANDATE + FIRST ATTRIBUTION (22:20Z, owner)
+
+Two axes standing (handoff §7c): (1) the AI's own decisions net-positive?
+(2) every other algorithm, each attributed. First pass since 08-12:
+fleet 33 AI exits **+8.27**/41 legs (the model case); fleet 31 −5.84/38
+(chop-trim day, targeted by #411/#413); fleet 32 AI −35.32/103 AND
+programmatic flattens −124.99/13 (tail: adapt_retired −83.37 + the #404
+ghost-book max_loss −69.56 — accumulated pre-fix). Collector vs
+accumulator distinction recorded in §7c.
+
 ## SCOPE → THREE USERS (22:14Z, owner)
 
 yoojinbe (crypto) + info@askkpop (us-stock) + henry.j (crypto+forex).

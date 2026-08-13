@@ -188,6 +188,35 @@ Extend candidates that WAIT for data (do not build early):
 - Paid positioning feeds — excluded until a gate is cleared (owner decision,
   Plan 23 v2).
 
+## 7c. 🔍 DEEP MONITORING — TWO AXES (owner 2026-08-13 ~22:20Z)
+
+Owner: *"deep monitoring 1. Sooppiy AI agent clear for make plus profit,
+2. other algorithm."* Every sweep (and any cycle with enough tape)
+attributes P&L to its AUTHOR:
+
+- **AXIS 1 — the AI's own decisions:** desk-cycle exits
+  (winning/losing_close adapts), panel-authored orders
+  (order_discussion finals), armed exits (the AI's standing orders).
+  The question: is the AI's judgment net-positive ON ITS OWN?
+- **AXIS 2 — every other algorithm, each on its own line:** SL/TP
+  watcher, trailing/breakeven locks, max_loss floors, at_time retires,
+  adapt-retire ladder, overnight cap, sizing/selection (research
+  ranking, backtest gate). ⚠️ Honesty rule: a flatten COLLECTS what the
+  book accumulated under holding — attribute the collector and the
+  accumulator separately before blaming either.
+
+**Baseline attribution (since 08-12, first pass 2026-08-13 22:20Z):**
+
+| fleet | AXIS-1 desk exits (legs) | AXIS-2 flattens (legs) | reading |
+|---|---|---|---|
+| 33 | **+8.27** (41) | −0.70 (5) | AI clearly plus-profit — the model case |
+| 31 | −5.84 (38) | −0.84 (7) | AI exits slightly red (chop-trim day 1); #411/#413 target exactly this — re-measure over sessions |
+| 32 | −35.32 (103) | **−124.99** (13) | both axes red PRE-fixes; tail = adapt_retired −83.37 + max_loss −69.56 (the #404 ghost-book). Watch whether the new architecture bends it |
+
+Panel night-1: 8 discussions, 2 confirmed-stronger, 6 reversed-to-hold.
+Count reversals per session; panel-starvation is an owner conversation
+with numbers.
+
 ## 7b. 🔒 OWNER RULE (2026-08-13, STRONG, all trading orders) — THE AI IS THE FINAL AUTHOR
 
 Owner, verbatim intent across five messages: *"Must be final discussion
