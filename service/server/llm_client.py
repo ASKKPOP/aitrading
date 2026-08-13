@@ -280,18 +280,22 @@ def resolve_provider(tier: str = "decision") -> Optional[ActiveProvider]:
     # a user or rule that picked its own provider. Unusable overrides
     # (unknown provider, missing key) fall through to normal resolution so a
     # misconfigured experiment degrades to current behavior, not to silence.
-    # User-owned calls (the context names a user or agent) only run on AI the
-    # user configured themselves: their Settings-page provider or the run's
-    # explicit llm_tiers. Without one they resolve to None — never the admin
-    # console default or the platform env keys (owner policy 2026-07-31). The
-    # user-facing assistant tier stays on the platform default.
-    user_unconfigured = bool(
-        ctx and (ctx.user_id is not None or ctx.agent_id is not None)
-        and not ctx.provider and tier != "assistant")
+    #
+    # Owner policy 2026-08-12: "user doesn't set LLM then use default local AI
+    # by system .env setting; user set LLM then all AI by set LLM." So naming a
+    # user or agent says WHO the call belongs to, never WHICH AI to use — a
+    # context without a provider falls through to the admin console default and
+    # then the env, exactly as no context at all would.
+    #
+    # This replaces the 2026-07-31 rule, under which a context naming a user or
+    # agent with no provider resolved to None. That made an ABSENT context
+    # load-bearing: run_cycle deliberately set none, and #395 — which set one
+    # only to record who to bill — silenced every fleet cycle
+    # (`"llm": {}`, forced hold) until it was reverted in 7d09628d.
     override = None
     if ctx and ctx.tier_providers:
         override = ctx.tier_providers.get(tier)
-    if override is None and not (ctx and ctx.provider) and not user_unconfigured:
+    if override is None and not (ctx and ctx.provider):
         override = _admin_llm_settings()["tiers"].get(tier)
     if override is not None:
         if isinstance(override, dict) and override.get("provider"):
@@ -305,9 +309,6 @@ def resolve_provider(tier: str = "decision") -> Optional[ActiveProvider]:
                                       base_url=base_url, model=model, source="rule")
             logger.warning("llm_tiers override for tier %r unusable (provider=%r); "
                            "falling back to normal resolution", tier, override.get("provider"))
-
-    if user_unconfigured:
-        return None
 
     ctx_provider = (ctx.provider or "") if ctx else ""
     env_provider = os.getenv("LLM_PROVIDER", "").strip().lower()
