@@ -119,6 +119,26 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 8 — retire-churn found and fixed: vary-on-refusal (12:39–13:1xZ, PR #410)
+
+Health: image current, 0 TB, docs 200, agents 6/59 realized unchanged.
+Tape citations still 0 (counting continues).
+
+**Found: same-symbol rebuild churn on refused theses.** UBER: desk
+retired it UNTRADED as unexpressable ("invalidation level sits at the
+current price"); replacement rebuilt UBER from the same thesis 20 seconds
+later; the rebuild re-reached the identical verdict in 4 minutes — UBER
+is on its 4th run (3 consecutive desk-retires), WMT on its 3rd, SBUX on
+its 3rd. The desks are RIGHT; the platform re-asks the identical
+question every ~30 min, burning builds + LLM calls. Cooldowns existed
+for idle_retired / losing stop_event / synthetic_liquidation —
+`desk_retired` was simply missing from the list.
+
+**Fix (PR #410):** desk_retired with ZERO trade legs writes the
+idle-class symbol cooldown (vary-on-refusal); `_ever_traded` fails
+closed so a traded bank-out never benches its symbol. fail-before 2/2,
+mutation (inverted gate) caught by both tests, 4,056 green. Deploy on CI.
+
 ## Cycle 7 — second shoulder round, no entries yet (12:08Z)
 
 18 fleet-31 decisions on the 30-min clock; zero trades from fleet 31
