@@ -188,6 +188,34 @@ Extend candidates that WAIT for data (do not build early):
 - Paid positioning feeds — excluded until a gate is cleared (owner decision,
   Plan 23 v2).
 
+## 7e. 🔒 OWNER RULES (2026-08-13) — TWO-SUBAGENT MONITORING + THE OUTCOME LAW
+
+Owner, verbatim:
+
+> "Do not make excuses, do not delude yourself into thinking your
+> analysis is always correct, and do not justify losses with flawed
+> logic; instead, always analyze the reasons behind the outcome of every
+> trade. The ultimate goal of all analysis is profit or loss; conduct
+> your analysis with that in mind."
+
+Origin: the same day, a −169.54 running loss was reported as "improved"
+on a +0.21 delta — the exact self-delusion the law forbids. Binding
+procedure for every cycle/sweep with tape to analyze:
+
+1. Dispatch **TWO subagents in parallel**: **Agent A** — every
+   AI-authored trade outcome (desk cycles, panel finals, armed exits)
+   with the REASON behind each result; **Agent B** — every
+   algorithm-authored outcome (SL/TP, locks, max_loss, at_time,
+   adapt-retire, flattens, sizing/selection) the same way. A description
+   without a reason is not analysis; an excuse is not a reason.
+2. The main session **fully cross-checks** both reports against the law:
+   reject findings that excuse a loss, assume their own correctness, or
+   lack a per-trade reason. Where A and B disagree, chase it — the
+   disagreement is the finding.
+3. Verdicts in PROFIT-OR-LOSS terms first; process health second. A
+   small favorable delta on a large loss is NOT improvement and must
+   never be reported as one.
+
 ## 7d. ⚠️ ACTIVE: GitHub Actions BILLING BLOCK (since 2026-08-13 22:53Z)
 
 Every CI job dies in ~4s with zero steps: "recent account payments have
