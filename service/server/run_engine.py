@@ -2112,6 +2112,23 @@ def _slot(dt: datetime, interval_min: int, offset_min: int) -> int:
     return (int(dt.timestamp()) // 60 - offset_min) // max(1, interval_min)
 
 
+def _opened_since(market: "str | None", last_dt: datetime,
+                  now: datetime) -> bool:
+    """True when the market is open NOW but was closed at the run's last
+    cycle — the bell rang in between. Owner (2026-08-12): "most people try
+    to buy and sell when the US market opens — we must catch that time."
+    A staggered slot could put a run's first in-session decision up to a
+    full interval after the open, missing the day's highest-volume window.
+    24×7 markets are always open at both stamps, so this never fires for
+    them. Fail-closed: a calendar problem falls back to normal slotting."""
+    try:
+        import markets as _mkts
+        return (_mkts.is_market_open(market, now)
+                and not _mkts.is_market_open(market, last_dt))
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def due_run_ids() -> list[int]:
     """Running runs whose per-run interval has elapsed (interval lives in the
     config snapshot; the comparison is done in Python — dual-dialect date
@@ -2160,6 +2177,14 @@ def due_run_ids() -> list[int]:
                 due.append(row["id"])
                 continue
             last_dt = datetime.strptime(last, TS_FMT).replace(tzinfo=timezone.utc)
+            # Catch the open (owner 2026-08-12): the bell rang since this
+            # run's last cycle ⇒ due NOW, bypassing slot phase and the
+            # half-interval guard. Every session-market run gets its first
+            # decision within one scheduler pass of the open instead of up
+            # to a full interval late.
+            if _opened_since(row.get("market"), last_dt, now):
+                due.append(row["id"])
+                continue
             offset = _phase_offset_min(row["id"], interval_min)
             # A plain "elapsed >= interval" test can never break lockstep:
             # once a full interval has passed the slot has ALWAYS advanced, so
@@ -3711,6 +3736,35 @@ def _fresh_armed_order(run_id: int) -> Optional[dict]:
     return blob or None
 
 
+_OPENING_WINDOW_MIN = 30
+
+
+def _opening_window_line(run: dict) -> str:
+    """Tells the desk it is inside the first minutes after the session open
+    — the day's highest-volume, highest-range window (owner 2026-08-12:
+    "most people try to buy and sell when the US market opens — we must
+    catch that time"). WHERE the session stands is platform context; what
+    to do with the window stays the desk's judgement. Pure clock
+    arithmetic on the same calendar the scheduler uses: open now, but not
+    open _OPENING_WINDOW_MIN ago ⇒ inside the window. A 24×7 market is
+    open at both stamps and never renders it."""
+    try:
+        import markets as _mkts
+        market = run.get("market")
+        if not _mkts.is_market_open(market):
+            return ""
+        if _mkts.is_market_open(
+                market, _now_dt() - timedelta(minutes=_OPENING_WINDOW_MIN)):
+            return ""
+    except Exception:  # noqa: BLE001
+        return ""
+    return ("The session OPENED within the last 30 minutes — the day's "
+            "highest-volume, highest-range window. Opening drives, gap "
+            "continuations and gap fades resolve here, at the day's best "
+            "liquidity; a plan acted on now beats the same plan 30 minutes "
+            "late.\n")
+
+
 def _contradiction_line(run: dict, pos_qty: float) -> str:
     """Plan 24 fix 1 prompt line: a held position may not silently ignore
     the desk's own reading. Rendered from the adapt-state streak the full
@@ -3967,6 +4021,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     can_sell = bool(trading_runs.is_futures_book(run.get("market"), market_type)
                     or pos_qty > 0)
     position_state = (_position_state_line(run, cfg, pos_qty, thesis)
+                      + _opening_window_line(run)
                       + _contradiction_line(run, pos_qty)
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
@@ -4413,6 +4468,7 @@ def run_cycle(run_id: int) -> dict:
                                         (cfg.get("thesis") or {})
                                         if isinstance(cfg.get("thesis"), dict)
                                         else {})
+                                        + _opening_window_line(run)
                                         + _contradiction_line(run, held)
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
