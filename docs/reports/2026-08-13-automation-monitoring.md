@@ -119,6 +119,29 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 11 — SL/TP watcher identified; §8(a) trigger met, fix in CI (14:39–15:1xZ, PR #411)
+
+Busy half hour: 21 decisions / 14 trades / 1 armed_exit. Wins banked
+AUDCHF +0.06, MSFT +0.50; trims/trailing-locks SPCX −0.34, ADBE −0.13,
+MSFT −0.17 (fleet 33 small caps behaving — SPCX stopped small, QNT
+still untraded). Agent 6 −5.34, agent 59 −0.91.
+
+**Watch RESOLVED — the null-client_order_id full-book sell path is the
+SL/TP WATCHER** (worker log: "SL/TP watcher closed position 340 (SLV
+us-stock @ 58.355, stop_loss)"). It executes the desk's own AI-authored
+entry stop at position level. Protection correct; the defect is
+upstream: **stops authored inside routine noise** — SLV 0.84% vs 1.52%
+ordinary day (0.55 od), UBER 0.94% vs 1.90% (0.50 od) — §8(a)'s exact
+trigger, met at n=2, −5.35 combined = the largest recurring loss shape
+on fleet 31.
+
+**Fix (PR #411, §8(a)'s own prescription):** `_ordinary_day_line` states
+the median daily move + the unit lesson in BOTH prompts at AUTHORING
+time (the exit-size line only rendered after adverse drift). fail-before
+5/5, unwire mutation caught, 4,061 green. Deploy on CI.
+
+Tape citations: still 0 (~80 decisions). Session-end test stands.
+
 ## Cycle 10 — session flowing; #410 replacement-side proof complete (14:09Z)
 
 27 decisions / 7 trades / 1 armed_exit in the half hour. Banking legs
