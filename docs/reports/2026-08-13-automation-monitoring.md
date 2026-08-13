@@ -119,6 +119,32 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 2 — scope extension + the night-notification defect (2026-08-13 ~09:00–10:00Z)
+
+**Owner: add henry.j@eklotho.com for US stock → DONE.** Fleet 33 in scope
+(baseline in §7a of the n-slot handoff); crons re-armed two-fleet
+(`5d805817` 30-min, `92bfc187` sweep).
+
+**Owner: "why working now (not market time)?" / "make clean this time" /
+the 12:10 AM email — run 1128 CBRS.** Diagnosis: nothing traded and no AI
+ran overnight (only market-closed pre-gate skips). The 24/7 safety scan
+retired the run on `at_time` — a 6h thesis horizon stamped as WALL hours
+at 01:09Z burned entirely against a shut NYSE; the slot then rebuilt the
+same symbol (owner's own keep-N rule — correct). The "청산" wording was
+boilerplate: $0 traded, no position.
+
+**Race note (parallel sessions, same mandate):** this session built the
+cumulative-open-hours fix (#408: 5 fail-before tests, mutation caught,
+4,052 green) while the parallel session shipped #407 (anchor at_time to
+the NEXT open) first — #408 CLOSED as superseded, rationale on the PR.
+#407's anchor+wall semantics is the better read for multi-day thesis
+horizons (48h ≈ 2 sessions, not 7+). This session deployed merged main as
+**`20260813-open-time-deadline`** and verified live: both containers on
+the tag, 0 tracebacks, `_horizon_anchor("us-stock")` → 13:30:00Z while
+closed / crypto → now, compose wired. Residual WATCH (not shipped without
+evidence): sub-session horizons composed near the close still anchor to
+now — the ORCL/CAT class.
+
 ## Cycle 1 SHIP — owner confirmed all four asks (2026-08-13 ~07:3xZ)
 
 Owner reply, verbatim intent: (1) "yes 30 min — change plan 23"; (2)

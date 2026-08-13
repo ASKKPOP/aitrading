@@ -190,6 +190,24 @@ Extend candidates that WAIT for data (do not build early):
 
 ## 7a. ▶️ THE FLEET EXISTS — fleet 31, loop LIVE (2026-08-13 05:46Z)
 
+- **SCOPE EXTENDED (owner 2026-08-13): henry.j@eklotho.com (user 23,
+  agent 59, fleet 33) is monitored for US STOCK.** Fleet 33: archetype
+  `short`, scope ["us-stock","forex"], 10 slots, budget ~$100k, profit
+  target 10%. Its us-stock runs cycle on the 30-min clock and skip with
+  `gate_skip: market closed` overnight (cheap pre-gate skips, no LLM
+  spend — by design; the short archetype has no `analysis_window`
+  zero-dispatch dormancy). ⚠️ Standing watch: it trades the THIN-HISTORY
+  small caps the swing gate refuses (QNT 48 bars, CBRS 62, SPCX 42) —
+  `swing_symbol_check` is swing-only and manipulation.py is crypto-only,
+  so no small-cap screen covers us-stock shorts. Judge by tape evidence
+  before proposing any gate.
+- **WATCH (from #407/#408, 2026-08-13):** `at_time` now anchors to the
+  next open (#407, deployed `20260813-open-time-deadline`) — new composes
+  while closed must show at_time ≥ next open + horizon. Residual shape:
+  a SUB-SESSION horizon composed near the close anchors to now and can
+  still burn its life overnight (the ORCL/CAT class). If reproduced, the
+  increment is open-time counting for sub-session horizons only (#408,
+  closed superseded, has the tested walk to start from).
 - **Fleet 31 = the owner-built swing fleet for info@askkpop.com** (user 5,
   agent 6): us-stock only, target 25 slots, budget/seed $10,000, built
   2026-08-12 ~15:13Z. This is the fleet this playbook governs. Fleets 32
