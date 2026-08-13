@@ -740,6 +740,18 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
         if reason == "idle_retired":
             _ensure_cooldown(member, hours=fp.IDLE_SYMBOL_COOLDOWN_HOURS)
 
+        # vary-on-refusal (2026-08-13): a desk that retires a run it NEVER
+        # traded refused the THESIS, not the timing. Live, 11:30Z shoulder:
+        # UBER was rebuilt 20 seconds after its desk retired it as
+        # unexpressable ("invalidation level sits at the current price") and
+        # the rebuild re-reached the identical verdict in 4 minutes — three
+        # consecutive desk-retires on one symbol, WMT and SBUX a step
+        # behind, each loop burning a build plus LLM decisions. Same class
+        # as vary-on-idle, one door over. Gated on zero trade legs so a
+        # desk banking out of a traded position never benches its symbol.
+        if reason == "desk_retired" and not _ever_traded(member):
+            _ensure_cooldown(member, hours=fp.IDLE_SYMBOL_COOLDOWN_HOURS)
+
         # vary-on-loss (2026-08-07): a member stopped by a LOSS stop-event was
         # wrong on today's tape. Without a cooldown the very next tick rebuilds
         # the same symbol with a fresh loss meter — three consecutive ADBE runs
@@ -902,6 +914,22 @@ def _zombie_open_qty(member: dict) -> float:
         return abs(qty)
     finally:
         conn.close()
+
+
+def _ever_traded(member: dict) -> bool:
+    """One trade event is enough. Fails CLOSED to True — a query problem can
+    only skip the cooldown, never bench a symbol the desk actually traded."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM run_events WHERE run_id = ? AND "
+                           "event_type = 'trade' LIMIT 1", (member["id"],))
+            return cursor.fetchone() is not None
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001
+        return True
 
 
 def _ensure_cooldown(member: dict, hours: float | None = None) -> None:

@@ -444,6 +444,54 @@ class ReplacementTests(SupervisionBase):
         conn.close()
         self.assertEqual(n, 0, "a profitable stop benched its own symbol")
 
+    def _seed_trade_event(self, member):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO run_events (run_id, seq, event_type, ts, payload)"
+            " VALUES (?, 9999, 'trade', '2026-08-13T12:00:00Z', '{}')",
+            (member["id"],))
+        conn.commit()
+        conn.close()
+
+    def _cooldown_count(self, symbol):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*) AS n FROM fleet_symbol_cooldowns WHERE "
+            "agent_id = ? AND symbol = ?", (self.agent_id, symbol))
+        n = int(cur.fetchone()["n"])
+        conn.close()
+        return n
+
+    def test_untraded_desk_retire_cools_symbol_and_varies(self):
+        """vary-on-refusal (2026-08-13): UBER was rebuilt 20 seconds after
+        its desk retired it untraded as unexpressable, and the rebuild
+        re-reached the identical verdict in 4 minutes — three consecutive
+        desk-retires on one symbol, WMT and SBUX a step behind. A desk that
+        retires a run it never traded refused the THESIS, not the timing."""
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        self._stop_member(member, "desk_retired")
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertEqual(self._cooldown_count(member["symbol"]), 1,
+                         "an untraded desk retire must cool its symbol")
+        live_syms = {m["symbol"] for m in fp.list_members(fleet_id)
+                     if m["status"] in ("running", "armed")}
+        self.assertNotIn(member["symbol"], live_syms,
+                         "replacement rebuilt the refused thesis's symbol")
+
+    def test_traded_desk_retire_does_NOT_cool_its_symbol(self):
+        """The zero-trades gate: a desk banking out of a position it
+        actually traded is judgment, not refusal — its symbol stays."""
+        fleet_id = self._built_fleet(n=2)
+        member = fp.list_members(fleet_id)[0]
+        self._seed_trade_event(member)
+        self._stop_member(member, "desk_retired")
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertEqual(self._cooldown_count(member["symbol"]), 0,
+                         "a traded desk retire benched its own symbol")
+
     def test_positions_held_keeps_slot_occupied(self):
         """A flatten-timeout zombie: slot occupied, no replacement, symbol
         excluded — until the unowned book clears (round-5 critical)."""
