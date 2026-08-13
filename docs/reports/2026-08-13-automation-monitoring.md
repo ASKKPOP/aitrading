@@ -119,6 +119,18 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 11b — #411 DEPLOYED + VERIFIED 3× (~15:3xZ)
+
+Merged `c7b1bff0`, deployed **`20260813-ordinary-day-authoring`**
+(rollback: `20260813-vary-on-refusal`). Verified: both containers on the
+tag, 0 tracebacks; the line renders live from prod candles (SLV ±1.52%,
+UBER ±1.90%, MSFT ±1.51%); wiring confirmed in BOTH prompt paths inside
+the image. **Post-ship watch:** newly authored stops on us-stock day
+runs should move toward ≥ ~1.0 ordinary day (or the desk should say why
+tighter) — measure authored stop_pct / typical_daily_move on new entries
+over the coming sessions; SL/TP-watcher full-closes on sub-0.6-od stops
+should stop recurring.
+
 ## Cycle 11 — SL/TP watcher identified; §8(a) trigger met, fix in CI (14:39–15:1xZ, PR #411)
 
 Busy half hour: 21 decisions / 14 trades / 1 armed_exit. Wins banked
