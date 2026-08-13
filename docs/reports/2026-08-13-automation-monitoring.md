@@ -119,6 +119,19 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 12 — choppy mid-session; four desk trims red (15:35Z)
+
+Agent 6 −5.34 → **−9.16**: JPM −1.35, ORCL −1.13, XOM −0.55, IBM −0.37,
+all desk `losing_close` trims (NO SL/TP watcher closes since #411's
+deploy — the watcher class is quiet). Wins this window: CBRS +0.19
+(fleet 33 small-cap banking!), AUDCHF +0.03. Agent 59 −0.74. Reading:
+mid-session chop against mostly-long books; each leg small, no dumps —
+the SHAPE verdict (per-leg expectancy, full-close share) belongs to the
+24h sweep, not a 30-min window. No new ship candidate this cycle.
+Post-#411 stop-authoring sample: none yet (deploy ~15:30; next decision
+round lands after this note). Tape citations 0 (~95 decisions). Image
+current, 0 TB, docs 200.
+
 ## Cycle 11b — #411 DEPLOYED + VERIFIED 3× (~15:3xZ)
 
 Merged `c7b1bff0`, deployed **`20260813-ordinary-day-authoring`**
