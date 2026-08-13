@@ -119,6 +119,37 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## AI-FINAL-AUTHOR SHIPPED — #413 deployed + verified 3× (21:36Z)
+
+Owner rule (STRONG, all trading orders, five messages verbatim in the
+n-slot handoff §7b): the sooppiy AI is the FINAL author of every order;
+programming is the optional fail-safe. Merged `2530390a`, deployed
+**`20260813-ai-final-author`** (rollback: `20260813-maturity-gate` — a
+parallel session's deploy landed between; this build is on merged main).
+
+1. **Order discussion:** every order-producing cheap-tier proposal
+   (buy/sell/retire-with-book) convenes the full 4-analyst + trader
+   panel; the panel's decision replaces the proposal wholesale. Holds
+   convene nothing. `ORDER_DISCUSSION` env.
+2. **Stop-hit routing:** a stop/target HIT on a live fleet run convenes
+   an immediate emergency discussion (due-now dispatch, forced full
+   route, STOP HIT brief); the watcher closes only on the 180s fail-safe.
+   Manual SL/TP untouched. `STOP_DESK_ROUTING` / `STOP_DESK_TIMEOUT_S` /
+   `STOP_RENOTE_MIN`.
+
+**Verification:** 4,086/0 full suite; fail-before + 2 mutations caught;
+live in-image: both mechanisms enabled + wired, a SYNTHETIC stop-hit
+forced the full route and rendered the emergency brief inside the
+running worker; 0 tracebacks; events flowing. **Watch from the next
+session:** `order_discussion` events (proposed vs final, count
+reversals), "SL/TP hit routed to desk" vs "TIMED OUT" log lines, and
+LLM spend (panel calls ≈ order cycles + hits — surface to the owner if
+it explodes). ⚠️ Traps for the record: worktrees SHARE the git stash
+stack (a pop resurrected a 2026-07-21 stash — use file copies for
+fail-before, never stash in a worktree); a suite run RACING live edits
+produces phantom failures — re-run named failures on the settled tree
+before believing them.
+
 ## Cycle 20 — SESSION CLOSE: strong finish, agent 59 +7.28 on the day (20:04Z)
 
 **The close delivered the day's best tape.** ORCL (fleet 33, built
