@@ -119,6 +119,20 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 13 — first post-#411 stops land at 1.1 and 2.0 ordinary days (16:09Z)
+
+**#411's first tape (n=2, one decision round after deploy):** BAC buy
+authored stop 0.8% vs a 0.73% ordinary day = **1.10 od**; PYPL 1.35% vs
+0.69% = **1.97 od** — versus this morning's noise-stops at 0.50–0.55 od.
+Exactly the direction the line teaches; keep counting (a two-sample
+verdict is not a verdict).
+
+Agent 59 flipped **positive: +0.24** (PFE +0.42 banked on fleet 33 —
+first green account of the day). Agent 6 −9.22 (≈flat this window,
+UBER trim −0.10). Two SL/TP-watcher closes in the past hour — attribute
+them next cycle when their adapts land. Tape citations still 0. Image
+current, 0 TB, docs 200.
+
 ## 24-HOUR VERIFICATION SWEEP (15:37Z) — five fixes re-proven; the day's losing SHAPE named
 
 **Fix re-proofs against the full day (all held):**
