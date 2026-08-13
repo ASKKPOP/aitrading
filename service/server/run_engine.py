@@ -4441,6 +4441,17 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
         final = dict(second.get("decision") or {})
         if not final.get("action"):
             raise ValueError("discussion returned no action")
+        # A rule-engine fallback is NOT the sooppiy AI speaking (owner
+        # policy 2026-07-31: user-owned calls never borrow the platform
+        # default, so a user without Settings-page AI gets decided_by=
+        # 'rule' here). Replacing the cheap tier's GENUINE AI verdict with
+        # a rule hold would let programming overrule the AI — the exact
+        # inversion of the owner's rule — and, worse, silently convert the
+        # desk's own risk-reducing exits into holds. Treat it as a failed
+        # meeting: journal it, keep the AI's proposal.
+        if final.get("decided_by") == "rule":
+            raise RuntimeError("panel fallback (not the AI): "
+                               + str(final.get("fallback_reason") or "rule"))
         final["escalated_from"] = payload["proposed"]
         payload["final"] = {"action": final.get("action"),
                             "confidence": final.get("confidence")}
