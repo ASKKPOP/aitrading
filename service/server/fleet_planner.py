@@ -630,6 +630,17 @@ def set_profit_target(fleet_id: int, frac: Optional[float]) -> None:
 SLOT_VIABLE_BUDGET_USD = 100.0
 
 
+def _thesis_factor(thesis: dict, key: str):
+    """A screening factor off the research row's factor_scores_json —
+    None when absent/unreadable (older batches, hand-built theses)."""
+    try:
+        fs = json.loads(thesis.get("factor_scores_json") or "{}")
+        val = (fs.get("factors") or {}).get(key)
+        return round(float(val), 4) if val is not None else None
+    except (ValueError, TypeError):
+        return None
+
+
 def recommended_max_slots(total_budget_usd: float) -> int:
     """The AI-side slot recommendation for a budget: as many slots as can
     each carry a fee-viable allocation, clamped to the fleet bounds."""
@@ -1142,6 +1153,13 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
             # brief's AGE at decision time instead of reading a days-old
             # level as current (the :496026 stale-brief class).
             "as_of": thesis.get("created_at"),
+            # Follow the Big Trader (owner 2026-08-12: "must be follow big
+            # trader — it's key"): the candidate's institutional footprint —
+            # 2-day move and volume-vs-normal — frozen onto the thesis so
+            # the desk reads the flow it was selected FOR at every decision,
+            # not only at screening. Absent on pre-mom_2d batches.
+            "mom_2d_pct": _thesis_factor(thesis, "mom_2d"),
+            "volume_ratio": _thesis_factor(thesis, "vol_ratio"),
         },
         "feedback": True,
     }

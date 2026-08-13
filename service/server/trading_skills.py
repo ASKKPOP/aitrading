@@ -1291,6 +1291,53 @@ BASE_SKILLS: list[dict[str, Any]] = [
             "that looks cheap is drifting, not discounted."
         ),
     },
+    # Follow the Big Trader (owner 2026-08-12: "most of people try to buy
+    # and sell when open usa stock market... Must be follow big trader —
+    # it's key"). The selection layer already ranks us-stock candidates by
+    # |2-day move| × volume confirmation and stamps mom_2d_pct/volume_ratio
+    # onto the thesis; this skill tells the desk what that footprint MEANS
+    # and how to trade with it rather than against it. Adapted to the data
+    # the desk actually sees (thesis mom_2d_pct/volume_ratio, daily candles,
+    # the opening-window brief); intraday tape/block prints are a future
+    # feed, not prompt material.
+    {
+        "slug": "follow-the-flow",
+        "name": "Follow the Big Trader",
+        "description": ("A large 2-day move on elevated volume is an "
+                        "institutional footprint — trade WITH it, never "
+                        "fade it by reflex; enter on the first orderly "
+                        "pullback, treat high-volume narrow-range as "
+                        "absorption, and never chase day three of a "
+                        "vertical move."),
+        "prompts": ["trader"],
+        "markets": ["us-stock"],
+        "priority": 17,
+        "body": (
+            "Your symbol was most likely selected because it MOVED: the "
+            "thesis carries mom_2d_pct (the 2-day move) and volume_ratio "
+            "(latest volume vs its own normal). Read them as footprints, "
+            "not noise. A big move WITH elevated volume (ratio well above "
+            "1) is institutional participation — size moved by players who "
+            "cannot enter or exit in one print, so their flow continues "
+            "across days. Trade in ITS direction; fading a confirmed flow "
+            "bar by reflex is stepping in front of the buyer or seller "
+            "who is still working. A big move on THIN volume is the "
+            "opposite read — a drift with nobody committed — and deserves "
+            "no continuation bet. Entries: the footprint's highest-odds "
+            "entry is the first orderly pullback that holds, taken on "
+            "resumption — especially inside the opening window, where the "
+            "prior day's flow resolves at the day's best liquidity. "
+            "Chasing the third day of a vertical move buys the "
+            "institution's exit: past two straight outsized days, wait "
+            "for the pullback or stand aside. High volume with a NARROW "
+            "range is absorption — someone is unloading into strength or "
+            "accumulating into weakness and the direction is not yet "
+            "decided: stand aside until the range breaks. And if price "
+            "falls back through the level where the volume appeared, the "
+            "footprint failed — the read is void, exit the idea rather "
+            "than argue with it."
+        ),
+    },
     {
         "slug": "parabolic-exhaustion",
         "name": "Parabolic Exhaustion Short",
