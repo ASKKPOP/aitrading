@@ -1124,6 +1124,14 @@ def _build_replacement(fleet: dict, slot: dict, funding: float,
             fp.emit_fleet_event(fleet["id"], "swing_gate",
                                 {"context": "replacement",
                                  "dropped": sw_dropped})
+    # Maturity gate (2026-08-13, SPCX class): young listings out of every
+    # non-swing us-stock replacement — see fp.usstock_maturity_gate.
+    if theses:
+        theses, my_dropped = fp.usstock_maturity_gate(fleet, theses)
+        if my_dropped:
+            fp.emit_fleet_event(fleet["id"], "maturity_gate",
+                                {"context": "replacement",
+                                 "dropped": my_dropped})
     if theses and backtest_gate.gate_enabled():
         kept, dropped = backtest_gate.gate_candidates(theses)
         if dropped:
