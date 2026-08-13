@@ -119,6 +119,15 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 15 — all-green window (17:08Z)
+
+Five winning closes, zero losing: agent 6 banked PYPL +0.12 / BAC +0.05
+(→ −9.14); agent 59 banked PFE +0.23, EURCHF, AUDNZD (→ +0.51, holding
+green). Stops authored: ORCL 3.7% (~1.9 od), SLV 3.0% (~2.0 od) — wide
+and sane; BAC re-authored 0.3% again (0.41 od — that one desk stays
+tight; single-desk idiosyncrasy so far, not fleet-wide). No new
+citations this window. Image current, 0 TB, docs 200.
+
 ## Cycle 14 — FIRST tape citation; stop authoring mixed (16:38Z)
 
 **First big-trader tape usage in a desk report** (MSFT): "Bullish macro
