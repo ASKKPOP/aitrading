@@ -119,6 +119,13 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 17 — third green window (18:08Z)
+
+Four wins, zero losing legs: agent 59 → **+1.52** (ORCL banked +0.32
+again), agent 6 → −8.99 (PYPL +0.20). Afternoon tempo is the intended
+shape: repeated partial banks on working positions. No citations this
+window. Image current, 0 TB, docs 200.
+
 ## Cycle 16 — second strong window (17:38Z)
 
 Six wins, one tiny loss: agent 59 → **+1.34** (ORCL +0.44 banked; the
