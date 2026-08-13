@@ -119,6 +119,16 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 19 — pre-close posture (19:08Z)
+
+Quiet: one small loss (MSFT −0.05); agent 6 realized improved → −8.64,
+agent 59 +1.47. Books into the close: agent 6 holds NFLX/SLV/JPM/PLTR/
+IBM ≈ $705 notional (PLTR $373 is a fresh afternoon entry), agent 59
+holds ORCL $351 + small forex. Overnight-cap arithmetic: Σ(notional×G)
+≈ $35 vs the $250 cap (2.5% of equity) — no cap reduce expected in the
+19:40–20:00 window, and none fired yet (correct). No citations. Image
+current, 0 TB, docs 200.
+
 ## Cycle 18 — steady late-session drift (18:38Z)
 
 Four small wins (agent 59 ORCL/PFE partials again → +1.50), one small
