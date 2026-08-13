@@ -119,6 +119,62 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## 24-HOUR VERIFICATION SWEEP (15:37Z) — five fixes re-proven; the day's losing SHAPE named
+
+**Fix re-proofs against the full day (all held):**
+1. **Regate back-off (#406-era churn → #410 PR set):** hourly fleet-31
+   gate events 240/hr for seven straight hours pre-deploy → **≤20/hr
+   ever since** (92–96% cut, sustained 8 hours). PROVEN.
+2. **putcall walk (#409):** batches 06/07/09Z were 0-for-56 non-null →
+   11/13/15Z are **28/28 each**. PROVEN sustained.
+3. **at_time anchor (#407):** all 10 us-stock composes since 11:33 carry
+   anchored deadlines — SBUX 1154 built 12:36Z (closed) → at_time
+   21:30Z = 13:30 open + 8h exactly. PROVEN across the day.
+4. **Vary-on-refusal (#410):** cooldown rows written on both fleets'
+   untraded retires; replacements varied (PFE/EURCHF/NZDUSD/INTC/NFLX —
+   fresh names entering, ping-pong absent since deploy). PROVEN.
+5. **Ordinary-day authoring (#411):** deployed 15:30 — NO verdict yet;
+   next sweep measures authored stop_pct / typical move on new entries.
+
+**Not a defect (investigated):** UBER 1134's two identical 0.654 sells
+15s apart = the ARMED reduce (74.90) firing, then the position stop
+(~74.84) collecting the remainder — two protective layers stacked at one
+level, both correct. A desk-coordination nuance, not a malfunction.
+
+**The 24h SHAPE (per closing leg, agents in scope):**
+- **Agent 6 / fleet 31: 19 legs, win rate 53%, median win +0.13 vs
+  median loss −0.55 — losers run ~4× winners. Worst-6 legs = 94% of all
+  loss. Per-leg expectancy −0.21.** The banking mandate produces fast
+  small wins (TMO's 5 partials, PFE at the bell) but loss-trims happen
+  at ~4× the size — the desk reacts to profit faster than to pain. No
+  whole-book desk dumps (the one full close was the SLV watcher-stop,
+  #411's target). Biggest legs: SLV −1.82 (noise stop), JPM −1.35,
+  ORCL −1.13 (mid-session chop trims).
+- Agent 59 / fleet 33: 24 legs, 42% win rate, everything fee-scale
+  (net −0.35); small caps behaving (CBRS +0.19 banked, SPCX stopped
+  −0.33, QNT untraded).
+- pnl_audit 08-13: ledger −145.82 platform-wide, DRIFT −13.88 = the
+  known benign entry-fee class (25+ newborns) — agents 6/59 own only
+  −9.16 / −0.74 of it; the rest is out-of-scope fleet 32.
+
+**Adversarial notes:** (a) "disciplined trims" is TRUE but insufficient —
+exit discipline alone did not buy positive expectancy; the losing shape
+is now precisely the 4× win/loss size inversion. DO NOT stack a new
+lesson yet: #411 just changed the stop layer mid-session — measure one
+full session under it first, then judge whether a loss-tempo lesson is
+still needed. (b) Tape citations 0/~95 is a WEAK usage signal (the
+report field is one sentence); the pre-registered session-end decision
+stands, but the better long-term measure is decision/tape correlation
+over days. (c) Fleet 31 slid 16→14/25 as cooldowns bench refused
+symbols — the intended tradeoff; universe supply remains the owner-level
+constraint (unchanged since cycle 100).
+
+**§7 promotion panel (fleet 31, day 2):** closed legs 19 · hit rate
+52.6% (Wilson 90% ≈ 0.34–0.71, n far below the 30-leg checkpoint) ·
+net realized −9.16 (0.09% of budget; DD trivial) · worst single
+overnight-gap loss: none yet · setups-taken vs seen: gates refusing
+negative-expectancy names as designed.
+
 ## Cycle 12 — choppy mid-session; four desk trims red (15:35Z)
 
 Agent 6 −5.34 → **−9.16**: JPM −1.35, ORCL −1.13, XOM −0.55, IBM −0.37,
