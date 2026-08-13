@@ -225,6 +225,64 @@ def swing_symbol_check(symbol: str) -> "tuple[float | None, str | None]":
         return None, f"swing_data_unreadable: {type(exc).__name__}"
 
 
+USSTOCK_MIN_BARS = 90
+
+
+def _usstock_min_bars() -> int:
+    """Maturity floor for NON-swing us-stock candidates; 0 disables."""
+    try:
+        return max(0, int(os.getenv("FLEET_USSTOCK_MIN_BARS",
+                                    USSTOCK_MIN_BARS)))
+    except ValueError:
+        return USSTOCK_MIN_BARS
+
+
+def usstock_maturity_gate(fleet: dict,
+                          theses: list[dict]) -> "tuple[list, dict]":
+    """Young listings out of EVERY us-stock build (owner 2026-08-13:
+    "yoojinbe got too much lost profit").
+
+    The day's selection losses were SPCX −$35.81 (42 daily bars) and QNT
+    −$7.49 (48 bars) — exactly the names the swing gate's 180-bar floor
+    refused fleet 31, which then landed in the UNGATED short-archetype
+    fleet 32 and carried 32% of the account's day loss. A listing under
+    ~90 bars has no statistical base ANY archetype's thesis can size
+    against — vol estimates, gap history and expectancy are all built on
+    air. Same discipline as the swing gate, lighter bar; swing fleets
+    skip this and run their own stricter 180-bar check.
+
+    Fail-open on a FETCH error (a feed hiccup must not blank the day's
+    universe — unlike swing, nothing here sizes an overnight hold), but a
+    readable-and-thin history always drops."""
+    if (fleet.get("archetype") or "short") == "swing":
+        return theses, {}
+    min_bars = _usstock_min_bars()
+    if not min_bars:
+        return theses, {}
+    kept: list[dict] = []
+    dropped: dict[str, str] = {}
+    for t in theses:
+        if (t.get("market") or "") != "us-stock":
+            kept.append(t)
+            continue
+        sym = t.get("symbol") or ""
+        try:
+            import price_fetcher
+            bars = price_fetcher.get_daily_candles(
+                sym, "us-stock", days=min_bars + 40)
+        except Exception:  # noqa: BLE001 — feed hiccup: let the thesis pass
+            kept.append(t)
+            continue
+        if bars is None:
+            kept.append(t)
+            continue
+        if len(bars) < min_bars:
+            dropped[sym] = f"listing_young: {len(bars)} bars < {min_bars}"
+        else:
+            kept.append(t)
+    return kept, dropped
+
+
 def swing_gate_candidates(fleet: dict, theses: list[dict]) -> "tuple[list, dict]":
     """Pre-build swing gate over research theses: (kept, dropped_reasons).
 
@@ -1621,6 +1679,17 @@ def _do_build(fleet: dict) -> None:
             emit_fleet_event(fleet["id"], "candidate_skipped",
                              {"thesis_key": cand["thesis_key"],
                               "reason": next(iter(sw_dropped.values()))})
+            skipped += 1
+            continue
+        thesis = kept[0]
+        # Maturity gate (2026-08-13, SPCX class): young listings out of
+        # every non-swing us-stock build — see usstock_maturity_gate.
+        kept, my_dropped = usstock_maturity_gate(fleet, [thesis])
+        if my_dropped:
+            _mark_candidate(fleet["id"], cand["id"], "skipped")
+            emit_fleet_event(fleet["id"], "candidate_skipped",
+                             {"thesis_key": cand["thesis_key"],
+                              "reason": next(iter(my_dropped.values()))})
             skipped += 1
             continue
         thesis = kept[0]
