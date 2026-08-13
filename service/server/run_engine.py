@@ -3765,6 +3765,74 @@ def _opening_window_line(run: dict) -> str:
             "late.\n")
 
 
+_YOUNG_EXIT_CYCLES = 3
+
+
+def _young_exit_brief(run: dict, cfg: dict, pos_qty: float) -> str:
+    """A young position moving against you INSIDE its ordinary daily range
+    is noise, not thesis evidence — and a full-book dump there is this
+    book's single largest measured loss mechanism.
+
+    Live 2026-08-13 (run 1104, KAITO): short at 0.44731, fully covered 30
+    minutes later on a −0.9% wiggle for −$10.14 — the dump decision carried
+    confidence 0.80 against conviction 0.30 — and the tape then fell BELOW
+    the original entry: the thesis was right, the panic paid. Same class as
+    the #245 finding (full-book dumps on sub-2% moves carry most loss).
+
+    No rail: exits are never refused or shrunk (the asymmetry). This is the
+    owner's decisions-become-skills path — the desk gets the situation and
+    the mandate, and the verb stays its own. Renders ONLY when the position
+    is young (< _YOUNG_EXIT_CYCLES decision intervals), losing, and the
+    adverse move is smaller than the symbol's ordinary day. Fail-soft."""
+    if not pos_qty:
+        return ""
+    try:
+        pnl = compute_run_pnl(run) or {}
+        pos = pnl.get("position") or {}
+        entry = float(pos.get("entry_price") or 0)
+        mark = float(pos.get("current_price") or 0)
+        if entry <= 0 or mark <= 0 or not pnl.get("mark_age_ok"):
+            return ""
+        got = (mark - entry) / entry * 100.0
+        if pos_qty < 0:
+            got = -got
+        if got >= 0:
+            return ""                    # in profit — banking is not dumping
+        ordinary = _typical_daily_move_pct(run)
+        if not ordinary or abs(got) >= float(ordinary):
+            return ""                    # a real move — the desk judges freely
+        interval_min = max(5, int(cfg.get("interval_minutes") or 60))
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COALESCE(first_opened_at, opened_at) AS o "
+                "FROM positions WHERE run_id = ? AND quantity != 0 LIMIT 1",
+                (run["id"],))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if not row or not row["o"]:
+            return ""
+        opened = datetime.strptime(str(row["o"])[:19],
+                                   "%Y-%m-%dT%H:%M:%S").replace(
+                                       tzinfo=timezone.utc)
+        age_min = (_now_dt() - opened).total_seconds() / 60.0
+        if age_min >= _YOUNG_EXIT_CYCLES * interval_min:
+            return ""
+    except Exception:  # noqa: BLE001
+        return ""
+    return (f"Young-position check: this position is ~{age_min:.0f} minutes "
+            f"old and the move against you ({got:+.2f}%) is INSIDE this "
+            f"symbol's ordinary daily range (~{float(ordinary):.2f}%) — "
+            "noise-sized, not evidence against the thesis. A full exit here "
+            "realizes fees on a wiggle; the book's largest measured losses "
+            "are exactly such dumps, made minutes before the tape went the "
+            "thesis's way. If you still exit, your report MUST state why a "
+            "FULL close beats a HALF reduce; and if your component scores "
+            "disagree with your stated confidence, trust the scores.\n")
+
+
 def _contradiction_line(run: dict, pos_qty: float) -> str:
     """Plan 24 fix 1 prompt line: a held position may not silently ignore
     the desk's own reading. Rendered from the adapt-state streak the full
@@ -4022,6 +4090,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                     or pos_qty > 0)
     position_state = (_position_state_line(run, cfg, pos_qty, thesis)
                       + _opening_window_line(run)
+                      + _young_exit_brief(run, cfg, pos_qty)
                       + _contradiction_line(run, pos_qty)
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
@@ -4469,6 +4538,7 @@ def run_cycle(run_id: int) -> dict:
                                         if isinstance(cfg.get("thesis"), dict)
                                         else {})
                                         + _opening_window_line(run)
+                                        + _young_exit_brief(run, cfg, held)
                                         + _contradiction_line(run, held)
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
@@ -4754,6 +4824,27 @@ def run_cycle(run_id: int) -> dict:
                 emit_telemetry_event(run_id, "contradiction_reduce",
                                      {"cycle": seq, "side": action,
                                       "position_qty": c_pos})
+
+        # Young-dump measurement (run 1104: −$10.14 covering a 30-minute-old
+        # short on a −0.9% wiggle, confidence 0.80 vs conviction 0.30, tape
+        # then went the thesis's way). NO behavior change — an exit-shaped
+        # decision on a young, noise-adverse position is journalled with
+        # both sizing signals so the weekly read can score the brief.
+        if action in ("sell", "cover"):
+            try:
+                yd_pos = _position_quantity(run["agent_id"], run["market"],
+                                            run["symbol"], run["id"])
+                if ((yd_pos > 0 and action == "sell")
+                        or (yd_pos < 0 and action == "cover")) \
+                        and _young_exit_brief(run, cfg, yd_pos):
+                    emit_telemetry_event(
+                        run_id, "young_dump_flag",
+                        {"cycle": seq, "action": action,
+                         "confidence": confidence,
+                         "conviction": conviction,
+                         "intent": (intent_exit or {}).get("intent")})
+            except Exception:  # noqa: BLE001 — telemetry never blocks a trade
+                pass
 
         # Plan 14 §7: same-direction re-entry block after a losing close
         # (whipsaw/fee-churn guard) — deterministic, before the gates.
