@@ -119,6 +119,16 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## GUARD PROVEN LIVE, n=4 (23:09Z) — window closing
+
+Post-deploy fleet-32 discussions journal `error: panel fallback (not the
+AI)` and the AI proposals STAND — the M2K/MES/SOLUSDT sells executed as
+trades (agent 5 improved −169.75 → −169.54). The exit-blocking hazard is
+closed and each event now advertises the missing-Settings root cause.
+0 TB, docs 200. Day ends with BOTH open items owner-side: (1) GitHub
+billing; (2) Settings-page AI for users 4/23. Loop crons stand for the
+next window.
+
 ## PANEL-FALLBACK GUARD DEPLOYED (#414) + GITHUB BILLING BLOCK + a process slip (23:0xZ)
 
 **Found by deep monitoring:** every fleet 32/33 order-discussion final was
