@@ -290,11 +290,11 @@ export type MarketEntry = {
 export const MARKETS: MarketEntry[] = [
   { value: 'all', supported: true, labels: { ko: '전체', en: 'All', ja: 'すべて', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' } },
   { value: 'us-stock', supported: true, labels: { ko: '미국주식', en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ', id: 'Saham AS' } },
-  { value: 'crypto', supported: true, labels: { ko: '암호화폐 (테스트)', en: 'Crypto (Testing)', ja: '暗号資産（テスト中）', th: 'คริปโต (ทดสอบ)', vi: 'Tiền mã hóa (Thử nghiệm)', id: 'Kripto (Uji coba)' } },
-  { value: 'polymarket', supported: true, labels: { ko: 'Polymarket (테스트)', en: 'Polymarket (Testing)', ja: 'Polymarket（テスト中）', th: 'Polymarket (ทดสอบ)', vi: 'Polymarket (Thử nghiệm)', id: 'Polymarket (Uji coba)' } },
-  { value: 'forex', supported: true, labels: { ko: '외환 (테스트)', en: 'Forex (Testing)', ja: '外国為替（テスト中）', th: 'Forex (ทดสอบ)', vi: 'Forex (Thử nghiệm)', id: 'Forex (Uji coba)' } },
-  { value: 'options', supported: true, labels: { ko: '옵션 (테스트)', en: 'Options (Testing)', ja: 'オプション（テスト中）', th: 'ออปชั่น (ทดสอบ)', vi: 'Quyền chọn (Thử nghiệm)', id: 'Opsi (Uji coba)' } },
-  { value: 'futures', supported: true, labels: { ko: '선물 (테스트)', en: 'Futures (Testing)', ja: '先物（テスト中）', th: 'ฟิวเจอร์ส (ทดสอบ)', vi: 'Hợp đồng tương lai (Thử nghiệm)', id: 'Futures (Uji coba)' } },
+  { value: 'crypto', supported: true, labels: { ko: '암호화폐', en: 'Crypto', ja: '暗号資産', th: 'คริปโต', vi: 'Tiền mã hóa', id: 'Kripto' } },
+  { value: 'polymarket', supported: true, labels: { ko: 'Polymarket', en: 'Polymarket', ja: 'Polymarket', th: 'Polymarket', vi: 'Polymarket', id: 'Polymarket' } },
+  { value: 'forex', supported: true, labels: { ko: '외환', en: 'Forex', ja: '外国為替', th: 'Forex', vi: 'Forex', id: 'Forex' } },
+  { value: 'options', supported: true, labels: { ko: '옵션', en: 'Options', ja: 'オプション', th: 'ออปชั่น', vi: 'Quyền chọn', id: 'Opsi' } },
+  { value: 'futures', supported: true, labels: { ko: '선물', en: 'Futures', ja: '先物', th: 'ฟิวเจอร์ส', vi: 'Hợp đồng tương lai', id: 'Futures' } },
 ]
 
 export function marketLabel(value: string, language: Language): string {
