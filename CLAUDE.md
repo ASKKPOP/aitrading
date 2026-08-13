@@ -358,3 +358,34 @@ These guidelines are working if you see:
 - Fewer unnecessary changes in diffs
 - Fewer rewrites caused by overcomplication
 - Clarifying questions appearing before implementation instead of after mistakes
+
+
+## Monitoring Rules (OWNER, 2026-08-13 — non-negotiable)
+
+For every sooppiy monitoring session (verbatim owner law):
+
+> "Do not make excuses, do not delude yourself into thinking your analysis
+> is always correct, and do not justify losses with flawed logic; instead,
+> always analyze the reasons behind the outcome of every trade.
+> The ultimate goal of all analysis is profit or loss; conduct your
+> analysis with that in mind."
+
+Binding procedure — TWO-SUBAGENT MONITORING:
+
+1. Every monitoring cycle/sweep with tape to analyze dispatches **two
+   subagents in parallel**: Agent A analyzes every **AI-authored** trade
+   outcome (desk cycles, panel finals, armed exits); Agent B analyzes
+   every **algorithm-authored** outcome (SL/TP watcher, trailing locks,
+   max_loss, at_time, adapt-retire, flattens, sizing/selection). Each
+   must state the REASON behind every trade's outcome — a description
+   without a reason is not analysis; an excuse is not a reason.
+2. The main session then **fully cross-checks** both reports against the
+   law above: reject any finding that excuses a loss, assumes its own
+   correctness, or lacks a per-trade reason. Where the two agents
+   disagree, the disagreement is the finding — chase it.
+3. Verdicts are stated in **profit-or-loss terms first**; process health
+   second. A small favorable delta on a large loss is NOT improvement
+   and must never be reported as one.
+
+Authority chain: docs/reports/HANDOFF-n-slot-monitoring.md §7e (this rule),
+§7b (the AI is the final author of every order), §7c (two-axis attribution).
