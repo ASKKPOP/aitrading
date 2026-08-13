@@ -119,6 +119,17 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 4b — #409 DEPLOYED + VERIFIED 3× (2026-08-13 ~11:2xZ)
+
+Merged `64fb6d70`, deployed **`sooppiy-backend:20260813-putcall-walk`**
+(rollback: `20260813-open-time-deadline`). Verification: (1) both
+containers on the tag, 0 tracebacks; (2) **live re-probe returns real
+ratios where the whole day was None** — MSFT 0.894, XOM 0.4554,
+JPM 0.9559; (3) walk source present in the running image. The next
+6-hourly factor batch should write non-NULL `putcall_oi_ratio`, and the
+Big-trader tape line then renders all three fields — confirm at the next
+batch (~15:4xZ) and in the first session decisions.
+
 ## Cycle 4 — putcall root-caused and fixed (2026-08-13 10:39–11:0xZ)
 
 Steady otherwise: image current, 0 tracebacks, docs 200, agent 6 −4.54 /
