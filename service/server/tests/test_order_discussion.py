@@ -106,6 +106,25 @@ class OrderDiscussionTests(unittest.TestCase):
             run_engine._order_discussion(_RUN, {}, _analysis("retire"))
         ra.assert_not_called()
 
+    def test_rule_fallback_final_is_not_the_AI_and_fails_open(self):
+        # Owner policy 2026-07-31: a user without Settings-page AI gets a
+        # rule-engine trader fallback (decided_by='rule', hold 0.5). That is
+        # programming, not the sooppiy AI — it must NOT overrule the cheap
+        # tier's genuine AI verdict (live 2026-08-13: every fleet 32/33
+        # discussion flat-lined to hold 0.5, silently blocking even desk
+        # EXITS for those fleets).
+        panel = {"decision": {"action": "hold", "confidence": 0.5,
+                              "decided_by": "rule",
+                              "fallback_reason": "no llm provider configured"},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(out["decision"]["action"], "sell",
+                         "a rule fallback must not overrule the AI proposal")
+        et, payload = self.events[0]
+        self.assertEqual(et, "order_discussion")
+        self.assertIn("no llm provider configured", payload["error"])
+
     def test_panel_error_fails_open_and_journals(self):
         with patch("analysis_agents.run_analysis",
                    side_effect=RuntimeError("llm down")):
