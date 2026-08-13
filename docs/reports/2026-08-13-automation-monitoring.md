@@ -119,6 +119,15 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 7 — second shoulder round, no entries yet (12:08Z)
+
+18 fleet-31 decisions on the 30-min clock; zero trades from fleet 31
+(shoulder correctly queues entries to the session). Fleet 33: one forex
+AUDCHF sell, agent 59 −0.45. **Tape-usage first sample: 0 of 18 decision
+reports cite short-volume/put-call/flow language** — too early to call
+(shoulder holds, short report field); keep sampling through the session
+per the days-not-cycles rule. Image current, 0 TB, docs 200.
+
 ## Cycle 6 — shoulder wake-up: all three fixes proven on the live tape (11:38Z)
 
 - **Shoulder works:** all 18 fleet-31 desks decided within ~9 min of the
