@@ -119,6 +119,19 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 10 — session flowing; #410 replacement-side proof complete (14:09Z)
+
+27 decisions / 7 trades / 1 armed_exit in the half hour. Banking legs
+small and disciplined: losing closes TMO −0.003, USDCHF −0.046, XOM
+−0.60 — all trims, no dumps. Agent 6 −3.91, agent 59 −0.44.
+**Vary-on-refusal fully proven:** after CVX/WMT cooled down, the
+replacements built DIFFERENT symbols (fleet 31 → PFE 1156, fleet 33 →
+EURCHF 1155). Watch closed on both sides (cooldown write + variation).
+Tape citations: 0 of ~60 decisions today — the session-end zero test
+(≈20:00Z cycle) decides the skill nudge. Watch note: a $5-notional TMO
+sell leg — if reduce-remainders under the ~$25 manage-floor recur, the
+dust-tail rule (#396 class) needs a look on the day block.
+
 ## Cycle 9 — first session under the full stack: bell-fire, first bank, #410 proven n=2 (13:38Z)
 
 - **Bell-fire:** 20 decisions across both fleets within 9 min of the
