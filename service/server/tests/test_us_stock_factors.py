@@ -48,6 +48,45 @@ class PutCall(unittest.TestCase):
                    return_value=None):
             self.assertIsNone(usf.putcall_oi_ratio("MSFT"))
 
+    # Live 2026-08-13: the day a fresh weekly rolls to front, Yahoo serves
+    # openInterest 0 on every contract of that expiry until OCC publishes
+    # next morning (MSFT 10:38Z: 105 calls, all OI 0) — the ratio sat NULL
+    # all day while the next expiry carried real positioning.
+    def test_zero_oi_front_expiry_walks_to_the_next(self):
+        front = dict(_chain(0, 0), expirationDates=[100, 200, 300])
+        second = _chain(1000, 800)
+        calls = []
+
+        def fetch(sym, expiry_epoch=None):
+            calls.append(expiry_epoch)
+            return front if expiry_epoch is None else second
+
+        with patch("price_fetcher._fetch_yahoo_option_chain",
+                   side_effect=fetch):
+            self.assertEqual(usf.putcall_oi_ratio("MSFT"), 0.8)
+        self.assertEqual(calls, [None, 200],
+                         "must fetch the SECOND listed expiry exactly once")
+
+    def test_all_zero_oi_expiries_stay_null_and_bounded(self):
+        dead = dict(_chain(0, 0), expirationDates=[100, 200, 300, 400, 500, 600])
+        calls = []
+        with patch("price_fetcher._fetch_yahoo_option_chain",
+                   side_effect=lambda s, expiry_epoch=None: (
+                       calls.append(expiry_epoch) or
+                       (dead if expiry_epoch is None else dict(_chain(0, 0))))):
+            self.assertIsNone(usf.putcall_oi_ratio("MSFT"))
+        self.assertLessEqual(len(calls), 4, "at most 3 extra fetches")
+
+    def test_populated_front_expiry_makes_one_fetch(self):
+        calls = []
+        with patch("price_fetcher._fetch_yahoo_option_chain",
+                   side_effect=lambda s, expiry_epoch=None: (
+                       calls.append(expiry_epoch) or
+                       dict(_chain(1000, 1500),
+                            expirationDates=[100, 200]))):
+            self.assertEqual(usf.putcall_oi_ratio("MSFT"), 1.5)
+        self.assertEqual(calls, [None], "no walk when the front has OI")
+
 
 class Tilt(unittest.TestCase):
     def test_bare_symbol_no_crypto_suffix(self):
