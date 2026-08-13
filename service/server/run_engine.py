@@ -3121,6 +3121,30 @@ def _mark_freshness_line(run: dict, pos_qty: float) -> str:
         return ""
 
 
+def _ordinary_day_line(run: dict) -> str:
+    """The symbol's ordinary daily move, stated WHEN the bracket is asked
+    for — not only after the position is already drifting.
+
+    WHY (2026-08-13, session 1 of the day block — main handoff §8(a)'s
+    prescribed fix, trigger met at n=2): SLV's authored stop sat at 0.84%
+    against a 1.52% ordinary day (0.55 days) and UBER's at 0.94% against
+    1.90% (0.50 days); both were collected by routine range within the
+    hour (−1.82, −3.53), executed by the SL/TP watcher as full closes.
+    The desk authors stop_pct on every cycle but only ever saw the
+    ordinary-day scale via _exit_size_line — which renders AFTER adverse
+    drift, long past authoring. Fact plus one unit lesson, fail-soft."""
+    try:
+        t = _typical_daily_move_pct(run)
+        if not t:
+            return ""
+        return (f"Scale: an ordinary day on this symbol moves ±{t:.2f}% "
+                "(median daily). A stop inside a small fraction of one "
+                "ordinary day sits in routine noise and gets collected — "
+                "size stops in ordinary-day units.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 BIG_TRADER_MAX_AGE_H = 48.0
 
 
@@ -4162,6 +4186,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                       + _exit_size_line(run, pos_qty)
                       + _mark_freshness_line(run, pos_qty)
                       + _big_trader_line(run)
+                      + _ordinary_day_line(run)
                       + _standing_arm_line(run, pos_qty))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
@@ -4611,6 +4636,7 @@ def run_cycle(run_id: int) -> dict:
                                         + _exit_size_line(run, held)
                                         + _mark_freshness_line(run, held)
                                         + _big_trader_line(run)
+                                        + _ordinary_day_line(run)
                                         + _standing_arm_line(run, held)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
