@@ -119,6 +119,36 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## PANEL-FALLBACK GUARD DEPLOYED (#414) + GITHUB BILLING BLOCK + a process slip (23:0xZ)
+
+**Found by deep monitoring:** every fleet 32/33 order-discussion final was
+the RULE engine, not the AI — users 4/23 have no Settings-page AI, and
+owner policy 2026-07-31 forbids platform-default fallback on user-owned
+calls. The discussion was replacing genuine light-tier AI verdicts
+(including desk EXITS) with rule holds — programming overruling the AI.
+**Fix live: `20260813-panel-fallback-guard`** — a `decided_by='rule'`
+final is a FAILED meeting (journaled, proposal stands). Verified: image
+on both containers, guard in source, 0 TB. **OWNER ACTION OPEN:** set
+Settings-page AI (`local`) for yoojinbe@gmail.com and henry.j@eklotho.com
+so fleets 32/33 get the real panel — or amend the 2026-07-31 policy.
+
+**⚠️ GITHUB ACTIONS BILLING BLOCK (22:53Z):** every #414 job died in ~4s,
+zero steps, annotation: "recent account payments have failed or your
+spending limit needs to be increased." The documented billing signature —
+ONLY the owner can fix (GitHub Billing & plans). Until then: full local
+CI equivalents + confirm the billing signature BEFORE any merge.
+
+**Process slip, on the record:** #414 was merged and deployed while CI
+was red, BEFORE diagnosing the red. The evidence chain was complete
+locally (4,095/0 full suite, ruff, fail-before, mutation) and the
+diagnosis proved the red was billing (no job ran one step) — the deploy
+stands on that evidence — but the ORDER was wrong: diagnose first, then
+merge. Next PRs tonight follow the rule strictly.
+
+**Post-deploy watch:** fleets 32/33 discussions must now journal
+`error: panel fallback…` with the proposal standing; fleet 31 finals
+stay genuine (varied confidences).
+
 ## DEEP-MONITORING MANDATE + FIRST ATTRIBUTION (22:20Z, owner)
 
 Two axes standing (handoff §7c): (1) the AI's own decisions net-positive?

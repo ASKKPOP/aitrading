@@ -188,6 +188,16 @@ Extend candidates that WAIT for data (do not build early):
 - Paid positioning feeds — excluded until a gate is cleared (owner decision,
   Plan 23 v2).
 
+## 7d. ⚠️ ACTIVE: GitHub Actions BILLING BLOCK (since 2026-08-13 22:53Z)
+
+Every CI job dies in ~4s with zero steps: "recent account payments have
+failed or your spending limit needs to be increased." OWNER-ONLY fix
+(GitHub Billing & plans). Until cleared: run full local CI equivalents
+and confirm this signature before any merge (global CI-outage rule).
+Also OPEN owner action: Settings-page AI for users 4 (yoojinbe) and 23
+(henry.j) — without it their panels are rule-fallbacks and the #414
+guard keeps their orders on light-tier AI verdicts only.
+
 ## 7c. 🔍 DEEP MONITORING — TWO AXES (owner 2026-08-13 ~22:20Z)
 
 Owner: *"deep monitoring 1. Sooppiy AI agent clear for make plus profit,
