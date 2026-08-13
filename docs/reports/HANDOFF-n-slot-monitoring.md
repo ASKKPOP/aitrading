@@ -188,6 +188,37 @@ Extend candidates that WAIT for data (do not build early):
 - Paid positioning feeds — excluded until a gate is cleared (owner decision,
   Plan 23 v2).
 
+## 7a. ▶️ THE FLEET EXISTS — fleet 31, loop LIVE (2026-08-13 05:46Z)
+
+- **Fleet 31 = the owner-built swing fleet for info@askkpop.com** (user 5,
+  agent 6): us-stock only, target 25 slots, budget/seed $10,000, built
+  2026-08-12 ~15:13Z. This is the fleet this playbook governs. Fleets 32
+  (user 4) and 33 (user 23) are other users — out of monitoring scope.
+- **New owner mandate (2026-08-13):** cycle every **30 min, 6AM–7PM**
+  (read as US Eastern — the us-stock session; KST would put every cycle
+  in the dormant window). Per cycle: working-per-plan / losses+why (check
+  the RUN AI reading algorithm) / what we missed / docs health
+  (how-it-works + plan-16) / suggestions, then solve directly. Plus a
+  standing feature ask: **a US-stock DAY block, buy/sell each 30 min,
+  that FOLLOWS BIG TRADERS ("it's key")** — see R1 in the 08-13 cycle
+  note before designing anything.
+- **Findings already on file (2026-08-13 cycle 1 — read that note first):**
+  (1) swing cadence never slowed — compose stamps `interval_minutes: 30`
+  and the 240 in `due_run_ids` is only a CEILING; runs think every ~30 min.
+  Coincidentally matches the owner's day-trade ask ⇒ OWNER DECISION, do
+  not silently "fix" either direction. (2) big-trader factors are
+  RECORD-ONLY (0 refs in run_engine/fleet_planner). (3) replenish churn:
+  ~1,342 gate events <6h against an exhausted pool (9 slots × ~60s tick);
+  back-off is the queued fix (R2). (4) run-less CRM/USDKRW positions on
+  agent 6 are HELD by OrphanReclaim by design — watch. (5) `run_events`
+  column is **`payload`**, and `fleet_events` is **`payload`** — the
+  `payload_json` in §2's SQL is STALE; errors are silent under 2>/dev/null.
+- First tape: fleet-31 realized −3.81 (UBER −3.53 = one stop-path
+  full-book sell on a −0.94% move, `client_order_id: null` — identify
+  that path). TMO +0.46 with 5 banked partials and the **first us-stock
+  `armed_exit` fire** (slippage +0.0174%). Trailing-lock deaths all
+  ≤ −0.33. §7 promotion counters started (~9 closed legs).
+
 ## 7. State at creation (2026-08-12)
 
 - Swing block SHIPPED through #388 (UI: 전략 유형 selector, 6 langs,
