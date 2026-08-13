@@ -61,19 +61,34 @@ def watchlist() -> tuple[str, ...]:
 
 
 def putcall_oi_ratio(symbol: str) -> Optional[float]:
-    """Put OI / call OI over the front expiry; None when the chain is
-    unavailable or call OI is zero (a ratio against nothing is not data)."""
+    """Put OI / call OI over the front expiry WITH PUBLISHED OI; None when
+    the chain is unavailable or no near expiry has any call OI (a ratio
+    against nothing is not data).
+
+    WHY the walk (live 2026-08-13): the day a fresh weekly rolls to front,
+    Yahoo serves openInterest 0 on EVERY contract of that expiry until OCC
+    publishes the next morning — MSFT at 10:38Z had 105 calls, all OI 0 —
+    so a front-expiry-only read sat NULL for the whole trading day while
+    perfectly good positioning data existed one expiry out. Walk to the
+    first expiry whose call OI is nonzero, at most 3 extra fetches."""
     try:
         import price_fetcher
         chain = price_fetcher._fetch_yahoo_option_chain(symbol)
-        block = (chain or {}).get("options") or [{}]
-        calls = block[0].get("calls") or []
-        puts = block[0].get("puts") or []
-        call_oi = sum(int(c.get("openInterest") or 0) for c in calls)
-        put_oi = sum(int(p.get("openInterest") or 0) for p in puts)
-        if call_oi <= 0:
-            return None
-        return round(put_oi / call_oi, 4)
+        expiries = list((chain or {}).get("expirationDates") or [])
+        tried = 0
+        while True:
+            block = (chain or {}).get("options") or [{}]
+            calls = block[0].get("calls") or []
+            puts = block[0].get("puts") or []
+            call_oi = sum(int(c.get("openInterest") or 0) for c in calls)
+            put_oi = sum(int(p.get("openInterest") or 0) for p in puts)
+            if call_oi > 0:
+                return round(put_oi / call_oi, 4)
+            tried += 1
+            if tried > 3 or tried >= len(expiries):
+                return None
+            chain = price_fetcher._fetch_yahoo_option_chain(
+                symbol, int(expiries[tried]))
     except Exception:  # noqa: BLE001
         logger.debug("putcall unavailable (%s)", symbol, exc_info=True)
         return None
