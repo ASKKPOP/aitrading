@@ -119,6 +119,54 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## INAUGURAL TWO-SUBAGENT PASS — CROSS-CHECKED VERDICT (§7e law, 23:5xZ)
+
+Agents A (AI-authored outcomes) and B (algorithm-authored) ran in
+parallel over the full 08-13 tape; findings cross-checked per the law.
+
+**AI axis (A): −19.01** (31: −2.78 / 32: −24.50 / 33: +8.27). ~−25 gross
+traces to ONE behavior: stops authored inside the symbol's ordinary
+range (ADBE 0.65%, QNT 1%, SLV 0.77%, JPM 0.73%, ORCL-31 0.5%,
+IBM 0.3%-as-parsed). Same-day controls prove it: ORCL 31 −1.13 vs 33
++6.65; CBRS 32 −9.42 vs 33 +0.19. Fleet 33's profit is bracket+banking
+discipline, not luck.
+
+**Algorithm axis (B): −151.9 collected** — honest collectors of
+AI-committed losses in every case but ONE: run 1099 SOLUSDT max_loss
+fired at −69.56 vs its authored −44.23 because run-scoped unrealized
+read 0.0 ALL NIGHT (rail blind; ungated adds past the breached rail;
+≈−25.3 algorithm-owned overshoot). CROSS-CHECK RESOLUTION: this is the
+#404 ghost-book class — 1099 died 05:09Z, #404 deployed ~07:00Z, so the
+root cause is known-and-fixed AFTER the casualty. A's scope-exclusion of
+1099 would have hidden the day's one real algorithm defect — the
+two-agent split earned its keep on day one.
+
+**Convergent finding (both agents, independent directions): the
+sizing-envelope incoherence.** Authored stops (3–6.4%) cannot survive
+the platform dollar rails at current slot sizes (−0.99 floor binds at
+<1% adverse on fleet 32/31 sizing; SPCX authored 6.4% inside a 1.33%
+envelope). The desk's written risk plans are unexecutable at size.
+OWNER DECISION: size slots so authored stops can breathe, or scale the
+dollar rails with position size.
+
+**Admission gap (both agents):** the backtest gate blocks proven losers
+(ES −523/trade etc.) but FULL-SIZES unknowns — QNT/CBRS/SPCX admitted
+minutes before the open at extreme sizing with zero history → the day's
+largest us-stock hits (−35.98/−8.26/−7.49+−9.42). FIX CANDIDATE:
+probation sizing for first-admission symbols (evidence n=3 same day) —
+proposed to the owner; implementation prepped next session.
+
+**Small systematic algorithm leaks (B):** breakeven ratchet on sub-$1
+peaks realized 4/4 small losses today; small-cap stop slippage 0.39–0.7%.
+
+**Open defect chases:** (1) IBM prose "~1.3% stop" vs parsed 0.3 —
+adjudicate desk-JSON vs parser from full payloads; (2) ghost-book
+recurrence post-#404 — my quick probe was METHODOLOGICALLY UNSOUND
+(non-time-aligned join; its hits are flat-period zeros, not blindness)
+and is REJECTED per the law; a trade-reconstructed, time-aligned probe
+is queued for the sweep. (3) Panel-fallback pass-throughs post-23:01Z
+worked as #414 designed (M2K −0.20, SOL +0.16 executed as proposals).
+
 ## GUARD PROVEN LIVE, n=4 (23:09Z) — window closing
 
 Post-deploy fleet-32 discussions journal `error: panel fallback (not the
