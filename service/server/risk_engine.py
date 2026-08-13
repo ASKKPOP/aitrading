@@ -569,6 +569,44 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
 
 # ─────────────────────────── SL/TP watcher ───────────────────────────
 
+def _route_stop_hit_to_desk(pos: dict, trigger: str, price: float) -> bool:
+    """True = the hit is routed to the desk's emergency discussion and the
+    watcher must NOT close this tick. False = close now (routing disabled,
+    a non-fleet position — manual SL/TP is a promise — a dead run, or the
+    fail-safe timeout expired with the desk silent). Fail-CLOSED to False:
+    any error here must leave the position protected by the old behavior."""
+    try:
+        import stop_router
+        if not stop_router.enabled():
+            return False
+        run_id = pos.get("run_id")
+        if not run_id:
+            return False
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT created_via, status FROM trading_runs "
+                        "WHERE id = ?", (run_id,))
+            run = cur.fetchone()
+        finally:
+            conn.close()
+        if (not run or run["created_via"] != "fleet"
+                or run["status"] != "running"):
+            return False
+        routed = stop_router.note_hit(int(run_id), int(pos["id"]),
+                                      trigger, float(price))
+        if routed:
+            logger.info("SL/TP hit routed to desk (run %s, position %s, "
+                        "%s @ %s)", run_id, pos["id"], trigger, price)
+        else:
+            logger.warning("SL/TP desk routing TIMED OUT — fail-safe close "
+                           "(run %s, position %s)", run_id, pos["id"])
+        return routed
+    except Exception:  # noqa: BLE001 — protection first
+        logger.exception("stop routing failed; falling back to close")
+        return False
+
+
 def _parse_position_ts(value: Optional[str]) -> Optional[datetime]:
     """Position timestamps exist in two stored formats ('YYYY-MM-DDTHH:MM:SSZ'
     and SQLite's 'YYYY-MM-DD HH:MM:SS') — parse both, assume UTC."""
@@ -712,6 +750,14 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
                     and (now - opened).days >= days):
                 trigger = "time_stop"
         if not trigger:
+            continue
+        # Stop-hit routing (owner 2026-08-13: "by AI it is main — programming
+        # decision is optional"): for a LIVE FLEET run's position the hit
+        # convenes the desk's emergency discussion instead of an immediate
+        # code close; the close below remains ONLY the fail-safe (desk silent
+        # past the timeout, routing disabled, or a non-fleet position —
+        # manual users' SL/TP is a promise and executes exactly as always).
+        if _route_stop_hit_to_desk(pos, trigger, price):
             continue
         signal_id, skip = execute_paper_trade(
             pos["agent_id"], pos["symbol"], pos["market"],

@@ -444,6 +444,19 @@ class BuildTests(FleetTestBase):
 
 
 class RunEngineFleetTests(FleetTestBase):
+    # ORDER_DISCUSSION off on purpose: these tests own the light path's
+    # budget-cap/dust mechanics, and the owner's order-discussion rule
+    # (2026-08-13) would escalate every mocked buy to the full panel and
+    # replace the decision under test. Escalation has its own suite
+    # (test_order_discussion.py).
+    def setUp(self):
+        super().setUp()
+        os.environ["ORDER_DISCUSSION"] = "0"
+
+    def tearDown(self):
+        os.environ.pop("ORDER_DISCUSSION", None)
+        super().tearDown()
+
     def _member(self):
         _seed_batch()
         fleet_id = self._fleet(n=1, budget=1000.0)

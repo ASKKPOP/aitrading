@@ -2144,8 +2144,20 @@ def due_run_ids() -> list[int]:
     finally:
         conn.close()
     due: list[int] = []
+    try:
+        import stop_router
+        _stop_routing = stop_router.enabled()
+    except Exception:  # noqa: BLE001
+        stop_router, _stop_routing = None, False
     for row in rows:
         try:
+            # Stop-hit routing: a noted hit dispatches NOW — before slots,
+            # intervals, even the analysis window (the desk must rule inside
+            # the fail-safe clock; its ORDER still obeys session rules).
+            if (_stop_routing and stop_router is not None
+                    and stop_router.pending(row["id"])):
+                due.append(row["id"])
+                continue
             cfg = json.loads(row.get("config_snapshot_json") or "{}")
             # Swing dormancy (owner spec 2026-08-12): a run stamped with an
             # analysis_window cycles only from pre_open before the open to
@@ -2695,6 +2707,16 @@ def _classify_situation(run: dict, cfg: dict) -> dict:
     path. Every signal is one that already ships in prod, and every read is
     fail-soft: a broken feed silently drops that trigger — routing must never
     break a cycle. Returns {"route": "full"|"light", "triggers": [...]}."""
+    # Stop-hit routing (owner 2026-08-13, "AI is main"): a noted stop/target
+    # hit IS the emergency — the discussion is mandatory, no other signal
+    # needs consulting.
+    try:
+        import stop_router
+        if stop_router.enabled() and stop_router.pending(run["id"]):
+            return {"route": "full", "triggers": ["stop_hit"],
+                    "route_by": "rule"}
+    except Exception:  # noqa: BLE001
+        pass
     triggers: list[str] = []
     try:
         from market_events import active_event_window
@@ -3117,6 +3139,26 @@ def _mark_freshness_line(run: dict, pos_qty: float) -> str:
             span = ""
         return (f"Mark check: this symbol has returned the SAME price for "
                 f"{reads} straight reads{span}.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
+def _stop_hit_line(run: dict) -> str:
+    """The emergency brief for a routed stop hit (owner 2026-08-13: the
+    sooppiy AI is the MAIN author of stop exits; the watcher is only the
+    fail-safe). Renders only while a hit is pending for this run."""
+    try:
+        import stop_router
+        hit = stop_router.pending(run["id"]) if stop_router.enabled() else None
+        if not hit:
+            return ""
+        return (f"STOP HIT: your {hit['trigger']} level traded at "
+                f"{hit['price']}. This cycle IS the decision the watcher "
+                "would otherwise make for you — choose: close (bank the "
+                "protection), reduce (cut, keep a re-entry), or hold ONLY "
+                "with a re-authored stop_pct that reflects why this level "
+                "no longer binds. If you do not decide, the fail-safe "
+                "closes the whole book.\n")
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
 
@@ -4176,6 +4218,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     can_sell = bool(trading_runs.is_futures_book(run.get("market"), market_type)
                     or pos_qty > 0)
     position_state = (_position_state_line(run, cfg, pos_qty, thesis)
+                      + _stop_hit_line(run)
                       + _opening_window_line(run)
                       + _young_exit_brief(run, cfg, pos_qty)
                       + _contradiction_line(run, pos_qty)
@@ -4337,7 +4380,83 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     if intent_block:
         decision["order_intent"] = intent_block
     return {"decision": decision,
-            "analysts": {}}
+            "analysts": {},
+            "position_state": position_state}
+
+
+def _order_discussion_enabled() -> bool:
+    return (os.environ.get("ORDER_DISCUSSION", "1").strip().lower()
+            not in ("0", "false", "no"))
+
+
+def _produces_order(action: "str | None", held: float) -> bool:
+    """buy/sell always produce an order; retire only flattens a held book."""
+    if action in ("buy", "sell"):
+        return True
+    return action == "retire" and abs(held) > 1e-12
+
+
+def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
+    """Owner rule 2026-08-13 (STRONG, all trading orders): "Must be final
+    discussion for contract or order by sooppiy AI — NOT any programming
+    logic."
+
+    A cheap-tier cycle may PROPOSE an order; the full 4-analyst + trader
+    discussion is the FINAL AUTHOR of it. The panel's decision REPLACES the
+    proposal wholesale — code convenes the meeting and never arbitrates the
+    outcome (no action-matching, no veto rule; whatever the discussion
+    concludes flows into the same gates and rails as any decision).
+
+    Deliberately NOT escalated: holds (no order to author), the full tier
+    (it already IS the discussion), and armed exits / protective stops —
+    those execute brackets and levels the desk itself authored in an
+    earlier decision, and delaying protective exits for a fresh meeting
+    was measured and rejected (main handoff §7).
+
+    Fail-OPEN on panel infrastructure errors: an LLM hiccup must not
+    freeze the book (the no-provider-default lesson); the proposal stands
+    and the failure is journaled in the same event."""
+    proposal = (analysis.get("decision") or {})
+    action = proposal.get("action")
+    try:
+        held = _position_quantity(run["agent_id"], run["market"],
+                                  run["symbol"], run["id"])
+    except Exception:  # noqa: BLE001
+        held = 0.0
+    if not _produces_order(action, held):
+        return analysis
+    payload: dict = {"proposed": {"action": action,
+                                  "confidence": proposal.get("confidence")}}
+    try:
+        from analysis_agents import run_analysis
+        second = run_analysis(
+            run["symbol"], run["market"], cfg.get("lang") or "en",
+            provider=cfg.get("provider") or None,
+            agent_id=run["agent_id"],
+            llm_tiers=cfg.get("llm_tiers") or None,
+            position_state=analysis.get("position_state") or "",
+            can_sell=bool(trading_runs.is_futures_book(
+                run.get("market"), (run.get("market_type") or "spot"))
+                or held > 0))
+        final = dict(second.get("decision") or {})
+        if not final.get("action"):
+            raise ValueError("discussion returned no action")
+        final["escalated_from"] = payload["proposed"]
+        payload["final"] = {"action": final.get("action"),
+                            "confidence": final.get("confidence")}
+        emit_telemetry_event(run["id"], "order_discussion", payload)
+        return {"decision": final,
+                "analysts": (second.get("analysts")
+                             if isinstance(second.get("analysts"), dict)
+                             else {}),
+                "position_state": analysis.get("position_state") or ""}
+    except Exception as exc:  # noqa: BLE001 — fail-open, journal the miss
+        payload["error"] = str(exc)[:200]
+        try:
+            emit_telemetry_event(run["id"], "order_discussion", payload)
+        except Exception:  # noqa: BLE001
+            pass
+        return analysis
 
 
 def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
@@ -4602,20 +4721,29 @@ def run_cycle(run_id: int) -> dict:
         # brief is built and emitted beside the decision below. Cleared first
         # so a cycle that never recalls cannot inherit the last one's chunks.
         _recall_reset(run_id)
+        # Both branches (and the contradiction tracker below, which now also
+        # runs on light cycles whose order-discussion panel returned real
+        # analysts) need the held book — compute it ONCE, ahead of the split.
+        try:
+            held = _position_quantity(run["agent_id"], run["market"],
+                                      run["symbol"], run["id"])
+        except Exception:  # noqa: BLE001
+            held = 0.0
         if is_fleet_run and cycle_mode == "light":
             # Plan 14 §9.2: one decision-tier call — swaps ONLY this stage;
             # everything below (gates, budget cap, fence) is byte-identical.
             analysis = _light_analysis(run, cfg)
+            # Owner rule 2026-08-13 (STRONG): the FINAL author of any order
+            # is the sooppiy AI's full discussion — a cheap-tier proposal
+            # that would trade convenes the panel, and the panel's verdict
+            # replaces it wholesale. Holds convene nothing.
+            if _order_discussion_enabled():
+                analysis = _order_discussion(run, cfg, analysis)
         else:
             from analysis_agents import run_analysis
             # The router escalates here FOR position reasons, so the expensive
             # desk must see the same book the cheap one does — same helper, so
             # the two paths cannot drift apart.
-            try:
-                held = _position_quantity(run["agent_id"], run["market"],
-                                          run["symbol"], run["id"])
-            except Exception:  # noqa: BLE001
-                held = 0.0
             analysis = run_analysis(run["symbol"], run["market"],
                                     cfg.get("lang") or "en",
                                     provider=cfg.get("provider") or None,
@@ -4626,6 +4754,7 @@ def run_cycle(run_id: int) -> dict:
                                         (cfg.get("thesis") or {})
                                         if isinstance(cfg.get("thesis"), dict)
                                         else {})
+                                        + _stop_hit_line(run)
                                         + _opening_window_line(run)
                                         + _young_exit_brief(run, cfg, held)
                                         + _contradiction_line(run, held)
@@ -4703,6 +4832,16 @@ def run_cycle(run_id: int) -> dict:
                               # there is a count before anyone argues from it.
                               **_conviction_divergence(confidence, conviction),
                               "report": (decision.get("report") or "")[:1000]})
+
+        # Stop-hit routing: this decision IS the desk's ruling on the noted
+        # hit — clear it (which also suppresses re-noting for one think
+        # window, so a justified hold is not re-litigated every scan tick).
+        try:
+            import stop_router
+            if stop_router.enabled():
+                stop_router.clear(run_id)
+        except Exception:  # noqa: BLE001
+            pass
 
         # The report just journaled is English on purpose (it is the corpus
         # desk_memory retrieves from), and the AI-analysis panel localizes it
