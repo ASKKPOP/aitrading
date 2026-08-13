@@ -119,6 +119,25 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 3 — quiet pre-open cycle (2026-08-13 10:08Z)
+
+Image `20260813-open-time-deadline`, 0 tracebacks, docs 200. Agent 6
+realized unchanged (−4.54), agent 59 −0.41 — no new losses overnight
+(market closed; only forex runs 1130/1143/1147 decided, small books).
+
+- **Regate back-off holding:** fleet 31 gate pairs down to 3 in 29 min
+  (was ~62) — slightly above the 1-per-15-min floor, consistent with the
+  pool fingerprint changing on fresh research batches. Keep watching.
+- **at_time anchor watch:** only compose since deploy is 1148 HYPEUSDT
+  (crypto) → +48h wall, correct for 24/7. First us-stock compose still
+  pending — check next cycles.
+- **pnl_audit DRIFT −6.03 (3 flattens):** the known-benign entry-fee
+  class — ~25 newborn runs built 08-12/13 carry entry-side fees the adapt
+  stream never sees (main handoff #257 note). Not chased. Bulk of the
+  day's red is fleet 32 (out of scope).
+- **putcall_oi_ratio still dark** since 04:18Z. If the ~10:48Z batch is
+  NULL again, trace `_fetch_yahoo_option_chain` from the prod container.
+
 ## Cycle 2 — scope extension + the night-notification defect (2026-08-13 ~09:00–10:00Z)
 
 **Owner: add henry.j@eklotho.com for US stock → DONE.** Fleet 33 in scope
