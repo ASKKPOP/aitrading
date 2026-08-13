@@ -245,3 +245,87 @@ class KeepDefinedCountTests(ReplacementScopeTests):
         self.assertEqual(len(members), 1,
                          "defined count must hold while the market is closed")
         self.assertEqual(members[0]["market"], "us-stock")
+
+
+class RegateBackoffTests(ReplacementScopeTests):
+    """Regate back-off (live 2026-08-13, fleet 31): an exhausted candidate
+    pool was re-gated by every empty slot on every ~60s supervise tick —
+    1,342 identical gate events in six hours. An unchanged pool that gated
+    to nothing must be skipped silently until the window expires or the
+    pool changes."""
+
+    def setUp(self):
+        super().setUp()
+        fs._REGATE_MEMO.clear()
+
+    def tearDown(self):
+        fs._REGATE_MEMO.clear()
+        super().tearDown()
+
+    def _gate_events(self, fleet_id, event_type="swing_gate"):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) AS n FROM fleet_events WHERE fleet_id=?"
+                    " AND event_type=?", (fleet_id, event_type))
+        n = cur.fetchone()["n"]
+        conn.close()
+        return n
+
+    def _slot(self, fleet_id):
+        return {"slot_index": 0, "current_run_id": None}
+
+    def _drop_all(self, fleet, n_calls=2):
+        """Run _build_replacement n times with every candidate gated away."""
+        def dropper(f, theses):
+            return [], {t["symbol"]: "swing_history_thin: 48 bars < 180"
+                        for t in theses}
+        with patch.object(fp, "swing_gate_candidates", side_effect=dropper):
+            for _ in range(n_calls):
+                got = fs._build_replacement(fleet, self._slot(fleet["id"]),
+                                            500.0, set(),
+                                            already_waiting=True)
+                self.assertIsNone(got)
+
+    def test_identical_pool_is_gated_once_not_every_attempt(self):
+        fleet_id = self._scoped_fleet(["us-stock"])
+        self._orphan_slot(fleet_id)
+        fleet = fp.get_fleet(fleet_id)
+        self._drop_all(fleet, n_calls=3)
+        self.assertEqual(self._gate_events(fleet_id), 1,
+                         "an unchanged pool must not be re-gated every tick")
+
+    def test_window_expiry_regates(self):
+        fleet_id = self._scoped_fleet(["us-stock"])
+        self._orphan_slot(fleet_id)
+        fleet = fp.get_fleet(fleet_id)
+        with patch.dict(os.environ, {"REPLACEMENT_REGATE_MIN": "0"}):
+            self._drop_all(fleet, n_calls=2)
+        self.assertEqual(self._gate_events(fleet_id), 2,
+                         "an expired window must re-gate")
+
+    def test_changed_pool_regates_immediately(self):
+        fleet_id = self._scoped_fleet(["us-stock"])
+        self._orphan_slot(fleet_id)
+        fleet = fp.get_fleet(fleet_id)
+        self._drop_all(fleet, n_calls=1)
+        # A new research batch changes the pool fingerprint.
+        self._seed_mixed_research(batch_id="research:999999")
+        self._drop_all(fleet, n_calls=1)
+        self.assertEqual(self._gate_events(fleet_id), 2,
+                         "a changed pool must re-gate immediately")
+
+    def test_surviving_pool_clears_the_memo(self):
+        # When candidates survive a RE-gate (window expired) the memo must
+        # not linger and suppress the NEXT genuinely-different failure.
+        # (Within the window an unchanged pool is skipped before the gates
+        # run at all — that short-circuit is the fix, not a leak.)
+        fleet_id = self._scoped_fleet(["us-stock"])
+        self._orphan_slot(fleet_id)
+        fleet = fp.get_fleet(fleet_id)
+        self._drop_all(fleet, n_calls=1)
+        self.assertIn(fleet_id, fs._REGATE_MEMO)
+        with patch.dict(os.environ, {"REPLACEMENT_REGATE_MIN": "0"}):
+            fs._build_replacement(fleet, self._slot(fleet_id), 500.0, set(),
+                                  already_waiting=True)
+        self.assertNotIn(fleet_id, fs._REGATE_MEMO,
+                         "a surviving pool must clear the back-off memo")

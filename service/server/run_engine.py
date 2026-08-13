@@ -2165,11 +2165,14 @@ def due_run_ids() -> list[int]:
                         continue
                 except Exception:  # noqa: BLE001
                     pass
-            # Plan 23 Phase B: the swing archetype thinks on a 240-min clock
-            # (owner-approved relaxation of the 30-min rule, swing only).
-            # Stops stay on the ~60s control scan either way — slower
-            # thinking never delays an exit.
-            cap = 240 if cfg.get("archetype") == "swing" else _interval_cap_min()
+            # Owner decision 2026-08-13 (AMENDS Plan 23 Phase B): the
+            # us-stock block DAY-trades — every archetype thinks on the
+            # platform's 30-min clock. The 240-min swing special-case never
+            # actually slowed a run (compose stamps interval_minutes=30 and
+            # this cap is a ceiling, so min(240, 30) was 30 all along);
+            # removing it makes the design match the tape. Stops stay on
+            # the ~60s control scan — thinking cadence never delays an exit.
+            cap = _interval_cap_min()
             interval_min = max(5, min(cap,
                                        int(cfg.get("interval_minutes") or 60)))
             last = row.get("last_cycle_at")
@@ -3114,6 +3117,62 @@ def _mark_freshness_line(run: dict, pos_qty: float) -> str:
             span = ""
         return (f"Mark check: this symbol has returned the SAME price for "
                 f"{reads} straight reads{span}.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
+BIG_TRADER_MAX_AGE_H = 48.0
+
+
+def _big_trader_line(run: dict) -> str:
+    """Latest recorded big-trader tape for a us-stock symbol — FINRA daily
+    short-volume ratio, front-expiry put/call OI, StockTwits tilt.
+
+    WHY (owner 2026-08-13: "must follow big trader — it's key"). Plan 23
+    Phase D records these 6-hourly into us_stock_factor_snapshots and
+    NOTHING showed them to the desk — the one signal the owner names as the
+    key was record-only (0 references in the decision layer, verified by
+    grep on 2026-08-13). Facts only, null-honest: a field the feed could
+    not see is omitted, never guessed. The judgment lives in the
+    follow-the-flow skill, which teaches level reads for exactly the fields
+    rendered here — teach nothing this line does not show. us-stock only;
+    48h age cap (FINRA publishes T+1 and weekends gap); fail-soft.
+    """
+    if (run.get("market") or "") != "us-stock":
+        return ""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT putcall_oi_ratio, short_volume_ratio, "
+                "stocktwits_tilt, tilt_n, created_at "
+                "FROM us_stock_factor_snapshots WHERE symbol = ? "
+                "ORDER BY id DESC LIMIT 1",
+                (str(run.get("symbol") or "").upper(),))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return ""
+        age_h = _age_seconds(str(row["created_at"])) / 3600.0
+        if age_h > BIG_TRADER_MAX_AGE_H:
+            return ""
+        bits: list[str] = []
+        if row["short_volume_ratio"] is not None:
+            bits.append(f"FINRA short-volume ratio "
+                        f"{float(row['short_volume_ratio']):.2f} "
+                        f"(share of the day's volume sold short)")
+        if row["putcall_oi_ratio"] is not None:
+            bits.append(f"put/call OI {float(row['putcall_oi_ratio']):.2f}")
+        if row["stocktwits_tilt"] is not None:
+            n = int(row["tilt_n"] or 0)
+            bits.append(f"StockTwits tilt {float(row['stocktwits_tilt']):+.2f}"
+                        + (f" (n={n})" if n else ""))
+        if not bits:
+            return ""
+        return (f"Big-trader tape ({age_h:.0f}h old): "
+                + "; ".join(bits) + ".\n")
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
 
@@ -4102,6 +4161,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                       + _brake_distance_line(run, pos_qty)
                       + _exit_size_line(run, pos_qty)
                       + _mark_freshness_line(run, pos_qty)
+                      + _big_trader_line(run)
                       + _standing_arm_line(run, pos_qty))
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
@@ -4550,6 +4610,7 @@ def run_cycle(run_id: int) -> dict:
                                         + _brake_distance_line(run, held)
                                         + _exit_size_line(run, held)
                                         + _mark_freshness_line(run, held)
+                                        + _big_trader_line(run)
                                         + _standing_arm_line(run, held)),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the

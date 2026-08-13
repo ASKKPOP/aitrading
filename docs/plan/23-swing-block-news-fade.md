@@ -341,6 +341,21 @@ starving the trial). All computable from backtest_metrics.py primitives.
    desk interval applies solely to `archetype=swing` (which is pinned
    `market_scope=["us-stock"]`); crypto short slots keep the 30-minute rule
    unchanged, and the ~60s stop scan is untouched for both.
+
+   > **AMENDED 2026-08-13 (owner): the 240-min swing clock is RETIRED.**
+   > The us-stock block DAY-trades — the owner's live fleet 31 ran its
+   > first day and the instruction is explicit: *"us stock a day buy sell
+   > each 30min. Must be follow big trader — it's key."* Every archetype
+   > now thinks on the platform's 30-min clock (`run_engine.due_run_ids`;
+   > the 240 special-case is removed — it never actually slowed a run,
+   > since compose stamps `interval_minutes=30` and the cap was a
+   > ceiling). Unchanged: session dormancy (`analysis_window`), overnight
+   > stop dormancy, gap-sized max_bet = R/G, the overnight book cap, and
+   > the §7 promotion gates. "Follow big trader" ships as perception +
+   > judgment: the `Big-trader tape` brief line (FINRA short-volume,
+   > put/call OI, StockTwits tilt from Phase D's recorder) wired into both
+   > decision prompts, plus the level-read clause in `follow-the-flow`
+   > (#405's skill).
 2. **Keys: platform-level, default free** (owner confirmed "default is open
    key use"). Step-0a audit on prod (2026-08-11): `ALPHA_VANTAGE_API_KEY`
    SET (tier unconfirmable; Yahoo-first routing already compensates);
