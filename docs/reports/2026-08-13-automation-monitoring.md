@@ -119,6 +119,26 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 9 — first session under the full stack: bell-fire, first bank, #410 proven n=2 (13:38Z)
+
+- **Bell-fire:** 20 decisions across both fleets within 9 min of the
+  13:30Z open; 6 entries — fleet 31 bought PFE/SLV/ADBE/MSFT, fleet 33
+  bought UBER.
+- **First banked win of the day block:** PFE bought 26.31 at the bell,
+  half sold 26.49 minutes later — agent 6 improved −4.54 → **−3.80**
+  (+0.74 realized). Buy-the-open, bank-the-pop: the intended shape.
+- **#410 vary-on-refusal PROVEN live, n=2, within minutes of deploy:**
+  1117 CVX (fleet 31) desk-retired untraded 13:34:48 → cooldown row 65
+  (until 08-14T01:35, source_run_id stamped); 1132 WMT (fleet 33) → row
+  66. Behavioral watch CLOSED — replacements must now vary; verify the
+  next builds pick different symbols.
+- Tape citations: still 0 of ~34 decisions today, now including real
+  entries. If the full session ends at 0, the next AI-first step is a
+  small `follow-the-flow` clause asking the desk to CITE the tape when
+  it bears on the action (cheap, makes usage observable) — evidence
+  threshold met by a full-day zero, not before.
+- Image current, 0 TB, docs 200, agent 59 −0.48.
+
 ## Cycle 8b — #410 DEPLOYED + VERIFIED (13:16Z, 14 min to the bell)
 
 Merged `8680caa4`, deployed **`20260813-vary-on-refusal`** (rollback:
