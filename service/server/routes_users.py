@@ -318,17 +318,6 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         conn.close()
         _delete_code(data.email, ctx)
 
-        # Card-free 7-day trial. Opens its own connection, so it must land
-        # after the commit+close above, never inside that write transaction.
-        # Fail-soft: a signup that has already committed must not 500 here —
-        # the member simply lands on /subscribe instead, which is recoverable.
-        try:
-            from billing_sync import grant_trial
-            await asyncio.to_thread(grant_trial, user_id)
-        except Exception:  # noqa: BLE001
-            _logger.warning('[Trial] grant failed for user %s', user_id,
-                            exc_info=True)
-
         try:
             await asyncio.to_thread(send_welcome_email, data.email, lang)
         except Exception as exc:  # noqa: BLE001 — a mail outage must never

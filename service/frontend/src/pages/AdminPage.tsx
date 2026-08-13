@@ -297,15 +297,14 @@ export function AdminPage() {
     subscriberRows: tr(language, { ko: '구독 이력', en: 'History', ja: '履歴', th: 'ประวัติ', vi: 'Lịch sử', id: 'Riwayat' }),
     planBilling: tr(language, { ko: '결제 연동 ID', en: 'Billing IDs', ja: '決済連携ID', th: 'รหัสการชำระเงิน', vi: 'ID thanh toán', id: 'ID penagihan' }),
     editStripeId: tr(language, { ko: 'Stripe 가격 ID', en: 'Stripe price id', ja: 'Stripe価格ID', th: 'รหัสราคา Stripe', vi: 'ID giá Stripe', id: 'ID harga Stripe' }),
-    editPaypalId: tr(language, { ko: 'PayPal 플랜 ID', en: 'PayPal plan id', ja: 'PayPalプランID', th: 'รหัสแพลน PayPal', vi: 'ID gói PayPal', id: 'ID paket PayPal' }),
     billingUnset: tr(language, { ko: '미설정', en: 'not set', ja: '未設定', th: 'ยังไม่ตั้ง', vi: 'chưa đặt', id: 'belum diatur' }),
     billingHint: tr(language, {
-      ko: '이 값이 비어 있으면 API 키가 올바르더라도 결제가 503으로 실패합니다. Stripe는 price_… (prod_… 아님), PayPal은 P-… 형식입니다.',
-      en: 'While these are empty, checkout fails with 503 even when the API keys are correct. Stripe wants price_… (not prod_…); PayPal wants P-….',
-      ja: 'これらが空のままだと、APIキーが正しくても決済は503で失敗します。Stripeはprice_…（prod_…ではない）、PayPalはP-…です。',
-      th: 'หากเว้นว่างไว้ การชำระเงินจะล้มเหลวด้วย 503 แม้คีย์ API จะถูกต้อง Stripe ใช้ price_… (ไม่ใช่ prod_…) ส่วน PayPal ใช้ P-…',
-      vi: 'Khi để trống, thanh toán sẽ lỗi 503 dù khóa API đúng. Stripe cần price_… (không phải prod_…); PayPal cần P-….',
-      id: 'Selama kosong, checkout gagal dengan 503 meski kunci API benar. Stripe memakai price_… (bukan prod_…); PayPal memakai P-….',
+      ko: '이 값이 비어 있으면 API 키가 올바르더라도 결제가 503으로 실패합니다. Stripe는 price_… 형식입니다(prod_… 아님).',
+      en: 'While these are empty, checkout fails with 503 even when the API keys are correct. Stripe wants price_… (not prod_…).',
+      ja: 'これらが空のままだと、APIキーが正しくても決済は503で失敗します。Stripeはprice_…です（prod_…ではない）。',
+      th: 'หากเว้นว่างไว้ การชำระเงินจะล้มเหลวด้วย 503 แม้คีย์ API จะถูกต้อง Stripe ใช้ price_… (ไม่ใช่ prod_…)',
+      vi: 'Khi để trống, thanh toán sẽ lỗi 503 dù khóa API đúng. Stripe cần price_… (không phải prod_…).',
+      id: 'Selama kosong, checkout gagal dengan 503 meski kunci API benar. Stripe memakai price_… (bukan prod_…).',
     }),
     status: tr(language, { ko: '상태', en: 'Status', ja: '状態', th: 'สถานะ', vi: 'Trạng thái', id: 'Status' }),
     plan: tr(language, { ko: '플랜', en: 'Plan', ja: 'プラン', th: 'แพลน', vi: 'Gói', id: 'Paket' }),
@@ -1003,7 +1002,6 @@ export function AdminPage() {
                   <option value="manual">{T.payMethodComp}</option>
                   <option value="usdt">usdt</option>
                   <option value="bank">bank</option>
-                  <option value="paypal">paypal</option>
                 </select>
                 <input placeholder={T.payReference} value={grant.reference}
                   onChange={e => setGrant(p => ({ ...p, reference: e.target.value }))}
@@ -1120,9 +1118,6 @@ export function AdminPage() {
                         <div style={{ color: p.stripe_price_id ? undefined : 'var(--text-muted,#8a8073)' }}>
                           Stripe: {p.stripe_price_id || T.billingUnset}
                         </div>
-                        <div style={{ color: p.paypal_plan_id ? undefined : 'var(--text-muted,#8a8073)' }}>
-                          PayPal: {p.paypal_plan_id || T.billingUnset}
-                        </div>
                       </>}
                     </td>
                     <td style={td}>{p.sort_order}</td>
@@ -1141,10 +1136,7 @@ export function AdminPage() {
                         const v = window.prompt(T.editStripeId, p.stripe_price_id || '')
                         if (v !== null) act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ stripe_price_id: v }) }, 'subscriptions')
                       }}>{T.editStripeId}</button>{' '}
-                      <button style={actionBtn} onClick={() => {
-                        const v = window.prompt(T.editPaypalId, p.paypal_plan_id || '')
-                        if (v !== null) act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ paypal_plan_id: v }) }, 'subscriptions')
-                      }}>{T.editPaypalId}</button>{' '}</>}
+                      </>}
                       {p.active
                         ? <button style={actionBtn} onClick={() => act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ active: 0 }) }, 'subscriptions')}>{T.planOff}</button>
                         : <button style={actionBtn} onClick={() => act(`plans/${p.code}`, { method: 'PATCH', body: JSON.stringify({ active: 1 }) }, 'subscriptions')}>{T.planOn}</button>}{' '}

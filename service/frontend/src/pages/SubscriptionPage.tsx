@@ -7,7 +7,7 @@ import { tr } from '../i18n'
 // /account/subscription — manage the subscription you already have, on the
 // rail you actually paid with (owner decisions 2026-08-05):
 //   upgrade  = pay the difference now (manual rails: prorated + admin
-//              approval; Stripe: portal; PayPal: change-plan)
+//              approval; Stripe: portal)
 //   downgrade = takes effect at renewal (manual rails: scheduled on the row)
 //   trial    = never prorated — the member paid $0, so upgrades go through
 //              the normal first-purchase page at full price.
@@ -68,8 +68,7 @@ export default function SubscriptionPage({ userToken }: { userToken: string }) {
     pendingBody: tr(language, { ko: '확인 후 관리자가 활성화합니다. 잠시 후 다시 확인해 주세요.', en: 'An administrator activates it once the payment is confirmed. Check back soon.', ja: '確認後、管理者が有効化します。しばらくしてからご確認ください。', th: 'ผู้ดูแลจะเปิดใช้งานหลังยืนยันการชำระ โปรดกลับมาดูอีกครั้ง', vi: 'Quản trị viên kích hoạt sau khi xác nhận thanh toán. Vui lòng kiểm tra lại sau.', id: 'Administrator mengaktifkannya setelah pembayaran terkonfirmasi. Silakan cek kembali nanti.' }),
     stripeManage: tr(language, { ko: 'Stripe 포털에서 플랜 변경 · 해지', en: 'Change or cancel in the Stripe portal', ja: 'Stripeポータルで変更・解約', th: 'เปลี่ยนหรือยกเลิกในพอร์ทัล Stripe', vi: 'Đổi hoặc hủy trong cổng Stripe', id: 'Ubah atau batalkan di portal Stripe' }),
     stripeNote: tr(language, { ko: '카드 구독은 Stripe가 차액 정산과 다음 주기 다운그레이드를 자동 처리합니다.', en: 'For card subscriptions Stripe handles proration and next-cycle downgrades automatically.', ja: 'カード購読ではStripeが差額精算と次周期のダウングレードを自動処理します。', th: 'สำหรับสมาชิกบัตร Stripe จัดการส่วนต่างและดาวน์เกรดรอบถัดไปให้อัตโนมัติ', vi: 'Với gói thẻ, Stripe tự xử lý chênh lệch và hạ cấp chu kỳ sau.', id: 'Untuk langganan kartu, Stripe menangani prorata dan penurunan siklus berikutnya secara otomatis.' }),
-    paypalNote: tr(language, { ko: 'PayPal 구독은 다음 결제 주기부터 새 플랜 요금이 적용됩니다.', en: 'PayPal subscriptions bill the new plan from the next billing cycle.', ja: 'PayPal購読は次の請求サイクルから新プラン料金が適用されます。', th: 'สมาชิก PayPal จะเรียกเก็บแผนใหม่ตั้งแต่รอบบิลถัดไป', vi: 'Gói PayPal tính phí gói mới từ chu kỳ thanh toán sau.', id: 'Langganan PayPal menagih paket baru mulai siklus penagihan berikutnya.' }),
-    changeTo: tr(language, { ko: '이 플랜으로 변경', en: 'Change to this plan', ja: 'このプランへ変更', th: 'เปลี่ยนเป็นแผนนี้', vi: 'Đổi sang gói này', id: 'Ganti ke paket ini' }),
+      changeTo: tr(language, { ko: '이 플랜으로 변경', en: 'Change to this plan', ja: 'このプランへ変更', th: 'เปลี่ยนเป็นแผนนี้', vi: 'Đổi sang gói này', id: 'Ganti ke paket ini' }),
     fullPriceAtSubscribe: tr(language, { ko: '구독 페이지에서 정가로 시작', en: 'Start at full price on the subscribe page', ja: '購読ページで正規価格で開始', th: 'เริ่มราคาเต็มที่หน้าสมัคร', vi: 'Bắt đầu giá đầy đủ ở trang đăng ký', id: 'Mulai dengan harga penuh di halaman langganan' }),
     network: tr(language, { ko: '네트워크', en: 'Network', ja: 'ネットワーク', th: 'เครือข่าย', vi: 'Mạng lưới', id: 'Jaringan' }),
     address: tr(language, { ko: '입금 주소', en: 'Deposit address', ja: '入金アドレス', th: 'ที่อยู่โอน', vi: 'Địa chỉ nhận', id: 'Alamat setor' }),
@@ -171,14 +170,6 @@ export default function SubscriptionPage({ userToken }: { userToken: string }) {
     } catch (e: any) { setError(String(e?.message || e)) }
   }
 
-  async function paypalChange(targetCode: string) {
-    try {
-      const d = await post('/subscriptions/paypal/change-plan', { plan_code: targetCode })
-      if (d.approve_url) { window.location.href = d.approve_url; return }
-      await loadAll()
-    } catch (e: any) { setError(String(e?.message || e)) }
-  }
-
   async function copyAddress() {
     try {
       await navigator.clipboard.writeText(avail.address)
@@ -251,9 +242,6 @@ export default function SubscriptionPage({ userToken }: { userToken: string }) {
               <button style={primaryBtn} disabled={busy} onClick={openStripePortal}>{T.stripeManage}</button>
             </div>
           )}
-          {method === 'paypal' && (
-            <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#a89f92)', marginBottom: 10 }}>{T.paypalNote}</div>
-          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
             {plans.map((p, idx) => {
               const isCurrent = p.code === sub.plan_code
@@ -280,8 +268,6 @@ export default function SubscriptionPage({ userToken }: { userToken: string }) {
                         : null
                     ) : method === 'stripe' ? (
                       <button style={{ ...ghostBtn, width: '100%' }} disabled={busy} onClick={openStripePortal}>{dir === 'up' ? `⬆ ${T.upgrade}` : `⤵ ${T.downgrade}`}</button>
-                    ) : method === 'paypal' ? (
-                      <button style={{ ...ghostBtn, width: '100%' }} disabled={busy} onClick={() => paypalChange(p.code)}>{T.changeTo}</button>
                     ) : isManual ? (
                       <button style={{ ...(dir === 'up' ? primaryBtn : ghostBtn), width: '100%' }} disabled={busy || !!pendingRow}
                         onClick={() => openPanel(p.code)}>

@@ -122,60 +122,6 @@ export const subscribeGuide: PageGuide = {
     },
     {
       heading: {
-        ko: 'PayPal로 결제하기',
-        en: 'Paying with PayPal',
-        ja: 'PayPal で支払う',
-        th: 'ชำระเงินด้วย PayPal',
-        vi: 'Thanh toán bằng PayPal',
-        id: 'Membayar dengan PayPal',
-      },
-      bullets: {
-        ko: [
-          'PayPal 버튼은 서버에서 PayPal 결제가 활성화되어 있을 때만 결제 영역 맨 위에 나타납니다.',
-          '"PayPal로 결제"를 누르면 주문이 생성되고 브라우저가 PayPal 승인 페이지로 이동합니다.',
-          '결제를 마치고 돌아오면 자동으로 결제 확인이 진행되며 "PayPal 결제를 확인하는 중…" 문구가 표시됩니다.',
-          '확인이 끝나면 성공 메시지가 뜨고 잠시 후 앱 첫 화면으로 자동 이동하면서 구독 잠금이 풀립니다.',
-          'PayPal에서 결제를 취소하면 이 페이지로 돌아와 취소 안내가 표시되고, 플랜을 다시 선택할 수 있습니다.',
-        ],
-        en: [
-          'The PayPal button appears at the top of the payment area only when PayPal is enabled on the server.',
-          'Pressing "Pay with PayPal" creates an order and sends your browser to the PayPal approval page.',
-          'When you return after paying, capture runs automatically and the page shows "Confirming your PayPal payment…".',
-          'Once confirmed, a success message appears and the app reloads to the home screen shortly after, lifting the subscription gate.',
-          'If you cancel at PayPal you come back here with a cancellation notice and can select a plan again.',
-        ],
-        ja: [
-          'PayPal ボタンは、サーバー側で PayPal 決済が有効な場合のみ支払い領域の最上部に表示されます。',
-          '「PayPal で支払う」を押すと注文が作成され、ブラウザが PayPal の承認ページへ移動します。',
-          '支払いを終えて戻ると自動的に決済確定処理が走り、「PayPal 決済を確認中…」と表示されます。',
-          '確認が完了すると成功メッセージが表示され、まもなくアプリのトップへ自動遷移して購読ゲートが解除されます。',
-          'PayPal 側でキャンセルした場合はこのページに戻り、キャンセルの案内が表示されてプランを選び直せます。',
-        ],
-        th: [
-          'ปุ่ม PayPal จะปรากฏบนสุดของส่วนชำระเงินเฉพาะเมื่อเปิดใช้ PayPal บนเซิร์ฟเวอร์แล้ว',
-          'กด "ชำระด้วย PayPal" จะสร้างคำสั่งซื้อและพาเบราว์เซอร์ไปยังหน้าอนุมัติของ PayPal',
-          'เมื่อกลับมาหลังชำระเงิน ระบบจะยืนยันการชำระอัตโนมัติ และแสดงข้อความ "กำลังยืนยันการชำระเงิน PayPal…"',
-          'เมื่อยืนยันเสร็จจะมีข้อความสำเร็จ และไม่นานหน้าจะโหลดกลับไปหน้าแรกพร้อมปลดล็อกสมาชิกภาพ',
-          'ถ้ายกเลิกที่ PayPal คุณจะกลับมาที่นี่พร้อมข้อความแจ้งการยกเลิก และเลือกแพลนใหม่ได้',
-        ],
-        vi: [
-          'Nút PayPal chỉ xuất hiện ở đầu khu vực thanh toán khi PayPal được bật trên máy chủ.',
-          'Nhấn "Thanh toán bằng PayPal" sẽ tạo đơn hàng và đưa trình duyệt tới trang phê duyệt của PayPal.',
-          'Khi bạn quay lại sau khi trả tiền, quá trình xác nhận chạy tự động và trang hiện "Đang xác nhận thanh toán PayPal…".',
-          'Sau khi xác nhận, thông báo thành công xuất hiện và ứng dụng tải lại về màn hình chính, mở khóa quyền truy cập.',
-          'Nếu bạn hủy ở PayPal, bạn quay về đây với thông báo hủy và có thể chọn lại gói.',
-        ],
-        id: [
-          'Tombol PayPal muncul di bagian atas area pembayaran hanya bila PayPal diaktifkan di server.',
-          'Menekan "Bayar dengan PayPal" membuat sebuah order dan mengarahkan peramban Anda ke halaman persetujuan PayPal.',
-          'Ketika Anda kembali setelah membayar, proses penarikan dana berjalan otomatis dan halaman menampilkan "Mengonfirmasi pembayaran PayPal Anda…".',
-          'Setelah terkonfirmasi, pesan berhasil muncul dan aplikasi memuat ulang ke layar utama tak lama kemudian, membuka gerbang langganan.',
-          'Jika Anda membatalkan di PayPal, Anda kembali ke sini dengan pemberitahuan pembatalan dan dapat memilih paket lagi.',
-        ],
-      },
-    },
-    {
-      heading: {
         ko: '계좌이체로 신청하기',
         en: 'Applying by bank transfer',
         ja: '銀行振込で申し込む',
@@ -306,24 +252,6 @@ export const subscribeGuide: PageGuide = {
         th: 'Sooppiy เปิดให้เฉพาะสมาชิก บัญชีที่เข้าสู่ระบบแล้วแต่ยังไม่มีสมาชิกภาพที่ใช้งานอยู่จึงถูกพามาที่นี่ ส่วนที่เหลือจะปลดล็อกเมื่อชำระเงินสำเร็จหรือผู้ดูแลอนุมัติ',
         vi: 'Sooppiy chỉ dành cho thành viên, nên tài khoản đã đăng nhập mà chưa có gói hoạt động sẽ được đưa tới đây. Phần còn lại của sản phẩm mở khóa khi thanh toán hoàn tất hoặc quản trị viên duyệt.',
         id: 'Sooppiy khusus anggota, jadi akun yang sudah masuk tanpa langganan aktif diarahkan ke sini. Sisa produknya terbuka begitu pembayaran selesai atau administrator menyetujui Anda.',
-      },
-    },
-    {
-      q: {
-        ko: 'PayPal 버튼이 아예 보이지 않습니다.',
-        en: 'The PayPal button is not showing at all.',
-        ja: 'PayPal ボタンがまったく表示されません。',
-        th: 'ไม่เห็นปุ่ม PayPal เลย',
-        vi: 'Không thấy nút PayPal đâu cả.',
-        id: 'Tombol PayPal tidak muncul sama sekali.',
-      },
-      a: {
-        ko: '두 가지 경우입니다. 아직 플랜을 선택하지 않았다면 결제 영역 자체가 나타나지 않고, 서버에서 PayPal이 활성화되어 있지 않으면 버튼만 빠집니다. 후자라면 계좌이체로 신청하면 됩니다.',
-        en: 'Two possibilities: if you have not selected a plan yet, the whole payment area is hidden, and if PayPal is not enabled on the server, only the button is omitted. In the latter case, use bank transfer instead.',
-        ja: '理由は 2 つあります。まだプランを選択していない場合は支払い領域自体が表示されず、サーバーで PayPal が有効になっていない場合はボタンだけが省かれます。後者なら銀行振込で申し込んでください。',
-        th: 'มีสองกรณี ถ้ายังไม่ได้เลือกแพลน ส่วนชำระเงินทั้งหมดจะถูกซ่อน และถ้าเซิร์ฟเวอร์ยังไม่เปิดใช้ PayPal จะขาดเฉพาะปุ่มนั้น กรณีหลังให้ใช้การโอนเงินแทน',
-        vi: 'Có hai khả năng: nếu bạn chưa chọn gói, toàn bộ khu vực thanh toán bị ẩn; còn nếu máy chủ chưa bật PayPal thì chỉ thiếu nút đó. Trường hợp sau, hãy dùng chuyển khoản ngân hàng.',
-        id: 'Ada dua kemungkinan: jika Anda belum memilih paket, seluruh area pembayaran disembunyikan, dan jika PayPal tidak diaktifkan di server, hanya tombolnya yang dihilangkan. Untuk kasus kedua, gunakan transfer bank sebagai gantinya.',
       },
     },
     {

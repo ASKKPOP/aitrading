@@ -1,6 +1,6 @@
-"""Admin console: configuring the Stripe price id / PayPal plan id per plan.
+"""Admin console: configuring the Stripe price id per plan.
 
-Without these two columns populated, checkout 503s ("this plan is not
+Without that column populated, checkout 503s ("this plan is not
 configured for card payments") no matter how correct the API keys are — and
 until now the only way to set them was raw SQL against prod.
 
@@ -27,7 +27,6 @@ import database  # noqa: E402
 from routes import create_app  # noqa: E402
 
 PRICE = "price_1QabcDEFghiJKL"
-PPLAN = "P-5ML4271244454362WXNWU5NQ"
 
 
 class PlanBillingIdTests(unittest.TestCase):
@@ -59,28 +58,15 @@ class PlanBillingIdTests(unittest.TestCase):
     def test_listing_exposes_both_billing_ids(self):
         junior = self._plans()["junior"]
         self.assertIn("stripe_price_id", junior)
-        self.assertIn("paypal_plan_id", junior)
 
     def test_unconfigured_plan_reports_empty_ids(self):
         junior = self._plans()["junior"]
         self.assertFalse(junior["stripe_price_id"])
-        self.assertFalse(junior["paypal_plan_id"])
 
     # ── write ───────────────────────────────────────────────────────────
     def test_setting_the_stripe_price_id_persists(self):
         self.assertEqual(self._patch("junior", {"stripe_price_id": PRICE}).status_code, 200)
         self.assertEqual(self._plans()["junior"]["stripe_price_id"], PRICE)
-
-    def test_setting_the_paypal_plan_id_persists(self):
-        self.assertEqual(self._patch("junior", {"paypal_plan_id": PPLAN}).status_code, 200)
-        self.assertEqual(self._plans()["junior"]["paypal_plan_id"], PPLAN)
-
-    def test_both_can_be_set_in_one_request(self):
-        r = self._patch("junior", {"stripe_price_id": PRICE, "paypal_plan_id": PPLAN})
-        self.assertEqual(r.status_code, 200, r.text)
-        junior = self._plans()["junior"]
-        self.assertEqual((junior["stripe_price_id"], junior["paypal_plan_id"]),
-                         (PRICE, PPLAN))
 
     def test_ids_are_trimmed(self):
         """Copy-paste out of a dashboard brings whitespace with it."""
@@ -91,11 +77,6 @@ class PlanBillingIdTests(unittest.TestCase):
         self._patch("junior", {"stripe_price_id": PRICE})
         self.assertEqual(self._patch("junior", {"stripe_price_id": ""}).status_code, 200)
         self.assertFalse(self._plans()["junior"]["stripe_price_id"])
-
-    def test_setting_one_id_leaves_the_other_alone(self):
-        self._patch("junior", {"stripe_price_id": PRICE, "paypal_plan_id": PPLAN})
-        self._patch("junior", {"stripe_price_id": "price_other"})
-        self.assertEqual(self._plans()["junior"]["paypal_plan_id"], PPLAN)
 
     def test_ids_do_not_leak_across_plans(self):
         self._patch("junior", {"stripe_price_id": PRICE})
@@ -110,17 +91,8 @@ class PlanBillingIdTests(unittest.TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("price_", r.json()["detail"])
 
-    def test_a_paypal_product_id_is_rejected(self):
-        r = self._patch("junior", {"paypal_plan_id": "PROD-1AB23456CD789012E"})
-        self.assertEqual(r.status_code, 400)
-
     def test_arbitrary_junk_is_rejected(self):
         self.assertEqual(self._patch("junior", {"stripe_price_id": "hello"}).status_code, 400)
-        self.assertEqual(self._patch("junior", {"paypal_plan_id": "hello"}).status_code, 400)
-
-    def test_ids_swapped_between_fields_are_rejected(self):
-        r = self._patch("junior", {"stripe_price_id": PPLAN, "paypal_plan_id": PRICE})
-        self.assertEqual(r.status_code, 400)
 
     def test_a_rejected_patch_writes_nothing(self):
         self._patch("junior", {"stripe_price_id": PRICE})

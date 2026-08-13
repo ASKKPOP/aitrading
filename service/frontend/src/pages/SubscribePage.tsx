@@ -8,7 +8,7 @@ import { tr } from '../i18n'
 // Membership gate — Sooppiy is subscription-only. A signed-in user without an
 // active subscription lands here (App.tsx gate). Four tiers: junior $60 /
 // pro $119 / professional $199 per month, enterprise via the contract page.
-// Payment: Stripe (card/Apple Pay/Google Pay) or PayPal — both auto-renewing
+// Payment: Stripe (card / Apple Pay / Google Pay), auto-renewing.
 // subscriptions, activated via webhook (hence the return-state polling) —
 // or USDT / bank transfer (admin approval, one-time).
 const card: any = { background: 'var(--bg-secondary,#161615)', border: '1px solid var(--border-color,#2a2a28)', borderRadius: 14, padding: '22px 20px' }
@@ -20,7 +20,6 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
   const { language } = useLanguage()
   const [params] = useSearchParams()
   const [plans, setPlans] = useState<any[]>([])
-  const [paypalAvailable, setPaypalAvailable] = useState(false)
   const [stripeAvailable, setStripeAvailable] = useState(false)
   const [bankInfo, setBankInfo] = useState('')
   const [usdt, setUsdt] = useState<{ available: boolean; address: string; network: string }>(
@@ -46,8 +45,6 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
     perMonth: tr(language, { ko: '/월', en: '/month', ja: '/月', th: '/เดือน', vi: '/tháng', id: '/bulan' }),
     select: tr(language, { ko: '선택', en: 'Select', ja: '選択', th: 'เลือก', vi: 'Chọn', id: 'Pilih' }),
     selectedLabel: tr(language, { ko: '선택됨', en: 'Selected', ja: '選択中', th: 'เลือกแล้ว', vi: 'Đã chọn', id: 'Terpilih' }),
-    payPaypal: tr(language, { ko: 'PayPal로 결제', en: 'Pay with PayPal', ja: 'PayPal で支払う',
-      th: 'ชำระด้วย PayPal', vi: 'Thanh toán bằng PayPal', id: 'Bayar dengan PayPal' }),
     payBank: tr(language, { ko: '계좌이체로 신청', en: 'Pay by bank transfer', ja: '銀行振込で申し込む',
       th: 'ชำระด้วยการโอนเงินผ่านธนาคาร', vi: 'Thanh toán bằng chuyển khoản ngân hàng', id: 'Bayar lewat transfer bank' }),
     bankRef: tr(language, { ko: '이체 참조번호 (보낸 분 성함 등)', en: 'Transfer reference (sender name, memo…)',
@@ -87,19 +84,11 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
     signOut: tr(language, { ko: '로그아웃', en: 'Sign out', ja: 'ログアウト', th: 'ออกจากระบบ',
       vi: 'Đăng xuất',
       id: 'Keluar' }),
-    paypalDone: tr(language, { ko: '결제가 완료되었습니다! 구독이 활성화되었습니다.', en: 'Payment complete! Your subscription is active.',
+    subDone: tr(language, { ko: '결제가 완료되었습니다! 구독이 활성화되었습니다.', en: 'Payment complete! Your subscription is active.',
       ja: 'お支払いが完了しました！購読が有効になりました。',
       th: 'ชำระเงินสำเร็จ! เปิดใช้งานการสมัครสมาชิกแล้ว',
       vi: 'Thanh toán hoàn tất! Gói đăng ký của bạn đã được kích hoạt.',
       id: 'Pembayaran selesai! Langganan Anda aktif.' }),
-    paypalCancel: tr(language, { ko: 'PayPal 결제가 취소되었습니다.', en: 'PayPal payment was cancelled.',
-      ja: 'PayPal の支払いがキャンセルされました。', th: 'การชำระเงินผ่าน PayPal ถูกยกเลิก',
-      vi: 'Thanh toán PayPal đã bị hủy.',
-      id: 'Pembayaran PayPal dibatalkan.' }),
-    paypalWorking: tr(language, { ko: 'PayPal 결제를 확인하는 중…', en: 'Confirming your PayPal payment…',
-      ja: 'PayPal の支払いを確認しています…', th: 'กำลังยืนยันการชำระเงินผ่าน PayPal…',
-      vi: 'Đang xác nhận thanh toán PayPal…',
-      id: 'Mengonfirmasi pembayaran PayPal Anda…' }),
     // ── USDT (the default rail) ──
     payUsdt: tr(language, { ko: 'USDT로 결제', en: 'Pay with USDT', ja: 'USDT で支払う',
       th: 'ชำระด้วย USDT', vi: 'Thanh toán bằng USDT', id: 'Bayar dengan USDT' }),
@@ -175,7 +164,6 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
     try {
       const p = await fetch(`${API_BASE}/subscriptions/plans`).then(r => r.json())
       setPlans(p.plans || [])
-      setPaypalAvailable(!!p.paypal_available)
       setStripeAvailable(!!p.stripe_available)
       setBankInfo(p.bank_transfer_info || '')
       setUsdt({ available: !!p.usdt_available, address: p.usdt_address || '',
@@ -202,31 +190,11 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
     return () => { live = false }
   }, [usdt.address])
 
-  // PayPal redirect return: ?paypal=return&token=<ORDER_ID> → capture.
-  useEffect(() => {
-    const mode = params.get('paypal')
-    const orderId = params.get('token')
-    if (mode === 'cancel') { setError(T.paypalCancel); return }
-    if (mode !== 'return' || !orderId || !userToken) return
-    setBusy(true); setNotice(T.paypalWorking)
-    fetch(`${API_BASE}/subscriptions/paypal/capture`, {
-      method: 'POST',
-      headers: { ...authHdr, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order_id: orderId }),
-    }).then(async r => {
-      if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
-      setNotice(T.paypalDone)
-      // Full reload so App refetches /users/me and lifts the gate.
-      setTimeout(() => { window.location.href = '/' }, 1200)
-    }).catch(e => { setError(String(e?.message || e)); setBusy(false); setNotice('') })
-  }, [params, userToken])
-
-  // Stripe/PayPal auto-renew returns: activation lands via webhook, so poll.
+  // Stripe auto-renew return: activation lands via webhook, so poll.
   useEffect(() => {
     const stripeMode = params.get('stripe')
-    const paypalMode = params.get('paypal')
     if (stripeMode === 'cancel') { setError(T.stripeCancelled); return }
-    if ((stripeMode !== 'success' && paypalMode !== 'sub-return') || !userToken) return
+    if (stripeMode !== 'success' || !userToken) return
     setBusy(true); setNotice(T.activating)
     let tries = 0
     const timer = setInterval(async () => {
@@ -236,7 +204,7 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
           .then(r => r.ok ? r.json() : null)
         if (m?.status === 'active' && Number(m?.subscription?.auto_renew)) {
           clearInterval(timer)
-          setNotice(T.paypalDone)
+          setNotice(T.subDone)
           setTimeout(() => { window.location.href = '/' }, 1200)
           return
         }
@@ -257,22 +225,6 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
       if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
       window.location.href = (await r.json()).url
     } catch (e: any) { setError(String(e?.message || e)); setBusy(false) }
-  }
-
-  async function startPaypal(planCode: string) {
-    setBusy(true); setError('')
-    try {
-      const r = await fetch(`${API_BASE}/subscriptions/paypal/subscribe`, {
-        method: 'POST',
-        headers: { ...authHdr, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan_code: planCode }),
-      })
-      if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
-      const body = await r.json()
-      window.location.href = body.approve_url
-    } catch (e: any) {
-      setError(String(e?.message || e)); setBusy(false)
-    }
   }
 
   async function submitUsdt(planCode: string) {
@@ -351,45 +303,6 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
                       window.location.href = (await r.json()).url
                     } catch (e: any) { setError(String(e?.message || e)); setBusy(false) }
                   }}>{T.manageSub}</button>
-              )}
-              {mine?.subscription?.method === 'paypal' && (
-                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    {plans.filter(p => !p.contact_only && p.code !== mine?.subscription?.plan_code).map(p => (
-                      <button key={p.code} style={{ ...ghostBtn, width: 'auto' }} disabled={busy}
-                        onClick={async () => {
-                          setBusy(true); setError('')
-                          try {
-                            const r = await fetch(`${API_BASE}/subscriptions/paypal/change-plan`, {
-                              method: 'POST',
-                              headers: { ...authHdr, 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ plan_code: p.code }),
-                            })
-                            if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
-                            const b = await r.json()
-                            if (b.approve_url) { window.location.href = b.approve_url; return }
-                            await loadState()
-                          } catch (e: any) { setError(String(e?.message || e)) }
-                          setBusy(false)
-                        }}>{p.name} — {T.changePlan}</button>
-                    ))}
-                  </div>
-                  {Number(mine?.subscription?.cancel_at_period_end) !== 1 && (
-                    <button style={{ background: 'none', border: 'none', color: 'var(--text-muted,#8a8073)', cursor: 'pointer', fontSize: 12.5, textDecoration: 'underline' }}
-                      disabled={busy}
-                      onClick={async () => {
-                        setBusy(true); setError('')
-                        try {
-                          const r = await fetch(`${API_BASE}/subscriptions/paypal/cancel`, {
-                            method: 'POST', headers: authHdr })
-                          if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail || String(r.status))
-                          await loadState()
-                        } catch (e: any) { setError(String(e?.message || e)) }
-                        setBusy(false)
-                      }}>{T.cancelAutoRenew}</button>
-                  )}
-                  <div style={{ fontSize: 11.5, color: 'var(--text-muted,#8a8073)' }}>{T.cancelKeepsAccess}</div>
-                </div>
               )}
             </div>
           )}
@@ -471,8 +384,7 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
           )}
 
           {/* USDT is the default rail — first, and the only one with a
-              highlighted action. PayPal renders only when explicitly
-              re-enabled server-side (PAYPAL_UI_ENABLED). */}
+              highlighted action. */}
           {usdt.available && (
             <div style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>₮ {T.payUsdt}</div>
@@ -518,16 +430,12 @@ export function SubscribePage({ userToken, onSignOut }: { userToken: string | nu
             </div>
           )}
 
-          {(paypalAvailable || usdt.available) && (
+          {usdt.available && (
             <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em',
               color: 'var(--text-muted,#8a8073)', borderTop: '1px solid var(--border-color,#2a2a28)',
               paddingTop: 14, marginBottom: 10 }}>{T.orOther}</div>
           )}
 
-          {paypalAvailable && (
-            <button style={{ ...ghostBtn, marginBottom: 14 }} disabled={busy}
-              onClick={() => startPaypal(selected)}>🅿️ {T.payPaypal}</button>
-          )}
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{T.payBank}</div>
           {bankInfo && <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', background: 'var(--bg-primary,#0e0e0d)', borderRadius: 8, padding: 10, border: '1px solid var(--border-color,#2a2a28)' }}>{bankInfo}</pre>}
           <input placeholder={T.bankRef} value={reference} onChange={e => setReference(e.target.value)}

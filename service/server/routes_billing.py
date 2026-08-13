@@ -1,11 +1,11 @@
-"""routes_billing.py — auto-renew billing rails (Stripe + PayPal subscriptions).
+"""routes_billing.py — auto-renew billing (Stripe subscriptions).
 
-Stripe:   hosted Checkout (cards / Apple Pay / Google Pay) + Customer Portal
-          for plan switches, card updates and cancellation. Needs
-          STRIPE_SECRET_KEY (+ STRIPE_WEBHOOK_SECRET for the webhook).
-PayPal:   Subscriptions API (v1/billing) — replaces the one-time Orders flow
-          for NEW purchases; the legacy capture route in routes_subscriptions
-          stays for in-flight orders. Needs PAYPAL_WEBHOOK_ID too.
+Hosted Checkout (cards / Apple Pay / Google Pay) + Customer Portal for plan
+switches, card updates and cancellation. Needs STRIPE_SECRET_KEY, and
+STRIPE_WEBHOOK_SECRET for the webhook.
+
+PayPal was removed on 2026-08-12 — it had never been configured (no plan ids,
+sandbox host) and never carried a subscription, so nothing was stranded.
 
 State rule: endpoints here never activate a plan. Activation, renewal, plan
 changes and endings arrive via the two webhook endpoints and are applied by
@@ -13,34 +13,33 @@ billing_sync (idempotent per provider event id).
 
   POST /api/subscriptions/stripe/checkout    start Stripe Checkout  → {url}
   POST /api/subscriptions/stripe/portal      manage (portal)        → {url}
-  POST /api/subscriptions/paypal/subscribe   start PayPal approval  → {approve_url}
-  POST /api/subscriptions/paypal/change-plan revise (next cycle)
-  POST /api/subscriptions/paypal/cancel      stop renewing
   POST /api/webhooks/stripe                  Stripe events (signed)
-  POST /api/webhooks/paypal                  PayPal events (verified)
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
 from datetime import datetime, timezone
 
-import requests
 from fastapi import FastAPI, Header, HTTPException, Request
 
 import billing_sync
 from database import get_db_connection
 from routes_shared import RouteContext
 from routes_subscriptions import (PlanOrderBody, _alert_new_subscription,
-                                  _frontend_url, _load_plan, _paypal_base,
-                                  _paypal_configured, _paypal_token,
-                                  _require_user)
+                                  _frontend_url, _load_plan, _require_user)
 
 logger = logging.getLogger("routes_billing")
 
 ALREADY_AUTORENEW = ("An auto-renewing subscription is already active — "
                      "manage or cancel it first")
+
+# Service rules 2026-08-12: a card is collected at sign-up, the first 7 days
+# are free, and the subscription then converts automatically. Junior only,
+# once per account. Stripe owns the clock — trial_period_days on the Checkout
+# Session — so there is no trial state of ours to keep in step.
+TRIAL_PLAN_CODE = "junior"
+TRIAL_DAYS = 7
 
 
 def _alert_webhook_failure(provider: str, event_id: str, exc: Exception) -> None:
@@ -131,51 +130,43 @@ def _handle_stripe_event(event: dict) -> None:
     elif etype == "customer.subscription.deleted":
         if obj.get("id"):
             billing_sync.end_subscription("stripe", obj["id"])
+    elif etype == "customer.subscription.trial_will_end":
+        _send_trial_reminder(obj)
     # anything else: recorded in billing_events, deliberately ignored
 
 
-def _parse_paypal_time(value: str) -> datetime | None:
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except Exception:  # noqa: BLE001
-        return None
+def _send_trial_reminder(obj: dict) -> None:
+    """Pre-charge notice before the free trial converts to a paid subscription.
 
+    Stripe fires trial_will_end three days out, which on a 7-day trial lands on
+    day 4 — so there is no scheduler of ours to run or to drift.
 
-def _handle_paypal_event(event: dict) -> None:
-    etype = event.get("event_type", "")
-    res = event.get("resource") or {}
-    if etype == "BILLING.SUBSCRIPTION.ACTIVATED":
-        sub_id = res.get("id") or ""
-        user_id = int(res.get("custom_id") or 0)
-        plan_code = billing_sync.plan_for_paypal_plan(res.get("plan_id") or "")
-        period_end = _parse_paypal_time(
-            ((res.get("billing_info") or {}).get("next_billing_time")) or "")
-        if not (sub_id and user_id and plan_code):
-            logger.warning("paypal ACTIVATED missing fields: %s", res)
-            return
-        billing_sync.upsert_autorenew_subscription(
-            provider="paypal", user_id=user_id, plan_code=plan_code,
-            external_id=sub_id, period_end=period_end)
-        _alert_new_subscription(email=None, plan_code=plan_code, amount=None,
-                                method="paypal", status_note="auto-activated",
-                                reference=sub_id)
-    elif etype == "PAYMENT.SALE.COMPLETED":
-        sub_id = res.get("billing_agreement_id") or ""
-        if sub_id:
-            billing_sync.extend_subscription("paypal", sub_id)
-    elif etype == "BILLING.SUBSCRIPTION.UPDATED":
-        sub_id = res.get("id") or ""
-        plan_code = billing_sync.plan_for_paypal_plan(res.get("plan_id") or "")
-        if sub_id and plan_code:
-            billing_sync.apply_subscription_update("paypal", sub_id,
-                                                   plan_code=plan_code)
-    elif etype in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.SUSPENDED"):
-        if res.get("id"):
-            billing_sync.mark_cancelled("paypal", res["id"])
-    elif etype == "BILLING.SUBSCRIPTION.EXPIRED":
-        if res.get("id"):
-            billing_sync.end_subscription("paypal", res["id"])
-    # anything else: recorded, ignored
+    Required, not courteous: California's Automatic Renewal Law expects the
+    member to be told before the first charge WHEN it lands, HOW MUCH it is and
+    HOW to stop it. Delivery failure RAISES so the caller answers 500 and Stripe
+    redelivers — a duplicate notice is an annoyance, a missing one is a
+    disclosure gap and the most common reason a first charge is disputed as
+    fraud. An unknown subscription returns quietly instead: nothing to notify,
+    so retrying forever would be pointless.
+    """
+    sub_id = obj.get("id") or ""
+    if not sub_id:
+        return
+    sub = billing_sync.subscriber_for_external_id("stripe", sub_id)
+    if not sub:
+        logger.warning("trial_will_end for unknown subscription %s", sub_id)
+        return
+    trial_end = obj.get("trial_end")
+    charge_on = ""
+    if trial_end:
+        charge_on = datetime.fromtimestamp(int(trial_end),
+                                           tz=timezone.utc).strftime("%Y-%m-%d")
+    import email_sender
+    ok = email_sender.send_trial_reminder_email(
+        to_email=sub["email"], lang=sub.get("lang") or "en",
+        amount_usd=float(sub.get("price_usd") or 0.0), charge_on=charge_on)
+    if not ok:
+        raise RuntimeError(f"trial reminder delivery failed for {sub_id}")
 
 
 def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -198,6 +189,14 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=503,
                                 detail="This plan is not configured for card payments")
         customer_id = _stripe_customer_id(user)
+        # The trial rides on subscription_data ALONGSIDE the metadata — the
+        # activation webhook resolves the member from that metadata, so it has
+        # to survive rather than be replaced.
+        sub_data: dict = {"metadata": {"user_id": str(user["id"]),
+                                       "plan_code": plan["code"]}}
+        if (plan["code"] == TRIAL_PLAN_CODE
+                and not billing_sync.has_prior_subscription(user["id"])):
+            sub_data["trial_period_days"] = TRIAL_DAYS
         try:
             session = _stripe().checkout.Session.create(
                 mode="subscription",
@@ -205,8 +204,7 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
                 client_reference_id=str(user["id"]),
                 line_items=[{"price": price_id, "quantity": 1}],
                 metadata={"user_id": str(user["id"]), "plan_code": plan["code"]},
-                subscription_data={"metadata": {"user_id": str(user["id"]),
-                                                "plan_code": plan["code"]}},
+                subscription_data=sub_data,
                 success_url=f"{_frontend_url()}/subscribe?stripe=success",
                 cancel_url=f"{_frontend_url()}/subscribe?stripe=cancel",
             )
@@ -230,100 +228,6 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
             logger.error("Stripe portal session failed: %s", exc)
             raise HTTPException(status_code=502, detail="Card processor error")
         return {"url": session["url"]}
-
-    @app.post('/api/subscriptions/paypal/subscribe')
-    async def paypal_subscribe(body: PlanOrderBody, authorization: str = Header(None)):
-        user = _require_user(authorization)
-        if not _paypal_configured():
-            raise HTTPException(status_code=503, detail="PayPal is not configured")
-        if billing_sync.active_autorenew(user["id"]):
-            raise HTTPException(status_code=409, detail=ALREADY_AUTORENEW)
-        conn = get_db_connection()
-        try:
-            plan = _load_plan(conn.cursor(), body.plan_code)
-        finally:
-            conn.close()
-        paypal_plan_id = (billing_sync.billing_ids_for_plan(plan["code"])
-                          .get("paypal_plan_id") or "")
-        if not paypal_plan_id:
-            raise HTTPException(status_code=503,
-                                detail="This plan is not configured for PayPal")
-        access = _paypal_token()
-        resp = requests.post(
-            f"{_paypal_base()}/v1/billing/subscriptions",
-            headers={"Authorization": f"Bearer {access}"},
-            json={
-                "plan_id": paypal_plan_id,
-                "custom_id": str(user["id"]),
-                "application_context": {
-                    "return_url": f"{_frontend_url()}/subscribe?paypal=sub-return",
-                    "cancel_url": f"{_frontend_url()}/subscribe?paypal=cancel",
-                    "user_action": "SUBSCRIBE_NOW",
-                },
-            },
-            timeout=20,
-        )
-        if resp.status_code not in (200, 201):
-            logger.error("PayPal subscribe failed: %s %s", resp.status_code,
-                         resp.text[:300])
-            raise HTTPException(status_code=502, detail="PayPal subscription failed")
-        sub = resp.json()
-        approve_url = next((link["href"] for link in sub.get("links", [])
-                            if link.get("rel") == "approve"), None)
-        if not approve_url:
-            raise HTTPException(status_code=502, detail="PayPal returned no approval link")
-        return {"subscription_id": sub["id"], "approve_url": approve_url}
-
-    @app.post('/api/subscriptions/paypal/change-plan')
-    async def paypal_change_plan(body: PlanOrderBody, authorization: str = Header(None)):
-        user = _require_user(authorization)
-        current = billing_sync.active_autorenew(user["id"])
-        if not current or current["method"] != "paypal":
-            raise HTTPException(status_code=404, detail="No active PayPal subscription")
-        conn = get_db_connection()
-        try:
-            plan = _load_plan(conn.cursor(), body.plan_code)
-        finally:
-            conn.close()
-        paypal_plan_id = (billing_sync.billing_ids_for_plan(plan["code"])
-                          .get("paypal_plan_id") or "")
-        if not paypal_plan_id:
-            raise HTTPException(status_code=503,
-                                detail="This plan is not configured for PayPal")
-        access = _paypal_token()
-        resp = requests.post(
-            f"{_paypal_base()}/v1/billing/subscriptions/{current['external_id']}/revise",
-            headers={"Authorization": f"Bearer {access}"},
-            json={"plan_id": paypal_plan_id},
-            timeout=20,
-        )
-        if resp.status_code not in (200, 204):
-            logger.error("PayPal revise failed: %s %s", resp.status_code, resp.text[:300])
-            raise HTTPException(status_code=502, detail="PayPal plan change failed")
-        # Plan actually flips on the BILLING.SUBSCRIPTION.UPDATED webhook.
-        links = (resp.json().get("links", []) if resp.status_code == 200 else [])
-        approve_url = next((link["href"] for link in links
-                            if link.get("rel") == "approve"), None)
-        return {"ok": True, "approve_url": approve_url}
-
-    @app.post('/api/subscriptions/paypal/cancel')
-    async def paypal_cancel(authorization: str = Header(None)):
-        user = _require_user(authorization)
-        current = billing_sync.active_autorenew(user["id"])
-        if not current or current["method"] != "paypal":
-            raise HTTPException(status_code=404, detail="No active PayPal subscription")
-        access = _paypal_token()
-        resp = requests.post(
-            f"{_paypal_base()}/v1/billing/subscriptions/{current['external_id']}/cancel",
-            headers={"Authorization": f"Bearer {access}"},
-            json={"reason": "Member cancelled from the subscribe page"},
-            timeout=20,
-        )
-        if resp.status_code not in (200, 204):
-            logger.error("PayPal cancel failed: %s %s", resp.status_code, resp.text[:300])
-            raise HTTPException(status_code=502, detail="PayPal cancel failed")
-        billing_sync.mark_cancelled("paypal", current["external_id"])
-        return {"ok": True}
 
     @app.post('/api/webhooks/stripe')
     async def stripe_webhook(request: Request,
@@ -359,61 +263,5 @@ def register_billing_routes(app: FastAPI, ctx: RouteContext) -> None:
                                  event_id)
             logger.exception("stripe webhook processing failed: %s", exc)
             _alert_webhook_failure("stripe", event_id, exc)
-            raise HTTPException(status_code=500, detail="Processing failed")
-        return {"ok": True}
-
-    @app.post('/api/webhooks/paypal')
-    async def paypal_webhook(request: Request):
-        webhook_id = os.getenv("PAYPAL_WEBHOOK_ID", "").strip()
-        if not (_paypal_configured() and webhook_id):
-            raise HTTPException(status_code=503, detail="PayPal webhook not configured")
-        event = await request.json()
-        headers = request.headers
-        try:
-            access = _paypal_token()
-            verify = requests.post(
-                f"{_paypal_base()}/v1/notifications/verify-webhook-signature",
-                headers={"Authorization": f"Bearer {access}"},
-                json={
-                    "auth_algo": headers.get("paypal-auth-algo", ""),
-                    "cert_url": headers.get("paypal-cert-url", ""),
-                    "transmission_id": headers.get("paypal-transmission-id", ""),
-                    "transmission_sig": headers.get("paypal-transmission-sig", ""),
-                    "transmission_time": headers.get("paypal-transmission-time", ""),
-                    "webhook_id": webhook_id,
-                    "webhook_event": event,
-                },
-                timeout=20,
-            )
-            verified = (verify.status_code == 200
-                        and verify.json().get("verification_status") == "SUCCESS")
-        except HTTPException:
-            raise  # _paypal_token's own 502 — already logged there
-        except Exception as exc:  # noqa: BLE001 — network/parse failure: PayPal
-            # retries on any non-2xx, so a controlled 502 keeps the event alive.
-            logger.error("paypal webhook verification call failed: %s", exc)
-            raise HTTPException(status_code=502, detail="PayPal verification unavailable")
-        if not verified:
-            raise HTTPException(status_code=400, detail="Invalid signature")
-        event_id = str(event.get("id") or "")
-        if not event_id:
-            raise HTTPException(status_code=400, detail="Event has no id")
-        if not billing_sync.record_billing_event(
-                "paypal", event_id, str(event.get("event_type") or ""),
-                json.dumps(event)):
-            return {"ok": True, "duplicate": True}
-        try:
-            _handle_paypal_event(event)
-        except Exception as exc:  # noqa: BLE001
-            try:
-                billing_sync.delete_billing_event("paypal", event_id)
-            except Exception:  # noqa: BLE001 — double fault: the event row may
-                # remain recorded, so provider retries would no-op as duplicates.
-                # Log loudly; the alert below still fires so an operator can
-                # delete the billing_events row and replay the event.
-                logger.exception("paypal webhook un-record ALSO failed for %s",
-                                 event_id)
-            logger.exception("paypal webhook processing failed: %s", exc)
-            _alert_webhook_failure("paypal", event_id, exc)
             raise HTTPException(status_code=500, detail="Processing failed")
         return {"ok": True}
