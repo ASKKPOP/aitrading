@@ -119,6 +119,16 @@ usage per the swing time-constant (days, not cycles); gate-event volume
 should stay ~2 pairs/15 min max while the pool is exhausted; a new
 research batch must break the memo immediately (fingerprint changes).
 
+## Cycle 8b — #410 DEPLOYED + VERIFIED (13:16Z, 14 min to the bell)
+
+Merged `8680caa4`, deployed **`20260813-vary-on-refusal`** (rollback:
+`20260813-putcall-walk`). Verified: both containers on the tag, 0
+tracebacks, vary-on-refusal wired in the running worker, events flowing.
+Behavioral proof pending tape: the NEXT untraded desk-retire must write a
+`fleet_symbol_cooldowns` row and the replacement must carry a different
+symbol — check next cycles (UBER/WMT/SBUX runs 1152/1153/1154 are the
+likely candidates at their first session look).
+
 ## Cycle 8 — retire-churn found and fixed: vary-on-refusal (12:39–13:1xZ, PR #410)
 
 Health: image current, 0 TB, docs 200, agents 6/59 realized unchanged.
