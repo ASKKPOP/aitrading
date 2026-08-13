@@ -93,6 +93,32 @@ and journalled — measure them in run_events before tuning anything.
 
 # Monitoring loop log (newest first)
 
+## Cycle 1 DEPLOYED + VERIFIED 3× — #406 live (2026-08-13 07:39Z)
+
+Merged `155e8572` (#406), deployed **`sooppiy-backend:20260813-day-block-trio`**
+via scripts/deploy.sh (rollback: `20260813-rag-usstock-lessons`). Migrations
+at 0050 head; all three static roots republished; health 200s.
+
+**Verification (3 passes, all green):**
+1. **In-image:** both containers on the new tag, 0 tracebacks;
+   `due_run_ids` source carries the 2026-08-13 owner comment and no
+   `240 if`; `_big_trader_line` renders from LIVE prod data (XOM 0.47 /
+   MSFT 0.46 / TMO 0.53 short-volume, StockTwits tilts, put/call omitted
+   while the feed serves NULL — null-honesty working); the tape clause is
+   in the live `trader/us-stock` catalogue (39,187 of 48,000).
+2. **Event rate:** fleet 31 repeat gate events **90 in the 27 min before
+   deploy → 0 after**, while `fleet_events`/`run_events` MAX(ts) stay
+   current (streams alive — the silence is the fix, not a dead loop).
+3. **Shape:** exactly ONE re-gate pair at 07:27:53–58 (first attempt after
+   the worker restart — the process-local memo starts empty, the fail-safe
+   direction), then only ~60s `fleet_status` ticks. 10 ticks in 10 min.
+
+**Watch next cycles:** first session decisions from 11:30Z (pre-open
+shoulder) should show the `Big-trader tape` line in effect — judge desk
+usage per the swing time-constant (days, not cycles); gate-event volume
+should stay ~2 pairs/15 min max while the pool is exhausted; a new
+research batch must break the memo immediately (fingerprint changes).
+
 ## Cycle 1 SHIP — owner confirmed all four asks (2026-08-13 ~07:3xZ)
 
 Owner reply, verbatim intent: (1) "yes 30 min — change plan 23"; (2)
