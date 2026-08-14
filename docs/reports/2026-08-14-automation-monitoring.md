@@ -11,6 +11,12 @@ live yet.
 
 ---
 
+## Cycle 14 — 19:23Z
+
+- 5 more $0 recycles (3 idle, 2 refusals — churn ~15); f31 backfilled
+  3 slots in a minute. No trades. Next cycle sits in the overnight-cap
+  window (19:40-20:00Z) — cap cannot bind at ~$300 held notional.
+
 ## Cycle 13 — 18:55Z
 
 - 5 recycles all $0 (4 idle, 1 desk refusal ~#13), instant refills, no
