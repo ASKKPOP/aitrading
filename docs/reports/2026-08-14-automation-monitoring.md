@@ -11,6 +11,11 @@ live yet.
 
 ---
 
+## Cycle 13 — 18:55Z
+
+- 5 recycles all $0 (4 idle, 1 desk refusal ~#13), instant refills, no
+  trades. Book 4 positions ±$0.25. Churn evidence accrues to the sweep.
+
 ## Cycle 12 — 18:23Z
 
 - **PLTR 1177 trailing_lock −1.35 on the remainder; run net ≈ −0.12**
