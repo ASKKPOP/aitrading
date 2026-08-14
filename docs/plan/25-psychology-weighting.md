@@ -4,12 +4,19 @@
 psychology harder — psychology is a very important factor for USA stock and
 foreign exchange."
 
-**Status:** Phase A **SHIPPED** (PR #422, squash `1a45a0f1`, deployed to
-prod as `sooppiy-backend:20260814-plan25-psych2` on 2026-08-14; both skills
-verified rendering in the prod container and present in `trading_skills`,
-enabled, correctly scoped). Phases B–D remain proposals; each ships behind
-its own flag and is judged in realized-P&L terms per the owner's monitoring
-law ("the ultimate goal of all analysis is profit or loss").
+**Status:** Phase A **SHIPPED** (PR #422 → prod `20260814-plan25-psych2`,
+2026-08-14; both skills verified rendering in the prod container, DB rows
+enabled and scoped). Phase B **SHIPPED** (PR #424 + #427 → prod
+`20260814-plan25-vix`, 2026-08-14): us-stock desks read a live US fear
+gauge and forex desks read an FX risk-sentiment line + analyst
+`risk_sentiment` facts, all verified rendering live on prod. Two field
+notes: CNN's fear&greed endpoint answers the box with HTTP 418 ("You're a
+bot") — the refusal is respected, and the gauge falls back to the VIX via
+Yahoo, source-labeled honestly; and the dollar-index half is dark on prod
+until `FRED_API_KEY` is set (free key — owner action). Phases C–D remain
+proposals; each ships behind its own flag and is judged in realized-P&L
+terms per the owner's monitoring law ("the ultimate goal of all analysis
+is profit or loss").
 
 All file/line references are `origin/main @ 9f03a972`.
 
