@@ -11,6 +11,17 @@ live yet.
 
 ---
 
+## FIX — 20:2xZ: UI analysis countdown (owner-reported)
+
+- Owner saw cards reading "다음 AI 분석까지 51분" vs the stated 30-min
+  cadence. ROOT CAUSE: RunsLivePage activityLines used the RAW config
+  interval (default 60) without the scheduler's RUN_INTERVAL_CAP_MIN
+  clamp — display wrong by up to 2×; the backend genuinely analyses
+  every ≤30 min. FIX: mirror the cap (PR #419, image
+  20260814-countdown-cap). Verified live: prod AutomationPage chunk
+  carries min(...,30); old formula absent. Note: another session
+  deployed 20260814-sparkline-email-fix between #417 and this.
+
 ## Cycle 15 — 19:53Z — FLEET 32 STOPPED BY USER
 
 - **fleet_stop_all at 19:51:40Z** — all 10 runs ended simultaneously; a
