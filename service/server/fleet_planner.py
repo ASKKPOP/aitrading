@@ -1097,6 +1097,41 @@ def _horizon_anchor(market: str) -> datetime:
     return now
 
 
+PROBATION_SIZE_FRAC = 0.33
+
+
+def _probation_size_frac(agent_id: "int | None", symbol: str) -> float:
+    """First-admission probation (owner "do", 2026-08-13, from the
+    two-subagent pass): the backtest gate blocks PROVEN losers but
+    fails-open on symbols with insufficient history — QNT, CBRS and SPCX
+    were admitted minutes before the open at extreme sizing with zero
+    record for their agent and produced the day's largest us-stock losses.
+    A symbol this agent has never completed a run on trades its FIRST run
+    at a fraction of max_bet; any completed run lifts probation. Fail-soft
+    to full size — a DB hiccup must not shrink a proven symbol's book —
+    and no identity means no history to consult, so full size there too."""
+    try:
+        frac = float(os.environ.get("PROBATION_SIZE_FRAC",
+                                    str(PROBATION_SIZE_FRAC)))
+    except (TypeError, ValueError):
+        frac = PROBATION_SIZE_FRAC
+    if frac >= 1.0 or not agent_id or not symbol:
+        return 1.0
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) AS n FROM trading_runs WHERE "
+                           "agent_id = ? AND symbol = ? AND "
+                           "status = 'stopped'", (agent_id, symbol))
+            n = int(cursor.fetchone()["n"])
+        finally:
+            conn.close()
+        return frac if n == 0 else 1.0
+    except Exception:  # noqa: BLE001
+        return 1.0
+
+
 def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     """Thesis + slot budget → the run-creation payload. Deterministic clamps
     only — including the §6.4 percent→fraction unit conversion (a 2.5% thesis
@@ -1183,6 +1218,11 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     # Exposure feasibility: after leverage is known and BEFORE the stop is
     # scaled, so max_loss/trail size to the bet the run can actually deploy.
     max_bet = _clamp_bet_to_exposure_cap(max_bet, leverage, fleet)
+    # First-admission probation (owner "do", 2026-08-13): a symbol this
+    # agent has never completed a run on trades its first run at a fraction
+    # of max_bet. Applied LAST so max_loss/trail scale to the probation bet.
+    max_bet = round(max_bet * _probation_size_frac(
+        fleet.get("agent_id"), thesis.get("symbol") or ""), 2)
     # Hoisted: the trailing lock arms against this, so it must exist before
     # the stop_conditions literal is built.
     max_loss_usd = round(max_bet * _tier("stop_loss_frac_of_bet", risk), 2)

@@ -3459,15 +3459,31 @@ def _breadth_state_line(run: dict) -> str:
 
 
 LOSS_FLOOR_USD = 0.99
+LOSS_FLOOR_FRAC = 0.006   # of run budget — what $0.99 WAS at the $1000 seed
 
 
-def _loss_floor_usd() -> float:
+def _loss_floor_usd(run: "dict | None" = None) -> float:
     """The owner's house floor for a losing run (2026-08-06): below this, the
-    run is a candidate to be closed and its slot returned for a fresh thesis."""
+    run is a candidate to be closed and its slot returned for a fresh thesis.
+
+    Budget-proportional since 2026-08-13 (owner: "do", after the two-subagent
+    pass): the dollar constant is the owner's verbatim rule at the $1000-seed
+    scale, where 6 slots ≈ $166 made $0.99 ≈ 0.6% of a slot. On today's
+    $1,580 slots the same dollar figure is 0.06% — fee noise — and desks
+    spent 2026-08-13 dutifully closing fee-scale "wounds" on big books while
+    their authored 3–5% stops never got to act. floor = max(USD floor,
+    FRAC × run budget): same rule, scale-aware threshold. Runs without a
+    budget (older rows, tests) keep the plain dollar floor."""
     try:
-        return abs(float(os.getenv("RUN_LOSS_FLOOR_USD", str(LOSS_FLOOR_USD))))
+        base = abs(float(os.getenv("RUN_LOSS_FLOOR_USD", str(LOSS_FLOOR_USD))))
     except (TypeError, ValueError):
-        return LOSS_FLOOR_USD
+        base = LOSS_FLOOR_USD
+    try:
+        frac = float(os.getenv("RUN_LOSS_FLOOR_FRAC", str(LOSS_FLOOR_FRAC)))
+        budget = float((run or {}).get("run_budget_usd") or 0)
+        return max(base, frac * budget)
+    except (TypeError, ValueError):
+        return base
 
 
 def _loss_verdict_line(run: dict, pnl: dict) -> str:
@@ -3499,7 +3515,7 @@ def _loss_verdict_line(run: dict, pnl: dict) -> str:
     """
     try:
         total = float(pnl.get("total") or 0)
-        floor = _loss_floor_usd()
+        floor = _loss_floor_usd(run)
         if total >= -floor:
             return ""
         pos = pnl.get("position") or {}
