@@ -569,7 +569,17 @@ def _note_build_attempt(fleet_id: int, slot_index: int, built: bool) -> None:
         _LAST_EMPTY_ATTEMPT[key] = time.monotonic()
 
 
-_STATUS_HEARTBEAT_SECONDS = max(60, int(__import__("os").getenv("FLEET_STATUS_HEARTBEAT_SECONDS", "1800")))
+# Guarded parse (R12 adversarial pass): an unguarded int() here raised at
+# IMPORT time on a garbage env value, and because this module imports inside
+# the fleet tick, one typo killed the whole supervision layer — rails,
+# brake, breaker, replacement — while the watchdog's own death in the same
+# module kept the failure silent. A bad value now falls back like the
+# run_engine heartbeat does.
+try:
+    _STATUS_HEARTBEAT_SECONDS = max(
+        60, int(os.getenv("FLEET_STATUS_HEARTBEAT_SECONDS", "1800")))
+except (TypeError, ValueError):
+    _STATUS_HEARTBEAT_SECONDS = 1800
 
 
 # fleet_id -> monotonic seconds of the last replenishing status write. The
