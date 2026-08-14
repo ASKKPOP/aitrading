@@ -11,6 +11,21 @@ live yet.
 
 ---
 
+## Cycle 3 — 13:53Z (first post-open window under the new rails)
+
+- **SBUX 1161 queued flatten: executed 23s after the bell** (13:30:23Z,
+  −$0.015) — QA-2 closed, all 10 agents PASS.
+- Two AI-decided retires, reasons per trade: 1201 MES $0.00 (7 cycles of
+  refused entries — no-trade discipline, correct under the mandate);
+  1169 INTC −3.90 (dead thesis ended with the retire verb; the loss was
+  yesterday's chase entry, already attributed in cycle 1).
+- Both freed fleet-32 us-stock slots refilled with SEED names (INTU,
+  FDX) — the widened pool serves any fleet's us-stock slots (disclosed
+  R14 behavior).
+- No platform-forced closes, **no size_clamp events yet** (no over-sized
+  entry attempted), swing book's opening moves within ±$1 (IBM −0.34,
+  NFLX +1.00 the extremes).
+
 ## QA — 5-agent post-deploy verification of #417 (owner-ordered)
 
 All five QA agents reported against LIVE prod:
