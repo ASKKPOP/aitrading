@@ -1,10 +1,27 @@
-"""User-owned LLM calls require the user's own AI setting.
+"""Which AI a call runs on, by owner policy.
 
-Owner policy (2026-07-31): system-level calls run on the admin console AI;
-a user who configured AI in Settings runs on that; a user WITHOUT an AI
-setting is not supported — their calls resolve to no provider instead of
-falling back to the platform admin/env AI. The user-facing assistant tier
-is exempt and stays on the platform default.
+**Owner policy 2026-08-12 REPLACES the 2026-07-31 rule this file used to pin.**
+
+  > "user doesn't set LLM then use default local AI by system .env setting;
+  >  user set LLM then all AI by set LLM"
+
+So an unconfigured user now FALLS BACK to the platform default (admin console,
+then env) instead of resolving to None. The three tests below that asserted
+None were inverted on 2026-08-12; the rest are unchanged, because the
+"configured user wins" half of the policy did not change.
+
+Why it was reversed: the old rule made an ABSENT LlmContext load-bearing.
+`run_engine.run_cycle` deliberately set none, and #395 — which set one purely
+to record which member the spend belonged to — flipped every fleet cycle onto
+the "unconfigured user" path and silenced the desk (`"llm": {}`, forced hold
+at confidence 0.0) until it was reverted in 7d09628d.
+
+Cost note, since the old rule existed to prevent this: an unconfigured user's
+calls now land on whatever the platform default is. That is free only while
+`llm_brief_provider`/`llm_decision_provider` are `local`. Flipping either to a
+paid provider spends platform keys on every unconfigured member.
+
+Broader coverage of the new policy lives in test_llm_default_fallback.py.
 """
 from __future__ import annotations
 
@@ -56,16 +73,19 @@ class UserAiRequired(unittest.TestCase):
         finally:
             reset_llm_context(token)
 
-    def test_unconfigured_user_gets_no_provider(self):
-        """A user-owned call with no user provider must NOT fall back to the
-        admin console AI or the env key chain."""
+    def test_unconfigured_user_falls_back_to_the_platform_default(self):
+        """2026-08-12: a user-owned call with no user provider DOES fall back
+        to the admin console AI. Was `is None` under the 2026-07-31 rule."""
         ctx = LlmContext(source="rule", user_id=42, agent_id=7)
         for tier in ("brief", "decision"):
-            assert self._resolve(ctx, tier) is None, tier
+            ap = self._resolve(ctx, tier)
+            assert ap is not None, tier
+            assert ap.spec.name == "local", tier
 
-    def test_agent_only_context_is_user_owned(self):
+    def test_agent_only_context_also_falls_back(self):
         ctx = LlmContext(source="rule", agent_id=7)
-        assert self._resolve(ctx, "decision") is None
+        ap = self._resolve(ctx, "decision")
+        assert ap is not None and ap.spec.name == "local"
 
     def test_configured_user_runs_their_ai(self):
         ctx = LlmContext(provider="anthropic", api_key="sk-user", source="user",
@@ -75,14 +95,16 @@ class UserAiRequired(unittest.TestCase):
         assert ap.api_key == "sk-user"
 
     def test_run_llm_tiers_still_apply(self):
-        """Run-config llm_tiers is explicit owner config; a listed tier works,
-        an unlisted tier still refuses the platform fallback."""
+        """Run-config llm_tiers is explicit owner config and still wins for the
+        tiers it lists. 2026-08-12: an UNLISTED tier now takes the platform
+        default rather than refusing (it asserted `is None` before)."""
         ctx = LlmContext(source="rule", user_id=42, agent_id=7,
                          tier_providers={"brief": {"provider": "local",
                                                    "model": "gpt-oss:20b"}})
         ap = self._resolve(ctx, "brief")
         assert ap is not None and ap.spec.name == "local"
-        assert self._resolve(ctx, "decision") is None
+        unlisted = self._resolve(ctx, "decision")
+        assert unlisted is not None and unlisted.spec.name == "local"
 
     def test_assistant_tier_stays_on_platform_default(self):
         ctx = LlmContext(source="user", user_id=42)
