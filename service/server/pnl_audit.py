@@ -25,6 +25,13 @@ So this module exists to make that class of failure loud instead of silent:
     ALONGSIDE their delta. Agreement is evidence; disagreement is a finding
     that surfaces on the next cycle rather than after weeks.
 
+SCOPE CAVEAT (R13 adversarial pass, 2026-08-14). The fee_asym correction
+makes this audit validate pnl-vs-adapt CONSISTENCY, not fee magnitudes:
+an error in a trade event's ENTRY-side fee_usd (e.g. a broker adapter
+recording 10× fees) is absorbed into fee_asym and invisible here — the
+adapt stream carries no entry-fee information to compare against. Fee
+integrity needs its own check outside this module.
+
 Usage inside the prod container:
 
     docker exec -w /app/service/server sooppiy-worker \

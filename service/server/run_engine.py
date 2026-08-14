@@ -3526,28 +3526,48 @@ def _last_cycle_word_line(run: dict) -> str:
     invalidation — was the one thing it could not see.
 
     Quote, verbatim and labelled as the desk's own; the rule stated is
-    the R11 lesson. Renders flat or held. Fail-soft."""
+    the R11 lesson. Renders flat or held. Fail-soft.
+
+    Two shapes the adversarial pass reproduced, both guarded here: an
+    ERRORED cycle still emits a decision event with empty action/report,
+    and a LIMIT-1 read of that row would erase the standing invalidation
+    exactly one failed cycle after it was written — so scan back past
+    empty rows. And words can be days old across a weekend or a pause;
+    quoting them undated as "last cycle" lends them false freshness — so
+    the line carries the age of the words and lets the desk weigh it."""
     try:
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT payload FROM run_events
+                """SELECT ts, payload FROM run_events
                    WHERE run_id = ? AND event_type = 'decision'
-                   ORDER BY id DESC LIMIT 1""", (run["id"],))
-            row = cursor.fetchone()
+                   ORDER BY id DESC LIMIT 5""", (run["id"],))
+            rows = cursor.fetchall()
         finally:
             conn.close()
-        if not row:
-            return ""
-        payload = json.loads(row["payload"] or "{}")
-        action = str(payload.get("action") or "").strip()
-        report = " ".join(str(payload.get("report") or "").split())
+        action = report = ts = ""
+        for row in rows or []:
+            payload = json.loads(row["payload"] or "{}")
+            action = str(payload.get("action") or "").strip()
+            report = " ".join(str(payload.get("report") or "").split())
+            if action and report:
+                ts = str(row["ts"] or "")
+                break
         if not action or not report:
             return ""
+        age = ""
+        try:
+            mins = _age_seconds(ts) / 60.0
+            if mins >= 1:
+                age = (f", {mins:.0f} min ago" if mins < 120 else
+                       f", {mins / 60:.0f} h ago" if mins < 2880 else
+                       f", {mins / 1440:.0f} days ago")
+        except Exception:  # noqa: BLE001 — an unreadable ts drops the age only
+            age = ""
         if len(report) > 400:
             report = report[:400].rsplit(" ", 1)[0] + "…"
-        return (f"Your own last cycle (action: {action}): \"{report}\"\n"
+        return (f"Your own last cycle (action: {action}{age}): \"{report}\"\n"
                 "An invalidation you stated stands until you explicitly "
                 "overturn it with NEW evidence in this cycle's report — "
                 "entering against your own standing invalidation is the "

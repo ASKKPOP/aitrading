@@ -903,7 +903,7 @@ class LastCycleWordBriefTests(unittest.TestCase):
                        "report": "Long thesis is already invalidated because "
                                  "price is below today's open — no entry."})
         line = run_engine._last_cycle_word_line({"id": 7})
-        self.assertIn("Your own last cycle (action: hold)", line)
+        self.assertIn("Your own last cycle (action: hold", line)
         self.assertIn("already invalidated", line)
         self.assertIn("standing invalidation", line)
 
@@ -924,6 +924,25 @@ class LastCycleWordBriefTests(unittest.TestCase):
         line = run_engine._last_cycle_word_line({"id": 10})
         self.assertIn("newest words", line)
         self.assertNotIn("older words", line)
+
+    def test_an_errored_cycle_does_not_erase_the_standing_word(self):
+        # An analysis failure still emits a decision event with empty
+        # action/report; a LIMIT-1 read of that row erased the standing
+        # invalidation one failed cycle after it was written (adversarial
+        # pass, reproduced). The line must scan back past empty rows.
+        self._emit(11, {"action": "hold",
+                        "report": "thesis already invalidated"}, seq=1)
+        self._emit(11, {"action": None, "report": ""}, seq=2)
+        line = run_engine._last_cycle_word_line({"id": 11})
+        self.assertIn("already invalidated", line)
+
+    def test_the_line_carries_the_age_of_the_words(self):
+        # Words from a fixed 2026-08-14T00:00:00Z stamp are days old by
+        # any later clock — quoted undated they would read as one cycle
+        # old across a weekend or pause.
+        self._emit(12, {"action": "hold", "report": "friday words"})
+        line = run_engine._last_cycle_word_line({"id": 12})
+        self.assertIn("ago)", line)
 
     def test_the_line_is_actually_WIRED_into_both_prompts(self):
         seen = {}

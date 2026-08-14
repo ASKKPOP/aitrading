@@ -107,11 +107,13 @@ WEIGHT_PROFILES: dict[str, dict[str, float]] = {
 # cap only decides how many of those already-paid-for scores survive. Raising
 # it costs no extra candle fetches — it stops discarding 117 finished results.
 #
-# ⚠️ Stage 2 interaction: fresh theses are chunked (FLEET_RESEARCH_BATCH_SIZE,
-# default 5) and capped at MAX_LLM_CALLS_PER_REFRESH (default 2), so at most
-# ~10 survivors get a FRESH LLM thesis per refresh; beyond that they reuse an
-# unchanged prior thesis or fall back. A wider survivor set therefore widens
-# the fleet's choice without widening LLM spend — but watch `'llm': N` in the
+# ⚠️ Stage 2 interaction (corrected 2026-08-14, R14 adversarial pass): fresh
+# theses are chunked (FLEET_RESEARCH_BATCH_SIZE, default 5) with a bounded
+# per-call payload, and MAX_LLM_CALLS_PER_REFRESH is a PER-CHUNK RETRY bound
+# — chunk COUNT scales with the survivors needing a fresh thesis, so a wider
+# survivor set adds ~1 LLM call per 5 fresh names on a cold refresh (then
+# thesis reuse damps it). The truncation defect cannot recur (per-chunk
+# payload is fixed), but total spend is not capped — watch `'llm': N` in the
 # [SymbolResearch] log line: if it collapses toward zero the reuse/fallback
 # mix has shifted and FLEET_RESEARCH_MAX_LLM_CALLS is the knob.
 _SURVIVOR_DEFAULTS = {"crypto": 8, "us-stock": 8, "futures": 4, "forex": 4}
