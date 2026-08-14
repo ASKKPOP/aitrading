@@ -3704,17 +3704,25 @@ def _us_psych_line(run: dict) -> str:
         return ""
     if not fg or fg.get("value") is None:
         return ""
-    line = (f"US crowd psychology (advisory, CNN Fear & Greed): "
-            f"{fg['value']:.0f}/100"
-            + (f" ({fg['classification']})" if fg.get("classification")
-               else ""))
     prev = fg.get("prev_1w")
-    if prev is not None:
-        line += f", {fg['value'] - prev:+.0f} vs a week ago"
-    line += (". Extremes (roughly 20 and below, or 80 and above) are "
-             "contrarian regimes; mid-range confirms momentum. Regime "
-             "evidence only — crowd psychology is never the sole reason "
-             "for an order.")
+    if fg.get("source") == "vix":
+        line = (f"US crowd psychology (advisory, VIX volatility gauge): "
+                f"VIX {fg['value']:.1f}")
+        if prev is not None:
+            line += f", {fg['value'] - prev:+.1f} vs a week ago"
+        line += (". Above roughly 30 signals fear/panic, below roughly 15 "
+                 "complacency-greed; extremes are contrarian regimes.")
+    else:
+        line = (f"US crowd psychology (advisory, CNN Fear & Greed): "
+                f"{fg['value']:.0f}/100"
+                + (f" ({fg['classification']})" if fg.get("classification")
+                   else ""))
+        if prev is not None:
+            line += f", {fg['value'] - prev:+.0f} vs a week ago"
+        line += (". Extremes (roughly 20 and below, or 80 and above) are "
+                 "contrarian regimes; mid-range confirms momentum.")
+    line += (" Regime evidence only — crowd psychology is never the sole "
+             "reason for an order.")
     return line + "\n"
 
 
@@ -3745,9 +3753,14 @@ def _fx_risk_line(run: dict) -> str:
         return ""
     parts = []
     if fg and fg.get("value") is not None:
-        parts.append(f"US equity Fear & Greed {fg['value']:.0f}/100"
-                     + (f" ({fg['classification']})"
-                        if fg.get("classification") else ""))
+        if fg.get("source") == "vix":
+            parts.append(f"US equity volatility VIX {fg['value']:.1f}"
+                         + (f" ({fg['value'] - fg['prev_1w']:+.1f} w/w)"
+                            if fg.get("prev_1w") is not None else ""))
+        else:
+            parts.append(f"US equity Fear & Greed {fg['value']:.0f}/100"
+                         + (f" ({fg['classification']})"
+                            if fg.get("classification") else ""))
     if dxy and dxy.get("value") is not None:
         d = f"broad dollar index {dxy['value']:.1f}"
         if dxy.get("change_1d_pct") is not None:

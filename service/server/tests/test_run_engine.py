@@ -1274,6 +1274,31 @@ class PsychRiskBriefTests(unittest.TestCase):
             self.assertEqual(
                 run_engine._fx_risk_line(self._run(market="forex")), "")
 
+    # ── VIX-source variant (CNN refuses cloud IPs with 418) ──
+    def _vix(self, **over):
+        row = {"source": "vix", "value": 27.4, "prev_1w": 24.2}
+        row.update(over)
+        return row
+
+    def test_us_line_renders_the_vix_variant(self):
+        with patch("psych_feed.us_fear_greed", return_value=self._vix()):
+            line = run_engine._us_psych_line(self._run())
+        self.assertIn("VIX", line)
+        self.assertIn("27.4", line)
+        self.assertIn("+3.2 vs a week ago", line)
+        self.assertIn("never the sole reason", line)
+        self.assertNotIn("/100", line)
+
+    def test_fx_line_renders_the_vix_variant(self):
+        with patch("psych_feed.us_fear_greed", return_value=self._vix()), \
+                patch("cross_market.dollar_index_cached", return_value=None):
+            line = run_engine._fx_risk_line(self._run(market="forex",
+                                                      symbol="EURUSD"))
+        self.assertIn("FX risk sentiment (advisory", line)
+        self.assertIn("VIX 27.4", line)
+        self.assertIn("one signal alone is no trade", line)
+        self.assertNotIn("/100", line)
+
     # ── wiring: the lines must reach the actual desk prompt ──
     def _light_prompt(self, run):
         captured = {}

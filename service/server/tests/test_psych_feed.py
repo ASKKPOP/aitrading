@@ -447,14 +447,18 @@ class UsFearGreedCacheTests(unittest.TestCase):
 
         psych_feed._US_FNG_CACHE["at"] = 0.0  # expire the TTL
         with patch.object(psych_feed, "fetch_cnn_fear_greed",
-                               return_value=None):
+                               return_value=None), \
+                patch.object(psych_feed, "_fetch_vix_row",
+                             return_value=None):
             stale = psych_feed.us_fear_greed()
         self.assertIsNotNone(stale, "outage must serve last-known-good")
         self.assertEqual(stale["value"], 55.0)
 
     def test_returns_none_when_never_fetched(self):
         with patch.object(psych_feed, "fetch_cnn_fear_greed",
-                               return_value=None):
+                               return_value=None), \
+                patch.object(psych_feed, "_fetch_vix_row",
+                             return_value=None):
             self.assertIsNone(psych_feed.us_fear_greed())
 
 
@@ -485,3 +489,40 @@ class FxTechnicalGatherTests(unittest.TestCase):
             out = analysis_agents._gather_technical("EURUSD", "forex")
         self.assertEqual(out.get("current_price"), 1.1)
         self.assertNotIn("risk_sentiment", out)
+
+
+class UsFearGaugeVixFallbackTests(unittest.TestCase):
+    """CNN answers cloud IPs with HTTP 418 ("You're a bot") — measured on
+    prod 2026-08-14. The refusal is respected, not evaded: the gauge falls
+    back to the VIX via Yahoo (the platform's permitted price source) and
+    labels its source honestly."""
+
+    def setUp(self):
+        psych_feed._US_FNG_CACHE.update({"row": None, "at": 0.0})
+
+    def test_falls_back_to_vix_when_cnn_refuses(self):
+        with patch.object(psych_feed, "fetch_cnn_fear_greed",
+                          return_value=None), \
+                patch.object(psych_feed, "_fetch_vix_row",
+                             return_value={"source": "vix", "value": 14.6,
+                                           "prev_1w": 15.9}):
+            row = psych_feed.us_fear_greed()
+        self.assertEqual(row["source"], "vix")
+        self.assertEqual(row["value"], 14.6)
+
+    def test_cnn_still_wins_when_it_answers(self):
+        with patch.object(psych_feed, "fetch_cnn_fear_greed",
+                          return_value={"source": "cnn", "value": 61.0,
+                                        "classification": "Greed",
+                                        "prev_1w": 50.0}), \
+                patch.object(psych_feed, "_fetch_vix_row",
+                             side_effect=AssertionError("must not fetch")):
+            row = psych_feed.us_fear_greed()
+        self.assertEqual(row["source"], "cnn")
+
+    def test_none_when_both_sources_fail(self):
+        with patch.object(psych_feed, "fetch_cnn_fear_greed",
+                          return_value=None), \
+                patch.object(psych_feed, "_fetch_vix_row",
+                             return_value=None):
+            self.assertIsNone(psych_feed.us_fear_greed())
