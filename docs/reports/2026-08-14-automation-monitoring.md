@@ -11,6 +11,14 @@ live yet.
 
 ---
 
+## Cycle 17 — 20:53Z — FLEET 33 SCALED 6→25 BY USER
+
+- Ten runs built in 20s (1255-1264), fleet 33 now 25/25 running on
+  $100k — instant fill powered by the R14 seed pool (CMCSA, ACN, SCHW,
+  ISRG, MDT, C + forex). Contrast: fleet 31 needed all day to reach 22
+  pre-seed. Watch: first-time symbols enter under #416 probation sizing
+  + R10 rails. One $0 refusal (AUDJPY 1243).
+
 ## Cycle 16 — 20:25Z (post-close)
 
 - **TMO 1095 (the original swing run) completed +$0.48** — 53 cycles /
