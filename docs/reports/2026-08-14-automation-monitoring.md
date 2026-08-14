@@ -11,6 +11,41 @@ live yet.
 
 ---
 
+## QA — 5-agent post-deploy verification of #417 (owner-ordered)
+
+All five QA agents reported against LIVE prod:
+
+- **QA-1 R10/R11: PASS.** `_brake_room_usd` matched hand-computed room to
+  10 decimals on 3 live runs; entry-rail notional examples correct;
+  last-cycle quotes verbatim vs MySQL with correct ages; 17 decisions in
+  29 min at normal cadence, 0 tracebacks. size_clamp events: 0 = expected
+  (fires only on over-size); armed path proven (apply mode + default-on
+  + code present). Watch: gate_skip composition change should settle;
+  "light cycle: no LLM verdict" reports can be quoted — cosmetic filter
+  candidate.
+- **QA-2 R12: 3 PASS + open-time check.** Spam cut ~97% (fleet_status
+  58/hr → 2/hr real; run 1161 gate_skips 107/hr → exactly one per 30-min
+  heartbeat). Label change 17/25→22/25 emitted within 1 SECOND of the
+  slot builds; UI status column always matched reality; supervision 61
+  ticks/62 min, watchdog quiet. SBUX 13:30Z flatten execution check →
+  one-shot scheduled 13:34Z (result below).
+- **QA-3 R13: PASS 4/4.** Live audit exit 0; 08-13 false DRIFT now
+  fee_asym −7.46 / resid +0.08 / ok; all historical days ok (resid ≤
+  ±0.33, the max pair being the midnight adapt-lag shape); independent
+  SQL hand-count matched to $0.0013, proven structural.
+- **QA-4 R14: PASS 5/5.** First refresh: 22 of 40 us-stock theses are
+  seed-only newcomers (composition changed, volume unchanged); gates
+  kept dropping (MRK −292/trade, NVDA −200/9, SHOP −470/7) every pass;
+  fleet 31 **17 → 22 slots in 27 min**, last 3 dormant on funding
+  (headroom 0.0), not candidates; 2 desk-retires (FDX, BLK) each
+  replaced in ONE pass; non-swing fleets bit-clean (forex-only
+  rotations); LLM 80→76/refresh — watch reuse damping a few refreshes.
+- **QA-5 RAG P1: PASS 5/5.** Zero DB rows touched by deploy; 40/40
+  recomputed catalog hashes identical (upgrade path provably silent);
+  deterministic renders in budget (trader/us-stock 39,381); 118 lessons
+  rejoin byte-identically; decisions resumed 11 min post-restart; admin
+  auth intact.
+
 ## SHIP — 11:09Z: PR #417 deployed (image 20260814-solutions-r10-rag)
 
 Owner order ("full make solutions for 1,2" + "verify with 5 agents + QA 5
