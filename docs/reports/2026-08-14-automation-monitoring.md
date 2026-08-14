@@ -11,6 +11,18 @@ live yet.
 
 ---
 
+## Cycle 15 — 19:53Z — FLEET 32 STOPPED BY USER
+
+- **fleet_stop_all at 19:51:40Z** — all 10 runs ended simultaneously; a
+  user-level stop via sooppiy.com (the owner's domain; observed, not
+  interfered with). Book was FLAT at stop — zero positions, zero forced
+  flattens, clean shutdown. **Final lifetime: −$187.86** (−0.19% of the
+  $100k budget). Monitoring scope now fleets 31 + 33.
+- Window also had ~7 more $0 recycles (idle + refusals) — churn
+  evidence keeps accruing for the sweep's R15 decision.
+- Fleet 31 carries IBM/MSFT/JPM (~$210 notional) into the 20:00Z close
+  — overnight hold is the swing design; cap correctly silent.
+
 ## Cycle 14 — 19:23Z
 
 - 5 more $0 recycles (3 idle, 2 refusals — churn ~15); f31 backfilled

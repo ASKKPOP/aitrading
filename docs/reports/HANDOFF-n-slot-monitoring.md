@@ -207,7 +207,7 @@ yoojinbe@gmail.com (user 4), info@askkpop.com (user 5).
 | fleet | user | agent | archetype | scope | slots | budget |
 |---|---|---|---|---|---|---|
 | **31** | info@askkpop (5) | 6 | **swing** | us-stock | 25 | $10k |
-| **32** | yoojinbe (4) | 5 | short | crypto/futures/forex/us-stock | 10 | $100k |
+| **32** | yoojinbe (4) | 5 | short | crypto/futures/forex/us-stock | 10 | $100k | **STOPPED by user 2026-08-14T19:51:40Z (fleet_stop_all, flat book, final −$187.86)** |
 | **33** | henry.j (23) | 59 | short | us-stock + forex | 6 | $100k |
 
 Fleet 31 is THE swing block trial — §2 checks and the §7 closed-trade
