@@ -11,6 +11,15 @@ live yet.
 
 ---
 
+## Cycle 7 — 15:58Z
+
+- NQ 1197 closed −$2.15: AI sold its loser at 15:36Z (small cut, right
+  verb), at_time retired the flat run — completes the R16 evidence pair
+  (NQ −2.42 then −2.15, same-day re-entry after desk_retire).
+- AUDUSD 1221 $0 quick refusal (~6th today, all free); 1199 idle-retire
+  $0. Fence lease-expired skips +2 since sweep (counter running).
+- Book near flat (worst IBM −0.43); no size_clamp; fleet 31 steady.
+
 ## 24h VERIFICATION SWEEP — 15:07Z window (two-agent, cross-checked)
 
 **P&L first.** UTC 08-14 in-window (00:00→15:07Z): **−$14.48** (Agent A,
