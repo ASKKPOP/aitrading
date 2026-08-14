@@ -402,7 +402,13 @@ function ageLabel(ts: string | undefined, lang: Language): string {
 function activityLines(run: Run, tick: any, events: any[],
                        lang: Language): string[] {
   const lines: string[] = []
-  const iv = Number((run as any).config?.interval_minutes ?? 60) * 60000
+  // The scheduler caps every run's thinking cadence at the platform's
+  // 30-minute clock (run_engine RUN_INTERVAL_CAP_MIN: interval =
+  // min(cap, config interval or 60)). This countdown used the RAW config
+  // default of 60, so cards showed "next AI analysis in 51m" for runs the
+  // backend would analyse within 30 — owner-reported 2026-08-14. Mirror
+  // the cap here so the card matches what the scheduler actually does.
+  const iv = Math.min(Number((run as any).config?.interval_minutes ?? 60), 30) * 60000
   const last = run.last_cycle_at ? new Date(run.last_cycle_at).getTime() : 0
   if (last) {
     const mins = Math.ceil(Math.max(0, last + iv - Date.now()) / 60000)
