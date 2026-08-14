@@ -11,6 +11,66 @@ live yet.
 
 ---
 
+## 24h VERIFICATION SWEEP — 15:07Z window (two-agent, cross-checked)
+
+**P&L first.** UTC 08-14 in-window (00:00→15:07Z): **−$14.48** (Agent A,
+two independent reconstructions within 2¢); full UTC day −$16.63 after
+NQ 1197's 15:36Z close, adapt-agreed −16.61. KST 08-14 trading day
+(15:00Z→15:00Z, signals-based): **≈ −$36.31** over 104 closing legs
+(carries yesterday's US-evening losses). Shape today: 8 wins avg +0.15
+vs 11 losses avg −1.42; **GC alone = 82% of gross losses** (full-size
+entry under self-acknowledged resistance; exits were disciplined — the
+entry sized and placed the loss).
+
+**CORRECTIONS to this file's earlier cycle notes (Agent A, accepted):**
+cycle notes used lifetime run totals — HG −1.27 and PFE +1.21 were
+booked YESTERDAY ($0 today); AUDNZD −0.32 was omitted; GC's −12.82 was
+realized TODAY 00:52–02:22Z (not "yesterday-night"); NFLX today-delta
+is +0.88 (lifetime +1.12). Window hygiene lesson: report deltas in
+window, never lifetime totals.
+
+**Fix re-proof (Agent B, all-day tape):** #404 dust HOLDS (zero
+zero-qty/dust rows; every unrealized:0.0 event legitimately at
+price==entry); LLM provider HOLDS (535/535 attributed, 0 fallbacks);
+R12 HOLDS all afternoon (107/hr → 0–2/hr sustained; no transition
+suppressed); R13 PROVEN live — the −2.15 resid was named (NQ 1197 adapt
+lag) and WATCHED collapse to 0.00 when the pending_close adapt landed
+15:53:58Z; R14 plateaued healthy (llm 80→76→78; fleet 31 22/25
+funding-bound); RAG stable (no delayed upgrade storm; renders match QA
+bytes; 105 recall events); liq-defense alive (T1 events at 00:13–00:28Z,
+quiet-because-nominal since); swing rails unbreached (no entries today —
+desk chose hold; overnight cap ≈$8–27 of $250 gap-risk budget). R10
+clamp: 0 fires, provably honest (zero post-deploy entries with authored
+stops platform-wide) — **mechanism still unproven by live tape**.
+
+**R10/R11 uptake CONFIRMED behaviorally (A):** desks quoting the rail
+in their own words ("required stop ~$3.4 exceeds the loss-rail limit"),
+sizing down (NQ successor 0.478 vs 0.887). Refusals were CORRECT calls
+(FDX/INTU fell after refusal). HYPE flat 26 cycles — 25 desk restraint
++ 1 confidence-gate block (shared credit).
+
+**NEW FINDINGS (escalated):**
+1. **R16 candidate — same-day same-symbol re-entry after desk_retire:**
+   NQ 1184 retired "no safe bracket" → fleet rebuilt NQ 4h later, desk
+   re-longed HIGHER with zero reference to the predecessor: −2.42 then
+   −2.15. desk_retired carries NO symbol cooldown (adapt-retire gets
+   24h) and no prompt line carries cross-run same-symbol history (R11
+   is within-run). AI-first design: a predecessor-run line ("this
+   symbol's previous run today retired: reason, P&L") + optional
+   desk_retired cooldown. STAGED — needs one more day of tape.
+2. **Fence lease-expired execute-stage skips: 12 today, one deferred a
+   desk CLOSE** (1116 JPM 15:42:44Z) — a fence deferring an exit points
+   the forbidden direction. Count again tomorrow.
+3. Light-cycle "no LLM verdict" fallback rate 4.5% (24/535) — pre-
+   existing, now measured. Watch.
+4. Unowned leveraged CRM position 281 (health ~0.93, no actor) — 3 days
+   old; owner-visible decision needed eventually.
+
+**Daily-obligation solution statement:** today's losses' solution
+SHIPPED intraday (#417): GC's exact class (full-size entry vs
+unreachable stop) is now taught at entry time and clamped; the repeat
+NQ leak is named with a designed fix (R16) accruing evidence.
+
 ## Cycle 6 — 15:23Z
 
 - **NFLX 1167 (swing) closed +$1.12 — the swing block's first completed

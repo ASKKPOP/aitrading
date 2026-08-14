@@ -143,3 +143,11 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ### R14 — Swing universe cannot fill 25 slots · **SHIPPED (2026-08-14, PR #417)** — S&P-100 seed roster, gates untouched (owner chose widen-universe via 'full make solutions')
 - Fleet 31 stuck 17/25 all day; gates honestly drop everything (swing_history_thin 42–62 bars; backtest expectancy −72…−502 USD/trade). Options: widen the researched us-stock universe, or lower n_runs. Gates themselves are correct — do NOT loosen them.
+
+### R16 — Cross-run same-symbol memory + desk_retired cooldown · STAGED (2026-08-14 sweep, n=1 pair + prior churn chains)
+- **Evidence:** NQ 1184 desk-retired 09:47Z citing "no safe bracket"; fleet rebuilt NQ, and successor 1197 re-longed at a HIGHER price 4h later with zero reference to the predecessor — −2.42 then −2.15 same day. `desk_retired` symbols carry no cooldown (only adapt-retires get 24h); no prompt line carries cross-run same-symbol history (R11 is within-run only). Also the swing-side WMT/UBER/SBUX/PFE instant-rebuild chains (08-13, $0 each).
+- **AI-first design:** a predecessor-run brief line at build/first-cycle — "this agent's previous run on {symbol} today: retired ({reason}), P&L {x}" — so the desk re-underwrites with its own history in view. Platform fallback: extend the 24h symbol cooldown to desk_retired (riskier — blocks legitimate re-entries on genuinely changed tape; prefer the brief line first).
+- **Gate:** one more day of tape (2+ cycles rule). If the repeat-entry-after-retire shape recurs with losses, ship the brief line.
+
+### W-fence — Execute-stage lease-expired skips deferring exits · WATCH (2026-08-14 sweep)
+- 12 lease-expired skips in one day, 11 in market hours, one deferred a desk CLOSE (run 1116 JPM 15:42:44Z; retried next cycle). A fence that can defer an exit points the forbidden direction. Count daily; if closes get deferred again, investigate the claim/lease path.
