@@ -1082,6 +1082,135 @@ class BreadthBriefTests(unittest.TestCase):
                       "the breadth brief never reached the desk")
 
 
+class PsychRiskBriefTests(unittest.TestCase):
+    """Plan 25 Phase B: the Phase-A skills teach the judgment, but until
+    these lines existed no us-stock desk read a market-level crowd gauge
+    and no forex desk read any psychology at all. Both lines are advisory,
+    facts-only, and render "" on any problem."""
+
+    def _run(self, market="us-stock", symbol="NVDA"):
+        return {"id": 1, "agent_id": 1, "symbol": symbol, "market": market,
+                "market_type": "spot"}
+
+    def _fg(self, **over):
+        row = {"value": 84.0, "classification": "Extreme Greed",
+               "prev_1w": 71.0}
+        row.update(over)
+        return row
+
+    def _dxy(self, **over):
+        row = {"value": 121.4, "change_1d_pct": 0.42, "date": "2026-08-13"}
+        row.update(over)
+        return row
+
+    # ── us-stock crowd line ──
+    def test_us_line_renders_value_delta_and_restraint(self):
+        with patch("psych_feed.us_fear_greed", return_value=self._fg()):
+            line = run_engine._us_psych_line(self._run())
+        self.assertIn("US crowd psychology (advisory", line)
+        self.assertIn("84/100", line)
+        self.assertIn("Extreme Greed", line)
+        self.assertIn("+13 vs a week ago", line)
+        self.assertIn("never the sole reason", line)
+
+    def test_us_line_omits_week_delta_when_absent(self):
+        with patch("psych_feed.us_fear_greed",
+                   return_value=self._fg(prev_1w=None)):
+            line = run_engine._us_psych_line(self._run())
+        self.assertIn("84/100", line)
+        self.assertNotIn("week ago", line)
+
+    def test_us_line_market_gate_and_fail_soft(self):
+        with patch("psych_feed.us_fear_greed",
+                   side_effect=AssertionError("crypto must not query")):
+            self.assertEqual(
+                run_engine._us_psych_line(self._run(market="crypto")), "")
+        with patch("psych_feed.us_fear_greed", return_value=None):
+            self.assertEqual(run_engine._us_psych_line(self._run()), "")
+        with patch("psych_feed.us_fear_greed",
+                   side_effect=RuntimeError("down")):
+            self.assertEqual(run_engine._us_psych_line(self._run()), "")
+
+    # ── forex risk-sentiment line ──
+    def test_fx_line_renders_fg_and_dxy(self):
+        with patch("psych_feed.us_fear_greed",
+                   return_value=self._fg(value=18.0,
+                                         classification="Extreme Fear",
+                                         prev_1w=34.0)), \
+                patch("cross_market.dollar_index_cached",
+                      return_value=self._dxy()):
+            line = run_engine._fx_risk_line(self._run(market="forex",
+                                                      symbol="EURUSD"))
+        self.assertIn("FX risk sentiment (advisory", line)
+        self.assertIn("18/100", line)
+        self.assertIn("Extreme Fear", line)
+        self.assertIn("+0.42%", line)
+        self.assertIn("one signal alone is no trade", line)
+
+    def test_fx_line_renders_without_dxy(self):
+        with patch("psych_feed.us_fear_greed", return_value=self._fg()), \
+                patch("cross_market.dollar_index_cached", return_value=None):
+            line = run_engine._fx_risk_line(self._run(market="forex",
+                                                      symbol="EURUSD"))
+        self.assertIn("FX risk sentiment (advisory", line)
+        self.assertIn("84/100", line)
+        self.assertNotIn("dollar index", line)
+
+    def test_fx_line_market_gate_and_fail_soft(self):
+        with patch("psych_feed.us_fear_greed",
+                   side_effect=AssertionError("us-stock must not use fx line")):
+            self.assertEqual(run_engine._fx_risk_line(self._run()), "")
+        with patch("psych_feed.us_fear_greed", return_value=None), \
+                patch("cross_market.dollar_index_cached", return_value=None):
+            self.assertEqual(
+                run_engine._fx_risk_line(self._run(market="forex")), "")
+        with patch("psych_feed.us_fear_greed",
+                   side_effect=RuntimeError("down")), \
+                patch("cross_market.dollar_index_cached",
+                      side_effect=RuntimeError("down")):
+            self.assertEqual(
+                run_engine._fx_risk_line(self._run(market="forex")), "")
+
+    # ── wiring: the lines must reach the actual desk prompt ──
+    def _light_prompt(self, run):
+        captured = {}
+
+        def fake_generate(prompt, **kw):
+            captured["prompt"] = prompt
+            return '{"action": "hold", "confidence": 0.5}'
+
+        cfg = {"thesis": {"direction": "long", "horizon_hours": 24,
+                          "invalidation": "below the recent swing low",
+                          "rationale": "momentum"}}
+        with patch("price_fetcher.get_price_from_market", return_value=500.0), \
+                patch("price_fetcher.get_daily_candles", return_value=[]), \
+                patch("llm_client.generate_text", side_effect=fake_generate), \
+                patch.object(run_engine, "_position_quantity",
+                             return_value=0.0), \
+                patch("trading_skills.skills_block", return_value=""), \
+                patch("fmp_feed.days_to_earnings", return_value=None), \
+                patch("breadth_feed.latest_breadth", return_value=None), \
+                patch("psych_feed.us_fear_greed", return_value=self._fg()), \
+                patch("cross_market.dollar_index_cached",
+                      return_value=self._dxy()):
+            run_engine._light_analysis(run, cfg)
+        return captured.get("prompt", "")
+
+    def test_us_line_reaches_the_light_prompt(self):
+        prompt = self._light_prompt(self._run())
+        self.assertIn("US crowd psychology (advisory", prompt,
+                      "the crowd brief never reached the us-stock desk")
+        self.assertNotIn("FX risk sentiment", prompt)
+
+    def test_fx_line_reaches_the_light_prompt(self):
+        prompt = self._light_prompt(self._run(market="forex",
+                                              symbol="EURUSD"))
+        self.assertIn("FX risk sentiment (advisory", prompt,
+                      "the risk brief never reached the forex desk")
+        self.assertNotIn("US crowd psychology", prompt)
+
+
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -3631,6 +3631,80 @@ def _breadth_state_line(run: dict) -> str:
     return line + "\n"
 
 
+
+def _us_psych_line(run: dict) -> str:
+    """US market-level crowd psychology as regime evidence (advisory).
+
+    Plan 25 Phase B (owner directive 2026-08-14): the Phase-A skill
+    us-crowd-psychology-lens teaches the judgment, but until this line
+    existed no us-stock desk read a market-level crowd gauge — CNN's
+    fear&greed had been fetched-but-never-wired since Plan 14. Facts only;
+    the skill owns the interpretation. A feed problem renders "".
+    """
+    if (run.get("market") or "") != "us-stock":
+        return ""
+    try:
+        import psych_feed
+        fg = psych_feed.us_fear_greed()
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+    if not fg or fg.get("value") is None:
+        return ""
+    line = (f"US crowd psychology (advisory, CNN Fear & Greed): "
+            f"{fg['value']:.0f}/100"
+            + (f" ({fg['classification']})" if fg.get("classification")
+               else ""))
+    prev = fg.get("prev_1w")
+    if prev is not None:
+        line += f", {fg['value'] - prev:+.0f} vs a week ago"
+    line += (". Extremes (roughly 20 and below, or 80 and above) are "
+             "contrarian regimes; mid-range confirms momentum. Regime "
+             "evidence only — crowd psychology is never the sole reason "
+             "for an order.")
+    return line + "\n"
+
+
+def _fx_risk_line(run: dict) -> str:
+    """Global risk appetite for the forex desk (advisory).
+
+    Plan 25 Phase B: forex desks read no psychology at all — pairs have no
+    crowd of their own here, so the read is global risk appetite (equity
+    fear&greed + the broad dollar's direction). Facts only; the Phase-A
+    skill fx-risk-sentiment-lens owns the judgment. Renders "" when
+    nothing is available — an unknown regime is stated by absence, never
+    guessed.
+    """
+    if (run.get("market") or "") != "forex":
+        return ""
+    fg = dxy = None
+    try:
+        import psych_feed
+        fg = psych_feed.us_fear_greed()
+    except Exception:  # noqa: BLE001
+        fg = None
+    try:
+        import cross_market
+        dxy = cross_market.dollar_index_cached()
+    except Exception:  # noqa: BLE001
+        dxy = None
+    if not (fg and fg.get("value") is not None) and not dxy:
+        return ""
+    parts = []
+    if fg and fg.get("value") is not None:
+        parts.append(f"US equity Fear & Greed {fg['value']:.0f}/100"
+                     + (f" ({fg['classification']})"
+                        if fg.get("classification") else ""))
+    if dxy and dxy.get("value") is not None:
+        d = f"broad dollar index {dxy['value']:.1f}"
+        if dxy.get("change_1d_pct") is not None:
+            d += f" ({dxy['change_1d_pct']:+.2f}% 1d)"
+        parts.append(d)
+    line = ("FX risk sentiment (advisory): " + "; ".join(parts)
+            + ". Risk-off bids JPY/CHF/USD and pressures high-beta FX; "
+              "risk-on is the mirror. Regime evidence only — one signal "
+              "alone is no trade.")
+    return line + "\n"
+
 LOSS_FLOOR_USD = 0.99
 LOSS_FLOOR_FRAC = 0.006   # of run budget — what $0.99 WAS at the $1000 seed
 
@@ -4414,6 +4488,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                       + _last_cycle_word_line(run)
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
+                      + _us_psych_line(run)
+                      + _fx_risk_line(run)
                       + _hold_streak_line(run, pos_qty)
                       + _brake_distance_line(run, pos_qty)
                       + _entry_rail_line(run, pos_qty)
@@ -4985,6 +5061,8 @@ def run_cycle(run_id: int) -> dict:
                                         + _last_cycle_word_line(run)
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
+                                        + _us_psych_line(run)
+                                        + _fx_risk_line(run)
                                         + _hold_streak_line(run, held)
                                         + _brake_distance_line(run, held)
                                         + _entry_rail_line(run, held)
