@@ -82,24 +82,63 @@ class ReplayRealizedTests(unittest.TestCase):
         self.assertAlmostEqual(r, 100.0, places=6)
 
 
+class EntryFeesTests(unittest.TestCase):
+    """entry_fees mirrors replay_realized's leg-walk, but sums only the
+    ENTRY-side portion of each leg's fee — the half the adapt stream never
+    nets, and therefore the exact expected ledger-vs-adapt delta."""
+
+    def test_open_fee_counts_close_fee_does_not(self):
+        f = pnl_audit.entry_fees([
+            {"side": "buy", "quantity": 7.8342915, "price": 103.37,
+             "fee_usd": 0.8761},
+            {"side": "sell", "quantity": 7.8342915, "price": 104.91,
+             "fee_usd": 0.4221}])
+        self.assertAlmostEqual(f, 0.8761, places=6)
+
+    def test_a_flip_prorates_its_single_fee(self):
+        # 10 close + 20 open on one 30-unit leg with one fee: only the
+        # opening two-thirds is entry-side.
+        f = pnl_audit.entry_fees([
+            {"side": "buy", "quantity": 10.153, "price": 100.0,
+             "fee_usd": 0.3011},
+            {"side": "sell", "quantity": 30.459, "price": 110.0,
+             "fee_usd": 0.9033}])
+        self.assertAlmostEqual(f, 0.3011 + 0.9033 * (20.306 / 30.459),
+                               places=6)
+
+
 class DriftReportTests(unittest.TestCase):
     """The point of the module: disagreement between the two methods must be
     LOUD. The old snippet was wrong silently for weeks."""
 
     def test_drift_is_flagged_and_agreement_is_not(self):
         rows = [{"day": "2026-08-05", "ledger": 8.62, "adapt": 73.21,
-                 "delta": -64.59, "flattens": 2, "agrees": False},
+                 "delta": -64.59, "fee_asym": -0.31, "resid": -64.28,
+                 "flattens": 2, "agrees": False},
                 {"day": "2026-08-06", "ledger": -4.21, "adapt": -1.44,
-                 "delta": -2.77, "flattens": 0, "agrees": True}]
+                 "delta": -2.77, "fee_asym": -2.51, "resid": -0.26,
+                 "flattens": 0, "agrees": True}]
         report = pnl_audit.format_report(rows)
         self.assertIn("*** DRIFT ***", report)
         self.assertIn("2026-08-05", report)
         self.assertEqual(report.count("*** DRIFT ***"), 1)
 
+    def test_report_prints_the_expected_fee_and_residual_columns(self):
+        # The report must stay honest: show WHAT was excused (fee_asym) and
+        # what remains after excusing it (resid), not just a verdict.
+        rows = [{"day": "2026-08-13", "ledger": -43.19, "adapt": -35.81,
+                 "delta": -7.38, "fee_asym": -7.38, "resid": 0.0,
+                 "flattens": 3, "agrees": True}]
+        report = pnl_audit.format_report(rows)
+        self.assertIn("fee_asym", report)
+        self.assertIn("resid", report)
+        self.assertIn("-7.38", report)
+
     def test_main_exit_code_is_nonzero_on_drift(self):
         # So a scheduled run can FAIL rather than print into the void.
         from unittest.mock import patch
         drift = [{"day": "d", "ledger": 1.0, "adapt": 99.0, "delta": -98.0,
+                  "fee_asym": -0.42, "resid": -97.58,
                   "flattens": 1, "agrees": False}]
         clean = [dict(drift[0], agrees=True)]
         with patch.object(pnl_audit, "realized_by_day", return_value=drift):
@@ -199,3 +238,60 @@ class RealizedByDayTests(unittest.TestCase):
         day = [r for r in rows if r["day"] == "2026-08-06"][0]
         # +100 total, all of it realized ON 08-06 — not a phantom short.
         self.assertAlmostEqual(day["ledger"], 100.0, places=2)
+
+    def test_ENTRY_FEE_ASYMMETRY_beyond_tolerance_is_ok_not_drift(self):
+        # The 2026-08-13 false alarm: adapt `realized` nets EXIT-side fees
+        # only, the ledger charges BOTH sides. Two closes whose raw delta
+        # (-7.38, summed entry fees) exceeds the $5 tolerance but is the
+        # asymmetry EXACTLY must read ok with resid ~ 0. (Modeled on prod
+        # runs 1104/1159, 2026-08-13 — float-dusty on purpose.)
+        pnl_1 = (517.34 - 520.01) * 5.8393100901905735   # -15.5910...
+        pnl_2 = (0.9137 - 0.9312) * 917.4311926605505    # -16.0550...
+        self._seed(
+            trades=[(1, "2026-08-06T01:00:00Z",
+                     {"side": "buy", "quantity": 5.8393100901905735,
+                      "price": 520.01, "fee_usd": 3.6612}),
+                    (1, "2026-08-06T02:00:00Z",
+                     {"side": "sell", "quantity": 5.8393100901905735,
+                      "price": 517.34, "fee_usd": 0.4221,
+                      "client_order_id": "run:1:flatten"}),
+                    (2, "2026-08-06T01:30:00Z",
+                     {"side": "buy", "quantity": 917.4311926605505,
+                      "price": 0.9312, "fee_usd": 3.7183}),
+                    (2, "2026-08-06T03:00:00Z",
+                     {"side": "sell", "quantity": 917.4311926605505,
+                      "price": 0.9137, "fee_usd": 0.3902})],
+            adapts=[("2026-08-06T02:00:00Z", {"realized": pnl_1 - 0.4221}),
+                    ("2026-08-06T03:00:00Z", {"realized": pnl_2 - 0.3902})])
+        rows = pnl_audit.realized_by_day("2026-08-06")
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertAlmostEqual(row["delta"], -7.38, places=2)
+        self.assertGreater(abs(row["delta"]), 5.0,
+                           "fixture must exceed raw tolerance to prove the point")
+        self.assertAlmostEqual(row["fee_asym"], -7.38, places=2)
+        self.assertAlmostEqual(row["resid"], 0.0, places=2)
+        self.assertTrue(row["agrees"],
+                        "entry-fee asymmetry alone must NOT read as drift")
+
+    def test_a_REAL_drift_beyond_the_fee_asymmetry_still_alarms(self):
+        # Same shape, but the adapt stream is short a further ~20 beyond
+        # the entry fee: excusing fees must not excuse this.
+        pnl = (517.34 - 520.01) * 5.8393100901905735
+        self._seed(
+            trades=[(1, "2026-08-06T01:00:00Z",
+                     {"side": "buy", "quantity": 5.8393100901905735,
+                      "price": 520.01, "fee_usd": 6.1273}),
+                    (1, "2026-08-06T02:00:00Z",
+                     {"side": "sell", "quantity": 5.8393100901905735,
+                      "price": 517.34, "fee_usd": 0.4221})],
+            adapts=[("2026-08-06T02:00:00Z",
+                     {"realized": pnl - 0.4221 + 19.7341})])
+        rows = pnl_audit.realized_by_day("2026-08-06")
+        row = rows[0]
+        self.assertAlmostEqual(row["fee_asym"], -6.13, places=2)
+        self.assertAlmostEqual(row["resid"], -19.73, places=2)
+        self.assertFalse(row["agrees"],
+                         "a real 19.73 gap must NOT hide behind the fee excuse")
+        # And the CLI must fail loudly on it, through the real query path.
+        self.assertEqual(pnl_audit.main(["--since", "2026-08-06"]), 1)

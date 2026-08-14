@@ -38,10 +38,13 @@ import json
 from collections import defaultdict
 from typing import Any, Iterable, Optional
 
-# A day's two figures are expected to differ slightly and benignly: `adapt`
-# nets exit-side fees only while the ledger charges both sides, and a close
-# emits its adapt on the NEXT cycle, so a fresh one lags. Beyond this the
-# delta is a finding worth a look, not bookkeeping.
+# A day's two figures differ benignly in a KNOWN way: `adapt` nets
+# exit-side fees only while the ledger charges both sides, so the expected
+# delta is minus the day's entry-side fees — computed per day (fee_asym)
+# and subtracted out before judging. The tolerance applies to the RESIDUAL
+# after that correction; what remains is a close's adapt lagging a cycle,
+# not bookkeeping. On 2026-08-13 ~30 closes' summed entry fees (-7.38)
+# tripped a false DRIFT, which is why the correction is explicit.
 DEFAULT_TOLERANCE_USD = 5.0
 
 _LONGING = ("buy", "cover")
@@ -93,6 +96,41 @@ def replay_realized(trades: Iterable[dict[str, Any]]) -> float:
     return realized
 
 
+def entry_fees(trades: Iterable[dict[str, Any]]) -> float:
+    """Cumulative ENTRY-side fees for one run's trades, oldest first.
+
+    The adapt stream's `realized` nets EXIT-side fees only; the ledger
+    replay charges both sides. The entry-side fees are therefore the exact
+    expected ledger-vs-adapt delta, and this walks the legs with the same
+    parsing, same skips, and same open/close split as `replay_realized` so
+    the attribution can never diverge from the replay it corrects. A leg
+    that both closes and flips prorates its single fee: only the opening
+    portion is entry-side.
+    """
+    qty = 0.0          # signed: > 0 long, < 0 short
+    total = 0.0
+    for t in trades:
+        try:
+            side = str(t["side"]).strip().lower()
+            q = abs(float(t["quantity"]))
+            px = float(t["price"])
+            fee = float(t.get("fee_usd") or 0.0)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if q <= 0 or px <= 0:
+            continue
+        leg_q = q
+        direction = 1 if side in _LONGING else -1
+        if qty and (qty > 0) != (direction > 0):
+            closed = min(q, abs(qty))
+            qty += direction * closed
+            q -= closed
+        if q > 1e-12:
+            total += fee * (q / leg_q)
+            qty += direction * q
+    return total
+
+
 def _rows(cursor, sql: str, params: tuple = ()) -> list[dict[str, Any]]:
     cursor.execute(sql, params)
     return [dict(r) for r in cursor.fetchall()]
@@ -105,8 +143,11 @@ def realized_by_day(since: str, *, conn=None,
 
     `since` is an ISO date/prefix, e.g. "2026-08-06". Returns one row per
     day: ledger (authoritative), adapt (the old runbook snippet), delta,
-    flatten count, and `agrees` — False when the two methods have drifted
-    beyond tolerance, which is the alarm this module exists to raise.
+    fee_asym (the delta EXPECTED from adapt netting exit-side fees only),
+    resid (delta - fee_asym), flatten count, and `agrees` — False when the
+    residual exceeds tolerance, which is the alarm this module exists to
+    raise. Judging the residual, not the raw delta, keeps the known fee
+    asymmetry from crying wolf without hiding a real drift behind it.
     """
     close_after = conn is None
     if conn is None:
@@ -140,17 +181,22 @@ def realized_by_day(since: str, *, conn=None,
         per_run[int(row["run_id"])].append(payload)
 
     ledger: dict[str, float] = defaultdict(float)
+    efees: dict[str, float] = defaultdict(float)
     flattens: dict[str, int] = defaultdict(int)
     for legs in per_run.values():
         running = 0.0
+        fee_running = 0.0
         for i in range(len(legs)):
             total = replay_realized(legs[: i + 1])
+            fee_total = entry_fees(legs[: i + 1])
             day = legs[i]["_ts"][:10]
             if day >= since[:10]:
                 ledger[day] += total - running
+                efees[day] += fee_total - fee_running
                 if "flatten" in str(legs[i].get("client_order_id") or ""):
                     flattens[day] += 1
             running = total
+            fee_running = fee_total
 
     adapt_sum: dict[str, float] = defaultdict(float)
     for row in adapts:
@@ -169,27 +215,35 @@ def realized_by_day(since: str, *, conn=None,
     for day in sorted(set(ledger) | set(adapt_sum)):
         led = round(ledger.get(day, 0.0), 2)
         ada = round(adapt_sum.get(day, 0.0), 2)
+        # Expected delta from the fee asymmetry: the ledger charged the
+        # day's entry-side fees, the adapt stream did not.
+        asym = round(-efees.get(day, 0.0), 2)
+        resid = round(led - ada - asym, 2)
         out.append({"day": day, "ledger": led, "adapt": ada,
                     "delta": round(led - ada, 2),
+                    "fee_asym": asym, "resid": resid,
                     "flattens": flattens.get(day, 0),
-                    "agrees": abs(led - ada) <= tolerance_usd})
+                    "agrees": abs(resid) <= tolerance_usd})
     return out
 
 
 def format_report(rows: list[dict[str, Any]]) -> str:
     lines = [f"{'day':12}{'ledger':>10}{'adapt':>10}{'delta':>9}"
-             f"{'flat':>6}  check",
-             "-" * 56]
+             f"{'fee_asym':>10}{'resid':>9}{'flat':>6}  check",
+             "-" * 74]
     for r in rows:
         mark = "ok" if r["agrees"] else "*** DRIFT ***"
         lines.append(f"{r['day']:12}{r['ledger']:>10.2f}{r['adapt']:>10.2f}"
-                     f"{r['delta']:>9.2f}{r['flattens']:>6}  {mark}")
+                     f"{r['delta']:>9.2f}{r['fee_asym']:>10.2f}"
+                     f"{r['resid']:>9.2f}{r['flattens']:>6}  {mark}")
     if rows:
-        lines.append("-" * 56)
+        lines.append("-" * 74)
         lines.append(f"{'TOTAL':12}{sum(r['ledger'] for r in rows):>10.2f}"
                      f"{sum(r['adapt'] for r in rows):>10.2f}")
     lines.append("ledger = authoritative (validated 71/71 vs the platform's "
                  "own stored realized_pnl_usd)")
+    lines.append("fee_asym = expected delta from adapt netting exit-side "
+                 "fees only; resid = delta - fee_asym is what's judged")
     return "\n".join(lines)
 
 
