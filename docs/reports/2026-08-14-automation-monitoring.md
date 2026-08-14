@@ -11,6 +11,11 @@ live yet.
 
 ---
 
+## Cycle 19 — 21:53Z (silent)
+
+- One $0 refusal (1238). Fleet 33's 25 fresh desks all patient-holding
+  (no entries yet, incl. forex). Swing holds unchanged.
+
 ## Cycle 18 — 21:23Z (quiet)
 
 - Fleet 33 burst completed (through 1270). SLV 1100 at_time on a flat
