@@ -11,6 +11,19 @@ live yet.
 
 ---
 
+## Cycle 6 — 15:23Z
+
+- **NFLX 1167 (swing) closed +$1.12 — the swing block's first completed
+  winner.** Partials banked along the way; the 24h at_time flattened the
+  final +0.88 leg. Rail benign; note the 24h horizon on a swing run cut
+  a running winner — if this recurs on winners, horizon authorship for
+  swing (24h vs multi-day) is worth a look, on evidence.
+- R15 watch broadened: FDX refused a 2nd time (cycle 2, $0); GBPUSD
+  cycle-1 refusal ($0, forex → churn is NOT seed-specific). 5 zero-P&L
+  near-cycle-1 retires since deploy. Keep counting; no action at n=5.
+- Replacements: ABT (seed→swing), AUDUSD, NFLX (fleet 33's own book).
+  No forced losses, no size_clamp; worst open NQ −$1.55.
+
 ## Cycle 5 — 14:53Z (quiet)
 
 - 1162 PFE (fleet 33) at_time expiry on an ALREADY-FLAT book — +$1.21
