@@ -11,6 +11,11 @@ live yet.
 
 ---
 
+## Cycle 8 — 16:23Z (quietest window today)
+
+- One idle-retire: UBER 1181 $0 (12 idle cycles, designed recycle),
+  slot refilled in 15s (1226). No trades, no rail fires, book ±$0.67.
+
 ## Cycle 7 — 15:58Z
 
 - NQ 1197 closed −$2.15: AI sold its loser at 15:36Z (small cut, right
