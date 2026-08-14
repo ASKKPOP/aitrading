@@ -755,6 +755,205 @@ class BrakeDistanceBriefTests(unittest.TestCase):
         self.assertIn("0.36% adverse price move", line)
 
 
+class StopCoherenceBriefTests(unittest.TestCase):
+    """R10 (2026-08-14): every large entry loss of 08-13 was sized so the
+    platform rail HAD to fire before the desk's own stop could — SPCX's
+    6.4% stop meant $212 against a $44 budget. The entry line supplies the
+    room arithmetic on a FLAT book (where _brake_distance_line is silent),
+    and the apply-path clamp enforces it shrink-only."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run(self, *, max_loss=85.26, peak=0.0):
+        return {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto",
+                "stop_conditions_json": json.dumps({"max_loss_usd": max_loss}),
+                "adapt_state_json": json.dumps({"v": 1, "peak_total_pnl": peak,
+                                                "size_mult": 1.0})}
+
+    def _pnl(self, *, total=0.0, mark=517.34, ok=True):
+        return {"total": total, "mark_age_ok": ok,
+                "position": {"current_price": mark, "entry_price": 520.55}}
+
+    def test_room_tracks_the_rail_constant_it_pairs_with(self):
+        # Hardcoding 0.70 would let the room drift from the brake it
+        # describes — same guard as _brake_distance_line's.
+        import run_feedback
+        run = self._run()
+        with patch.dict(run_feedback.ADAPT_BOUNDS,
+                        {"retire_drawdown_frac": 0.35}):
+            with patch.object(run_engine, "compute_run_pnl",
+                              return_value=self._pnl(total=0.0)):
+                room = run_engine._brake_room_usd(run)
+        self.assertAlmostEqual(room, 0.35 * 85.26, places=4)
+
+    def test_room_agrees_with_the_brake_distance_line(self):
+        # The held-book line and the flat-book room must be the same
+        # number: pct rendered by the line × notional == room.
+        run = self._run(peak=0.0)
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(total=-10.0)):
+            room = run_engine._brake_room_usd(run)
+            line = run_engine._brake_distance_line(run, 15.8115)
+        # room = 0.70*85.26 - 10 = 49.682; notional 15.8115*517.34 = 8180.0
+        self.assertAlmostEqual(room, 49.682, places=3)
+        self.assertIn("$49.68", line)
+
+    def test_entry_rail_renders_only_on_a_flat_book(self):
+        run = self._run()
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(total=0.0)):
+            flat = run_engine._entry_rail_line(run, 0.0)
+            held = run_engine._entry_rail_line(run, 15.8115)
+        self.assertIn("Sizing rail for a NEW entry", flat)
+        # room = 59.682; a 1% stop supports room/0.01 = $5,968 of notional
+        self.assertIn("$59.68", flat)
+        self.assertIn("$5,968", flat)
+        self.assertEqual(held, "")
+
+    def test_entry_rail_with_no_room_warns_instead_of_arithmetic(self):
+        run = self._run(peak=70.0)
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(total=-10.0)):
+            line = run_engine._entry_rail_line(run, 0.0)
+        # room = 59.682 - 80 < 0
+        self.assertIn("NO remaining loss budget", line)
+        self.assertNotIn("supports at most", line)
+
+    def test_entry_rail_fail_soft_without_a_stop_and_kill_switch(self):
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl()):
+            self.assertEqual(
+                run_engine._entry_rail_line(self._run(max_loss=0), 0.0), "")
+        os.environ["RUN_STOP_COHERENCE"] = "0"
+        try:
+            with patch.object(run_engine, "compute_run_pnl",
+                              return_value=self._pnl()):
+                self.assertEqual(
+                    run_engine._entry_rail_line(self._run(), 0.0), "")
+        finally:
+            os.environ.pop("RUN_STOP_COHERENCE", None)
+
+    def test_the_entry_line_is_actually_WIRED_into_the_light_prompt(self):
+        seen = {}
+
+        def _capture(prompt, **kw):
+            seen["prompt"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        import llm_client
+        import price_fetcher
+        run = {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto",
+               "market_type": "spot"}
+        with patch.object(price_fetcher, "get_price_from_market",
+                          return_value=517.34), \
+            patch.object(price_fetcher, "get_daily_candles",
+                         return_value=[]), \
+            patch.object(run_engine, "_position_quantity",
+                         return_value=0.0), \
+            patch.object(run_engine, "_entry_rail_line",
+                         return_value="ENTRY_RAIL_SENTINEL\n"), \
+                patch.object(llm_client, "generate_text", _capture):
+            run_engine._light_analysis(run, {})
+        self.assertIn("ENTRY_RAIL_SENTINEL", seen.get("prompt", ""),
+                      "entry rail line is not wired into the light prompt")
+
+    def test_the_entry_line_is_WIRED_into_the_full_prompt_source(self):
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_entry_rail_line(run, held)", src,
+                      "entry rail line is not wired into the full prompt")
+
+
+class LastCycleWordBriefTests(unittest.TestCase):
+    """R11 (2026-08-14): QNT bought 29 minutes after its own cycle wrote
+    "thesis already invalidated" — nothing showed the desk what it had
+    just said. The line quotes the desk's own last decision back to it."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _emit(self, run_id: int, payload: dict, seq: int = 0):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'decision', '2026-08-14T00:00:00Z', ?)",
+                (run_id, seq, json.dumps(payload)))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_quotes_the_desks_own_last_report(self):
+        self._emit(7, {"action": "hold",
+                       "report": "Long thesis is already invalidated because "
+                                 "price is below today's open — no entry."})
+        line = run_engine._last_cycle_word_line({"id": 7})
+        self.assertIn("Your own last cycle (action: hold)", line)
+        self.assertIn("already invalidated", line)
+        self.assertIn("standing invalidation", line)
+
+    def test_silent_when_there_is_no_history_or_no_report(self):
+        self.assertEqual(run_engine._last_cycle_word_line({"id": 99}), "")
+        self._emit(8, {"action": "hold", "report": ""})
+        self.assertEqual(run_engine._last_cycle_word_line({"id": 8}), "")
+
+    def test_a_long_report_is_truncated_not_dropped(self):
+        self._emit(9, {"action": "sell", "report": "word " * 200})
+        line = run_engine._last_cycle_word_line({"id": 9})
+        self.assertIn("…", line)
+        self.assertLess(len(line), 900)
+
+    def test_the_newest_decision_wins(self):
+        self._emit(10, {"action": "hold", "report": "older words"}, seq=1)
+        self._emit(10, {"action": "buy", "report": "newest words"}, seq=2)
+        line = run_engine._last_cycle_word_line({"id": 10})
+        self.assertIn("newest words", line)
+        self.assertNotIn("older words", line)
+
+    def test_the_line_is_actually_WIRED_into_both_prompts(self):
+        seen = {}
+
+        def _capture(prompt, **kw):
+            seen["prompt"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        import llm_client
+        import price_fetcher
+        run = {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto",
+               "market_type": "spot"}
+        with patch.object(price_fetcher, "get_price_from_market",
+                          return_value=517.34), \
+            patch.object(price_fetcher, "get_daily_candles",
+                         return_value=[]), \
+            patch.object(run_engine, "_position_quantity",
+                         return_value=0.0), \
+            patch.object(run_engine, "_last_cycle_word_line",
+                         return_value="LAST_WORD_SENTINEL\n"), \
+                patch.object(llm_client, "generate_text", _capture):
+            run_engine._light_analysis(run, {})
+        self.assertIn("LAST_WORD_SENTINEL", seen.get("prompt", ""),
+                      "last-cycle line is not wired into the light prompt")
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_last_cycle_word_line(run)", src,
+                      "last-cycle line is not wired into the full prompt")
+
+
 class BreadthBriefTests(unittest.TestCase):
     """The catalogue teaches distribution counting and follow-through
     confirmation, but the us-stock desks had no market-wide data to apply
