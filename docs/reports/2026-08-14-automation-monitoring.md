@@ -11,6 +11,13 @@ live yet.
 
 ---
 
+## Cycle 18 — 21:23Z (quiet)
+
+- Fleet 33 burst completed (through 1270). SLV 1100 at_time on a flat
+  book — finalizes −2.52, booked 08-12/13 pre-#416 (the fee-scale
+  wound class since fixed). One $0 refusal (COP 1250). Overnight swing
+  holds steady.
+
 ## Cycle 17 — 20:53Z — FLEET 33 SCALED 6→25 BY USER
 
 - Ten runs built in 20s (1255-1264), fleet 33 now 25/25 running on
