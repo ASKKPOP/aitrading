@@ -127,19 +127,19 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 - **Next analysis pass (backtest-first, R6 discipline):** trace the `adapt_retire`/`at_time` close path; of the 39 losses quantify retire/time-driven vs own-stop and the recoverable fraction; then propose the retire-verb skill + the decision-routing path (both AI-first) for owner/desk approval.
 - **Self-correction log this investigation:** (1) my monitoring short-P&L sign was inverted — fixed, memory `position-upnl-sign-convention`; (2) "desk ignores its reduce skill / empty why" was wrong — `why` isn't a persisted field, the real reason lives in `report`; (3) "tail = max-loss floor firing" was wrong — floors are $3–5, losses closed at 7–42% of floor; the true cause is retire/time-limit. Reported each plainly.
 
-### R10 — Size-vs-loss-floor coherence (the desk's stop must be REACHABLE) · HARD-READY (2026-08-14, cycle 1)
+### R10 — Size-vs-loss-floor coherence · **SHIPPED (2026-08-14, PR #417, image 20260814-solutions-r10-rag)** — add-aware clamp + entry rail line + per-run-type rail
 - **Evidence (n=3 in one day, −$118):** SPCX 1159 (stop 6.4% ⇒ $212 at full size vs $44 budget → brake fired at −1.07%, 26 min in), SOL 1099 aggregate (6 tranches made the AI's own $76.7 invalidation unreachable — floor at ~0.7% adverse vs stop at ~1.4%), GC 1186 (1.31% stop ⇒ $27.5 vs ~$13 floor). In every case the platform rail fired FIRST and the AI's authored stop was fiction. #244 gave the desk VISIBILITY of the rail; it still doesn't SIZE against it.
 - **AI-first design:** prompt/skill lesson — "worst-case USD at your stop (notional × stop%) must fit the run's REMAINING loss budget; size down until it does." Platform fallback: shrink-only clamp in order-params apply (size_frac ↓ until stop-USD ≤ remaining budget) — composes with existing shrink-only rails (#81/#82).
 - **Blocker to resolve first:** skills catalogue is AT CAPACITY (handoff trap 2026-08-06) — needs a merge/drop decision; and the clamp needs the wiring test pattern (brief-line trap).
 
-### R11 — Momentum-chase against the desk's own written invalidation · STAGED (2026-08-14, n=3, −$47)
+### R11 — Momentum-chase against the desk's own written invalidation · **SHIPPED (2026-08-14, PR #417)** — last-cycle word line (age-stamped, errored-cycle-proof); owner ordered immediate ship
 - QNT 1157 (bought 29 min after itself writing "thesis already invalidated"), INTC 1169 (bought after twice writing the bracket doesn't work), SPCX 1159 (full size into a +34%/5d extended mover). Candidate lesson: "a condition you wrote as invalidation stays binding across cycles unless the thesis is re-derived." Wait for one more day of tape before drafting the skill (2+ cycles rule; catalogue capacity).
 
-### R12 — Event-table spam ~2,500 rows/day · SOFT (2026-08-14)
+### R12 — Event-table spam ~2,500 rows/day · **SHIPPED (2026-08-14, PR #417)** — change-driven + 30-min heartbeat
 - Fleet 31 re-emits `fleet_status replenishing` every ~62s (×1,385/day); run 1161's queued flatten retries every ~33s writing `gate_skip` (×1,144 over 10.5h). No P&L impact; dedupe/backoff when convenient.
 
-### R13 — pnl_audit should model entry-side fee asymmetry · SOFT (2026-08-14)
+### R13 — pnl_audit entry-side fee asymmetry · **SHIPPED (2026-08-14, PR #417)** — fee_asym/resid columns
 - 08-13 DRIFT flag (−7.38) proven benign to the cent: adapt nets exit-side fees only. Make the tool compute the expected fee asymmetry (or scale tolerance by open-leg fees) so real drift stays loud.
 
-### R14 — Swing universe cannot fill 25 slots · OWNER DECISION (2026-08-14)
+### R14 — Swing universe cannot fill 25 slots · **SHIPPED (2026-08-14, PR #417)** — S&P-100 seed roster, gates untouched (owner chose widen-universe via 'full make solutions')
 - Fleet 31 stuck 17/25 all day; gates honestly drop everything (swing_history_thin 42–62 bars; backtest expectancy −72…−502 USD/trade). Options: widen the researched us-stock universe, or lower n_runs. Gates themselves are correct — do NOT loosen them.

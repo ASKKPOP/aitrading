@@ -11,6 +11,34 @@ live yet.
 
 ---
 
+## SHIP — 11:09Z: PR #417 deployed (image 20260814-solutions-r10-rag)
+
+Owner order ("full make solutions for 1,2" + "verify with 5 agents + QA 5
+agents … after deploy"). Built by 5 parallel builders, adversarially
+verified by 5 independent agents pre-merge (every finding fixed +
+mutation-tested), shipped as one squash commit 8087e5f4:
+
+- **R10** stop-coherence: `_entry_rail_line` (flat-book rail arithmetic)
+  + apply-path shrink-only clamp (ADD-AWARE: room − held_notional×stop%,
+  after the verifier reproduced the SOL shape surviving an
+  increment-only clamp) + per-run-type rail selection (brake frac only
+  for feedback runs). `size_clamp` telemetry; kill switch
+  RUN_STOP_COHERENCE. Prod has RUN_AI_ORDER_PARAMS=apply → ACTIVE.
+- **R11** `_last_cycle_word_line`: desk's own last decision quoted back,
+  age-stamped, scanning past errored empty cycles.
+- **R12** event dedupe: fleet replenishing status + queued-flatten
+  gate_skip → change-driven + 30-min heartbeat; env parse guarded.
+- **R13** pnl_audit fee_asym/resid columns; residual-judged tolerance.
+- **R14** S&P-100 swing seed universe (gates untouched; kill switch
+  SWING_SEED_UNIVERSE=0).
+- **RAG Plan 22 Phase 1**: 40 skills → 118 atomic lessons, bodies/hashes
+  byte-identical (DB no-op), `applies_when` staged for Phase 2.
+
+Verification: full suite 4,190 + 1,337 subtests green ×2; CI green;
+migrations at 0050; containers up on the new image; static roots 200;
+zero startup errors. Rollback: SOOPPIY_IMAGE=sooppiy-backend:20260814-llmdefault.
+5 QA agents dispatched against live prod (results appended when in).
+
 ## Cycle 2 — 09:29Z (anchored; quiet window)
 
 - **Tape 09:00→09:29Z:** one AI partial profit-take (run 1147 AUDCHF sold
