@@ -1,4 +1,24 @@
-# Handoff — N-slot fleet monitoring: crypto short block + US-stock swing block
+# Handoff — N-slot fleet monitoring
+
+> ### ⏸️ LOOP STOPPED BY OWNER — 2026-08-14 08:4xZ
+>
+> Owner: **"stop all monitoring."** Both crons cancelled (30-min 24/7
+> `38b98c93`, daily sweep `b4e28081`); nothing scheduled. **Do NOT
+> restart the loop until the owner says so.** When monitoring resumes,
+> re-arm per §7a–§7e + CLAUDE.md Monitoring Rules (two-subagent
+> procedure, the outcome law, three-user scope).
+>
+> **State at stop:** image `20260814-llmdefault` (carries all 11 fixes of
+> 08-13/14 incl. #416 scale-coherence and #415 llm-default); 0
+> tracebacks; panels genuine on all three fleets (parse-fallback n=1
+> logged, no recurrence); probation proven live (EURUSD 1190); stop-hit
+> routing armed, no live fire yet. P&L since 08-12: agent 5 −185.66 /
+> agent 6 −7.64 / agent 59 +6.94. OPEN owner item: GitHub billing block
+> (CI dead since 08-13 22:53Z). Open defect chases for the next session:
+> IBM prose-vs-parsed stop (1.3% vs 0.3%); time-aligned ghost-book
+> recurrence probe; loss-tempo lesson pending one full session of
+> evidence under the new stack.
+: crypto short block + US-stock swing block
 
 > ## ⚠️ REPO MARKDOWN IS THE ONLY DURABLE STATE
 >
