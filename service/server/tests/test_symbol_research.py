@@ -815,3 +815,73 @@ class SurvivorPoolSizingTests(unittest.TestCase):
         out = sr.screen_universe(rows, fetch_candles=lambda s, m: candles,
                                  overlays={})
         self.assertLessEqual(len([s for s in out if s["market"] == "crypto"]), 2)
+
+
+class PsychWeightsV2Tests(unittest.TestCase):
+    """Plan 25 C1/C2. Finding recorded first: the psych subscore was
+    hardcoded None for every market, so every WEIGHT_PROFILES psych weight
+    (including crypto's .20) had NEVER bound — coverage renormalization
+    removed it. v2 feeds the us-stock subscore from per-symbol StockTwits
+    tilt aligned with candidate direction, and re-weights us-stock, all
+    behind FLEET_PSYCH_WEIGHTS_V2 so v1 batches stay byte-identical."""
+
+    def tearDown(self):
+        os.environ.pop("FLEET_PSYCH_WEIGHTS_V2", None)
+
+    def _fetch(self, sym, market):
+        drift = {"UP": 1.2, "DOWN": -1.2}.get(sym, 0.6)
+        return _candles(drift=drift, volume=5_000_000)
+
+    _OVERLAYS = {"event_window": False, "regime_blocks_longs": False,
+                 "policy": {}}
+
+    def test_profile_v2_binds_only_under_the_flag(self):
+        v1 = sr._weight_profile("us-stock")
+        self.assertEqual(v1, sr.WEIGHT_PROFILES["us-stock"])
+        os.environ["FLEET_PSYCH_WEIGHTS_V2"] = "true"
+        v2 = sr._weight_profile("us-stock")
+        self.assertEqual(v2["psych"], .15)
+        self.assertEqual(v2["technical"], .30)
+        self.assertEqual(v2["social"], .05)
+        self.assertAlmostEqual(sum(v2.values()), 1.0)
+        for market in ("crypto", "futures", "forex"):
+            self.assertEqual(sr._weight_profile(market),
+                             sr.WEIGHT_PROFILES.get(market)
+                             or sr.WEIGHT_PROFILES["crypto"], market)
+
+    def test_us_psych_subscore_from_tilt_aligned_with_direction(self):
+        os.environ["FLEET_PSYCH_WEIGHTS_V2"] = "true"
+        universe = [{"symbol": "UP", "market": "us-stock"},
+                    {"symbol": "DOWN", "market": "us-stock"},
+                    {"symbol": "NOTILT", "market": "us-stock"},
+                    {"symbol": "UP", "market": "crypto"}]
+        with patch("us_stock_factors.latest_tilts",
+                   return_value={"UP": 0.6, "DOWN": -0.4}):
+            got = sr.screen_universe(universe, fetch_candles=self._fetch,
+                                     overlays=dict(self._OVERLAYS))
+        by = {(s["market"], s["symbol"]): s for s in got}
+        self.assertAlmostEqual(
+            by[("us-stock", "UP")]["subscores"]["psych"], 0.6)
+        # bearish crowd agreeing with a falling candidate = confirmation
+        self.assertAlmostEqual(
+            by[("us-stock", "DOWN")]["subscores"]["psych"], 0.4)
+        self.assertIsNone(by[("us-stock", "NOTILT")]["subscores"]["psych"])
+        self.assertIsNone(by[("crypto", "UP")]["subscores"]["psych"])
+
+    def test_flag_off_never_reads_tilts_and_leaves_psych_none(self):
+        universe = [{"symbol": "UP", "market": "us-stock"}]
+        with patch("us_stock_factors.latest_tilts",
+                   side_effect=AssertionError("v1 must not read tilts")):
+            got = sr.screen_universe(universe, fetch_candles=self._fetch,
+                                     overlays=dict(self._OVERLAYS))
+        self.assertIsNone(got[0]["subscores"]["psych"])
+
+    def test_tilt_feed_failure_is_fail_soft(self):
+        os.environ["FLEET_PSYCH_WEIGHTS_V2"] = "true"
+        universe = [{"symbol": "UP", "market": "us-stock"}]
+        with patch("us_stock_factors.latest_tilts",
+                   side_effect=RuntimeError("db down")):
+            got = sr.screen_universe(universe, fetch_candles=self._fetch,
+                                     overlays=dict(self._OVERLAYS))
+        self.assertTrue(got)
+        self.assertIsNone(got[0]["subscores"]["psych"])

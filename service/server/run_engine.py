@@ -2402,7 +2402,7 @@ def _unrealized_pnl(run: dict) -> Optional[float]:
 #  "trail_arm_pct":12, "trail_give":0.3, "horizon_hours":72, "max_adds":1}
 # — a complete, internally consistent risk plan — and the engine kept less
 # than half of it. This section honours the rest.
-_AMBIENT_TRIGGERS = frozenset({"psych_shock", "hot_issue"})
+_AMBIENT_TRIGGERS = frozenset({"psych_shock", "hot_issue", "psych_extreme"})
 
 
 def _order_plan_enabled() -> bool:
@@ -2782,6 +2782,24 @@ def _classify_situation(run: dict, cfg: dict) -> dict:
             triggers.append("hot_issue")
     except Exception:  # noqa: BLE001
         pass
+    if (run.get("market") or "") in ("us-stock", "forex"):
+        # Plan 25 C3: crowd extremes convene the full desk for the markets
+        # whose psychology is the US fear gauge — mirror of crypto's
+        # psych_shock. Market-wide, so it is ambient (the desk may
+        # downgrade it; it cannot override an authored horizon).
+        try:
+            import psych_feed
+            fg = psych_feed.us_fear_greed()
+            if fg and fg.get("value") is not None:
+                v = float(fg["value"])
+                if fg.get("source") == "vix":
+                    extreme = v >= 30.0 or v <= 12.0
+                else:
+                    extreme = v <= 20.0 or v >= 80.0
+                if extreme:
+                    triggers.append("psych_extreme")
+        except Exception:  # noqa: BLE001
+            pass
     deterministic = "full" if triggers else "light"
     if not triggers or not _ai_routing_enabled():
         return {"route": deterministic, "triggers": triggers}

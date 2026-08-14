@@ -154,6 +154,48 @@ def finra_short_volume_ratios(lookback_days: int = 5) -> dict[str, float]:
     return {}
 
 
+def latest_tilts(max_age_h: float = 48.0) -> dict[str, float]:
+    """Latest non-null StockTwits tilt per symbol, age-capped.
+
+    Plan 25 C1: feeds the research screen's psych subscore. One bounded
+    query (latest row per symbol), age-filtered in Python because the two
+    backends disagree on datetime arithmetic. Fail-soft to {} — a dead
+    feed must cost the screen nothing.
+    """
+    out: dict[str, float] = {}
+    try:
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT s.symbol, s.stocktwits_tilt, s.created_at "
+                "FROM us_stock_factor_snapshots s "
+                "JOIN (SELECT symbol, MAX(id) AS mid "
+                "      FROM us_stock_factor_snapshots GROUP BY symbol) m "
+                "ON s.id = m.mid")
+            rows = cur.fetchall()
+        finally:
+            conn.close()
+        now = datetime.now(timezone.utc)
+        for r in rows:
+            tilt = r["stocktwits_tilt"]
+            if tilt is None:
+                continue
+            try:
+                created = str(r["created_at"])
+                dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                if (now - dt).total_seconds() > max_age_h * 3600.0:
+                    continue
+            except Exception:  # noqa: BLE001 — unreadable stamp: skip, never guess
+                continue
+            out[str(r["symbol"]).upper()] = float(tilt)
+    except Exception:  # noqa: BLE001
+        return {}
+    return out
+
+
 def record_us_stock_factor_snapshots(symbols: "tuple[str, ...] | None" = None
                                      ) -> dict[str, Any]:
     """One snapshot row per symbol. Fail-soft per source AND per symbol —

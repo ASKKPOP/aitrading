@@ -30,7 +30,14 @@ RUN = {"id": 1, "symbol": "ETHUSDT", "market": "crypto",
 
 
 class AiRoutingTests(unittest.TestCase):
+    def setUp(self):
+        # Plan 25 C3 added the US fear gauge as a trigger source; every test
+        # here must control it or a real VIX extreme would flip routes.
+        self._fg = patch("psych_feed.us_fear_greed", return_value=None)
+        self._fg.start()
+
     def tearDown(self):
+        self._fg.stop()
         os.environ.pop("RUN_AI_ROUTING", None)
 
     def test_enabled_by_default(self):
@@ -170,3 +177,66 @@ class AiRoutingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PsychExtremeTriggerTests(unittest.TestCase):
+    """Plan 25 C3: crowd extremes convene the full desk for us-stock and
+    forex, exactly as psych_shock already does for crypto. Market-wide, so
+    the trigger is ambient (the desk may downgrade it; it cannot override
+    an authored horizon)."""
+
+    def _classify(self, market, fg, psych_payload=None):
+        with patch("market_events.active_event_window", return_value=None), \
+             patch("regime.current_regime_state", return_value=None), \
+             patch("hot_issue_daemon.recent_hot_issue", return_value=False), \
+             patch("psych_feed.us_fear_greed", return_value=fg), \
+             patch("psych_feed.get_psych_payload",
+                   return_value=psych_payload or {"available": False}), \
+             patch("llm_client.llm_configured", return_value=False):
+            return run_engine._classify_situation({**RUN, "market": market}, {})
+
+    def test_vix_fear_extreme_routes_full_for_us_stock_and_forex(self):
+        for market in ("us-stock", "forex"):
+            out = self._classify(market, {"source": "vix", "value": 32.0})
+            self.assertIn("psych_extreme", out["triggers"], market)
+            self.assertEqual(out["route"], "full", market)
+
+    def test_vix_complacency_extreme_triggers(self):
+        out = self._classify("us-stock", {"source": "vix", "value": 11.5})
+        self.assertIn("psych_extreme", out["triggers"])
+
+    def test_cnn_extremes_trigger_and_midrange_does_not(self):
+        self.assertIn("psych_extreme", self._classify(
+            "forex", {"source": "cnn", "value": 85.0})["triggers"])
+        self.assertIn("psych_extreme", self._classify(
+            "us-stock", {"source": "cnn", "value": 15.0})["triggers"])
+        self.assertEqual(self._classify(
+            "us-stock", {"source": "vix", "value": 20.0})["triggers"], [])
+        self.assertEqual(self._classify(
+            "forex", {"source": "cnn", "value": 55.0})["triggers"], [])
+
+    def test_crypto_never_uses_the_equity_gauge(self):
+        with patch("market_events.active_event_window", return_value=None), \
+             patch("regime.current_regime_state", return_value=None), \
+             patch("hot_issue_daemon.recent_hot_issue", return_value=False), \
+             patch("psych_feed.us_fear_greed",
+                   side_effect=AssertionError("crypto must not read it")), \
+             patch("psych_feed.get_psych_payload",
+                   return_value={"available": False}), \
+             patch("llm_client.llm_configured", return_value=False):
+            out = run_engine._classify_situation({**RUN, "market": "crypto"}, {})
+        self.assertNotIn("psych_extreme", out["triggers"])
+
+    def test_gauge_failure_drops_the_trigger_silently(self):
+        with patch("market_events.active_event_window", return_value=None), \
+             patch("regime.current_regime_state", return_value=None), \
+             patch("hot_issue_daemon.recent_hot_issue", return_value=False), \
+             patch("psych_feed.us_fear_greed",
+                   side_effect=RuntimeError("down")), \
+             patch("llm_client.llm_configured", return_value=False):
+            out = run_engine._classify_situation(
+                {**RUN, "market": "us-stock"}, {})
+        self.assertNotIn("psych_extreme", out["triggers"])
+
+    def test_psych_extreme_is_ambient(self):
+        self.assertIn("psych_extreme", run_engine._AMBIENT_TRIGGERS)

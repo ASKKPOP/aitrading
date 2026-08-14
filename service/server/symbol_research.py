@@ -432,6 +432,32 @@ def _clip(x: float, lo: float = -1.0, hi: float = 1.0) -> float:
     return max(lo, min(hi, x))
 
 
+def _psych_weights_v2() -> bool:
+    """Plan 25 C2 flag. Default off so v1 research batches stay
+    byte-identical; prod enables it for the A/B (thesis factor_scores carry
+    a non-null psych subscore as the v2 fingerprint)."""
+    return os.getenv("FLEET_PSYCH_WEIGHTS_V2", "false").strip().lower() \
+        in {"1", "true", "yes", "on"}
+
+
+# Plan 25 C2 (owner directive 2026-08-14): psychology weighted harder for
+# us-stock. Finding recorded first: the psych subscore was hardcoded None
+# for every market, so every psych weight below had NEVER bound — coverage
+# renormalization removed it. v2 feeds the subscore (per-symbol StockTwits
+# tilt aligned with candidate direction) and re-weights us-stock. forex is
+# deliberately NOT re-weighted: no per-pair psychology source exists, and a
+# weight on a structurally-None subscore is decoration — forex psychology
+# binds at the desk brief line and the psych_extreme routing trigger.
+_WEIGHT_PROFILE_V2_US = {"technical": .30, "news": .25, "macro": .15,
+                         "policy": .10, "social": .05, "psych": .15}
+
+
+def _weight_profile(market: str) -> dict[str, float]:
+    if market == "us-stock" and _psych_weights_v2():
+        return _WEIGHT_PROFILE_V2_US
+    return WEIGHT_PROFILES.get(market) or WEIGHT_PROFILES["crypto"]
+
+
 def technical_subscore(f: dict[str, Any]) -> Optional[float]:
     """Blend candle factors into one technical subscore ∈ [−1, +1]."""
     parts: list[float] = []
@@ -467,7 +493,7 @@ def composite_score(subscores: dict[str, Optional[float]], market: str) -> dict[
     Missing factor == None, NEVER a fabricated 0 — thin markets compete on
     what they have without pretending sentiment data exists.
     """
-    profile = WEIGHT_PROFILES.get(market) or WEIGHT_PROFILES["crypto"]
+    profile = _weight_profile(market)
     avail = {k: v for k, v in subscores.items() if v is not None and k in profile}
     wsum = sum(profile[k] for k in avail)
     if wsum <= 0:
@@ -741,6 +767,14 @@ def screen_universe(universe: list[dict[str, str]],
         fetch_candles = lambda s, m: price_fetcher.get_daily_candles(s, m, days=60)  # noqa: E731
     overlays = overlays if overlays is not None else _read_overlays()
 
+    us_tilts: dict[str, float] = {}
+    if _psych_weights_v2():
+        try:
+            import us_stock_factors
+            us_tilts = us_stock_factors.latest_tilts() or {}
+        except Exception:  # noqa: BLE001 — a dead feed costs the screen nothing
+            us_tilts = {}
+
     scored: list[dict[str, Any]] = []
     for cand in universe:
         sym, market = cand["symbol"], cand["market"]
@@ -756,11 +790,18 @@ def screen_universe(universe: list[dict[str, str]],
         floor = LIQUIDITY_FLOOR_USD.get(market)
         if floor and (f.get("dollar_vol_20d") or 0) < floor:
             continue
+        direction = "long" if (f.get("mom_5d") or 0) >= 0 else "short"
         subs: dict[str, Optional[float]] = {
             "technical": technical_subscore(f),
             "psych": None, "social": None, "news": None,
             "flows": None, "macro": None,
         }
+        if market == "us-stock" and sym.upper() in us_tilts:
+            # Plan 25 C1: crowd tilt aligned with the candidate's direction —
+            # a bullish crowd on a rising name (or bearish on a falling one)
+            # confirms; disagreement scores negative. Clamped, per-symbol.
+            tilt = max(-1.0, min(1.0, us_tilts[sym.upper()]))
+            subs["psych"] = tilt * (1.0 if direction == "long" else -1.0)
         if market in ("crypto", "us-stock") and overlays.get("policy", {}).get(market):
             # attention flag only — direction comes from the LLM reading titles
             subs["policy"] = 0.2
@@ -768,7 +809,6 @@ def screen_universe(universe: list[dict[str, str]],
         if comp["rank_score"] is None:
             continue
         vfit = vol_fit_score(f.get("vol_daily_pct"), market)
-        direction = "long" if (f.get("mom_5d") or 0) >= 0 else "short"
         session_open = True
         try:
             session_open = markets.is_market_open(market)
