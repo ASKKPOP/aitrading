@@ -1990,6 +1990,22 @@ def _flush_pending_close_adapts(run: dict) -> int:
         return 0
 
 
+# queued-flatten telemetry: first queue entry writes, then a heartbeat — NOT
+# a row per control scan (run 1161 wrote 1,144 identical "flatten queued"
+# rows over one 10.5h closed session; R12). The retry itself is untouched —
+# only the journal write is throttled. Leaving the queue (market open, or a
+# broken calendar failing open to the flatten) clears the entry, so the next
+# queueing writes immediately again.
+_last_flatten_queued: dict[int, float] = {}  # run_id -> monotime of last write
+
+
+def _flatten_queued_heartbeat_seconds() -> int:
+    try:
+        return max(60, int(os.getenv("RUN_FLATTEN_QUEUED_HEARTBEAT", "1800")))
+    except ValueError:
+        return 1800
+
+
 def _control_stopping(run: dict, out: dict) -> None:
     # BEFORE any branch, and before the flatten leg exists as a signal: all
     # three exits below are terminal, and each one is a place a pending close
@@ -2035,13 +2051,20 @@ def _control_stopping(run: dict, out: dict) -> None:
     try:
         import markets as _mkts
         if not _mkts.is_market_open(run.get("market")):
-            emit_telemetry_event(run["id"], "gate_skip",
-                                 {"stage": "flatten",
-                                  "reason": "market closed — flatten queued "
-                                            "to the next open"})
+            import time as _time
+            now_mono = _time.monotonic()
+            prev = _last_flatten_queued.get(run["id"])
+            if prev is None \
+                    or now_mono - prev >= _flatten_queued_heartbeat_seconds():
+                _last_flatten_queued[run["id"]] = now_mono
+                emit_telemetry_event(run["id"], "gate_skip",
+                                     {"stage": "flatten",
+                                      "reason": "market closed — flatten queued "
+                                                "to the next open"})
             return
     except Exception:  # noqa: BLE001 — a missing calendar must not block a stop
         pass
+    _last_flatten_queued.pop(run["id"], None)  # left the queue: a state change
 
     ok, why = _flatten_run(run)
     if ok:

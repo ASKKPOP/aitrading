@@ -119,6 +119,7 @@ class SupervisionBase(unittest.TestCase):
         # module-level retry cache is keyed by (fleet_id, slot_index); every
         # test recreates fleet 1 in the same process, so reset it
         fs._LAST_EMPTY_ATTEMPT.clear()
+        fs._LAST_STATUS_EMIT.clear()
         self.tmp = tempfile.TemporaryDirectory()
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
@@ -754,6 +755,71 @@ class CompositionNoticeTests(SupervisionBase):
         self.assertEqual(hits[0]["dedupe"], f"fleet:{fleet_id}:slots_filled")
         fs.supervise_fleet(fp.get_fleet(fleet_id))  # no further growth: quiet
         self.assertEqual(len(self._kind("fleet_slots_filled")), 1)
+
+
+class ReplenishStatusEmitTests(SupervisionBase):
+    """R12: fleet 31 re-wrote an UNCHANGED `replenishing:16/25` fleet_status
+    row on every ~62s pass — 1,385 identical journal rows in a day. The
+    label recomputation stays per-pass; the WRITE is change-driven with a
+    heartbeat, and a state change (slot count, reason cleared) always writes
+    immediately — monitoring reads the transitions."""
+
+    def _replenish_events(self, fleet_id):
+        import json as _json
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT payload FROM fleet_events WHERE fleet_id = ? "
+                    "AND event_type = 'fleet_status'", (fleet_id,))
+        rows = [_json.loads(r["payload"]) for r in cur.fetchall()]
+        conn.close()
+        return [r for r in rows
+                if str(r.get("reason") or "").startswith("replenishing:")]
+
+    def _under_target_fleet(self):
+        fleet_id = self._built_fleet(n=8, budget=8000.0)  # 5 candidates < 8
+        fs.supervise_fleet(fp.get_fleet(fleet_id))  # partial: → replenishing:
+        self.assertEqual(len(self._replenish_events(fleet_id)), 1)
+        return fleet_id
+
+    def test_unchanged_state_does_not_rewrite_within_the_interval(self):
+        fleet_id = self._under_target_fleet()
+        for _ in range(3):
+            fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertEqual(len(self._replenish_events(fleet_id)), 1)
+        # the row still carries the (unchanged) label for the UI
+        self.assertTrue((fp.get_fleet(fleet_id)["status_reason"] or "")
+                        .startswith("replenishing:"))
+
+    def test_heartbeat_rewrites_after_the_interval(self):
+        fleet_id = self._under_target_fleet()
+        fs._LAST_STATUS_EMIT[fleet_id] -= fs._STATUS_HEARTBEAT_SECONDS + 1
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertEqual(len(self._replenish_events(fleet_id)), 2)
+
+    def test_slot_count_change_writes_immediately(self):
+        fleet_id = self._under_target_fleet()
+        before = fp.get_fleet(fleet_id)["status_reason"]
+        self._seed_research(symbols=("FFF",), batch_id="research:999999")
+        fs._LAST_EMPTY_ATTEMPT.clear()  # skip the empty-retry cooldown
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        after = fp.get_fleet(fleet_id)["status_reason"]
+        self.assertNotEqual(after, before, "fixture never grew the fleet")
+        self.assertEqual(len(self._replenish_events(fleet_id)), 2)
+
+    def test_reaching_target_clears_reason_and_throttle_state(self):
+        import time as _time
+        fleet_id = self._built_fleet(n=2, budget=2000.0)  # builds full
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleets SET status_reason = 'replenishing:1/2' "
+                    "WHERE id = ?", (fleet_id,))
+        conn.commit()
+        conn.close()
+        fs._LAST_STATUS_EMIT[fleet_id] = _time.monotonic()  # fresh: no heartbeat due
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertIsNone(fp.get_fleet(fleet_id)["status_reason"])
+        self.assertNotIn(fleet_id, fs._LAST_STATUS_EMIT,
+                         "re-entering replenishing must write immediately")
 
 
 if __name__ == "__main__":
