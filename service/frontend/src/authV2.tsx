@@ -74,11 +74,11 @@ function AuthShell({ title, subtitle, children, mode = 'login', social = false }
            vetting (error 30908) checks that the privacy policy is
            discoverable from the pages where users sign up. */
         <div style={{ paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: '#93a0aa', textAlign: 'center' }}>
-          <a href="https://sooppiy.com/privacypolicy" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Privacy Policy</a>
+          <a href="/privacypolicy" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Privacy Policy</a>
           {' · '}
-          <a href="https://sooppiy.com/termsconditions" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Terms &amp; Conditions</a>
+          <a href="/termsconditions" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>Terms &amp; Conditions</a>
           {' · '}
-          <a href="https://sooppiy.com/smsoptin" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>SMS Policy</a>
+          <a href="/smsoptin" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>SMS Policy</a>
         </div>
       }
     >

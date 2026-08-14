@@ -34,7 +34,6 @@ reject or extend. Lazy expiry: reads mark stale 'active' rows 'expired'.
 from __future__ import annotations
 
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -77,7 +76,10 @@ def _bank_info() -> str:
 
 
 def _frontend_url() -> str:
-    return os.getenv("SOOPPIY_FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    """Stripe return target. Sourced from site_config, which has NO default —
+    see the 2026-08-13 defect note there."""
+    from site_config import site_url
+    return site_url()
 
 
 def _now() -> datetime:

@@ -128,7 +128,7 @@ class DbTestCase(unittest.TestCase):
 
 class BuildAlertEmailTestCase(DbTestCase):
     def test_every_explained_msg_id_renders_in_every_language(self):
-        from alert_email import (DASHBOARD_URL, EXPLAIN, _UI, build_alert_email)
+        from alert_email import EXPLAIN, _UI, _dashboard_url, build_alert_email
         user_id, _agent_id = self._seed_user_agent()
         for msg_id in EXPLAIN:
             for lang in LANGS:
@@ -137,17 +137,17 @@ class BuildAlertEmailTestCase(DbTestCase):
                 exp = EXPLAIN[msg_id].get(lang) or EXPLAIN[msg_id]['en']
                 ui = _UI[lang]
                 for fragment in (exp['why'], exp['next'], exp['action'],
-                                 ui['no_runs'], DASHBOARD_URL, "B body"):
+                                 ui['no_runs'], _dashboard_url(), "B body"):
                     self.assertIn(fragment, text, f"{msg_id}/{lang}")
                 self.assertIn("Sooppiy", html)
                 self.assertIn("T title", html)
 
     def test_unknown_msg_id_still_produces_wrapped_email(self):
-        from alert_email import DASHBOARD_URL, build_alert_email
+        from alert_email import _dashboard_url, build_alert_email
         user_id, _ = self._seed_user_agent()
         text, html = build_alert_email("no_such_msg", "T", "B", "ko", user_id)
         self.assertIn("B", text)
-        self.assertIn(DASHBOARD_URL, text)
+        self.assertIn(_dashboard_url(), text)
         self.assertIn("Sooppiy", html)
 
     def test_snapshot_and_email_show_run_pnl(self):
@@ -277,10 +277,10 @@ class SendAlertEmailPathTestCase(DbTestCase):
 
 class WrapBasicEmailTestCase(DbTestCase):
     def test_wrapper_contains_brand_title_body_footer(self):
-        from alert_email import DASHBOARD_URL, _UI, wrap_basic_email
+        from alert_email import _UI, _dashboard_url, wrap_basic_email
         html = wrap_basic_email("제목 T", "본문 B\n둘째 줄", "ko")
         for fragment in ("Sooppiy", "제목 T", "본문 B<br>둘째 줄",
-                         DASHBOARD_URL, _UI["ko"]["footer"]):
+                         _dashboard_url(), _UI["ko"]["footer"]):
             self.assertIn(fragment, html)
 
     def test_wrapper_escapes_html(self):
