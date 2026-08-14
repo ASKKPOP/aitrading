@@ -170,6 +170,39 @@ class BuildAlertEmailTestCase(DbTestCase):
         from alert_email import run_status_snapshot
         self.assertIsNone(run_status_snapshot(None))
 
+    def test_snapshot_totals_all_runs_and_lists_pnl_bearing_first(self):
+        # Fleet churn regression: the P&L-bearing run is the OLDEST id, then
+        # 13 freshly built idle runs push it past the 12-row display window.
+        # The old newest-12-by-id snapshot dropped it entirely and the email
+        # read $+0.00 while the book was not flat.
+        import trading_runs
+        from alert_email import _SNAPSHOT_MAX_RUNS, run_status_snapshot
+        user_id, agent_id = self._seed_user_agent()
+        pnl_run = self._seed_running_run(agent_id)   # +$10 realized, oldest id
+        idle_ids = []
+        for _ in range(13):
+            idle_ids.append(trading_runs.create_run(
+                agent_id,
+                {"symbol": "ETHUSDT", "market": "crypto",
+                 "market_type": "futures", "max_bet_usd": 100,
+                 "interval_minutes": 60, "min_confidence": 0.6},
+                {"type": "immediate"}, {"max_loss_usd": 50}, True))
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.executemany("UPDATE trading_runs SET status = 'running' "
+                        "WHERE id = ?", [(rid,) for rid in idle_ids])
+        conn.commit()
+        conn.close()
+
+        snap = run_status_snapshot(user_id)
+        self.assertEqual(snap["count"], 14)                    # every active run
+        self.assertAlmostEqual(snap["total"], 10.0, places=2)  # includes oldest
+        self.assertEqual(len(snap["runs"]), _SNAPSHOT_MAX_RUNS)
+        self.assertEqual(snap["runs"][0]["id"], pnl_run)       # money first
+        # remaining rows are the idle runs, newest first
+        self.assertEqual([r["id"] for r in snap["runs"][1:]],
+                         sorted(idle_ids, reverse=True)[:_SNAPSHOT_MAX_RUNS - 1])
+
 
 class SendAlertEmailPathTestCase(DbTestCase):
     def test_catalogue_alert_sends_rich_email_and_journals_short_body(self):

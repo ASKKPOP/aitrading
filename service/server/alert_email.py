@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 
 SITE_URL = "https://sooppiy.com"
 DASHBOARD_URL = f"{SITE_URL}/automation"
-_SNAPSHOT_MAX_RUNS = 12
+_SNAPSHOT_MAX_RUNS = 12      # displayed rows — total/count always cover all runs
+_SNAPSHOT_FETCH_CAP = 100    # safety bound on per-run P&L replays per email
 
 # ── section labels / chrome ────────────────────────────────────────────────
 
@@ -1219,7 +1220,7 @@ def run_status_snapshot(user_id: Optional[int]) -> Optional[dict[str, Any]]:
                    WHERE a.user_id = ?
                      AND r.status IN ('running', 'paused', 'stopping')
                    ORDER BY r.id DESC LIMIT ?""",
-                (user_id, _SNAPSHOT_MAX_RUNS))
+                (user_id, _SNAPSHOT_FETCH_CAP))
             runs = [dict(r) for r in cursor.fetchall()]
         finally:
             conn.close()
@@ -1237,7 +1238,14 @@ def run_status_snapshot(user_id: Optional[int]) -> Optional[dict[str, Any]]:
             out.append({"id": run["id"], "symbol": run["symbol"],
                         "market": run["market"], "status": run["status"],
                         "pnl": pnl})
-        return {"runs": out, "total": total, "count": len(out)}
+        # Total and count cover EVERY active run; only the row list is capped.
+        # Under fleet churn "newest 12 by id" is exactly the just-built idle
+        # runs — the older position-holding runs (where the P&L lives) fell off
+        # the list and the email read $+0.00 while the book was down. Runs with
+        # money on the line come first; ties (all-zero) stay newest-first.
+        out.sort(key=lambda r: (abs(r["pnl"] or 0.0), r["id"]), reverse=True)
+        return {"runs": out[:_SNAPSHOT_MAX_RUNS], "total": total,
+                "count": len(out)}
     except Exception:  # noqa: BLE001
         logger.warning("run status snapshot failed for user %s", user_id,
                        exc_info=True)
