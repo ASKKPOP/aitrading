@@ -587,6 +587,41 @@ class RegistryTests(_Db):
         self.assertEqual(trading_skills.all_skills(fresh=True), [])
 
 
+    def test_plan25_psychology_skills_ride_their_market_blocks(self):
+        # Plan 25 Phase A (owner directive 2026-08-14: weight psychology
+        # harder for us-stock and forex). Both skills are regime/posture
+        # lenses with an exit-relevant half (crowd euphoria = tighten;
+        # risk-off flip = reduce), so like pump-ignition-veto they ride
+        # light AND trader — and only their own market's blocks.
+        for site in ("trader", "light"):
+            us = trading_skills.skills_block(site, "us-stock")
+            fx = trading_skills.skills_block(site, "forex")
+            self.assertIn("### US Crowd Psychology Lens\n", us, site)
+            self.assertIn("funding someone's exit", us, site)
+            self.assertIn("### FX Risk Sentiment Lens\n", fx, site)
+            self.assertIn("carry-long into risk-off", fx, site)
+            self.assertNotIn("### FX Risk Sentiment Lens\n", us, site)
+            self.assertNotIn("### US Crowd Psychology Lens\n", fx, site)
+            for market in (None, "crypto", "futures"):
+                block = trading_skills.skills_block(site, market)
+                self.assertNotIn("### US Crowd Psychology Lens\n", block)
+                self.assertNotIn("### FX Risk Sentiment Lens\n", block)
+        for site in ("verifier", "planner"):
+            slugs = {s["slug"] for s in trading_skills.skills_for_prompt(site)}
+            self.assertNotIn("us-crowd-psychology-lens", slugs)
+            self.assertNotIn("fx-risk-sentiment-lens", slugs)
+
+    def test_plan25_psychology_skills_keep_the_never_alone_invariant(self):
+        # OWNER-CONFIRMED 2026-08-14: psychology may steer regime, sizing
+        # and attention but never places an order alone. Each skill must
+        # carry that restraint in its own text so the desk reads the
+        # invariant with the lens, not as an external rule.
+        us = trading_skills.skills_block("trader", "us-stock")
+        fx = trading_skills.skills_block("trader", "forex")
+        self.assertIn("never the only reason", us)
+        self.assertIn("one signal alone is no trade", fx)
+
+
 class AtomicLessonTests(_Db):
     """Plan 22 Phase 1 — chunking. Every base skill body is structured as
     atomic lessons (one claim, one situation, one evidence clause); the body
@@ -615,6 +650,7 @@ class AtomicLessonTests(_Db):
         "crypto-regime-lens", "stage-discipline", "volatility-context",
         "mean-reversion-guard", "breadth-context", "pead-drift",
         "follow-the-flow", "parabolic-exhaustion",
+        "us-crowd-psychology-lens", "fx-risk-sentiment-lens",
     })
 
     # Lessons inside evidence-bearing skills whose own claim the skill's

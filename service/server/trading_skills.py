@@ -1784,6 +1784,113 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "an auction with one bidder.")},
         ],
     },
+    # ---- Plan 25 Phase A (owner directive 2026-08-14): weight psychology
+    # harder for us-stock and forex. Both are regime/posture lenses with an
+    # exit-relevant half, so they ride light AND trader like
+    # pump-ignition-veto. The never-alone invariant is OWNER-CONFIRMED and
+    # written into each skill's own text.
+    {
+        "slug": "us-crowd-psychology-lens",
+        "name": "US Crowd Psychology Lens",
+        "description": ("Read US crowd psychology as first-class evidence: "
+                        "Fear & Greed extremes are contrarian regimes, "
+                        "mid-range is momentum-confirming, and positioning "
+                        "that disagrees with price is the signal — but "
+                        "psychology is never the only reason to trade."),
+        "prompts": ["light", "trader"],
+        "markets": ["us-stock"],
+        "priority": 14,
+        "lessons": [
+            {"applies_when": ["any"], "text": (
+                "Before siding with any single-name thesis, read the "
+                "crowd evidence in the prompt — Fear & Greed level and "
+                "its 3-day change, put/call open interest, the FINRA "
+                "short-volume ratio, and retail temperature — as "
+                "market-psychology context. Extremes are contrarian "
+                "regimes: at extreme fear (F&G at or under 20) forced "
+                "selling exhausts itself and panic is what capitulation "
+                "looks like from inside; at extreme greed (80 or above) "
+                "a chased entry is funding someone's exit. Neither "
+                "extreme places a trade by itself: psychology sets the "
+                "regime and sizes conviction, and is never the only "
+                "reason to enter or add — the quant and price evidence "
+                "must independently agree.")},
+            {"applies_when": ["flat"], "text": (
+                "Mid-range crowd readings (roughly 30-70) are "
+                "momentum-CONFIRMING, not contrarian: the crowd agrees "
+                "with the tape, so follow the flow rules rather than "
+                "fading sentiment. The richer read is DISAGREEMENT "
+                "between positioning and price: heavy put positioning "
+                "while price rises is fuel (shorts and hedges must "
+                "unwind into strength); heavy call positioning while "
+                "price stalls is a crowded theatre near the exit. When "
+                "positioning and price agree, they add little beyond "
+                "the tape you can already see.")},
+            {"applies_when": ["holding", "winning"], "text": (
+                "A winner held into extreme greed is where gains turn "
+                "into round trips: euphoria is the crowd's exit "
+                "liquidity moment, so tighten the stop toward the "
+                "position, bank partials on strength, and demand extra "
+                "justification for any add. The discipline is "
+                "asymmetric on purpose — euphoria argues harvesting, "
+                "never pressing.")},
+            {"applies_when": ["holding", "losing"], "text": (
+                "Extreme fear is NOT a reason to average a loser down. "
+                "A losing position at F&G 20 still needs its own "
+                "quant confirmation to justify holding, and the "
+                "adds-into-losers rules still bind. If the crowd data "
+                "is missing from the prompt, the crowd state is "
+                "UNKNOWN — a missing feed is never evidence of calm.")},
+        ],
+    },
+    {
+        "slug": "fx-risk-sentiment-lens",
+        "name": "FX Risk Sentiment Lens",
+        "description": ("FX psychology is global risk appetite: equity "
+                        "Fear & Greed plus the dollar's direction define "
+                        "the day's risk-on/risk-off regime, safe-haven "
+                        "logic follows from it, and a regime flip against "
+                        "a held position is exit-relevant immediately."),
+        "prompts": ["light", "trader"],
+        "markets": ["forex"],
+        "priority": 16,
+        "lessons": [
+            {"applies_when": ["any"], "text": (
+                "Currency pairs have no crowd of their own here — the "
+                "psychology read for FX is GLOBAL RISK APPETITE. Equity "
+                "Fear & Greed and the dollar's recent direction define "
+                "the day's regime: risk-off (fear rising, dollar bid) "
+                "bids the safe havens — JPY, CHF, and USD itself — and "
+                "offers high-beta and commodity currencies (AUD, NZD, "
+                "MXN, ZAR, TRY); risk-on is the mirror image. Name the "
+                "regime in your report before reasoning about the "
+                "pair: risk-on, neutral, or risk-off, and why.")},
+            {"applies_when": ["flat"], "text": (
+                "Never open against the day's regime on a yield or "
+                "carry rationale: a carry-long into risk-off is the "
+                "classic negative-expectancy FX trade — the carry "
+                "accrues in points while the risk-off move takes "
+                "figures. The regime must AGREE with the pair-level "
+                "technical read; when regime and technicals disagree, "
+                "the answer is hold — one signal alone is no trade, "
+                "and risk sentiment alone never places an order.")},
+            {"applies_when": ["holding"], "text": (
+                "A regime FLIP against your position is exit-relevant "
+                "NOW, not at some later review: safe-haven legs (JPY, "
+                "CHF crosses) reprice fastest when risk appetite "
+                "turns, so a flip against a high-beta long argues "
+                "reduce or close on this read rather than hoping the "
+                "flip reverses. A flip IN your favour is not a reason "
+                "to add without fresh technical confirmation.")},
+            {"applies_when": ["any"], "text": (
+                "If the risk-sentiment inputs are missing from the "
+                "prompt, the regime is UNKNOWN: fall back to the "
+                "technical read alone at reduced conviction, and say "
+                "so in the report. Never guess a regime — a wrong "
+                "regime label poisons every downstream judgement in "
+                "the cycle.")},
+        ],
+    },
 ]
 
 # Plan 22 Phase 1 — a skill's body is DERIVED from its atomic lessons: the
