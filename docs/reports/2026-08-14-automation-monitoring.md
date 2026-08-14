@@ -11,6 +11,24 @@ live yet.
 
 ---
 
+## Cycle 2 — 09:29Z (anchored; quiet window)
+
+- **Tape 09:00→09:29Z:** one AI partial profit-take (run 1147 AUDCHF sold
+  half at 0.5753 vs entry 0.57484 — the good winner shape) and one new
+  fleet-33 run (1199, draft→running). No closes, no losses, no forced
+  events. No two-agent dispatch (no outcomes to analyze).
+- **Open book:** 8 positions, all within ±$1. SBUX 1161 queued flatten
+  still pending the 13:30Z open (watch #1).
+- **Liq-defense silence EXPLAINED (not a defect):** tasks.py logs only
+  when `escalations` > 0 and journals `margin_state` only for
+  non-nominal/escalated states WITH a run_id. The 2 startup escalations
+  were on unowned rows (USDKRW orphan pair → stdout only). Current book
+  nominal → silence is the healthy output. Falsifiable dead-daemon
+  trigger: leveraged position materially underwater AND zero
+  margin_state events → then it's dead.
+- Worker logs clean (only known Yahoo "possibly delisted" noise for
+  AUDCHF/MNQ/GBPUSD symbol lookups).
+
 ## Cycle 1 — 09:00Z → 09:40Z (anchored SELECT NOW() 09:00:05)
 
 **P&L (pnl_audit, ledger):** 08-12 −23.53 · 08-13 **−147.49** (13 flattens;
