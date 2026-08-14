@@ -11,6 +11,12 @@ live yet.
 
 ---
 
+## Cycle 10 — 17:23Z
+
+- Three $0 recycles: idle-retires 1182 (f31) + 1200 (f32), desk-retire
+  1220 ABT (f31 seed, refused after ~4 cycles — refusal counter ~7,
+  all free). Instant refills. Book unchanged, worst PLTR −0.72.
+
 ## Cycle 9 — 16:53Z (zero events)
 
 - No events at all in the window. Book drifting mildly red, all within
