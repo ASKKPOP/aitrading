@@ -1245,6 +1245,13 @@ def _try_build(fleet: dict, thesis: dict, funding: float) -> int:
 
     agent_id = fleet["agent_id"]
     settings = fp.compose_run_settings(thesis, funding, fleet)
+    # R15 bracket feasibility — parity with the initial build (the fee gate
+    # was once missed on this path and shipped three permanently-blocked
+    # runs). Raising here feeds _build_replacement's normal candidate loop:
+    # candidate_skipped is journaled and the slot tries the next name.
+    bracket = fp.bracket_infeasible(thesis, settings)
+    if bracket:
+        raise ValueError(bracket)
     run_id = None
     try:
         payload = RunIn(

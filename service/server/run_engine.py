@@ -3595,6 +3595,60 @@ def _last_cycle_word_line(run: dict) -> str:
         return ""
 
 
+_PREDECESSOR_LOOKBACK_HOURS = 72
+
+
+def _predecessor_run_line(run: dict) -> str:
+    """R16: what happened the LAST time this agent ran this symbol.
+
+    2026-08-14: fleet 32 retired its NQ long at 09:47Z citing "no safe
+    bracket", rebuilt NQ four hours later, and the successor desk
+    re-longed at a HIGHER price with zero reference to the predecessor —
+    −$2.42 then −$2.15 the same day. _last_cycle_word_line (R11) carries
+    a run's OWN memory; nothing carried memory ACROSS runs, so every
+    rebuild re-derived the symbol from scratch and repeated the entry
+    its predecessor had just proven wrong. desk_retired symbols carry no
+    cooldown (only adapt-retires do) — by design, since tape genuinely
+    changes; the fix is memory, not a ban.
+
+    Fact only — predecessor's ending, P&L, and age; re-underwriting is
+    the desk's call. Recent window only (a week-old run is stale tape).
+    Fail-soft."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT id, status_reason, realized_pnl_usd, stopped_at
+                   FROM trading_runs
+                   WHERE agent_id = ? AND market = ? AND symbol = ?
+                     AND id <> ? AND stopped_at IS NOT NULL
+                   ORDER BY id DESC LIMIT 1""",
+                (run["agent_id"], run["market"], run["symbol"], run["id"]))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return ""
+        age_s = _age_seconds(str(row["stopped_at"] or ""))
+        if age_s > _PREDECESSOR_LOOKBACK_HOURS * 3600:
+            return ""
+        pnl = float(row["realized_pnl_usd"] or 0)
+        reason = str(row["status_reason"] or "").strip() or "stopped"
+        hours = age_s / 3600.0
+        age = (f"{age_s / 60:.0f} min ago" if hours < 2
+               else f"{hours:.0f} h ago")
+        return (f"This agent's PREVIOUS run on {run['symbol']} ended {age}: "
+                f"{reason}, realized ${pnl:,.2f}. A fresh run is not fresh "
+                f"tape — re-underwrite against what just happened here, and "
+                f"say in your report what has CHANGED since that ending "
+                f"(2026-08-14: NQ was retired for 'no safe bracket', rebuilt "
+                f"4h later, re-longed higher with no reference to it, and "
+                f"lost again — −$4.57 across the pair).\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _breadth_state_line(run: dict) -> str:
     """US market breadth as market-environment evidence (advisory).
 
@@ -4486,6 +4540,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                       + _young_exit_brief(run, cfg, pos_qty)
                       + _contradiction_line(run, pos_qty)
                       + _last_cycle_word_line(run)
+                      + _predecessor_run_line(run)
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
                       + _us_psych_line(run)
@@ -5059,6 +5114,7 @@ def run_cycle(run_id: int) -> dict:
                                         + _young_exit_brief(run, cfg, held)
                                         + _contradiction_line(run, held)
                                         + _last_cycle_word_line(run)
+                                        + _predecessor_run_line(run)
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
                                         + _us_psych_line(run)
