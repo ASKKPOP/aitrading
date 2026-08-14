@@ -73,8 +73,31 @@ def _gather_technical(symbol: str, market: str) -> dict[str, Any]:
     try:
         from price_fetcher import get_price_from_market
         price = get_price_from_market(symbol, _now_iso(), market)
-        return {"symbol": symbol, "market": market, "current_price": price,
-                "note": "light technical (spot price only) for non-equity market"}
+        out = {"symbol": symbol, "market": market, "current_price": price,
+               "note": "light technical (spot price only) for non-equity market"}
+        # Plan 25 Phase B: forex was the only fleet market whose technical
+        # analyst saw nothing but the spot price. Attach the risk-sentiment
+        # facts (equity F&G + dollar index), fail-soft — the analyst reads
+        # them as regime context, never as a pair-level signal.
+        if market == "forex":
+            risk: dict[str, Any] = {}
+            try:
+                import psych_feed
+                fg = psych_feed.us_fear_greed()
+                if fg:
+                    risk["fear_greed"] = fg
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                import cross_market
+                dxy = cross_market.dollar_index_cached()
+                if dxy:
+                    risk["dollar_index"] = dxy
+            except Exception:  # noqa: BLE001
+                pass
+            if risk:
+                out["risk_sentiment"] = risk
+        return out
     except Exception as exc:  # noqa: BLE001
         return {"symbol": symbol, "market": market, "error": str(exc)}
 

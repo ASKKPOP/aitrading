@@ -425,3 +425,63 @@ class OddsDeltaSignTests(unittest.TestCase):
         self.assertEqual(psych_feed.compute_odds_deltas(
             [{"slug": "new", "odds": {"Yes": 0.5}}],
             [{"slug": "old", "odds": {"Yes": 0.5}}]), [])
+
+
+class UsFearGreedCacheTests(unittest.TestCase):
+    """Plan 25 Phase B: the CNN gauge was fetched-but-never-wired since
+    Plan 14. The brief lines read it every cycle, so it must be cached and
+    serve last-known-good — a CNN outage may never blank the desk's read."""
+
+    def setUp(self):
+        psych_feed._US_FNG_CACHE.update({"row": None, "at": 0.0})
+
+    def test_caches_and_serves_last_known_good(self):
+        row = {"value": 55.0, "classification": "Neutral", "source": "cnn"}
+        with patch.object(psych_feed, "fetch_cnn_fear_greed",
+                               return_value=dict(row)) as fetch:
+            first = psych_feed.us_fear_greed()
+            second = psych_feed.us_fear_greed()
+        self.assertEqual(first["value"], 55.0)
+        self.assertEqual(second["value"], 55.0)
+        self.assertEqual(fetch.call_count, 1, "second read must hit the cache")
+
+        psych_feed._US_FNG_CACHE["at"] = 0.0  # expire the TTL
+        with patch.object(psych_feed, "fetch_cnn_fear_greed",
+                               return_value=None):
+            stale = psych_feed.us_fear_greed()
+        self.assertIsNotNone(stale, "outage must serve last-known-good")
+        self.assertEqual(stale["value"], 55.0)
+
+    def test_returns_none_when_never_fetched(self):
+        with patch.object(psych_feed, "fetch_cnn_fear_greed",
+                               return_value=None):
+            self.assertIsNone(psych_feed.us_fear_greed())
+
+
+class FxTechnicalGatherTests(unittest.TestCase):
+    """Plan 25 Phase B: forex was the only fleet market whose technical
+    analyst saw nothing but the spot price. The forex branch now attaches
+    the risk-sentiment facts (equity F&G + dollar index), fail-soft."""
+
+    def test_forex_gather_carries_risk_sentiment(self):
+        import analysis_agents
+        fg = {"value": 30.0, "classification": "Fear", "prev_1w": 44.0}
+        dxy = {"value": 120.0, "change_1d_pct": -0.2, "date": "2026-08-13"}
+        with patch("price_fetcher.get_price_from_market", return_value=1.1), \
+                patch("psych_feed.us_fear_greed", return_value=dict(fg)), \
+                patch("cross_market.dollar_index_cached",
+                      return_value=dict(dxy)):
+            out = analysis_agents._gather_technical("EURUSD", "forex")
+        self.assertEqual(out.get("risk_sentiment", {}).get("fear_greed"), fg)
+        self.assertEqual(out.get("risk_sentiment", {}).get("dollar_index"), dxy)
+
+    def test_forex_gather_survives_dead_feeds(self):
+        import analysis_agents
+        with patch("price_fetcher.get_price_from_market", return_value=1.1), \
+                patch("psych_feed.us_fear_greed",
+                      side_effect=RuntimeError("down")), \
+                patch("cross_market.dollar_index_cached",
+                      side_effect=RuntimeError("down")):
+            out = analysis_agents._gather_technical("EURUSD", "forex")
+        self.assertEqual(out.get("current_price"), 1.1)
+        self.assertNotIn("risk_sentiment", out)

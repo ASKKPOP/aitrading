@@ -31,6 +31,7 @@ import logging
 import math
 import os
 import re
+import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -145,14 +146,39 @@ def fetch_cnn_fear_greed() -> Optional[dict[str, Any]]:
         score = fg.get("score")
         if score is None:
             return None
+        prev_1w = fg.get("previous_1_week")
         return {
             "value": float(score),
             "classification": fg.get("rating"),
+            "prev_1w": float(prev_1w) if prev_1w is not None else None,
             "as_of": fg.get("timestamp"),
             "source": "cnn",
         }
     except Exception:  # noqa: BLE001
         return None
+
+
+# Plan 25 Phase B — the CNN gauge above was fetched-but-never-wired since
+# Plan 14. The desk brief lines read it every cycle, so it is cached here
+# with last-known-good semantics: a CNN outage degrades the read to the
+# previous value, never to a network call per cycle and never to an error.
+_US_FNG_CACHE: dict[str, Any] = {"row": None, "at": 0.0}
+_US_FNG_TTL_SECONDS = 1800.0
+
+
+def us_fear_greed(force: bool = False) -> Optional[dict[str, Any]]:
+    """Cached CNN fear&greed for the us-stock/forex desk brief lines."""
+    now = time.monotonic()
+    if (force or _US_FNG_CACHE["row"] is None
+            or now - _US_FNG_CACHE["at"] >= _US_FNG_TTL_SECONDS):
+        row = fetch_cnn_fear_greed()
+        if row is not None:
+            _US_FNG_CACHE["row"] = row
+            _US_FNG_CACHE["at"] = now
+        elif _US_FNG_CACHE["row"] is not None:
+            # outage: keep serving last-known-good, retry next TTL window
+            _US_FNG_CACHE["at"] = now
+    return _US_FNG_CACHE["row"]
 
 
 def fetch_fear_greed_full_history() -> list[dict[str, Any]]:

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -113,6 +114,27 @@ def fetch_dollar_index() -> Optional[dict[str, Any]]:
     except Exception as exc:  # noqa: BLE001
         logger.warning("FRED %s fetch failed: %s", FRED_DXY_SERIES, exc)
         return None
+
+
+# Plan 25 Phase B — the forex desk brief line reads the dollar index every
+# cycle; cache it with last-known-good so a FRED outage (or a missing key)
+# degrades to the previous read or None, never to a per-cycle network call.
+_DXY_CACHE: dict[str, Any] = {"row": None, "at": 0.0}
+_DXY_TTL_SECONDS = 1800.0
+
+
+def dollar_index_cached(force: bool = False) -> Optional[dict[str, Any]]:
+    """Cached broad-dollar-index read for desk brief lines."""
+    now = time.monotonic()
+    if (force or _DXY_CACHE["row"] is None
+            or now - _DXY_CACHE["at"] >= _DXY_TTL_SECONDS):
+        row = fetch_dollar_index()
+        if row is not None:
+            _DXY_CACHE["row"] = row
+            _DXY_CACHE["at"] = now
+        elif _DXY_CACHE["row"] is not None:
+            _DXY_CACHE["at"] = now
+    return _DXY_CACHE["row"]
 
 
 # ── assembly ──────────────────────────────────────────────────────────────
