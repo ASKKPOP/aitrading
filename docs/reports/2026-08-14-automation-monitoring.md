@@ -11,6 +11,15 @@ live yet.
 
 ---
 
+## Cycle 12 — 18:23Z
+
+- **PLTR 1177 trailing_lock −1.35 on the remainder; run net ≈ −0.12**
+  (had banked +1.23 in partials) — the lock capped a give-back into a
+  scratch. Rail verdict: correct-shape (post-close price unchecked).
+- CBRS 1146 desk-retired +0.17 after 51 cycles (normal thesis end).
+  One more <15-min refusal (1234, $0) — churn counter ~12.
+- Book: 4 positions within ±$0.30.
+
 ## Cycle 11 — 17:53Z (churn accelerating, cause converging)
 
 - 5 recycles, 0 trades: at_time flat-book EURUSD, 1 idle, 3 desk
