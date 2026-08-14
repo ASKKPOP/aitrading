@@ -27,8 +27,12 @@ All five QA agents reported against LIVE prod:
   58/hr → 2/hr real; run 1161 gate_skips 107/hr → exactly one per 30-min
   heartbeat). Label change 17/25→22/25 emitted within 1 SECOND of the
   slot builds; UI status column always matched reality; supervision 61
-  ticks/62 min, watchdog quiet. SBUX 13:30Z flatten execution check →
-  one-shot scheduled 13:34Z (result below).
+  ticks/62 min, watchdog quiet. **SBUX open-check PASS (13:34Z):** the
+  queued flatten executed 23 SECONDS after the bell — sell 0.94417576
+  @108.550003 (`run:1161:flatten`), adapt journaled, run stopped,
+  position gone, realized −$0.015. Throttle touched journaling only,
+  never execution. → QA-2 fully PASS; **all 10 agents (5 verify + 5 QA)
+  complete, everything PASS.**
 - **QA-3 R13: PASS 4/4.** Live audit exit 0; 08-13 false DRIFT now
   fee_asym −7.46 / resid +0.08 / ok; all historical days ok (resid ≤
   ±0.33, the max pair being the midnight adapt-lag shape); independent
