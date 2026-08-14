@@ -7,6 +7,11 @@ takes effect for every test.
 """
 import os
 
+# site_config.site_url() deliberately has NO default — an unset value raises
+# rather than silently redirecting members to localhost (2026-08-13 defect).
+# The suite therefore has to supply it, exactly as a real deploy does.
+os.environ.setdefault("SOOPPIY_FRONTEND_URL", "https://sooppiy.test")
+
 os.environ["DEV_LOGIN_ANY_PASSWORD"] = "false"
 os.environ["DEV_MARKET_INTEL_SEED"] = "false"
 os.environ["ALLOW_SYNC_PRICE_FETCH_IN_API"] = "false"

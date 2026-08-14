@@ -405,11 +405,11 @@ export default function SettingsPage({ userToken, userInfo, onSignOut }: {
               id: 'Saya setuju menerima kode verifikasi SMS dan peringatan akun dari Sooppiy di nomor ini. Frekuensi pesan bervariasi. Tarif pesan dan data dapat berlaku. Balas STOP untuk berhenti berlangganan, HELP untuk bantuan.',
             })}
             {' '}
-            <a href="https://sooppiy.com/privacypolicy" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
+            <a href="/privacypolicy" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
               {tr(language, { ko: '개인정보처리방침', en: 'Privacy Policy', ja: 'プライバシーポリシー', th: 'นโยบายความเป็นส่วนตัว', vi: 'Chính sách bảo mật', id: 'Kebijakan Privasi' })}
             </a>
             {' · '}
-            <a href="https://sooppiy.com/termsconditions" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
+            <a href="/termsconditions" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
               {tr(language, { ko: '이용약관', en: 'Terms & Conditions', ja: '利用規約', th: 'ข้อกำหนดและเงื่อนไข', vi: 'Điều khoản & Điều kiện', id: 'Syarat & Ketentuan' })}
             </a>
           </span>

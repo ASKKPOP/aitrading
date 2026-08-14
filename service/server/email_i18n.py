@@ -15,7 +15,7 @@ import html as _html
 
 from analysis_agents import normalize_lang
 
-SITE_URL = "https://sooppiy.com"
+from site_config import site_url  # noqa: E402 — no hardcoded host here
 
 # lang -> shared chrome strings
 _CHROME = {
@@ -216,7 +216,7 @@ def verification_email(code: str, lang: str, purpose: str = 'signup') -> tuple[s
         'padding:16px 28px;">'
         f'<div style="color:#64748b;font-size:11px;line-height:1.6;">{e(chrome["footer"])}</div>'
         f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
-        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        f'<a href="{site_url()}" style="color:#475569;">sooppiy.com</a></div>'
         '</td></tr>'
         '</table></td></tr></table></div>')
     return copy['subject'], html
@@ -312,7 +312,7 @@ def welcome_email(lang: str) -> tuple[str, str]:
         f'{e(c["body"])}</p>'
         f'<ol style="margin:0 0 22px;padding-left:20px;font-size:14px;'
         f'line-height:1.6;color:#334155;">{steps}</ol>'
-        f'<p style="margin:0 0 4px;"><a href="{SITE_URL}" style="background:#0f172a;'
+        f'<p style="margin:0 0 4px;"><a href="{site_url()}" style="background:#0f172a;'
         f'color:#ffffff;padding:10px 22px;border-radius:8px;text-decoration:none;'
         f'font-size:14px;display:inline-block;">{e(c["cta"])}</a></p>'
         '</td></tr>'
@@ -321,7 +321,7 @@ def welcome_email(lang: str) -> tuple[str, str]:
         'padding:16px 28px;">'
         f'<div style="color:#64748b;font-size:11px;line-height:1.6;">{e(chrome["footer"])}</div>'
         f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
-        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        f'<a href="{site_url()}" style="color:#475569;">sooppiy.com</a></div>'
         '</td></tr>'
         '</table></td></tr></table></div>')
     return c['subject'], html
@@ -331,7 +331,7 @@ def welcome_email_text(lang: str) -> str:
     lc = normalize_lang(lang)
     c = _WELCOME.get(lc, _WELCOME['en'])
     steps = '\n'.join(f'  {i}. {s}' for i, s in enumerate(c['steps'], 1))
-    return f"{c['heading']}\n\n{c['body']}\n\n{steps}\n\n{SITE_URL}\n"
+    return f"{c['heading']}\n\n{c['body']}\n\n{steps}\n\n{site_url()}\n"
 
 
 # lang -> the pre-charge notice for the 7-day Junior trial. A card IS held from
@@ -436,7 +436,7 @@ def trial_reminder_email(lang: str, amount_usd: float,
         '</div>'
         f'<p style="margin:0 0 22px;font-size:12px;line-height:1.6;color:#64748b;">'
         f'{e(c["note"])}</p>'
-        f'<p style="margin:0 0 4px;"><a href="{SITE_URL}/subscribe" '
+        f'<p style="margin:0 0 4px;"><a href="{site_url()}/subscribe" '
         f'style="background:#0f172a;color:#ffffff;padding:10px 22px;'
         f'border-radius:8px;text-decoration:none;font-size:14px;'
         f'display:inline-block;">{e(c["cta"])}</a></p>'
@@ -446,7 +446,7 @@ def trial_reminder_email(lang: str, amount_usd: float,
         'padding:16px 28px;">'
         f'<div style="color:#64748b;font-size:11px;line-height:1.6;">{e(chrome["footer"])}</div>'
         f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
-        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        f'<a href="{site_url()}" style="color:#475569;">sooppiy.com</a></div>'
         '</td></tr>'
         '</table></td></tr></table></div>')
     return c['subject'], html
@@ -456,7 +456,7 @@ def trial_reminder_email_text(lang: str, amount_usd: float,
                               charge_on: str) -> str:
     c = _trial_copy(lang, amount_usd, charge_on)
     return (f"{c['heading']}\n\n{c['body']}\n\n{c['note']}\n\n"
-            f"{SITE_URL}/subscribe\n")
+            f"{site_url()}/subscribe\n")
 
 
 def verification_email_text(code: str, lang: str, purpose: str = 'signup') -> str:

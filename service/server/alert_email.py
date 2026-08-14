@@ -30,8 +30,11 @@ from analysis_agents import normalize_lang
 
 logger = logging.getLogger(__name__)
 
-SITE_URL = "https://sooppiy.com"
-DASHBOARD_URL = f"{SITE_URL}/automation"
+from site_config import site_url  # noqa: E402 — no hardcoded host here
+
+
+def _dashboard_url() -> str:
+    return f"{site_url()}/automation"
 _SNAPSHOT_MAX_RUNS = 12      # displayed rows — total/count always cover all runs
 _SNAPSHOT_FETCH_CAP = 100    # safety bound on per-run P&L replays per email
 
@@ -1323,7 +1326,7 @@ def _render_text(ui: dict[str, str], title: str, body: str,
         for term, definition in glossary:
             lines.append(f"• {term}: {definition}")
         lines.append("")
-    lines += [f"{ui['open_app']}: {DASHBOARD_URL}", "", "Sooppiy — " + SITE_URL,
+    lines += [f"{ui['open_app']}: {_dashboard_url()}", "", "Sooppiy — " + site_url(),
               ui['footer']]
     return "\n".join(lines)
 
@@ -1357,12 +1360,12 @@ def wrap_basic_email(title: str, body: str, lang: str) -> str:
         f'{body_html}</p></td></tr>'
         '<tr><td style="background:#0f172a;border-radius:0 0 12px 12px;'
         'padding:18px 28px;">'
-        f'<a href="{DASHBOARD_URL}" style="color:#38bdf8;font-size:13px;'
+        f'<a href="{_dashboard_url()}" style="color:#38bdf8;font-size:13px;'
         f'font-weight:600;text-decoration:none;">{e(ui["open_app"])} →</a>'
         f'<div style="color:#64748b;font-size:11px;line-height:1.6;'
         f'margin-top:10px;">{e(ui["footer"])}</div>'
         f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
-        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        f'<a href="{site_url()}" style="color:#475569;">sooppiy.com</a></div>'
         '</td></tr></table></td></tr></table></div>')
 
 
@@ -1473,12 +1476,12 @@ def _render_html(ui: dict[str, str], title: str, body: str,
     parts.append(
         '<tr><td style="background:#0f172a;border-radius:0 0 12px 12px;'
         'padding:18px 28px;">'
-        f'<a href="{DASHBOARD_URL}" style="color:#38bdf8;font-size:13px;'
+        f'<a href="{_dashboard_url()}" style="color:#38bdf8;font-size:13px;'
         f'font-weight:600;text-decoration:none;">{e(ui["open_app"])} →</a>'
         f'<div style="color:#64748b;font-size:11px;line-height:1.6;'
         f'margin-top:10px;">{e(ui["footer"])}</div>'
         f'<div style="color:#475569;font-size:11px;margin-top:8px;">© Sooppiy — '
-        f'<a href="{SITE_URL}" style="color:#475569;">sooppiy.com</a></div>'
+        f'<a href="{site_url()}" style="color:#475569;">sooppiy.com</a></div>'
         '</td></tr>')
     parts.append('</table></td></tr></table></div>')
     return "".join(parts)
