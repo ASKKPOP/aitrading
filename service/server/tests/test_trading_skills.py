@@ -587,6 +587,182 @@ class RegistryTests(_Db):
         self.assertEqual(trading_skills.all_skills(fresh=True), [])
 
 
+class AtomicLessonTests(_Db):
+    """Plan 22 Phase 1 — chunking. Every base skill body is structured as
+    atomic lessons (one claim, one situation, one evidence clause); the body
+    is the byte-exact join of its lessons, so the stored row shape, the
+    admin API, and the catalog_hash auto-upgrade are unchanged. Selection
+    stays deterministic — `applies_when` is data for Phase 2, unread here."""
+
+    # Skills with NO measured-evidence clause anywhere in their body: method
+    # doctrine ported from the public skill ecosystems (marian2js,
+    # tradermonty, agiprolabs, himself65 — see the catalogue comments).
+    # Their house evidence lives in the catalogue's code comments (run
+    # numbers, measured episodes), which are not prompt material, and the
+    # Phase 1 rule is structure-not-rewriting: inventing an in-body
+    # evidence clause for them would put words in the author's mouth.
+    DOCTRINE_SLUGS = frozenset({
+        "market-regime-lens", "position-sizing-discipline",
+        "reentry-discipline", "horizon-discipline", "level-integrity",
+        "reachable-exits", "loss-aging", "confidence-resolution",
+        "conviction-calibration", "thesis-validation",
+        "macro-event-analysis", "pre-trade-readiness", "evidence-gap-check",
+        "earnings-preview", "catalyst-map", "watchlist-review",
+        "execution-plan-check", "portfolio-concentration",
+        "market-topping-evidence", "news-reaction-evidence",
+        "drawdown-circuit-breaker", "exposure-discipline",
+        "contrarian-crowding-gate", "scenario-precommit", "data-honesty",
+        "crypto-regime-lens", "stage-discipline", "volatility-context",
+        "mean-reversion-guard", "breadth-context", "pead-drift",
+        "follow-the-flow", "parabolic-exhaustion",
+    })
+
+    # Lessons inside evidence-bearing skills whose own claim the skill's
+    # evidence does not cover. The evidence stays attached to the claim it
+    # actually supports (Plan 22 §3: apportion honestly, never invent);
+    # these fragments carry none of their own in the source body.
+    NO_EVIDENCE_LESSONS = frozenset({
+        # bracket geometry / authorship / rail doctrine — the SOL stop-out
+        # evidence belongs to the noise-floor lesson (index 3) only
+        ("risk-reward-structure", 0), ("risk-reward-structure", 1),
+        ("risk-reward-structure", 2), ("risk-reward-structure", 4),
+        ("risk-reward-structure", 5),
+        # banking/add/scale doctrine — the measured-live clauses belong to
+        # the ledger-shape (4) and exit-verb (5) lessons
+        ("exit-discipline", 0), ("exit-discipline", 1),
+        ("exit-discipline", 2), ("exit-discipline", 3),
+        # plan-not-P&L doctrine — the arm fire-count and whole-book-exit
+        # measurements belong to the arm lessons (2, 4)
+        ("position-management", 0), ("position-management", 1),
+        ("position-management", 3),
+        # undercut-reset doctrine — the follow-through record claims sit in
+        # lessons 0 and 1
+        ("bottom-confirmation", 2),
+        # veto/gift-exit doctrine — the ~65% retrace measurement sits in
+        # lesson 0
+        ("pump-ignition-veto", 1), ("pump-ignition-veto", 2),
+        # hunt-signature and setup doctrine — the full-book-dump
+        # measurement sits in lesson 1
+        ("stop-hunt-discipline", 0), ("stop-hunt-discipline", 2),
+        # majors-preference and hard-case doctrine — the wash-trading
+        # measurement sits in lesson 0
+        ("manipulated-book-hygiene", 1), ("manipulated-book-hygiene", 2),
+    })
+
+    def test_every_lesson_has_evidence_or_is_whitelisted(self):
+        for skill in trading_skills.BASE_SKILLS:
+            for i, lesson in enumerate(skill["lessons"]):
+                evidence = lesson.get("evidence")
+                if evidence:
+                    # evidence is QUOTED from the lesson, never invented
+                    self.assertIn(evidence, lesson["text"],
+                                  f"{skill['slug']}[{i}]: evidence clause is "
+                                  "not a substring of its own lesson")
+                    continue
+                self.assertTrue(
+                    skill["slug"] in self.DOCTRINE_SLUGS
+                    or (skill["slug"], i) in self.NO_EVIDENCE_LESSONS,
+                    f"{skill['slug']}[{i}] carries no evidence clause and "
+                    "is not whitelisted — a lesson without evidence "
+                    "degrades into a slogan")
+
+    def test_the_whitelists_do_not_rot(self):
+        # A doctrine slug that grows an evidence clause must leave the
+        # slug-level whitelist; a stale (slug, i) entry hides a regression.
+        by_slug = {s["slug"]: s for s in trading_skills.BASE_SKILLS}
+        for slug in self.DOCTRINE_SLUGS:
+            self.assertIn(slug, by_slug)
+            for lesson in by_slug[slug]["lessons"]:
+                self.assertIsNone(lesson.get("evidence"),
+                                  f"{slug} has evidence; whitelist by "
+                                  "lesson, not by slug")
+        for slug, i in self.NO_EVIDENCE_LESSONS:
+            self.assertIn(slug, by_slug)
+            self.assertNotIn(slug, self.DOCTRINE_SLUGS)
+            self.assertLess(i, len(by_slug[slug]["lessons"]))
+            self.assertIsNone(by_slug[slug]["lessons"][i].get("evidence"))
+
+    def test_lessons_join_back_into_the_body(self):
+        # The splitter can never teach the desk a clause its author did not
+        # write: the join of the atoms IS the body, byte for byte (same
+        # invariant as desk_memory_ingest's atomiser).
+        for skill in trading_skills.BASE_SKILLS:
+            self.assertTrue(skill["lessons"], skill["slug"])
+            joined = " ".join(x["text"] for x in skill["lessons"])
+            self.assertEqual(joined, skill["body"], skill["slug"])
+            self.assertLessEqual(len(skill["body"]),
+                                 trading_skills.MAX_BODY_LEN,
+                                 f"{skill['slug']} body exceeds the stored "
+                                 "row cap")
+
+    def test_applies_when_tags_come_from_the_closed_set(self):
+        for skill in trading_skills.BASE_SKILLS:
+            for i, lesson in enumerate(skill["lessons"]):
+                tags = lesson.get("applies_when")
+                self.assertTrue(tags, f"{skill['slug']}[{i}] has no "
+                                "applies_when tags")
+                for tag in tags:
+                    self.assertIn(tag, trading_skills.APPLIES_WHEN,
+                                  f"{skill['slug']}[{i}]: unknown tag "
+                                  f"{tag!r}")
+
+    def test_selection_never_reads_applies_when(self):
+        # Phase 1 ships the tags as data only; selection stays the
+        # deterministic site+market filter. Wiring check on the source so a
+        # Phase 2 change is a deliberate edit, not a drive-by.
+        import inspect
+        src = inspect.getsource(trading_skills.skills_for_prompt)
+        self.assertNotIn("applies_when", src)
+
+    def test_chunked_render_preserves_every_claim(self):
+        # Every selected skill still renders, and every one of its atomic
+        # lessons appears whole in the block — nothing silently dropped by
+        # the shape change.
+        for site in trading_skills.PROMPT_SITES:
+            for market in (None, "us-stock", "crypto", "futures", "forex"):
+                block = trading_skills.skills_block(site, market)
+                for skill in trading_skills.skills_for_prompt(site, market):
+                    self.assertIn(f"### {skill['name']}\n", block,
+                                  f"{skill['slug']} dropped from "
+                                  f"{site}/{market}")
+                    for i, lesson in enumerate(
+                            trading_skills.lessons_for(skill)):
+                        self.assertIn(f"- {lesson['text']}", block,
+                                      f"{skill['slug']}[{i}] lesson missing "
+                                      f"from {site}/{market}")
+
+    def test_every_site_keeps_budget_headroom_after_chunking(self):
+        for site in trading_skills.PROMPT_SITES:
+            for market in (None, "us-stock", "crypto", "futures", "forex"):
+                block = trading_skills.skills_block(site, market)
+                self.assertLess(len(block), trading_skills.MAX_BLOCK_LEN,
+                                f"{site}/{market} has no headroom left")
+
+    def test_catalogue_row_renders_lessons_as_bullets(self):
+        block = trading_skills.skills_block("light")
+        self.assertIn("### Data Honesty\n- Use only the numbers actually "
+                      "shown in this prompt", block)
+
+    def test_admin_edited_body_renders_whole_not_as_lessons(self):
+        # An edited row no longer matches the catalogue: its stored body is
+        # the only truth and renders exactly as before Phase 1.
+        trading_skills.all_skills(fresh=True)
+        trading_skills.update_skill(
+            "data-honesty", {"body": "my one edited paragraph"},
+            updated_by="t@t")
+        skill = trading_skills.get_skill("data-honesty")
+        self.assertEqual(trading_skills.lessons_for(skill), [])
+        block = trading_skills.skills_block("light")
+        self.assertIn("### Data Honesty\nmy one edited paragraph\n", block)
+
+    def test_a_broken_lesson_structure_never_breaks_the_block(self):
+        # Fail-soft invariant: a rendering error degrades to "", never to a
+        # broken trading cycle.
+        with patch.object(trading_skills, "lessons_for",
+                          side_effect=RuntimeError("boom")):
+            self.assertEqual(trading_skills.skills_block("trader"), "")
+
+
 class MandateHeaderTests(_Db):
     """Owner, 2026-08-06: "We must be make solution for get a profit (It's
     our destiny and purpose)", "MUST BE THINKING DEEPLY and do not make
