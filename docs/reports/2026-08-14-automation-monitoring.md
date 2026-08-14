@@ -11,6 +11,21 @@ live yet.
 
 ---
 
+## Cycle 4 — 14:23Z
+
+- Two AI retires, reasons per trade: ADBE 1163 −8.26 final (loss was
+  yesterday's stop-inside-noise entry, already attributed; today's
+  retire = correct exit verb at conviction 0.41); INTU 1215 $0.00
+  (cycle-1 refusal, free).
+- **WATCH (R15 candidate): 3rd fresh seed build desk-retired at cycle 1**
+  (FDX, BLK, INTU — all $0). Research proposes seed theses the desk
+  immediately declines — free in P&L, costly in LLM/slot churn. If the
+  cycle-1 refusal rate on seed builds stays high over a day, the
+  composer→desk handoff disagrees systematically; fix would be its own
+  R15 (do NOT tune on n=3).
+- No forced closes, no size_clamp, book within ±$1. Slots refilled
+  instantly (ORCL, HG).
+
 ## Cycle 3 — 13:53Z (first post-open window under the new rails)
 
 - **SBUX 1161 queued flatten: executed 23s after the bell** (13:30:23Z,
