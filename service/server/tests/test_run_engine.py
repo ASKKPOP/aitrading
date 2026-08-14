@@ -771,15 +771,40 @@ class StopCoherenceBriefTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def _run(self, *, max_loss=85.26, peak=0.0):
+    def _run(self, *, max_loss=85.26, peak=0.0, feedback=True):
+        # feedback=True is the fleet shape — the drawdown brake exists only
+        # for feedback-enabled runs (R10 adversarial pass), so the fixtures
+        # here carry it explicitly.
         return {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto",
                 "stop_conditions_json": json.dumps({"max_loss_usd": max_loss}),
+                "config_snapshot_json": json.dumps({"feedback": feedback}),
                 "adapt_state_json": json.dumps({"v": 1, "peak_total_pnl": peak,
                                                 "size_mult": 1.0})}
 
     def _pnl(self, *, total=0.0, mark=517.34, ok=True):
         return {"total": total, "mark_age_ok": ok,
                 "position": {"current_price": mark, "entry_price": 520.55}}
+
+    def test_a_non_feedback_run_rooms_at_the_full_max_loss(self):
+        # The drawdown brake never fires for a manual (feedback-off) run —
+        # its binding rail is stop_event:max_loss at 100% of the cap. Using
+        # the brake fraction over-shrank manual runs ~30% against a rail
+        # that does not exist for them.
+        run = self._run(feedback=False)
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(total=0.0)):
+            room = run_engine._brake_room_usd(run)
+        self.assertAlmostEqual(room, 85.26, places=4)
+
+    def test_a_stale_mark_on_a_held_book_yields_no_room(self):
+        # An unknown mark must never clamp or render (add path only — a
+        # flat book has no mark to be stale).
+        run = self._run()
+        stale = {"total": -5.0, "mark_age_ok": False,
+                 "position": {"quantity": 3.0, "current_price": 500.0,
+                              "entry_price": 520.55}}
+        with patch.object(run_engine, "compute_run_pnl", return_value=stale):
+            self.assertIsNone(run_engine._brake_room_usd(run))
 
     def test_room_tracks_the_rail_constant_it_pairs_with(self):
         # Hardcoding 0.70 would let the room drift from the brake it

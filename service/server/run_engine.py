@@ -3453,26 +3453,43 @@ def _stop_coherence_enabled() -> bool:
 
 
 def _brake_room_usd(run: dict) -> Optional[float]:
-    """USD of further equity loss this run can take before the drawdown
-    brake retires it: retire_drawdown_frac × max_loss_usd minus the
-    drawdown already spent from the high-water mark.
+    """USD of further equity loss this run can take before the platform's
+    loss rail acts: the binding rail's cap minus the drawdown already
+    spent from the high-water mark.
 
-    Same formula as _brake_distance_line renders for held books (a test
-    pins the two together); factored here because the R10 entry line and
-    the size clamp both need the number for a book that does not exist
-    yet. None when the run has no max_loss stop or anything is unreadable
-    — an unknown room must never clamp or render."""
+    WHICH rail binds depends on the run (R10 adversarial pass): the
+    drawdown brake at retire_drawdown_frac × max_loss exists only for
+    feedback-enabled runs (run_feedback.apply_policy is gated on
+    cfg.feedback — fleet runs); a manual run carrying max_loss_usd is
+    ended by stop_event:max_loss at the FULL cap. Using the brake frac
+    for a manual run over-shrank its size ~30% against a rail that never
+    fires for it.
+
+    Same formula as _brake_distance_line renders for feedback-enabled
+    held books (a test pins the two together); factored here because the
+    R10 entry line and the size clamp both need the number for a book
+    that does not exist yet. None when the run has no max_loss stop, the
+    mark on a HELD book is stale (an unknown room must never clamp or
+    render), or anything is unreadable."""
     try:
         stops = json.loads(run.get("stop_conditions_json") or "{}")
         max_loss = float(stops.get("max_loss_usd") or 0)
         if max_loss <= 0:
             return None
         pnl = compute_run_pnl(run) or {}
+        pos = pnl.get("position") or {}
+        if float(pos.get("quantity") or 0) and not pnl.get("mark_age_ok"):
+            return None
         total = float(pnl.get("total") or 0)
         import run_feedback           # local: matches the cycle path's import
         state = run_feedback.load_state(run)
         peak = max(float(state.get("peak_total_pnl") or 0), total)
-        frac = float(run_feedback.ADAPT_BOUNDS["retire_drawdown_frac"])
+        try:
+            cfg = json.loads(run.get("config_snapshot_json") or "{}")
+        except (ValueError, TypeError):
+            cfg = {}
+        frac = (float(run_feedback.ADAPT_BOUNDS["retire_drawdown_frac"])
+                if run_feedback.feedback_enabled(cfg) else 1.0)
         return frac * max_loss - (peak - total)
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return None
@@ -3503,9 +3520,9 @@ def _entry_rail_line(run: dict, pos_qty: float) -> str:
         return ("Sizing rail: this run has NO remaining loss budget — the "
                 "equity brake is at or past its trigger, so any new "
                 "position may be retired regardless of your stop.\n")
-    return (f"Sizing rail for a NEW entry: the equity brake retires this "
-            f"run ${room:,.2f} below its high-water mark. Your stop is "
-            f"only real if notional × stop% fits inside ${room:,.2f} — "
+    return (f"Sizing rail for a NEW entry: the platform's loss rail ends "
+            f"this book ${room:,.2f} below its high-water mark. Your stop "
+            f"is only real if notional × stop% fits inside ${room:,.2f} — "
             f"e.g. a 1% stop supports at most ${room / 0.01:,.0f} of "
             f"notional. Size to your stop, or the platform exits before "
             f"your stop can (2026-08-13: three entries sized past this "
@@ -5434,26 +5451,41 @@ def run_cycle(run_id: int) -> dict:
         # room supports no meaningful size.
         if (op_mode == "apply" and order_params is not None
                 and intent_exit is None and _stop_coherence_enabled()
-                and order_params.stop_pct and float(size_usd or 0) > 0):
-            opens_exposure = action in ("buy", "short")
-            if not opens_exposure and action == "sell":
-                # A futures sell against a short book EXTENDS exposure.
-                opens_exposure = (
-                    trading_runs.is_futures_book(
-                        run.get("market"), (run.get("market_type") or "spot"))
-                    and _position_quantity(run["agent_id"], run["market"],
-                                           run["symbol"], run["id"]) < 0)
-            room = _brake_room_usd(run) if opens_exposure else None
+                and order_params.stop_pct and float(size_usd or 0) > 0
+                and action in ("buy", "short")):
+            # By this point a futures sell with no long was already remapped
+            # to "short" upstream, so "sell" here is always a reduce against
+            # a long — reduces are never clamped (verified: the old
+            # sell-extends-short branch was dead code).
+            room = _brake_room_usd(run)
             if room is not None and room > 0:
                 stop_frac = float(order_params.stop_pct) / 100.0
+                # ADD-AWARE (R10 adversarial pass, HIGH): the rail prices the
+                # WHOLE book, so an add must budget the held notional's stop
+                # risk too — pricing only the increment let a second $100 add
+                # rebuild exactly the SPCX/SOL shape the clamp exists to
+                # close (reproduced: book 2× notional, whole-book stop-USD
+                # 2× the room, brake first). Same-direction holdings only;
+                # an opposite book reduces exposure and never reaches here.
+                try:
+                    held_qty = _position_quantity(run["agent_id"],
+                                                  run["market"],
+                                                  run["symbol"], run["id"])
+                except Exception:  # noqa: BLE001
+                    held_qty = 0.0
+                same_dir = (max(held_qty, 0.0) if action == "buy"
+                            else max(-held_qty, 0.0))
+                held_notional = same_dir * float(entry or 0)
+                room_eff = room - held_notional * stop_frac
                 stop_usd = float(size_usd) * lev * stop_frac
-                if stop_usd > room:
-                    clamped = room / stop_frac / lev
+                if stop_usd > room_eff:
+                    clamped = max(room_eff, 0.0) / stop_frac / lev
                     emit_telemetry_event(run_id, "size_clamp",
                                          {"cycle": seq,
                                           "stage": "stop_coherence",
                                           "stop_pct": order_params.stop_pct,
                                           "room_usd": round(room, 2),
+                                          "held_notional": round(held_notional, 2),
                                           "size_before": round(float(size_usd), 2),
                                           "size_after": round(clamped, 2)})
                     size_usd = clamped
