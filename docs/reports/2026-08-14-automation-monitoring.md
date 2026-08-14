@@ -11,6 +11,19 @@ live yet.
 
 ---
 
+## Cycle 11 — 17:53Z (churn accelerating, cause converging)
+
+- 5 recycles, 0 trades: at_time flat-book EURUSD, 1 idle, 3 desk
+  refusals within minutes of building (C 1207; 1229 and 1231 at cycle 1
+  in <30 min). Refusal counter ~10-11 today, all $0.
+- **R15 design sharpened:** refusing desks cite the R10 rail arithmetic
+  ("required stop exceeds the loss-rail limit") — the composer builds
+  theses whose stop distance cannot fit the slot's loss budget at
+  viable size; desks correctly refuse. Fix = extend the BUILD-TIME
+  feasibility gate: thesis stop distance × viable size ≤ slot loss
+  rail, before the run exists (the exposure-feasibility lesson at the
+  bracket level). Decide at tomorrow's sweep on a full day of tape.
+
 ## Cycle 10 — 17:23Z
 
 - Three $0 recycles: idle-retires 1182 (f31) + 1200 (f32), desk-retire
