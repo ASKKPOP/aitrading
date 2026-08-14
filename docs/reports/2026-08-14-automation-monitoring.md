@@ -23,6 +23,23 @@ live yet.
   wound class since fixed). One $0 refusal (COP 1250). Overnight swing
   holds steady.
 
+## Cycle 20 — 23:14Z — ALL FLEETS STOPPED BY USER (wind-down)
+
+- **The user stopped the remaining fleets**: 31 at 22:28:51Z, 33 at
+  22:31:10Z (fleet_stop_all; 32 was stopped 19:51Z). The whole trial is
+  user-terminated. NOTE: today is FRIDAY (earlier notes said Thursday).
+- **Wind-down verified clean:** AUDCHF flatten correctly queued to the
+  Sunday 21:00Z FX reopen (forex closed for the weekend 21:00Z Friday);
+  JPM/IBM/MSFT flattens queued to MONDAY 13:30Z NYSE open. R12 throttle
+  visible on the queue events (4 rows, not ~80). Everything else flat.
+- **Final realized ledgers:** fleet 31 (swing) −$7.37 over 66 runs;
+  fleet 32 −$187.86 over 71; fleet 33 +$6.95 over 52. Open uPNL rides
+  the queued flattens (±$1 scale).
+- R15+R16 deployed at 23:11Z (image 20260814-r15-r16-planned, PR #426)
+  — zero errors post-restart; their live exercise now waits for the
+  owner's NEXT fleet (the current ones are stopped). Weekend watch:
+  Sunday 21:00Z AUDCHF flatten, Monday 13:30Z us-stock trio flatten.
+
 ## Cycle 17 — 20:53Z — FLEET 33 SCALED 6→25 BY USER
 
 - Ten runs built in 20s (1255-1264), fleet 33 now 25/25 running on

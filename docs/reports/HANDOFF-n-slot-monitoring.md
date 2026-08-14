@@ -210,6 +210,6 @@ yoojinbe@gmail.com (user 4), info@askkpop.com (user 5).
 | **32** | yoojinbe (4) | 5 | short | crypto/futures/forex/us-stock | 10 | $100k | **STOPPED by user 2026-08-14T19:51:40Z (fleet_stop_all, flat book, final −$187.86)** |
 | **33** | henry.j (23) | 59 | short | us-stock + forex | **25 (user-scaled 6→25 at 2026-08-14T20:53Z)** | $100k |
 
-Fleet 31 is THE swing block trial — §2 checks and the §7 closed-trade
+ALL THREE fleets were STOPPED by the user on 2026-08-14 (32 at 19:51Z, 31 at 22:28Z, 33 at 22:31Z — fleet_stop_all). Queued flattens: AUDCHF at Sunday 21:00Z FX open; JPM/IBM/MSFT at Monday 13:30Z NYSE open — VERIFY EXECUTION. Final realized: 31 −$7.37, 32 −$187.86, 33 +$6.95. R15 (bracket feasibility) + R16 (predecessor memory) deployed 23:11Z awaiting the next fleet. Fleet 31 was THE swing block trial — §2 checks and the §7 closed-trade
 counter apply to it. Owner directive 2026-08-14: do NOT actively monitor
 us-stock runs outside NYSE session hours (13:30–20:00Z).
