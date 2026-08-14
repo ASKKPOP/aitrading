@@ -166,12 +166,45 @@ _US_FNG_CACHE: dict[str, Any] = {"row": None, "at": 0.0}
 _US_FNG_TTL_SECONDS = 1800.0
 
 
+def _fetch_vix_row() -> Optional[dict[str, Any]]:
+    """VIX-based fear gauge from Yahoo's chart endpoint.
+
+    CNN answers cloud IPs with HTTP 418 ("You're a bot") — measured on prod
+    2026-08-14. That refusal is respected, not evaded: when CNN declines,
+    the gauge falls back to the VIX via Yahoo, the platform's permitted
+    price source, and labels its source honestly so the brief line renders
+    a volatility level, never a fabricated 0-100 index. Never raises.
+    """
+    try:
+        resp = requests.get(
+            "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX",
+            params={"range": "10d", "interval": "1d"},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        result = (resp.json() or {}).get("chart", {}).get("result") or []
+        closes = [c for c in (result[0]["indicators"]["quote"][0]["close"]
+                              or []) if c is not None]
+        if not closes:
+            return None
+        return {
+            "source": "vix",
+            "value": round(float(closes[-1]), 2),
+            "prev_1w": (round(float(closes[-6]), 2)
+                        if len(closes) >= 6 else None),
+        }
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def us_fear_greed(force: bool = False) -> Optional[dict[str, Any]]:
-    """Cached CNN fear&greed for the us-stock/forex desk brief lines."""
+    """Cached US fear gauge for the desk brief lines: CNN fear&greed when
+    it answers, else the VIX fallback; last-known-good on total outage."""
     now = time.monotonic()
     if (force or _US_FNG_CACHE["row"] is None
             or now - _US_FNG_CACHE["at"] >= _US_FNG_TTL_SECONDS):
-        row = fetch_cnn_fear_greed()
+        row = fetch_cnn_fear_greed() or _fetch_vix_row()
         if row is not None:
             _US_FNG_CACHE["row"] = row
             _US_FNG_CACHE["at"] = now
