@@ -11,6 +11,15 @@ live yet.
 
 ---
 
+## Cycle 16 — 20:25Z (post-close)
+
+- **TMO 1095 (the original swing run) completed +$0.48** — 53 cycles /
+  2 days, flat book, clean desk retire. Longest-lived swing run ends
+  profitably.
+- 3 more $0 refusals (NOW, AUDJPY, COP — churn ~18). Fleet 31 thinning
+  post-close to 16/25 (yesterday's overnight pattern; rebuilds at the
+  open). IBM/MSFT/JPM held overnight by design.
+
 ## FIX — 20:2xZ: UI analysis countdown (owner-reported)
 
 - Owner saw cards reading "다음 AI 분석까지 51분" vs the stated 30-min
