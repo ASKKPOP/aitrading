@@ -569,6 +569,28 @@ def _note_build_attempt(fleet_id: int, slot_index: int, built: bool) -> None:
         _LAST_EMPTY_ATTEMPT[key] = time.monotonic()
 
 
+# Guarded parse (R12 adversarial pass): an unguarded int() here raised at
+# IMPORT time on a garbage env value, and because this module imports inside
+# the fleet tick, one typo killed the whole supervision layer — rails,
+# brake, breaker, replacement — while the watchdog's own death in the same
+# module kept the failure silent. A bad value now falls back like the
+# run_engine heartbeat does.
+try:
+    _STATUS_HEARTBEAT_SECONDS = max(
+        60, int(os.getenv("FLEET_STATUS_HEARTBEAT_SECONDS", "1800")))
+except (TypeError, ValueError):
+    _STATUS_HEARTBEAT_SECONDS = 1800
+
+
+# fleet_id -> monotonic seconds of the last replenishing status write. The
+# fill-state label is recomputed every pass; a CHANGED reason always writes
+# through (monitoring reads the transitions), an UNCHANGED one re-stamps at
+# most once per heartbeat — fleet 31 wrote `replenishing:16/25` on every
+# ~62s pass, 1,385 identical fleet_status rows in a day (R12). Worker
+# restart resets the map: the first pass re-stamps once, which is fine.
+_LAST_STATUS_EMIT: dict[int, float] = {}
+
+
 def _slots(fleet_id: int) -> list[dict]:
     conn = get_db_connection()
     try:
@@ -860,11 +882,17 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
     if fleet["status"] == fp.STATUS_ACTIVE:
         prev_reason = fleet.get("status_reason") or ""
         if live < n:
-            fp._set_status(fleet["id"], (fp.STATUS_ACTIVE,), fp.STATUS_ACTIVE,
-                           f"replenishing:{live}/{n}")
+            reason = f"replenishing:{live}/{n}"
+            last = _LAST_STATUS_EMIT.get(fleet["id"])
+            if (reason != prev_reason or last is None
+                    or time.monotonic() - last >= _STATUS_HEARTBEAT_SECONDS):
+                fp._set_status(fleet["id"], (fp.STATUS_ACTIVE,),
+                               fp.STATUS_ACTIVE, reason)
+                _LAST_STATUS_EMIT[fleet["id"]] = time.monotonic()
         elif prev_reason.startswith(("replenishing:", "partial:")):
             fp._set_status(fleet["id"], (fp.STATUS_ACTIVE,), fp.STATUS_ACTIVE,
                            None)
+            _LAST_STATUS_EMIT.pop(fleet["id"], None)
         # an under-target fleet grew this pass (markets opened / research
         # qualified) — tell the member, mirroring the partial-build notice
         m = re.match(r"(?:replenishing|partial):(\d+)/", prev_reason)

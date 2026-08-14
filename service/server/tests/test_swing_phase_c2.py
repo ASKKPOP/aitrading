@@ -31,6 +31,9 @@ import run_engine as re_
 
 class QueuedFlattenTests(unittest.TestCase):
     def setUp(self):
+        # module-level throttle map is keyed by run_id; every test recreates
+        # run 1 in the same process, so reset it
+        re_._last_flatten_queued.clear()
         self.tmp = tempfile.TemporaryDirectory()
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
@@ -88,6 +91,78 @@ class QueuedFlattenTests(unittest.TestCase):
             re_._control_stopping(self._run_row(), out)
         flat.assert_called_once()
         self.assertEqual(self._run_row()["status"], "stopped")
+
+    def _queued_skips(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT payload FROM run_events WHERE run_id = ? AND "
+                    "event_type = 'gate_skip'", (self.run_id,))
+        rows = [json.loads(r["payload"]) for r in cur.fetchall()]
+        conn.close()
+        return [r for r in rows if "flatten queued" in (r.get("reason") or "")]
+
+    def test_queue_retry_writes_one_gate_skip_not_one_per_scan(self):
+        # R12: run 1161 wrote 1,144 identical rows over one closed session.
+        # The retry keeps running each scan; only the journal write throttles.
+        out = {"stopping_finished": 0}
+        with patch("markets.is_market_open", return_value=False), \
+             patch.object(re_, "_flatten_run") as flat:
+            for _ in range(3):
+                re_._control_stopping(self._run_row(), out)
+        flat.assert_not_called()
+        self.assertEqual(self._run_row()["status"], "stopping")
+        self.assertEqual(len(self._queued_skips()), 1)
+
+    def test_queue_heartbeat_rewrites_after_the_interval(self):
+        out = {"stopping_finished": 0}
+        with patch("markets.is_market_open", return_value=False), \
+             patch.object(re_, "_flatten_run"):
+            re_._control_stopping(self._run_row(), out)
+            self.assertEqual(len(self._queued_skips()), 1)
+            re_._last_flatten_queued[self.run_id] -= (
+                re_._flatten_queued_heartbeat_seconds() + 1)
+            re_._control_stopping(self._run_row(), out)
+        self.assertEqual(len(self._queued_skips()), 2)
+
+    def test_execution_after_a_throttled_queue_is_unchanged(self):
+        # queued (one write), then the open executes exactly as before and
+        # clears the throttle entry — a later re-queue writes immediately
+        out = {"stopping_finished": 0}
+        with patch("markets.is_market_open", return_value=False), \
+             patch.object(re_, "_flatten_run"):
+            re_._control_stopping(self._run_row(), out)
+            re_._control_stopping(self._run_row(), out)
+        self.assertEqual(len(self._queued_skips()), 1)
+        with patch("markets.is_market_open", return_value=True), \
+             patch.object(re_, "_flatten_run",
+                          return_value=(True, None)) as flat, \
+             patch.object(re_, "_cache_realized_pnl"), \
+             patch.object(re_, "compute_run_pnl",
+                          return_value={"realized": 1.0}), \
+             patch.object(re_, "_maybe_auto_restart"):
+            re_._control_stopping(self._run_row(), out)
+        flat.assert_called_once()
+        self.assertEqual(self._run_row()["status"], "stopped")
+        self.assertNotIn(self.run_id, re_._last_flatten_queued)
+
+    def test_requeue_after_leaving_the_queue_writes_immediately(self):
+        out = {"stopping_finished": 0}
+        with patch("markets.is_market_open", return_value=False), \
+             patch.object(re_, "_flatten_run"):
+            re_._control_stopping(self._run_row(), out)
+        # market opens but the flatten fails — the run stays stopping and the
+        # queue entry clears (state changed: it is now retry-failing, whose
+        # gate_skip carries the failure reason and is untouched by the throttle)
+        with patch("markets.is_market_open", return_value=True), \
+             patch.object(re_, "_flatten_run",
+                          return_value=(False, "no fill")):
+            re_._control_stopping(self._run_row(), out)
+        self.assertNotIn(self.run_id, re_._last_flatten_queued)
+        # market closes again: the fresh queue entry writes without waiting
+        with patch("markets.is_market_open", return_value=False), \
+             patch.object(re_, "_flatten_run"):
+            re_._control_stopping(self._run_row(), out)
+        self.assertEqual(len(self._queued_skips()), 2)
 
     def test_calendar_failure_fails_open_to_the_flatten(self):
         # a broken calendar must not wedge a stop forever

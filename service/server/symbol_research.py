@@ -107,11 +107,13 @@ WEIGHT_PROFILES: dict[str, dict[str, float]] = {
 # cap only decides how many of those already-paid-for scores survive. Raising
 # it costs no extra candle fetches — it stops discarding 117 finished results.
 #
-# ⚠️ Stage 2 interaction: fresh theses are chunked (FLEET_RESEARCH_BATCH_SIZE,
-# default 5) and capped at MAX_LLM_CALLS_PER_REFRESH (default 2), so at most
-# ~10 survivors get a FRESH LLM thesis per refresh; beyond that they reuse an
-# unchanged prior thesis or fall back. A wider survivor set therefore widens
-# the fleet's choice without widening LLM spend — but watch `'llm': N` in the
+# ⚠️ Stage 2 interaction (corrected 2026-08-14, R14 adversarial pass): fresh
+# theses are chunked (FLEET_RESEARCH_BATCH_SIZE, default 5) with a bounded
+# per-call payload, and MAX_LLM_CALLS_PER_REFRESH is a PER-CHUNK RETRY bound
+# — chunk COUNT scales with the survivors needing a fresh thesis, so a wider
+# survivor set adds ~1 LLM call per 5 fresh names on a cold refresh (then
+# thesis reuse damps it). The truncation defect cannot recur (per-chunk
+# payload is fixed), but total spend is not capped — watch `'llm': N` in the
 # [SymbolResearch] log line: if it collapses toward zero the reuse/fallback
 # mix has shifted and FLEET_RESEARCH_MAX_LLM_CALLS is the knob.
 _SURVIVOR_DEFAULTS = {"crypto": 8, "us-stock": 8, "futures": 4, "forex": 4}
@@ -239,6 +241,59 @@ def _now_iso() -> str:
 
 # ── Stage 0: universe ───────────────────────────────────────────────────────
 
+# Swing seed universe (2026-08-14, fleet 31 stuck at 17/25): the organic
+# us-stock pool — the dropdown list plus hot movers — keeps proposing exactly
+# the names the swing universe gate refuses (QNT/CBRS/SPCX at 42–62 daily
+# bars), so every replacement pass gated to nothing. This roster is the
+# S&P 100 membership: a mechanical size/liquidity list, not a stock-picking
+# opinion — deep, seasoned, exitable names that CAN clear the swing gate's
+# 180-bar / $10 / $50M-ADV floor. It only widens what research CONSIDERS
+# while a swing fleet is live; seeded names become theses like any other and
+# swing_symbol_check + the expectancy gate still decide what builds.
+# SWING_SEED_UNIVERSE=0 disables.
+SWING_SEED_UNIVERSE: tuple[str, ...] = (
+    'AAPL', 'ABBV', 'ABT', 'ACN', 'ADBE', 'AIG', 'AMD', 'AMGN', 'AMT',
+    'AMZN', 'AVGO', 'AXP', 'BA', 'BAC', 'BK', 'BKNG', 'BLK', 'BMY',
+    'BRK.B', 'C', 'CAT', 'CHTR', 'CL', 'CMCSA', 'COF', 'COP', 'COST',
+    'CRM', 'CSCO', 'CVS', 'CVX', 'DE', 'DHR', 'DIS', 'DOW', 'DUK', 'EMR',
+    'ETN', 'F', 'FDX', 'GD', 'GE', 'GILD', 'GM', 'GOOG', 'GOOGL', 'GS',
+    'HD', 'HON', 'IBM', 'INTC', 'INTU', 'ISRG', 'JNJ', 'JPM', 'KO', 'LIN',
+    'LLY', 'LMT', 'LOW', 'MA', 'MCD', 'MDLZ', 'MDT', 'MET', 'META', 'MMM',
+    'MO', 'MRK', 'MS', 'MSFT', 'NEE', 'NFLX', 'NKE', 'NOW', 'NVDA',
+    'ORCL', 'PEP', 'PFE', 'PG', 'PLTR', 'PM', 'PYPL', 'QCOM', 'RTX',
+    'SBUX', 'SCHW', 'SO', 'SPG', 'T', 'TGT', 'TMO', 'TMUS', 'TSLA', 'TXN',
+    'UNH', 'UNP', 'UPS', 'USB', 'V', 'VZ', 'WFC', 'WMT', 'XOM',
+)
+
+
+def _swing_seed_enabled() -> bool:
+    """Default-on kill switch for the swing seed universe."""
+    return os.getenv("SWING_SEED_UNIVERSE", "true").strip().lower() in {
+        "1", "true", "yes", "on"}
+
+
+def _swing_fleet_demand() -> int:
+    """Σ n_runs of non-terminal swing-archetype fleets. Fail-soft: any error
+    means 0 and the seed stays out — organic research is untouched."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT n_runs FROM fleets WHERE archetype = 'swing'
+               AND status IN ('researching','building','active','paused',
+                              'stopping')""")
+        return sum(int(r["n_runs"] or 0) for r in cursor.fetchall())
+    except Exception:  # noqa: BLE001 — research must never break on this
+        return 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def build_universe() -> list[dict[str, str]]:
     """[{symbol, market}] across automatable markets. Pure list assembly —
     the only network call is the crypto top-volume read, which fails soft."""
@@ -305,6 +360,14 @@ def build_universe() -> list[dict[str, str]]:
                     stocks.append(s)
         except Exception:  # noqa: BLE001
             pass
+        # A live swing fleet widens the researched slice with the seed
+        # roster (~50 names beyond the dropdown list — cached daily-candle
+        # reads, paid only while swing demand exists). See
+        # SWING_SEED_UNIVERSE.
+        if _swing_seed_enabled() and _swing_fleet_demand() > 0:
+            for s in SWING_SEED_UNIVERSE:
+                if s not in stocks:
+                    stocks.append(s)
         out.extend({"symbol": s, "market": "us-stock"} for s in stocks)
     if "futures" in autom:
         out.extend({"symbol": s, "market": "futures"} for s in routes_market.FUTURES_SYMBOLS)
@@ -732,6 +795,28 @@ def screen_universe(universe: list[dict[str, str]],
         pool = sorted((s for s in scored if s["market"] == market),
                       key=lambda s: s["screen_score"], reverse=True)
         survivors.extend(pool[:k])
+    # Swing seed top-up: the mover-tilted top-K cut crowds seasoned
+    # large-caps out of the survivor set, so a swing fleet's replacement
+    # pool can carry nothing its universe gate accepts however wide the
+    # cap. When live swing demand exceeds the seed-listed us-stock names
+    # that made the cut, extend the set with the best-scored seed names
+    # below it — already scored above, zero extra fetches, and
+    # _SURVIVOR_HARD_CAP still bounds the market. Seeded survivors become
+    # theses like any other; swing_symbol_check and the expectancy gate
+    # still decide what builds.
+    if _swing_seed_enabled():
+        want = _swing_fleet_demand()
+        if want > 0:
+            seed = set(SWING_SEED_UNIVERSE)
+            us = [s for s in survivors if s["market"] == "us-stock"]
+            kept = {s["symbol"] for s in us}
+            take = min(want - len(kept & seed), _SURVIVOR_HARD_CAP - len(us))
+            if take > 0:
+                pool = sorted(
+                    (s for s in scored if s["market"] == "us-stock"
+                     and s["symbol"] in seed and s["symbol"] not in kept),
+                    key=lambda s: s["screen_score"], reverse=True)
+                survivors.extend(pool[:take])
     return survivors
 
 

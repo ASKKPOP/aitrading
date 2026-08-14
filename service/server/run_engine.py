@@ -1990,6 +1990,22 @@ def _flush_pending_close_adapts(run: dict) -> int:
         return 0
 
 
+# queued-flatten telemetry: first queue entry writes, then a heartbeat — NOT
+# a row per control scan (run 1161 wrote 1,144 identical "flatten queued"
+# rows over one 10.5h closed session; R12). The retry itself is untouched —
+# only the journal write is throttled. Leaving the queue (market open, or a
+# broken calendar failing open to the flatten) clears the entry, so the next
+# queueing writes immediately again.
+_last_flatten_queued: dict[int, float] = {}  # run_id -> monotime of last write
+
+
+def _flatten_queued_heartbeat_seconds() -> int:
+    try:
+        return max(60, int(os.getenv("RUN_FLATTEN_QUEUED_HEARTBEAT", "1800")))
+    except ValueError:
+        return 1800
+
+
 def _control_stopping(run: dict, out: dict) -> None:
     # BEFORE any branch, and before the flatten leg exists as a signal: all
     # three exits below are terminal, and each one is a place a pending close
@@ -2035,13 +2051,20 @@ def _control_stopping(run: dict, out: dict) -> None:
     try:
         import markets as _mkts
         if not _mkts.is_market_open(run.get("market")):
-            emit_telemetry_event(run["id"], "gate_skip",
-                                 {"stage": "flatten",
-                                  "reason": "market closed — flatten queued "
-                                            "to the next open"})
+            import time as _time
+            now_mono = _time.monotonic()
+            prev = _last_flatten_queued.get(run["id"])
+            if prev is None \
+                    or now_mono - prev >= _flatten_queued_heartbeat_seconds():
+                _last_flatten_queued[run["id"]] = now_mono
+                emit_telemetry_event(run["id"], "gate_skip",
+                                     {"stage": "flatten",
+                                      "reason": "market closed — flatten queued "
+                                                "to the next open"})
             return
     except Exception:  # noqa: BLE001 — a missing calendar must not block a stop
         pass
+    _last_flatten_queued.pop(run["id"], None)  # left the queue: a state change
 
     ok, why = _flatten_run(run)
     if ok:
@@ -3422,6 +3445,156 @@ def _brake_distance_line(run: dict, pos_qty: float) -> str:
         return ""
 
 
+def _stop_coherence_enabled() -> bool:
+    """R10 kill switch (default on) for the entry rail line and the size
+    clamp together — the lesson and its enforcement ship as one unit."""
+    return (os.getenv("RUN_STOP_COHERENCE", "true") or "true"
+            ).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _brake_room_usd(run: dict) -> Optional[float]:
+    """USD of further equity loss this run can take before the platform's
+    loss rail acts: the binding rail's cap minus the drawdown already
+    spent from the high-water mark.
+
+    WHICH rail binds depends on the run (R10 adversarial pass): the
+    drawdown brake at retire_drawdown_frac × max_loss exists only for
+    feedback-enabled runs (run_feedback.apply_policy is gated on
+    cfg.feedback — fleet runs); a manual run carrying max_loss_usd is
+    ended by stop_event:max_loss at the FULL cap. Using the brake frac
+    for a manual run over-shrank its size ~30% against a rail that never
+    fires for it.
+
+    Same formula as _brake_distance_line renders for feedback-enabled
+    held books (a test pins the two together); factored here because the
+    R10 entry line and the size clamp both need the number for a book
+    that does not exist yet. None when the run has no max_loss stop, the
+    mark on a HELD book is stale (an unknown room must never clamp or
+    render), or anything is unreadable."""
+    try:
+        stops = json.loads(run.get("stop_conditions_json") or "{}")
+        max_loss = float(stops.get("max_loss_usd") or 0)
+        if max_loss <= 0:
+            return None
+        pnl = compute_run_pnl(run) or {}
+        pos = pnl.get("position") or {}
+        if float(pos.get("quantity") or 0) and not pnl.get("mark_age_ok"):
+            return None
+        total = float(pnl.get("total") or 0)
+        import run_feedback           # local: matches the cycle path's import
+        state = run_feedback.load_state(run)
+        peak = max(float(state.get("peak_total_pnl") or 0), total)
+        try:
+            cfg = json.loads(run.get("config_snapshot_json") or "{}")
+        except (ValueError, TypeError):
+            cfg = {}
+        frac = (float(run_feedback.ADAPT_BOUNDS["retire_drawdown_frac"])
+                if run_feedback.feedback_enabled(cfg) else 1.0)
+        return frac * max_loss - (peak - total)
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return None
+
+
+def _entry_rail_line(run: dict, pos_qty: float) -> str:
+    """The rail arithmetic for a position that does NOT exist yet.
+
+    _brake_distance_line (#244) reconciles the desk's price-percent stop
+    with the platform's USD equity rail — but only for a held book, and
+    every large entry loss of 2026-08-13 happened while this brief was
+    silent: SPCX sized $3,317 whose 6.4% stop meant $212 against a $44
+    budget (the brake fired on a −1.07% wiggle 26 minutes in), GC went
+    full size under a 1.31% stop worth $27.5 against a ~$13 floor. n=3,
+    −$118 in one day, and in every case the platform acted before the
+    authored stop COULD — a stop needing more room than the rail has is
+    not a stop, it is fiction.
+
+    Fact + the one line of arithmetic that makes size answerable at entry
+    time; the apply-path clamp enforces the same identity shrink-only for
+    the desks that ignore it. Flat books only; fail-soft."""
+    if pos_qty or not _stop_coherence_enabled():
+        return ""
+    room = _brake_room_usd(run)
+    if room is None:
+        return ""
+    if room <= 0:
+        return ("Sizing rail: this run has NO remaining loss budget — the "
+                "equity brake is at or past its trigger, so any new "
+                "position may be retired regardless of your stop.\n")
+    return (f"Sizing rail for a NEW entry: the platform's loss rail ends "
+            f"this book ${room:,.2f} below its high-water mark. Your stop "
+            f"is only real if notional × stop% fits inside ${room:,.2f} — "
+            f"e.g. a 1% stop supports at most ${room / 0.01:,.0f} of "
+            f"notional. Size to your stop, or the platform exits before "
+            f"your stop can (2026-08-13: three entries sized past this "
+            f"rail lost $118 and no authored stop ever acted).\n")
+
+
+def _last_cycle_word_line(run: dict) -> str:
+    """The desk's OWN last-cycle verdict, quoted back to it.
+
+    2026-08-13, run 1157 (QNT): cycle 2 wrote "Long thesis is already
+    invalidated because price is below today's open — no entry", and
+    cycle 3 bought 29 minutes later on the same tape; run 1169 (INTC)
+    entered after twice writing down why the bracket did not work. −$47
+    across three runs whose losing entries contradicted the desk's own
+    words from the cycle before. Nothing in the prompt showed the desk
+    what it had just said, so each cycle re-derived the world from
+    scratch and the sharpest fact it owned — its own standing
+    invalidation — was the one thing it could not see.
+
+    Quote, verbatim and labelled as the desk's own; the rule stated is
+    the R11 lesson. Renders flat or held. Fail-soft.
+
+    Two shapes the adversarial pass reproduced, both guarded here: an
+    ERRORED cycle still emits a decision event with empty action/report,
+    and a LIMIT-1 read of that row would erase the standing invalidation
+    exactly one failed cycle after it was written — so scan back past
+    empty rows. And words can be days old across a weekend or a pause;
+    quoting them undated as "last cycle" lends them false freshness — so
+    the line carries the age of the words and lets the desk weigh it."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT ts, payload FROM run_events
+                   WHERE run_id = ? AND event_type = 'decision'
+                   ORDER BY id DESC LIMIT 5""", (run["id"],))
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
+        action = report = ts = ""
+        for row in rows or []:
+            payload = json.loads(row["payload"] or "{}")
+            action = str(payload.get("action") or "").strip()
+            report = " ".join(str(payload.get("report") or "").split())
+            if action and report:
+                ts = str(row["ts"] or "")
+                break
+        if not action or not report:
+            return ""
+        age = ""
+        try:
+            mins = _age_seconds(ts) / 60.0
+            if mins >= 1:
+                age = (f", {mins:.0f} min ago" if mins < 120 else
+                       f", {mins / 60:.0f} h ago" if mins < 2880 else
+                       f", {mins / 1440:.0f} days ago")
+        except Exception:  # noqa: BLE001 — an unreadable ts drops the age only
+            age = ""
+        if len(report) > 400:
+            report = report[:400].rsplit(" ", 1)[0] + "…"
+        return (f"Your own last cycle (action: {action}{age}): \"{report}\"\n"
+                "An invalidation you stated stands until you explicitly "
+                "overturn it with NEW evidence in this cycle's report — "
+                "entering against your own standing invalidation is the "
+                "measured failure (2026-08-13: QNT bought 29 minutes after "
+                "writing 'thesis already invalidated'; −$47 across three "
+                "such entries).\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _breadth_state_line(run: dict) -> str:
     """US market breadth as market-environment evidence (advisory).
 
@@ -4238,10 +4411,12 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                       + _opening_window_line(run)
                       + _young_exit_brief(run, cfg, pos_qty)
                       + _contradiction_line(run, pos_qty)
+                      + _last_cycle_word_line(run)
                       + _earnings_state_line(run)
                       + _breadth_state_line(run)
                       + _hold_streak_line(run, pos_qty)
                       + _brake_distance_line(run, pos_qty)
+                      + _entry_rail_line(run, pos_qty)
                       + _exit_size_line(run, pos_qty)
                       + _mark_freshness_line(run, pos_qty)
                       + _big_trader_line(run)
@@ -4807,10 +4982,12 @@ def run_cycle(run_id: int) -> dict:
                                         + _opening_window_line(run)
                                         + _young_exit_brief(run, cfg, held)
                                         + _contradiction_line(run, held)
+                                        + _last_cycle_word_line(run)
                                         + _earnings_state_line(run)
                                         + _breadth_state_line(run)
                                         + _hold_streak_line(run, held)
                                         + _brake_distance_line(run, held)
+                                        + _entry_rail_line(run, held)
                                         + _exit_size_line(run, held)
                                         + _mark_freshness_line(run, held)
                                         + _big_trader_line(run)
@@ -5260,6 +5437,58 @@ def run_cycle(run_id: int) -> dict:
                 intent_exit["size_frac"],
                 position_qty=intent_exit["position_qty"],
                 entry=float(entry or 0), leverage=lev)
+        # R10 stop-coherence clamp (2026-08-14, shrink-only): the desk
+        # authors a stop in price percent; the platform retires the run on
+        # USD equity drawdown. When notional × stop% exceeds the brake's
+        # remaining room, the rail is guaranteed to fire BEFORE the stop —
+        # measured 2026-08-13 on SPCX/SOL/GC: n=3, −$118, no authored stop
+        # ever acted. _entry_rail_line teaches the desk the identity; this
+        # enforces it for the desks that ignore it, by shrinking size until
+        # the authored stop fits the room. Opens/extends only — a rail that
+        # shrinks a reduction points the forbidden direction — and only
+        # when the desk actually authored a stop; unknown room never
+        # clamps. Downstream dust guard remains the refusal path when the
+        # room supports no meaningful size.
+        if (op_mode == "apply" and order_params is not None
+                and intent_exit is None and _stop_coherence_enabled()
+                and order_params.stop_pct and float(size_usd or 0) > 0
+                and action in ("buy", "short")):
+            # By this point a futures sell with no long was already remapped
+            # to "short" upstream, so "sell" here is always a reduce against
+            # a long — reduces are never clamped (verified: the old
+            # sell-extends-short branch was dead code).
+            room = _brake_room_usd(run)
+            if room is not None and room > 0:
+                stop_frac = float(order_params.stop_pct) / 100.0
+                # ADD-AWARE (R10 adversarial pass, HIGH): the rail prices the
+                # WHOLE book, so an add must budget the held notional's stop
+                # risk too — pricing only the increment let a second $100 add
+                # rebuild exactly the SPCX/SOL shape the clamp exists to
+                # close (reproduced: book 2× notional, whole-book stop-USD
+                # 2× the room, brake first). Same-direction holdings only;
+                # an opposite book reduces exposure and never reaches here.
+                try:
+                    held_qty = _position_quantity(run["agent_id"],
+                                                  run["market"],
+                                                  run["symbol"], run["id"])
+                except Exception:  # noqa: BLE001
+                    held_qty = 0.0
+                same_dir = (max(held_qty, 0.0) if action == "buy"
+                            else max(-held_qty, 0.0))
+                held_notional = same_dir * float(entry or 0)
+                room_eff = room - held_notional * stop_frac
+                stop_usd = float(size_usd) * lev * stop_frac
+                if stop_usd > room_eff:
+                    clamped = max(room_eff, 0.0) / stop_frac / lev
+                    emit_telemetry_event(run_id, "size_clamp",
+                                         {"cycle": seq,
+                                          "stage": "stop_coherence",
+                                          "stop_pct": order_params.stop_pct,
+                                          "room_usd": round(room, 2),
+                                          "held_notional": round(held_notional, 2),
+                                          "size_before": round(float(size_usd), 2),
+                                          "size_after": round(clamped, 2)})
+                    size_usd = clamped
         # Intent exits carry no confidence floor into the gate: a desk sure
         # enough to bank is not required to be sure enough to enter, and a
         # refused flatten is the failure mode the asymmetry exists to forbid.

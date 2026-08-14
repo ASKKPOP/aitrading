@@ -293,6 +293,122 @@ class RunCycleOrderParamTests(unittest.TestCase):
             result = run_engine.run_cycle(run_id)
         self.assertTrue(result["executed"], result.get("skip_reason"))
 
+    # ── R10 stop-coherence clamp (2026-08-14) ──────────────────────────
+
+    def _pin_max_loss(self, run_id: int, max_loss: float,
+                      feedback: bool = False):
+        """Stamp a USD loss cap (and optionally the fleet's feedback flag,
+        which decides WHICH rail binds) the way prod runs carry them."""
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT stop_conditions_json, config_snapshot_json "
+                        "FROM trading_runs WHERE id = ?", (run_id,))
+            row = cur.fetchone()
+            stops = json.loads(row["stop_conditions_json"] or "{}")
+            stops["max_loss_usd"] = max_loss
+            cfg = json.loads(row["config_snapshot_json"] or "{}")
+            if feedback:
+                cfg["feedback"] = True
+            database.begin_write_transaction(cur)
+            cur.execute("UPDATE trading_runs SET stop_conditions_json = ?, "
+                        "config_snapshot_json = ? WHERE id = ?",
+                        (json.dumps(stops), json.dumps(cfg), run_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_apply_clamps_a_size_whose_stop_overshoots_the_rail(self):
+        """SPCX shape on a manual run: the desk's 2% stop on a $100 bet is
+        $2 of risk against a $1.50 max_loss rail (feedback off → the full
+        cap binds). The clamp shrinks the bet until the stop fits: $75."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        self._pin_max_loss(run_id, 1.5)
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 75.0,
+                               places=1)
+        clamps = self._events(run_id, "size_clamp")
+        self.assertEqual(len(clamps), 1)
+        self.assertEqual(clamps[0]["stage"], "stop_coherence")
+        self.assertAlmostEqual(clamps[0]["size_before"], 100.0, places=1)
+        self.assertAlmostEqual(clamps[0]["size_after"], 75.0, places=1)
+
+    def test_a_feedback_run_clamps_at_the_brake_fraction(self):
+        """Fleet shape (feedback on): the binding rail is the drawdown
+        brake at 0.70 × max_loss — room 0.70 × $2 = $1.40 → $70."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        self._pin_max_loss(run_id, 2.0, feedback=True)
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 70.0,
+                               places=1)
+
+    def test_an_add_budgets_the_held_books_stop_risk(self):
+        """R10 adversarial pass (HIGH, reproduced): pricing only the
+        increment let a second $100 add rebuild the SPCX/SOL shape — book
+        2× notional, whole-book stop-USD past the room. The add's room
+        must subtract held_notional × stop%: the whole book's stop-USD
+        stays inside the rail after every add."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        self._pin_max_loss(run_id, 3.2)
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)):
+            first = run_engine.run_cycle(run_id)
+            second = run_engine.run_cycle(run_id)
+        self.assertTrue(first["executed"], first.get("skip_reason"))
+        self.assertTrue(second["executed"], second.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertEqual(len(fills), 2)
+        # Entry 1 is coherent unclamped ($2 stop-USD ≤ $3.20 room); the add
+        # must be clamped below full size so that the WHOLE book's stop-USD
+        # (Σ notional × 2%) stays within the remaining room.
+        add_notional = float(fills[1]["quantity"]) * 100.0
+        self.assertLess(add_notional, 99.0)
+        book_stop_usd = (float(fills[0]["quantity"]) +
+                         float(fills[1]["quantity"])) * 100.0 * 0.02
+        self.assertLessEqual(book_stop_usd, 3.2 + 0.01)
+        clamps = self._events(run_id, "size_clamp")
+        self.assertEqual(len(clamps), 1)
+        self.assertAlmostEqual(clamps[0]["held_notional"], 100.0, delta=1.0)
+
+    def test_the_clamp_kill_switch_restores_the_old_behavior(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        os.environ["RUN_STOP_COHERENCE"] = "0"
+        try:
+            run_id = self._run()
+            self._pin_max_loss(run_id, 2.0)
+            with patch("analysis_agents.run_analysis",
+                       return_value=_analysis(order=ORDER)):
+                result = run_engine.run_cycle(run_id)
+            self.assertTrue(result["executed"], result.get("skip_reason"))
+            fills = self._fill(run_id)
+            self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0,
+                                   100.0, places=2)
+            self.assertEqual(self._events(run_id, "size_clamp"), [])
+        finally:
+            os.environ.pop("RUN_STOP_COHERENCE", None)
+
+    def test_a_run_without_a_loss_cap_is_never_clamped(self):
+        """Unknown room must never clamp — manual runs carry no
+        max_loss_usd and their sizing is not this rail's business."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        self.assertEqual(self._events(run_id, "size_clamp"), [])
+
 
 if __name__ == "__main__":
     unittest.main()
