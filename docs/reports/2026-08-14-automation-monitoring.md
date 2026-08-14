@@ -2,6 +2,17 @@
 
 Newest first. Anchor every entry to the prod DB clock.
 
+## Probation PROVEN live to the cent (07:10Z cycle)
+
+First post-#416 builds verified: **EURUSD 1190 (agent 5, zero completed
+runs) composed at max_bet 236.93 = 0.33 × (1025.65 budget × 0.70 tier
+frac) — probation applied exactly.** History-holders at full size as
+designed: ZECUSDT 643.84 (2 prior runs), INTC 180.09 (agent 6 had 1
+prior run — my initial suspicion was wrong and the evidence said so),
+PFE/T/VZ/SBUX full. #416 post-ship watch: first sample CLOSED-CORRECT.
+Overnight otherwise quiet: panels 100% genuine (0 fallback errors all
+night), no stop-hits, agent P&L 5: −185.66 / 6: −7.64 / 59: +7.06.
+
 ## SCALE COHERENCE DEPLOYED (#416) — both owner-approved fixes live (00:13Z)
 
 Merged `816091bc`, deployed **`20260814-scale-coherence`** (rollback:
