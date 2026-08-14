@@ -76,11 +76,16 @@ export class GLLineChart {
   private onLost = (e: Event) => { e.preventDefault(); this.gl = null }
   private onRestored = () => { this.initGL() }
 
-  constructor(canvas: HTMLCanvasElement, opts: { capacity?: number; color?: string } = {}) {
+  constructor(canvas: HTMLCanvasElement,
+              opts: { capacity?: number; color?: string; mode?: 'gl' | '2d' } = {}) {
     this.canvas = canvas
     this.cap = Math.max(16, opts.capacity ?? 4096)
     this.ring = new Float32Array(this.cap * 2)
     this.lineColor = opts.color ?? 'rgb(42,120,214)'
+    // '2d' bypasses WebGL: pages with many small charts must not each hold a
+    // WebGL context — Chromium evicts the oldest past 16 live contexts and the
+    // evicted canvas renders as a white dead-face box.
+    if (opts.mode === '2d') { this.ctx2d = canvas.getContext('2d'); this.schedule(); return }
     canvas.addEventListener('webglcontextlost', this.onLost, false)
     canvas.addEventListener('webglcontextrestored', this.onRestored, false)
     this.initGL()
@@ -235,6 +240,10 @@ export class GLLineChart {
     if (gl) {
       if (this.vbo) gl.deleteBuffer(this.vbo)
       if (this.prog) gl.deleteProgram(this.prog)
+      // Release the context slot NOW — an unmounted chart's context otherwise
+      // counts against the per-page cap until GC, and under fleet churn the
+      // leaked slots evict the still-visible cards' contexts.
+      gl.getExtension('WEBGL_lose_context')?.loseContext()
     }
     this.gl = null; this.ctx2d = null
   }

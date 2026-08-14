@@ -1212,7 +1212,9 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
               <BookBlock run={run} snap={snapByRun[run.id]} liqDefense={liqByRun[run.id]}
                 tick={run.status === 'running' ? tick : null} lang={language} />
               <div style={{ marginTop: 8 }}>
-                <RunSparkline values={equityByRun[run.id] || [0]}
+                {/* mode "2d": one grid card per active run — 20+ WebGL contexts
+                    would blow Chromium's 16-context cap and evict canvases */}
+                <RunSparkline mode="2d" values={equityByRun[run.id] || [0]}
                   color={pnl < 0 ? 'rgb(208,59,59)' : 'rgb(12,163,12)'} height={44} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between',
