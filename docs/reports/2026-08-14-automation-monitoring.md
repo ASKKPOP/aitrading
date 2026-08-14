@@ -23,6 +23,18 @@ live yet.
   wound class since fixed). One $0 refusal (COP 1250). Overnight swing
   holds steady.
 
+## LOOP STOPPED — 23:3xZ, by owner order
+
+Owner: "stop all monitoring session tasks, i will be make new fleet, and
+then asking you again tonight." Both crons (30-min cycle + daily sweep)
+cancelled. State at stop: all fleets user-stopped, wind-down clean,
+final ledgers below. FOR THE NEXT SESSION: (1) verify AUDCHF flatten at
+Sunday 21:00Z FX open and JPM/IBM/MSFT flattens at Monday 13:30Z NYSE
+open; (2) when the owner's NEW fleet appears, R15 (bracket_infeasible
+events) and R16 (predecessor line) get their first live exercise —
+verify both; (3) owner directive stands: implement designed fixes
+immediately, every time; quiet cycles report one line only.
+
 ## Cycle 20 — 23:14Z — ALL FLEETS STOPPED BY USER (wind-down)
 
 - **The user stopped the remaining fleets**: 31 at 22:28:51Z, 33 at
