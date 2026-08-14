@@ -998,6 +998,109 @@ class LastCycleWordBriefTests(unittest.TestCase):
                       "last-cycle line is not wired into the full prompt")
 
 
+class PredecessorRunBriefTests(unittest.TestCase):
+    """R16 (2026-08-14): fleet 32 retired NQ citing "no safe bracket",
+    rebuilt it 4h later, and the successor re-longed HIGHER with zero
+    reference to the predecessor — −$4.57 across the pair. Memory must
+    cross runs on the same agent+market+symbol."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _mk_run(self, rid, *, symbol="NQ", agent=7, stopped_at=None,
+                reason=None, pnl=0.0):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO trading_runs (id, agent_id, symbol, market, "
+                "status, status_reason, realized_pnl_usd, stopped_at, "
+                "created_at) VALUES (?, ?, ?, 'futures', ?, ?, ?, ?, "
+                "'2026-08-14T00:00:00Z')",
+                (rid, agent, symbol,
+                 'stopped' if stopped_at else 'running',
+                 reason, pnl, stopped_at))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _now_iso(self, hours_ago: float) -> str:
+        from datetime import datetime, timedelta, timezone
+        return (datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+                ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def test_quotes_the_predecessors_ending(self):
+        self._mk_run(100, stopped_at=self._now_iso(4),
+                     reason="desk_retired", pnl=-2.42)
+        self._mk_run(101)
+        line = run_engine._predecessor_run_line(
+            {"id": 101, "agent_id": 7, "market": "futures", "symbol": "NQ"})
+        self.assertIn("PREVIOUS run on NQ", line)
+        self.assertIn("desk_retired", line)
+        self.assertIn("-2.42", line.replace("−", "-"))
+        self.assertIn("h ago", line)
+
+    def test_silent_without_a_recent_predecessor(self):
+        self._mk_run(103)
+        line = run_engine._predecessor_run_line(
+            {"id": 103, "agent_id": 7, "market": "futures", "symbol": "NQ"})
+        self.assertEqual(line, "")
+        # A week-old predecessor is stale tape, not memory.
+        self._mk_run(104, stopped_at=self._now_iso(100),
+                     reason="desk_retired", pnl=-9.0)
+        self._mk_run(105)
+        self.assertEqual(run_engine._predecessor_run_line(
+            {"id": 105, "agent_id": 7, "market": "futures", "symbol": "NQ"}),
+            "")
+
+    def test_scoped_to_agent_and_symbol(self):
+        self._mk_run(106, stopped_at=self._now_iso(1),
+                     reason="desk_retired", pnl=-5.0)
+        self._mk_run(107, symbol="ES")
+        self.assertEqual(run_engine._predecessor_run_line(
+            {"id": 107, "agent_id": 7, "market": "futures", "symbol": "ES"}),
+            "")
+        self._mk_run(108, agent=8)
+        self.assertEqual(run_engine._predecessor_run_line(
+            {"id": 108, "agent_id": 8, "market": "futures", "symbol": "NQ"}),
+            "")
+
+    def test_the_line_is_actually_WIRED_into_both_prompts(self):
+        seen = {}
+
+        def _capture(prompt, **kw):
+            seen["prompt"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        import llm_client
+        import price_fetcher
+        run = {"id": 1, "agent_id": 1, "symbol": "ZECUSDT", "market": "crypto",
+               "market_type": "spot"}
+        with patch.object(price_fetcher, "get_price_from_market",
+                          return_value=517.34), \
+            patch.object(price_fetcher, "get_daily_candles",
+                         return_value=[]), \
+            patch.object(run_engine, "_position_quantity",
+                         return_value=0.0), \
+            patch.object(run_engine, "_predecessor_run_line",
+                         return_value="PREDECESSOR_SENTINEL\n"), \
+                patch.object(llm_client, "generate_text", _capture):
+            run_engine._light_analysis(run, {})
+        self.assertIn("PREDECESSOR_SENTINEL", seen.get("prompt", ""),
+                      "predecessor line is not wired into the light prompt")
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_predecessor_run_line(run)", src,
+                      "predecessor line is not wired into the full prompt")
+
+
 class BreadthBriefTests(unittest.TestCase):
     """The catalogue teaches distribution counting and follow-through
     confirmation, but the us-stock desks had no market-wide data to apply
