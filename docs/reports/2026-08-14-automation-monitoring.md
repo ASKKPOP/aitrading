@@ -11,6 +11,11 @@ live yet.
 
 ---
 
+## Cycle 9 — 16:53Z (zero events)
+
+- No events at all in the window. Book drifting mildly red, all within
+  ±$0.83 (PLTR worst). Nothing to analyze.
+
 ## Cycle 8 — 16:23Z (quietest window today)
 
 - One idle-retire: UBER 1181 $0 (12 idle cycles, designed recycle),
