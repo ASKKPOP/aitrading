@@ -329,6 +329,92 @@ def _thesis_fee_infeasible(thesis: dict) -> "str | None":
     return f"fee_infeasible: {skip}" if skip else None
 
 
+# R15 (2026-08-14): us-stock minimum meaningful position, in shares. The
+# refusal identity is size-dependent, and the desks demonstrably trade
+# fractional shares — calibrated on the day's prod tape: every certain
+# quick-refusal run (1205/1206/1211/1213/1214/1235: FDX, INTU, COP, NOW)
+# had a loss rail supporting < 0.34 shares at a 1-sigma stop, while every
+# us-stock run that actually placed entries supported >= 0.53 shares
+# (PLTR 1177 at 0.534 is the tightest accepted entry). 0.5 sits below the
+# whole accepted band, so the gate only drops the certain-refusal class;
+# the 0.53-0.7 band stays the desk's judgment (ORCL 1164 traded at 0.675
+# while FDX 1216 refused at 0.68 — no build-time constant can honestly
+# split that).
+BRACKET_MIN_SHARES = 0.5
+
+
+def _bracket_feasibility_enabled() -> bool:
+    """R15 kill switch (default on) for the build-time bracket gate."""
+    return os.getenv("FLEET_BRACKET_FEASIBILITY", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def bracket_infeasible(thesis: dict, settings: dict) -> "str | None":
+    """Reason the composed run's bracket can never work, or None.
+
+    R15 (measured 2026-08-14): the composer built runs whose loss rail was
+    too small for any honest stop, and the R10-taught desks refused them at
+    cycle 1 — ~18 zero-P&L quick refusals in one day (live reports: FDX
+    "the required stop (~$3.4) exceeds the loss-rail limit ($3.23)"). Same
+    class as the fee-infeasible thesis and the exposure clamp: arithmetic
+    knowable at build time belongs at build time.
+
+    The identity, all read from the engine's own rails:
+      room        = retire_drawdown_frac x max_loss_usd — the equity the
+                    drawdown brake grants a feedback run before it retires
+                    the book (run_engine._brake_room_usd,
+                    run_feedback.ADAPT_BOUNDS); non-feedback runs get the
+                    full max_loss (the brake never fires for them).
+      honest stop = 1 x the symbol's daily sigma — a stop inside daily
+                    noise is collected by an ordinary day, not a thesis
+                    verdict (the 2026-08-13 ADBE/QNT/SLV class).
+      min size    = the engine's own dust floor, max($10, 2% of max_bet)
+                    margin x leverage (run_engine's dust guard refuses
+                    anything smaller); for us-stock additionally
+                    BRACKET_MIN_SHARES x the thesis last price — see that
+                    constant's prod calibration.
+
+    Infeasible when even the MINIMUM meaningful position cannot carry a
+    1-sigma stop inside the room: no size the engine would accept can ever
+    author an honest bracket, so the desk can only refuse. Takes the
+    COMPOSED settings, so every upstream clamp (exposure cap, #416
+    probation scaling, swing notional cap) is already priced in. Fail-open
+    on missing data — sigma or price absent passes; the desk remains the
+    judge."""
+    if not _bracket_feasibility_enabled():
+        return None
+    sigma_pct = _thesis_vol_daily_pct(thesis)
+    if sigma_pct is None:
+        return None
+    try:
+        max_bet = float(settings.get("max_bet_usd") or 0)
+        stops = settings.get("stop_conditions") or {}
+        max_loss = float(stops.get("max_loss_usd") or 0)
+        leverage = max(1.0, float(settings.get("leverage") or 1.0))
+    except (TypeError, ValueError):
+        return None
+    if max_bet <= 0 or max_loss <= 0:
+        return None
+    try:
+        import run_feedback
+        frac = (float(run_feedback.ADAPT_BOUNDS["retire_drawdown_frac"])
+                if settings.get("feedback") else 1.0)
+    except Exception:  # noqa: BLE001 — never block a build on an import
+        return None
+    room = frac * max_loss
+    min_notional = max(10.0, 0.02 * max_bet) * leverage
+    if (settings.get("market") or thesis.get("market")) == "us-stock":
+        last = _thesis_factor(thesis, "last")
+        if last is not None and last > 0:
+            min_notional = max(min_notional, BRACKET_MIN_SHARES * float(last))
+    min_stop_usd = min_notional * sigma_pct / 100.0
+    if min_stop_usd > room:
+        return (f"bracket_infeasible: sigma_daily_pct={sigma_pct:.3f} "
+                f"min_stop_usd={min_stop_usd:.2f} "
+                f"loss_rail_usd={room:.2f}")
+    return None
+
+
 def _expectancy_min_trades() -> int:
     """Closed trades in a bucket before its record is allowed to veto. Below
     this the sample says nothing and the bucket is presumed innocent."""
@@ -1736,6 +1822,18 @@ def _do_build(fleet: dict) -> None:
 
         settings = compose_run_settings(thesis, float(cand["allocation_usd"] or 0),
                                         fleet)
+        # R15 bracket feasibility, on the COMPOSED settings (post exposure
+        # clamp and probation scaling) — a run whose loss rail cannot carry
+        # a 1-sigma stop on even the minimum meaningful position is refused
+        # by the desk at cycle 1 and burns the build for nothing.
+        bracket = bracket_infeasible(thesis, settings)
+        if bracket:
+            _mark_candidate(fleet["id"], cand["id"], "skipped")
+            emit_fleet_event(fleet["id"], "candidate_skipped",
+                             {"thesis_key": cand["thesis_key"],
+                              "reason": bracket})
+            skipped += 1
+            continue
         run_id = None
         try:
             payload = RunIn(
