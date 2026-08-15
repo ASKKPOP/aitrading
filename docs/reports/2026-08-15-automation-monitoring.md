@@ -8,6 +8,16 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 15 — 09:4xZ (anchor 09:40:35): quiet — cycle 3 all-hold, still flat
+
+10/10 holds (conf 0.38–0.63), `last_cycle_word` on every brief, 0
+positions, 0 tracebacks. Three full desk cycles now without a single
+entry on an *aggressive/short* fleet — the only attempt (FIL, cycle 1)
+died on the $10 dust floor. Not yet a defect (light route, ambient-only
+Saturday tape) but the entry-stall count starts here. Fleet 33 `stopping`.
+
+---
+
 ## Cycle 14 — 09:1xZ (anchor 09:10:33): quiet — 12 holds, flat book
 
 Fleet 35 desk cycle 2 complete on all 10 runs: **every decision hold**
