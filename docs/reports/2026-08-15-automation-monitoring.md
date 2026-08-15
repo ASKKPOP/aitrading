@@ -8,6 +8,34 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 19 — 11:4xZ (anchor 11:40:33): the desk is managing a PHANTOM position — fix in flight
+
+**FAILED:** UNI 1293 held at conf **0.78** (11:23:21Z) with the report
+"Given our existing short position and limited rail headroom, we should
+hold and protect rather than add new exposure" — **it has no position.**
+Its 10:53Z sell was dust-skipped (pre-fix). Cause read from code, not
+guessed: `_position_state_line` renders NOTHING when flat, and
+`_last_cycle_word_line` quotes "action: sell" with no execution outcome
+— so after any discarded non-hold, the only position-relevant prompt
+line implies the order filled. The desk now believes itself short in a
+downtrend it wants to be short in: it neither holds real exposure nor
+will re-enter ("no new exposure"). Profit leak on both sides.
+
+#440 removed the dust discard, but Kelly / exposure / fee-edge /
+add-limit skips still discard non-holds routinely — the phantom hazard
+is general.
+
+**Fix (branch `fix/last-cycle-word-outcome`):** the quote now carries
+the outcome — when the quoted non-hold's cycle has a matching
+gate_skip, the line appends "That sell did NOT execute — the platform
+discarded it (<reason>). Your book is unchanged…". Holds exempt by
+construction (every hold emits its own gate_skip); an old cycle's skip
+cannot taint a newer executed order. Fail-before red→green (4 new
+tests), 3/3 mutants killed, ruff clean; full suite running → PR → CI →
+deploy. Otherwise: 10 holds, flat, 0 tracebacks.
+
+---
+
 ## Cycle 18 — 11:1xZ (anchor 11:10:35): quiet — 5 holds, flat; first post-fix sell still awaited
 
 ---
