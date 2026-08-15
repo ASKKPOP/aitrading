@@ -133,6 +133,26 @@ def remember(kind: str, source: str, title: str, body: str, *,
         conn.close()
 
 
+def forget_superseded(kind: str, source: str, keep_sha: str) -> int:
+    """Drop earlier chunks for this kind+source whose content has changed.
+
+    `remember` is keyed by sha, so an EDITED body inserts a second row and
+    leaves the stale one competing for the same retrieval slots. That is
+    correct for a monitoring note (a day's note genuinely gains sections) and
+    wrong for anything single-valued: one finished run has exactly one
+    outcome. Callers that rewrite a body must say so."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM desk_memory WHERE kind = ? AND source = ?"
+                    " AND sha <> ?", (kind, source, keep_sha))
+        n = cur.rowcount or 0
+        conn.commit()
+        return max(0, n)
+    finally:
+        conn.close()
+
+
 def _kind_list(kind: "str | Iterable[str] | None") -> list[str]:
     """Normalise the `kind` filter to a list. A bare string stays one kind."""
     if kind is None:

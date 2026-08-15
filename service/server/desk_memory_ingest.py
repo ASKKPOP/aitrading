@@ -33,7 +33,7 @@ import time
 from typing import Any, Optional
 
 from database import get_db_connection
-from desk_memory import known_shas, remember
+from desk_memory import _sha, forget_superseded, known_shas, remember
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +98,70 @@ def ingest_decisions(limit: int = 5000,
     return stored
 
 
+# What ENDED the run, in words, and — the distinction a desk can act on —
+# whether the desk chose the exit or the platform imposed it. `desk_retired`
+# is the only reason that is the desk's own call; every stop_event and every
+# other *_retired rail is forced on it, and `fleet_stop_all` is the user's.
+_EXIT_PHRASE: dict[str, str] = {
+    "desk_retired": "the desk retired the thesis itself",
+    "adapt_retired": ("the adapt rail retired it after repeated losing closes"
+                      " — not the desk's own call"),
+    "idle_retired": ("the idle rail retired it for never trading"
+                     " — not the desk's own call"),
+    "fleet_stop_all": "the user stopped the whole fleet — not the desk's own call",
+    "stop_event:at_time": "the time stop closed it — not the desk's own call",
+    "stop_event:trailing_lock": ("the trailing lock closed it"
+                                 " — not the desk's own call"),
+    "stop_event:max_loss": "the max-loss rail closed it — not the desk's own call",
+    "stop_event:conviction_collapse": ("conviction collapsed and the rail closed"
+                                       " it — not the desk's own call"),
+    "positions_held": "it ended with positions still held — not the desk's own call",
+}
+
+
+def _outcome_body(r: dict, pnl: float, traded: bool) -> str:
+    """Describe a finished run in the vocabulary a live run's recall query is
+    actually built from (`run_engine._recall_query`).
+
+    The body was a metadata template — status, an enum and two timestamps —
+    and carried none of that vocabulary, so an outcome could never be
+    retrieved however relevant it was. Measured on prod 2026-08-15: 0 of 278
+    outcomes surfaced in any of the 12 (market x situation) cells, against a
+    lesson pool of 147. This is not keyword stuffing: a run that lost while
+    giving back a peak IS a losing position that gave back its peak, and that
+    is the only sentence a desk in the same situation can learn from."""
+    sym, mkt = r.get("symbol"), r.get("market")
+    cycles = r.get("cycle_seq")
+    exit_phrase = _EXIT_PHRASE.get(str(r.get("status_reason") or ""),
+                                   str(r.get("status_reason") or "not recorded"))
+    if not traded:
+        # 140 of prod's 278 outcomes realized exactly +0.00 because the run
+        # never opened a position. "ended stopped with realized P&L +0.00"
+        # reads as a flat TRADE, which is a different and far rarer thing.
+        return (f"Run {r['id']} on {sym} ({mkt}) never opened a position: "
+                f"{cycles} cycles of looking, then {exit_phrase}. Nothing was "
+                f"risked and nothing was learned about the entry — the thesis "
+                f"never became a trade. Started {r.get('started_at')}, "
+                f"stopped {r.get('stopped_at')}.")
+    stance = "winning position" if pnl > 0 else (
+        "losing position" if pnl < 0 else "position that ended flat")
+    bits = [f"Run {r['id']} on {sym} ({mkt}) closed a {stance}: realized P&L "
+            f"{pnl:+.2f} over {cycles} cycles."]
+    peak = r.get("peak_pnl_usd")
+    try:
+        peak = float(peak) if peak is not None else None
+    except (TypeError, ValueError):
+        peak = None
+    if peak is not None and peak > 0 and peak > pnl:
+        kept = (pnl / peak) if peak else 0.0
+        bits.append(f"It gave back a peak of {peak:+.2f} — give-back of "
+                    f"{peak - pnl:.2f}, keeping {kept:.0%} of the high-water "
+                    f"mark it had already reached.")
+    bits.append(f"The exit: {exit_phrase}.")
+    bits.append(f"Started {r.get('started_at')}, stopped {r.get('stopped_at')}.")
+    return " ".join(bits)
+
+
 def ingest_run_outcomes(known: Optional[set[str]] = None) -> int:
     """Join each finished run to what it actually realized.
 
@@ -109,10 +173,16 @@ def ingest_run_outcomes(known: Optional[set[str]] = None) -> int:
     try:
         cur = conn.cursor()
         placeholders = ", ".join("?" for _ in _TERMINAL)
+        # Whether the run ever TRADED cannot be read off the P&L: a run that
+        # never opened a position and a run that round-tripped to zero both
+        # realize +0.00, and half the corpus is the former.
         cur.execute(
-            f"SELECT id, symbol, market, status, status_reason, realized_pnl_usd, "
-            f"cycle_seq, started_at, stopped_at FROM trading_runs "
-            f"WHERE status IN ({placeholders})", _TERMINAL)
+            f"SELECT r.id, r.symbol, r.market, r.status, r.status_reason, "
+            f"r.realized_pnl_usd, r.peak_pnl_usd, r.cycle_seq, r.started_at, "
+            f"r.stopped_at, "
+            f"(SELECT COUNT(*) FROM run_events e WHERE e.run_id = r.id "
+            f" AND e.event_type = 'trade') AS trades "
+            f"FROM trading_runs r WHERE r.status IN ({placeholders})", _TERMINAL)
         rows = [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
@@ -120,23 +190,25 @@ def ingest_run_outcomes(known: Optional[set[str]] = None) -> int:
     stored = 0
     for r in rows:
         pnl = _f(r.get("realized_pnl_usd"))
-        verdict = "profit" if pnl > 0 else ("loss" if pnl < 0 else "flat")
-        body = (
-            f"Run {r['id']} on {r.get('symbol')} ({r.get('market')}) ended "
-            f"{r.get('status')} after {r.get('cycle_seq')} cycles with realized "
-            f"P&L {pnl:+.2f}. Reason: {r.get('status_reason') or 'not recorded'}. "
-            f"Started {r.get('started_at')}, stopped {r.get('stopped_at')}."
-        )
+        traded = int(r.get("trades") or 0) > 0
+        verdict = ("profit" if pnl > 0 else ("loss" if pnl < 0 else "flat")
+                   ) if traded else "never-traded"
+        body = _outcome_body(r, pnl, traded)
         tags = [f"outcome:{verdict}", f"reason:{r.get('status_reason') or 'none'}"]
         if pnl <= -0.99:
             # The owner's floor rule: below this a run is cleaned and rebuilt.
             tags.append("below-loss-floor")
-        if remember("outcome", f"run:{r['id']}:outcome",
+        source = f"run:{r['id']}:outcome"
+        if remember("outcome", source,
                     f"Run {r['id']} {r.get('symbol')} {verdict} {pnl:+.2f}",
                     body, ts=r.get("stopped_at"), run_id=r["id"],
                     symbol=r.get("symbol"), market=r.get("market"), tags=tags,
                     known=known):
             stored += 1
+        # A finished run has exactly ONE outcome. Without this, every body
+        # revision leaves its predecessor in the pool competing for the same
+        # two retrieval slots.
+        forget_superseded("outcome", source, _sha("outcome", source, body))
     return stored
 
 

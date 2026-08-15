@@ -231,8 +231,14 @@ class IngestTests(_Db):
         self.assertEqual(desk_memory.stats()["total"], 1)
 
     def test_finished_run_outcome_is_kept_with_the_loss_floor_tag(self):
-        self._agent_and_run(symbol="ZC", status="stopped",
-                            status_reason="loss_floor", realized_pnl_usd=-1.42)
+        # The trade event is not decoration: verified on prod 2026-08-15, all
+        # 276 terminal runs split 138/138 — every run with non-zero P&L has
+        # trade events and every run without them realized exactly 0.00. A run
+        # that lost money without ever trading does not exist.
+        rid = self._agent_and_run(symbol="ZC", status="stopped",
+                                  status_reason="loss_floor",
+                                  realized_pnl_usd=-1.42)
+        self._traded(rid)
         self.assertEqual(desk_memory_ingest.ingest_run_outcomes(), 1)
         hits = desk_memory.search("realized", kind="outcome")
         self.assertEqual(len(hits), 1)
@@ -242,6 +248,122 @@ class IngestTests(_Db):
     def test_running_runs_have_no_outcome_yet(self):
         self._agent_and_run(status="running", realized_pnl_usd=-5.0)
         self.assertEqual(desk_memory_ingest.ingest_run_outcomes(), 0)
+
+    def _traded(self, run_id, n=1):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            for i in range(n):
+                cur.execute(
+                    "INSERT INTO run_events (run_id, seq, event_type, ts, payload)"
+                    " VALUES (?, ?, ?, ?, ?)",
+                    (run_id, i, "trade", "2026-08-06T01:00:00Z", "{}"))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _body(self):
+        return desk_memory.search("run", kind="outcome", limit=1)[0]["body"]
+
+    def test_an_outcome_describes_the_situation_it_ended_in(self):
+        """The body was a metadata template — status, an enum and two
+        timestamps — carrying none of the vocabulary a holding run's recall
+        query is built from, so an outcome could never be retrieved however
+        relevant it was. Measured on prod 2026-08-15: 0 of 278 outcomes
+        surfaced in any of the 12 (market x situation) cells."""
+        rid = self._agent_and_run(symbol="SOLUSDT", status="stopped",
+                                  status_reason="stop_event:trailing_lock",
+                                  realized_pnl_usd=-1.42)
+        self._traded(rid)
+        self._peak(rid, 2.40)
+        desk_memory_ingest.ingest_run_outcomes()
+        body = self._body()
+        self.assertIn("losing position", body)
+        self.assertIn("gave back", body)
+        self.assertIn("peak", body)
+        self.assertIn("-1.42", body, "the number must survive the rewrite")
+
+    def _peak(self, run_id, peak):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE trading_runs SET peak_pnl_usd = ? WHERE id = ?",
+                        (peak, run_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_a_winning_outcome_says_winning(self):
+        rid = self._agent_and_run(status="stopped", status_reason="desk_retired",
+                                  realized_pnl_usd=3.10)
+        self._traded(rid)
+        desk_memory_ingest.ingest_run_outcomes()
+        self.assertIn("winning position", self._body())
+
+    def test_a_run_that_never_traded_says_so_instead_of_claiming_a_result(self):
+        """50% of the prod outcome corpus (140/278) realized exactly +0.00
+        because the run never opened a position. Reported as 'ended stopped
+        with realized P&L +0.00' that reads as a flat TRADE, which is a
+        different — and much rarer — thing."""
+        self._agent_and_run(status="stopped", status_reason="idle_retired",
+                            realized_pnl_usd=0.0)
+        desk_memory_ingest.ingest_run_outcomes()
+        body = self._body()
+        self.assertIn("never opened a position", body)
+        self.assertNotIn("winning position", body)
+        self.assertNotIn("losing position", body)
+
+    def test_an_outcome_says_whether_the_desk_chose_the_exit_or_it_was_forced(self):
+        """The distinction a desk can act on. `desk_retired` is the only
+        reason that is the desk's own call; every stop_event and every other
+        *_retired rail is imposed on it."""
+        rid = self._agent_and_run(symbol="ZC", status="stopped",
+                                  status_reason="stop_event:trailing_lock",
+                                  realized_pnl_usd=-0.50)
+        self._traded(rid)
+        desk_memory_ingest.ingest_run_outcomes()
+        forced = self._body()
+        self.assertIn("trailing lock", forced)
+        self.assertIn("not the desk's own call", forced)
+
+    def test_an_exit_the_desk_chose_is_not_reported_as_forced(self):
+        rid = self._agent_and_run(symbol="ZW", status="stopped",
+                                  status_reason="desk_retired",
+                                  realized_pnl_usd=-0.50)
+        self._traded(rid)
+        desk_memory_ingest.ingest_run_outcomes()
+        chose = self._body()
+        self.assertIn("the desk retired", chose)
+        self.assertNotIn("not the desk's own call", chose)
+
+    def test_a_rewritten_outcome_supersedes_the_stale_one(self):
+        """Bodies are keyed by sha, so an edited body INSERTS rather than
+        replaces. Without a supersede the old content-free chunk stays in the
+        pool and keeps competing for the desk's two slots."""
+        rid = self._agent_and_run(status="stopped", status_reason="desk_retired",
+                                  realized_pnl_usd=-0.50)
+        self._traded(rid)
+        desk_memory.remember("outcome", f"run:{rid}:outcome", "stale",
+                             "Run ended stopped after 3 cycles with realized "
+                             "P&L -0.50. Reason: desk_retired.")
+        desk_memory_ingest.ingest_run_outcomes()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) n FROM desk_memory WHERE source = ?",
+                        (f"run:{rid}:outcome",))
+            self.assertEqual(dict(cur.fetchone())["n"], 1,
+                             "the stale outcome body was left in the pool")
+        finally:
+            conn.close()
+
+    def test_reingesting_an_unchanged_outcome_is_still_a_no_op(self):
+        rid = self._agent_and_run(status="stopped", status_reason="desk_retired",
+                                  realized_pnl_usd=-0.50)
+        self._traded(rid)
+        self.assertEqual(desk_memory_ingest.ingest_run_outcomes(), 1)
+        self.assertEqual(desk_memory_ingest.ingest_run_outcomes(), 0)
+        self.assertEqual(desk_memory.stats()["by_kind"]["outcome"], 1)
 
     def test_monitoring_markdown_is_chunked_by_heading(self):
         root = os.path.join(self.tmp.name, "reports")
