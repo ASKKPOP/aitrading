@@ -61,6 +61,49 @@ class RouterCoreTests(unittest.TestCase):
         with patch.dict(os.environ, {"STOP_DESK_ROUTING": "0"}):
             self.assertFalse(stop_router.enabled())
 
+    def test_the_failsafe_does_not_dump_mid_deliberation(self):
+        """A desk actually DECIDING must not be fail-safed out from under
+        its own ruling. SOL 1274 (2026-08-15): the fail-safe fired at 183s
+        against the 180s window; dispatch alone can eat 30s and the
+        emergency runs the expensive full tier, so a slow LLM cycle can
+        cross the deadline mid-deliberation — the watcher then dumps the
+        book AND the deliberation is wasted. Once run_cycle stamps
+        `begin_ruling`, the hit gets one full timeout window measured from
+        deliberation start, hard-bounded: a hung cycle still meets the
+        fail-safe at (deciding_since + timeout)."""
+        t = {"now": 1000.0}
+        with patch.object(stop_router, "_now", side_effect=lambda: t["now"]):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+            t["now"] = 1170.0                    # 170s in, desk cycle starts
+            stop_router.begin_ruling(9)
+            t["now"] = 1200.0                    # 200s: past the raw window
+            self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58.2),
+                            "the fail-safe dumped the book while the desk "
+                            "was mid-deliberation")
+            t["now"] = 1170.0 + stop_router.timeout_s() + 1.0
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 58.1),
+                             "a hung deliberation must still meet the "
+                             "fail-safe at the hard bound")
+
+    def test_without_a_ruling_the_window_is_unchanged(self):
+        """No begin_ruling => the original 180s clock, byte-for-byte."""
+        t = {"now": 1000.0}
+        with patch.object(stop_router, "_now", side_effect=lambda: t["now"]):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+            t["now"] = 1000.0 + stop_router.timeout_s() + 1.0
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 58.1))
+
+    def test_begin_ruling_on_an_unnoted_run_is_a_noop(self):
+        stop_router.begin_ruling(77)             # must not raise or create
+        self.assertIsNone(stop_router.pending(77))
+
+    def test_run_cycle_stamps_the_ruling_start(self):
+        import inspect
+        self.assertIn("stop_router.begin_ruling(run_id)",
+                      inspect.getsource(run_engine.run_cycle),
+                      "the desk never announces deliberation start — the "
+                      "fail-safe cannot know it is mid-ruling")
+
 
 class WatcherRoutingTests(unittest.TestCase):
     def setUp(self):

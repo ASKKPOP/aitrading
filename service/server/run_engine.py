@@ -5115,6 +5115,16 @@ def run_cycle(run_id: int) -> dict:
             logger.warning("run cycle LLM attribution unavailable (run %s): %s",
                            run_id, exc)
 
+        # Announce deliberation start for a routed stop hit: the fail-safe
+        # must not dump the book while the desk is mid-ruling (stop_router
+        # extends the window from this stamp, hard-bounded).
+        try:
+            import stop_router
+            if stop_router.enabled() and stop_router.pending(run_id) is not None:
+                stop_router.begin_ruling(run_id)
+        except Exception:  # noqa: BLE001 — telemetry must never cost a cycle
+            pass
+
         seq = int(run["cycle_seq"])
         cfg = json.loads(run.get("config_snapshot_json") or "{}")
 
