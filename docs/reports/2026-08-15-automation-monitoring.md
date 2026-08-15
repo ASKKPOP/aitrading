@@ -8,6 +8,61 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 7 — 04:12Z (anchored 04:12:35Z) — #436 VERIFIED END-TO-END: 16 crypto theses, 9 new runs, gates exercised
+
+**Tape: one OPEN trade, zero closes** → no two-agent dispatch. FIL 1283
+shorted 199.48 @ 0.6948 (fee 0.0624) at 04:06:14Z — cycle-1 entry, desk stop
+**1.9%** (`stop_pct 1.9, target 4.1, trail_arm 3.0` — NOT floored; the 0.3%
+floor never bound, unlike the SOL/BTC entries). uPNL −0.01.
+
+### ✅ #436 end-to-end verification — all three predictions landed
+
+1. **The 13-batch streak of ~5 crypto theses broke.** First post-deploy batch
+   (`research:496323`, 03:55:27Z): **16 crypto theses, 14 selectable** (vs 6/3
+   the batch before). Total batch 105 rows.
+2. **Fleet 34 built 9 new runs in ~2 minutes** (03:56:13–56:19Z): KAITO, WLD,
+   AVAX, LINK, BNB, UNI, TRUMP, FIL, SUI — 1276–1284. Now **14 running**.
+3. **The gates exercised REAL selection pressure** — the profit argument in
+   action: `backtest_gate` **dropped AAVEUSDT ("non-positive expectancy
+   −367.51 USD/trade over 5 closed trades") and BCHUSDT (non-positive
+   expectancy)** from every replacement pass. A ranker with 14 candidates
+   refused the negative-expectancy tail; three weeks ago it accepted
+   HYPEUSDT at 0.30 because there was nothing else.
+
+**LINKUSDT** — yesterday's highest-scored-but-unselectable thesis — is now
+running (1279). Book exposure of the 9 newcomers so far: one FIL short; the
+other 8 are in first-cycle analysis. Watch, don't celebrate: 14 running
+negative-expectancy-*class* crypto runs is 14 chances to lose; the v1 crypto
+cohort averages −$1.50/closed run. The measure of #436 is whether SELECTION
+(dropping AAVE/BCH class candidates) improves the per-run mean, and that is a
+Phase-D-style judgement over closed runs, not tonight's open book.
+
+### 🔴 Auto-tune overrode the user's size AGAIN — n=2, owner decision needed
+
+03:21:42Z: user resized 25 → **10** (resize API). **03:49:14Z: auto_tune_slots
+raised it straight back 10 → 25** — 27 minutes later. This is the second
+override of an explicit user sizing choice on this fleet in one day (first:
+00:36:27Z, 10 → 25). `fleet_auto_tune.recommended_max_slots(budget)` knows the
+budget but not the user's intent; nothing marks a user-chosen size as sticky.
+The 9 new runs exist in slots the user had just deleted.
+**Escalated to the owner: should a user resize pin the fleet size against
+auto-tune?** (One-line fix candidate: honour the resize API's size as a cap
+until the user changes it.)
+
+### Watch items
+
+- **R16 predecessor line: NOT exercised** — 0 events. Correct-by-design so
+  far: none of the 9 new runs replaced a retired predecessor on the same
+  symbol (all fresh slots). Still unexercised, not failed.
+- **R15 bracket_infeasible: 0 events** — nothing infeasible in the new
+  builds (FIL's 1.9%/4.1% bracket parsed clean). Still unexercised.
+- ETH 1272 cooldown expires 04:24:24Z; stop 0.92% away — trap disarms itself
+  if ETH stays up.
+- BTC 1271: 0.174% from stop. Prediction open.
+- `pnl_audit` unchanged −$2.28 `ok` (FIL entry fee lands next audit).
+
+---
+
 ## Cycle 6 — 03:50Z (anchored 03:50:14Z) — 4-PR deploy verified; the cooldown trap is now armed on ETH
 
 **Tape: no trades since cycle 5** → no two-agent dispatch. `pnl_audit` 08-15
