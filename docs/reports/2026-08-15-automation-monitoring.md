@@ -8,6 +8,17 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 21 — 12:4xZ (anchor 12:42:11): quiet — UNI short held correctly; position-state briefs rendering
+
+9 holds; UNI (1293) held its short at 0.6 with the held-book brief set
+rendering exactly as designed: `["position_state", "young_exit",
+"last_cycle_word", "brake_distance", "exit_size", "ordinary_day"]` —
+entry_rail correctly dropped, position lines correctly present (#438
+working both ways). Flat runs now render `hold_streak`. uPNL −$0.04,
+0 tracebacks. Docs PR #442 merged+deployed — cycles 5-20 in the corpus.
+
+---
+
 ## Cycle 20 — 12:1xZ (anchor 12:16:55): #440 PROVEN ON TAPE — fleet 35's first position exists because of the fix; #441 deployed
 
 **WORKED — the behavioural proof landed.** UNI 1293 cycle 8 (11:53:09Z),
