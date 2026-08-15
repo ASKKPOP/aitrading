@@ -1621,6 +1621,9 @@ class BreakevenRatchetTests(unittest.TestCase):
         src = inspect.getsource(run_engine._evaluate_stop)
         self.assertIn("breakeven_ratchet", src)
         self.assertIn("stop_mechanism", src)
+        # and the call site must actually pass the fee — dropping it
+        # silently reverts to the guaranteed-negative gross-zero floor.
+        self.assertIn("exit_fee_usd=_be_fee", src)
 
     def test_a_reduce_cannot_retro_arm_the_floor(self):
         # Run 976 (2026-08-06): entered 1.3166 GC ~4317, peaked +7.22 while
