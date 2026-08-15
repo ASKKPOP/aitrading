@@ -8,6 +8,19 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 23 — 13:4xZ (anchor 13:40:34): FIL finally gets its short — third attempt, first fill
+
+FIL 1286 cycle 11 (13:34:38Z): sell conf 0.66, authored size_frac **0.1**
+(margin $17.24, clears the floor unaided — no raise note, correct),
+executed short 49.70 @ 0.6935 (`run:1286:cyc:11`), stop 0.70848
+(+2.16%), target 0.6635 (R:R floor note). The same entry died at
+cycles 1 and 4 on size_frac 0.05; whether the schema's new $10-minimum
+line nudged the desk to 0.1 or it re-derived independently, the entry
+path is now clean. Book: two shorts (UNI −$0.10, FIL +$0.01). 10 holds
+otherwise, 0 tracebacks.
+
+---
+
 ## Cycle 22 — 13:1xZ (anchor 13:10:36): quiet — 9 holds, UNI short held (uPNL −$0.01)
 
 ---
