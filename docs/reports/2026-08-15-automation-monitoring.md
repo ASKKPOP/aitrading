@@ -37,6 +37,16 @@ enlargement is capped at the $10-margin minimum order. Fail-before tests
 red→green (4 new), 4/4 mutants killed, ruff clean; full suite running,
 then PR → CI → deploy.
 
+**#440 DEPLOYED — 10:5xZ addendum.** PR MERGED (merge commit `612c96a`),
+image `sooppiy-backend:20260815-size-frac-floor` from that exact sha on
+both worker and backend. In-container: `min_size_frac` in
+order_params.py (3) + run_engine.py call site (1), `_dust_floor_usd` (1),
+schema line updated. 0 tracebacks; FleetPlanner ticking. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-stop-outranks-cooldown`.
+Behavioural proof pending: the desk's next sub-floor entry must fill at
+the $10 minimum with a `size_frac … raised to floor` note — armed on the
+fleet-35 watch.
+
 **Also this cycle:** BNB 1294 logged one `conf 0.0` hold — "light cycle:
 no LLM verdict" fail-safe (LLM returned nothing); safe when flat, noted
 only. Cycle 5 otherwise all-hold, book flat, 0 tracebacks.
