@@ -212,6 +212,56 @@ class EngineSideTests(unittest.TestCase):
             self.assertIn("_compose_position_state(",
                           inspect.getsource(path))
 
+    def test_a_routed_stop_hit_outranks_the_loss_cooldown(self):
+        """The SOL 1274 sequence, live 2026-08-15 02:21–02:24Z: the desk's own
+        de-risking half-cover was scored `losing_close`, arming a 3600s adapt
+        cooldown; the stop then traded; SIX stop-hit priority dispatches at
+        30s spacing all short-circuited at the cooldown gate (it returns
+        before `stop_router.clear`); after the 180s router timeout the
+        fail-safe dumped the book at 75.514 — exactly 2.00x worse than the
+        desk's own exit on the same symbol/qty 14.5 min earlier (−0.88105 vs
+        −0.44030). The shape re-armed twice more the same day (ETH 1272, BTC
+        1271 — the latter blind for an hour at 0.17% from its stop).
+
+        stop_router exists because of the owner rule 2026-08-13: the sooppiy
+        AI is the MAIN author of stop exits; the watcher's close is only the
+        fail-safe. A cooldown gate that structurally prevents the desk from
+        ever ruling on its own stop reinstates the behaviour that module was
+        built to abolish — precisely when it matters most, right after a
+        loss. The emergency ruling must pass the gate; ordinary cycles in
+        cooldown stay gated; the 180s fail-safe still binds a silent desk."""
+        cooling = {"cooldown_until": "2999-01-01T00:00:00Z"}
+        # cooldown, no hit: gates.
+        self.assertTrue(run_engine._cooldown_blocks(9, cooling))
+        # cooldown + routed hit: the emergency outranks the gate.
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        self.assertFalse(run_engine._cooldown_blocks(9, cooling),
+                         "a run in adapt cooldown can never rule on its own "
+                         "stop — the 180s timer sells the book instead")
+        # and run_cycle must consult this predicate, not re-derive it.
+        import inspect
+        self.assertIn("_cooldown_blocks(run_id, adapt_state)",
+                      inspect.getsource(run_engine.run_cycle))
+
+    def test_ordinary_cooldown_cycles_stay_gated(self):
+        """The bypass is for the emergency ruling ONLY."""
+        cooling = {"cooldown_until": "2999-01-01T00:00:00Z"}
+        # another run's hit must not open THIS run's gate
+        stop_router.note_hit(8, 1, "stop_loss", 58.3)
+        self.assertTrue(run_engine._cooldown_blocks(9, cooling))
+        # no cooldown: never blocks
+        self.assertFalse(run_engine._cooldown_blocks(9, {}))
+        # router disabled: fail closed — the cooldown gates as before
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        with patch.dict(os.environ, {"STOP_DESK_ROUTING": "0"}):
+            self.assertTrue(run_engine._cooldown_blocks(9, cooling))
+        # router BROKEN: also fail closed — an exception must gate, not open
+        with patch.object(stop_router, "pending",
+                          side_effect=RuntimeError("router down")):
+            self.assertTrue(run_engine._cooldown_blocks(9, cooling),
+                            "a broken router must not silently disable the "
+                            "loss cooldown")
+
     def test_decision_clears_the_pending_hit(self):
         import inspect
         src = inspect.getsource(run_engine.run_cycle)
