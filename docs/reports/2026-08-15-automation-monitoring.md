@@ -8,6 +8,136 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 3 — 02:27Z (anchored 02:27:49Z) — FIRST REAL LOSS, two-agent analysis
+
+**P&L FIRST: fleet 34 realized −$2.06** (1271 −0.074, 1272 −0.446, **1274 −1.544**),
+open +$0.13 → **≈ −$1.93 mark-to-market**. `pnl_audit` 08-15 remains `ok`.
+
+Run 1274 SOLUSDT: shorted 6.5755 @ 75.28 (01:11:03Z), covered in two halves —
+3.2877 @ 75.38 (02:10:19Z, `run:1274:cyc:5`) and 3.2877 @ 75.514 (02:24:52Z,
+**`client_order_id: null`**). Both agents dispatched per the owner rule.
+
+### Loss decomposition (Agent B, reconciled to equity seq 165 to the cent)
+
+| component | USD | share |
+|---|---|---|
+| fees (0.22275 + 0.11152 + 0.11172) | **−0.44599** | **28.9%** |
+| leg 1 price (75.28→75.38) | −0.32877 | 21.3% |
+| leg 2 price (75.28→75.514) | −0.76933 | 49.8% |
+
+**29% of the loss was fee, on a $495 notional held 74 minutes.**
+
+### 🔴 THE AGENTS DISAGREED — and the disagreement is the finding
+
+**Agent A:** honouring the desk's own cycle-5 stop (0.7% → 75.807) means leg 2
+never fires; realized would be **−0.663 instead of −1.544 — "$0.881 less loss."**
+
+**Agent B:** refuted it on the actual tape — SOL's post-hit lows were 75.506 /
+75.535 / 75.536 and the wider stops (75.807, 76.454) were **never reached**
+(max 75.576).
+
+**Main-session adjudication — B is right, A is wrong.** Priced against the live
+mark **SOL 75.55** (OKX, 02:37Z): the surviving 3.2877 short at entry 75.28
+marks at **−0.888**, plus the −0.663 already realized = **−1.551**, and it would
+still owe ~0.111 of exit fee → **−1.662 versus the actual −1.544.**
+**The counterfactual is ~$0.12 WORSE, not $0.88 better.**
+
+Agent A compared a *realized* loss against an *unrealized* snapshot of the
+alternative and booked the gap as a saving. That is precisely the flawed logic
+the owner law forbids, and it is rejected. **No rail cost money in this window;
+the fail-safe close at 75.514 was at or better than every subsequent print.**
+
+### ✅ CONFIRMED BY BOTH, and re-verified in the main session
+
+1. **The stop that killed it was never the desk's.** Verbatim from
+   `order_params` cycle 3: `"stop_pct 0.016 raised to floor 0.3"` (SOL) and
+   `"stop_pct 0.007 raised to floor 0.3"` (BTC). The desk emits sub-basis-point
+   stops while writing the rationale *"stop sits just above recent
+   resistance"* — its words and its number are disconnected.
+2. **Stop revisions after the opening cycle are journaled and discarded.**
+   BTC 1271 asked for `stop_pct 1.23` at cycle 5 (→ 63,749); the stored
+   `positions.stop_loss` is still **63,163.5**, the cycle-3 0.3% value. Agent B
+   audited all four writers of `positions.stop_loss` — `automation.py:247/271`
+   (monotone), `orphan_reclaim.py:183` (`WHERE stop_loss IS NULL`),
+   `risk_engine.py:656` (tighten-only), `routes_trading.py:845` (manual user
+   API) — **no path exists for the desk to widen a stop mid-life**, while
+   `_stop_hit_line` (run_engine.py:3196) explicitly instructs it to *"hold ONLY
+   with a re-authored stop_pct"*. An instruction the code cannot execute.
+3. **The null `client_order_id` is `risk_engine.sl_tp_watch`'s fail-safe.**
+   Worker log names it: 6 × "SL/TP hit routed to desk" at 30 s ticks from
+   02:21:48, then `02:24:51,977 WARNING SL/TP desk routing TIMED OUT —
+   fail-safe close`. Desk orders stamp `run:{id}:cyc:{n}`; the watcher has no
+   cycle to name.
+4. **The desk was structurally barred from ruling on its own stop.**
+   `stop_router` timeout 180 s vs an adapt loss-cooldown of **3600 s**, and the
+   cooldown gate (`run_engine.py:5047`) `return`s 186 lines *before*
+   `stop_router.clear()` (line 5233). **A 20× asymmetry: any stop hit during
+   adapt cooldown deterministically ends in a watcher close.** Self-inflicted —
+   the desk's own risk-reducing half-cover armed the cooldown 23 seconds after
+   the stop hit was noted. `adapt` simultaneously recorded
+   `thesis_status: "intact"` and locked the desk out for an hour.
+5. **`young_dump_flag` is telemetry only** — `run_engine.py:5462`, comment says
+   *"NO behavior change"*. P&L effect exactly $0.00.
+6. **recall never returns lessons or outcomes.** Agent A measured **163 recall
+   events since 2026-08-14: `monitoring` 163, `lesson` 0, `outcome` 0** — an
+   independent, wider-window confirmation of the cycle-2 finding that PR #432
+   fixes. Bitter detail: recall delivered *"stops tighter than a day's noise"*
+   to this very run at 01:38 and 02:10. **The desk acted on it** — it asked for
+   0.7%. The platform discarded the request and stopped it out on 0.3%.
+
+### 🔴 THE PROFIT FINDING — the thesis was fabricated, and the gate cannot see it
+
+Agent B found this and Agent A missed it entirely. Verified verbatim in the
+main session from `research_theses` / `config_snapshot_json`:
+
+| field | value |
+|---|---|
+| `expected_move_pct` | **4.0** |
+| `vol_daily_pct` (SOL's own measured daily range) | **1.2421** |
+| `mom_2d_pct` | −0.3175 |
+| `volume_ratio` | **0.2573** (26% of normal) |
+| `technical` subscore | **−0.0597** (≈ zero) |
+| `psych` / `social` / `news` subscores | **all null** |
+| `final_score` | 0.8655 → **selected** |
+
+**A 4.0% expected move was claimed on an asset whose ordinary day is 1.24%** —
+3.2× a day's range, over 48 h, on quarter-normal volume, with a technical
+subscore of approximately zero and no psych/social/news support at all.
+
+The resulting geometry could essentially only lose:
+
+- stop 0.3% = **one quarter of an ordinary day**
+- target 0.6%, claimed move 4.0% = **3.2 ordinary days**
+- round-trip fee ≈ 9 bp = **30% of the stop distance**
+
+**And the fee/edge gate consumes `expected_move_pct` as an INPUT** — so it
+verified the arithmetic against a number the planner invented. The gate cannot
+detect that the claim is unsupported by the momentum and volume fields sitting
+beside it in the same row.
+
+**This chains directly to cycle 1.** The ranker had 5 crypto candidates for 5
+open slots and took 100% of them — so a thesis claiming 3.2× a day's range on
+26% volume could not be rejected, because there was nothing to reject it in
+favour of.
+
+### Falsifiable prediction, stated BEFORE the outcome
+
+**BTC 1271 is 0.110% from the same death**: mark 63,094, stop 63,163.5, thesis
+invalidation ~63,785, and its cycle-5 request for `stop_pct 1.23` was discarded.
+If it stops out on an unfalsified thesis, the mechanism is proven at n=2 and a
+fix is designed. If it does not, this analysis is revised. Recorded now so it
+cannot be confirmed after the fact.
+
+### Watch items (new)
+
+7. **Run 1274 is still `status='running'` with a flat book**, cooldown to
+   03:22:11Z, on the same fabricated thesis. Watch whether it re-shorts SOL.
+8. Liquidation daemon liveness **inside** the window is not provable from logs —
+   there is no heartbeat line, only registration + a successful run 36 min
+   prior + no crash trace. Stated as a limit, not asserted as healthy.
+
+---
+
 ## Cycle 2 — 01:47Z (anchored `SELECT NOW()` = 2026-08-15 01:47:34Z)
 
 **Tape: silent.** Zero trades, zero closes since cycle 1 → no two-agent
