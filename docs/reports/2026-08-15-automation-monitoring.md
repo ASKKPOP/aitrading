@@ -8,6 +8,35 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 29 — 17:1xZ (anchor 17:10:36): fleet self-restructured — 8 idle-retires, auto-tune growth 10→25, replenish underway
+
+Not quiet after all — the platform machinery had a busy 3 hours, all
+per design:
+
+- **8 of the 10 original runs idle-retired** (13:54–14:08Z) — none ever
+  opened a position in ~5.5 h; the rail returned their capital. Only
+  FIL 1286 and UNI 1293 (the two that traded) survive.
+- **Auto-tune grew the fleet 10→25 slots** (slot_created
+  `underfill_backfill` ×15, $400 allocations). `user_size_cap` is NULL
+  — correct **#437 semantics**: creation size does not pin, only a
+  user resize does, and auto-tune remains free. Consistent with the
+  owner's morning question ("Slot doesn't increased, why?") — growth is
+  the desired behavior. If the owner ever wants 10 to STICK, a UI
+  resize will stamp the pin.
+- **Replenish 7/25**: fresh builds SUI 1296, LTC 1297, ZEC 1298
+  (13:41–13:49), BTC 1301 (15:43), ETH 1302 (16:34, slot 4, $1,719).
+  **BCH refused by the expectancy gate on every round** (−$255.02/trade
+  over 10 closed) — the corpus gate visibly constraining replacement.
+- **First `desk_retired` on fleet 35**: KAITO 1300 — the desk retired
+  its own thesis after 1 h (AI-decided close-reason, correct taxonomy);
+  ETHFI 1299 also built-and-stopped quickly.
+
+Watches: new runs' first entries will exercise #443's positive render
+and the new skills; brief arrays to verify on the replacements. Flat
+book, 0 tracebacks, fleet 33 unchanged.
+
+---
+
 ## Cycle 28 — 16:4xZ (anchor 16:40:34): quiet — one hold, flat
 
 ---
