@@ -129,6 +129,87 @@ class AutoTuneFleetsTestCase(unittest.TestCase):
         self.assertEqual(changed, [])
         self.assertEqual(self._fleet()["n_runs"], 10)   # unchanged
 
+    def test_a_user_resize_pins_the_size_against_a_raise(self):
+        """Owner decision 2026-08-15 (live n=2 on fleet 34): the user resized
+        25 -> 10 at 03:21:42Z and auto_tune_slots raised it straight back to
+        25 at 03:49:14Z — the second override of an explicit user size in one
+        day, and the 9 runs it then built sat in slots the user had just
+        deleted. recommended_max_slots knows the budget, not the intent.
+
+        A size set through the resize API is now a CAP: auto-tune may still
+        LOWER below it (a fee-viability shrink is safety), but never raise
+        above it. The pin lasts until the user resizes again."""
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        # big budget => rec well above 4; the user chose 4.
+        cur.execute("UPDATE fleets SET total_budget_usd = 100000 WHERE id = 28")
+        conn.commit()
+        conn.close()
+        import fleet_planner
+        with patch("entitlements.limits_for_agent",
+                   return_value=("professional", {"max_fleet_size": 25})):
+            fleet_planner.set_fleet_size(28, 4, user_set=True)
+            fleet_auto_tune.auto_tune_fleets()
+        self.assertEqual(self._fleet()["n_runs"], 4,
+                         "auto-tune raised a fleet above the size the user "
+                         "explicitly chose")
+
+    def test_auto_tune_may_still_lower_below_the_pin(self):
+        """The pin is a cap, not a floor — the fee-viability shrink is a
+        safety behaviour and keeps working."""
+        import fleet_planner
+        # budget $300 => rec 3; the user pinned 10. Lowering must proceed.
+        fleet_planner.set_fleet_size(28, 8, user_set=True)
+        fleet_auto_tune.auto_tune_fleets()
+        self.assertEqual(self._fleet()["n_runs"], 3)
+
+    def test_an_unpinned_fleet_keeps_the_old_behaviour(self):
+        """NULL cap = every fleet created before this change: auto-tune may
+        raise toward the recommendation exactly as before."""
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleets SET total_budget_usd = 100000, n_runs = 10"
+                    " WHERE id = 28")
+        conn.commit()
+        conn.close()
+        with patch("entitlements.limits_for_agent",
+                   return_value=("professional", {"max_fleet_size": 25})):
+            fleet_auto_tune.auto_tune_fleets()
+        self.assertGreater(self._fleet()["n_runs"], 10,
+                           "an unpinned fleet should still grow to the rec")
+
+    def test_a_new_user_resize_replaces_the_pin(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleets SET total_budget_usd = 100000 WHERE id = 28")
+        conn.commit()
+        conn.close()
+        import fleet_planner
+        with patch("entitlements.limits_for_agent",
+                   return_value=("professional", {"max_fleet_size": 25})):
+            fleet_planner.set_fleet_size(28, 4, user_set=True)
+            fleet_planner.set_fleet_size(28, 12, user_set=True)
+            fleet_auto_tune.auto_tune_fleets()
+        self.assertEqual(self._fleet()["n_runs"], 12,
+                         "the newer user size must be the cap")
+
+    def test_an_auto_tune_resize_does_not_create_a_pin(self):
+        """Only the USER's hand pins. set_fleet_size called without user_set
+        (auto-tune's own path) must leave the cap untouched."""
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleets SET total_budget_usd = 100000, n_runs = 10"
+                    " WHERE id = 28")
+        conn.commit()
+        conn.close()
+        import fleet_planner
+        with patch("entitlements.limits_for_agent",
+                   return_value=("professional", {"max_fleet_size": 25})):
+            fleet_planner.set_fleet_size(28, 6)      # machine path, no pin
+            fleet_auto_tune.auto_tune_fleets()
+        self.assertGreater(self._fleet()["n_runs"], 6,
+                           "a machine resize must not pin the size")
+
     def test_maybe_tune_throttles_within_interval(self):
         first = fleet_auto_tune.maybe_tune(1000.0)
         self.assertIsNotNone(first)

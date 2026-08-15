@@ -117,7 +117,7 @@ def auto_tune_fleets() -> list[dict[str, Any]]:
         placeholders = ", ".join("?" for _ in _NON_TERMINAL)
         cur.execute(
             f"""SELECT f.id, f.agent_id, f.n_runs, f.total_budget_usd,
-                       f.profit_target_frac,
+                       f.profit_target_frac, f.user_size_cap,
                        f.started_at, f.created_at,
                        COALESCE((SELECT SUM(r.realized_pnl_usd) FROM trading_runs r
                                  WHERE r.fleet_id = f.id), 0) AS realized,
@@ -160,6 +160,13 @@ def auto_tune_fleets() -> list[dict[str, Any]]:
                 rec_slots = min(rec_slots, cap)
             elif rec_slots > cur_slots:
                 rec_slots = cur_slots
+            # The user's own hand outranks the recommendation (owner decision
+            # 2026-08-15, after auto-tune undid a user's 25->10 within 27
+            # minutes, twice in one day). A resize-API size is a CAP: never
+            # raise above it; lowering (the fee-viability shrink) still runs.
+            user_cap = row.get("user_size_cap")
+            if user_cap is not None and rec_slots > int(user_cap):
+                rec_slots = int(user_cap)
             if rec_slots != cur_slots:
                 set_fleet_size(fleet_id, rec_slots)
                 emit_fleet_event(fleet_id, "auto_tune_slots",
