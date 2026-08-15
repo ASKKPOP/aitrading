@@ -8,6 +8,124 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 6 — 03:50Z (anchored 03:50:14Z) — 4-PR deploy verified; the cooldown trap is now armed on ETH
+
+**Tape: no trades since cycle 5** → no two-agent dispatch. `pnl_audit` 08-15
+**−$2.28**, `ok`, resid −0.01. Zero tracebacks. BTC 1271 backed off to
+**0.188%** from its stop (was 0.053% at the closest) — prediction still open,
+unresolved either way.
+
+### SHIPPED — image `20260815-desk-universe` (03:48:43Z), PRs #433+#434+#435+#436
+
+All verified in the running image:
+
+1. **#436 universe cap 20→60:** `build_universe()` crypto **10 → 24**
+   (total 187 → 201). Live pool now includes LINK, WLD, UNI, AVAX, SUI, ADA,
+   BNB, KAITO, FIL, TRUMP, BCH, NEAR, AAVE. Zero extra network calls.
+2. **#433 prune — first live exercise, kept the RIGHT backups**: exactly
+   `*.prev-20260815-024950` + `*.prev-20260815-034822` per surface. The old
+   logic would have deleted `034822` (today's rollback).
+3. **#434:** `"cannot be widened"` in the running run_engine — the desk is no
+   longer offered the unexecutable re-authored-stop option.
+4. **#435:** `2026-08-15-automation-monitoring.md` present on the box —
+   cycle results now reach the RAG corpus (owner order).
+5. Post-deploy recall re-verified on the new image: 1271 cycle at 03:47:38Z
+   served `lesson`/`lesson` (exit-discipline#4 + horizon-discipline#2).
+
+**Pending verification:** the current research batch (496322, 02:47Z, built on
+the OLD image, crypto 6) predates the deploy. The first post-deploy batch
+(~04:47Z) must show crypto theses > 6 (survivor cap 8 from 24 candidates) and
+fleet 34's 5 waiting slots seeing eligible candidates. Next cycle's job.
+
+### 🔴 The cooldown trap is now ARMED on ETH 1272 — same shape as SOL 1274
+
+At 03:24:24Z adapt scored the desk's fee-churn half-trim (−0.2122, the leg
+where the fee was 21× the gain) as a `losing_close`:
+`size_mult 0.75, conf_bump 0.05, cooldown_until 04:24:24Z`.
+
+So until **04:24:24Z**, run 1272 is in exactly the state that killed SOL: if
+ETH trades down to the stop at **1864.95** (currently 0.93% away, mark
+1882.40), the stop-hit dispatches will hit the cooldown gate, the desk cannot
+rule, and the 180s fail-safe closes the book with a null client_order_id.
+Distance makes it unlikely in the hour; the STRUCTURE is the point — the
+desk's own trim again disarmed its own authority. n=2 of the arming shape
+(not yet of the fail-safe firing).
+
+Also carried: 1272's armed reduce at **1865.0** sits 5 cents above the stop
+at **1864.95** — stacked triggers, flagged by Agent B in cycle 5.
+
+### Fleet 34 (5/10 after the user's resize at 03:21:42Z)
+
+`size_changed {"from":25,"to":10}` with no auto-tune pair = the resize API
+(user action via UI). Drain removed empty slots only — correct. The 5 waiting
+slots remain empty pending the post-deploy research batch.
+
+---
+
+## Cycle 5 — 03:04Z (anchored 03:04:06Z) — ETH fee-churn trim; agents cross-checked
+
+**P&L: fleet 34 −$2.276 realized** (1274 −1.544, 1272 −0.658, 1271 −0.074
+fee). One closed leg in-window → both agents dispatched.
+
+### The outcome: ETH 1272 sold half at 02:56:22Z — the fee was 21× the gain
+
+0.26279 @ 1883.64 vs entry 1883.60: gross **+$0.0105**, fee **−$0.2228**, net
+**−$0.2122**. Age 59m53s (young threshold 90m). **No young_dump_flag fired**:
+`run_engine.py` guard `if got >= 0: return ""` — the profit-side exemption has
+no fee term, so a bank whose fee is 21× its gain is classified as legitimate.
+
+**Agent A (verified against prod source):** the desk sat under the standing
+banking mandate — "open P&L is rolling over from its high-water mark →
+reducing is the correct answer THIS cycle" — which has **no magnitude floor
+and no fee term**. The high-water mark it defended was **+$0.47 = 0.0478%**,
+smaller than the 0.09% round-trip fee. Its report claimed "slightly
+underwater" (false — the mark was above entry) and "noise-sized" (true, and
+the argument against the trade it then made). It also abandoned its own
+cycle-5 trigger (reduce at 1865) by executing 18.6 points above it, and its
+report said "keep the position" while the intent compiled `sell 0.5`.
+
+**Agent B:** the exit path has no fee hurdle by design (`Exits are never
+gated`) and the reduce bypassed the risk stage. Trim cost vs holding full:
+**−$0.53** at the 03:10 mark. Also: found the sharper root cause of SOL's leg
+2 — `automation.py:230` writes brackets only on OPENING sides, so a `cover`
+cycle can never re-author a stop; the desk's 0.7% was parsed and discarded.
+**Stop-discard now n=2 with P&L attached.**
+
+### Cross-check — BOTH agents made the same counterfactual error, opposite signs
+
+- Cycle 3: Agent A claimed honouring the wider stop saved $0.88 → **wrong**,
+  priced live it was $0.12 worse.
+- Cycle 5: Agent B claimed "had the 0.7% stop applied, the loss never
+  happens" → **wrong**, at SOL 75.55 the position would be −1.66 total vs
+  −1.544 actual — deferred and larger, not avoided.
+
+Both compared a REALIZED loss to an UNREALIZED snapshot. Pattern now named;
+every future counterfactual gets priced to the live mark before acceptance.
+
+**Agent B's deploy-timing correction was itself wrong**: deploy-log.tsv shows
+TWO deploys of the same image/sha (024237 and 024950); the containers were on
+the new image from 02:42:54Z, so the 02:48:14Z live recall verification
+stands. Agent B read only the current StartedAt.
+
+### Population measurement — the third refuted microstructure fix tonight
+
+619 exit legs, whole history: fee-ate-the-gain legs = 20 (3.2%), total
+**−$0.32**; move-smaller-than-fee legs = 32 (5.2%), total **−$0.49**. Today's
+ETH leg (−$0.2122) is the single worst ever. Meanwhile ALL exit legs: gross
+**−$158.90**, fees −$13.02 → **~92% of the loss is gross price movement**.
+No exit fee gate shipped — it would fix $0.49 in nine days. Recorded with the
+other two refutations in memory `measure-before-shipping-a-microstructure-fix`.
+
+### Fleet 34 starvation — root cause proven (Agent B + main session)
+
+Build attempted on all 20 empty slots at 02:50:16Z, **eligible candidates:
+zero**: `market_scope_json` NULL → open-markets bias → Saturday → crypto only
+→ pool 6 symbols, 3 selectable all already held, LINK `selectable=0`.
+42 selectable us-stock theses were excluded solely by the NULL scope
+(closed-market builds are supported by design). → led to #436.
+
+---
+
 ## Cycle 4 — 02:45Z (anchored 02:45:54Z) — PR #432 SHIPPED TO PROD + verified
 
 **Tape silent: zero trades, zero closes** since cycle 3 → no two-agent dispatch.
