@@ -8,6 +8,16 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 37 — 21:4xZ (anchor 21:40:42): quiet — UNI re-entry blocked by its own tightened gate
+
+UNI 1293 authored a sane re-entry short (stop 2.3 / target 7.6, >3:1;
+floor raise fired again) but conf 0.58 fell below its adapt-raised 0.60
+gate — the post-loss tightening doing exactly its job on a real prior
+loss. Book: SUI +$0.01, JTO −$0.11 (stop 2.1% away). 0 tracebacks, no
+closed trades.
+
+---
+
 ## Cycle 36 — 21:1xZ (anchor 21:10:39): quiet — JTO's replacement authored a SANE bracket
 
 JTO 1304 (replacing the unit-slip run) opened long 43.49 @ 0.5806 with
