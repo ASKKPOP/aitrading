@@ -46,12 +46,44 @@ test asserted.
 Em-dash `�` in an earlier query result was **my shell client, not the data**:
 column is `utf8mb4`, stored bytes `E28094` = U+2014. No corruption.
 
-**Still pending — the live journal path.** `_recall_line` runs only when a run
-is HOLDING, and both holders (1271, 1272) last cycled *before* the deploy
-(02:17:02Z, 02:24:13Z). The two flat runs that have cycled since produce no
-recall by design. The in-image check above is the deployed code against the live
-corpus; the journalled `recall` event on a live holding cycle is the second
-confirmation and is still owed.
+**✅ LIVE JOURNAL PATH CONFIRMED at 02:48:14Z — run 1271, cycle 6**, the BTC
+short while losing, i.e. the exact situation that produced the original
+finding:
+
+```json
+{"cycle": 6, "action": "hold",
+ "query": "crypto holding position losing position stop distance cut or hold reduce",
+ "chunks": [{"kind": "lesson", "source": "skill:exit-discipline#4",     "score": 10.1344},
+            {"kind": "lesson", "source": "skill:horizon-discipline#2",  "score":  7.9884}],
+ "scheme": "deterministic-top2", "explore": false, "propensity": 1.0}
+```
+
+**Both chunks `lesson`, zero monitoring.** The identical query string that six
+hours of history answered with *"…that is why nothing ships"* and *"Two
+instances, no outcome yet … Logged, not shipped"* now returns exit and horizon
+discipline. The desk then decided `hold` at confidence 0.64.
+
+**Verified three independent ways** (owner rule ≥2): (1) locally against a copy
+of the 4,292-chunk corpus, 12/12 cells; (2) in the deployed prod image against
+the live 4,307-chunk corpus, 4/4 cells; (3) the live journalled `recall` event
+above.
+
+### Deploy completed end-to-end on the second run (02:49:50Z)
+
+`npm ci` in `marketing/` cleared the astro trap. Run with **`KEEP_BACKUPS=5`**
+so the still-buggy prune (below) could not fire. Every step ran: SPA to all
+three static roots, marketing published, verify green. `.well-known/README.txt`
+canary **200** (the script's own dotfile canary), `/docs/how-it-works`,
+`/docs/guide`, `/smsoptin/`, `/pricing`, `/privacypolicy`, `/termsconditions`,
+`/api/subscriptions/plans` all **200**. Zero tracebacks. Backups now 4 per
+surface with **nothing pruned** — both of today's rollbacks survived, as
+intended.
+
+⚠️ **The script's printed rollback line is wrong-but-harmless this time:** it
+says `Rollback: set SOOPPIY_IMAGE=sooppiy-backend:20260815-desk-recall`, which
+is the image just deployed — because the guard captured the value already
+swapped in by the aborted first run. **The real rollback target is
+`sooppiy-backend:20260815-plan25-phase-c`.**
 
 ### Corpus self-observation worth recording
 
