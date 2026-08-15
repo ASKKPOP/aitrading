@@ -3604,15 +3604,42 @@ def _last_cycle_word_line(run: dict) -> str:
         finally:
             conn.close()
         action = report = ts = ""
+        cycle = None
         for row in rows or []:
             payload = json.loads(row["payload"] or "{}")
             action = str(payload.get("action") or "").strip()
             report = " ".join(str(payload.get("report") or "").split())
             if action and report:
                 ts = str(row["ts"] or "")
+                cycle = payload.get("cycle")
                 break
         if not action or not report:
             return ""
+        # Did that word become an order? A discarded non-hold quoted without
+        # its outcome reads as an open position: fleet 35 UNI (2026-08-15)
+        # had its sell dust-skipped, then held at 0.78 to "protect our
+        # existing short" — a phantom book. Every hold emits its own
+        # gate_skip in the same cycle, so holds are exempt by construction.
+        discard = ""
+        if action != "hold" and cycle is not None:
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """SELECT payload FROM run_events
+                       WHERE run_id = ? AND event_type = 'gate_skip'
+                       ORDER BY id DESC LIMIT 8""", (run["id"],))
+                for srow in cursor.fetchall() or []:
+                    sp = json.loads(srow["payload"] or "{}")
+                    if sp.get("cycle") == cycle:
+                        discard = (
+                            f"That {action} did NOT execute — the platform "
+                            f"discarded it ({sp.get('reason')}). Your book is "
+                            "unchanged by it: do not manage a position that "
+                            "order did not open.\n")
+                        break
+            finally:
+                conn.close()
         age = ""
         try:
             mins = _age_seconds(ts) / 60.0
@@ -3625,6 +3652,7 @@ def _last_cycle_word_line(run: dict) -> str:
         if len(report) > 400:
             report = report[:400].rsplit(" ", 1)[0] + "…"
         return (f"Your own last cycle (action: {action}{age}): \"{report}\"\n"
+                + discard +
                 "An invalidation you stated stands until you explicitly "
                 "overturn it with NEW evidence in this cycle's report — "
                 "entering against your own standing invalidation is the "
