@@ -133,16 +133,46 @@ def remember(kind: str, source: str, title: str, body: str, *,
         conn.close()
 
 
-def _candidates(kind: Optional[str], market: Optional[str],
+def forget_superseded(kind: str, source: str, keep_sha: str) -> int:
+    """Drop earlier chunks for this kind+source whose content has changed.
+
+    `remember` is keyed by sha, so an EDITED body inserts a second row and
+    leaves the stale one competing for the same retrieval slots. That is
+    correct for a monitoring note (a day's note genuinely gains sections) and
+    wrong for anything single-valued: one finished run has exactly one
+    outcome. Callers that rewrite a body must say so."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM desk_memory WHERE kind = ? AND source = ?"
+                    " AND sha <> ?", (kind, source, keep_sha))
+        n = cur.rowcount or 0
+        conn.commit()
+        return max(0, n)
+    finally:
+        conn.close()
+
+
+def _kind_list(kind: "str | Iterable[str] | None") -> list[str]:
+    """Normalise the `kind` filter to a list. A bare string stays one kind."""
+    if kind is None:
+        return []
+    if isinstance(kind, str):
+        return [kind]
+    return [str(k) for k in kind if k]
+
+
+def _candidates(kind: "str | Iterable[str] | None", market: Optional[str],
                 symbol: Optional[str], run_id: Optional[int],
                 cap: int) -> list[dict[str, Any]]:
     """Cheap SQL narrowing before Python scoring. `market` and `symbol` match
     permissively — a chunk with no market recorded is general knowledge and
     stays a candidate for every market."""
     where, params = [], []
-    if kind:
-        where.append("kind = ?")
-        params.append(kind)
+    kinds = _kind_list(kind)
+    if kinds:
+        where.append("kind IN (%s)" % ", ".join("?" for _ in kinds))
+        params.extend(kinds)
     if market:
         where.append("(market IS NULL OR market = ?)")
         params.append(market)
@@ -166,7 +196,7 @@ def _candidates(kind: Optional[str], market: Optional[str],
         conn.close()
 
 
-def search(query: str, *, kind: Optional[str] = None,
+def search(query: str, *, kind: "str | Iterable[str] | None" = None,
            market: Optional[str] = None, symbol: Optional[str] = None,
            run_id: Optional[int] = None, tags: Optional[Iterable[str]] = None,
            limit: int = 5, pool: int = 2000) -> list[dict[str, Any]]:
@@ -176,7 +206,13 @@ def search(query: str, *, kind: Optional[str] = None,
     does not count ten times, and a term common to the whole corpus (every
     monitoring note says "run") counts for almost nothing. Tag overlap and an
     exact symbol match add a bounded boost — bounded on purpose, so a tag can
-    surface a chunk but never outrank genuine textual relevance."""
+    surface a chunk but never outrank genuine textual relevance.
+
+    `kind` takes one kind or several. Several is not a convenience: IDF and
+    the length norm are computed over the candidate pool, so scores from two
+    separate calls are not the same unit and must never be merged by the
+    caller. Asking for the kinds together is the only way to get one ranking
+    across them."""
     rows = _candidates(kind, market, symbol, run_id, pool)
     if not rows:
         return []

@@ -2257,6 +2257,44 @@ class DeskRecallTests(unittest.TestCase):
             self.assertEqual(
                 run_engine._recall_line({"market": "crypto"}, {}, 0), "")
 
+    def test_recall_prefers_lessons_and_outcomes_over_monitoring_prose(self):
+        """Measured on prod 2026-08-15: monitoring chunks outscore lessons in
+        every (market x situation) cell — 12-22 against 6-12 — because a
+        monitoring section is long, term-dense prose written WHILE analysing a
+        losing shape, so it is term-dense for exactly the query a losing run
+        generates. Merging the kinds into one pool therefore does NOT fix
+        anything: monitoring still takes every slot. The corpus the desk reads
+        has to be chosen, not ranked."""
+        self.mem.remember(
+            "monitoring", "notes.md#ladder",
+            "The ladder that never ends - quantified, and NOT shipped",
+            "the position was losing and the desk had to cut or hold; cutting "
+            "the loser in a ladder cost drag against holding the whole "
+            "position, and the cause is not mechanical greed, and that is why "
+            "nothing ships; cut or hold, losing, stop distance, reduce")
+        self.mem.remember(
+            "lesson", "skill:exit-discipline#4", "Exit discipline",
+            "when a position is losing, cut it")
+        line = run_engine._recall_line(
+            {"id": 11, "market": "crypto"}, {"unrealized": -1.0}, pos_qty=5)
+        self.assertIn("when a position is losing, cut it", line,
+                      "the curated lesson was not what the desk read")
+        self.assertNotIn("that is why nothing ships", line,
+                         "unshipped engineering commentary reached the desk")
+        rec = run_engine._take_recall_journal(11)
+        self.assertTrue(rec["chunks"], "recall was injected but not journaled")
+        self.assertEqual({c["kind"] for c in rec["chunks"]}, {"lesson"})
+
+    def test_recall_falls_back_to_monitoring_when_no_lesson_or_outcome(self):
+        """The corpus must be able to hold nothing but monitoring without the
+        desk losing its memory altogether — fail-soft, not fail-silent."""
+        line = run_engine._recall_line(
+            {"id": 12, "market": "crypto", "peak_pnl_usd": 1.0},
+            {"unrealized": 0.2}, pos_qty=5)
+        self.assertIn("given back", line)
+        rec = run_engine._take_recall_journal(12)
+        self.assertEqual({c["kind"] for c in rec["chunks"]}, {"monitoring"})
+
     def test_recall_is_bounded(self):
         for i in range(20):
             self.mem.remember("monitoring", f"n{i}.md#x", f"n{i}",

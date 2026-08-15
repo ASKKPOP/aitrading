@@ -3888,6 +3888,29 @@ def _loss_verdict_line(run: dict, pnl: dict) -> str:
 # Until now the corpus only ACCUMULATED — the desk filled it and never read it.
 _RECALL_MAX = 2
 _RECALL_CHARS = 700
+# WHICH corpus the desk reads back (fixed 2026-08-15). Retrieval was pinned to
+# kind="monitoring" — 636 of 4292 chunks — so the desk's record of its own
+# TRADE OUTCOMES (278) and its curated trading LESSONS (147) were written,
+# stored, and never read by anything that trades.
+#
+# Monitoring notes are our engineering commentary about whether to ship a
+# platform change. 16 of the 636 carry deliberately-inconclusive markers
+# ("NOT shipped", "no outcome yet", "logged, not shipped") and NO other kind
+# carries any. Live instance, run 1274 c4 — a SOL short, losing, asking cut or
+# hold — was handed "…that is why nothing ships" as rank 1 under the heading
+# "What this desk has already learned".
+#
+# Two TIERS, not one merged pool. Measured on prod the same day: monitoring
+# outscores lessons in every (market x situation) cell — 12-22 against 6-12 —
+# because a monitoring section is long, term-dense prose written WHILE
+# analysing a losing shape, so it is term-dense for precisely the query a
+# losing run generates. Merged, monitoring still takes every slot. The corpus
+# has to be CHOSEN.
+#
+# Monitoring stays as the fallback: a corpus holding nothing else must not
+# leave the desk with no memory at all.
+_RECALL_KINDS = ("outcome", "lesson")
+_RECALL_KINDS_FALLBACK = ("monitoring",)
 
 
 def _recall_enabled() -> bool:
@@ -3934,11 +3957,13 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
         query = _recall_query(run, pnl, pos_qty)
         explore = (_recall_explore_enabled()
                    and _recall_explore_allowed(pnl, pos_qty))
-        hits = desk_memory.search(query,
-                                  kind="monitoring",
-                                  market=str(run.get("market") or "") or None,
-                                  limit=(_RECALL_EXPLORE_POOL if explore
-                                         else _RECALL_MAX))
+        market = str(run.get("market") or "") or None
+        limit = _RECALL_EXPLORE_POOL if explore else _RECALL_MAX
+        hits = desk_memory.search(query, kind=_RECALL_KINDS,
+                                  market=market, limit=limit)
+        if not hits:
+            hits = desk_memory.search(query, kind=_RECALL_KINDS_FALLBACK,
+                                      market=market, limit=limit)
         # Same reasoning as the capture guard below: a selector that raises
         # must fall back to the incumbent ranking, never to no recall at all.
         try:
