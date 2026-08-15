@@ -8,6 +8,32 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 31 — 18:1xZ (anchor 18:10:37): first SURVIVING partial reduce (boundary proven from the other side); 4 shorts
+
+- **ETH 1302 half-reduce SURVIVED** (17:54:49): `railed: {}` — no
+  escalation; cover 0.01355 @ 1883.1, remainder $25.5 ≥ $25 floor by
+  fifty cents. The dust-remainder boundary is now proven live from BOTH
+  sides (UNI/FIL escalated below it; ETH survived above it). The
+  realized half-leg: +$0.011 gross − $0.011 fee ≈ **−$0.001 net** —
+  reason: the desk banked half at a +0.04% move, premature banking with
+  an empty `why`; full two-agent treatment deferred to the position's
+  final close (leg is ±$0.001, position still open).
+- **#440 third save**: SUI 1296 short 29.34 @ 0.6816 — desk authored
+  0.05 for the third time (habit unchanged by the schema note), rail
+  raised to 0.0642, filled. Sane bracket (stop 1.97 / target 2×).
+- **Second `desk_retired`**: BTC 1301, desk action "retire" conf 0.66 —
+  the retire verb used deliberately twice in 3 h.
+- **Post-#444 watch opened**: TWO standing orders this cycle carry an
+  empty `why` (ETH reduce, FIL banking arm price_below 0.684 → reduce
+  1.0) — the one-invalidation skill forbids this but skills are
+  advisory; if the pattern persists, the candidate escalation is an
+  order_intent rail requiring a why on arms (n=2, monitor only).
+
+Book: 4 shorts (LTC, ETH-half, FIL, SUI), new run 1303 deliberating,
+0 tracebacks, fleet 33 unchanged.
+
+---
+
 ## Cycle 30 — 17:4xZ (anchor 17:40:38): #443 positive render PROVEN both ways; #440 second live save; book 3 shorts
 
 **#443 EXERCISED, both branches:** LTC 1297 (notional $26.3, inside the
