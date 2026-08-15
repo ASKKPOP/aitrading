@@ -8,6 +8,48 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Intercycle — 06:12Z: #437 + #438 SHIPPED; brief-line journal VERIFIED LIVE
+
+Two more fixes to prod since cycle 8:
+
+**#437 size pin (image `20260815-size-pin`, migration 0051):** a user resize
+now stamps `fleets.user_size_cap`; auto-tune may lower below it, never raise
+above it. From live n=2 (auto-tune undid the user's 25→10 within 27 min,
+twice in one day). Fleet 34's cap is NULL until the next user resize — left
+to the user by design. Verified: column on prod MySQL, pin code in image.
+
+**#438 brief-line journal (image `20260815-brief-journal`):** every decision
+event now carries `brief` — the NAMES of the brief lines that rendered.
+Solves the R16-class blindness (prompts not journaled → rendering not
+determinable from tape; memory: brief-line wiring is untested by default).
+`_compose_position_state` is byte-identical to the old inline chain (pinned
+by test); pop-never-read semantics like the recall journal.
+
+**VERIFIED LIVE at 06:12:14Z** — first clean post-deploy decision, run 1283
+FIL (holding short):
+
+```json
+"brief": ["position_state", "last_cycle_word", "brake_distance",
+          "ordinary_day", "standing_arm"]
+```
+
+Exactly the expected composition for a holding crypto run: no predecessor
+(fresh slot), no stop_hit, no earnings (crypto). The 06:10:26Z decision that
+straddled the container restart carried NULL — correctly absent, not wrong.
+
+Ship discipline note: the composer refactor stale-ified **16 pre-existing
+per-line wiring tests** across two rounds (14 caught by the first full suite,
+2 more raw-source greps by the second — they grep the FILE, not
+`inspect.getsource`, so the first sweep missed them). All repointed at the
+composer; unwire protection re-proven by mutation after repointing. Three
+full-suite passes; the last fully green at 4,269 + 1,337.
+
+**Session ship total: 7 PRs to prod** (#432 recall corpus, #433 deploy prune,
+#434 stop-hit brief, #435 cycle notes→RAG, #436 universe cap, #437 size pin,
+#438 brief journal).
+
+---
+
 ## Cycle 8 — 05:02Z (anchored 05:02:38Z) — UNI retire-churn (1 rebuild, $0); psych_shock swept all 13 runs
 
 **No closed TRADES** since cycle 7 (two desk-retires realized 0.00 with zero
