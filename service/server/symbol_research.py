@@ -317,10 +317,12 @@ def build_universe() -> list[dict[str, str]]:
             # entire unheld crypto opportunity set was TWO symbols while the
             # fleet sat at 7 of 10.
             #
-            # The effective ceiling is top_symbols._VOLUME_CANDIDATES (20),
-            # not 50: _compute ranks that many by volume before the priceable
-            # filter. So this widens crypto to at most 20, costing ~15 extra
-            # daily-candle reads per refresh against the crypto feed.
+            # The effective ceiling is top_symbols._VOLUME_CANDIDATES, not
+            # 50: _compute ranks that many by volume before the priceable
+            # filter. That constant was 20 (sized for the top-5 UI widget)
+            # until 2026-08-15, which pinned the priceable pool at ~8 — this
+            # slice's own widening never bound. Now 60 → ~21 priceable,
+            # measured live.
             rows = top_symbols.get_top_symbols(50) or []
             crypto = [s.get("symbol") for s in rows[:50]
                       if isinstance(s, dict) and s.get("symbol")]
