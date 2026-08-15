@@ -22,7 +22,20 @@ from typing import Any
 
 TOP_SYMBOLS_LIMIT = 5
 _CACHE_SECONDS = int(os.environ.get("TOP_SYMBOLS_CACHE_SECONDS", "300"))
-_VOLUME_CANDIDATES = 20  # rank this many by volume before popularity/priceable filters
+# Rank this many by volume before the popularity/priceable filters. Was 20 —
+# sized for the top-5 UI widget this module was built for (Plan 11 F1) and
+# then reused as the fleet's discovery channel, where it BOUND: measured on
+# prod 2026-08-15, only 8 of the top 20 were Hyperliquid-priceable, so the
+# whole research universe carried 10 crypto symbols against us-stock 126 and
+# 12 consecutive batches each produced exactly 5 crypto theses. On a Saturday
+# (crypto is the only open market) fleet 34 exhausted that pool with half its
+# budget idle — the ranker had 5 candidates for 5 slots and made no choice at
+# all. At 60 the same feeds yield 21 priceable symbols. Ranking costs no extra
+# network call (the OKX tickers response already carries all ~431 rows); only
+# the research screen's daily-candle reads grow, and the survivor caps still
+# bound what a batch keeps. The UI widget is untouched: TOP_SYMBOLS_LIMIT
+# still slices its five.
+_VOLUME_CANDIDATES = 60
 
 _cache_lock = threading.Lock()
 _cache: dict[str, Any] = {"at": 0.0, "items": []}
