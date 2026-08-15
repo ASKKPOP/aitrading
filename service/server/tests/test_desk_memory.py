@@ -137,6 +137,32 @@ class RankingTests(_Db):
                              "the stop was placed inside ordinary noise")
         self.assertEqual(desk_memory.search("kubernetes ingress certificate"), [])
 
+    def test_several_kinds_can_be_searched_as_one_pool(self):
+        """A caller that wants outcomes AND lessons must get ONE ranking.
+
+        Two separate searches cannot be merged by score: IDF is computed over
+        the candidate pool, so a score from a 147-row pool and a score from a
+        278-row pool are not the same unit."""
+        desk_memory.remember("outcome", "run:1#x", "outcome",
+                             "the run cut the loser and kept the loss small")
+        desk_memory.remember("lesson", "skill:exit#1", "lesson",
+                             "cut a loser early rather than holding it down")
+        desk_memory.remember("monitoring", "m.md#x", "monitoring",
+                             "cut or hold the loser was analysed and not shipped")
+        got = {h["source"] for h in desk_memory.search(
+            "cut the loser", kind=("outcome", "lesson"), limit=10)}
+        self.assertEqual(got, {"run:1#x", "skill:exit#1"},
+                         "multi-kind search must return exactly those kinds")
+
+    def test_a_single_kind_string_still_works(self):
+        desk_memory.remember("lesson", "skill:exit#1", "lesson",
+                             "cut a loser early rather than holding it down")
+        desk_memory.remember("monitoring", "m.md#x", "monitoring",
+                             "cut a loser early rather than holding it down")
+        got = {h["source"] for h in desk_memory.search("cut a loser",
+                                                       kind="lesson", limit=10)}
+        self.assertEqual(got, {"skill:exit#1"})
+
 
 class IngestTests(_Db):
     def _agent_and_run(self, **cols):
