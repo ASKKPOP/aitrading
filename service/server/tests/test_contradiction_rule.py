@@ -239,9 +239,11 @@ class RailIntegrationTests(unittest.TestCase):
             conn.close()
         line = run_engine._contradiction_line(run, 5.0)
         self.assertIn("OPPOSED", line)
-        src = (Path(SERVER_DIR) / "run_engine.py").read_text()
-        self.assertEqual(src.count("+ _contradiction_line(run,"), 2,
-                         "line must be wired into BOTH prompt paths")
+        import inspect
+        self.assertIn("_contradiction_line(run, pos_qty)",
+                      inspect.getsource(run_engine._compose_position_state),
+                      "line must be in the composed brief (both prompt paths "
+                      "route through it — pinned by BriefJournalTests)")
 
 
 if __name__ == "__main__":
