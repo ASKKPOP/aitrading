@@ -816,6 +816,18 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "so `reduce` is an arm's default verb too; the level "
                 "that ends the thesis is what your STOP already covers, "
                 "and repeating it with close 1.0 buys nothing.")},
+            {"applies_when": ["holding"], "evidence": (
+                "paid a real fee to escape a fee that does not exist"),
+             "text": (
+                "HOLDING COSTS NOTHING on this ledger — fees are charged "
+                "only when you trade; there is no funding and no carry. "
+                "'Fee drag' is never a reason to cut a held position: the "
+                "measured case (UNI 2026-08-15) reduced 'to limit further "
+                "fee drag' and thereby paid a real fee to escape a fee "
+                "that does not exist. A fee-motivated exit must name the "
+                "actual fee it avoids and show it exceeds the fee the "
+                "exit itself incurs — otherwise the reason is fiction "
+                "and the exit stands on nothing.")},
         ],
     },
     {
@@ -842,6 +854,17 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "ready' costs nothing, while a forced entry pays fees to "
                 "learn what the checks already knew. State the verdict "
                 "and the single binding constraint explicitly.")},
+            {"applies_when": ["flat"], "evidence": (
+                "its own stated path crossed its own stop"), "text": (
+                "STATE THE PATH before you open: which way price travels "
+                "to your target, and what it may traverse first. If the "
+                "path you state crosses your own stop before it reaches "
+                "your target, the entry cannot win on your own narrative "
+                "— restate the thesis or stand down. The measured case "
+                "(UNI short, 2026-08-15) predicted a pullback UP to a "
+                "resistance zone ABOVE its stop 'before any rebound' "
+                "while shorting below it: its own stated path crossed "
+                "its own stop, and the trade lost by its own script.")},
         ],
     },
     {

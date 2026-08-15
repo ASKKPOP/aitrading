@@ -2045,6 +2045,61 @@ class MarkFreshnessBriefTests(unittest.TestCase):
                       "missing from the composed brief (both paths)")
 
 
+class ReduceGeometryBriefTests(unittest.TestCase):
+    """Fleet 35 UNI (2026-08-15): the desk authored 'reduce half' on a $20
+    book; the dust-remainder rail escalated it to a full close because the
+    $10 remainder sat under the $25 floor. The desk did not know its book
+    was all-or-nothing — _exit_size_line even told it 'reduce keeps the
+    thesis alive'. This line states the reduce geometry the rail enforces."""
+
+    def _pnl(self, entry, mark, ok=True):
+        return {"mark_age_ok": ok,
+                "position": {"entry_price": entry, "current_price": mark}}
+
+    def test_a_sub_floor_book_is_named_all_or_nothing(self):
+        # 6.148 UNI @ 3.2655 ≈ $20.08 notional < $25 floor.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(3.253, 3.2655)), \
+                patch.dict(os.environ, {"RUN_DUST_REMAINDER_USD": "25"}):
+            line = run_engine._reduce_geometry_line({"id": 1}, -6.148)
+        self.assertIn("ANY 'reduce'", line)
+        self.assertIn("FULL close", line)
+
+    def test_a_mid_band_book_states_the_surviving_fraction(self):
+        # 49.7 FIL @ 0.6935 ≈ $34.5: a half-reduce leaves $17 < $25 and
+        # escalates, but a reduce under ~27% survives.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(0.6935, 0.6935)), \
+                patch.dict(os.environ, {"RUN_DUST_REMAINDER_USD": "25"}):
+            line = run_engine._reduce_geometry_line({"id": 1}, -49.7)
+        self.assertIn("larger than", line)
+        self.assertIn("FULL close", line)
+        self.assertNotIn("ANY 'reduce'", line)
+
+    def test_a_large_book_says_nothing(self):
+        # $100 notional: half leaves $50 ≥ $25 — geometry unremarkable.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(10.0, 10.0)), \
+                patch.dict(os.environ, {"RUN_DUST_REMAINDER_USD": "25"}):
+            self.assertEqual(
+                run_engine._reduce_geometry_line({"id": 1}, 10.0), "")
+
+    def test_a_flat_book_says_nothing(self):
+        self.assertEqual(run_engine._reduce_geometry_line({"id": 1}, 0.0), "")
+
+    def test_a_pnl_failure_renders_nothing_rather_than_breaking_the_cycle(self):
+        with patch.object(run_engine, "compute_run_pnl",
+                          side_effect=RuntimeError("down")):
+            self.assertEqual(
+                run_engine._reduce_geometry_line({"id": 1}, -6.148), "")
+
+    def test_it_is_WIRED_into_the_composed_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_reduce_geometry_line", src,
+                      "missing from the composed brief (both paths)")
+
+
 class StandingArmBriefTests(unittest.TestCase):
     """Cycle 82: _store_armed_order runs ONLY on intent == 'arm', so a reduce
     or hold cycle leaves the arm standing. The skill claimed the opposite and

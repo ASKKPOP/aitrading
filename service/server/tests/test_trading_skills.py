@@ -641,7 +641,7 @@ class AtomicLessonTests(_Db):
         "reentry-discipline", "horizon-discipline", "level-integrity",
         "reachable-exits", "loss-aging", "confidence-resolution",
         "conviction-calibration", "thesis-validation",
-        "macro-event-analysis", "pre-trade-readiness", "evidence-gap-check",
+        "macro-event-analysis", "evidence-gap-check",
         "earnings-preview", "catalyst-map", "watchlist-review",
         "execution-plan-check", "portfolio-concentration",
         "market-topping-evidence", "news-reaction-evidence",
@@ -671,6 +671,9 @@ class AtomicLessonTests(_Db):
         # measurements belong to the arm lessons (2, 4)
         ("position-management", 0), ("position-management", 1),
         ("position-management", 3),
+        # readiness-ladder doctrine — the path-coherence measurement (UNI
+        # 2026-08-15) sits in lesson 2 only
+        ("pre-trade-readiness", 0), ("pre-trade-readiness", 1),
         # undercut-reset doctrine — the follow-through record claims sit in
         # lessons 0 and 1
         ("bottom-confirmation", 2),
