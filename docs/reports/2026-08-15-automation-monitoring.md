@@ -8,6 +8,17 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 41 — 23:3xZ (anchor 23:33:37): quiet — #448 proven at scale; FIL short +$3.10
+
+**`run_expiry` renders on ALL 10 decisions this window** (flat and
+held) — #448 behaviourally proven at scale within an hour of deploy.
+FIL 1305's $209 short is **+$3.10** (price −1.49%), the day's largest
+favorable move — the desk held at 0.62 with the full held-book brief
+set; 0.6932 arm standing, target 8.4% further. All holds, no trades,
+0 tracebacks. Day: 9 closes ≈ +$0.01 realized, +$3.10 open.
+
+---
+
 ## Cycle 40 — 23:0xZ: JTO verdict — NOT the trailing lock; the breakeven ratchet is guaranteed-negative by construction
 
 **CORRECTION to cycle 39 (mine):** the event label lied and I repeated
