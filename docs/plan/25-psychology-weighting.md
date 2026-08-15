@@ -18,6 +18,16 @@ proposals; each ships behind its own flag and is judged in realized-P&L
 terms per the owner's monitoring law ("the ultimate goal of all analysis
 is profit or loss").
 
+Phase C **SHIPPED** (PR #429 → prod `20260815-plan25-phase-c`,
+`FLEET_PSYCH_WEIGHTS_V2=true` set on the box; verified end-to-end in the
+prod container: v2 profile active, 51 symbols carrying live tilts, real
+screens stamping non-null psych subscores — e.g. MSFT −0.64 crowd-vs-price
+disagreement, AAPL +0.11 confirmation — `psych_extreme` registered ambient
+and correctly quiet at VIX 14.25). Key finding preserved in the code: the
+psych subscore was structurally None for every market before C1, so no
+WEIGHT_PROFILES psych weight had ever bound. Phase D is now live
+measurement per the procedure below.
+
 All file/line references are `origin/main @ 9f03a972`.
 
 ---
@@ -102,8 +112,28 @@ deterministic injection, admin Skills tab). Cost: two catalogue entries.
 7. Per-market expectancy via `pnl_audit.py` ledger replay, two-week windows
    before/after each phase; the comparison is realized P&L per closed run,
    never process health. Each phase keeps its own kill switch; Phase C's flag
-   makes the weight change a clean A/B (research batches are journaled with
-   their profile, so attribution is mechanical).
+   makes the weight change a clean A/B.
+
+**Mechanical A/B procedure (any session can run this, prod MySQL):**
+
+- **Cohort split** — a fleet run is v2 iff its frozen thesis carries a
+  non-null psych subscore (before C1, `psych` was structurally None):
+  `JSON_EXTRACT(config_snapshot_json, '$.thesis.factor_scores.subscores.psych')
+  IS NOT NULL` on `trading_runs WHERE created_via='fleet' AND
+  market='us-stock' AND status='stopped'`. (Confirm the exact JSON path
+  against a live v2 row before first use; the fingerprint concept, not the
+  path string, is the contract.)
+- **Metric** — per cohort: n closed runs, Σ `realized_pnl_usd`, mean per
+  run (expectancy), win rate; cross-check the raw column against a
+  `pnl_audit` replay for the same runs (forced flattens are invisible to
+  naive queries — see memory `realized-pnl-misses-forced-flattens`).
+- **Decision rule** — v2 stays default-on only if, with ≥ 8 closed v2
+  us-stock runs, v2 expectancy ≥ v1 expectancy over the same calendar
+  window. A small favorable delta on a large loss is not improvement.
+  `psych_extreme` routing is judged separately: count cycles it escalated
+  and their decision outcomes (`decision` events carry the trigger list).
+- **Rollback** — unset `FLEET_PSYCH_WEIGHTS_V2` in the box `.env` and
+  `compose up`; v1 behavior returns at the next research refresh.
 
 **Exit criteria:** Phase A/B promote by default if us-stock and forex
 expectancy do not degrade; Phase C flips default-on only if the v2-weighted
