@@ -8,6 +8,31 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 30 — 17:4xZ (anchor 17:40:38): #443 positive render PROVEN both ways; #440 second live save; book 3 shorts
+
+**#443 EXERCISED, both branches:** LTC 1297 (notional $26.3, inside the
+25–50 band) rendered **`reduce_geometry`** in its held-book brief; ETH
+1302 (notional $51.0, just above 2× floor) correctly did NOT. The line
+renders exactly on its designed boundary.
+
+**#440 second live save:** FIL 1286 re-entered short (cycle 19,
+17:35:53Z) — the desk authored size_frac 0.05 AGAIN (the schema note
+has not changed its habit), rail raised to 0.0580, **short 29.07 @
+0.688 filled** at the $10 minimum. Stop 0.7040 (+2.32%, structural),
+target 0.6560, horizon 72 h — sane shape, longer thesis this time.
+
+Book: three shorts — LTC (−0.595 @ 44.16), ETH (−0.0271 @ 1883.9, desk
+ARMED price_below 1875 → reduce 0.5, a banking arm per the skill), FIL
+(−29.07 @ 0.688). One more `conf 0.0` no-LLM-verdict fail-safe hold
+(UNI 17:22). 7 runs running, replenish continuing, 0 tracebacks.
+
+**Process correction (mine):** cycles 28–29 queried `run_id BETWEEN
+1286 AND 1295` and were blind to the new runs' entries (LTC 15:21,
+ETH 16:37 — found now, entries only, nothing closed, no analysis owed).
+Sweeps now use `run_id >= 1286`.
+
+---
+
 ## Cycle 29 — 17:1xZ (anchor 17:10:36): fleet self-restructured — 8 idle-retires, auto-tune growth 10→25, replenish underway
 
 Not quiet after all — the platform machinery had a busy 3 hours, all
