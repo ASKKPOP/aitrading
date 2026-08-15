@@ -8,6 +8,21 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 17 — 10:5xZ (anchor 10:56:39): dust defect fired a THIRD time — 81 s before the fix went live
+
+UNI 1293 cycle 6 (10:53:03Z): sell conf 0.68, authored size_frac **0.1**
+(double the advertised minimum) — still destroyed: margin $9.25 < $10,
+because UNI's $92.48 max_bet puts the executable floor at 0.108. Worker
+restarted onto `size-frac-floor` at **10:54:24Z** — the decision ran on
+the old image by 81 seconds, so this is pre-fix evidence n=3 (second
+symbol), NOT a fix failure. It also validates the design: a static bump
+of the 0.05 minimum would not have saved this order; only the per-run
+floor does. Post-fix behavioural proof still pending — next sub-floor
+sell must fill at $10 with the raise note. Otherwise: 14 decisions
+(13 hold), book flat, 0 tracebacks, fleet 33 `stopping`.
+
+---
+
 ## Cycle 16 — 10:1xZ (anchor 10:10:35): REPRODUCED — the schema's advertised minimum size is below the executable floor; fix in flight
 
 **FAILED (n=2, deterministic):** FIL run 1286 cycle 4 (10:04:11Z) authored
