@@ -3007,6 +3007,7 @@ def init_database():
             total_budget_usd    REAL NOT NULL,
             risk_appetite       TEXT NOT NULL DEFAULT 'balanced',
             archetype           TEXT NOT NULL DEFAULT 'short',
+            user_size_cap       INTEGER,
             market_scope_json   TEXT,
             warn_loss_frac      REAL NOT NULL DEFAULT 0.30,
             stop_loss_frac      REAL NOT NULL DEFAULT 0.40,
@@ -3172,6 +3173,11 @@ def init_database():
         # crypto, today's behavior) | 'swing' (us-stock, holds overnight).
         # MySQL mirror: alembic 0049.
         "ALTER TABLE fleets ADD COLUMN archetype TEXT NOT NULL DEFAULT 'short'",
+        # User size pin (2026-08-15): a size set through the resize API is a
+        # CAP auto-tune may not raise above (live n=2: auto_tune_slots undid
+        # the user's 25->10 within 27 minutes, twice in one day). NULL =
+        # never user-resized = old behaviour. MySQL mirror: alembic 0051.
+        "ALTER TABLE fleets ADD COLUMN user_size_cap INTEGER",
         "ALTER TABLE users ADD COLUMN ai_automation_state TEXT NOT NULL DEFAULT 'active'",
         "ALTER TABLE users ADD COLUMN ai_automation_held_at TEXT",
         "ALTER TABLE automation_configs ADD COLUMN held_by_master INTEGER NOT NULL DEFAULT 0",

@@ -435,7 +435,7 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
             raise HTTPException(status_code=409,
                                 detail="fleet already stopped")
         try:
-            fleet_planner.set_fleet_size(fleet_id, data.n_runs)
+            fleet_planner.set_fleet_size(fleet_id, data.n_runs, user_set=True)
         except trading_runs.EntitlementDenied as exc:
             raise HTTPException(status_code=403, detail=str(exc))
         except ValueError as exc:

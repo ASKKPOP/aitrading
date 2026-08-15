@@ -796,14 +796,22 @@ def recommended_max_slots(total_budget_usd: float) -> int:
     return max(n_lo, min(viable, n_hi))
 
 
-def set_fleet_size(fleet_id: int, n_runs: int) -> None:
+def set_fleet_size(fleet_id: int, n_runs: int, *,
+                   user_set: bool = False) -> None:
     """Change a live fleet's slot target (owner ask 2026-08-08).
 
     Raising re-checks the plan cap like create/start do; the supervisor's
     growth loop then fills toward the new target on its next pass. Lowering
     never needs the cap (a downgraded plan must still be able to shrink) and
     never touches a live position — excess slots drain as they empty
-    (fleet_supervisor._slot_pass)."""
+    (fleet_supervisor._slot_pass).
+
+    `user_set` marks a size the USER chose (the resize API), which pins
+    `user_size_cap`: auto-tune may still lower below it but never raise above
+    it, until the user resizes again. Owner decision 2026-08-15, after
+    auto_tune_slots undid the user's 25→10 on fleet 34 within 27 minutes —
+    the second override of an explicit user size in one day. Machine callers
+    (auto-tune itself) leave the pin untouched."""
     n = int(n_runs)
     n_lo, n_hi = FLEET_BOUNDS["n_runs"]
     if not (n_lo <= n <= n_hi):
@@ -812,7 +820,7 @@ def set_fleet_size(fleet_id: int, n_runs: int) -> None:
     if not fleet:
         raise ValueError("fleet not found")
     old = int(fleet["n_runs"])
-    if n == old:
+    if n == old and not user_set:
         return
     if n > old:
         from entitlements import check_fleet_create
@@ -827,12 +835,20 @@ def set_fleet_size(fleet_id: int, n_runs: int) -> None:
     try:
         cursor = conn.cursor()
         begin_write_transaction(cursor)
-        cursor.execute("UPDATE fleets SET n_runs = ? WHERE id = ?",
-                       (n, fleet_id))
+        if user_set:
+            cursor.execute(
+                "UPDATE fleets SET n_runs = ?, user_size_cap = ? WHERE id = ?",
+                (n, n, fleet_id))
+        else:
+            cursor.execute("UPDATE fleets SET n_runs = ? WHERE id = ?",
+                           (n, fleet_id))
         conn.commit()
     finally:
         conn.close()
-    emit_fleet_event(fleet_id, "size_changed", {"from": old, "to": n})
+    if n != old:
+        emit_fleet_event(fleet_id, "size_changed",
+                         {"from": old, "to": n,
+                          **({"user_set": True} if user_set else {})})
 
 
 def get_fleet(fleet_id: int, agent_id: Optional[int] = None) -> Optional[dict]:
