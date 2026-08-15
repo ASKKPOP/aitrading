@@ -32,7 +32,10 @@ Rails are the reason tier 2 is safe. Two invariants:
      Size and leverage clamp DOWN, the stop clamps TIGHTER, the horizon clamps
      SHORTER, adds clamp FEWER. The one field allowed to move outward is
      `target_pct`, because demanding more edge before banking is conservative.
-     A rail that can enlarge an order is not a rail.
+     A rail that can enlarge an order is not a rail. (One bounded exception:
+     `size_frac` floors UP to the run's executable minimum — the $10-margin
+     dust floor — because below it the order is not shrunk but destroyed;
+     the enlargement is capped at the smallest order the platform will fill.)
   2. R:R FLOOR: `target_pct >= RR_FLOOR * stop_pct`. Had this existed last
      week the 10:1 geometry could not have been expressed at all — it caps the
      breakeven hit rate at ~33% instead of 90.9%.
@@ -164,7 +167,9 @@ def _clamp(name: str, val: float, notes: list[str],
 
 
 def parse_order_block(raw: Any, *, leverage_cap: float = 10.0,
-                      fee_rate: Optional[float] = None) -> Optional[OrderParams]:
+                      fee_rate: Optional[float] = None,
+                      min_size_frac: Optional[float] = None
+                      ) -> Optional[OrderParams]:
     """Parse + rail the trader's `order` block.
 
     Returns None when there is nothing to apply — absent, not a dict, deferred,
@@ -184,7 +189,15 @@ def parse_order_block(raw: Any, *, leverage_cap: float = 10.0,
         if val is None:
             continue
         hi = leverage_cap if name == "leverage" else None
-        setattr(out, name, _clamp(name, val, notes, hi_override=hi))
+        # Executable-size floor: the prompt advertises 0.05 as the legal
+        # minimum, but on a small max_bet that lands under the $10 dust floor
+        # and the order is silently discarded (fleet 35 FIL, n=2). The caller
+        # passes the run's true minimum; the ask is floored up to it — never
+        # past the full bet — and journaled like every other clamp.
+        lo = min(min_size_frac, RAILS["size_frac"][1]) \
+            if name == "size_frac" and min_size_frac is not None else None
+        setattr(out, name, _clamp(name, val, notes,
+                                  lo_override=lo, hi_override=hi))
 
     adds = _num(raw.get("max_adds"))
     if adds is not None:

@@ -112,6 +112,34 @@ class MonotoneRailTests(unittest.TestCase):
         self.assertTrue(all("cut to cap" in n for n in p.notes))
 
 
+class ExecutableSizeFloorTests(unittest.TestCase):
+    """The prompt advertises size_frac 0.05 as legal, but a small max_bet puts
+    0.05 under the $10 dust floor — the desk's order is then silently
+    discarded (fleet 35 FIL, 2x, n=2). The caller passes the run's true
+    executable minimum and the rail floors the ask up to it, journaled."""
+
+    def test_a_sub_floor_ask_is_raised_to_the_executable_minimum(self):
+        p = op.parse_order_block({"size_frac": 0.05}, min_size_frac=0.058)
+        self.assertEqual(p.size_frac, 0.058)
+        self.assertTrue(any("size_frac 0.05 raised to floor 0.058" in n
+                            for n in p.notes), p.notes)
+
+    def test_an_ask_above_the_minimum_is_untouched(self):
+        p = op.parse_order_block({"size_frac": 0.2}, min_size_frac=0.058)
+        self.assertEqual(p.size_frac, 0.2)
+        self.assertEqual(p.notes, [])
+
+    def test_the_floor_never_exceeds_the_full_bet(self):
+        """A max_bet under $10 would imply min_size_frac > 1; the rail must
+        clamp to the full bet, not above the 1.0 cap."""
+        p = op.parse_order_block({"size_frac": 0.05}, min_size_frac=2.5)
+        self.assertEqual(p.size_frac, 1.0)
+
+    def test_no_minimum_keeps_the_static_floor(self):
+        p = op.parse_order_block({"size_frac": 0.01})
+        self.assertEqual(p.size_frac, 0.05)
+
+
 class RRFloorTests(unittest.TestCase):
     """The single most valuable rail: it makes last week's dominant defect
     structurally impossible."""
