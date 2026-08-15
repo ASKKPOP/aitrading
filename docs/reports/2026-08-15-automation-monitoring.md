@@ -36,6 +36,13 @@ decomposes −$0.011 structural + −$0.035 one 61s poll gap.
   served in recall BOTH management cycles; deferred to the dead arm at
   the peak (+$0.074 was available). Read-and-overridden again.
 
+**#449 DEPLOYED — 23:3xZ addendum.** PR MERGED (`4cc693f`), image
+`sooppiy-backend:20260815-ratchet-fee-floor` live; functional
+in-container proof: the floor fires at total ≤ exit fee and stands
+above it. 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-run-expiry`. Day ship count:
+#439–#449 (11 PRs).
+
 **Actions:**
 1. SHIP NOW (B): ratchet floor `total ≤ 0` → `total ≤ est. exit fee`
    (every fire becomes ≥$0-net-capable) + a `mechanism` payload
