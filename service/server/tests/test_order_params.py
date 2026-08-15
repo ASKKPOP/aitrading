@@ -295,3 +295,52 @@ class OutcomeClassificationTests(unittest.TestCase):
 
     def test_defer_wins_over_other_fields(self):
         self.assertEqual(op.outcome({"defer": True, "size_frac": 0.5}), "defer")
+
+
+class UnitSlipTests(unittest.TestCase):
+    """JTO 2026-08-15: the desk authored stop 0.05 / target 0.09 /
+    trail_arm 0.06 — a coherent 5%/9%/6% bracket expressed as FRACTIONS
+    (its own narrative said "~4.5% gain -> reduce half"; the same desk
+    wrote correct percents on SUI 50 min earlier). Three independent
+    floors silently rebuilt it 100x tighter (0.3/0.6/0.3) and the desk
+    traded a noise bracket it never designed. When EVERY authored pct
+    field is simultaneously below its floor, the block is a unit slip:
+    reinterpret as fractions x100, journaled."""
+
+    def test_an_all_sub_floor_bracket_is_reinterpreted_as_fractions(self):
+        p = op.parse_order_block({"stop_pct": 0.05, "target_pct": 0.09,
+                                  "trail_arm_pct": 0.06})
+        self.assertEqual(p.stop_pct, 5.0)
+        self.assertEqual(p.target_pct, 10.0)   # 9 raised to R:R floor 2x5
+        self.assertEqual(p.trail_arm_pct, 6.0)
+        self.assertTrue(any("unit slip" in n for n in p.notes), p.notes)
+
+    def test_the_historical_garbage_values_convert_to_sane_percents(self):
+        # SOL 0.016 -> 1.6%, BTC 0.007 -> 0.7% (both floored to 0.3 today).
+        p = op.parse_order_block({"stop_pct": 0.016, "target_pct": 0.04})
+        self.assertEqual(p.stop_pct, 1.6)
+        self.assertEqual(p.target_pct, 4.0)
+
+    def test_a_mixed_bracket_is_not_reinterpreted(self):
+        # target above its floor -> the block is percent-denominated and
+        # the tight stop is deliberate; floor it as today, no x100.
+        p = op.parse_order_block({"stop_pct": 0.05, "target_pct": 1.0})
+        self.assertEqual(p.stop_pct, 0.3)
+        self.assertFalse(any("unit slip" in n for n in p.notes))
+
+    def test_a_sane_bracket_is_untouched(self):
+        p = op.parse_order_block({"stop_pct": 1.97, "target_pct": 3.94})
+        self.assertEqual(p.stop_pct, 1.97)
+        self.assertEqual(p.target_pct, 3.94)
+        self.assertEqual(p.notes, [])
+
+    def test_a_lone_sub_floor_target_without_a_stop_is_not_reinterpreted(self):
+        # No stop authored: nothing anchors the units; floor as today.
+        p = op.parse_order_block({"target_pct": 0.09})
+        self.assertFalse(any("unit slip" in n for n in p.notes))
+
+    def test_a_converted_bracket_is_still_railed_after_conversion(self):
+        # 0.09 stop -> 9% exceeds the 8% cap: convert THEN clamp.
+        p = op.parse_order_block({"stop_pct": 0.09, "target_pct": 0.2})
+        self.assertEqual(p.stop_pct, 8.0)
+        self.assertTrue(any("cut to cap" in n for n in p.notes))

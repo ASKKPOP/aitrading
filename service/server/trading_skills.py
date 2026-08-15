@@ -300,6 +300,22 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "add. When a position has meaningfully paid, protect the "
                 "gain: prefer reducing, or arming an exit level, over "
                 "waiting another cycle.")},
+            {"applies_when": ["holding", "winning"], "evidence": (
+                "citing a 'nearby stop' that was 2.16% away"), "text": (
+                "TRUTHFUL EXIT. Before full-closing a winner below 30% of "
+                "your declared target path: (1) state your ACTUAL stop "
+                "distance as a number read from your bracket — the "
+                "measured case (SUI 2026-08-15) closed a short at +0.19% "
+                "citing a 'nearby stop' that was 2.16% away, reasoning "
+                "against an invented mid-life stop that does not exist "
+                "(stops are write-once); a 'nearby' claim more than 1% "
+                "away voids the rationale. (2) Either follow the entry "
+                "plan's own banking level (reduce, not full close) or "
+                "name the NEW invalidation that replaced it. Banking "
+                "under 13% of path against ~2% stops needs a 91-95% win "
+                "rate — no desk sustains that; winners capped below "
+                "losers make the book unprofitable regardless of entry "
+                "edge.")},
             {"applies_when": ["holding", "losing"], "text": (
                 "Never add to a losing position — an add is a fresh claim "
                 "that the thesis is working, and a drawdown is evidence "

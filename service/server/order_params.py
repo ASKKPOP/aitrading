@@ -183,6 +183,29 @@ def parse_order_block(raw: Any, *, leverage_cap: float = 10.0,
     notes: list[str] = []
     out = OrderParams(why=str(raw.get("why") or raw.get("rationale") or ""))
 
+    # Unit-slip reinterpretation (JTO 2026-08-15): the desk sometimes emits
+    # the percent fields as FRACTIONS (stop 0.05 / target 0.09 / arm 0.06
+    # meaning 5%/9%/6% — its own narrative said "~4.5% gain -> reduce half").
+    # Clamping each field to its floor independently rebuilt that bracket
+    # 100x tighter than authored and the desk traded a noise bracket it
+    # never designed. A deliberate ultra-tight bracket never has EVERY pct
+    # field sub-floor at once, so that pattern is diagnostic: reinterpret
+    # x100, journal it, then rail normally. Anchored on the stop — without
+    # an authored stop nothing pins the units.
+    raw = dict(raw)
+    _pct_fields = ("stop_pct", "target_pct", "trail_arm_pct")
+    _authored = {n: _num(raw.get(n)) for n in _pct_fields}
+    _present = {n: v for n, v in _authored.items() if v is not None}
+    if _present.get("stop_pct") is not None and \
+            all(0 < v < RAILS[n][0] for n, v in _present.items()):
+        for n, v in _present.items():
+            raw[n] = v * 100.0
+        notes.append(
+            "bracket interpreted as percent fractions (unit slip: every "
+            "authored pct field sub-floor — "
+            + ", ".join(f"{n} {v:g} -> {v * 100:g}"
+                        for n, v in _present.items()) + ")")
+
     for name in ("size_frac", "leverage", "stop_pct", "target_pct",
                  "trail_arm_pct", "trail_give", "horizon_hours"):
         val = _num(raw.get(name))
