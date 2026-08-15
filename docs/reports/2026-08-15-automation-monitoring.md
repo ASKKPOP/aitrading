@@ -8,6 +8,18 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 36 — 21:1xZ (anchor 21:10:39): quiet — JTO's replacement authored a SANE bracket
+
+JTO 1304 (replacing the unit-slip run) opened long 43.49 @ 0.5806 with
+a fully coherent bracket: stop 2.5 / target 5.5 / trail_arm 3.0 /
+12 h — "stop clears daily noise" now true. Converter correctly idle.
+Its 21:09 banking arm (price_above 0.586 → reduce 0.5) carries an
+empty why — **n=4**; and a half-reduce of the $25 book would escalate.
+Book: SUI +$0.04, JTO −$0.01. Cooldowns continuing (LTC/ETH), 0
+tracebacks, no closed trades.
+
+---
+
 ## Cycle 35 — 20:3xZ (anchor 20:39:25): quiet-ish — FIL retired by horizon on a flat book; cooldown grind
 
 - FIL 1286 retired `stop_event:at_time` (20:33:52) — the desk's own 1 h
