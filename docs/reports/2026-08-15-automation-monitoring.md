@@ -8,6 +8,95 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 4 — 02:45Z (anchored 02:45:54Z) — PR #432 SHIPPED TO PROD + verified
+
+**Tape silent: zero trades, zero closes** since cycle 3 → no two-agent dispatch.
+`pnl_audit` 08-15 **−$2.06**, verdict `ok`, resid 0.00, 0 flattens — matches the
+hand figure to the cent. Zero tracebacks in 20 min.
+
+**Book is still bleeding, slowly:** fleet 34 realized −$2.06, open −$0.405
+(BTC 1271 −0.352, ETH 1272 −0.053) → **≈ −$2.47 mark-to-market**, worse than
+cycle 3's −$1.93. ETH 1272 flipped from +$0.47 to **−$0.05** (mark 1883.5 vs
+entry 1883.6) — it has not yet paid for its own $0.4455 entry fee. No rail
+touched; the book is simply drifting against both positions.
+
+### SHIPPED — PR #432, prod image `20260815-desk-recall` (02:42:54Z)
+
+All 5 CI jobs green → squash-merged `1a9feb01` → deployed. Migrations 0050,
+both containers up, all six prod endpoints 200.
+
+**Verified in the deployed image against the live 4,307-chunk corpus** (4/4
+cells, zero monitoring):
+
+| cell | kinds read | sources |
+|---|---|---|
+| crypto/losing | `lesson` | exit-discipline#4, horizon-discipline#2 |
+| crypto/winning | `outcome` | run:1013:outcome, run:1017:outcome |
+| us-stock/losing | `lesson` | exit-discipline#4, horizon-discipline#2 |
+| forex/winning | `outcome` | run:1130:outcome, run:1178:outcome |
+
+**The enrichment is live and `forget_superseded` is proven.** Newest outcome
+body now reads: *"Run 1270 on BKNG (us-stock) **never opened a position**: 4
+cycles of looking, then **the user stopped the whole fleet — not the desk's own
+call**. Nothing was risked and nothing was learned about the entry — the thesis
+never became a trade."* And the outcome count held at **278, not 556** — the
+supersede replaced the stale bodies instead of duplicating them, exactly as the
+test asserted.
+
+Em-dash `�` in an earlier query result was **my shell client, not the data**:
+column is `utf8mb4`, stored bytes `E28094` = U+2014. No corruption.
+
+**Still pending — the live journal path.** `_recall_line` runs only when a run
+is HOLDING, and both holders (1271, 1272) last cycled *before* the deploy
+(02:17:02Z, 02:24:13Z). The two flat runs that have cycled since produce no
+recall by design. The in-image check above is the deployed code against the live
+corpus; the journalled `recall` event on a live holding cycle is the second
+confirmation and is still owed.
+
+### Corpus self-observation worth recording
+
+`monitoring` grew **636 → 641** in the last hour: these very cycle notes are
+being ingested into the corpus the desk used to read from. That is precisely
+why the retrieval source had to change — the loop was feeding its own
+engineering commentary back into the trading prompt.
+
+### 🔴 BTC 1271 — the cycle-3 prediction is tightening, not resolving
+
+| cycle | mark | stop | distance |
+|---|---|---|---|
+| 3 (02:27Z) | 63,094 | 63,163.5 | 0.110% |
+| **4 (02:45Z)** | **63,109** | 63,163.5 | **0.086%** |
+
+Thesis invalidation ~63,785; the cycle-5 request for `stop_pct 1.23` is still
+discarded. Prediction stands unrevised.
+
+### 🔴 deploy.sh bug found and NOT executed
+
+The deploy aborted at the marketing step (`astro: command not found`, the known
+worktree trap) — safely, before any marketing mutation, and `marketing/` +
+`service/frontend/` have **zero changes** since the last deployed image, so that
+step was a content no-op. But the skipped step 7 prune was dry-run and would
+have **deleted today's rollback backup**:
+
+```
+WOULD DELETE:  admin-site.prev-20260815-024237
+               /usr/share/nginx/sooppiy.prev-20260815-024237   ← newest
+```
+
+Cause: all three directory backups share an identical mtime
+(`2026-08-14 22:50:50`) because `cp -a` preserves the SOURCE tree's mtime and
+the built SPA has not changed since. `ls -dt` then has nothing to sort by and an
+arbitrary tiebreak puts the newest-by-name last, where `tail -n +3` deletes it.
+The script's comment *"Sort by mtime, never by name"* is right for `.env.bak-*`
+(real files, distinct mtimes) and **wrong for the `cp -a` directory surfaces**.
+
+**Net effect on every normal deploy: the SPA and admin-site rollback for the
+deploy that just ran is destroyed while two older ones are kept.** It did not
+fire this time only because the marketing build aborted the script first.
+Prune NOT run; backups left at 3 per surface, rollback path intact.
+
+---
+
 ## Cycle 3 — 02:27Z (anchored 02:27:49Z) — FIRST REAL LOSS, two-agent analysis
 
 **P&L FIRST: fleet 34 realized −$2.06** (1271 −0.074, 1272 −0.446, **1274 −1.544**),
