@@ -41,6 +41,15 @@ Retroactively: SOL 0.016 → 1.6%, BTC 0.007 → 0.7% — the historical
 advertised 0.05 — the desk rationally quotes a fictional minimum;
 per-run number in the prompt now evidenced.
 
+**#446 DEPLOYED — 19:4xZ addendum.** PR MERGED (`9fee7ee`), image
+`sooppiy-backend:20260815-unit-slip` live. Verified with a functional
+test IN the container: `parse_order_block({stop 0.05, target 0.09,
+trail_arm 0.06})` → **5.0 / 10.0 / 6.0** — the exact JTO bracket now
+restores to the desk's intended geometry; TRUTHFUL EXIT renders in the
+live trader skills block. 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-sweep-docs`. Day ship count:
+#439–#446 (8 PRs).
+
 **Actions (implement-every-time):**
 1. SHIP NOW — unit-slip reinterpretation: when ALL authored pct
    fields (stop/target/trail_arm) are sub-floor simultaneously,
