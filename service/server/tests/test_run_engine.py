@@ -2075,6 +2075,9 @@ class ReduceGeometryBriefTests(unittest.TestCase):
         self.assertIn("larger than", line)
         self.assertIn("FULL close", line)
         self.assertNotIn("ANY 'reduce'", line)
+        # $34.47 notional, $25 floor: the surviving bound is 1 - 25/34.47
+        # ≈ 27%, NOT the kept fraction 73% — the number must be the bound.
+        self.assertIn("27%", line)
 
     def test_a_large_book_says_nothing(self):
         # $100 notional: half leaves $50 ≥ $25 — geometry unremarkable.
