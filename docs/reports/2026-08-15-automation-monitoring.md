@@ -8,6 +8,36 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 20 — 12:1xZ (anchor 12:16:55): #440 PROVEN ON TAPE — fleet 35's first position exists because of the fix; #441 deployed
+
+**WORKED — the behavioural proof landed.** UNI 1293 cycle 8 (11:53:09Z),
+sell conf 0.62:
+
+- notes: **"size_frac 0.05 raised to floor 0.108131"** — the journaled
+  raise, floored to UNI's exact per-run minimum (10 / $92.48).
+- **Trade executed**: short 6.148 UNI @ 3.253 (`run:1293:cyc:8`), margin
+  6.148 × 3.253 / 2 = **$10.00 exactly** — the minimum executable order.
+  Fleet 35's FIRST position, ~3.3 h after birth; without #440 this order
+  dies like the previous three.
+- Position: qty −6.148, stop 3.3018 (+1.5%), target 3.1554 (−3%).
+- Rails also caught garbage: the desk authored **target_pct −6**
+  (negative) → floor 0.3 → R:R floor 3.0. Stop shape sane (1.5).
+
+**Phantom resolved without #441**: the 11:53 cycle re-derived a fresh
+short with no "existing position" reference — LLM non-determinism broke
+the chain one cycle after the 0.78 phantom hold. #441 makes that
+correction deterministic instead of lucky.
+
+**#441 DEPLOYED**: PR MERGED (`45447d1`), image
+`sooppiy-backend:20260815-last-cycle-word` on worker+backend, "did NOT
+execute" wired in-container, 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-size-frac-floor`.
+
+Watch: UNI stop at 3.3018 (~1.5% away) — first live exit will exercise
+the stop_router path (#439 armed; no cooldown active). uPNL −$0.04.
+
+---
+
 ## Cycle 19 — 11:4xZ (anchor 11:40:33): the desk is managing a PHANTOM position — fix in flight
 
 **FAILED:** UNI 1293 held at conf **0.78** (11:23:21Z) with the report
