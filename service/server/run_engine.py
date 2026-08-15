@@ -3375,6 +3375,53 @@ def _typical_daily_move_pct(run: dict) -> Optional[float]:
         return None
 
 
+def _reduce_geometry_line(run: dict, pos_qty: float) -> str:
+    """What a 'reduce' will actually do on THIS book, before it is issued.
+
+    Fleet 35 UNI (2026-08-15): the desk authored 'reduce half' on a $20
+    book; the dust-remainder rail escalated it to a full close because the
+    $10 remainder sat under the $25 floor. The desk had no way to know its
+    book was all-or-nothing — _exit_size_line was simultaneously telling it
+    'reduce keeps the thesis alive'. The rail is sound (a sub-floor
+    remainder is not worth desk cycles); the information gap is the defect.
+    Two shapes: below the floor every reduce is a full close; between the
+    floor and 2x the floor only reduces below 1 - floor/notional survive.
+    Held books only, fail-soft to ""."""
+    if not pos_qty:
+        return ""
+    try:
+        from order_intent import _dust_remainder_usd
+        floor = _dust_remainder_usd()
+        if floor <= 0:
+            return ""
+        pnl = compute_run_pnl(run) or {}
+        pos = pnl.get("position") or {}
+        mark = float(pos.get("current_price") or 0)
+        entry = float(pos.get("entry_price") or 0)
+        px = mark if mark > 0 else entry
+        if px <= 0:
+            return ""
+        notional = abs(pos_qty) * px
+        if notional < floor:
+            return (f"Reduce geometry: this book is ${notional:.2f} — below "
+                    f"the ${floor:.2f} partial-reduce minimum, so ANY "
+                    "'reduce' will be escalated to a FULL close (a remainder "
+                    "that small is not kept). Your real choices are hold or "
+                    "a deliberate full close; a half-measure does not exist "
+                    "on this book.\n")
+        if notional < 2 * floor:
+            keep_frac = floor / notional
+            max_reduce = 1.0 - keep_frac
+            return (f"Reduce geometry: this book is ${notional:.2f}; a "
+                    f"remainder under ${floor:.2f} is not kept, so a "
+                    f"'reduce' larger than {max_reduce:.0%} of the book "
+                    "becomes a FULL close. Size any partial exit under "
+                    "that, or choose the full close deliberately.\n")
+        return ""
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _exit_size_line(run: dict, pos_qty: float) -> str:
     """Scale the adverse move the desk is reacting to, and name the verb.
 
@@ -3704,6 +3751,7 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("hold_streak", _hold_streak_line(run, pos_qty)),
         ("brake_distance", _brake_distance_line(run, pos_qty)),
         ("entry_rail", _entry_rail_line(run, pos_qty)),
+        ("reduce_geometry", _reduce_geometry_line(run, pos_qty)),
         ("exit_size", _exit_size_line(run, pos_qty)),
         ("mark_freshness", _mark_freshness_line(run, pos_qty)),
         ("big_trader", _big_trader_line(run)),
