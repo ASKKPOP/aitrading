@@ -8,6 +8,10 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 27 — 16:2xZ (anchor 16:25:31): quiet — UNI out of loss cooldown, all flat
+
+---
+
 ## 24-HOUR SWEEP — 15:3x–16:0xZ (window 08-14 15:35Z → 08-15 15:35Z): adversarial re-proof of the day
 
 ### Ships re-proven in the RUNNING container (single cumulative image `20260815-one-invalidation`, 0 tracebacks)
