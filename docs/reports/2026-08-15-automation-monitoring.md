@@ -40,6 +40,14 @@ scale, which is exactly what #443's line now tells the desk.
 Per-market dust floor: stays BACKLOGGED (evidence insufficient — impact
 ±$0.03 and #443 unmeasured).
 
+**#444 DEPLOYED — 15:3xZ addendum.** PR MERGED (`391d7db`), image
+`sooppiy-backend:20260815-one-invalidation` on worker+backend, verified
+2×: skill text in-container AND all three new lessons render in the
+live `skills_block("trader", "crypto")` (one-invalidation, fee-drag,
+path-coherence — catalog auto-upgrade confirmed). 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260815-reduce-geometry`.
+Ship count today: #439 #440 #441 #442 #443 #444.
+
 **Actions:**
 1. SHIP NOW — skill (position-management): ONE THESIS, ONE INVALIDATION —
    stop/arm/prose must reference the same level; an arm inside the stop
