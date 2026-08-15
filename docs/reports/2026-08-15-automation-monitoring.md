@@ -8,6 +8,34 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## OWNER-ORDERED STOP-ALL — 08:5x–09:0xZ: every other user's fleet stopped
+
+Owner: *"and stop all other user fleet and slot."* Executed via the
+platform's own kill switch (`fleet_planner.request_stop_fleet(34, 60,
+flatten=True)`):
+
+- **Fleet 34** (forevery1969, agent 60): 9 flat members → `stopping` →
+  finished instantly (crypto open, nothing to flatten) → **fleet stopped**.
+- **Run 1271 BTC had stopped itself `positions_held` moments earlier**,
+  releasing its short to the unowned book and dodging the kill switch's
+  flatten. Completed the owner's 청산 semantics by closing the orphan via
+  `execute_paper_trade` (cover 0.00131005 @ 63,022.5, signal 1365,
+  `owner:stopall:orphan-1271`). **Agent 60: zero open positions.**
+- **Fleet 33** (henry.j, agent 59): already `stopping`; unchanged. Its
+  AUDCHF 1147 queued flatten (Sunday 21:00Z FX open) is now the ONLY live
+  position platform-wide among these users.
+
+**⚠️ Watch resolutions:**
+- **BTC 1271 stop-out prediction: ABORTED, not resolved** — position closed
+  by owner order before the stop could confirm or refute the mechanism.
+  The write-once-stop discard evidence (n=2 with P&L) and the cooldown-trap
+  evidence (1 fire + 3 armings) stand on their own; #439 ships regardless.
+- Cooldown-trap live exposure (1271 blind to 08:47Z): mooted by the close.
+- Platform state: **zero active fleets.** Next event: owner builds the new
+  $10k test fleet on info@askkpop.com.
+
+---
+
 ## OWNER-ORDERED RESET — 08:2x–08:4xZ: info@askkpop.com (user 5 / agent 6) wiped for a fresh test
 
 Owner: *"i need test again for info@askkpop.com so remove this part (can not
