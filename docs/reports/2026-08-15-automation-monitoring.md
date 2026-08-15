@@ -8,6 +8,52 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 34 — 20:0xZ: three closes (net −$0.03), cross-checked — direction-confused exit, fee-flip adapt poisoning
+
+**P&L first: ETH leg −$0.006 / FIL +$0.040 / LTC −$0.066 → −$0.03 this
+batch; fleet 35 day ≈ +$0.07 over 7 closed trades.** Desk exits alone
+this batch: −$0.046.
+
+**Agent A (desk), accepted:** LTC direction incoherence CONFIRMED — the
+desk closed a SHORT citing bearish confluence, downside warnings, and
+crowded longs (3.04:1): every cited factor was its own thesis working;
+the panel had proposed ADDING to the short the same cycle; it even
+cited its own 43.9 profit arm as a market factor. At A's mark the
+"feared downside" began materializing — without the position. FIL:
+"the short bias remains justified" → full close anyway at 6.25% of
+path (scratch-bank n=2 same symbol, honestly pre-skill: exit-discipline
+updated_at 19:58:37Z post-dates all three closes — timing corrected).
+ETH: paid a $0.011 fee to protect a $0.006 gain. FEAR IS BIDIRECTIONAL:
+the same +7 fear spike OPENED the SUI short at 19:44 and CLOSED the LTC
+short at 19:51 — ambient flags functioning as post-hoc justification.
+
+**Agent B (rails), accepted:** all rails per design; the three
+escalations cumulatively **+$0.0008 — noise on price**. THE REAL COST:
+run 1302's two adapt "losses" were both GROSS-POSITIVE fee-flipped
+scratches (−$0.0006, −$0.0059), the second RAIL-FORCED
+(dust_remainder_closed) — yet they halved size_mult (1.0→0.5), raised
+the conf gate +0.1, and blocked a cycle. Penalty ≈1000× the trigger.
+B verified scratch-as-loss is DOCUMENTED design ("churn IS the failure
+mode being disciplined") — the premise fails when the platform forces
+the churn. LTC's 43.9 arm correctly stood (low 44.043). #446 converter
+unexercised (SUI's sane 2.06/6.04 correctly untouched). SUI re-entry
+structurally improved (named invalidation, 2.93:1 — desk claimed 3:1,
+small overstatement flagged).
+
+**Actions:**
+1. SHIP NOW — direction-coherence exit lesson: before any close/reduce
+   state position sign, cited-risk direction, and that the risk is
+   AGAINST the position (LTC's every cited risk favored it).
+2. OWNER DECISION REQUIRED (top of recommendations backlog): the adapt
+   ladder punishes fee-flipped scratches as losses — narrow fix
+   (rail-escalated closes don't feed the loss ladder) or full scratch
+   band (|realized| ≤ leg fee → neutral). Both REVERSE documented
+   churn-discipline doctrine; per §7e this is flagged, not shipped.
+3. Watches: #446 first live conversion; SUI open short (−$0.03 uPNL,
+   inside its stop); ETH second cooldown expiry.
+
+---
+
 ## Cycle 33 — 19:1xZ: SUI +$0.020 (desk) and JTO +$0.024 (trailing lock) — cross-checked verdict; UNIT-SLIP reframe
 
 **P&L first: +$0.043 across the two closes; fleet 35 day now 4 closed
