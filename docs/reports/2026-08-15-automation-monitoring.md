@@ -8,6 +8,10 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 28 — 16:4xZ (anchor 16:40:34): quiet — one hold, flat
+
+---
+
 ## Cycle 27 — 16:2xZ (anchor 16:25:31): quiet — UNI out of loss cooldown, all flat
 
 ---
