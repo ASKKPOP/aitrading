@@ -40,6 +40,13 @@ unexercised (SUI's sane 2.06/6.04 correctly untouched). SUI re-entry
 structurally improved (named invalidation, 2.93:1 — desk claimed 3:1,
 small overstatement flagged).
 
+**#447 DEPLOYED — 20:3xZ addendum.** PR MERGED (`ff2265b`), image
+`sooppiy-backend:20260815-direction-coherence` live; DIRECTION
+COHERENCE renders in the live trader skills block (functional
+in-container check). 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-unit-slip`. Day ship count:
+#439–#447 (9 PRs).
+
 **Actions:**
 1. SHIP NOW — direction-coherence exit lesson: before any close/reduce
    state position sign, cited-risk direction, and that the risk is
