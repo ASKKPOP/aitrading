@@ -8,6 +8,10 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 22 — 13:1xZ (anchor 13:10:36): quiet — 9 holds, UNI short held (uPNL −$0.01)
+
+---
+
 ## Cycle 21 — 12:4xZ (anchor 12:42:11): quiet — UNI short held correctly; position-state briefs rendering
 
 9 holds; UNI (1293) held its short at 0.6 with the held-book brief set
