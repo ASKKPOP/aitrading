@@ -3029,3 +3029,40 @@ class CycleCadenceTests(unittest.TestCase):
         offs = [run_engine._phase_offset_min(r, 30) for r in range(980, 986)]
         self.assertEqual(len(set(offs)), 6, f"offsets collide: {offs}")
         self.assertTrue(all(0 <= o < 30 for o in offs))
+
+
+class RunExpiryBriefTests(unittest.TestCase):
+    """Fleet 35 SUI (2026-08-15): the desk authored a 24h/6% thesis on a
+    run whose build-time at_time killed it 1h57m later — no composer line
+    carried the TTL, so the desk structurally could not know. This line
+    hands the desk the run's hard end-of-life."""
+
+    def test_a_future_at_time_renders_the_remaining_life(self):
+        run = {"id": 1, "stop_conditions_json":
+               '{"at_time": "2030-01-01T00:00:00Z"}'}
+        line = run_engine._run_expiry_line(run)
+        self.assertIn("HARD-ENDS at 2030-01-01T00:00:00Z", line)
+        self.assertIn("remaining", line)
+        self.assertIn("fee donation", line)
+
+    def test_a_past_at_time_renders_nothing(self):
+        run = {"id": 1, "stop_conditions_json":
+               '{"at_time": "2020-01-01T00:00:00Z"}'}
+        self.assertEqual(run_engine._run_expiry_line(run), "")
+
+    def test_no_at_time_renders_nothing(self):
+        self.assertEqual(run_engine._run_expiry_line(
+            {"id": 1, "stop_conditions_json": "{}"}), "")
+        self.assertEqual(run_engine._run_expiry_line({"id": 1}), "")
+
+    def test_garbage_stop_conditions_render_nothing(self):
+        self.assertEqual(run_engine._run_expiry_line(
+            {"id": 1, "stop_conditions_json": "not json"}), "")
+        self.assertEqual(run_engine._run_expiry_line(
+            {"id": 1, "stop_conditions_json": '{"at_time": "garbage"}'}), "")
+
+    def test_it_is_WIRED_into_the_composed_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_run_expiry_line", src,
+                      "missing from the composed brief (both paths)")
