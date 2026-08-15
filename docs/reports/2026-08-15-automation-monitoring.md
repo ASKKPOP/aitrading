@@ -8,6 +8,766 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 20 — 12:1xZ (anchor 12:16:55): #440 PROVEN ON TAPE — fleet 35's first position exists because of the fix; #441 deployed
+
+**WORKED — the behavioural proof landed.** UNI 1293 cycle 8 (11:53:09Z),
+sell conf 0.62:
+
+- notes: **"size_frac 0.05 raised to floor 0.108131"** — the journaled
+  raise, floored to UNI's exact per-run minimum (10 / $92.48).
+- **Trade executed**: short 6.148 UNI @ 3.253 (`run:1293:cyc:8`), margin
+  6.148 × 3.253 / 2 = **$10.00 exactly** — the minimum executable order.
+  Fleet 35's FIRST position, ~3.3 h after birth; without #440 this order
+  dies like the previous three.
+- Position: qty −6.148, stop 3.3018 (+1.5%), target 3.1554 (−3%).
+- Rails also caught garbage: the desk authored **target_pct −6**
+  (negative) → floor 0.3 → R:R floor 3.0. Stop shape sane (1.5).
+
+**Phantom resolved without #441**: the 11:53 cycle re-derived a fresh
+short with no "existing position" reference — LLM non-determinism broke
+the chain one cycle after the 0.78 phantom hold. #441 makes that
+correction deterministic instead of lucky.
+
+**#441 DEPLOYED**: PR MERGED (`45447d1`), image
+`sooppiy-backend:20260815-last-cycle-word` on worker+backend, "did NOT
+execute" wired in-container, 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-size-frac-floor`.
+
+Watch: UNI stop at 3.3018 (~1.5% away) — first live exit will exercise
+the stop_router path (#439 armed; no cooldown active). uPNL −$0.04.
+
+---
+
+## Cycle 19 — 11:4xZ (anchor 11:40:33): the desk is managing a PHANTOM position — fix in flight
+
+**FAILED:** UNI 1293 held at conf **0.78** (11:23:21Z) with the report
+"Given our existing short position and limited rail headroom, we should
+hold and protect rather than add new exposure" — **it has no position.**
+Its 10:53Z sell was dust-skipped (pre-fix). Cause read from code, not
+guessed: `_position_state_line` renders NOTHING when flat, and
+`_last_cycle_word_line` quotes "action: sell" with no execution outcome
+— so after any discarded non-hold, the only position-relevant prompt
+line implies the order filled. The desk now believes itself short in a
+downtrend it wants to be short in: it neither holds real exposure nor
+will re-enter ("no new exposure"). Profit leak on both sides.
+
+#440 removed the dust discard, but Kelly / exposure / fee-edge /
+add-limit skips still discard non-holds routinely — the phantom hazard
+is general.
+
+**Fix (branch `fix/last-cycle-word-outcome`):** the quote now carries
+the outcome — when the quoted non-hold's cycle has a matching
+gate_skip, the line appends "That sell did NOT execute — the platform
+discarded it (<reason>). Your book is unchanged…". Holds exempt by
+construction (every hold emits its own gate_skip); an old cycle's skip
+cannot taint a newer executed order. Fail-before red→green (4 new
+tests), 3/3 mutants killed, ruff clean; full suite running → PR → CI →
+deploy. Otherwise: 10 holds, flat, 0 tracebacks.
+
+---
+
+## Cycle 18 — 11:1xZ (anchor 11:10:35): quiet — 5 holds, flat; first post-fix sell still awaited
+
+---
+
+## Cycle 17 — 10:5xZ (anchor 10:56:39): dust defect fired a THIRD time — 81 s before the fix went live
+
+UNI 1293 cycle 6 (10:53:03Z): sell conf 0.68, authored size_frac **0.1**
+(double the advertised minimum) — still destroyed: margin $9.25 < $10,
+because UNI's $92.48 max_bet puts the executable floor at 0.108. Worker
+restarted onto `size-frac-floor` at **10:54:24Z** — the decision ran on
+the old image by 81 seconds, so this is pre-fix evidence n=3 (second
+symbol), NOT a fix failure. It also validates the design: a static bump
+of the 0.05 minimum would not have saved this order; only the per-run
+floor does. Post-fix behavioural proof still pending — next sub-floor
+sell must fill at $10 with the raise note. Otherwise: 14 decisions
+(13 hold), book flat, 0 tracebacks, fleet 33 `stopping`.
+
+---
+
+## Cycle 16 — 10:1xZ (anchor 10:10:35): REPRODUCED — the schema's advertised minimum size is below the executable floor; fix in flight
+
+**FAILED (n=2, deterministic):** FIL run 1286 cycle 4 (10:04:11Z) authored
+its second sell (conf 0.58, conviction 0.60, stop 1.97 / target 4.44 —
+sane shape again) and the identical dust skip destroyed it: **margin
+$8.62 < $10 floor**, same figure as cycle 1 despite a different
+size_scale. Cause traced in code, not guessed:
+
+- `size_usd = max_bet_usd × size_frac` (size_scale never enters — the
+  cycle-13 formula was wrong; corrected here).
+- The desk's prompt schema advertises **`size_frac: 0.05-1.0`** as legal.
+- Fleet 35's true executable minimum (`$10 dust floor / max_bet`):
+  FIL 0.058, KAITO 0.067, UNI 0.108, **BNB 0.120** — on EVERY fleet-35
+  run the advertised minimum is below the executable floor. The desk
+  picked the advertised minimum for a cautious starter, twice; the
+  platform silently destroyed both. Contract violation between prompt
+  and rail — the fleet cannot open a cautious position at all.
+
+**Fix (shipped this cycle, branch `fix/size-frac-dust-floor`):** one
+definition `_dust_floor_usd` now serves the final dust guard AND a new
+order-params rail — the engine passes the run's true minimum and a
+sub-floor ask is floored UP to it (capped at the full bet), journaled
+`"size_frac 0.05 raised to floor 0.058"` in the rails' own idiom; the
+schema line states the raise. Documented as the one bounded monotone
+exception: below the floor an order is not shrunk but destroyed, and the
+enlargement is capped at the $10-margin minimum order. Fail-before tests
+red→green (4 new), 4/4 mutants killed, ruff clean; full suite running,
+then PR → CI → deploy.
+
+**#440 DEPLOYED — 10:5xZ addendum.** PR MERGED (merge commit `612c96a`),
+image `sooppiy-backend:20260815-size-frac-floor` from that exact sha on
+both worker and backend. In-container: `min_size_frac` in
+order_params.py (3) + run_engine.py call site (1), `_dust_floor_usd` (1),
+schema line updated. 0 tracebacks; FleetPlanner ticking. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-stop-outranks-cooldown`.
+Behavioural proof pending: the desk's next sub-floor entry must fill at
+the $10 minimum with a `size_frac … raised to floor` note — armed on the
+fleet-35 watch.
+
+**Also this cycle:** BNB 1294 logged one `conf 0.0` hold — "light cycle:
+no LLM verdict" fail-safe (LLM returned nothing); safe when flat, noted
+only. Cycle 5 otherwise all-hold, book flat, 0 tracebacks.
+
+---
+
+## Cycle 15 — 09:4xZ (anchor 09:40:35): quiet — cycle 3 all-hold, still flat
+
+10/10 holds (conf 0.38–0.63), `last_cycle_word` on every brief, 0
+positions, 0 tracebacks. Three full desk cycles now without a single
+entry on an *aggressive/short* fleet — the only attempt (FIL, cycle 1)
+died on the $10 dust floor. Not yet a defect (light route, ambient-only
+Saturday tape) but the entry-stall count starts here. Fleet 33 `stopping`.
+
+---
+
+## Cycle 14 — 09:1xZ (anchor 09:10:33): quiet — 12 holds, flat book
+
+Fleet 35 desk cycle 2 complete on all 10 runs: **every decision hold**
+(conf 0.45–0.67), 0 positions, 0 trades, 0 tracebacks. Dust-skip did NOT
+reproduce (FIL desk chose hold at 0.50 rather than retry the sell; n
+stays 1). **#438 brief arrays now show `last_cycle_word`** on
+second-cycle decisions — the predecessor/continuity line rendering
+exactly when it should. Fleet 33 `stopping` (AUDCHF Sunday flatten
+pending). #439 deployed mid-window (see cycle-13 addendum).
+
+---
+
+## Cycle 13 — 08:5x–09:0xZ: fleet 35 fully built in 2½ min; first entry attempt dies on the dust floor
+
+**Fleet 35 build (08:32–08:35Z): every gate fired, cleanly.** 10/10 slots
+`active` from the 24-crypto universe (#436): FIL, AVAX, WLD, HYPE, SOL,
+LINK, TRUMP, UNI + replacements BNB, KAITO. Gates on tape:
+
+- **Expectancy gate**: AAVE dropped 3× ("non-positive expectancy −367.51
+  USD/trade over 5 closed trades") — the deleted-account history still
+  informs the corpus gate. Correct.
+- **Bracket-feasibility gate**: KAITO first skipped
+  (`bracket_infeasible: sigma_daily_pct=9.501 min_stop_usd=1.90 >
+  loss_rail_usd=1.75` at a $561 slot), then admitted in a replacement
+  round at a **$1,000 slot** — the gate did exactly what it exists for:
+  refuse the impossible config, accept the feasible one.
+- Vol-parity allocations $561–$1,719 summing to exactly $10,000.
+
+**First desk cycles (3 decisions, 0 positions):**
+
+| run | sym | action | conf | outcome |
+|---|---|---|---|---|
+| 1289 | HYPE | hold | 0.48 | gate_skip (hold) |
+| 1286 | FIL | **sell** | 0.58 | **dust order skip: margin $8.62 < $10 floor** |
+| 1287 | AVAX | hold | 0.38 | gate_skip (hold) |
+
+- **#438 brief arrays LIVE on all 3**: `["entry_rail", "ordinary_day"]` —
+  correct for a flat cycle-1 book.
+- **#432 recall visibly serving**: FIL's report quotes "echoing desk
+  memory that high fear can nullify bullish bias" — an ingested
+  lesson/outcome chunk reaching the prompt, on the very first cycle.
+- **stop_pct shape: SANE.** FIL short authored stop 2.46 / target 3.82
+  → rails raised target to R:R floor 4.92 and trail_arm to 2.46, both
+  journaled in `notes`. No 0.016-style garbage.
+
+**⚠️ New watch — cautious entries can't clear the $10 margin floor.**
+FIL: size_frac 0.05 × size_scale 0.30 (conviction 0.5575) × $1,160 alloc
+÷ 2× leverage = **$8.62 margin → skipped**. The desk decided to enter;
+the platform silently discarded it. One data point — if fleet 35's
+starter entries keep dying here, that is an entry-stall defect
+(conviction scaling × small size_frac interacts with the floor). Monitor,
+don't fix yet.
+
+Health: 0 tracebacks; one Hyperliquid read-timeout on AVAX (transient);
+#439 merge chain still gating on CI (head 20d1fd78). Equity ticks ×48.
+
+**#439 DEPLOYED — 09:5xZ addendum.** PR MERGED (merge commit `88555c6`),
+image `sooppiy-backend:20260815-stop-outranks-cooldown` built **from that
+exact sha** and running on both worker and backend. Verified in-container:
+`_cooldown_blocks`/`begin_ruling` present in run_engine.py (4 hits) and
+`begin_ruling`/`deciding_since` in stop_router.py (6 hits). 0 tracebacks
+post-restart; FleetPlanner ticking (claimed 2, supervised 2). Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-brief-journal`. The full overnight
+stack #432–#439 is now live on prod. Remaining #439 verification is
+behavioural: the first real cooldown-era stop hit must show "loss cooldown
+BYPASSED" + a desk ruling — armed on the fleet-35 watch.
+
+---
+
+## TARGET SET — 09:1xZ: monitoring follows info@askkpop.com; FLEET 35 born
+
+Owner: *"monitoring target user is info@askkpop.com (keep going this user)."*
+**Fleet 35** created 08:32:14Z on the freshly-reset account: 10 slots,
+$10,000, aggressive, archetype `short`, market_scope NULL, status `building`.
+Loop re-armed (cron `b0ea7f21`, 30-min) centred on fleet 35 with the full
+watch list: #436 universe build quality, #438 brief arrays, #432 recall
+kinds, R15/R16 first exercises, #437 size-pin first live stamp if the user
+resizes, #439 deploy + BYPASSED verification, and the desk's stop_pct
+authoring shape (garbage 0.016/0.007 vs sane 1.9 — which does fleet 35
+produce?). AUDCHF 1147 Sunday flatten remains the only other live position.
+
+---
+
+## OWNER-ORDERED STOP-ALL — 08:5x–09:0xZ: every other user's fleet stopped
+
+Owner: *"and stop all other user fleet and slot."* Executed via the
+platform's own kill switch (`fleet_planner.request_stop_fleet(34, 60,
+flatten=True)`):
+
+- **Fleet 34** (forevery1969, agent 60): 9 flat members → `stopping` →
+  finished instantly (crypto open, nothing to flatten) → **fleet stopped**.
+- **Run 1271 BTC had stopped itself `positions_held` moments earlier**,
+  releasing its short to the unowned book and dodging the kill switch's
+  flatten. Completed the owner's 청산 semantics by closing the orphan via
+  `execute_paper_trade` (cover 0.00131005 @ 63,022.5, signal 1365,
+  `owner:stopall:orphan-1271`). **Agent 60: zero open positions.**
+- **Fleet 33** (henry.j, agent 59): already `stopping`; unchanged. Its
+  AUDCHF 1147 queued flatten (Sunday 21:00Z FX open) is now the ONLY live
+  position platform-wide among these users.
+
+**⚠️ Watch resolutions:**
+- **BTC 1271 stop-out prediction: ABORTED, not resolved** — position closed
+  by owner order before the stop could confirm or refute the mechanism.
+  The write-once-stop discard evidence (n=2 with P&L) and the cooldown-trap
+  evidence (1 fire + 3 armings) stand on their own; #439 ships regardless.
+- Cooldown-trap live exposure (1271 blind to 08:47Z): mooted by the close.
+- Platform state: **zero active fleets.** Next event: owner builds the new
+  $10k test fleet on info@askkpop.com.
+
+---
+
+## OWNER-ORDERED RESET — 08:2x–08:4xZ: info@askkpop.com (user 5 / agent 6) wiped for a fresh test
+
+Owner: *"i need test again for info@askkpop.com so remove this part (can not
+delete)"* → *"delete all slot and fleet"* → *"and balance make 10000"* →
+*"and clear this part week, month year"*. Executed step by step, platform
+paths first, single transactions, verified after each:
+
+1. **Queued flattens executed early** via the platform's own
+   `_flatten_run` → `_simple_transition` (the exact code Monday's open
+   would run, minus the market gate — owner order accepts Friday-close
+   marks on the test account): MSFT 1113 +0.331, JPM 1116 −1.604,
+   IBM 1119 −0.863 lifetime. `pnl_audit` verdict `ok`, 3 flattens, before
+   the history deletion below.
+2. **Fleet 31 finished stopping on its own** within seconds (all runs
+   terminal → supervisor stopped it, released `active_fleet_key='user:5'` —
+   the unique key that was blocking any new fleet for this account; that
+   WAS the "cannot delete/test again" blocker).
+3. **Full graph deletion, fleets 28/29/31** (fleet-30 precedent, one
+   transaction): 154 runs, 97,004 run_events, 14,173 fleet_events, 576
+   signals, 155 candidates, 43 slots, 67 symbol cooldowns, 3 fleets, all 3
+   leftover agent-6 positions (CRM + USDKRW ×2 orphans). Zero orphans
+   verified.
+4. **Balance reset**: agents.cash = starting_capital = **10,000**.
+5. **History widgets cleared** (week/month/year sources): profit_history
+   903, agent_metric_snapshots 874, signal_quality_scores 576,
+   signal_predictions 576, +2 cooldowns. Runs/signals/positions all 0.
+
+**Kept, deliberately**: `desk_memory` chunks (owner order "all cycle result
+keep in RAG" — the corpus keeps the lessons; bodies are self-contained
+text), users/agents identity rows, risk_limits, automation_configs.
+
+**⚠️ CONSEQUENCES FOR FUTURE CYCLES (do not misread):**
+- `pnl_audit --since 2026-08-12..15` now EXCLUDES agent 6's deleted ledger —
+  historical day sums have changed. The 24h sweep must NOT read that as
+  drift. The markdown record above retains the true pre-deletion figures.
+- Watch item CLOSED: MSFT/JPM/IBM Monday-open flattens (executed early by
+  owner order). **AUDCHF 1147 (fleet 33, agent 59) still stands** for
+  Sunday 21:00Z.
+- Swing-block trial (HANDOFF-n-slot §7 counter) for fleet 31: terminated by
+  owner reset; counter resets with whatever fleet is built next.
+- Next expected event: the owner builds a NEW fleet on info@askkpop.com
+  ($10k). First session after: run §2 checks, note the fleet id in the
+  handoff.
+
+---
+
+## Cycle 12 — 07:42Z (anchored 07:42:37Z) — BTC cuts half before its stop; THE COOLDOWN TRAP ARMS A THIRD TIME
+
+**P&L FIRST: day −$3.31** (`pnl_audit` `ok`). One desk trade: BTC 1271
+covered HALF its losing short @ 63076.9 (07:20:30Z), realized **−$0.171**
+(fee = 22–28% of the loss). SUI 1284 desk-retired $0. Both agents dispatched,
+cross-checked; they agree, and B verified the forward claim live.
+
+### The half-cover (Agent A, ledger-exact; live-mark rule followed)
+
+Ranks MIDDLE of three at the live mark: hold −0.237 < **actual −0.289** <
+full-cover −0.342. The desk's reasoning flipped on NARRATIVE, not price
+(+0.05% between cycles; thesis_alignment 0.8→0.5; cites a "60k–62k squeeze
+target" BELOW the current price — stale/garbled input; its own router graded
+the evidence "no specific trigger" while acting on it). It followed
+exit-discipline's FORM (reduce a slice, state why — not the 91%-of-loss
+full dump) while contradicting its substance (a 0.16% adverse move inside
+the 0.3% stop distance is the "expected cost of owning the trade").
+Executed unshaped — `railed: {}`, dust floor is $25 NOTIONAL and the $82.6
+remainder is 3.3× above it (B corrected A's margin framing).
+
+### 🔴 THE SOL TRAP, ARMED A THIRD TIME — verified live, not predicted
+
+adapt seq 534 at **07:47:26Z**: `losing_close` (−0.1712), size_mult 0.75,
+**cooldown_until 08:47:26Z**. Cycle 16 already gate-skipped. The desk is
+BLIND to its own remainder — short $82.6 notional, **0.169% from the
+63163.5 stop** — for an hour. Bounded: the SL/TP watcher runs on the
+control pass, so the stop executes regardless; what the cooldown removes is
+any better-than-stop pre-emption. Worst case ≈ −$0.29 + a cascading 2h
+cooldown (second losing_close).
+
+Arming tally: SOL 1274 (fired, desk exit −0.44 vs machine −0.88 = 2.00×
+worse) · ETH 1272 (armed, self-disarmed) · **BTC 1271 (armed, live now)**.
+The mechanism is deterministic (cooldown gate returns before
+`stop_router.clear`, 3600s vs 180s asymmetry). Owner rule
+`implement-every-time` binds: **the fix ships this session** — a routed
+stop hit outranks the loss cooldown (one block: check `stop_router.pending`
+before the `in_cooldown` return). This RESTORES the owner's 2026-08-13 rule
+(the AI is the main author of stop exits) rather than loosening a rail; the
+180s fail-safe stays for a silent desk.
+
+### Also on the tape
+
+- Prediction status: **halved, not resolved** — remainder keeps the same
+  stop/invalidation geometry; the dead-letter arm (63250 > stop 63163.5)
+  survives the cover, dead by geometry (`_evaluate_stop` runs before
+  `_fire_armed_order` in the same pass).
+- SUI 1284 retire: clean bracket-infeasibility in the desk's own words
+  ("stop at swing high ~2.6% exceeds target — no acceptable bracket").
+  Symbol cooldown stamped to 19:20:23Z. Tension flagged by B: the fresh
+  batch re-scored SUI short at 1.80 (2nd highest) — the 12h bench is the
+  anti-churn rail's cost if the thesis pays. Watch, by design.
+- ETH cooldown held (1 gate-skip, nothing slipped). Flattens parked clean
+  (B verified `is_market_open("forex")` = False — Saturday). Liq daemon
+  alive. 0 tracebacks. 10/25 running — under-deployment remains the
+  largest P&L lever (owner's call).
+
+---
+
+## Cycle 11 — 07:12Z (anchored 07:12:36Z) — FIL completes the day's only winner (+$0.355); replacement pool fully accounted
+
+**P&L FIRST: day improved to −$3.13** (`pnl_audit` `ok`, was −3.32). The delta
+is FIL 1283's final cover: 49.869 @ 0.6908 (06:43:54Z), net **+$0.184**, fee
+cleared ~13×. Run total **+$0.3547** — the fleet's only fully-realized winner
+today. Both agents dispatched (owner law); cross-checked.
+
+### FIL 1283 — the completed staged exit (Agent A, ledger-exact)
+
+Three covers on a short from 0.6948: 0.69302 → 0.69275 → 0.6908, each at a
+better price, per-tranche capture of its own favourable excursion
+**56% → 65% → 78%**. The desk kept **62% of its own high-water mark by its
+OWN decisions** — the first fully desk-authored staged-exit winner on tape.
+
+**The #432 loop visibly closed on a winner:** cycle 7's recall served two
+ENRICHED OUTCOME chunks (runs 1013/1017 — "the trailing lock closed it, not
+the desk's own call" give-back cases) and the desk then self-banked. Corpus
+fed the lesson; desk acted in line with it. `brief` array present
+(brake_distance, standing_arm rendered).
+
+**Nuance (both agents agree):** the desk asked `reduce 0.5`; the Plan 24
+`dust_remainder_closed` rail widened it to 1.0 (remainder ≈ $5.74 margin =
+dust). Direction desk-authored, full size platform-authored. At live marks
+the closed half would be +$0.05–0.115 better and the 60-min re-entry
+cooldown (to ~07:43Z) means the continuing move toward 0.66 is captured by
+nothing. One data point, immaterial USD — watch, not a change request.
+
+Post-close adapt `winning_close`: size_mult [1.0,1.0], no cooldown penalty —
+correct. Confidence quantization sighting #3 today: final 0.62 again.
+
+### Replacement pool — B's "fresh theses never reach it" RESOLVED by accounting
+
+Batch 496326's 16 crypto theses decompose exactly:
+**10–11 held** (run exclusivity) + **3 in fleet_symbol_cooldowns** (UNI ×2
+to 16:2x, HYPE 17:32, ZEC 17:46 — retire cooldowns DO stamp for desk/idle
+retires on this fleet, n=4 rows) + **AAVE/BCH expectancy-refused**
+(−367.51 and −255.02 USD/trade) = 16. **No defect: the pool is exhausted by
+holding + cooldown + refusal — the design.** Note the research screen also
+now marks ETH/SOL/HYPE/BNB `selectable=0` in the fresh batch — its own
+gates rejecting what just lost.
+
+The honest residual (B is right about the money): **~14 unfilled slots earn
+nothing on a crypto-only Saturday.** 25 slots >> viable crypto ideas.
+That is capital allocation for the owner, not a mechanism defect.
+
+### Other
+
+- BTC 1271: 0.18–0.21% from stop all window, watcher provably silent
+  (`stops_fired: 0` every tick), NOT in cooldown, dead-letter arm still
+  standing. Prediction open.
+- ETH 1272: exactly 1 gate-skip (cooldown) — nothing slipped through.
+- SUI 1284 desk_retired 07:19:35Z ($0, never traded) — post-window,
+  next cycle's tape.
+- Liq daemon ALIVE with proof: its 06:12Z T1 escalation WAS FIL pos 401,
+  resolved by the desk's own cover. Flattens parked clean. 0 tracebacks.
+- 10 running at 07:19Z.
+
+---
+
+## Cycle 10 — 06:42Z (anchored 06:42:44Z) — silent
+
+Zero trades, zero status changes, `pnl_audit` −$3.32 `ok` unchanged, zero
+tracebacks. BTC 1271 eased to 0.21% from its stop; FIL 1283 short +$0.20
+open; 11 running. All watches unchanged.
+
+---
+
+## Cycle 9 — 06:13Z (anchored 06:13:44Z) — ETH round trip closes at −$1.87; FIL banks a winner; two-agent cross-check
+
+**P&L FIRST: day −$3.32** (`pnl_audit` `ok`), delta −$0.98 from cycle 8,
+reconciled to the cent: ETH 1272 remainder sell **−1.213** + FIL 1283 covers
+**+0.146 / +0.087**. Two idle-retires (1273 HYPE, 1275 ZEC) at $0. 11 running.
+
+### ETH 1272 — the completed round trip, −$1.8708 (ledger-verified)
+
+| leg | price | net |
+|---|---|---|
+| entry buy 0.5256 @ 1883.60 (01:56, **panel-crash fallback**) | | −0.4455 fee |
+| trim 0.2628 @ 1883.64 (02:56, fee 21× gain) | +0.04 | −0.2122 |
+| final 0.2628 @ 1879.83 (05:56, floor-rule exit) | −3.77 | −1.2130 |
+| **total** | | **−1.8708** |
+
+**Verdict (both agents, cross-checked): the loss was authored at ENTRY, and
+48% of it was fees.** The buy existed only because the panel crashed on the
+one cycle it would have vetoed (it had downgraded the same buy 3 consecutive
+cycles). The same fleet's FIL desk read the identical tape (FGI 34 fear,
+negative macro) as SHORT — and profited. Fee decomposition: −0.98 price,
+−0.89 fees.
+
+- **The 02:56 fee-churn trim's real cost was structural, not the $0.21:**
+  its `losing_close` armed a 1h59m decision lockout (cycles 7–9 gate-skipped)
+  spanning the remainder's ENTIRE profitable window (peak +0.37), and burned
+  0.66 of floor headroom so the floor tripped on a −0.69% move.
+- **Cycle 10's stated belief "existing arm protect downside" was false** —
+  the 1865 arm sat behind the house floor and could never fire.
+- **The 05:56 exit itself is a WASH at the live mark** (ETH 1879.75 vs sold
+  1879.83, ~$0.20 inside fee noise). No post-entry choice ended positive.
+  Whether the lockout cost money is NOT DETERMINABLE — a cycle-7 sell at
+  +0.29 was available (+$1.28 better) but the desk's revealed behaviour at
+  flat readings was hold. The lockout provably removed the option, no more.
+- Post-close adapt (06:24:05Z): size_mult 0.75→**0.5**, conf_bump 0.1,
+  cooldown to 08:24:05Z — the feedback loop responding proportionately to 2
+  consecutive losing closes.
+
+### FIL 1283 — the healthy shape, +$0.171 realized, +$0.15 open
+
+Short 199.48 @ 0.6948 into fear + bearish technicals (stated, with >2:1 R:R
+plan). The panel **twice overrode a counter-trend "buy" proposal to hold**
+(04:43, 05:16) while the short ran to +0.63. Two staged partials cleared
+their fees **5.7× and 6.6×**. Blemish: cover 1 came after giving back ~47%
+from peak — banked on the retrace, not the extension. Cycle 6's decision
+carries the new `brief` array (brake_distance, standing_arm rendered) — #438
+telemetry live in real decisions.
+
+### Cross-check verdicts
+
+- **Agent B's "research pipeline dead" claim REJECTED.** It read
+  `researched: 0, built: 0` as a dead pipeline — the EXACT trap the
+  fleet-replenish-stall memory warns about (those counters only increment
+  for researching/building fleets, and cycle 5 already established this).
+  Verified live: fresh batches 05:16:07Z and 06:17:44Z, 105 rows / 16 crypto
+  each, `llm: 105`. The two-candidate replacement pool (AAVE −367.51/trade,
+  BCH −255.02/trade, both expectancy-dropped 6×) is holding + refusal —
+  the design, not starvation.
+- Both agents obeyed the live-mark counterfactual rule this cycle (first
+  time both have).
+- **Agent B's real find: BTC 1271's armed order is a dead letter.** Armed
+  05:18:11Z `price_above 63250 → reduce 0.5`, but the full-close stop sits
+  at 63163.5 — the stop always fires first; the desk's graduated exit intent
+  is silently void. $0 effect so far; same family as "the desk cannot see
+  the rail that retires it". Carried as a watch.
+- Idle-retires both CORRECT (12/12 cycles at sub-gate confidence, the
+  rail's exact target pattern).
+
+### Watches
+
+- BTC 1271: 0.15% from stop at anchor, still oscillating, prediction open;
+  NOT in cooldown (a stop hit would reach the desk).
+- ETH 1272 in cooldown to 08:24:05Z with a FLAT book — watch whether it
+  re-longs the same tape on expiry.
+- Queued flattens clean; liq daemon alive (FIL margin T1 improving); zero
+  tracebacks across both deploy restarts.
+
+---
+
+## Intercycle — 06:12Z: #437 + #438 SHIPPED; brief-line journal VERIFIED LIVE
+
+Two more fixes to prod since cycle 8:
+
+**#437 size pin (image `20260815-size-pin`, migration 0051):** a user resize
+now stamps `fleets.user_size_cap`; auto-tune may lower below it, never raise
+above it. From live n=2 (auto-tune undid the user's 25→10 within 27 min,
+twice in one day). Fleet 34's cap is NULL until the next user resize — left
+to the user by design. Verified: column on prod MySQL, pin code in image.
+
+**#438 brief-line journal (image `20260815-brief-journal`):** every decision
+event now carries `brief` — the NAMES of the brief lines that rendered.
+Solves the R16-class blindness (prompts not journaled → rendering not
+determinable from tape; memory: brief-line wiring is untested by default).
+`_compose_position_state` is byte-identical to the old inline chain (pinned
+by test); pop-never-read semantics like the recall journal.
+
+**VERIFIED LIVE at 06:12:14Z** — first clean post-deploy decision, run 1283
+FIL (holding short):
+
+```json
+"brief": ["position_state", "last_cycle_word", "brake_distance",
+          "ordinary_day", "standing_arm"]
+```
+
+Exactly the expected composition for a holding crypto run: no predecessor
+(fresh slot), no stop_hit, no earnings (crypto). The 06:10:26Z decision that
+straddled the container restart carried NULL — correctly absent, not wrong.
+
+Ship discipline note: the composer refactor stale-ified **16 pre-existing
+per-line wiring tests** across two rounds (14 caught by the first full suite,
+2 more raw-source greps by the second — they grep the FILE, not
+`inspect.getsource`, so the first sweep missed them). All repointed at the
+composer; unwire protection re-proven by mutation after repointing. Three
+full-suite passes; the last fully green at 4,269 + 1,337.
+
+**Session ship total: 7 PRs to prod** (#432 recall corpus, #433 deploy prune,
+#434 stop-hit brief, #435 cycle notes→RAG, #436 universe cap, #437 size pin,
+#438 brief journal).
+
+---
+
+## Cycle 8 — 05:02Z (anchored 05:02:38Z) — UNI retire-churn (1 rebuild, $0); psych_shock swept all 13 runs
+
+**No closed TRADES** since cycle 7 (two desk-retires realized 0.00 with zero
+trades — nothing to attribute) → no two-agent dispatch. `pnl_audit` 08-15
+**−$2.34** `ok` (delta = FIL entry fee). Zero tracebacks. 13 running.
+
+### UNI retire-churn — the known shape, but it stopped at ONE rebuild
+
+- 04:28:05Z run 1281 UNIUSDT `desk_retired` at cycle 2, never traded, $0.
+- 04:28:56Z replacement **1285, same symbol UNIUSDT** (the known same-symbol
+  instant-rebuild shape — cooldown binds only adapt-retires).
+- 04:30:08Z **1285 retired itself at cycle 1**: *"Short thesis aligns with
+  the downtrend but lacks a realistic stop/target within risk limits, so
+  retiring the slot."* conviction 0.64, thesis_alignment 0.9.
+- After the second retire the replacement gate now keeps **[]** — UNI no
+  longer offered (04:44, 04:59, 05:01 passes) — so the chain STOPPED at one
+  wasted build, against the 4-long WMT/UBER/SBUX chains of 08-14. Cost: $0
+  (no trades, no fees).
+
+**R16 (predecessor line) — first live scenario, verdict LIMITED:**
+`_predecessor_run_line` is wired into both prompt paths (run_engine 4611,
+5185), but prompts are not journaled, so whether it rendered for 1285 c1 is
+**not determinable from the tape** (0 payload mentions of "predecessor" —
+which proves nothing either way). The behavioural evidence is consistent with
+it working: the replacement declined to re-litigate in ONE cycle, citing
+bracket infeasibility. **R15 note:** no `bracket_infeasible` event fired —
+the DESK judged the bracket infeasible and retired before any platform gate
+saw it. Both watches stay technically unexercised.
+
+### psych_shock swept ALL 13 runs (~04:49Z)
+
+Every run got a `hot_issue {"triggers": ["psych_shock"]}` — a market-wide
+F&G/psych spike event, two with extras (1276 `manipulation:crowded_funding`,
+1279 `price_move:+6.9%` on LINK). **Zero trades resulted** — 25 decisions in
+the window, all hold/retire. The book stayed still through a shock event;
+whether that is discipline or missed opportunity is not judgeable without the
+counterfactual.
+
+### Watches
+
+- **BTC 1271: 0.083% from stop again** (63,111 vs 63,163.5). It has now
+  oscillated 0.053% → 0.19% → 0.083% without firing. Prediction open.
+- ETH 1272 recovered to −$0.03; cooldown expired 04:24Z without the trap
+  firing (disarmed as predicted).
+- FIL 1283 short −$0.004, stop 1.90% away, desk-authored bracket clean.
+- Fleet 34: 13/25 filled; replacement passes find kept=[] — every selectable
+  crypto candidate is held or expectancy-dropped (AAVE −367.51/trade, BCH).
+  **The wider universe is being consumed by REFUSAL, which is the design.**
+- #437 (size pin) deployed 04:5xZ as image `20260815-size-pin`, migration
+  0051, fleet 34 cap NULL until the next user resize.
+
+---
+
+## Cycle 7 — 04:12Z (anchored 04:12:35Z) — #436 VERIFIED END-TO-END: 16 crypto theses, 9 new runs, gates exercised
+
+**Tape: one OPEN trade, zero closes** → no two-agent dispatch. FIL 1283
+shorted 199.48 @ 0.6948 (fee 0.0624) at 04:06:14Z — cycle-1 entry, desk stop
+**1.9%** (`stop_pct 1.9, target 4.1, trail_arm 3.0` — NOT floored; the 0.3%
+floor never bound, unlike the SOL/BTC entries). uPNL −0.01.
+
+### ✅ #436 end-to-end verification — all three predictions landed
+
+1. **The 13-batch streak of ~5 crypto theses broke.** First post-deploy batch
+   (`research:496323`, 03:55:27Z): **16 crypto theses, 14 selectable** (vs 6/3
+   the batch before). Total batch 105 rows.
+2. **Fleet 34 built 9 new runs in ~2 minutes** (03:56:13–56:19Z): KAITO, WLD,
+   AVAX, LINK, BNB, UNI, TRUMP, FIL, SUI — 1276–1284. Now **14 running**.
+3. **The gates exercised REAL selection pressure** — the profit argument in
+   action: `backtest_gate` **dropped AAVEUSDT ("non-positive expectancy
+   −367.51 USD/trade over 5 closed trades") and BCHUSDT (non-positive
+   expectancy)** from every replacement pass. A ranker with 14 candidates
+   refused the negative-expectancy tail; three weeks ago it accepted
+   HYPEUSDT at 0.30 because there was nothing else.
+
+**LINKUSDT** — yesterday's highest-scored-but-unselectable thesis — is now
+running (1279). Book exposure of the 9 newcomers so far: one FIL short; the
+other 8 are in first-cycle analysis. Watch, don't celebrate: 14 running
+negative-expectancy-*class* crypto runs is 14 chances to lose; the v1 crypto
+cohort averages −$1.50/closed run. The measure of #436 is whether SELECTION
+(dropping AAVE/BCH class candidates) improves the per-run mean, and that is a
+Phase-D-style judgement over closed runs, not tonight's open book.
+
+### 🔴 Auto-tune overrode the user's size AGAIN — n=2, owner decision needed
+
+03:21:42Z: user resized 25 → **10** (resize API). **03:49:14Z: auto_tune_slots
+raised it straight back 10 → 25** — 27 minutes later. This is the second
+override of an explicit user sizing choice on this fleet in one day (first:
+00:36:27Z, 10 → 25). `fleet_auto_tune.recommended_max_slots(budget)` knows the
+budget but not the user's intent; nothing marks a user-chosen size as sticky.
+The 9 new runs exist in slots the user had just deleted.
+**Escalated to the owner: should a user resize pin the fleet size against
+auto-tune?** (One-line fix candidate: honour the resize API's size as a cap
+until the user changes it.)
+
+### Watch items
+
+- **R16 predecessor line: NOT exercised** — 0 events. Correct-by-design so
+  far: none of the 9 new runs replaced a retired predecessor on the same
+  symbol (all fresh slots). Still unexercised, not failed.
+- **R15 bracket_infeasible: 0 events** — nothing infeasible in the new
+  builds (FIL's 1.9%/4.1% bracket parsed clean). Still unexercised.
+- ETH 1272 cooldown expires 04:24:24Z; stop 0.92% away — trap disarms itself
+  if ETH stays up.
+- BTC 1271: 0.174% from stop. Prediction open.
+- `pnl_audit` unchanged −$2.28 `ok` (FIL entry fee lands next audit).
+
+---
+
+## Cycle 6 — 03:50Z (anchored 03:50:14Z) — 4-PR deploy verified; the cooldown trap is now armed on ETH
+
+**Tape: no trades since cycle 5** → no two-agent dispatch. `pnl_audit` 08-15
+**−$2.28**, `ok`, resid −0.01. Zero tracebacks. BTC 1271 backed off to
+**0.188%** from its stop (was 0.053% at the closest) — prediction still open,
+unresolved either way.
+
+### SHIPPED — image `20260815-desk-universe` (03:48:43Z), PRs #433+#434+#435+#436
+
+All verified in the running image:
+
+1. **#436 universe cap 20→60:** `build_universe()` crypto **10 → 24**
+   (total 187 → 201). Live pool now includes LINK, WLD, UNI, AVAX, SUI, ADA,
+   BNB, KAITO, FIL, TRUMP, BCH, NEAR, AAVE. Zero extra network calls.
+2. **#433 prune — first live exercise, kept the RIGHT backups**: exactly
+   `*.prev-20260815-024950` + `*.prev-20260815-034822` per surface. The old
+   logic would have deleted `034822` (today's rollback).
+3. **#434:** `"cannot be widened"` in the running run_engine — the desk is no
+   longer offered the unexecutable re-authored-stop option.
+4. **#435:** `2026-08-15-automation-monitoring.md` present on the box —
+   cycle results now reach the RAG corpus (owner order).
+5. Post-deploy recall re-verified on the new image: 1271 cycle at 03:47:38Z
+   served `lesson`/`lesson` (exit-discipline#4 + horizon-discipline#2).
+
+**Pending verification:** the current research batch (496322, 02:47Z, built on
+the OLD image, crypto 6) predates the deploy. The first post-deploy batch
+(~04:47Z) must show crypto theses > 6 (survivor cap 8 from 24 candidates) and
+fleet 34's 5 waiting slots seeing eligible candidates. Next cycle's job.
+
+### 🔴 The cooldown trap is now ARMED on ETH 1272 — same shape as SOL 1274
+
+At 03:24:24Z adapt scored the desk's fee-churn half-trim (−0.2122, the leg
+where the fee was 21× the gain) as a `losing_close`:
+`size_mult 0.75, conf_bump 0.05, cooldown_until 04:24:24Z`.
+
+So until **04:24:24Z**, run 1272 is in exactly the state that killed SOL: if
+ETH trades down to the stop at **1864.95** (currently 0.93% away, mark
+1882.40), the stop-hit dispatches will hit the cooldown gate, the desk cannot
+rule, and the 180s fail-safe closes the book with a null client_order_id.
+Distance makes it unlikely in the hour; the STRUCTURE is the point — the
+desk's own trim again disarmed its own authority. n=2 of the arming shape
+(not yet of the fail-safe firing).
+
+Also carried: 1272's armed reduce at **1865.0** sits 5 cents above the stop
+at **1864.95** — stacked triggers, flagged by Agent B in cycle 5.
+
+### Fleet 34 (5/10 after the user's resize at 03:21:42Z)
+
+`size_changed {"from":25,"to":10}` with no auto-tune pair = the resize API
+(user action via UI). Drain removed empty slots only — correct. The 5 waiting
+slots remain empty pending the post-deploy research batch.
+
+---
+
+## Cycle 5 — 03:04Z (anchored 03:04:06Z) — ETH fee-churn trim; agents cross-checked
+
+**P&L: fleet 34 −$2.276 realized** (1274 −1.544, 1272 −0.658, 1271 −0.074
+fee). One closed leg in-window → both agents dispatched.
+
+### The outcome: ETH 1272 sold half at 02:56:22Z — the fee was 21× the gain
+
+0.26279 @ 1883.64 vs entry 1883.60: gross **+$0.0105**, fee **−$0.2228**, net
+**−$0.2122**. Age 59m53s (young threshold 90m). **No young_dump_flag fired**:
+`run_engine.py` guard `if got >= 0: return ""` — the profit-side exemption has
+no fee term, so a bank whose fee is 21× its gain is classified as legitimate.
+
+**Agent A (verified against prod source):** the desk sat under the standing
+banking mandate — "open P&L is rolling over from its high-water mark →
+reducing is the correct answer THIS cycle" — which has **no magnitude floor
+and no fee term**. The high-water mark it defended was **+$0.47 = 0.0478%**,
+smaller than the 0.09% round-trip fee. Its report claimed "slightly
+underwater" (false — the mark was above entry) and "noise-sized" (true, and
+the argument against the trade it then made). It also abandoned its own
+cycle-5 trigger (reduce at 1865) by executing 18.6 points above it, and its
+report said "keep the position" while the intent compiled `sell 0.5`.
+
+**Agent B:** the exit path has no fee hurdle by design (`Exits are never
+gated`) and the reduce bypassed the risk stage. Trim cost vs holding full:
+**−$0.53** at the 03:10 mark. Also: found the sharper root cause of SOL's leg
+2 — `automation.py:230` writes brackets only on OPENING sides, so a `cover`
+cycle can never re-author a stop; the desk's 0.7% was parsed and discarded.
+**Stop-discard now n=2 with P&L attached.**
+
+### Cross-check — BOTH agents made the same counterfactual error, opposite signs
+
+- Cycle 3: Agent A claimed honouring the wider stop saved $0.88 → **wrong**,
+  priced live it was $0.12 worse.
+- Cycle 5: Agent B claimed "had the 0.7% stop applied, the loss never
+  happens" → **wrong**, at SOL 75.55 the position would be −1.66 total vs
+  −1.544 actual — deferred and larger, not avoided.
+
+Both compared a REALIZED loss to an UNREALIZED snapshot. Pattern now named;
+every future counterfactual gets priced to the live mark before acceptance.
+
+**Agent B's deploy-timing correction was itself wrong**: deploy-log.tsv shows
+TWO deploys of the same image/sha (024237 and 024950); the containers were on
+the new image from 02:42:54Z, so the 02:48:14Z live recall verification
+stands. Agent B read only the current StartedAt.
+
+### Population measurement — the third refuted microstructure fix tonight
+
+619 exit legs, whole history: fee-ate-the-gain legs = 20 (3.2%), total
+**−$0.32**; move-smaller-than-fee legs = 32 (5.2%), total **−$0.49**. Today's
+ETH leg (−$0.2122) is the single worst ever. Meanwhile ALL exit legs: gross
+**−$158.90**, fees −$13.02 → **~92% of the loss is gross price movement**.
+No exit fee gate shipped — it would fix $0.49 in nine days. Recorded with the
+other two refutations in memory `measure-before-shipping-a-microstructure-fix`.
+
+### Fleet 34 starvation — root cause proven (Agent B + main session)
+
+Build attempted on all 20 empty slots at 02:50:16Z, **eligible candidates:
+zero**: `market_scope_json` NULL → open-markets bias → Saturday → crypto only
+→ pool 6 symbols, 3 selectable all already held, LINK `selectable=0`.
+42 selectable us-stock theses were excluded solely by the NULL scope
+(closed-market builds are supported by design). → led to #436.
+
+---
+
 ## Cycle 4 — 02:45Z (anchored 02:45:54Z) — PR #432 SHIPPED TO PROD + verified
 
 **Tape silent: zero trades, zero closes** since cycle 3 → no two-agent dispatch.
