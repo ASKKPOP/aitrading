@@ -2190,6 +2190,95 @@ class LossVerdictBriefTests(unittest.TestCase):
                       "loss verdict not wired into the position brief")
 
 
+class BriefJournalTests(unittest.TestCase):
+    """Which brief lines rendered — journaled onto the decision event.
+
+    R16's first live scenario (run 1285, 2026-08-15) could not be judged:
+    `_predecessor_run_line` is wired into both prompt paths, but prompts are
+    not journaled, so whether the line actually rendered was not determinable
+    from the tape. Every one of the ~19 brief lines has the same blindness,
+    and it has already bitten once — a line was unwired and every test passed
+    (memory: brief-line wiring is untested by default)."""
+
+    def tearDown(self):
+        run_engine._BRIEF_JOURNAL.clear()
+
+    _RUN = {"id": 77, "agent_id": 1, "symbol": "SLV", "market": "us-stock"}
+
+    def test_rendered_lines_are_journaled_by_name(self):
+        with patch.object(run_engine, "_stop_hit_line",
+                          return_value="STOP HIT: x\n"), \
+             patch.object(run_engine, "_predecessor_run_line",
+                          return_value="Your predecessor...\n"):
+            out = run_engine._compose_position_state(self._RUN, {}, 0, {})
+        names = run_engine._take_brief_journal(77)
+        self.assertIn("stop_hit", names)
+        self.assertIn("predecessor_run", names)
+        self.assertIn("STOP HIT: x", out)
+        self.assertIn("Your predecessor", out)
+
+    def test_a_silent_line_is_not_journaled(self):
+        with patch.object(run_engine, "_predecessor_run_line",
+                          return_value=""):
+            run_engine._compose_position_state(self._RUN, {}, 0, {})
+        names = run_engine._take_brief_journal(77) or []
+        self.assertNotIn("predecessor_run", names)
+
+    def test_the_journal_is_popped_not_read(self):
+        """A cycle that composed but never reached a decision must not have
+        its lines attributed to the NEXT decision — same trap as recall."""
+        run_engine._compose_position_state(self._RUN, {}, 0, {})
+        self.assertIsNotNone(run_engine._take_brief_journal(77))
+        self.assertIsNone(run_engine._take_brief_journal(77))
+
+    def test_composition_is_byte_identical_to_the_old_concatenation(self):
+        """The journal must be a pure observer: the composed brief is the
+        SAME string the old inline `+` chain produced, line for line."""
+        run = dict(self._RUN)
+        out = run_engine._compose_position_state(run, {}, 0, {})
+        old = (run_engine._position_state_line(run, {}, 0, {})
+               + run_engine._stop_hit_line(run)
+               + run_engine._opening_window_line(run)
+               + run_engine._young_exit_brief(run, {}, 0)
+               + run_engine._contradiction_line(run, 0)
+               + run_engine._last_cycle_word_line(run)
+               + run_engine._predecessor_run_line(run)
+               + run_engine._earnings_state_line(run)
+               + run_engine._breadth_state_line(run)
+               + run_engine._us_psych_line(run)
+               + run_engine._fx_risk_line(run)
+               + run_engine._hold_streak_line(run, 0)
+               + run_engine._brake_distance_line(run, 0)
+               + run_engine._entry_rail_line(run, 0)
+               + run_engine._exit_size_line(run, 0)
+               + run_engine._mark_freshness_line(run, 0)
+               + run_engine._big_trader_line(run)
+               + run_engine._ordinary_day_line(run)
+               + run_engine._standing_arm_line(run, 0))
+        self.assertEqual(out, old)
+
+    def test_both_prompt_paths_use_the_composer(self):
+        import inspect
+        light = inspect.getsource(run_engine._light_analysis)
+        full = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_compose_position_state(", light,
+                      "light path bypasses the composer — its lines are "
+                      "invisible on the tape again")
+        self.assertIn("_compose_position_state(", full,
+                      "full path bypasses the composer")
+        self.assertNotIn("+ _predecessor_run_line(run)", light,
+                         "old inline concatenation still present alongside "
+                         "the composer")
+        self.assertNotIn("+ _predecessor_run_line(run)", full)
+
+    def test_the_decision_event_carries_the_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_take_brief_journal(run_id)", src,
+                      "the journal is captured but never attached to the "
+                      "decision event — still invisible on the tape")
+
+
 class DeskRecallTests(unittest.TestCase):
     """Owner, 2026-08-07: "from tomorrow sooppiy and this session must be ref
     RAG". Until now the corpus only accumulated — the desk filled it and never

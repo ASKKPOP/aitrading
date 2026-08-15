@@ -3628,6 +3628,57 @@ def _last_cycle_word_line(run: dict) -> str:
 _PREDECESSOR_LOOKBACK_HOURS = 72
 
 
+# ── which brief lines RENDERED — journaled onto the decision event ─────────
+# R16's first live scenario (run 1285, 2026-08-15) could not be judged:
+# _predecessor_run_line is wired into both prompt paths, but prompts are not
+# journaled, so whether the line actually rendered was not determinable from
+# the tape. Every one of the ~19 brief lines has the same blindness, and it
+# has already bitten once — a line was unwired and every test passed (memory:
+# brief-line wiring is untested by default). Same design as the Plan 22
+# recall journal: record identities, not text; pop, never read, so a cycle
+# that composed but never decided cannot leak its lines onto the next
+# decision. The composer is a PURE OBSERVER — the same helpers, in the same
+# order, byte-for-byte the same string as the old inline concatenation.
+_BRIEF_JOURNAL: dict[int, list[str]] = {}
+
+
+def _take_brief_journal(run_id):
+    try:
+        return _BRIEF_JOURNAL.pop(int(run_id or 0), None)
+    except (TypeError, ValueError):
+        return None
+
+
+def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
+                            thesis: dict) -> str:
+    parts = [
+        ("position_state", _position_state_line(run, cfg, pos_qty, thesis)),
+        ("stop_hit", _stop_hit_line(run)),
+        ("opening_window", _opening_window_line(run)),
+        ("young_exit", _young_exit_brief(run, cfg, pos_qty)),
+        ("contradiction", _contradiction_line(run, pos_qty)),
+        ("last_cycle_word", _last_cycle_word_line(run)),
+        ("predecessor_run", _predecessor_run_line(run)),
+        ("earnings_state", _earnings_state_line(run)),
+        ("breadth_state", _breadth_state_line(run)),
+        ("us_psych", _us_psych_line(run)),
+        ("fx_risk", _fx_risk_line(run)),
+        ("hold_streak", _hold_streak_line(run, pos_qty)),
+        ("brake_distance", _brake_distance_line(run, pos_qty)),
+        ("entry_rail", _entry_rail_line(run, pos_qty)),
+        ("exit_size", _exit_size_line(run, pos_qty)),
+        ("mark_freshness", _mark_freshness_line(run, pos_qty)),
+        ("big_trader", _big_trader_line(run)),
+        ("ordinary_day", _ordinary_day_line(run)),
+        ("standing_arm", _standing_arm_line(run, pos_qty)),
+    ]
+    try:  # telemetry must never cost a cycle
+        _BRIEF_JOURNAL[int(run.get("id") or 0)] = [n for n, t in parts if t]
+    except Exception:  # noqa: BLE001
+        pass
+    return "".join(t for _, t in parts)
+
+
 def _predecessor_run_line(run: dict) -> str:
     """R16: what happened the LAST time this agent ran this symbol.
 
@@ -4602,25 +4653,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                           "(nothing to reduce) — a bearish read means 'hold'.")
     can_sell = bool(trading_runs.is_futures_book(run.get("market"), market_type)
                     or pos_qty > 0)
-    position_state = (_position_state_line(run, cfg, pos_qty, thesis)
-                      + _stop_hit_line(run)
-                      + _opening_window_line(run)
-                      + _young_exit_brief(run, cfg, pos_qty)
-                      + _contradiction_line(run, pos_qty)
-                      + _last_cycle_word_line(run)
-                      + _predecessor_run_line(run)
-                      + _earnings_state_line(run)
-                      + _breadth_state_line(run)
-                      + _us_psych_line(run)
-                      + _fx_risk_line(run)
-                      + _hold_streak_line(run, pos_qty)
-                      + _brake_distance_line(run, pos_qty)
-                      + _entry_rail_line(run, pos_qty)
-                      + _exit_size_line(run, pos_qty)
-                      + _mark_freshness_line(run, pos_qty)
-                      + _big_trader_line(run)
-                      + _ordinary_day_line(run)
-                      + _standing_arm_line(run, pos_qty))
+    position_state = _compose_position_state(run, cfg, pos_qty, thesis)
     # Trading skills (Plan 20): house decision methods scoped to the light
     # site. Fail-soft — a skills-registry problem must never break a cycle.
     try:
@@ -5172,29 +5205,11 @@ def run_cycle(run_id: int) -> dict:
                                     provider=cfg.get("provider") or None,
                                     agent_id=run["agent_id"],
                                     llm_tiers=cfg.get("llm_tiers") or None,
-                                    position_state=(_position_state_line(
+                                    position_state=_compose_position_state(
                                         run, cfg, held,
                                         (cfg.get("thesis") or {})
                                         if isinstance(cfg.get("thesis"), dict)
-                                        else {})
-                                        + _stop_hit_line(run)
-                                        + _opening_window_line(run)
-                                        + _young_exit_brief(run, cfg, held)
-                                        + _contradiction_line(run, held)
-                                        + _last_cycle_word_line(run)
-                                        + _predecessor_run_line(run)
-                                        + _earnings_state_line(run)
-                                        + _breadth_state_line(run)
-                                        + _us_psych_line(run)
-                                        + _fx_risk_line(run)
-                                        + _hold_streak_line(run, held)
-                                        + _brake_distance_line(run, held)
-                                        + _entry_rail_line(run, held)
-                                        + _exit_size_line(run, held)
-                                        + _mark_freshness_line(run, held)
-                                        + _big_trader_line(run)
-                                        + _ordinary_day_line(run)
-                                        + _standing_arm_line(run, held)),
+                                        else {}),
                                     # Same book, same vocabulary: a flat spot
                                     # run must not be offered "sell" on the
                                     # expensive path either.
@@ -5259,6 +5274,15 @@ def run_cycle(run_id: int) -> dict:
                               # sizing to that scalar with no signal today) so
                               # there is a count before anyone argues from it.
                               **_conviction_divergence(confidence, conviction),
+                              # Which brief lines RENDERED for this decision —
+                              # names only, popped so a composed-but-undecided
+                              # cycle cannot leak onto the next decision. This
+                              # is how R16-class questions ("did the
+                              # predecessor line reach run 1285?") become
+                              # answerable from the tape.
+                              **({"brief": _brief}
+                                 if (_brief := _take_brief_journal(run_id))
+                                 is not None else {}),
                               "report": (decision.get("report") or "")[:1000]})
 
         # Stop-hit routing: this decision IS the desk's ruling on the noted
