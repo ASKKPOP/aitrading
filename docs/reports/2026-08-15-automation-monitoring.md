@@ -8,7 +8,19 @@ for the v1 bar this fleet must beat.
 
 ---
 
-## Cycle 13 — 09:4xZ: fleet 35 fully built in 2½ min; first entry attempt dies on the dust floor
+## Cycle 14 — 09:1xZ (anchor 09:10:33): quiet — 12 holds, flat book
+
+Fleet 35 desk cycle 2 complete on all 10 runs: **every decision hold**
+(conf 0.45–0.67), 0 positions, 0 trades, 0 tracebacks. Dust-skip did NOT
+reproduce (FIL desk chose hold at 0.50 rather than retry the sell; n
+stays 1). **#438 brief arrays now show `last_cycle_word`** on
+second-cycle decisions — the predecessor/continuity line rendering
+exactly when it should. Fleet 33 `stopping` (AUDCHF Sunday flatten
+pending). #439 deployed mid-window (see cycle-13 addendum).
+
+---
+
+## Cycle 13 — 08:5x–09:0xZ: fleet 35 fully built in 2½ min; first entry attempt dies on the dust floor
 
 **Fleet 35 build (08:32–08:35Z): every gate fired, cleanly.** 10/10 slots
 `active` from the 24-crypto universe (#436): FIL, AVAX, WLD, HYPE, SOL,
