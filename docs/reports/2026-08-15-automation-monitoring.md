@@ -8,6 +8,52 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 13 — 09:4xZ: fleet 35 fully built in 2½ min; first entry attempt dies on the dust floor
+
+**Fleet 35 build (08:32–08:35Z): every gate fired, cleanly.** 10/10 slots
+`active` from the 24-crypto universe (#436): FIL, AVAX, WLD, HYPE, SOL,
+LINK, TRUMP, UNI + replacements BNB, KAITO. Gates on tape:
+
+- **Expectancy gate**: AAVE dropped 3× ("non-positive expectancy −367.51
+  USD/trade over 5 closed trades") — the deleted-account history still
+  informs the corpus gate. Correct.
+- **Bracket-feasibility gate**: KAITO first skipped
+  (`bracket_infeasible: sigma_daily_pct=9.501 min_stop_usd=1.90 >
+  loss_rail_usd=1.75` at a $561 slot), then admitted in a replacement
+  round at a **$1,000 slot** — the gate did exactly what it exists for:
+  refuse the impossible config, accept the feasible one.
+- Vol-parity allocations $561–$1,719 summing to exactly $10,000.
+
+**First desk cycles (3 decisions, 0 positions):**
+
+| run | sym | action | conf | outcome |
+|---|---|---|---|---|
+| 1289 | HYPE | hold | 0.48 | gate_skip (hold) |
+| 1286 | FIL | **sell** | 0.58 | **dust order skip: margin $8.62 < $10 floor** |
+| 1287 | AVAX | hold | 0.38 | gate_skip (hold) |
+
+- **#438 brief arrays LIVE on all 3**: `["entry_rail", "ordinary_day"]` —
+  correct for a flat cycle-1 book.
+- **#432 recall visibly serving**: FIL's report quotes "echoing desk
+  memory that high fear can nullify bullish bias" — an ingested
+  lesson/outcome chunk reaching the prompt, on the very first cycle.
+- **stop_pct shape: SANE.** FIL short authored stop 2.46 / target 3.82
+  → rails raised target to R:R floor 4.92 and trail_arm to 2.46, both
+  journaled in `notes`. No 0.016-style garbage.
+
+**⚠️ New watch — cautious entries can't clear the $10 margin floor.**
+FIL: size_frac 0.05 × size_scale 0.30 (conviction 0.5575) × $1,160 alloc
+÷ 2× leverage = **$8.62 margin → skipped**. The desk decided to enter;
+the platform silently discarded it. One data point — if fleet 35's
+starter entries keep dying here, that is an entry-stall defect
+(conviction scaling × small size_frac interacts with the floor). Monitor,
+don't fix yet.
+
+Health: 0 tracebacks; one Hyperliquid read-timeout on AVAX (transient);
+#439 merge chain still gating on CI (head 20d1fd78). Equity ticks ×48.
+
+---
+
 ## TARGET SET — 09:1xZ: monitoring follows info@askkpop.com; FLEET 35 born
 
 Owner: *"monitoring target user is info@askkpop.com (keep going this user)."*
