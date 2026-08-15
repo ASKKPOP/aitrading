@@ -1596,6 +1596,35 @@ class BreakevenRatchetTests(unittest.TestCase):
                     {"position": {"quantity": 0, "current_price": 500.0}}):
             self.assertEqual(run_engine._breakeven_arm_usd(bad), 0.0)
 
+    def test_the_floor_fires_before_the_exit_fee_eats_the_bank(self):
+        # JTO 1304 (2026-08-15): floor at total <= 0 GROSS means every fire
+        # nets a loss — best case is exactly -1 exit fee, while the label
+        # reports a banked winner. With the exit fee passed, the floor
+        # fires while closing still nets >= 0.
+        self.assertTrue(run_engine._breakeven_floor_hit(
+            16.15, 0.009, self.ARM, exit_fee_usd=0.011))
+        self.assertTrue(run_engine._breakeven_floor_hit(
+            16.15, 0.011, self.ARM, exit_fee_usd=0.011))
+        # comfortably above the fee: no fire.
+        self.assertFalse(run_engine._breakeven_floor_hit(
+            16.15, 0.05, self.ARM, exit_fee_usd=0.011))
+
+    def test_the_fee_floor_defaults_off_for_old_callers(self):
+        # without exit_fee_usd the boundary is the old gross zero.
+        self.assertFalse(run_engine._breakeven_floor_hit(16.15, 0.009, self.ARM))
+
+    def test_the_ratchet_fire_is_discriminated_on_the_tape(self):
+        # Two mechanisms share the stop_event:trailing_lock label (the real
+        # trail and this ratchet) — B's attribution ran into it. The ratchet
+        # branch must emit a telemetry discriminator.
+        import inspect
+        src = inspect.getsource(run_engine._evaluate_stop)
+        self.assertIn("breakeven_ratchet", src)
+        self.assertIn("stop_mechanism", src)
+        # and the call site must actually pass the fee — dropping it
+        # silently reverts to the guaranteed-negative gross-zero floor.
+        self.assertIn("exit_fee_usd=_be_fee", src)
+
     def test_a_reduce_cannot_retro_arm_the_floor(self):
         # Run 976 (2026-08-06): entered 1.3166 GC ~4317, peaked +7.22 while
         # the full-book arm was 11.36 — never armed. The desk then reduced
