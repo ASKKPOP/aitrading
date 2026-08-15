@@ -8,6 +8,59 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 8 — 05:02Z (anchored 05:02:38Z) — UNI retire-churn (1 rebuild, $0); psych_shock swept all 13 runs
+
+**No closed TRADES** since cycle 7 (two desk-retires realized 0.00 with zero
+trades — nothing to attribute) → no two-agent dispatch. `pnl_audit` 08-15
+**−$2.34** `ok` (delta = FIL entry fee). Zero tracebacks. 13 running.
+
+### UNI retire-churn — the known shape, but it stopped at ONE rebuild
+
+- 04:28:05Z run 1281 UNIUSDT `desk_retired` at cycle 2, never traded, $0.
+- 04:28:56Z replacement **1285, same symbol UNIUSDT** (the known same-symbol
+  instant-rebuild shape — cooldown binds only adapt-retires).
+- 04:30:08Z **1285 retired itself at cycle 1**: *"Short thesis aligns with
+  the downtrend but lacks a realistic stop/target within risk limits, so
+  retiring the slot."* conviction 0.64, thesis_alignment 0.9.
+- After the second retire the replacement gate now keeps **[]** — UNI no
+  longer offered (04:44, 04:59, 05:01 passes) — so the chain STOPPED at one
+  wasted build, against the 4-long WMT/UBER/SBUX chains of 08-14. Cost: $0
+  (no trades, no fees).
+
+**R16 (predecessor line) — first live scenario, verdict LIMITED:**
+`_predecessor_run_line` is wired into both prompt paths (run_engine 4611,
+5185), but prompts are not journaled, so whether it rendered for 1285 c1 is
+**not determinable from the tape** (0 payload mentions of "predecessor" —
+which proves nothing either way). The behavioural evidence is consistent with
+it working: the replacement declined to re-litigate in ONE cycle, citing
+bracket infeasibility. **R15 note:** no `bracket_infeasible` event fired —
+the DESK judged the bracket infeasible and retired before any platform gate
+saw it. Both watches stay technically unexercised.
+
+### psych_shock swept ALL 13 runs (~04:49Z)
+
+Every run got a `hot_issue {"triggers": ["psych_shock"]}` — a market-wide
+F&G/psych spike event, two with extras (1276 `manipulation:crowded_funding`,
+1279 `price_move:+6.9%` on LINK). **Zero trades resulted** — 25 decisions in
+the window, all hold/retire. The book stayed still through a shock event;
+whether that is discipline or missed opportunity is not judgeable without the
+counterfactual.
+
+### Watches
+
+- **BTC 1271: 0.083% from stop again** (63,111 vs 63,163.5). It has now
+  oscillated 0.053% → 0.19% → 0.083% without firing. Prediction open.
+- ETH 1272 recovered to −$0.03; cooldown expired 04:24Z without the trap
+  firing (disarmed as predicted).
+- FIL 1283 short −$0.004, stop 1.90% away, desk-authored bracket clean.
+- Fleet 34: 13/25 filled; replacement passes find kept=[] — every selectable
+  crypto candidate is held or expectancy-dropped (AAVE −367.51/trade, BCH).
+  **The wider universe is being consumed by REFUSAL, which is the design.**
+- #437 (size pin) deployed 04:5xZ as image `20260815-size-pin`, migration
+  0051, fleet 34 cap NULL until the next user resize.
+
+---
+
 ## Cycle 7 — 04:12Z (anchored 04:12:35Z) — #436 VERIFIED END-TO-END: 16 crypto theses, 9 new runs, gates exercised
 
 **Tape: one OPEN trade, zero closes** → no two-agent dispatch. FIL 1283
