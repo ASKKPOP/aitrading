@@ -52,6 +52,17 @@ don't fix yet.
 Health: 0 tracebacks; one Hyperliquid read-timeout on AVAX (transient);
 #439 merge chain still gating on CI (head 20d1fd78). Equity ticks ×48.
 
+**#439 DEPLOYED — 09:5xZ addendum.** PR MERGED (merge commit `88555c6`),
+image `sooppiy-backend:20260815-stop-outranks-cooldown` built **from that
+exact sha** and running on both worker and backend. Verified in-container:
+`_cooldown_blocks`/`begin_ruling` present in run_engine.py (4 hits) and
+`begin_ruling`/`deciding_since` in stop_router.py (6 hits). 0 tracebacks
+post-restart; FleetPlanner ticking (claimed 2, supervised 2). Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-brief-journal`. The full overnight
+stack #432–#439 is now live on prod. Remaining #439 verification is
+behavioural: the first real cooldown-era stop hit must show "loss cooldown
+BYPASSED" + a desk ruling — armed on the fleet-35 watch.
+
 ---
 
 ## TARGET SET — 09:1xZ: monitoring follows info@askkpop.com; FLEET 35 born
