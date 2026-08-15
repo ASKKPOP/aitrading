@@ -969,6 +969,62 @@ class LastCycleWordBriefTests(unittest.TestCase):
         line = run_engine._last_cycle_word_line({"id": 12})
         self.assertIn("ago)", line)
 
+    def _emit_skip(self, run_id: int, payload: dict, seq: int = 0):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'gate_skip', '2026-08-14T00:00:00Z', ?)",
+                (run_id, seq, json.dumps(payload)))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_a_discarded_order_is_reported_as_not_executed(self):
+        # Fleet 35 UNI (2026-08-15 11:23Z): the desk's sell was dust-skipped,
+        # the next cycle read "action: sell" with no outcome, inferred an
+        # "existing short position" and held at 0.78 to protect a phantom
+        # book. The quote must carry the discard.
+        self._emit(20, {"action": "sell", "cycle": 6,
+                        "report": "short the breakdown"}, seq=1)
+        self._emit_skip(20, {"cycle": 6, "stage": "risk",
+                             "reason": "dust order skip (margin $9.25 "
+                                       "< floor $10.00)"}, seq=2)
+        line = run_engine._last_cycle_word_line({"id": 20})
+        self.assertIn("did NOT execute", line)
+        self.assertIn("dust order skip", line)
+        self.assertIn("book is unchanged", line)
+
+    def test_an_executed_order_carries_no_discard_note(self):
+        self._emit(21, {"action": "sell", "cycle": 3,
+                        "report": "short the breakdown"}, seq=1)
+        line = run_engine._last_cycle_word_line({"id": 21})
+        self.assertNotIn("did NOT execute", line)
+
+    def test_a_hold_never_carries_the_discard_note(self):
+        # Every hold emits its own gate_skip ("decision is 'hold'") in the
+        # same cycle — a hold must never be labelled a discarded order.
+        self._emit(22, {"action": "hold", "cycle": 2,
+                        "report": "nothing to do"}, seq=1)
+        self._emit_skip(22, {"cycle": 2, "stage": "risk",
+                             "reason": "decision is 'hold'"}, seq=2)
+        line = run_engine._last_cycle_word_line({"id": 22})
+        self.assertNotIn("did NOT execute", line)
+
+    def test_an_old_cycles_skip_does_not_taint_a_newer_order(self):
+        self._emit(23, {"action": "sell", "cycle": 4,
+                        "report": "first try"}, seq=1)
+        self._emit_skip(23, {"cycle": 4, "stage": "risk",
+                             "reason": "dust order skip (margin $8.62 "
+                                       "< floor $10.00)"}, seq=2)
+        self._emit(23, {"action": "sell", "cycle": 5,
+                        "report": "second try, executed"}, seq=3)
+        line = run_engine._last_cycle_word_line({"id": 23})
+        self.assertIn("second try", line)
+        self.assertNotIn("did NOT execute", line)
+
     def test_the_line_is_actually_WIRED_into_both_prompts(self):
         seen = {}
 
