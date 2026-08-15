@@ -8,6 +8,59 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 24 — 14:1xZ: FIRST CLOSED TRADE — UNI short net −$0.095; two-agent review, cross-checked
+
+**P&L first: net −$0.0949** (gross −$0.0769, fees −$0.0180). Desk-authored
+reduce-half escalated to full cover by the dust-remainder rail
+(half of $20 leaves $10 < $25). Both agents priced live marks
+independently (3.2655 @14:12:37Z / 3.2635 @14:13:13Z, Hyperliquid) and
+agree: **the loss was authored at ENTRY; the exit machinery moved ≈ $0.**
+
+**Agent A (desk axis), accepted after cross-check:**
+- Entry thesis incoherent BY CONSTRUCTION: the desk predicted a pullback
+  UP to 3.40–3.45 "before any rebound" while shorting at 3.253 with a
+  +1.5% stop at 3.3018 — its own stated path crosses its own stop with
+  certainty. No scenario in its own narrative wins. That authored the
+  gross −$0.077 (+0.38% drift against).
+- Exit reason "reduce half to limit further fee drag" is economically
+  FALSE: holds cost nothing in this ledger; the reduce CREATED the only
+  fee in play (−$0.009 deadweight vs holding, price delta $0.00).
+- Confidence machinery decorative: risk_context 0.9 and conviction at
+  its trade-life HIGH (0.6925) on the cycle it cut.
+- Recall served position-management #5/#3 and did not prevent the
+  fee-fiction exit — the lesson corpus lacks this case.
+
+**Agent B (rail axis), accepted after cross-check:**
+- Both rails performed their design intent. #440 created the trade
+  ($20 vs $0); the dust-remainder escalation was −$0.006 vs the literal
+  half-reduce at live mark — noise. On percentage-fee markets closing in
+  two slices costs IDENTICAL total fees, so the escalation's fee-saving
+  on crypto is exactly $0 (its value is desk-attention economics).
+- STRUCTURAL: floor-minimum notional ($10×L = $20 at 2×) sits INSIDE
+  the $25 dust-remainder band → any partial reduce escalates to full
+  close; floor positions are all-or-nothing below 2.5× leverage. The
+  desk did not know this when it authored "reduce half".
+- $25 dust-remainder floor is flat-fee-calibrated (2.4% hurdle); a
+  crypto round trip is 0.09% — stated reason wrong for this market
+  (backlog: per-market value).
+
+**Cross-check:** no contradiction between agents (different
+counterfactuals, both priced correctly); neither excused the loss; both
+tie every element to a reason. Accepted in full.
+
+**Actions (AI-first, decisions-become-skills):**
+1. SHIP NOW — composer line: when position notional < dust-remainder
+   floor, tell the desk "any reduce closes this position fully" (B's
+   option 3; the desk issued a physically impossible order unknowingly).
+2. SHIP NOW — skill edits: (a) thesis-path coherence (an entry whose
+   stated path crosses its own stop before the target is incoherent —
+   restate or stand down); (b) fee-drag truth (holds are free; a
+   fee-motivated exit must name the avoided fee and show it exceeds the
+   fee the action incurs).
+3. Backlog: per-market RUN_DUST_REMAINDER_USD.
+
+---
+
 ## Cycle 23 — 13:4xZ (anchor 13:40:34): FIL finally gets its short — third attempt, first fill
 
 FIL 1286 cycle 11 (13:34:38Z): sell conf 0.66, authored size_frac **0.1**
