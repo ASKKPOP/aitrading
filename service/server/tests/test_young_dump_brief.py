@@ -128,9 +128,11 @@ class BriefRenderTests(unittest.TestCase):
             run_engine._young_exit_brief(self.run, self.cfg, 0.0), "")
 
     def test_wired_into_both_prompt_paths(self):
-        src = (Path(SERVER_DIR) / "run_engine.py").read_text()
-        self.assertEqual(src.count("+ _young_exit_brief(run, cfg,"), 2,
-                         "brief must reach BOTH decision paths")
+        import inspect
+        import run_engine
+        self.assertIn("_young_exit_brief(run, cfg, pos_qty)",
+                      inspect.getsource(run_engine._compose_position_state),
+                      "brief must be in the composed prompt (both paths)")
 
 
 class DumpFlagTelemetryTests(unittest.TestCase):

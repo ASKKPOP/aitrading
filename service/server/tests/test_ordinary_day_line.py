@@ -67,7 +67,7 @@ class OrdinaryDayLineTests(unittest.TestCase):
 
     def test_the_line_is_actually_WIRED_into_the_full_prompt(self):
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
+        src = inspect.getsource(run_engine._compose_position_state)
         self.assertIn("_ordinary_day_line(run)", src,
                       "ordinary-day line is not wired into the full prompt")
 

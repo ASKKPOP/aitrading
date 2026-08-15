@@ -616,8 +616,8 @@ class ExitSizeBriefTests(unittest.TestCase):
 
     def test_the_line_is_actually_WIRED_into_the_full_prompt(self):
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
-        self.assertIn("_exit_size_line(run, held)", src,
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_exit_size_line(run, pos_qty)", src,
                       "exit-size line is not wired into the full prompt")
 
 
@@ -737,8 +737,8 @@ class BrakeDistanceBriefTests(unittest.TestCase):
         # run_cycle(-1) never reaches the call, so assert on the source wiring
         # of the composed kwarg instead — both sites must carry the line.
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
-        self.assertIn("_brake_distance_line(run, held)", src,
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_brake_distance_line(run, pos_qty)", src,
                       "brake line is not wired into the full prompt")
 
     def test_tracks_the_rail_constant_it_describes(self):
@@ -891,8 +891,8 @@ class StopCoherenceBriefTests(unittest.TestCase):
 
     def test_the_entry_line_is_WIRED_into_the_full_prompt_source(self):
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
-        self.assertIn("_entry_rail_line(run, held)", src,
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_entry_rail_line(run, pos_qty)", src,
                       "entry rail line is not wired into the full prompt")
 
 
@@ -993,7 +993,7 @@ class LastCycleWordBriefTests(unittest.TestCase):
         self.assertIn("LAST_WORD_SENTINEL", seen.get("prompt", ""),
                       "last-cycle line is not wired into the light prompt")
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
+        src = inspect.getsource(run_engine._compose_position_state)
         self.assertIn("_last_cycle_word_line(run)", src,
                       "last-cycle line is not wired into the full prompt")
 
@@ -1096,9 +1096,9 @@ class PredecessorRunBriefTests(unittest.TestCase):
         self.assertIn("PREDECESSOR_SENTINEL", seen.get("prompt", ""),
                       "predecessor line is not wired into the light prompt")
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
+        src = inspect.getsource(run_engine._compose_position_state)
         self.assertIn("_predecessor_run_line(run)", src,
-                      "predecessor line is not wired into the full prompt")
+                      "predecessor line is not wired into the composed brief")
 
 
 class BreadthBriefTests(unittest.TestCase):
@@ -1984,10 +1984,9 @@ class MarkFreshnessBriefTests(unittest.TestCase):
 
     def test_it_is_WIRED_into_both_prompt_paths(self):
         import inspect
-        light = inspect.getsource(run_engine._light_analysis)
-        full = inspect.getsource(run_engine.run_cycle)
-        self.assertIn("_mark_freshness_line", light, "missing from light path")
-        self.assertIn("_mark_freshness_line", full, "missing from full path")
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_mark_freshness_line", src,
+                      "missing from the composed brief (both paths)")
 
 
 class StandingArmBriefTests(unittest.TestCase):
@@ -2026,10 +2025,9 @@ class StandingArmBriefTests(unittest.TestCase):
 
     def test_it_is_WIRED_into_both_prompt_paths(self):
         import inspect
-        light = inspect.getsource(run_engine._light_analysis)
-        full = inspect.getsource(run_engine.run_cycle)
-        self.assertIn("_standing_arm_line", light, "missing from light path")
-        self.assertIn("_standing_arm_line", full, "missing from full path")
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_standing_arm_line", src,
+                      "missing from the composed brief (both paths)")
 
 
 class FloorStatusBriefTests(unittest.TestCase):
@@ -2805,10 +2803,12 @@ class ExcursionScaleBriefTests(unittest.TestCase):
 
     def test_the_brief_reaches_both_prompt_paths(self):
         import inspect
-        src = inspect.getsource(run_engine)
-        self.assertGreaterEqual(
-            src.count("_position_state_line("), 3,
-            "the light and full prompt paths must both carry the brief")
+        # Both prompt paths route through the composer now; the module
+        # carries the def, the composer's call, and BriefJournalTests pins
+        # both paths onto _compose_position_state.
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_position_state_line(run, cfg, pos_qty, thesis)", src,
+                      "the position brief is not in the composed prompt")
 
 
 class CycleCadenceTests(unittest.TestCase):
