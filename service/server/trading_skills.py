@@ -817,6 +817,22 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "that ends the thesis is what your STOP already covers, "
                 "and repeating it with close 1.0 buys nothing.")},
             {"applies_when": ["holding"], "evidence": (
+                "0.70 arm, 0.70848 stop, 0.71 prose at once"), "text": (
+                "ONE THESIS, ONE INVALIDATION. Your stop, any standing "
+                "arm, and the level in your prose must all reference the "
+                "SAME invalidation level — the measured case (FIL "
+                "2026-08-15) carried 0.70 arm, 0.70848 stop, 0.71 prose "
+                "at once, and its cycle plans contradicted its own "
+                "standing orders. An arm strictly inside your stop is a "
+                "stealth tighten: either state 'tightening because X' "
+                "with the new evidence, or do not arm it — an empty why "
+                "on a standing order is forbidden. And any reduce or "
+                "close before target or invalidation must name its "
+                "ACTUAL firing signal (that trade exited on momentum "
+                "decay 0.81 to 0.45 while citing an invalidation that "
+                "never fired) — an exit whose stated trigger did not "
+                "fire is unexplained, whatever its P&L.")},
+            {"applies_when": ["holding"], "evidence": (
                 "paid a real fee to escape a fee that does not exist"),
              "text": (
                 "HOLDING COSTS NOTHING on this ledger — fees are charged "
