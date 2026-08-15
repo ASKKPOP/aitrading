@@ -8,6 +8,20 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## TARGET SET — 09:1xZ: monitoring follows info@askkpop.com; FLEET 35 born
+
+Owner: *"monitoring target user is info@askkpop.com (keep going this user)."*
+**Fleet 35** created 08:32:14Z on the freshly-reset account: 10 slots,
+$10,000, aggressive, archetype `short`, market_scope NULL, status `building`.
+Loop re-armed (cron `b0ea7f21`, 30-min) centred on fleet 35 with the full
+watch list: #436 universe build quality, #438 brief arrays, #432 recall
+kinds, R15/R16 first exercises, #437 size-pin first live stamp if the user
+resizes, #439 deploy + BYPASSED verification, and the desk's stop_pct
+authoring shape (garbage 0.016/0.007 vs sane 1.9 — which does fleet 35
+produce?). AUDCHF 1147 Sunday flatten remains the only other live position.
+
+---
+
 ## OWNER-ORDERED STOP-ALL — 08:5x–09:0xZ: every other user's fleet stopped
 
 Owner: *"and stop all other user fleet and slot."* Executed via the
