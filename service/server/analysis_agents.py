@@ -628,7 +628,8 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         # fields optional; "defer" hands the trade back to the fixed defaults,
         # which is the right answer whenever the situation is unremarkable.
         '"order":{"defer":true|false,'
-        '"size_frac":0.05-1.0 (fraction of the max bet),'
+        '"size_frac":0.05-1.0 (fraction of the max bet; on a small slot an '
+        'ask below the $10-margin minimum is raised to it, never discarded),'
         '"leverage":number,'
         '"stop_pct":number (%% from entry — size it to THIS instrument\'s '
         'volatility, not a house default),'

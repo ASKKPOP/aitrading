@@ -222,6 +222,27 @@ class RunCycleOrderParamTests(unittest.TestCase):
         self.assertAlmostEqual(float(fill["stop_loss"]), 98.0, places=2)
         self.assertAlmostEqual(float(fill["take_profit"]), 106.0, places=2)
 
+    def test_a_cautious_minimum_size_survives_the_dust_floor(self):
+        """Fleet 35 FIL (n=2): the desk authored the schema's advertised
+        minimum size_frac 0.05 on a $172 max_bet and the $10 dust floor
+        discarded the order both times. The engine must pass the run's
+        executable minimum into the rails so the ask is floored UP and the
+        order fills at the $10-margin minimum instead of vanishing."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run(max_bet_usd=150.0)
+        cautious = {**ORDER, "size_frac": 0.05, "leverage": 1.0}
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=cautious)):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        # 0.05 of $150 = $7.50 < $10 floor → raised to 10/150 ≈ 0.0667.
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 10.0,
+                               places=2)
+        params = self._events(run_id, "order_params")[0]["params"]
+        self.assertTrue(any("size_frac 0.05 raised to floor" in n
+                            for n in params["notes"]), params["notes"])
+
     def test_apply_still_rails_a_hostile_block(self):
         """size_frac 50 is 50x the configured bet; the rail must cap it at the
         full bet, never honour it."""

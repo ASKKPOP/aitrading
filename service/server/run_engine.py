@@ -2523,6 +2523,16 @@ def _order_size_usd(action: str, size_frac: float, *, max_bet_usd: float,
     return float(max_bet_usd or 0) * size_frac
 
 
+def _dust_floor_usd(max_bet_usd: float) -> float:
+    """The smallest margin the executor will fill, in max_bet (margin) terms.
+
+    One definition for both consumers: the final dust guard that discards a
+    sized order below it, and the order-params rail that floors the desk's
+    size_frac up to it — if these drift apart the desk can again author a
+    legal-looking size the executor then destroys (fleet 35 FIL, n=2)."""
+    return max(10.0, 0.02 * float(max_bet_usd or 0))
+
+
 def _horizon_bypass(triggers: Any) -> bool:
     """Does this cycle's situation override the desk's stated horizon?
 
@@ -5391,10 +5401,16 @@ def run_cycle(run_id: int) -> dict:
             # pair's. Only visible on a target-only block — with a stop present
             # the R:R floor lands on the same number.
             from fees import fee_rate as _fee_rate_for_market
+            # The executable-size floor: 0.05 of a small max_bet lands under
+            # the dust guard and the desk's entry is silently discarded, so
+            # the rail needs the run's true minimum (dust floor / max_bet).
+            _max_bet = float(cfg.get("max_bet_usd") or 0)
             order_params = parse_order_block(
                 decision.get("order"),
                 leverage_cap=max(1.0, float(cfg.get("leverage") or 1.0)),
-                fee_rate=_fee_rate_for_market(run.get("market")))
+                fee_rate=_fee_rate_for_market(run.get("market")),
+                min_size_frac=(_dust_floor_usd(_max_bet) / _max_bet
+                               if _max_bet > 0 else None))
             emit_telemetry_event(
                 run_id, "order_params",
                 {"cycle": seq, "mode": op_mode, "action": action,
@@ -5805,7 +5821,7 @@ def run_cycle(run_id: int) -> dict:
             # Compare the committed MARGIN (notional / L) to the floor, since
             # the floor is denominated in max_bet (also margin).
             sized_margin = float(gate.quantity or 0) * float(entry or 0) / lev
-            dust_floor = max(10.0, 0.02 * float(cfg.get("max_bet_usd") or 0))
+            dust_floor = _dust_floor_usd(cfg.get("max_bet_usd"))
             if sized_margin < dust_floor:
                 result["skip_reason"] = (
                     f"dust order skip (margin ${sized_margin:.2f} "
