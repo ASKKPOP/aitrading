@@ -8,6 +8,222 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## 24-HOUR SWEEP — 15:3x–16:0xZ (window 08-14 15:35Z → 08-15 15:35Z): adversarial re-proof of the day
+
+### Ships re-proven in the RUNNING container (single cumulative image `20260815-one-invalidation`, 0 tracebacks)
+Every fix grep-verified live: #439 `_cooldown_blocks`/`begin_ruling` ✓,
+#440 `min_size_frac`+`_dust_floor_usd` ✓, #441 discard note ✓, #443
+`_reduce_geometry_line` ✓, #444 + fee-drag + path-coherence skills ✓
+(and render-verified via live `skills_block`), #436 `_VOLUME_CANDIDATES=60`
+✓, #432 `_RECALL_KINDS=(outcome,lesson)` ✓. Six PRs merged+deployed in
+the window: #439 #440 #441 #442 #443 #444.
+
+### Behaviour over the day — what each fix ACTUALLY did (adversarial)
+- **PROVEN at scale**: #438 briefs on 100% of decisions since fleet-35
+  birth (0 missing of ~180); #432 recall — 41 recall events, lesson
+  chunks visibly served (FIL entry quote, UNI exit).
+- **PROVEN n=1 but decisive**: #440 fired EXACTLY ONCE (UNI 11:53) —
+  and that one raise created the fleet's first position and its first
+  win path. **Correction to my own cycle-13-era tally: the "5 floor
+  raises" count was a contaminated grep** (trail-arm floor notes
+  matched); the true #440 count is 1. R15 bracket gate exercised
+  (KAITO refused at $561, admitted at $1,000). #436 built the fleet
+  from 24 candidates (n=1 build).
+- **UNEXERCISED — deployed but no occasion, say so plainly**: #439 (0
+  stop hits in 24h, zero stop_router events), #441 (no post-deploy
+  discarded non-hold), #443 positive render (no held book since 14:50;
+  negative case proven), #437 size pin (owner never resized;
+  user_size_cap NULL), #434 stop-hit brief (no stop hits). These are
+  code-verified, behaviour-pending — not "working", not "failed".
+
+### True 24h P&L (pnl_audit, flatten-reconciled, resid 0.00 both frames)
+- **UTC 08-15: ledger −$3.26** (fee asym −0.84 explains ledger−adapt
+  fully). Decomposition: fleet 34 (agent 60) −$2.50 (ETH −1.43,
+  SOL −1.32, BTC orphan −0.17, FIL +0.42); **fleet 35 (agent 6)
+  +$0.08** (UNI −0.086, FIL +0.169); pre-reset NQ in KST segment.
+- **KST day 08-15 (08-14 15:00Z → 08-15 15:00Z): −$5.44** (adds the
+  08-14 evening wind-down segment, dominated by the NQ flatten −2.15).
+
+### SHAPE of wins and losses
+Wins: floor-scale desk scratches banked before bounces (FIL +0.17,
+fleet-34 FIL +0.42) — small, fee-heavy, real. Losses: (a) fleet 34's
+fee-churn pattern — ETH entered LONG after three straight cycles of
+"conflicting inputs / preserve capital", scratched half at entry price,
+closed −0.2% lower; **fees were 62% of the ETH loss**; (b) wind-down
+flattens (NQ −2.15, BTC orphan −0.17) — owner-ordered, not strategy.
+The monitored fleet (35) finished its first day NET POSITIVE with
+visibly better process than fleet 34's tape.
+
+### Gap admitted (no excuse): fleet 34's final closes (ETH 1272,
+SOL 1274, BTC 1271) received NO two-agent review — the owner reset and
+target switch arrived mid-morning. Their visible shape (fee churn on
+conflicted entries; "loss exceeds house floor" exits) is the same class
+today's shipped skills target. Fleet 34 is stopped; no continuing
+exposure; the skills apply platform-wide to every future fleet.
+
+### Owner obligation — TODAY'S LOSSES → TODAY'S SOLUTIONS (all shipped, not described)
+- UNI −$0.095 → path-coherence skill (#443), fee-drag-truth skill
+  (#443), reduce-geometry line (#443), one-invalidation (#444) — all
+  DEPLOYED and render-verified same day.
+- Fleet-34 fee churn → the same fee-drag + path-coherence lessons are
+  in every future desk prompt; the fleet itself is owner-stopped.
+- Structural entry stall (would have kept fleet 35 at 0 positions
+  forever) → #440 shipped and proven on tape.
+
+### Regression check vs prior day
+Yesterday's two headline defects both have shipped counters: write-once
+stop discard + cooldown blindness → #439 (code-verified, awaiting first
+live stop-in-cooldown); recall corpus starvation → 41 recall events
+serving outcome/lesson chunks today. No new regressions: 0 tracebacks
+24h, briefs 100%, calibration/leaderboard jobs running, site 200s.
+Standing next: AUDCHF 1147 Sunday 21:00Z flatten; fleet 33 `stopping`;
+#443/#441/#439 first live exercises.
+
+---
+
+## Cycle 26 — 15:3xZ (anchor 15:34:56): quiet — both ex-position runs in their cooldowns
+
+UNI 1293 sits in adapt **loss cooldown** (cycles 14/15 skipped — the
+feedback loop doing its job after −$0.095; #439's bypass correctly NOT
+firing, no routed stop hit pending). FIL 1286 passed its 45-min
+re-entry cooldown and resumed deliberating (hold 0.36, flat-book
+briefs). No positions, 0 tracebacks, fleet 33 unchanged. Day stands at
++$0.058 across 2 trades.
+
+---
+
+## Cycle 25 — 15:0xZ: SECOND CLOSED TRADE — FIL short net +$0.153, the fleet's first WIN; two-agent verdict cross-checked
+
+**P&L first: +$0.153 net** (gross +$0.184, fees $0.031). Entry AND exit
+timing desk-authored: shorted a real downtrend at the top of its 6-hour
+range (13:34Z, 0.6935) and covered before the bounce (14:34Z, 0.6898).
+Day P&L for fleet 35: +$0.153 − $0.095 = **+$0.058 net across 2 trades.**
+
+**Agent A (desk axis), accepted:** entry grade A — clean geometry (path
+never crosses its own stop; contrast UNI), strongest score set of the
+run (momentum 0.81, conviction 0.689), and honest no-arm reasoning at
+entry. Process overall **C+**: (1) an empty-`why` arm at 0.70 placed
+INSIDE the stop one cycle after the desk itself wrote "no arm needed" —
+a stealth tighten with no stated evidence; (2) THREE simultaneous
+invalidation levels (0.70 arm / 0.70848 stop / 0.71 prose) — the desk
+does not read its own standing orders; (3) the reduce fired at **12.3%**
+of the path to target, citing an invalidation that never fired while the
+true trigger (momentum 0.81→0.45 decay) went unnamed. Fees ate 17% of
+gross — the signature of scratching, which cannot outrun one full
+stop-out (~$0.74).
+
+**Agent B (rail axis), accepted with two corrections to MY briefing:**
+today had THREE dust escalations (fleet 34 run 1283 too), and UNI's
+escalation cost **−$0.032 at B's mark**, not ≈$0 (my cycle-24 figure was
+priced at an earlier mark — escalation impact is mark-dependent, small,
+symmetric). FIL's escalation SAVED +$0.031 by luck (banked before the
+bounce; the desk's coherent keep-half intent was the worse book at both
+agents' marks). All rails per design intent; **3 of 3 reduce intents
+today escalated** — partial exits effectively do not exist at this book
+scale, which is exactly what #443's line now tells the desk.
+Per-market dust floor: stays BACKLOGGED (evidence insufficient — impact
+±$0.03 and #443 unmeasured).
+
+**#444 DEPLOYED — 15:3xZ addendum.** PR MERGED (`391d7db`), image
+`sooppiy-backend:20260815-one-invalidation` on worker+backend, verified
+2×: skill text in-container AND all three new lessons render in the
+live `skills_block("trader", "crypto")` (one-invalidation, fee-drag,
+path-coherence — catalog auto-upgrade confirmed). 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260815-reduce-geometry`.
+Ship count today: #439 #440 #441 #442 #443 #444.
+
+**Actions:**
+1. SHIP NOW — skill (position-management): ONE THESIS, ONE INVALIDATION —
+   stop/arm/prose must reference the same level; an arm inside the stop
+   requires a stated tightening reason (empty why forbidden); an exit
+   before target/invalidation must name its actual firing signal.
+2. Watch armed (B): verify #443's line renders in the next held-book
+   prompt (brief-line wiring is untested by default — house lesson) and
+   observe the next sub-$50 reduce intent.
+
+---
+
+## Cycle 24 — 14:1xZ: FIRST CLOSED TRADE — UNI short net −$0.095; two-agent review, cross-checked
+
+**P&L first: net −$0.0949** (gross −$0.0769, fees −$0.0180). Desk-authored
+reduce-half escalated to full cover by the dust-remainder rail
+(half of $20 leaves $10 < $25). Both agents priced live marks
+independently (3.2655 @14:12:37Z / 3.2635 @14:13:13Z, Hyperliquid) and
+agree: **the loss was authored at ENTRY; the exit machinery moved ≈ $0.**
+
+**Agent A (desk axis), accepted after cross-check:**
+- Entry thesis incoherent BY CONSTRUCTION: the desk predicted a pullback
+  UP to 3.40–3.45 "before any rebound" while shorting at 3.253 with a
+  +1.5% stop at 3.3018 — its own stated path crosses its own stop with
+  certainty. No scenario in its own narrative wins. That authored the
+  gross −$0.077 (+0.38% drift against).
+- Exit reason "reduce half to limit further fee drag" is economically
+  FALSE: holds cost nothing in this ledger; the reduce CREATED the only
+  fee in play (−$0.009 deadweight vs holding, price delta $0.00).
+- Confidence machinery decorative: risk_context 0.9 and conviction at
+  its trade-life HIGH (0.6925) on the cycle it cut.
+- Recall served position-management #5/#3 and did not prevent the
+  fee-fiction exit — the lesson corpus lacks this case.
+
+**Agent B (rail axis), accepted after cross-check:**
+- Both rails performed their design intent. #440 created the trade
+  ($20 vs $0); the dust-remainder escalation was −$0.006 vs the literal
+  half-reduce at live mark — noise. On percentage-fee markets closing in
+  two slices costs IDENTICAL total fees, so the escalation's fee-saving
+  on crypto is exactly $0 (its value is desk-attention economics).
+- STRUCTURAL: floor-minimum notional ($10×L = $20 at 2×) sits INSIDE
+  the $25 dust-remainder band → any partial reduce escalates to full
+  close; floor positions are all-or-nothing below 2.5× leverage. The
+  desk did not know this when it authored "reduce half".
+- $25 dust-remainder floor is flat-fee-calibrated (2.4% hurdle); a
+  crypto round trip is 0.09% — stated reason wrong for this market
+  (backlog: per-market value).
+
+**Cross-check:** no contradiction between agents (different
+counterfactuals, both priced correctly); neither excused the loss; both
+tie every element to a reason. Accepted in full.
+
+**Actions (AI-first, decisions-become-skills):**
+1. SHIP NOW — composer line: when position notional < dust-remainder
+   floor, tell the desk "any reduce closes this position fully" (B's
+   option 3; the desk issued a physically impossible order unknowingly).
+2. SHIP NOW — skill edits: (a) thesis-path coherence (an entry whose
+   stated path crosses its own stop before the target is incoherent —
+   restate or stand down); (b) fee-drag truth (holds are free; a
+   fee-motivated exit must name the avoided fee and show it exceeds the
+   fee the action incurs).
+3. Backlog: per-market RUN_DUST_REMAINDER_USD.
+
+---
+
+## Cycle 23 — 13:4xZ (anchor 13:40:34): FIL finally gets its short — third attempt, first fill
+
+FIL 1286 cycle 11 (13:34:38Z): sell conf 0.66, authored size_frac **0.1**
+(margin $17.24, clears the floor unaided — no raise note, correct),
+executed short 49.70 @ 0.6935 (`run:1286:cyc:11`), stop 0.70848
+(+2.16%), target 0.6635 (R:R floor note). The same entry died at
+cycles 1 and 4 on size_frac 0.05; whether the schema's new $10-minimum
+line nudged the desk to 0.1 or it re-derived independently, the entry
+path is now clean. Book: two shorts (UNI −$0.10, FIL +$0.01). 10 holds
+otherwise, 0 tracebacks.
+
+---
+
+## Cycle 22 — 13:1xZ (anchor 13:10:36): quiet — 9 holds, UNI short held (uPNL −$0.01)
+
+---
+
+## Cycle 21 — 12:4xZ (anchor 12:42:11): quiet — UNI short held correctly; position-state briefs rendering
+
+9 holds; UNI (1293) held its short at 0.6 with the held-book brief set
+rendering exactly as designed: `["position_state", "young_exit",
+"last_cycle_word", "brake_distance", "exit_size", "ordinary_day"]` —
+entry_rail correctly dropped, position lines correctly present (#438
+working both ways). Flat runs now render `hold_streak`. uPNL −$0.04,
+0 tracebacks. Docs PR #442 merged+deployed — cycles 5-20 in the corpus.
+
+---
+
 ## Cycle 20 — 12:1xZ (anchor 12:16:55): #440 PROVEN ON TAPE — fleet 35's first position exists because of the fix; #441 deployed
 
 **WORKED — the behavioural proof landed.** UNI 1293 cycle 8 (11:53:09Z),
