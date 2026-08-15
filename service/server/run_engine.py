@@ -3193,13 +3193,25 @@ def _stop_hit_line(run: dict) -> str:
         hit = stop_router.pending(run["id"]) if stop_router.enabled() else None
         if not hit:
             return ""
+        # The third option used to be "hold ONLY with a re-authored stop_pct".
+        # Nothing can execute that. `automation.execute_paper_trade` writes the
+        # bracket monotonically — min() for a short, max() for a long, under
+        # its own "NEVER LOOSEN an existing exit level" rule — `risk_engine`
+        # only ratchets tighter, `orphan_reclaim` only fills a NULL, and this
+        # module consumes `stop_pct` solely on an opening action. Measured on
+        # prod 2026-08-15: run 1271 authored stop_pct 1.23 at cycle 5 (→
+        # 63,749) and positions.stop_loss stayed 63,163.5, the 0.3% level
+        # written at open. Offering it was worse than useless — "hold" is the
+        # branch that ends in the fail-safe close, so the brief pointed the
+        # desk at the one option that fails silently AND forfeits its ruling.
         return (f"STOP HIT: your {hit['trigger']} level traded at "
                 f"{hit['price']}. This cycle IS the decision the watcher "
                 "would otherwise make for you — choose: close (bank the "
-                "protection), reduce (cut, keep a re-entry), or hold ONLY "
-                "with a re-authored stop_pct that reflects why this level "
-                "no longer binds. If you do not decide, the fail-safe "
-                "closes the whole book.\n")
+                "protection), reduce (cut, keep a re-entry), or hold. This "
+                "level cannot be widened — it is fixed for the life of the "
+                "position, so holding means holding AT IT, and it will keep "
+                "trading against you until you close or reduce. If you do "
+                "not decide, the fail-safe closes the whole book.\n")
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
 
