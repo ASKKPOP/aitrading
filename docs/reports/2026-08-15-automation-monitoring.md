@@ -8,6 +8,49 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 25 — 15:0xZ: SECOND CLOSED TRADE — FIL short net +$0.153, the fleet's first WIN; two-agent verdict cross-checked
+
+**P&L first: +$0.153 net** (gross +$0.184, fees $0.031). Entry AND exit
+timing desk-authored: shorted a real downtrend at the top of its 6-hour
+range (13:34Z, 0.6935) and covered before the bounce (14:34Z, 0.6898).
+Day P&L for fleet 35: +$0.153 − $0.095 = **+$0.058 net across 2 trades.**
+
+**Agent A (desk axis), accepted:** entry grade A — clean geometry (path
+never crosses its own stop; contrast UNI), strongest score set of the
+run (momentum 0.81, conviction 0.689), and honest no-arm reasoning at
+entry. Process overall **C+**: (1) an empty-`why` arm at 0.70 placed
+INSIDE the stop one cycle after the desk itself wrote "no arm needed" —
+a stealth tighten with no stated evidence; (2) THREE simultaneous
+invalidation levels (0.70 arm / 0.70848 stop / 0.71 prose) — the desk
+does not read its own standing orders; (3) the reduce fired at **12.3%**
+of the path to target, citing an invalidation that never fired while the
+true trigger (momentum 0.81→0.45 decay) went unnamed. Fees ate 17% of
+gross — the signature of scratching, which cannot outrun one full
+stop-out (~$0.74).
+
+**Agent B (rail axis), accepted with two corrections to MY briefing:**
+today had THREE dust escalations (fleet 34 run 1283 too), and UNI's
+escalation cost **−$0.032 at B's mark**, not ≈$0 (my cycle-24 figure was
+priced at an earlier mark — escalation impact is mark-dependent, small,
+symmetric). FIL's escalation SAVED +$0.031 by luck (banked before the
+bounce; the desk's coherent keep-half intent was the worse book at both
+agents' marks). All rails per design intent; **3 of 3 reduce intents
+today escalated** — partial exits effectively do not exist at this book
+scale, which is exactly what #443's line now tells the desk.
+Per-market dust floor: stays BACKLOGGED (evidence insufficient — impact
+±$0.03 and #443 unmeasured).
+
+**Actions:**
+1. SHIP NOW — skill (position-management): ONE THESIS, ONE INVALIDATION —
+   stop/arm/prose must reference the same level; an arm inside the stop
+   requires a stated tightening reason (empty why forbidden); an exit
+   before target/invalidation must name its actual firing signal.
+2. Watch armed (B): verify #443's line renders in the next held-book
+   prompt (brief-line wiring is untested by default — house lesson) and
+   observe the next sub-$50 reduce intent.
+
+---
+
 ## Cycle 24 — 14:1xZ: FIRST CLOSED TRADE — UNI short net −$0.095; two-agent review, cross-checked
 
 **P&L first: net −$0.0949** (gross −$0.0769, fees −$0.0180). Desk-authored
