@@ -665,8 +665,8 @@ class AtomicLessonTests(_Db):
         ("risk-reward-structure", 5),
         # banking/add/scale doctrine — the measured-live clauses belong to
         # the ledger-shape (4) and exit-verb (5) lessons
-        ("exit-discipline", 0), ("exit-discipline", 1),
-        ("exit-discipline", 2), ("exit-discipline", 3),
+        ("exit-discipline", 0), ("exit-discipline", 2),
+        ("exit-discipline", 3), ("exit-discipline", 4),
         # plan-not-P&L doctrine — the arm fire-count and whole-book-exit
         # measurements belong to the arm lessons (2, 4)
         ("position-management", 0), ("position-management", 1),
