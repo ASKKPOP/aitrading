@@ -935,7 +935,7 @@ def _run_max_abs_qty(run: dict) -> float:
 
 
 def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
-                         arm_usd: float) -> bool:
+                         arm_usd: float, exit_fee_usd: float = 0.0) -> bool:
     """Once a position has genuinely been in profit, do not let it go
     negative. Deterministic, needs NOTHING from the desk.
 
@@ -975,7 +975,11 @@ def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
         peak = float(peak_pnl)
         if peak < arm_usd:
             return False        # never was a winner — nothing to protect
-        return float(current_pnl) <= 0.0
+        # Fee-aware floor (JTO 1304, 2026-08-15): at `total <= 0` gross,
+        # EVERY fire nets a loss — best case exactly -1 exit fee — while
+        # the label reports a banked winner. Firing at total <= exit fee
+        # makes the best case $0 net; the poll gap is unchanged.
+        return float(current_pnl) <= max(0.0, float(exit_fee_usd or 0))
     except (TypeError, ValueError):
         return False
 
@@ -1145,10 +1149,33 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # must not lower the bar under an already-earned peak (run 976).
     if has_position and pnl["mark_age_ok"]:
         _be_arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run))
-        if _breakeven_floor_hit(run.get("peak_pnl_usd"), pnl["total"], _be_arm):
+        # One-leg exit fee on the CURRENT book — closing costs this much.
+        try:
+            _pos = pnl.get("position") or {}
+            _be_fee = abs(float(_pos.get("quantity") or 0)) \
+                * float(_pos.get("current_price") or 0) \
+                * float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
+        except (TypeError, ValueError):
+            _be_fee = 0.0
+        if _breakeven_floor_hit(run.get("peak_pnl_usd"), pnl["total"], _be_arm,
+                                exit_fee_usd=_be_fee):
             logger.info("breakeven ratchet fired (run %s): peak=%s now=%s arm=%s",
                         run["id"], run.get("peak_pnl_usd"), pnl["total"],
                         round(_be_arm, 4))
+            # Discriminator: this fire shares the trailing_lock REASON (the
+            # string is classified in dispositions + notifications) but is
+            # the breakeven ratchet — B's attribution pass could not tell
+            # them apart from the tape.
+            try:
+                emit_telemetry_event(run["id"], "stop_mechanism",
+                                     {"reason": "trailing_lock",
+                                      "mechanism": "breakeven_ratchet",
+                                      "peak": run.get("peak_pnl_usd"),
+                                      "total": pnl["total"],
+                                      "arm": round(_be_arm, 4),
+                                      "exit_fee": round(_be_fee, 4)})
+            except Exception:  # noqa: BLE001 — telemetry never blocks a stop
+                pass
             return "stop_event:trailing_lock"
 
     # Conviction-collapse exit (2026-07-31, desk item I5). Ships dark. A held
