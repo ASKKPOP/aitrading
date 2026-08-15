@@ -8,6 +8,41 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 16 — 10:1xZ (anchor 10:10:35): REPRODUCED — the schema's advertised minimum size is below the executable floor; fix in flight
+
+**FAILED (n=2, deterministic):** FIL run 1286 cycle 4 (10:04:11Z) authored
+its second sell (conf 0.58, conviction 0.60, stop 1.97 / target 4.44 —
+sane shape again) and the identical dust skip destroyed it: **margin
+$8.62 < $10 floor**, same figure as cycle 1 despite a different
+size_scale. Cause traced in code, not guessed:
+
+- `size_usd = max_bet_usd × size_frac` (size_scale never enters — the
+  cycle-13 formula was wrong; corrected here).
+- The desk's prompt schema advertises **`size_frac: 0.05-1.0`** as legal.
+- Fleet 35's true executable minimum (`$10 dust floor / max_bet`):
+  FIL 0.058, KAITO 0.067, UNI 0.108, **BNB 0.120** — on EVERY fleet-35
+  run the advertised minimum is below the executable floor. The desk
+  picked the advertised minimum for a cautious starter, twice; the
+  platform silently destroyed both. Contract violation between prompt
+  and rail — the fleet cannot open a cautious position at all.
+
+**Fix (shipped this cycle, branch `fix/size-frac-dust-floor`):** one
+definition `_dust_floor_usd` now serves the final dust guard AND a new
+order-params rail — the engine passes the run's true minimum and a
+sub-floor ask is floored UP to it (capped at the full bet), journaled
+`"size_frac 0.05 raised to floor 0.058"` in the rails' own idiom; the
+schema line states the raise. Documented as the one bounded monotone
+exception: below the floor an order is not shrunk but destroyed, and the
+enlargement is capped at the $10-margin minimum order. Fail-before tests
+red→green (4 new), 4/4 mutants killed, ruff clean; full suite running,
+then PR → CI → deploy.
+
+**Also this cycle:** BNB 1294 logged one `conf 0.0` hold — "light cycle:
+no LLM verdict" fail-safe (LLM returned nothing); safe when flat, noted
+only. Cycle 5 otherwise all-hold, book flat, 0 tracebacks.
+
+---
+
 ## Cycle 15 — 09:4xZ (anchor 09:40:35): quiet — cycle 3 all-hold, still flat
 
 10/10 holds (conf 0.38–0.63), `last_cycle_word` on every brief, 0
