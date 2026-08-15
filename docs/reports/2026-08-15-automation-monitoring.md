@@ -8,6 +8,25 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 39 — 22:5xZ (anchor 22:51:59): JTO closed by a trailing lock AT A LOSS — agents dispatched; FIL goes triple-digit
+
+- **JTO 1304: trailing lock flattened the long at 0.58006 — BELOW the
+  0.5806 entry — net ≈ −$0.046.** A lock exists to bank profit; this
+  one realized a loss (peak was ~+0.38%). Second lock underperformance
+  today (n=1: 44%-of-peak fire; n=2: negative fire). Two-agent review
+  dispatched: was it poll-lag, a lock level computed below
+  breakeven+fees, or something else.
+- **FIL 1305 opened the fleet's first triple-digit position**: short
+  304 units @ 0.687 ($209 notional, $104 margin) from a $522 max_bet
+  slot — sane bracket (3.4/9.8), currently +$0.41. `predecessor_run`
+  (R16) visibly rendering the ancestor run's history. But: authored a
+  NEGATIVE target again at cycle 6 (−2.97, rails rebuilt) and an
+  empty-why arm (n=5).
+- `run_expiry` not yet in the 22:46 brief — that cycle ran seconds
+  before the #448 restart; next held-book cycle must show it (watch).
+
+---
+
 ## Cycle 38 — 22:1xZ: SUI at_time flatten −$0.014 — information failure verdict; my ladder claim corrected
 
 **P&L first: −$0.014 net** (gross +$0.014, fees $0.028); fleet 35 day:
