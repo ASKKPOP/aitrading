@@ -8,6 +8,52 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## OWNER-ORDERED RESET — 08:2x–08:4xZ: info@askkpop.com (user 5 / agent 6) wiped for a fresh test
+
+Owner: *"i need test again for info@askkpop.com so remove this part (can not
+delete)"* → *"delete all slot and fleet"* → *"and balance make 10000"* →
+*"and clear this part week, month year"*. Executed step by step, platform
+paths first, single transactions, verified after each:
+
+1. **Queued flattens executed early** via the platform's own
+   `_flatten_run` → `_simple_transition` (the exact code Monday's open
+   would run, minus the market gate — owner order accepts Friday-close
+   marks on the test account): MSFT 1113 +0.331, JPM 1116 −1.604,
+   IBM 1119 −0.863 lifetime. `pnl_audit` verdict `ok`, 3 flattens, before
+   the history deletion below.
+2. **Fleet 31 finished stopping on its own** within seconds (all runs
+   terminal → supervisor stopped it, released `active_fleet_key='user:5'` —
+   the unique key that was blocking any new fleet for this account; that
+   WAS the "cannot delete/test again" blocker).
+3. **Full graph deletion, fleets 28/29/31** (fleet-30 precedent, one
+   transaction): 154 runs, 97,004 run_events, 14,173 fleet_events, 576
+   signals, 155 candidates, 43 slots, 67 symbol cooldowns, 3 fleets, all 3
+   leftover agent-6 positions (CRM + USDKRW ×2 orphans). Zero orphans
+   verified.
+4. **Balance reset**: agents.cash = starting_capital = **10,000**.
+5. **History widgets cleared** (week/month/year sources): profit_history
+   903, agent_metric_snapshots 874, signal_quality_scores 576,
+   signal_predictions 576, +2 cooldowns. Runs/signals/positions all 0.
+
+**Kept, deliberately**: `desk_memory` chunks (owner order "all cycle result
+keep in RAG" — the corpus keeps the lessons; bodies are self-contained
+text), users/agents identity rows, risk_limits, automation_configs.
+
+**⚠️ CONSEQUENCES FOR FUTURE CYCLES (do not misread):**
+- `pnl_audit --since 2026-08-12..15` now EXCLUDES agent 6's deleted ledger —
+  historical day sums have changed. The 24h sweep must NOT read that as
+  drift. The markdown record above retains the true pre-deletion figures.
+- Watch item CLOSED: MSFT/JPM/IBM Monday-open flattens (executed early by
+  owner order). **AUDCHF 1147 (fleet 33, agent 59) still stands** for
+  Sunday 21:00Z.
+- Swing-block trial (HANDOFF-n-slot §7 counter) for fleet 31: terminated by
+  owner reset; counter resets with whatever fleet is built next.
+- Next expected event: the owner builds a NEW fleet on info@askkpop.com
+  ($10k). First session after: run §2 checks, note the fleet id in the
+  handoff.
+
+---
+
 ## Cycle 12 — 07:42Z (anchored 07:42:37Z) — BTC cuts half before its stop; THE COOLDOWN TRAP ARMS A THIRD TIME
 
 **P&L FIRST: day −$3.31** (`pnl_audit` `ok`). One desk trade: BTC 1271
