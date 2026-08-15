@@ -8,6 +8,89 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 2 — 01:47Z (anchored `SELECT NOW()` = 2026-08-15 01:47:34Z)
+
+**Tape: silent.** Zero trades, zero closes since cycle 1 → no two-agent
+dispatch (nothing to attribute). `pnl_audit` 08-15 **−$0.30**, `ok`, 0 flattens
+— unchanged. Two decisions, both `hold` (SOL 1274 conf 0.53, ZEC 1275 conf
+0.48). Fleet 34 still **5/25**. Queued flattens still correctly parked. Worker
+clean; one new benign feed 404 (`Yahoo daily candles failed for BK`).
+
+**Book drifted against us, small:** SOL 1274 short −$0.53 → **−$0.74**,
+BTC 1271 short −$0.09 → **−$0.12**. Fleet 34 total −$1.16 (−$0.30 realized fees
++ −$0.86 open). Both shorts are losing because crypto ticked up; neither has
+reached any rail. Not a defect — but it is a loss, and it is the reason the next
+finding matters.
+
+### 🔴 FINDING — the desk's memory recall reads the wrong 15% of its own corpus
+
+First live sighting of the Plan 22 RAG `recall` event this session, on run 1274
+cycle 4 — the SOL short, while losing, asking *"cut or hold?"*.
+
+**The corpus (`desk_memory`, prod):**
+
+| kind | chunks | retrieved in production? |
+|---|---|---|
+| `decision` | 3,231 | ❌ never |
+| **`monitoring`** | **636** | ✅ **the only kind ever read** |
+| `outcome` | 278 | ❌ never |
+| `lesson` | 147 | ❌ never |
+
+There is exactly **one** production call site — `run_engine.py:3937`, inside
+`_recall_line`, with **`kind="monitoring"` hardcoded**. Every other
+`desk_memory.search` in the tree is in `tests/`. The result is injected straight
+into the decision prompt at `run_engine.py:4385` under the heading
+*"What this desk has already learned about cycles like this."*
+
+So the desk's memory of **actual trade outcomes (278 chunks)** and its
+**curated Plan 22 trading lessons (147 chunks)** are dead weight — written,
+stored, and never read by anything that trades.
+
+**What it actually injected into run 1274's prompt** (`scheme:
+deterministic-top2`, both hits from `2026-08-03-automation-monitoring.md`):
+
+1. `#The ladder that never ends — quantified, and NOT shipped` (score 12.29).
+   Body: scaling out of a position cost **0.53 of drag** versus holding whole,
+   concluding *"the cause is not mechanical greed, and that is why nothing
+   ships."*
+2. `#NEW WATCH — stops tighter than a day's noise` (score 10.88). Body:
+   *"Two instances, **no outcome yet** — neither has been stopped out. Logged,
+   not shipped."*
+
+A desk deciding whether to cut a losing short was handed (a) an argument that
+trimming is drag, and (b) an explicitly unresolved hypothesis — both labelled
+as things it had *learned*. Neither chunk carries an outcome. Both are
+engineering commentary about whether to ship a platform change.
+
+**Base rate of deliberately-inconclusive chunks** ("NOT shipped" / "no outcome
+yet" / "logged, not"): **16 / 636 monitoring — and 0 in every other kind.** The
+one corpus the desk reads is the only one carrying text we wrote precisely
+*because we had not concluded anything.* And retrieval is biased toward them:
+those sections are written while analysing a losing shape, so they are
+term-dense for exactly the query a losing run generates. The observed hit
+ranked **#1**.
+
+**Honesty about strength of claim** (owner law — do not assume the analysis is
+right):
+- **CERTAIN** (code + payload + body all read): the single prod recall path
+  reads only `monitoring`; `outcome` and `lesson` are never retrieved.
+- **CERTAIN**: the two chunks quoted above were injected into a live decision.
+- **NOT PROVEN**: that this changed the decision. SOL held at conf 0.53 and is
+  −$0.74. **n=1.** This is not yet grounds to claim a measured P&L cost.
+
+**Fix designed (AI-first):** rank `outcome` + `lesson` first — what actually
+happened last time in this shape, and the curated lessons — with `monitoring`
+as fallback, and exclude chunks carrying unresolved markers. One call site.
+
+### Watch items (carried + new)
+
+5. Recall corpus kind selection — fix in build.
+6. `horizon_shadow` fired twice (runs 1274, 1271) with triggers
+   `["psych_shock","hot_issue"]`, "desk horizon holds until ~13:1xZ". Shadow
+   mode, not acting. First sighting; watching for its first live promotion.
+
+---
+
 ## Cycle 1 — 01:34Z (anchored `SELECT NOW()` = 2026-08-15 01:34:35Z)
 
 **P&L (pnl_audit ledger replay, authoritative):** 08-15 **−$0.30**, 0 flattens,
