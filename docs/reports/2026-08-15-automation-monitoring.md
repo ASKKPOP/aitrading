@@ -8,6 +8,46 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 38 — 22:1xZ: SUI at_time flatten −$0.014 — information failure verdict; my ladder claim corrected
+
+**P&L first: −$0.014 net** (gross +$0.014, fees $0.028); fleet 35 day:
+8 closes, ≈ +$0.06. Counterfactual at both agents' marks: the flatten
+BEAT holding (~$0.004-0.007) — SUI went nowhere; TTL cost nothing this
+time.
+
+**Agent A (desk):** the desk's best-managed position of the day — held
+3 cycles per plan, no scratch-bank, coherent arm — killed by an 8h
+run TTL it structurally could not see: the at_time comes from the
+BUILD-time research thesis (horizon_hours 8), the desk authored 24h,
+and none of the ~20 composer lines conveys run life (A inventoried
+all). The platform journaled the contradiction 3× (`horizon_shadow`)
+then killed the run. Information failure, not management failure. The
+hazard: the same blindness amputates a WORKING winner at 1/12 of its
+thesis life.
+
+**Agent B (rails), correcting MY brief twice:** (1) the at_time flatten
+logged `flatten_close` — journal-only, ZERO ladder/cooldown effect
+(#249); my "platform-forced closes feed the loss ladder" claim does
+NOT replicate on this path — doctrine case NARROWED to the
+dust-escalation path (ETH, n=1). (2) The REAL defect:
+`leg_outcomes` charges only the CLOSING leg's fee (docstring claims
+"net of fees") — this fee-complete −$0.014 trade journals +$0.0002 and
+would ladder as a WIN. The fee-flip class is arithmetically invisible
+to the discipline written to catch it.
+
+**Actions:**
+1. SHIP NOW — run-TTL brief line (`run_expiry`, both agents' #1): the
+   desk sees "this run ends at T, Xh Ym left" and authors horizons/
+   targets against remaining life. Pure information, no doctrine.
+2. OWNER PACKAGE (backlog updated): full-fee accounting in
+   leg_outcomes (aligns code with its own docstring) + scratch band —
+   these interlock: full fees alone makes the ladder HARSHER on
+   scratches; the band alone hides real churn. Decide together.
+3. Shadow-score the research-8h vs desk-24h horizon disagreement (3×
+   journaled on this run alone).
+
+---
+
 ## Cycle 37 — 21:4xZ (anchor 21:40:42): quiet — UNI re-entry blocked by its own tightened gate
 
 UNI 1293 authored a sane re-entry short (stop 2.3 / target 7.6, >3:1;
