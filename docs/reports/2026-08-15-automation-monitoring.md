@@ -8,6 +8,24 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 35 — 20:3xZ (anchor 20:39:25): quiet-ish — FIL retired by horizon on a flat book; cooldown grind
+
+- FIL 1286 retired `stop_event:at_time` (20:33:52) — the desk's own 1 h
+  horizon from its 19:34 close order, fired on an already-flat run. 29 s
+  later an in-flight desk cycle emitted "close to lock loss" on the
+  flat book — the intent compiler correctly no-oped it
+  (`close_on_flat_noop`); no money moved, rails absorbed the race.
+- Cooldown grind: LTC + ETH (and UNI churning holds) in loss cooldowns
+  — per design after real losses this time.
+- SUI: favorable +$0.06, desk armed price_below 0.674 → reduce 0.5 with
+  an EMPTY why (n=3 on the empty-why watch); if it fires, the $15.5
+  remainder escalates to full close — the desk is not applying the
+  reduce-geometry line to ARM sizing (the line speaks to reduces; arms
+  compile to reduces at fire time — extension candidate if it fires).
+- New run 1305 building; 0 tracebacks; fleet 33 unchanged.
+
+---
+
 ## Cycle 34 — 20:0xZ: three closes (net −$0.03), cross-checked — direction-confused exit, fee-flip adapt poisoning
 
 **P&L first: ETH leg −$0.006 / FIL +$0.040 / LTC −$0.066 → −$0.03 this
