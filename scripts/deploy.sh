@@ -202,13 +202,29 @@ $SSH "
 # Sort by mtime, never by name — tags are not lexically ordered (.env.bak-welcome
 # has no date in it at all).
 say "pruning superseded backups (keeping the 2 newest per surface)"
+# TWO orderings, because the surfaces are not the same kind of thing.
+#
+# `.env.bak-*` are FILES written fresh by each deploy, so their mtimes are
+# distinct and truthful — and one legacy name (.env.bak-welcome) carries no
+# date at all, so name order would put it anywhere. mtime is right for these.
+#
+# The other four are DIRECTORIES made with `cp -a`, which preserves the SOURCE
+# tree's mtime. Measured on the box 2026-08-15: all three
+# `/usr/share/nginx/sooppiy.prev-*` and all three `admin-site.prev-*` shared
+# the identical mtime 2026-08-14 22:50:50, because the built SPA had not
+# changed since. `ls -dt` then has nothing to order by, an arbitrary tiebreak
+# put the NEWEST-by-name last, and `tail -n +3` would have deleted
+# `*.prev-20260815-024237` — the rollback for the deploy that had just run —
+# while keeping two older ones. These names are `<surface>.prev-YYYYmmdd-HHMMSS`,
+# fixed-width and zero-padded, so they ARE lexically ordered: sort by name.
 $SSH "
-  prune() { sudo ls -dt \$1 2>/dev/null | tail -n +\$((${KEEP_BACKUPS:-2} + 1)) | xargs -r sudo rm -rf; }
-  prune '$REMOTE/app.prev-*'
-  prune '$REMOTE/admin-site.prev-*'
-  prune '$REMOTE/.env.bak-*'
-  prune '/usr/share/nginx/sooppiy.prev-*'
-  prune '/usr/share/nginx/sooppiy-marketing.prev-*'
+  prune_mtime() { sudo ls -dt \$1 2>/dev/null | tail -n +\$((${KEEP_BACKUPS:-2} + 1)) | xargs -r sudo rm -rf; }
+  prune_name()  { sudo ls -d \$1 2>/dev/null | sort -r | tail -n +\$((${KEEP_BACKUPS:-2} + 1)) | xargs -r sudo rm -rf; }
+  prune_name  '$REMOTE/app.prev-*'
+  prune_name  '$REMOTE/admin-site.prev-*'
+  prune_mtime '$REMOTE/.env.bak-*'
+  prune_name  '/usr/share/nginx/sooppiy.prev-*'
+  prune_name  '/usr/share/nginx/sooppiy-marketing.prev-*'
 "
 
 # Stale upload tarballs in the box's /tmp. This deploy removes its own two
