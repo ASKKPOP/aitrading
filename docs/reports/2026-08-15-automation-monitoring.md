@@ -8,6 +8,31 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 32 — 18:4xZ (anchor 18:40:43): garbage stop returns (JTO); a −$0.001 leg silences a desk holding $25 — two watches armed
+
+- **Stop-shape watch FIRED**: JTO 1303 opened the fleet's first LONG
+  with an authored **stop_pct 0.05** ("beyond noise" — 0.05% is inside
+  noise on any crypto) → floored to 0.3. The SOL/BTC garbage class,
+  first appearance on fleet 35. Bracket now stop −0.3% / target +0.6%
+  on a small-cap — high probability of a fast stop-out; if it stops
+  quickly that is evidence toward a stop-vs-sigma coherence lesson
+  (n=1, watch). Note the rails caught it (floor note journaled), and
+  #440 fired its FOURTH save on the same order (0.05 → 0.0581).
+- **Cooldown mechanics on a held book (n=1, watch)**: ETH 1302's
+  −$0.001 reduce leg was classified `losing_close` — magnitude-blind —
+  stepping size down, bumping the conf gate, and silencing the desk
+  for 60 min WHILE IT HOLDS the $25.5 remainder. The book is fully
+  guarded watcher-side (stop 1895.2 / target 1823.6 / standing arm
+  1875 all fire during cooldown), so risk is bounded — but the desk
+  cannot manage its own remainder. Two candidate fixes if reproduced:
+  (a) scratch band — a close inside fee-noise (|realized| < ~1 fee
+  round trip) is neither win nor loss; (b) held-book cooldown yields
+  for manage/exit verbs, blocks only new opens. NOT shipping at n=1.
+
+Book: 4 shorts + 1 long (JTO), all bracketed; 0 tracebacks.
+
+---
+
 ## Cycle 31 — 18:1xZ (anchor 18:10:37): first SURVIVING partial reduce (boundary proven from the other side); 4 shorts
 
 - **ETH 1302 half-reduce SURVIVED** (17:54:49): `railed: {}` — no
