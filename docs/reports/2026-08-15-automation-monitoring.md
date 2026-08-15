@@ -8,6 +8,64 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 12 — 07:42Z (anchored 07:42:37Z) — BTC cuts half before its stop; THE COOLDOWN TRAP ARMS A THIRD TIME
+
+**P&L FIRST: day −$3.31** (`pnl_audit` `ok`). One desk trade: BTC 1271
+covered HALF its losing short @ 63076.9 (07:20:30Z), realized **−$0.171**
+(fee = 22–28% of the loss). SUI 1284 desk-retired $0. Both agents dispatched,
+cross-checked; they agree, and B verified the forward claim live.
+
+### The half-cover (Agent A, ledger-exact; live-mark rule followed)
+
+Ranks MIDDLE of three at the live mark: hold −0.237 < **actual −0.289** <
+full-cover −0.342. The desk's reasoning flipped on NARRATIVE, not price
+(+0.05% between cycles; thesis_alignment 0.8→0.5; cites a "60k–62k squeeze
+target" BELOW the current price — stale/garbled input; its own router graded
+the evidence "no specific trigger" while acting on it). It followed
+exit-discipline's FORM (reduce a slice, state why — not the 91%-of-loss
+full dump) while contradicting its substance (a 0.16% adverse move inside
+the 0.3% stop distance is the "expected cost of owning the trade").
+Executed unshaped — `railed: {}`, dust floor is $25 NOTIONAL and the $82.6
+remainder is 3.3× above it (B corrected A's margin framing).
+
+### 🔴 THE SOL TRAP, ARMED A THIRD TIME — verified live, not predicted
+
+adapt seq 534 at **07:47:26Z**: `losing_close` (−0.1712), size_mult 0.75,
+**cooldown_until 08:47:26Z**. Cycle 16 already gate-skipped. The desk is
+BLIND to its own remainder — short $82.6 notional, **0.169% from the
+63163.5 stop** — for an hour. Bounded: the SL/TP watcher runs on the
+control pass, so the stop executes regardless; what the cooldown removes is
+any better-than-stop pre-emption. Worst case ≈ −$0.29 + a cascading 2h
+cooldown (second losing_close).
+
+Arming tally: SOL 1274 (fired, desk exit −0.44 vs machine −0.88 = 2.00×
+worse) · ETH 1272 (armed, self-disarmed) · **BTC 1271 (armed, live now)**.
+The mechanism is deterministic (cooldown gate returns before
+`stop_router.clear`, 3600s vs 180s asymmetry). Owner rule
+`implement-every-time` binds: **the fix ships this session** — a routed
+stop hit outranks the loss cooldown (one block: check `stop_router.pending`
+before the `in_cooldown` return). This RESTORES the owner's 2026-08-13 rule
+(the AI is the main author of stop exits) rather than loosening a rail; the
+180s fail-safe stays for a silent desk.
+
+### Also on the tape
+
+- Prediction status: **halved, not resolved** — remainder keeps the same
+  stop/invalidation geometry; the dead-letter arm (63250 > stop 63163.5)
+  survives the cover, dead by geometry (`_evaluate_stop` runs before
+  `_fire_armed_order` in the same pass).
+- SUI 1284 retire: clean bracket-infeasibility in the desk's own words
+  ("stop at swing high ~2.6% exceeds target — no acceptable bracket").
+  Symbol cooldown stamped to 19:20:23Z. Tension flagged by B: the fresh
+  batch re-scored SUI short at 1.80 (2nd highest) — the 12h bench is the
+  anti-churn rail's cost if the thesis pays. Watch, by design.
+- ETH cooldown held (1 gate-skip, nothing slipped). Flattens parked clean
+  (B verified `is_market_open("forex")` = False — Saturday). Liq daemon
+  alive. 0 tracebacks. 10/25 running — under-deployment remains the
+  largest P&L lever (owner's call).
+
+---
+
 ## Cycle 11 — 07:12Z (anchored 07:12:36Z) — FIL completes the day's only winner (+$0.355); replacement pool fully accounted
 
 **P&L FIRST: day improved to −$3.13** (`pnl_audit` `ok`, was −3.32). The delta
