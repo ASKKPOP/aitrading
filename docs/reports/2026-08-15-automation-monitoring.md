@@ -35,6 +35,13 @@ dust-escalation path (ETH, n=1). (2) The REAL defect:
 would ladder as a WIN. The fee-flip class is arithmetically invisible
 to the discipline written to catch it.
 
+**#448 DEPLOYED — 22:5xZ addendum.** PR MERGED (`b7ab432`), image
+`sooppiy-backend:20260815-run-expiry` live. Functional in-container
+proof on the live JTO run: "Run life: this run HARD-ENDS at
+2026-08-16T07:48:16Z (8h 56m remaining)…" renders. 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260815-direction-coherence`.
+Day ship count: #439–#448 (10 PRs).
+
 **Actions:**
 1. SHIP NOW — run-TTL brief line (`run_expiry`, both agents' #1): the
    desk sees "this run ends at T, Xh Ym left" and authors horizons/
