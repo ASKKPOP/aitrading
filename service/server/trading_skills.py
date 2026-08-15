@@ -316,6 +316,16 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "rate — no desk sustains that; winners capped below "
                 "losers make the book unprofitable regardless of entry "
                 "edge.")},
+            {"applies_when": ["holding"], "evidence": (
+                "every cited risk was in the short's favor"), "text": (
+                "DIRECTION COHERENCE. Before any close or reduce, "
+                "state your position's sign, the cited risk's "
+                "direction, and that it moves AGAINST you. The measured "
+                "case (LTC, -$0.066) closed a SHORT citing bearish "
+                "confluence and downside warnings — every cited risk "
+                "was in the short's favor; the desk closed the position "
+                "that profits from the outcome it predicted. A risk "
+                "that helps your position is a reason to HOLD it.")},
             {"applies_when": ["holding", "losing"], "text": (
                 "Never add to a losing position — an add is a fresh claim "
                 "that the thesis is working, and a drawdown is evidence "
