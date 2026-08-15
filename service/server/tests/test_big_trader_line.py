@@ -118,7 +118,7 @@ class BigTraderLineTests(unittest.TestCase):
 
     def test_the_line_is_actually_WIRED_into_the_full_prompt(self):
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
+        src = inspect.getsource(run_engine._compose_position_state)
         self.assertIn("_big_trader_line(run)", src,
                       "big-trader line is not wired into the full prompt")
 

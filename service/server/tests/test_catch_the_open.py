@@ -129,9 +129,10 @@ class OpeningWindowLineTests(unittest.TestCase):
                 run_engine._opening_window_line({"market": "us-stock"}), "")
 
     def test_wired_into_both_prompt_paths(self):
-        src = (Path(SERVER_DIR) / "run_engine.py").read_text()
-        self.assertEqual(src.count("+ _opening_window_line(run)"), 2,
-                         "line must reach BOTH decision paths")
+        import inspect
+        self.assertIn("_opening_window_line(run)",
+                      inspect.getsource(run_engine._compose_position_state),
+                      "line must be in the composed brief (both paths route through it)")
 
 
 if __name__ == "__main__":

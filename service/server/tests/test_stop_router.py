@@ -207,9 +207,10 @@ class EngineSideTests(unittest.TestCase):
     def test_line_is_WIRED_into_both_prompts(self):
         import inspect
         self.assertIn("_stop_hit_line(run)",
-                      inspect.getsource(run_engine._light_analysis))
-        self.assertIn("_stop_hit_line(run)",
-                      inspect.getsource(run_engine.run_cycle))
+                      inspect.getsource(run_engine._compose_position_state))
+        for path in (run_engine._light_analysis, run_engine.run_cycle):
+            self.assertIn("_compose_position_state(",
+                          inspect.getsource(path))
 
     def test_decision_clears_the_pending_hit(self):
         import inspect
