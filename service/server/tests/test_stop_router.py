@@ -21,6 +21,7 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+import automation
 import database
 import risk_engine
 import run_engine
@@ -169,6 +170,39 @@ class EngineSideTests(unittest.TestCase):
 
     def test_stop_hit_line_silent_without_a_hit(self):
         self.assertEqual(run_engine._stop_hit_line(self._RUN), "")
+
+    def test_the_emergency_never_offers_an_option_the_code_cannot_execute(self):
+        """The brief used to offer 'hold ONLY with a re-authored stop_pct'.
+
+        No code path can apply that. `automation.execute_paper_trade` writes
+        the bracket monotonically — `min()` for a short, `max()` for a long —
+        so a WIDER stop is refused by design ('NEVER LOOSEN an existing exit
+        level'); `risk_engine` only ratchets tighter; `orphan_reclaim` only
+        fills a NULL; and run_engine consumes `stop_pct` only on an opening
+        action. Live proof, prod 2026-08-15: run 1271 authored `stop_pct 1.23`
+        at cycle 5 (-> 63,749) and `positions.stop_loss` stayed 63,163.5, the
+        0.3% value written at open.
+
+        Offering it is worse than useless: 'hold' is the branch that ends in
+        the fail-safe close, so the brief steered the desk toward the one
+        option that both fails silently and forfeits its authority."""
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        line = run_engine._stop_hit_line(self._RUN)
+        self.assertNotIn("re-authored", line)
+        self.assertNotIn("stop_pct", line)
+        self.assertIn("cannot be widened", line,
+                      "the desk must be told the stop is fixed, not invited "
+                      "to move it")
+
+    def test_the_bracket_rail_really_does_refuse_to_widen(self):
+        """Pins the fact the brief's wording depends on. If a future change
+        lets the desk widen a stop mid-life, this fails and the brief text
+        has to be revisited with it."""
+        import inspect
+        src = inspect.getsource(automation.execute_paper_trade)
+        self.assertIn("NEVER LOOSEN", src)
+        self.assertIn("new_sl = min(", src, "short-side stop is not monotone")
+        self.assertIn("new_sl = max(", src, "long-side stop is not monotone")
 
     def test_line_is_WIRED_into_both_prompts(self):
         import inspect
