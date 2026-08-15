@@ -5049,6 +5049,40 @@ def _order_gate_skip(run: dict, cfg: dict, action: str) -> Optional[str]:
     return None
 
 
+def _cooldown_blocks(run_id, adapt_state) -> bool:
+    """Should the adapt loss cooldown skip this cycle?
+
+    True only when the cooldown is active AND no routed stop hit awaits the
+    desk's ruling. A routed stop hit OUTRANKS the cooldown — live sequence
+    (SOL 1274, 2026-08-15 02:21–02:24Z): the desk's own de-risking
+    half-cover was scored `losing_close`, arming a 3600s cooldown; the stop
+    then traded; six stop-hit priority dispatches at 30s spacing all died at
+    this gate (its return sits before `stop_router.clear`); the 180s router
+    timeout then fail-safe-dumped the book — exactly 2.00x worse than the
+    desk's own exit on the same symbol/qty 14.5 min earlier. The shape
+    re-armed twice more that day (ETH 1272; BTC 1271 blind for an hour at
+    0.17% from its stop).
+
+    stop_router exists because of the owner rule 2026-08-13: the sooppiy AI
+    is the MAIN author of stop exits; the watcher's close is only the
+    fail-safe. Gating the desk off its own stop ruling — precisely after a
+    loss, when it matters most — reinstated what that module was built to
+    abolish. The emergency ruling passes; every ordinary cooldown cycle
+    still skips; a desk that stays silent still meets the 180s fail-safe
+    unchanged. Fail-closed: a broken router means the cooldown gates as
+    before."""
+    import run_feedback
+    if not run_feedback.in_cooldown(adapt_state):
+        return False
+    try:
+        import stop_router
+        if stop_router.enabled() and stop_router.pending(run_id) is not None:
+            return False
+    except Exception:  # noqa: BLE001 — gate must fail closed (i.e. gate)
+        pass
+    return True
+
+
 def run_cycle(run_id: int) -> dict:
     """One full cycle: claim -> pre-gates -> analysis -> gates -> trade.
     Sync; called on the dedicated executor. Never raises."""
@@ -5080,6 +5114,16 @@ def run_cycle(run_id: int) -> dict:
         except Exception as exc:  # noqa: BLE001
             logger.warning("run cycle LLM attribution unavailable (run %s): %s",
                            run_id, exc)
+
+        # Announce deliberation start for a routed stop hit: the fail-safe
+        # must not dump the book while the desk is mid-ruling (stop_router
+        # extends the window from this stamp, hard-bounded).
+        try:
+            import stop_router
+            if stop_router.enabled() and stop_router.pending(run_id) is not None:
+                stop_router.begin_ruling(run_id)
+        except Exception:  # noqa: BLE001 — telemetry must never cost a cycle
+            pass
 
         seq = int(run["cycle_seq"])
         cfg = json.loads(run.get("config_snapshot_json") or "{}")
@@ -5114,12 +5158,20 @@ def run_cycle(run_id: int) -> dict:
                 run_feedback.retire_run(run, policy.get("reason") or "adapt")
                 result["skip_reason"] = "adapt_retired"
                 return result
-            if run_feedback.in_cooldown(adapt_state):
+            if _cooldown_blocks(run_id, adapt_state):
                 result["skip_reason"] = "adapt loss cooldown"
                 emit_telemetry_event(run_id, "gate_skip",
                                      {"cycle": seq, "stage": "adapt",
                                       "reason": "loss cooldown"})
                 return result
+            elif run_feedback.in_cooldown(adapt_state):
+                # in cooldown but a routed stop hit awaits the desk's ruling
+                # — the emergency outranks the gate (see _cooldown_blocks).
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "adapt",
+                                      "reason": "loss cooldown BYPASSED: "
+                                                "routed stop hit awaits the "
+                                                "desk's ruling"})
             adapt_params = run_feedback.effective_gate_params(adapt_state, cfg,
                                                               run_id=run["id"])
 

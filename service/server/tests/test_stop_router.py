@@ -61,6 +61,49 @@ class RouterCoreTests(unittest.TestCase):
         with patch.dict(os.environ, {"STOP_DESK_ROUTING": "0"}):
             self.assertFalse(stop_router.enabled())
 
+    def test_the_failsafe_does_not_dump_mid_deliberation(self):
+        """A desk actually DECIDING must not be fail-safed out from under
+        its own ruling. SOL 1274 (2026-08-15): the fail-safe fired at 183s
+        against the 180s window; dispatch alone can eat 30s and the
+        emergency runs the expensive full tier, so a slow LLM cycle can
+        cross the deadline mid-deliberation — the watcher then dumps the
+        book AND the deliberation is wasted. Once run_cycle stamps
+        `begin_ruling`, the hit gets one full timeout window measured from
+        deliberation start, hard-bounded: a hung cycle still meets the
+        fail-safe at (deciding_since + timeout)."""
+        t = {"now": 1000.0}
+        with patch.object(stop_router, "_now", side_effect=lambda: t["now"]):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+            t["now"] = 1170.0                    # 170s in, desk cycle starts
+            stop_router.begin_ruling(9)
+            t["now"] = 1200.0                    # 200s: past the raw window
+            self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58.2),
+                            "the fail-safe dumped the book while the desk "
+                            "was mid-deliberation")
+            t["now"] = 1170.0 + stop_router.timeout_s() + 1.0
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 58.1),
+                             "a hung deliberation must still meet the "
+                             "fail-safe at the hard bound")
+
+    def test_without_a_ruling_the_window_is_unchanged(self):
+        """No begin_ruling => the original 180s clock, byte-for-byte."""
+        t = {"now": 1000.0}
+        with patch.object(stop_router, "_now", side_effect=lambda: t["now"]):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+            t["now"] = 1000.0 + stop_router.timeout_s() + 1.0
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 58.1))
+
+    def test_begin_ruling_on_an_unnoted_run_is_a_noop(self):
+        stop_router.begin_ruling(77)             # must not raise or create
+        self.assertIsNone(stop_router.pending(77))
+
+    def test_run_cycle_stamps_the_ruling_start(self):
+        import inspect
+        self.assertIn("stop_router.begin_ruling(run_id)",
+                      inspect.getsource(run_engine.run_cycle),
+                      "the desk never announces deliberation start — the "
+                      "fail-safe cannot know it is mid-ruling")
+
 
 class WatcherRoutingTests(unittest.TestCase):
     def setUp(self):
@@ -211,6 +254,56 @@ class EngineSideTests(unittest.TestCase):
         for path in (run_engine._light_analysis, run_engine.run_cycle):
             self.assertIn("_compose_position_state(",
                           inspect.getsource(path))
+
+    def test_a_routed_stop_hit_outranks_the_loss_cooldown(self):
+        """The SOL 1274 sequence, live 2026-08-15 02:21–02:24Z: the desk's own
+        de-risking half-cover was scored `losing_close`, arming a 3600s adapt
+        cooldown; the stop then traded; SIX stop-hit priority dispatches at
+        30s spacing all short-circuited at the cooldown gate (it returns
+        before `stop_router.clear`); after the 180s router timeout the
+        fail-safe dumped the book at 75.514 — exactly 2.00x worse than the
+        desk's own exit on the same symbol/qty 14.5 min earlier (−0.88105 vs
+        −0.44030). The shape re-armed twice more the same day (ETH 1272, BTC
+        1271 — the latter blind for an hour at 0.17% from its stop).
+
+        stop_router exists because of the owner rule 2026-08-13: the sooppiy
+        AI is the MAIN author of stop exits; the watcher's close is only the
+        fail-safe. A cooldown gate that structurally prevents the desk from
+        ever ruling on its own stop reinstates the behaviour that module was
+        built to abolish — precisely when it matters most, right after a
+        loss. The emergency ruling must pass the gate; ordinary cycles in
+        cooldown stay gated; the 180s fail-safe still binds a silent desk."""
+        cooling = {"cooldown_until": "2999-01-01T00:00:00Z"}
+        # cooldown, no hit: gates.
+        self.assertTrue(run_engine._cooldown_blocks(9, cooling))
+        # cooldown + routed hit: the emergency outranks the gate.
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        self.assertFalse(run_engine._cooldown_blocks(9, cooling),
+                         "a run in adapt cooldown can never rule on its own "
+                         "stop — the 180s timer sells the book instead")
+        # and run_cycle must consult this predicate, not re-derive it.
+        import inspect
+        self.assertIn("_cooldown_blocks(run_id, adapt_state)",
+                      inspect.getsource(run_engine.run_cycle))
+
+    def test_ordinary_cooldown_cycles_stay_gated(self):
+        """The bypass is for the emergency ruling ONLY."""
+        cooling = {"cooldown_until": "2999-01-01T00:00:00Z"}
+        # another run's hit must not open THIS run's gate
+        stop_router.note_hit(8, 1, "stop_loss", 58.3)
+        self.assertTrue(run_engine._cooldown_blocks(9, cooling))
+        # no cooldown: never blocks
+        self.assertFalse(run_engine._cooldown_blocks(9, {}))
+        # router disabled: fail closed — the cooldown gates as before
+        stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        with patch.dict(os.environ, {"STOP_DESK_ROUTING": "0"}):
+            self.assertTrue(run_engine._cooldown_blocks(9, cooling))
+        # router BROKEN: also fail closed — an exception must gate, not open
+        with patch.object(stop_router, "pending",
+                          side_effect=RuntimeError("router down")):
+            self.assertTrue(run_engine._cooldown_blocks(9, cooling),
+                            "a broken router must not silently disable the "
+                            "loss cooldown")
 
     def test_decision_clears_the_pending_hit(self):
         import inspect

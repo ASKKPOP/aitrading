@@ -37,7 +37,10 @@ from __future__ import annotations
 import os
 import time
 
-# run_id -> {"position_id", "trigger", "price", "ts"}
+# Indirection for tests — patch stop_router._now, never stdlib time.
+_now = time.monotonic
+
+# run_id -> {"position_id", "trigger", "price", "ts", "deciding_since"?}
 _PENDING: dict[int, dict] = {}
 # run_id -> suppress re-noting until this monotonic time
 _SUPPRESS_UNTIL: dict[int, float] = {}
@@ -69,10 +72,22 @@ def note_hit(run_id: int, position_id: int, trigger: str,
     window has expired for an already-noted hit (the watcher closes) or
     re-noting is suppressed after a fresh desk verdict (no close either —
     the desk just ruled)."""
-    now = time.monotonic()
+    now = _now()
     pending = _PENDING.get(run_id)
     if pending is not None:
-        if now - pending["ts"] >= timeout_s():
+        # A desk actually DECIDING is not "silent": once run_cycle stamps
+        # begin_ruling, the hit gets one full timeout window measured from
+        # deliberation start (SOL 1274's fail-safe fired at 183s vs the
+        # 180s window; dispatch alone can eat 30s and the emergency runs
+        # the expensive full tier — dumping the book mid-deliberation both
+        # wastes the LLM call and steals the ruling). HARD-BOUNDED: a hung
+        # cycle still meets the fail-safe at deciding_since + timeout, so
+        # the worst case is dispatch-window + one deliberation window.
+        deadline = pending["ts"] + timeout_s()
+        deciding = pending.get("deciding_since")
+        if deciding is not None:
+            deadline = max(deadline, deciding + timeout_s())
+        if now >= deadline:
             _PENDING.pop(run_id, None)
             return False               # fail-safe: programming closes
         return True                    # meeting already convened — wait
@@ -83,6 +98,16 @@ def note_hit(run_id: int, position_id: int, trigger: str,
     return True
 
 
+def begin_ruling(run_id: int) -> None:
+    """The desk's emergency cycle has STARTED for this run's pending hit.
+
+    Stamped once (the first cycle to reach it wins); a no-op when nothing
+    is pending. See note_hit for why this extends the fail-safe window."""
+    pending = _PENDING.get(run_id)
+    if pending is not None and "deciding_since" not in pending:
+        pending["deciding_since"] = _now()
+
+
 def pending(run_id: int) -> "dict | None":
     return _PENDING.get(run_id)
 
@@ -91,7 +116,7 @@ def clear(run_id: int) -> None:
     """A desk decision cycle ran for this run — its verdict governs.
     Suppress re-noting for one think-window so a justified hold sticks."""
     if _PENDING.pop(run_id, None) is not None:
-        _SUPPRESS_UNTIL[run_id] = time.monotonic() + renote_min() * 60.0
+        _SUPPRESS_UNTIL[run_id] = _now() + renote_min() * 60.0
 
 
 def _reset() -> None:
