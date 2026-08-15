@@ -8,6 +8,79 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## 24-HOUR SWEEP — 15:3x–16:0xZ (window 08-14 15:35Z → 08-15 15:35Z): adversarial re-proof of the day
+
+### Ships re-proven in the RUNNING container (single cumulative image `20260815-one-invalidation`, 0 tracebacks)
+Every fix grep-verified live: #439 `_cooldown_blocks`/`begin_ruling` ✓,
+#440 `min_size_frac`+`_dust_floor_usd` ✓, #441 discard note ✓, #443
+`_reduce_geometry_line` ✓, #444 + fee-drag + path-coherence skills ✓
+(and render-verified via live `skills_block`), #436 `_VOLUME_CANDIDATES=60`
+✓, #432 `_RECALL_KINDS=(outcome,lesson)` ✓. Six PRs merged+deployed in
+the window: #439 #440 #441 #442 #443 #444.
+
+### Behaviour over the day — what each fix ACTUALLY did (adversarial)
+- **PROVEN at scale**: #438 briefs on 100% of decisions since fleet-35
+  birth (0 missing of ~180); #432 recall — 41 recall events, lesson
+  chunks visibly served (FIL entry quote, UNI exit).
+- **PROVEN n=1 but decisive**: #440 fired EXACTLY ONCE (UNI 11:53) —
+  and that one raise created the fleet's first position and its first
+  win path. **Correction to my own cycle-13-era tally: the "5 floor
+  raises" count was a contaminated grep** (trail-arm floor notes
+  matched); the true #440 count is 1. R15 bracket gate exercised
+  (KAITO refused at $561, admitted at $1,000). #436 built the fleet
+  from 24 candidates (n=1 build).
+- **UNEXERCISED — deployed but no occasion, say so plainly**: #439 (0
+  stop hits in 24h, zero stop_router events), #441 (no post-deploy
+  discarded non-hold), #443 positive render (no held book since 14:50;
+  negative case proven), #437 size pin (owner never resized;
+  user_size_cap NULL), #434 stop-hit brief (no stop hits). These are
+  code-verified, behaviour-pending — not "working", not "failed".
+
+### True 24h P&L (pnl_audit, flatten-reconciled, resid 0.00 both frames)
+- **UTC 08-15: ledger −$3.26** (fee asym −0.84 explains ledger−adapt
+  fully). Decomposition: fleet 34 (agent 60) −$2.50 (ETH −1.43,
+  SOL −1.32, BTC orphan −0.17, FIL +0.42); **fleet 35 (agent 6)
+  +$0.08** (UNI −0.086, FIL +0.169); pre-reset NQ in KST segment.
+- **KST day 08-15 (08-14 15:00Z → 08-15 15:00Z): −$5.44** (adds the
+  08-14 evening wind-down segment, dominated by the NQ flatten −2.15).
+
+### SHAPE of wins and losses
+Wins: floor-scale desk scratches banked before bounces (FIL +0.17,
+fleet-34 FIL +0.42) — small, fee-heavy, real. Losses: (a) fleet 34's
+fee-churn pattern — ETH entered LONG after three straight cycles of
+"conflicting inputs / preserve capital", scratched half at entry price,
+closed −0.2% lower; **fees were 62% of the ETH loss**; (b) wind-down
+flattens (NQ −2.15, BTC orphan −0.17) — owner-ordered, not strategy.
+The monitored fleet (35) finished its first day NET POSITIVE with
+visibly better process than fleet 34's tape.
+
+### Gap admitted (no excuse): fleet 34's final closes (ETH 1272,
+SOL 1274, BTC 1271) received NO two-agent review — the owner reset and
+target switch arrived mid-morning. Their visible shape (fee churn on
+conflicted entries; "loss exceeds house floor" exits) is the same class
+today's shipped skills target. Fleet 34 is stopped; no continuing
+exposure; the skills apply platform-wide to every future fleet.
+
+### Owner obligation — TODAY'S LOSSES → TODAY'S SOLUTIONS (all shipped, not described)
+- UNI −$0.095 → path-coherence skill (#443), fee-drag-truth skill
+  (#443), reduce-geometry line (#443), one-invalidation (#444) — all
+  DEPLOYED and render-verified same day.
+- Fleet-34 fee churn → the same fee-drag + path-coherence lessons are
+  in every future desk prompt; the fleet itself is owner-stopped.
+- Structural entry stall (would have kept fleet 35 at 0 positions
+  forever) → #440 shipped and proven on tape.
+
+### Regression check vs prior day
+Yesterday's two headline defects both have shipped counters: write-once
+stop discard + cooldown blindness → #439 (code-verified, awaiting first
+live stop-in-cooldown); recall corpus starvation → 41 recall events
+serving outcome/lesson chunks today. No new regressions: 0 tracebacks
+24h, briefs 100%, calibration/leaderboard jobs running, site 200s.
+Standing next: AUDCHF 1147 Sunday 21:00Z flatten; fleet 33 `stopping`;
+#443/#441/#439 first live exercises.
+
+---
+
 ## Cycle 26 — 15:3xZ (anchor 15:34:56): quiet — both ex-position runs in their cooldowns
 
 UNI 1293 sits in adapt **loss cooldown** (cycles 14/15 skipped — the

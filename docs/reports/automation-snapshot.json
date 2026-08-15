@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-15T15:35Z",
+  "as_of": "2026-08-15T16:00Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -828,5 +828,25 @@
     "open_positions": 0,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
     "note": "2 closed trades: UNI -$0.095, FIL +$0.153 (first win); day +$0.058; one-invalidation skill shipping"
+  },
+  "sweep_24h": {
+    "utc_pnl": -3.26,
+    "kst_pnl": -5.44,
+    "fleet35_pnl": 0.08,
+    "ships": [
+      "#439",
+      "#440",
+      "#441",
+      "#442",
+      "#443",
+      "#444"
+    ],
+    "unexercised": [
+      "#439",
+      "#441",
+      "#443-positive",
+      "#437",
+      "#434"
+    ]
   }
 }
