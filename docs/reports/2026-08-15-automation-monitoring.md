@@ -8,6 +8,45 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 40 — 23:0xZ: JTO verdict — NOT the trailing lock; the breakeven ratchet is guaranteed-negative by construction
+
+**CORRECTION to cycle 39 (mine):** the event label lied and I repeated
+it. B's reconstruction: the configured trail (arm $0.76) NEVER armed —
+peak was $0.10. What fired was the **breakeven ratchet**, which reuses
+the `stop_event:trailing_lock` label. Detection lag ≈ 0; the loss
+decomposes −$0.011 structural + −$0.035 one 61s poll gap.
+
+**P&L first: −$0.046 net — and the ratchet was the BEST branch**
+(holding = −$0.092 at mark; the desk's stop untouched). The defects:
+
+- **Agent B (rails):** the ratchet floor is `total ≤ 0` GROSS of exit
+  fee — **every fire nets a loss; best case is −1 exit fee** — while
+  the label and fleet disposition (`banked winner — replace at once`)
+  report it as a win, corrupting downstream attribution (including
+  ours, until now). "n=2 lock defect" REFUTED: 1303 was the real trail
+  (mark lag), 1304 the ratchet — two mechanisms, one label, a debt
+  ratchet_audit.py already admits. Poll-speed fix refuted (≤$0.035 on
+  a $25 book); arm-floor-raise refuted (would have left 1304 unarmed
+  → −$0.092).
+- **Agent A (desk):** the desk authored the loss three ways — bought an
+  entry it had itself rejected TWICE ("no positive-expectancy entry",
+  written at two lower prices, chased at the range top with nothing
+  new); placed a 0.586 arm ~2× beyond any measured next-look move
+  (empty why) and never repaired it though the reachability lesson was
+  served in recall BOTH management cycles; deferred to the dead arm at
+  the peak (+$0.074 was available). Read-and-overridden again.
+
+**Actions:**
+1. SHIP NOW (B): ratchet floor `total ≤ 0` → `total ≤ est. exit fee`
+   (every fire becomes ≥$0-net-capable) + a `mechanism` payload
+   discriminator so ratchet fires stop masquerading as trail fires.
+2. NEXT SESSION (A, designed, evidenced): arm-reachability rail at
+   intent time — clamp reduce-arms beyond the measured next-look range
+   (skill served twice and overridden; 60+ arms, 3 fired). Backlogged
+   as first implementation task, not dropped.
+
+---
+
 ## Cycle 39 — 22:5xZ (anchor 22:51:59): JTO closed by a trailing lock AT A LOSS — agents dispatched; FIL goes triple-digit
 
 - **JTO 1304: trailing lock flattened the long at 0.58006 — BELOW the
