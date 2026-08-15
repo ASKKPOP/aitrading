@@ -8,6 +8,84 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 9 — 06:13Z (anchored 06:13:44Z) — ETH round trip closes at −$1.87; FIL banks a winner; two-agent cross-check
+
+**P&L FIRST: day −$3.32** (`pnl_audit` `ok`), delta −$0.98 from cycle 8,
+reconciled to the cent: ETH 1272 remainder sell **−1.213** + FIL 1283 covers
+**+0.146 / +0.087**. Two idle-retires (1273 HYPE, 1275 ZEC) at $0. 11 running.
+
+### ETH 1272 — the completed round trip, −$1.8708 (ledger-verified)
+
+| leg | price | net |
+|---|---|---|
+| entry buy 0.5256 @ 1883.60 (01:56, **panel-crash fallback**) | | −0.4455 fee |
+| trim 0.2628 @ 1883.64 (02:56, fee 21× gain) | +0.04 | −0.2122 |
+| final 0.2628 @ 1879.83 (05:56, floor-rule exit) | −3.77 | −1.2130 |
+| **total** | | **−1.8708** |
+
+**Verdict (both agents, cross-checked): the loss was authored at ENTRY, and
+48% of it was fees.** The buy existed only because the panel crashed on the
+one cycle it would have vetoed (it had downgraded the same buy 3 consecutive
+cycles). The same fleet's FIL desk read the identical tape (FGI 34 fear,
+negative macro) as SHORT — and profited. Fee decomposition: −0.98 price,
+−0.89 fees.
+
+- **The 02:56 fee-churn trim's real cost was structural, not the $0.21:**
+  its `losing_close` armed a 1h59m decision lockout (cycles 7–9 gate-skipped)
+  spanning the remainder's ENTIRE profitable window (peak +0.37), and burned
+  0.66 of floor headroom so the floor tripped on a −0.69% move.
+- **Cycle 10's stated belief "existing arm protect downside" was false** —
+  the 1865 arm sat behind the house floor and could never fire.
+- **The 05:56 exit itself is a WASH at the live mark** (ETH 1879.75 vs sold
+  1879.83, ~$0.20 inside fee noise). No post-entry choice ended positive.
+  Whether the lockout cost money is NOT DETERMINABLE — a cycle-7 sell at
+  +0.29 was available (+$1.28 better) but the desk's revealed behaviour at
+  flat readings was hold. The lockout provably removed the option, no more.
+- Post-close adapt (06:24:05Z): size_mult 0.75→**0.5**, conf_bump 0.1,
+  cooldown to 08:24:05Z — the feedback loop responding proportionately to 2
+  consecutive losing closes.
+
+### FIL 1283 — the healthy shape, +$0.171 realized, +$0.15 open
+
+Short 199.48 @ 0.6948 into fear + bearish technicals (stated, with >2:1 R:R
+plan). The panel **twice overrode a counter-trend "buy" proposal to hold**
+(04:43, 05:16) while the short ran to +0.63. Two staged partials cleared
+their fees **5.7× and 6.6×**. Blemish: cover 1 came after giving back ~47%
+from peak — banked on the retrace, not the extension. Cycle 6's decision
+carries the new `brief` array (brake_distance, standing_arm rendered) — #438
+telemetry live in real decisions.
+
+### Cross-check verdicts
+
+- **Agent B's "research pipeline dead" claim REJECTED.** It read
+  `researched: 0, built: 0` as a dead pipeline — the EXACT trap the
+  fleet-replenish-stall memory warns about (those counters only increment
+  for researching/building fleets, and cycle 5 already established this).
+  Verified live: fresh batches 05:16:07Z and 06:17:44Z, 105 rows / 16 crypto
+  each, `llm: 105`. The two-candidate replacement pool (AAVE −367.51/trade,
+  BCH −255.02/trade, both expectancy-dropped 6×) is holding + refusal —
+  the design, not starvation.
+- Both agents obeyed the live-mark counterfactual rule this cycle (first
+  time both have).
+- **Agent B's real find: BTC 1271's armed order is a dead letter.** Armed
+  05:18:11Z `price_above 63250 → reduce 0.5`, but the full-close stop sits
+  at 63163.5 — the stop always fires first; the desk's graduated exit intent
+  is silently void. $0 effect so far; same family as "the desk cannot see
+  the rail that retires it". Carried as a watch.
+- Idle-retires both CORRECT (12/12 cycles at sub-gate confidence, the
+  rail's exact target pattern).
+
+### Watches
+
+- BTC 1271: 0.15% from stop at anchor, still oscillating, prediction open;
+  NOT in cooldown (a stop hit would reach the desk).
+- ETH 1272 in cooldown to 08:24:05Z with a FLAT book — watch whether it
+  re-longs the same tape on expiry.
+- Queued flattens clean; liq daemon alive (FIL margin T1 improving); zero
+  tracebacks across both deploy restarts.
+
+---
+
 ## Intercycle — 06:12Z: #437 + #438 SHIPPED; brief-line journal VERIFIED LIVE
 
 Two more fixes to prod since cycle 8:
