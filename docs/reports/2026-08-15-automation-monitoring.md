@@ -8,6 +8,65 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 11 — 07:12Z (anchored 07:12:36Z) — FIL completes the day's only winner (+$0.355); replacement pool fully accounted
+
+**P&L FIRST: day improved to −$3.13** (`pnl_audit` `ok`, was −3.32). The delta
+is FIL 1283's final cover: 49.869 @ 0.6908 (06:43:54Z), net **+$0.184**, fee
+cleared ~13×. Run total **+$0.3547** — the fleet's only fully-realized winner
+today. Both agents dispatched (owner law); cross-checked.
+
+### FIL 1283 — the completed staged exit (Agent A, ledger-exact)
+
+Three covers on a short from 0.6948: 0.69302 → 0.69275 → 0.6908, each at a
+better price, per-tranche capture of its own favourable excursion
+**56% → 65% → 78%**. The desk kept **62% of its own high-water mark by its
+OWN decisions** — the first fully desk-authored staged-exit winner on tape.
+
+**The #432 loop visibly closed on a winner:** cycle 7's recall served two
+ENRICHED OUTCOME chunks (runs 1013/1017 — "the trailing lock closed it, not
+the desk's own call" give-back cases) and the desk then self-banked. Corpus
+fed the lesson; desk acted in line with it. `brief` array present
+(brake_distance, standing_arm rendered).
+
+**Nuance (both agents agree):** the desk asked `reduce 0.5`; the Plan 24
+`dust_remainder_closed` rail widened it to 1.0 (remainder ≈ $5.74 margin =
+dust). Direction desk-authored, full size platform-authored. At live marks
+the closed half would be +$0.05–0.115 better and the 60-min re-entry
+cooldown (to ~07:43Z) means the continuing move toward 0.66 is captured by
+nothing. One data point, immaterial USD — watch, not a change request.
+
+Post-close adapt `winning_close`: size_mult [1.0,1.0], no cooldown penalty —
+correct. Confidence quantization sighting #3 today: final 0.62 again.
+
+### Replacement pool — B's "fresh theses never reach it" RESOLVED by accounting
+
+Batch 496326's 16 crypto theses decompose exactly:
+**10–11 held** (run exclusivity) + **3 in fleet_symbol_cooldowns** (UNI ×2
+to 16:2x, HYPE 17:32, ZEC 17:46 — retire cooldowns DO stamp for desk/idle
+retires on this fleet, n=4 rows) + **AAVE/BCH expectancy-refused**
+(−367.51 and −255.02 USD/trade) = 16. **No defect: the pool is exhausted by
+holding + cooldown + refusal — the design.** Note the research screen also
+now marks ETH/SOL/HYPE/BNB `selectable=0` in the fresh batch — its own
+gates rejecting what just lost.
+
+The honest residual (B is right about the money): **~14 unfilled slots earn
+nothing on a crypto-only Saturday.** 25 slots >> viable crypto ideas.
+That is capital allocation for the owner, not a mechanism defect.
+
+### Other
+
+- BTC 1271: 0.18–0.21% from stop all window, watcher provably silent
+  (`stops_fired: 0` every tick), NOT in cooldown, dead-letter arm still
+  standing. Prediction open.
+- ETH 1272: exactly 1 gate-skip (cooldown) — nothing slipped through.
+- SUI 1284 desk_retired 07:19:35Z ($0, never traded) — post-window,
+  next cycle's tape.
+- Liq daemon ALIVE with proof: its 06:12Z T1 escalation WAS FIL pos 401,
+  resolved by the desk's own cover. Flattens parked clean. 0 tracebacks.
+- 10 running at 07:19Z.
+
+---
+
 ## Cycle 10 — 06:42Z (anchored 06:42:44Z) — silent
 
 Zero trades, zero status changes, `pnl_audit` −$3.32 `ok` unchanged, zero
