@@ -8,6 +8,54 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 33 — 19:1xZ: SUI +$0.020 (desk) and JTO +$0.024 (trailing lock) — cross-checked verdict; UNIT-SLIP reframe
+
+**P&L first: +$0.043 across the two closes; fleet 35 day now 4 closed
+trades, ≈ +$0.10 net.** Both wins real; NEITHER earned by its stated
+logic.
+
+**Agent A (desk axis):** SUI's exit reason is factually false — it
+called a stop 2.16% away "nearby", after INVENTING a 1.03% stop
+mid-life (bracket is write-once; the desk reasoned against a stop that
+does not exist), and abandoned its own entry plan ("lock half at +2%")
+by full-closing at +0.19% — with the panel bumping confidence
+0.55→0.66, exactly clearing the 0.65 gate. Scratch-bank pattern n=4
+quantified: **banking <13% of path against ~2% stops needs a 91–95%
+win rate — structurally negative expectancy regardless of entry edge.**
+Skills are being READ AND OVERRIDDEN (the exit report computed the
+path % then ignored it). Flags: exit-recall queries pre-seeded with
+banking vocabulary; the 0.55→0.66 gate-clearing bump.
+
+**Agent B (rail axis):** all rails per design; trailing lock banked
+44% of peak vs the designed 80% (poll granularity, ~$0.034 on a
+$0.024 trade — material at 21-min timescales, quantified not
+defected); retirement-on-lock per enumerated taxonomy; **replenish
+stall signature live** (5/25, `built: 0` 30+ min — watch).
+**THE REFRAME (disagreement chased, B's evidence wins): JTO was a
+UNIT SLIP, not garbage** — authored 0.05/0.09/0.06 = 5%/9%/6% as
+fractions (its narrative said "~4.5% gain → reduce half" ≈ half of
+9%; same desk wrote correct percents on SUI 50 min earlier). Three
+floors silently rebuilt a coherent swing bracket 100× tighter.
+Retroactively: SOL 0.016 → 1.6%, BTC 0.007 → 0.7% — the historical
+"garbage" reads as unit slips too. #440 n=5: every ask exactly the
+advertised 0.05 — the desk rationally quotes a fictional minimum;
+per-run number in the prompt now evidenced.
+
+**Actions (implement-every-time):**
+1. SHIP NOW — unit-slip reinterpretation: when ALL authored pct
+   fields (stop/target/trail_arm) are sub-floor simultaneously,
+   interpret as fractions ×100, journaled; plus a units example in
+   the schema line.
+2. SHIP NOW — truthful-exit skill: full-closing a winner <30% of path
+   requires the ACTUAL stop distance as a number (a "nearby" claim
+   >1% away voids the rationale) and either the entry plan's banking
+   level or a named new invalidation.
+3. Backlog: per-run size minimum in the prompt (authorship, not P&L);
+   trailing-lock poll cadence at short timescales; banking-seeded
+   recall queries; panel confidence-bump audit.
+
+---
+
 ## Cycle 32 — 18:4xZ (anchor 18:40:43): garbage stop returns (JTO); a −$0.001 leg silences a desk holding $25 — two watches armed
 
 - **Stop-shape watch FIRED**: JTO 1303 opened the fleet's first LONG
