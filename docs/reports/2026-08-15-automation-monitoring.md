@@ -8,6 +8,10 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 18 — 11:1xZ (anchor 11:10:35): quiet — 5 holds, flat; first post-fix sell still awaited
+
+---
+
 ## Cycle 17 — 10:5xZ (anchor 10:56:39): dust defect fired a THIRD time — 81 s before the fix went live
 
 UNI 1293 cycle 6 (10:53:03Z): sell conf 0.68, authored size_frac **0.1**
