@@ -3306,6 +3306,37 @@ def _big_trader_line(run: dict) -> str:
         return ""
 
 
+def _run_expiry_line(run: dict) -> str:
+    """The run's hard end-of-life, so the desk stops authoring theses the
+    vehicle cannot finish.
+
+    Fleet 35 SUI (2026-08-15): the desk authored a 24 h / 6% thesis at
+    19:44 on a run whose build-time at_time (the RESEARCH thesis's 8 h
+    horizon, frozen at build) killed it at 21:41 — 1 h 57 m later. The
+    platform journaled the contradiction three times (horizon_shadow)
+    and no composer line carried the TTL; the desk structurally could
+    not know. Fee burn was near-certain at entry: a 6% target with
+    under 2 h of life is a fee donation. Renders flat or held (entry
+    sizing needs it most). Fail-soft."""
+    try:
+        stops = json.loads(run.get("stop_conditions_json") or "{}")
+        at_time = str(stops.get("at_time") or "")
+        if not at_time:
+            return ""
+        secs = -_age_seconds(at_time)      # positive while in the future
+        if secs <= 0:
+            return ""
+        hours, mins = int(secs // 3600), int((secs % 3600) // 60)
+        return (f"Run life: this run HARD-ENDS at {at_time} "
+                f"({hours}h {mins}m remaining) — any open position is "
+                "flattened then, whatever your horizon says. Author "
+                "horizons and targets against the REMAINING life; an "
+                "entry whose target cannot plausibly be reached in time "
+                "is a fee donation, not a trade.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _standing_arm_line(run: dict, pos_qty: float) -> str:
     """The arm the desk already has standing — which it could not see.
 
@@ -3756,6 +3787,7 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("mark_freshness", _mark_freshness_line(run, pos_qty)),
         ("big_trader", _big_trader_line(run)),
         ("ordinary_day", _ordinary_day_line(run)),
+        ("run_expiry", _run_expiry_line(run)),
         ("standing_arm", _standing_arm_line(run, pos_qty)),
     ]
     try:  # telemetry must never cost a cycle
