@@ -23,6 +23,54 @@ flag comes off.
 
 ---
 
+## OWNER QUESTION (22:5xZ) — "is Plan 26 working well?" Verified against prod, not the screenshot
+
+**Values in the panel match prod exactly** (FIL slot 0: target 0.6466,
+stop_ref 0.69513, verdict `adjusted`, written 22:49:13Z; panel clock is
+UTC−7, hence "15:49"). So the pipeline is real, not a mock.
+
+**WORKS:**
+- **Stop echo holds live**: AVAX 1335 outlook `stop_ref_px 6.47824` =
+  its position's actual `stop_loss` 6.47824, to the digit.
+- **#448 visibly steering**: DOT slot 3 — *"short thesis still valid,
+  but only ~2 h to the deadline so the expected 3.5% move is
+  unachievable → hold"*, and its dialog line **"Algorithmic entry
+  targets are ignored because time horizon is insufficient."** The desk
+  is refusing entries it cannot finish.
+- **Deviations carry reasons** (FIL: *"We deviate from the original
+  full-size hold by reducing half the position"*) — the guide's §2 rule
+  satisfied.
+- Coverage widened: us-stock slots (PYPL, SLV, DIS, UBER) now carry
+  targets; `null` stop_ref on all of them is correct — they are flat.
+
+**⚠️ DEFECT FOUND — the panel can publish a plan the book does not
+match.** FIL slot 0 tells the reader the desk **reduced half** and
+still holds a short. It does not: **at 22:49:13Z the outlook published
+"reduce half", and at 22:49:14Z the dust-remainder rail escalated that
+same intent to a FULL close.** Run 1322 is flat. The outlook records
+the desk's INTENT, never the EXECUTED action, so whenever a rail
+rewrites the order the published plan is wrong from the second it is
+written — and a user reading this panel believes they hold a position
+they do not.
+**Not money lost; it is a truthfulness defect in the user-facing
+artifact**, and it is the escalation problem surfacing in the UI.
+**Fix (queued): reconcile the outlook against the executed order —
+either publish after execution, or stamp the row with what actually
+filled.**
+
+**Internal inconsistency, same card:** stop_ref **0.69513** (the real
+stop) vs the prose invalidation **"$0.689"**. Two different levels in
+one plan; the desk's narrative and its bracket disagree.
+
+**Verdict in profit terms, per §3.7:** the profit test is **day-7 and
+not yet due**. Today: realized **+$5.63**, and the plan-era trades are
+the good ones — TRUMP +$1.69 and FIL +$1.41 across honoured reduces.
+But adherence is NOT profit: I measured `followed` ×6 while DOT bled
+5× earlier today. **So: the plumbing works, the discipline is
+improving, and the profit claim stays unproven until the day-7 split.**
+
+---
+
 ## Cycle 46 — 22:4xZ (anchor 22:49:29): **prediction CONFIRMED** — and the clamp's first live test FAILED to fire
 
 **1 · The residual hypothesis is confirmed, cleanly.** I predicted run
