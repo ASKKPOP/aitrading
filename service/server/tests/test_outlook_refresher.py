@@ -277,6 +277,22 @@ class NoOpTests(OutlookRefresherBase):
                                   "emitted": 0})
         self.assertEqual(self._outlook_events(run_id), [])
 
+    def test_unset_flag_defaults_off(self):
+        """The pre-flip production state: OUTLOOK_ENABLED absent entirely.
+
+        `test_flag_off_is_a_no_op` sets the var to "0" and so never exercises
+        the DEFAULT. The sweeper writes run_events rows the desk reads back as
+        its standing plan, so a default that read ON would start the loop on
+        every box that never set the var — the kill switch has to hold when
+        the switch is missing, not only when it is set to off."""
+        run_id = self._bound_slot(market="us-stock", run_status="running")
+        os.environ.pop("OUTLOOK_ENABLED", None)
+        self.assertFalse(orf.outlook_enabled())
+        result = orf.outlook_refresher_tick(now=CLOSED_NOW)
+        self.assertEqual(result, {"enabled": False, "checked": 0,
+                                  "emitted": 0})
+        self.assertEqual(self._outlook_events(run_id), [])
+
     def test_stale_run_binding_is_skipped(self):
         """A current_run_id pointing at a deleted run must not crash the
         sweep or emit anything."""
