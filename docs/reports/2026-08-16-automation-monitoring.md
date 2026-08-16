@@ -23,6 +23,18 @@ flag comes off.
 
 ---
 
+## Cycle 21 — 09:4xZ (anchor 09:49:21): quiet — Plan 26 healthy; guide now in main and pulled into the tree
+
+Short 6-min window. Plan 26 per guide §2: crypto outlook newest
+09:44:57Z (**4 min old vs 30-min floor** ✓); source/verdict split
+sweeper·adjusted 1 + cycle·overridden 1 — **no `algo_fallback`** ✓;
+adherence 1/1 (`followed`) ✓. No trades. Both shorts inside stops
+(LTC −$0.12, DOT −$0.04). 0 tracebacks. The guide is now merged to
+main (#452 chain) and pulled into the working tree, so the
+existence check is closed — future cycles read it locally.
+
+---
+
 ## Cycle 20 — 09:4xZ (anchor 09:43:18): docs deploy verified NOT to have reverted Plan 26 — and a process risk I took
 
 The docs PR #452 chain rebuilds the image **from main** and replaced
