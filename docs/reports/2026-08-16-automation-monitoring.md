@@ -23,6 +23,31 @@ flag comes off.
 
 ---
 
+## Cycle 37 — 18:1xZ (anchor 18:19:27): **second surviving reduce confirms the divisibility line**; day +$2.63
+
+**SUI 1306 `reduce 0.5` on a $93.8 book → honoured, +$0.166.**
+Remainder $46.9 = 1.9× the floor. That is the divisibility prediction
+made in cycle 35 holding on its first independent test:
+
+| book at the reduce | outcome |
+|---|---|
+| DOT $25.5 | escalated to full close (−$0.185) |
+| SUI $47.3 | escalated to full close (−$0.133) |
+| **TRUMP $187** | **honoured, +$0.287** |
+| **SUI $93.8** | **honoured, +$0.166** |
+
+Clean separation at ~2× the floor, 4/4. **Both of today's honoured
+reduces are also the day's two largest profitable legs** — the desk's
+partial-exit instrument works exactly when the book can carry it.
+
+Day ledger **+$2.63** (resid 0.16 — flagged, next sweep re-reads it).
+Fleet replenishing: four new runs 1331–1334 built 17:52Z. Adherence
+8/8, `net_of_fees` on 4, `side_contradiction` 0, two conf-0.0,
+outlook fresh, 0 tracebacks. Book: DOT +$0.02, SUI +$0.29,
+TRUMP +$0.62, FIL +$0.01.
+
+---
+
 ## Cycle 36 — 17:4xZ (anchor 17:49:27): quiet — FIL re-entered at a $209 book, above the divisibility line
 
 FIL 1322 re-shorted 153.27 @ 0.6815 (17:47:30Z, `followed`) — notional
