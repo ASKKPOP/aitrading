@@ -30,6 +30,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import threading
 import time
 from datetime import datetime, timezone
@@ -1956,6 +1957,49 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "the cycle.")},
         ],
     },
+    {
+        # Plan 26 (slot strategy outlook): rendered only while
+        # OUTLOOK_ENABLED is on — see skills_for_prompt — so the prompt
+        # stays byte-identical with the flag off.
+        "slug": "standing-plan-discipline",
+        "name": "Standing Plan Discipline",
+        "description": ("Trade your standing plan (the outlook you last "
+                        "published); revise it deliberately each cycle; an "
+                        "action that contradicts it must set plan_adherence "
+                        "to deviated and say why in the report."),
+        "prompts": ["light", "trader"],
+        "priority": 25,
+        "lessons": [
+            {"applies_when": ["any"], "text": (
+                "Your standing plan is the forward strategy you last "
+                "published: entry zone or trigger, target, stop reference, "
+                "time exit, invalidation, horizon. Begin each cycle by "
+                "checking this tape against that plan and revise the plan "
+                "deliberately instead of re-deriving the symbol from "
+                "scratch — a desk that re-decided 30 minutes after "
+                "authoring a 72-hour horizon sold the exact low of its own "
+                "price series (run 825, $5.54 given back against simply "
+                "keeping the plan it wrote)."),
+             "evidence": (
+                "a desk that re-decided 30 minutes after authoring a "
+                "72-hour horizon sold the exact low of its own price "
+                "series")},
+            {"applies_when": ["any"], "text": (
+                "If this cycle's action contradicts your standing plan, "
+                "say so: set plan_adherence to 'deviated' and state in "
+                "your report what NEW evidence overturns the plan — "
+                "acting against your own written plan without naming why "
+                "is the measured failure: QNT was bought 29 minutes after "
+                "the desk wrote 'thesis already invalidated' (-$47 across "
+                "three such entries, 2026-08-13). When the tape genuinely "
+                "changed, update the plan and mark 'revised'; when the "
+                "action is the plan, mark 'followed'."),
+             "evidence": (
+                "QNT was bought 29 minutes after the desk wrote 'thesis "
+                "already invalidated' (-$47 across three such entries, "
+                "2026-08-13)")},
+        ],
+    },
 ]
 
 # Plan 22 Phase 1 — a skill's body is DERIVED from its atomic lessons: the
@@ -2145,6 +2189,21 @@ def all_skills(fresh: bool = False) -> list[dict[str, Any]]:
     return rows
 
 
+def _outlook_enabled() -> bool:
+    """Plan 26 flag, read per call (post-cache) so the standing-plan skill
+    renders only while the outlook feature is live — with the flag off every
+    skills block is byte-identical to the pre-plan catalogue. The row still
+    seeds either way; only selection is gated."""
+    return (os.getenv("OUTLOOK_ENABLED", "0") or "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+# Skills that exist only for the outlook loop; rendering them while the
+# feature is dark would instruct the desk about a plan_adherence field no
+# prompt asks for.
+_OUTLOOK_GATED_SLUGS = ("standing-plan-discipline",)
+
+
 def skills_for_prompt(site: str, market: Optional[str] = None) -> list[dict[str, Any]]:
     """Enabled skills applying to this prompt site (and market, when the
     skill scopes markets), priority-ordered."""
@@ -2156,6 +2215,8 @@ def skills_for_prompt(site: str, market: Optional[str] = None) -> list[dict[str,
         if not skill["enabled"] or site not in skill["prompts"]:
             continue
         if skill["markets"] and market not in [m.lower() for m in skill["markets"]]:
+            continue
+        if skill["slug"] in _OUTLOOK_GATED_SLUGS and not _outlook_enabled():
             continue
         out.append(skill)
     return out

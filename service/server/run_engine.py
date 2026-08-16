@@ -37,6 +37,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import os
 import random
 import re
@@ -2503,6 +2504,16 @@ def _horizon_gate_enabled() -> bool:
         "1", "true", "yes", "on")
 
 
+def _outlook_enabled() -> bool:
+    """Plan 26 (slot strategy outlook): the desk publishes a forward plan
+    (when it will buy, when it will sell) beside each decision, and reads
+    its own standing plan back on the next cycle. Default OFF — with the
+    flag off the prompt, the parse, and the event tape are byte-identical
+    to the pre-plan behaviour. Read per call so tests/env can flip it."""
+    return (os.getenv("OUTLOOK_ENABLED", "0") or "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
 def _warm_report_i18n(agent_id: int, report: Any) -> None:
     """Schedule the owner's-language translation of a just-journaled report.
 
@@ -2536,6 +2547,37 @@ def _warm_report_i18n(agent_id: int, report: Any) -> None:
         market_i18n.localize_texts([text], lang)
     except Exception:  # noqa: BLE001 — i18n warm must never break a cycle
         logger.debug("desk report i18n warm skipped for agent %s", agent_id,
+                     exc_info=True)
+
+
+def _warm_outlook_i18n(agent_id: int, outlook: dict) -> None:
+    """Plan 26: warm the owner's-language translation of the outlook's prose
+    (narrative + invalidation) — same contract as _warm_report_i18n: the
+    journal stays English, the warm is cache-only and non-blocking, and a
+    localization problem must never touch a trading cycle."""
+    try:
+        texts = [t.strip() for t in (outlook.get("narrative"),
+                                     outlook.get("invalidation"))
+                 if isinstance(t, str) and t.strip()]
+        if not texts:
+            return
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT u.lang FROM users u JOIN agents a ON a.user_id = u.id "
+                "WHERE a.id = ?", (agent_id,))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        from analysis_agents import normalize_lang
+        lang = normalize_lang(row["lang"] if row else None)
+        if lang == "en":
+            return
+        import market_i18n
+        market_i18n.localize_texts(texts, lang)
+    except Exception:  # noqa: BLE001 — i18n warm must never break a cycle
+        logger.debug("outlook i18n warm skipped for agent %s", agent_id,
                      exc_info=True)
 
 
@@ -3830,6 +3872,68 @@ def _take_brief_journal(run_id):
         return None
 
 
+def _standing_plan_line(run: dict) -> str:
+    """Plan 26 §3.6: the slot's kept plan, read back into the next analysis.
+
+    The standing plan IS the newest `outlook` event for this run — the desk
+    published it, so the desk sees it again before deciding, and this cycle's
+    action either follows it, revises it, or deviates with a stated reason
+    (plan_adherence). Renders nothing when no outlook exists or the flag is
+    off — no empty-placeholder noise. Fail-soft."""
+    if not _outlook_enabled():
+        return ""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            # By ts (run_events has no created_at column); id breaks the
+            # same-second tie toward the later write.
+            cursor.execute(
+                """SELECT ts, payload FROM run_events
+                   WHERE run_id = ? AND event_type = 'outlook'
+                   ORDER BY ts DESC, id DESC LIMIT 1""", (run["id"],))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return ""
+        payload = json.loads(row["payload"] or "{}")
+        bits = []
+        bias = str(payload.get("bias") or "").strip()
+        if bias:
+            bits.append(f"{bias} bias")
+        entry = payload.get("entry") if isinstance(payload.get("entry"), dict) else {}
+        if entry.get("kind") == "zone" and (entry.get("low") is not None
+                                            or entry.get("high") is not None):
+            low, high = entry.get("low"), entry.get("high")
+            if low is not None and high is not None:
+                bits.append(f"entry zone {low}-{high}")
+            else:
+                bits.append(f"entry zone {low if low is not None else high}")
+        elif entry.get("kind") == "trigger" and entry.get("trigger"):
+            bits.append(f"entry trigger: {entry['trigger']}")
+        exit_block = payload.get("exit") if isinstance(payload.get("exit"), dict) else {}
+        if exit_block.get("target_px") is not None:
+            bits.append(f"target {exit_block['target_px']}")
+        if exit_block.get("stop_ref_px") is not None:
+            bits.append(f"stop ref {exit_block['stop_ref_px']}")
+        if exit_block.get("time_exit"):
+            bits.append(f"time exit {exit_block['time_exit']}")
+        if payload.get("invalidation"):
+            bits.append(f"invalidation: {payload['invalidation']}")
+        if payload.get("horizon_hours") is not None:
+            bits.append(f"horizon {payload['horizon_hours']:g}h")
+        if not bits:
+            return ""
+        ts = str(row["ts"] or "")
+        when = f"{ts[11:16]} UTC" if len(ts) >= 16 else "earlier"
+        return (f"Your standing plan ({when}): " + " · ".join(bits) + ". "
+                "Trade it: follow it, revise it deliberately, or state in "
+                "your report why this cycle deviates from it.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
                             thesis: dict) -> str:
     parts = [
@@ -3839,6 +3943,7 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("young_exit", _young_exit_brief(run, cfg, pos_qty)),
         ("contradiction", _contradiction_line(run, pos_qty)),
         ("last_cycle_word", _last_cycle_word_line(run)),
+        ("standing_plan", _standing_plan_line(run)),
         ("predecessor_run", _predecessor_run_line(run)),
         ("earnings_state", _earnings_state_line(run)),
         ("breadth_state", _breadth_state_line(run)),
@@ -4775,6 +4880,162 @@ def _margin_state_line(run: dict, pnl: dict, pos_qty: float) -> str:
         return ""
 
 
+# ── Plan 26: the outlook object (the slot's standing plan) ────────────────
+# Parsed and clamped HERE, once, for both decision paths: the light parser
+# attaches the raw block to its decision and the full path's merged JSON
+# carries it through untouched, so the emit site routes every outlook through
+# this clamp before anything persists. NaN in a persisted JSON column
+# permanently 500s reads (known trap), so every numeric passes the finite
+# filter; junk types degrade to null/safe defaults; a missing object means
+# no event, never a crash.
+
+_OUTLOOK_BIASES = ("long", "short", "flat")
+_OUTLOOK_ENTRY_KINDS = ("zone", "trigger", "none")
+_PLAN_ADHERENCE_VALUES = ("followed", "revised", "deviated")
+_OUTLOOK_VERDICTS = ("adopted", "adjusted", "overridden")
+
+
+def _outlook_num(value: Any) -> Optional[float]:
+    """Finite float or None — never NaN/±inf, never a junk type."""
+    if isinstance(value, bool):
+        return None
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    return out if math.isfinite(out) else None
+
+
+def _outlook_str(value: Any, cap: int) -> Optional[str]:
+    """Non-empty capped string or None."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()[:cap]
+
+
+def _parse_plan_adherence(raw: Any) -> str:
+    """followed | revised | deviated; junk/missing degrade to 'revised'."""
+    value = str(raw or "").strip().lower() if isinstance(raw, str) else ""
+    return value if value in _PLAN_ADHERENCE_VALUES else "revised"
+
+
+def _parse_outlook_verdict(raw: Any) -> str:
+    """adopted | adjusted | overridden; junk/missing degrade to 'adjusted'."""
+    value = str(raw or "").strip().lower() if isinstance(raw, str) else ""
+    return value if value in _OUTLOOK_VERDICTS else "adjusted"
+
+
+def _parse_outlook(raw: Any) -> Optional[dict]:
+    """Clamp the desk's forward plan to the persisted contract, tolerant of
+    junk. Returns None (no event) when the model produced no usable object."""
+    if not isinstance(raw, dict):
+        return None
+    bias = raw.get("bias")
+    bias = bias.strip().lower() if isinstance(bias, str) else ""
+    if bias not in _OUTLOOK_BIASES:
+        bias = "flat"
+    entry_raw = raw.get("entry") if isinstance(raw.get("entry"), dict) else {}
+    kind = entry_raw.get("kind")
+    kind = kind.strip().lower() if isinstance(kind, str) else ""
+    if kind not in _OUTLOOK_ENTRY_KINDS:
+        kind = "none"
+    exit_raw = raw.get("exit") if isinstance(raw.get("exit"), dict) else {}
+    return {
+        "bias": bias,
+        "entry": {"kind": kind,
+                  "low": _outlook_num(entry_raw.get("low")),
+                  "high": _outlook_num(entry_raw.get("high")),
+                  "trigger": _outlook_str(entry_raw.get("trigger"), 200)},
+        "exit": {"target_px": _outlook_num(exit_raw.get("target_px")),
+                 "stop_ref_px": _outlook_num(exit_raw.get("stop_ref_px")),
+                 "time_exit": _outlook_str(exit_raw.get("time_exit"), 64)},
+        "invalidation": _outlook_str(raw.get("invalidation"), 300),
+        "horizon_hours": _outlook_num(raw.get("horizon_hours")),
+        "narrative": _outlook_str(raw.get("narrative"), 600) or "",
+        # The model authors only verdict + discussion; the algo dict is
+        # attached at the emit site, and a missing candidate drops the
+        # whole basis there (an algo-less basis records no discussion).
+        "basis": {
+            "verdict": _parse_outlook_verdict(
+                (raw.get("basis") or {}).get("verdict")
+                if isinstance(raw.get("basis"), dict) else None),
+            "discussion": _outlook_str(
+                (raw.get("basis") or {}).get("discussion")
+                if isinstance(raw.get("basis"), dict) else None, 300),
+        },
+    }
+
+
+def _outlook_live_stop(run: dict) -> Optional[float]:
+    """The run's ACTUAL live stop, for the outlook's stop_ref_px.
+
+    The model is asked to echo its existing stop, but the echo is enforced
+    in code: whatever it returned is DISCARDED and replaced with this —
+    the stop is write-once at open, and a hallucinated wider stop must not
+    even be displayed as the plan. Source of truth order: the position's
+    own stop_loss (the live bracket), else the run-level price_cross stop
+    condition (the sweeper reads the same), else None. Fail-soft."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT stop_loss FROM positions WHERE run_id = ? "
+                "ORDER BY id DESC LIMIT 1", (run["id"],))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if row and row["stop_loss"] is not None:
+            return _outlook_num(row["stop_loss"])
+    except Exception:  # noqa: BLE001 — telemetry, never the cycle
+        pass
+    try:
+        pc = (json.loads(run.get("stop_conditions_json") or "{}")
+              or {}).get("price_cross")
+        if isinstance(pc, dict):
+            return _outlook_num(pc.get("price"))
+    except (ValueError, TypeError):
+        pass
+    return None
+
+
+def _outlook_algo_candidate(run: dict, cfg: dict) -> Optional[dict]:
+    """Plan 26 basis: the deterministic candidate plan the desk discusses.
+
+    Lazy import — outlook_refresher ships in a parallel phase, so an absent
+    module, absent thesis inputs, or a failed call all mean no candidate
+    (the outlook then persists WITHOUT a `basis`), never a broken cycle."""
+    try:
+        from outlook_refresher import algo_candidate
+    except ImportError:
+        return None
+    try:
+        thesis = (cfg.get("thesis") or {}) if isinstance(cfg.get("thesis"), dict) else {}
+        stop_ref = None
+        try:
+            pc = (json.loads(run.get("stop_conditions_json") or "{}")
+                  or {}).get("price_cross")
+            if isinstance(pc, dict):
+                stop_ref = _outlook_num(pc.get("price"))
+        except (ValueError, TypeError):
+            stop_ref = None
+        out = algo_candidate(
+            str(thesis.get("direction") or "long"),
+            _outlook_num(thesis.get("entry_ref_price")),
+            _outlook_num(thesis.get("expected_move_pct")),
+            _outlook_num(thesis.get("horizon_hours")),
+            stop_ref,
+            datetime.now(timezone.utc))
+        if not isinstance(out, dict):
+            return None
+        # A candidate with every field None (missing thesis inputs) is no
+        # candidate: rendering "entry zone None-None" would ask the desk to
+        # discuss nothing, and a vacuous basis records nothing.
+        return out if any(v is not None for v in out.values()) else None
+    except Exception:  # noqa: BLE001 — basis is telemetry, never the cycle
+        return None
+
+
 def _light_analysis(run: dict, cfg: dict) -> dict:
     """One decision-tier LLM call (agent_planner-style) replacing ONLY the
     analysis stage of run_cycle. Pre-gates, evaluate_execution_gates, the
@@ -4844,6 +5105,21 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         skills_text = skills_block("light", market=run.get("market"))
     except Exception:  # noqa: BLE001
         skills_text = ""
+    # Plan 26 basis: the deterministic candidate plan, shown so the desk
+    # DISCUSSES its targets (adopt / adjust / override) instead of
+    # authoring in a vacuum. Empty when the flag is off or no candidate.
+    algo_line = ""
+    if _outlook_enabled():
+        _cand = _outlook_algo_candidate(run, cfg)
+        if _cand is not None:
+            algo_line = (
+                "Algorithmic candidate plan: entry zone "
+                f"{_cand.get('entry_low')}-{_cand.get('entry_high')}, "
+                f"target {_cand.get('target_px')}, "
+                f"stop ref {_cand.get('stop_ref_px')}, "
+                f"time exit {_cand.get('time_exit')}. "
+                "Discuss: adopt, adjust, or override — justify your final "
+                "targets.\n")
     prompt = (
         "You are the trading desk for one symbol. Decide THIS cycle's action.\n"
         f"Symbol: {run['symbol']} ({run['market']}, {market_type}), price now {entry}.\n"
@@ -4876,6 +5152,22 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         "entry to your invalidation level, target_pct = %% to a level the move "
         "can realistically reach. target_pct MUST be at least 2x stop_pct. If "
         "you have no concrete basis, omit them and the house defaults apply.\n"
+        # Plan 26: the outlook — the slot's standing plan, published beside
+        # the decision and quoted back on the next cycle (standing_plan brief
+        # line). One compact paragraph; the JSON keys join the contract below.
+        # stop_ref_px is an ECHO of the existing stop for display — the
+        # write-once stop rule is untouched and nothing here reaches
+        # stop_conditions or order params.
+        + ('Also state your forward plan (outlook): when you will buy (an '
+           'entry/add zone in price, or a named trigger), when you will sell '
+           '(target price; stop reference — echo your EXISTING stop, never a '
+           'wider one; time exit if any), what would invalidate the plan, and '
+           'your horizon in hours. If your action contradicts your standing '
+           'plan above, set plan_adherence to "deviated" and say why in the '
+           'report; "revised" means you changed the plan deliberately; '
+           '"followed" means this action is the plan.\n'
+           if _outlook_enabled() else '')
+        + algo_line
         # 'retire' (2026-07-30): a desk whose book cannot express its read has
         # no legal action and no way to say so. Prod run 824 read the tape
         # bearish on a SPOT book, emitted three refused sells across three
@@ -4922,14 +5214,30 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
            '"price_above", "level": number, "then": "reduce"|"close", '
            '"size_frac": 0.0-1.0}|null}, '
            if pos_qty else '')
+        + ('"outlook": {"bias": "long"|"short"|"flat", "entry": {"kind": '
+           '"zone"|"trigger"|"none", "low": number|null, "high": number|null, '
+           '"trigger": string|null}, "exit": {"target_px": number|null, '
+           '"stop_ref_px": number|null, "time_exit": string|null}, '
+           '"invalidation": string|null, "horizon_hours": number|null, '
+           '"narrative": "<1-2 sentences>", "basis": {"verdict": '
+           '"adopted"|"adjusted"|"overridden" (your ruling on the '
+           'algorithmic candidate plan), "discussion": "<why, one '
+           'sentence>"|null}}, '
+           '"plan_adherence": "followed"|"revised"|"deviated", '
+           if _outlook_enabled() else '')
         + '"report": "<one sentence>"}'
     )
     text = None
     try:
         from llm_client import generate_text
         # 200 was the budget before the intent object joined the payload; a
-        # cut-off JSON is not a smaller answer, it is a lost one.
-        text = generate_text(prompt, max_tokens=280 if pos_qty else 200,
+        # cut-off JSON is not a smaller answer, it is a lost one. The outlook
+        # object (Plan 26) costs ~120-180 output tokens, so the flag buys the
+        # room it needs — with it off the budget is byte-identical to before.
+        max_tokens = 280 if pos_qty else 200
+        if _outlook_enabled():
+            max_tokens += 180
+        text = generate_text(prompt, max_tokens=max_tokens,
                              temperature=0.2, tier="decision")
     except Exception:  # noqa: BLE001
         text = None
@@ -4937,6 +5245,8 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     scores: Optional[dict] = None
     order_block: Optional[dict] = None
     intent_block: Optional[dict] = None
+    outlook_block: Optional[dict] = None
+    plan_adherence: Optional[str] = None
     if text:
         m = re.search(r"\{.*\}", text, re.DOTALL)
         if m:
@@ -4973,6 +5283,15 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                 oi = obj.get("order_intent")
                 if isinstance(oi, dict):
                     intent_block = oi
+                # Plan 26: the outlook rides beside the verb, clamped here
+                # (this parser builds the decision from named keys — an
+                # unextracted key is silently dropped). plan_adherence is
+                # parsed whenever the flag asked for it: junk/missing
+                # degrade to "revised", never crash the cycle.
+                if _outlook_enabled():
+                    outlook_block = _parse_outlook(obj.get("outlook"))
+                    plan_adherence = _parse_plan_adherence(
+                        obj.get("plan_adherence"))
             except (ValueError, TypeError):
                 pass
     # `order_eligible` is now True: the light prompt DOES ask for a bracket
@@ -4985,6 +5304,10 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         decision["order"] = order_block
     if intent_block:
         decision["order_intent"] = intent_block
+    if outlook_block is not None:
+        decision["outlook"] = outlook_block
+    if plan_adherence is not None:
+        decision["plan_adherence"] = plan_adherence
     return {"decision": decision,
             "analysts": {},
             "position_state": position_state}
@@ -5518,7 +5841,47 @@ def run_cycle(run_id: int) -> dict:
                               **({"brief": _brief}
                                  if (_brief := _take_brief_journal(run_id))
                                  is not None else {}),
+                              # Plan 26: plan-vs-action, stamped on every
+                              # decision while the flag is on so outcome
+                              # analysis is a query, not archaeology.
+                              # Junk/missing degrade to "revised".
+                              **({"plan_adherence": _parse_plan_adherence(
+                                      decision.get("plan_adherence"))}
+                                 if _outlook_enabled() else {}),
                               "report": (decision.get("report") or "")[:1000]})
+
+        # Plan 26: the slot's standing plan, journaled beside the decision
+        # that produced it. Both paths route through the same clamp here
+        # (the full path's merged JSON carries the raw block), so nothing
+        # non-finite or oversized can reach the persisted payload. Influence
+        # flows ONLY through the next cycle's standing_plan brief line —
+        # never into stop_conditions, order params, or any rail.
+        if _outlook_enabled():
+            _outlook = _parse_outlook(decision.get("outlook"))
+            if _outlook is not None:
+                # stop_ref_px is enforced, not trusted: the model's value is
+                # discarded and the run's actual live stop recorded instead
+                # (write-once stop rule — a hallucinated wider stop must not
+                # even be displayed as the plan).
+                _outlook["exit"]["stop_ref_px"] = _outlook_live_stop(run)
+                # Basis: the deterministic candidate the desk discussed.
+                # Recorded only when the candidate exists — the model's
+                # verdict/discussion answer a candidate it was shown, and
+                # a failed helper omits `basis` whole, never the event.
+                _basis = _outlook.pop("basis", None) or {}
+                _algo = _outlook_algo_candidate(run, cfg)
+                if _algo is not None:
+                    _outlook["basis"] = {
+                        "algo": _algo,
+                        "verdict": _basis.get("verdict") or "adjusted",
+                        "discussion": _basis.get("discussion")}
+                emit_telemetry_event(run_id, "outlook",
+                                     {"cycle": seq,
+                                      "symbol": run["symbol"],
+                                      "market": run["market"],
+                                      "source": "cycle",
+                                      **_outlook})
+                _warm_outlook_i18n(run["agent_id"], _outlook)
 
         # Stop-hit routing: this decision IS the desk's ruling on the noted
         # hit — clear it (which also suppresses re-noting for one think
