@@ -155,12 +155,39 @@ def rail(parsed: dict, *, position_notional_usd: float = 0.0) -> dict:
         # whose REMAINDER would fall below the manage-worthy floor grows to
         # a full close. Still shed-only: the rail may only grow a reduce.
         frac = float(out["size_frac"])
-        if frac < 1.0 and \
-                position_notional_usd * (1.0 - frac) < _dust_remainder_usd():
-            out["railed"] = {"size_frac": {"from": frac, "to": 1.0,
-                                           "why": "dust_remainder_closed"}}
-            out["size_frac"] = 1.0
+        floor = _dust_remainder_usd()
+        if frac < 1.0 and position_notional_usd * (1.0 - frac) < floor:
+            # 2026-08-16, fleet 35, n=4: the desk authored `reduce 0.5`
+            # into this escalation four times — SUI at a $47.32 book where
+            # the rendered bound was 47.2% (missed by 2.8 points), DOT at
+            # $40.42, twice below — and in THREE of them it stated it
+            # wanted to KEEP the remainder. Growing to a full close does
+            # the opposite of the desk's own stated intent, and authorship
+            # belongs to the desk (#119).
+            #
+            # Plan 24 fix 4's actual harm was an UN-BANKABLE $4.45
+            # remainder. Clamping to leave exactly the manage-worthy floor
+            # prevents that harm too, so the clamp is preferred WHENEVER a
+            # meaningful partial is still possible; below that the old
+            # grow-to-full stands (DOT at $25.47 could only shed 1.8% — a
+            # sliver that pays a full round trip to shed nothing).
+            max_reduce = (1.0 - floor / position_notional_usd) \
+                if position_notional_usd > 0 else 0.0
+            if max_reduce >= _MEANINGFUL_PARTIAL:
+                out["railed"] = {"size_frac": {"from": frac, "to": max_reduce,
+                                               "why": "dust_remainder_clamped"}}
+                out["size_frac"] = max_reduce
+            else:
+                out["railed"] = {"size_frac": {"from": frac, "to": 1.0,
+                                               "why": "dust_remainder_closed"}}
+                out["size_frac"] = 1.0
     return out
+
+
+# Smallest clamped reduce worth executing: below this the clamp would author
+# a sliver that pays a full round trip to shed almost nothing, so the rail
+# grows to a full close instead (DOT 1308 at $25.47 could shed only 1.8%).
+_MEANINGFUL_PARTIAL = 0.25
 
 
 def _dust_remainder_usd() -> float:
