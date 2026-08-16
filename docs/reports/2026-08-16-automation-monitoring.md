@@ -10,6 +10,21 @@ AUDCHF 1147 flatten at Sunday 21:00Z FX open, fleet 33 `stopping`.
 
 ---
 
+## Cycle 2 — 00:4xZ (anchor 00:40:49): FIL CLOSED **+$3.04 NET** — the fleet's first material win; agents dispatched
+
+Desk-authored at both ends: short 304.09 @ 0.687 (22:17Z) → full cover
+@ 0.6764 (00:17Z). Gross +$3.22, fees $0.19. Banked at 15.7% of path,
+conf 0.68 — and the exit's cited risk (short squeeze, price UP) is
+genuinely AGAINST a short: direction-coherence satisfied on first live
+contact. SUI 1306's new entry authored its target to "fit within
+remaining run life" — **run_expiry shaping bracket authoring already**.
+Two-agent review dispatched (win scrutinized like a loss; noted for
+them: prose label slip "the existing long", intent-1.0 vs params-0.05
+contradiction at exit, empty-why arm n=6). Book: LTC + SUI shorts.
+Fleet-35 running total: 10 closes, ≈ +$3.05 realized.
+
+---
+
 ## Cycle 1 — 00:1xZ (anchor 00:10:44): quiet — LTC re-entered; FIL short +$3.32
 
 LTC 1297 re-entered short 0.454 @ 44.09 (floor raise fired again; sane
