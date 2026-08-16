@@ -23,6 +23,33 @@ flag comes off.
 
 ---
 
+## Cycle 40 — 19:5xZ (anchor 19:57:27): two clean desk exits, **+$0.333 combined** — day **+$3.32**
+
+Both closes predate the #457 deploy (worker restarted **19:56:02Z**);
+`dust_remainder_clamped` count is **0**, which is the correct state,
+not a silent failure — no reduce has been authored since the restart.
+
+- **SUI 1306: deliberate `close` 1.0** (`railed: {}` — a close is never
+  railed), cover 69.41 @ 0.67697 = **+$0.203**. The desk chose a full
+  exit outright rather than authoring a doomed partial. Run 1306 has
+  now produced +$0.166 (honoured reduce) then +$0.203 (clean close).
+- **FIL 1322: `reduce 0.5` on a $104 book → honoured**, `railed: {}`,
+  cover 76.64 @ 0.6795 = **+$0.130**, remainder $52 kept. **Boundary
+  now 7/7.**
+
+Day ledger **+$3.32** (resid 0.14 — same mid-flight-read shape as the
+0.16 I cleared in cycle 38; re-read next cycle rather than assumed).
+15 decisions, adherence 15/15, `side_contradiction` 0, three conf-0.0,
+0 tracebacks. New AVAX short opened (1335, 7.84 @ 6.345). Book:
+TRUMP +$0.37, FIL +$0.13, AVAX +$0.04.
+
+**Standing note:** every one of today's honoured reduces (SUI $93.8,
+TRUMP ×2, FIL $104) came from a book above the line, and all four were
+profitable. The clamp now extends that regime downward — first live
+clamp is the next thing to watch for.
+
+---
+
 ## #457 DEPLOYED — 19:5xZ: clamp-not-invert, verified by replaying every real escalation
 
 PR MERGED (`d9ad692`), image `sooppiy-backend:20260816-clamp-not-invert`.
