@@ -23,6 +23,37 @@ flag comes off.
 
 ---
 
+## Cycle 29 — 13:1xZ (anchor 13:19:25): **DOT closed at a LOSS via a dust ESCALATION** — the "sell winners, hold losers" shape; agents dispatched
+
+**P&L: run 1308 realized −$0.1764** (day ledger slips +$2.74 → **+$2.55**).
+The shape is the concern, not the size:
+
+| leg | ts | qty | price | signals.pnl |
+|---|---|---|---|---|
+| open short | 05:10:56 | 88.98 | 0.7581 | — |
+| bank #1 | 06:08:45 | 44.49 | 0.7574 | +$0.016 |
+| bank #2 | 06:38:45 | 11.12 | 0.7557 | +$0.023 |
+| **forced full close** | **13:09:12** | **33.37** | **0.7633** | **−$0.185** |
+
+The desk banked **two-thirds of the book for +$0.039**, then left the
+last third exposed for **6.5 hours** to lose **5× that**. And the final
+exit was not the desk's: it authored `reduce 0.5` and the rail
+escalated to 1.0 (`dust_remainder_closed` — the ~$12.7 remainder is
+under the $25 floor). **Escalation n=4+ on this fleet.**
+
+Both agents dispatched with the central question stated plainly: **is
+staged exiting making this fleet sell its winners and hold its losers?**
+— tested against today's other staged exits (SUI 1306, FIL 1322) — and
+whether the reduce-geometry line warns the desk *before* it stages down
+to a book too small to reduce again, or only once it is already trapped.
+
+Also: runs 1319 and 1320 `idle_retired` (12:57, 13:01) — sent to Agent B
+to confirm correct vs premature. Adherence 7/7 (seventh window),
+`side_contradiction` 0 flags, Plan 26 §2 green. 0 tracebacks. Book:
+LTC −$0.09, SUI −$0.06, FIL +$0.09.
+
+---
+
 ## Cycle 28 — 12:4xZ (anchor 12:49:27): quiet — 7 holds, no trades, all four shorts inside their stops
 
 Adherence 7/7 (sixth consecutive 100% window), `side_contradiction`
