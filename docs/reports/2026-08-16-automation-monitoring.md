@@ -23,6 +23,42 @@ flag comes off.
 
 ---
 
+## Cycle 22 — 10:1xZ (anchor 10:19:27): Plan 26 §2 all green; new FIL short opened on a `deviated` cycle
+
+**Plan 26 (guide §2):** outlook freshness **6 seconds** (newest
+10:19:21Z) ✓; verdict mix cycle overridden 3 / adjusted 2 / adopted 1 +
+sweeper adjusted 2 / adopted 1 — **no `algo_fallback`** ✓; adherence
+**7/7 = 100%** — second independent confirmation that the guide's
+§3b "minority of cycles" claim is wrong.
+Adherence mix: followed 3 · **deviated 3** · revised 1.
+
+**Per-trade check on all three deviations (guide: a deviation without a
+stated reason is a finding).** All three DO state reasons — verified
+individually:
+- 1293: *"holding flat preserves capital as the short thesis lacks a
+  clear positive expectancy within the remaining ~11 hours"* — note it
+  is reasoning against **run life**, i.e. #448 still steering.
+- 1306: 600-char report (fear/greed contrarian read, crowded longs,
+  desk memory) ✓.
+- 1322: full technical + sentiment + news rationale, and it **acted** —
+  short 153.32 FIL @ 0.6813, stop 0.688999.
+
+**⚠️ My own false alarm, corrected before reporting:** 1306's report
+first read as EMPTY and looked like the first Plan-26 defect. It was a
+display artifact — a binary byte in the payload made `grep` swallow the
+row. Re-fetched with `-N | tr -d '\000'`: 600 chars present. **No
+defect.** Query hygiene noted for the loop.
+
+**Stop-echo invariant — not yet testable on 1322, watch armed:** all
+three of its outlooks carry `stop_ref_px: null`, but the newest
+(10:16:24Z) was authored **1 second before** the position opened
+(10:16:25Z) — null is correct while flat. The real test is its NEXT
+outlook (~10:46Z), which must echo **0.688999**.
+
+Book: 3 shorts (LTC −$0.12, DOT −$0.02, FIL +$0.13). 0 tracebacks.
+
+---
+
 ## Cycle 21 — 09:4xZ (anchor 09:49:21): quiet — Plan 26 healthy; guide now in main and pulled into the tree
 
 Short 6-min window. Plan 26 per guide §2: crypto outlook newest
