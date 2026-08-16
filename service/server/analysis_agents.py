@@ -538,6 +538,16 @@ def _skills_block(site: str, market: Optional[str] = None) -> str:
         return ""
 
 
+def _outlook_enabled() -> bool:
+    """Plan 26 (slot strategy outlook) — same flag the light path reads.
+    Default OFF: with it off this prompt is byte-identical to before. The
+    parsed keys need no mirror here: _parse_decision_json returns the merged
+    object whole, and run_engine clamps `outlook`/`plan_adherence` once at
+    the emit site for both paths."""
+    return (os.getenv("OUTLOOK_ENABLED", "0") or "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
 def ai_only_orders() -> bool:
     """PRIMARY RULE: an order is decided by the AI, or it is not placed.
 
@@ -622,6 +632,21 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         'is executed at the live market price regardless),'
         '"target":number|null,"stop":number|null,"rationale":"1-2 sentences",'
         '"report":"a 4-6 sentence markdown report synthesizing the analysts",'
+        # Plan 26: the outlook — the slot's standing plan, published beside
+        # the decision and quoted back on the next cycle. Mirrors the light
+        # path so an escalated cycle cannot silently drop the plan.
+        + ('"outlook":{"bias":"long|short|flat","entry":{"kind":'
+           '"zone|trigger|none","low":number|null,"high":number|null,'
+           '"trigger":string|null},"exit":{"target_px":number|null,'
+           '"stop_ref_px":number|null,"time_exit":string|null},'
+           '"invalidation":string|null,"horizon_hours":number|null,'
+           '"narrative":"1-2 sentences",'
+           '"basis":{"verdict":"adopted|adjusted|overridden" (your ruling '
+           'on the algorithmic candidate plan, when one was shown),'
+           '"discussion":"one sentence"|null}},'
+           '"plan_adherence":"followed|revised|deviated",'
+           if _outlook_enabled() else '')
+        +
         # The order block: the desk sizes its own trade. Every field is
         # RELATIVE — no absolute prices, no dollar amounts — so a wrong number
         # is bounded by the rails instead of becoming a fabricated order. All
@@ -658,7 +683,16 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         "numbers, anchor the stop to measured volatility (ATR/sigma) and a "
         "structural level, and the target to a real level the move can reach "
         "— not to a round number.\n\n"
-        f"NEWS ANALYST:\n{briefs['news']}\n\n"
+        + ("For the outlook: state your forward plan — when you will buy (an "
+           "entry/add zone in price, or a named trigger), when you will sell "
+           "(target price; stop reference — echo your EXISTING stop, never a "
+           "wider one; time exit if any), what would invalidate the plan, "
+           "and your horizon in hours. If your action contradicts your "
+           "standing plan, set plan_adherence to \"deviated\" and say why in "
+           "the report; \"revised\" means you changed the plan deliberately; "
+           "\"followed\" means this action is the plan.\n\n"
+           if _outlook_enabled() else "")
+        + f"NEWS ANALYST:\n{briefs['news']}\n\n"
         f"SENTIMENT ANALYST:\n{briefs['sentiment']}\n\n"
         f"FUNDAMENTALS/MACRO ANALYST:\n{briefs['fundamentals_macro']}\n\n"
         f"TECHNICAL ANALYST:\n{briefs['technical']}\n\n"
