@@ -3413,6 +3413,86 @@ def _big_trader_line(run: dict) -> str:
         return ""
 
 
+_LONG_CLAIM = re.compile(
+    r"\b(?:we|i)\s+(?:are|am)\s+long\b"
+    r"|\b(?:current|existing|our)\s+long\s+(?:trade|position)\b"
+    r"|\bopen(?:ing|ed)?\s+a\s+long\b"
+    r"|\bclose\s+the\s+existing\s+long\b", re.I)
+_SHORT_CLAIM = re.compile(
+    r"\b(?:we|i)\s+(?:are|am)\s+short\b"
+    r"|\b(?:current|existing|our)\s+short\s+(?:trade|position)\b"
+    r"|\bopen(?:ing|ed)?\s+a\s+short\b"
+    r"|\bclose\s+the\s+existing\s+short\b", re.I)
+
+
+def _last_decision_report(run: dict) -> str:
+    """The previous cycle's decision report text, for the side check."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT payload FROM run_events WHERE run_id = ?
+                   AND event_type = 'decision' ORDER BY id DESC LIMIT 1""",
+                (run["id"],))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return ""
+        return str(json.loads(row["payload"] or "{}").get("report") or "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _side_contradiction(text: Any, pos_qty: float) -> Optional[str]:
+    """Does the desk's own prose claim a side its book contradicts?
+
+    Measured 2026-08-16, three times in one day: FIL 1322 cycle 9 closed a
+    WINNING, correctly directed SHORT because it believed it had opened a
+    long ("current long trade", "opening a long", and "lock profit before a
+    likely further drop" — a drop PAYS a short); FIL 1305 cycle 9 wrote
+    "Given we are long" against a -304 short; LTC 1297 closed a short citing
+    bearish confluence. The desk infers its side from the action verb rather
+    than from position_state, which is rendered in its own brief.
+
+    Latent hazard on the same tape: cycle 9 emitted legacy_action 'short' to
+    CLOSE a short — only the intent compiler stopped a DOUBLED position.
+
+    Detection only: this NEVER blocks an order (a rail the desk cannot see
+    gets fought, not used — #119). It journals, and _side_contradiction_line
+    quotes the contradiction back next cycle, the #441 pattern that worked.
+    Flat books are exempt: with no position, "open a long" is a plan.
+    Returns a description, or None. Fail-soft."""
+    try:
+        if not pos_qty or not isinstance(text, str):
+            return None
+        held = "SHORT" if float(pos_qty) < 0 else "LONG"
+        wrong = _LONG_CLAIM if held == "SHORT" else _SHORT_CLAIM
+        m = wrong.search(text)
+        if not m:
+            return None
+        claimed = "long" if held == "SHORT" else "short"
+        return (f'claimed "{m.group(0)}" while the book is {held} '
+                f'{abs(float(pos_qty)):g} — a {claimed} claim on a {held} '
+                "position")
+    except Exception:  # noqa: BLE001 — detection must never cost a cycle
+        return None
+
+
+def _side_contradiction_line(text: Any, pos_qty: float) -> str:
+    """Quote the desk's own side error back to it (the #441 pattern)."""
+    found = _side_contradiction(text, pos_qty)
+    if not found:
+        return ""
+    held = "SHORT" if float(pos_qty) < 0 else "LONG"
+    gains = "price FALLS" if held == "SHORT" else "price RISES"
+    return (f"YOUR OWN LAST CYCLE {found}. You are {held}: you gain when "
+            f"{gains}. Read position_state before naming a side — an exit "
+            "reasoned from the wrong side closes winners and can double a "
+            "position instead of closing it.\n")
+
+
 def _run_expiry_line(run: dict) -> str:
     """The run's hard end-of-life, so the desk stops authoring theses the
     vehicle cannot finish.
@@ -3943,6 +4023,8 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("young_exit", _young_exit_brief(run, cfg, pos_qty)),
         ("contradiction", _contradiction_line(run, pos_qty)),
         ("last_cycle_word", _last_cycle_word_line(run)),
+        ("side_contradiction", _side_contradiction_line(
+            _last_decision_report(run), pos_qty)),
         ("standing_plan", _standing_plan_line(run)),
         ("predecessor_run", _predecessor_run_line(run)),
         ("earnings_state", _earnings_state_line(run)),
@@ -5832,6 +5914,19 @@ def run_cycle(run_id: int) -> dict:
                               # sizing to that scalar with no signal today) so
                               # there is a count before anyone argues from it.
                               **_conviction_divergence(confidence, conviction),
+                              # Side coherence (2026-08-16): the desk named
+                              # the wrong side of its own book three times in
+                              # one day, once closing a winning short it
+                              # believed was a long. Journal it beside the
+                              # decision so the count exists; the brief line
+                              # quotes it back next cycle.
+                              **({"side_contradiction": _sc}
+                                 if (_sc := _side_contradiction(
+                                     decision.get("report"),
+                                     _position_quantity(
+                                         run["agent_id"], run["market"],
+                                         run["symbol"], run_id)))
+                                 else {}),
                               # Which brief lines RENDERED for this decision —
                               # names only, popped so a composed-but-undecided
                               # cycle cannot leak onto the next decision. This
