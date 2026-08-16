@@ -23,6 +23,24 @@ flag comes off.
 
 ---
 
+## Cycle 39 — 19:1xZ (anchor 19:19:27): boundary now **6/6** — TRUMP honoured a second reduce on a $93 book
+
+TRUMP 1329 `reduce 0.5` again, book 65.72 × 1.4178 = **$93.2**, above
+the line → **honoured**, position halved to 32.86 with the remainder
+kept. Sixth consecutive data point, still no exception:
+**every book above ~$50 honoured, every book below escalated.**
+
+10 holds otherwise, adherence 10/10, `side_contradiction` 0, one
+conf-0.0, two new runs (1335, 1336) built, 0 tracebacks. Book: SUI
++$0.23, TRUMP +$0.30, FIL +$0.34.
+
+**Shipping clamp-not-invert now** — the evidence is no longer marginal:
+4 escalations originated from a `reduce 0.5` the book could not honour,
+3 of them while the desk stated it wanted to keep the remainder, and
+the boundary is 6/6.
+
+---
+
 ## Cycle 38 — 18:4xZ (anchor 18:49:27): residual RESOLVED; escalation n=6 — and it lands **exactly** on the divisibility line
 
 **The 0.16 residual I flagged last cycle was transient**: re-read now
