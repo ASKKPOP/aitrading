@@ -23,6 +23,44 @@ flag comes off.
 
 ---
 
+## Cycle 47 — 23:1xZ (anchor 23:19:31): **#457's FIRST LIVE CLAMP FIRED** — and it did exactly what it was built to do
+
+**The watch closes affirmatively.** AVAX 1335, 22:49:57Z:
+
+```
+intent reduce, from 0.5 -> to 0.49463133911708423,
+why: "dust_remainder_clamped"
+```
+
+Book was 7.842 × 6.308 = **$49.47** — inside the narrow $33–50 band I
+identified last cycle. Max non-escalating reduce = 1 − 25/49.47 =
+**49.46%**; the desk asked **50%**, over by **0.54 of a percentage
+point**. Pre-#457 that 0.54-point miss would have inverted the desk's
+partial into a **full close**. Instead:
+
+- cover **3.879** @ 6.308 = **+$0.133**, remainder **$25.00 kept**;
+- the desk then closed the rest deliberately at 23:18:01 for
+  **+$0.060**. Run 1335 realized **+$0.170**.
+
+**So the clamp preserved the desk's stated intent, the remainder was
+managed, and the second exit was the desk's own choice rather than a
+rail's.** That is the whole argument for the fix, demonstrated on live
+money 3.5 h after deploy — and it landed in the band I had just
+finished warning would make it rare. Both statements were right: **rare
+AND correct.**
+
+**Second first: FOREX arrived.** Run 1341 **AUDUSD** is running —
+fleet 35's first non-crypto trading slot (9 crypto + 1 forex). The
+market_scope-NULL universe reached FX ~2.3 h after the open; the
+"no forex yet" watch closes.
+
+Day ledger **+$5.82**, resid 0.06 (adapt 24/25 — the one gap is
+AVAX's 23:18 close awaiting its next cycle, exactly the confirmed
+mechanism). 11 decisions, adherence 11/11, `side_contradiction` 0,
+0 tracebacks. **Book is flat** — no open positions.
+
+---
+
 ## OWNER QUESTION (22:5xZ) — "is Plan 26 working well?" Verified against prod, not the screenshot
 
 **Values in the panel match prod exactly** (FIL slot 0: target 0.6466,
