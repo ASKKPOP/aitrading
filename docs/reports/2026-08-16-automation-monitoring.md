@@ -23,6 +23,50 @@ flag comes off.
 
 ---
 
+## Cycle 19 — 09:3xZ (anchor 09:35:48): **PLAN 26 IS LIVE** — guide found, checks run, and its baseline table is WRONG
+
+**The guide exists** — on branch `fix/plan26-monitoring-guide`
+(commit ebaee986), not in this working tree, which is why every prior
+cycle's existence check failed honestly. Read and now binding.
+**Plan 26 shipped**: image `sooppiy-backend:20260816-plan26-outlook`,
+`OUTLOOK_ENABLED=1` in both .env and the container, flag flipped
+09:10Z.
+
+### §1 deploy verification — ALL GREEN
+| check | result |
+|---|---|
+| outlook rows by market | crypto 8, newest 09:30:49Z — **4 min old vs a 30-min floor** ✓ |
+| source split | cycle 5 / sweeper 3 — no double-writing on open+cycling runs ✓ |
+| `basis.verdict` mix | adopted 2 · adjusted 2 · overridden 4 — **no `algo_fallback`**, LLM path alive ✓ |
+| **stop-echo invariant** | run 1297: `stop_ref_px` **44.5309** = live stop **44.5309**, byte-equal ✓ (the other 7 are flat runs → null, correct) |
+| adherence mix | followed 4 · revised 1 · deviated 1 |
+| deviated-with-reason | 1322 states it: *"weak momentum, low volume, sub-coin-flip confidence, the short entry lacks positive expectancy; we stay flat"* — compliant ✓ |
+| errors | 0 outlook errors, 0 tracebacks ✓ |
+
+### ⚠️ MATERIAL CORRECTION TO THE GUIDE'S §3b BASELINE
+The guide's table says *"decisions | 395 | 181"* and *"3 adherence
+stamps"* in the first 30 min, and tells sessions to chase
+**"compliance trending to zero."** Measured here, twice, independently:
+
+- decisions in 09:10–09:40 = **6** (not 181). **181/208 is the count of
+  ALL `run_events`** in that window, not decisions.
+- The guide's own numbers are internally inconsistent: 395 decisions/24 h
+  is ~8 per 30 min, so 181 decisions in 30 min would be a 55× rate jump.
+  My 6-in-25-min matches 397/24 h exactly.
+- **`plan_adherence` coverage is 6/6 = 100%**, not 3/181 ≈ 1.7%.
+
+Consequence if followed blindly: a session would report "outlook
+coverage is thin / compliance failing" when compliance is **complete**.
+The §3b conclusion *"the model emits the block on a minority of
+cycles"* is **not supported** by this measurement. Not editing another
+session's branch (parallel-session rule); flagged here and to the owner.
+
+**Verdict per §3.7:** too early for the profit test (day-7 ledger split
+by adherence and verdict). Nothing to judge on P&L yet; the feature is
+healthy on every process check the guide defines.
+
+---
+
 ## Cycle 18 — 09:1xZ (anchor 09:19:27): quiet — 3 holds; conf-0.0 on a HELD book again (n=5)
 
 DOT 1308 (held short, −$0.08) took another `conf 0.0` no-LLM-verdict
