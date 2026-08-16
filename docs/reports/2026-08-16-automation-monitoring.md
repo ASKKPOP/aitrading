@@ -23,6 +23,57 @@ flag comes off.
 
 ---
 
+## CROSS-CHECK (A × B) — one root cause from two axes: **fee blindness**, desk-side and rail-side
+
+**P&L: −$0.1764 fee-complete.** B's attribution: adverse price move
+−$0.1157 (66%), **fees $0.0608 (34%)**. Third independent confirmation
+that `signals.pnl` omits the open fee (realized before the final leg was
++$0.0199, not the +$0.039 I first reported).
+
+**They converge without collusion:**
+- **A (desk):** the desk **reasons in GROSS and books in NET** — every
+  staging decision taken on a number 3–7× the ledger figure. Staging
+  cost 2.7× everything three runs earned today (3/3).
+- **B (rails):** `BREAKEVEN_FEE_RATE` is a hardcoded **0.001** while the
+  platform's real crypto fee is **0.00045** (verified exactly from the
+  tape). So the ratchet's arm sits **2.22× too high on every crypto
+  run** — DOT's peak cleared its TRUE round trip by 1.63× and the rail
+  still declined to protect it. **Not a near-miss: a defect against the
+  rail's own docstring** ("its own round-trip cost").
+  B's replay at the correct rate: exit at −$0.0456 vs actual −$0.1764 =
+  **+$0.131 on this run alone, 12× the escalation question.**
+
+**B refuses to oversell, and I'm adopting the caution:** the corrected
+ratchet also forfeits the 06:38 dip where a full close was +$0.153. It
+is *a floor, not alpha*, and B says plainly **do not ship it on one
+run — replay fleet-wide first**, because a rail that turns losers into
+smaller losers while turning winners into scratches is not a profit fix.
+
+**Dust escalation, n=4, settled: NOISE.** UNI −$0.032, FIL +$0.031,
+ETH +$0.0018, DOT −$0.0103 → cumulative **−$0.0115, sign 2:2**. It cost
+5.9% of this loss. It remains an authorship defect (a rail issuing a
+close the desk declined) — worth fixing on principle, **never to be
+sold as a P&L lever.**
+
+**#443 is DESCRIPTIVE, not PROSPECTIVE — and that is why it failed
+here.** B's table: the trap was set at **cover 1** ($67.45 → $33.70),
+and at that cycle the line **said nothing** (it only speaks below
+2×floor = $50). It first spoke at cover 2, *after* the book was already
+binary. Cover 2 survived only because the desk picked 0.25 against a
+0.258 ceiling — **a $0.21 margin, luck not design.**
+
+**idle_retire on 1319/1320: CORRECT** (12 worked cycles, flat, zero
+trades, both theses' entry zones never triggered). If anything the rail
+is **late** — 1320's entry zone was stale from cycle 1.
+
+**SHIPPING NOW (the AI-first half of A's fix):** feed the exit prompt
+**net-of-round-trip** P&L instead of gross. Pure information, no rail —
+the pattern that has worked all session (#443, #448). The
+forced-close-compilation half and the fee-rate constant both wait for
+the fleet-wide replay B requires.
+
+---
+
 ## VERDICT (Agent A) — staging cost 2.7× everything these runs made; the desk reasons in GROSS and books in NET
 
 **P&L first, fee-complete (A, verified 3 ways to 8 dp): DOT run 1308
