@@ -23,6 +23,24 @@ flag comes off.
 
 ---
 
+## Cycle 42 — 20:4xZ (anchor 20:49:31): quiet — **AUDCHF flatten is T-minus ~10 min**, position confirmed live
+
+11 holds, no trades, 0 tracebacks; adherence 11/11,
+`side_contradiction` 0, no conf-0.0 this window; clamp still awaiting
+its first live reduce (count 0, no reduce authored since restart).
+Book: TRUMP +$0.51, FIL +$0.24, AVAX +$0.06.
+
+**AUDCHF 1147 pre-flatten state captured** (the watch has been standing
+since 08-15): run `stopping`, fleet 33 `stopping`, position **LONG
+51.647 @ 0.57484, mark 0.57543 → +$0.030 unrealized**, run realized
+already **+$0.127**. Its `at_time` (2026-08-15T09:12:10Z) is long past —
+the run has been parked in `stopping` awaiting the FX open to flatten,
+which is the queued behaviour, not a stall. **Next cycle verifies the
+flatten actually executes at the 21:00Z open** and prices it; if it
+does not fire, that is the finding.
+
+---
+
 ## Cycle 41 — 20:1xZ (anchor 20:19:28): quiet — residual cleared again; no reduces yet post-clamp
 
 **Residual re-read: 0.14 → 0.01, check ok**, ledger unchanged at
