@@ -33,7 +33,11 @@ authors every order, §7c two-axis attribution, §7e two-subagent outcome rules)
    SELECT JSON_UNQUOTE(JSON_EXTRACT(payload,'$.plan_adherence')) a, COUNT(*)
    FROM run_events WHERE event_type='decision' AND ts > NOW() - INTERVAL 1 HOUR GROUP BY a;
    ```
-   `NULL` here after the flag is on = the parser or prompt regressed — that is a finding.
+   **Do NOT read `NULL` as a regression.** Measured at the 2026-08-16 flip: `plan_adherence` and `outlook`
+   ride the decision only when the desk model actually emits those fields, and the local model
+   (`gpt-oss:120b`) complies on a minority of cycles. In the first 30 minutes: 181 decisions, 3 cycle-authored
+   outlooks, 3 adherence stamps. The finding to chase is **compliance trending to zero**, not a NULL row.
+   `NULL` on a decision whose `scores` are also absent is simply a cycle the model did not answer in full.
 
 ## 2 · Ongoing per-cycle checks (add to the normal ~30-min sweep)
 
@@ -64,6 +68,30 @@ Agent A (AI-authored outcomes) now has a sharper tool: every close can be judged
 standing plan at the time** — was the exit at the planned target/stop/time, or a deviation, and what reason
 was stated? A description without the plan-vs-action reason is not analysis. Agent B (algorithm-authored
 outcomes) additionally attributes sweeper-authored (`algo_fallback`) plans to the algorithm axis.
+
+## 3b · Measured baseline at flip (2026-08-16 09:10 UTC) — compare against this, not against expectations
+
+Taken on prod immediately after `OUTLOOK_ENABLED=1`, so drift is measurable rather than argued:
+
+| Signal | Before flip (24 h) | First ~30 min after |
+|---|---|---|
+| decisions | 395 | 181 |
+| action mix | hold 91.1% · sell 5.3% · retire 2.5% · buy 1.0% | hold 91.7% · sell 4.4% · retire 3.9% |
+| avg confidence | 0.505 | 0.500 |
+| decisions missing `scores` | 7 (1.8%) | 5 (2.8%) |
+| cycle-authored outlooks | — | 3 |
+| sweeper-authored outlooks | — | 3 |
+| `basis.verdict` seen | — | adopted, adjusted, overridden |
+
+Two conclusions from this table. **The prompt change did not degrade decisions** — action mix and average
+confidence are flat, which is the thing that would have cost money. **Outlook coverage is thin**: the model
+emits the block on a minority of cycles, so "every outcome carries its plan-vs-action reason" is an
+aspiration, not yet a fact. If coverage does not rise, the lever to pull is prompt compliance (or a stronger
+tier for the desk), not more rails.
+
+The stop-echo invariant was verified live at the flip: run 1297's outlook carried `stop_ref_px 44.5309`,
+byte-equal to the position's live stop, while the algorithmic candidate's own stop was null — i.e. the code
+enforced the real stop rather than passing through a model or algo value.
 
 ## 4 · Day-7 profit verdict (the actual goal — plan §3.7)
 
