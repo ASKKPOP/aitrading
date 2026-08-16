@@ -3151,5 +3151,7 @@ class TrailPositionScopedTests(unittest.TestCase):
     def test_the_call_site_passes_baseline_and_fee(self):
         import inspect
         src = inspect.getsource(run_engine._evaluate_stop)
-        self.assertIn("baseline_pnl=", src)
         self.assertIn("_trailing_lock_hit", src)
+        # the VALUE matters: zeroing it silently restores the defect.
+        self.assertIn('baseline_pnl=float(pnl.get("realized") or 0)', src)
+        self.assertIn("exit_fee_usd=_exit_fee", src)
