@@ -3155,3 +3155,77 @@ class TrailPositionScopedTests(unittest.TestCase):
         # the VALUE matters: zeroing it silently restores the defect.
         self.assertIn('baseline_pnl=float(pnl.get("realized") or 0)', src)
         self.assertIn("exit_fee_usd=_exit_fee", src)
+
+
+class SideCoherenceTests(unittest.TestCase):
+    """FIL 1322 cycle 9 (2026-08-16): the desk closed a WINNING, correctly
+    directed SHORT because it believed it had opened a long — three
+    falsehoods in one cycle ("current long trade", "opening a long",
+    "lock profit before a likely further drop" — a drop PAYS a short).
+    Same day, run 1305 cycle 9: "Given we are long" on a -304 short.
+    LTC 1297 closed a short citing bearish confluence. The desk infers
+    its side from the action verb, not from position_state.
+
+    Latent hazard on the same tape: cycle 9 emitted legacy_action
+    'short' to CLOSE a short — only the intent compiler prevented a
+    DOUBLED position."""
+
+    def test_a_long_claim_on_a_short_book_is_caught(self):
+        for text in ("Given we are long, the prudent move is to exit",
+                     "limited upside for the current long trade",
+                     "closing corrects the mis-direction after opening a long",
+                     "Close the existing long position"):
+            self.assertIsNotNone(
+                run_engine._side_contradiction(text, -304.0), text)
+
+    def test_a_short_claim_on_a_long_book_is_caught(self):
+        self.assertIsNotNone(
+            run_engine._side_contradiction("our existing short position", 12.5))
+
+    def test_a_correct_claim_is_silent(self):
+        self.assertIsNone(
+            run_engine._side_contradiction("our existing short position", -304.0))
+        self.assertIsNone(
+            run_engine._side_contradiction("we are long and holding", 12.5))
+
+    def test_a_flat_book_is_never_flagged(self):
+        # No position: either side is a PLAN, not a contradiction. A short
+        # claim is the case that actually exercises the exemption (qty 0
+        # otherwise reads as LONG, which silences long-claims anyway).
+        self.assertIsNone(
+            run_engine._side_contradiction("we open a short here", 0.0))
+        self.assertIsNone(
+            run_engine._side_contradiction("our existing short position", 0.0))
+        self.assertIsNone(
+            run_engine._side_contradiction("we open a long here", 0.0))
+
+    def test_text_without_a_side_claim_is_silent(self):
+        self.assertIsNone(
+            run_engine._side_contradiction(
+                "momentum is weak and volume is thin", -304.0))
+
+    def test_the_quote_names_both_sides(self):
+        out = run_engine._side_contradiction("Given we are long, exit", -304.0)
+        self.assertIn("long", out)
+        self.assertIn("SHORT", out)
+
+    def test_it_fails_soft_on_junk(self):
+        for bad in (None, 12345, {"a": 1}):
+            self.assertIsNone(run_engine._side_contradiction(bad, -1.0))
+
+    def test_the_brief_line_quotes_the_contradiction_back(self):
+        line = run_engine._side_contradiction_line(
+            "Given we are long, the prudent move is to exit", -304.0)
+        self.assertIn("YOUR OWN LAST CYCLE", line)
+        self.assertIn("SHORT", line)
+
+    def test_it_is_WIRED_into_the_composed_brief_and_the_decision(self):
+        import inspect
+        comp = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_side_contradiction_line", comp)
+        dec = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("side_contradiction", dec)
+
+    def test_the_brief_line_is_silent_when_coherent(self):
+        self.assertEqual(run_engine._side_contradiction_line(
+            "our existing short position", -304.0), "")
