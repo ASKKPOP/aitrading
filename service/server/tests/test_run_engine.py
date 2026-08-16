@@ -3189,7 +3189,13 @@ class SideCoherenceTests(unittest.TestCase):
             run_engine._side_contradiction("we are long and holding", 12.5))
 
     def test_a_flat_book_is_never_flagged(self):
-        # No position: "open a long" is a plan, not a contradiction.
+        # No position: either side is a PLAN, not a contradiction. A short
+        # claim is the case that actually exercises the exemption (qty 0
+        # otherwise reads as LONG, which silences long-claims anyway).
+        self.assertIsNone(
+            run_engine._side_contradiction("we open a short here", 0.0))
+        self.assertIsNone(
+            run_engine._side_contradiction("our existing short position", 0.0))
         self.assertIsNone(
             run_engine._side_contradiction("we open a long here", 0.0))
 
