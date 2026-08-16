@@ -3249,13 +3249,18 @@ class NetOfFeesExitTests(unittest.TestCase):
                 "position": {"quantity": qty, "current_price": mark}}
 
     def test_it_states_the_net_and_the_round_trip(self):
-        # 76.66 @ 0.68 = $52.1 notional; round trip 2 x 0.045% = $0.047.
+        # 76.66 @ 0.68 = $52.1288 notional. With a pinned 0.001/side rate
+        # the round trip is BOTH legs: 52.1288 x 0.001 x 2 = $0.1043.
+        # Pinning the NUMBER is what catches a single-leg round trip.
+        import fees
         with patch.object(run_engine, "compute_run_pnl",
-                          return_value=self._pnl(0.10, -76.66, 0.68)):
+                          return_value=self._pnl(0.10, -76.66, 0.68)), \
+                patch.object(fees, "fee_rate", return_value=0.001):
             line = run_engine._net_of_fees_line({"id": 1, "market": "crypto"},
                                                 -76.66)
         self.assertIn("round trip", line)
-        self.assertIn("net", line.lower())
+        self.assertIn("$0.1043", line)          # both legs, not $0.0521
+        self.assertIn("-$0.0043", line)         # 0.10 gross - 0.1043 net
 
     def test_a_gain_under_its_round_trip_is_named_as_such(self):
         # gross $0.02 on a $52 book: the round trip is larger than the gain.
