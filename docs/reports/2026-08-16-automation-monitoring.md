@@ -23,6 +23,37 @@ flag comes off.
 
 ---
 
+## Cycle 44 — 21:4xZ (anchor 21:49:30): FIL banks **+$0.645** — the day's second-largest leg, from an honoured reduce; day **+$3.99**
+
+**FIL 1322 `reduce 0.5` on a $52 book → honoured** (`railed: {}`),
+cover 38.32 @ 0.66437 = **+$0.645**, remainder 38.32 kept. FIL fell
+from 0.6815 to 0.663 — the short worked and the desk took half at the
+right moment. **Boundary now 8/8.**
+
+Day ledger **+$3.99** (resid 0.65 on this read — the familiar
+mid-flight shape, third occurrence; re-read next cycle per the
+established pattern, not treated as drift).
+
+**Honoured-reduce scoreboard, today:** SUI +$0.166 · TRUMP +$0.287 ·
+TRUMP +$0.341 · FIL +$0.130 · **FIL +$0.645** — five for five,
+**+$1.569 combined**, every one from a book above the divisibility
+line. Against that, the four escalated (sub-line) reduces produced
+−$0.185, −$0.133, +$0.031 and a forced close. **The instrument works
+where the book can carry it** — which is exactly the regime #457's
+clamp now extends downward.
+
+**FX open: no forex runs yet.** All 10 running slots are still crypto
+(outlooks: crypto 11, us-stock 6, forex 0) an hour after the 21:00Z
+open. Fleet 35's `market_scope` is NULL so forex is eligible — worth
+watching whether the next build round reaches for it or the universe
+stays crypto-only. Not a defect yet; noted.
+
+12 decisions, adherence 12/12, `side_contradiction` 0, one conf-0.0,
+clamp count still 0, 0 tracebacks. Book: TRUMP +$1.08, FIL +$0.70,
+AVAX +$0.39.
+
+---
+
 ## Cycle 43 — 21:1xZ (anchor 21:19:42): **AUDCHF FLATTEN FIRED ON TIME — the longest-standing watch closes**
 
 **The 08-15 watch resolves affirmatively.** Queued flatten executed
