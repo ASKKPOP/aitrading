@@ -23,6 +23,40 @@ flag comes off.
 
 ---
 
+## Cycle 24 — 11:1xZ (anchor 11:19:26): first FULL round trip under Plan 26 (+$0.137); no double-writing; sweeper spends on STOPPED runs
+
+**Plan 26 §2 — the double-write check, run by run.** Crypto showed both
+`cycle` (7) and `sweeper` (2) rows this window, which is the guide's
+known-gap signature — so I checked per run rather than in aggregate:
+every **`running`** crypto run got **only cycle rows**; both sweeper
+rows belong to runs **1315 and 1321, which are `stopped`**.
+**No double-writing** ✓.
+**But:** the sweeper is authoring outlooks for runs that are STOPPED —
+a stopped run has no slot left to plan for, and each row costs an LLM
+call. That is guide known-gap #1 ("non-running runs treated as cold");
+logging it as instructed, **n=2**, dispatched to Agent B for a code
+verdict (waste vs defect vs intended).
+
+Other checks: freshness crypto 11:19:26Z / us-stock 11:14:08Z ✓;
+verdict mix adopted 5 · adjusted 4 · overridden 3 — **no
+`algo_fallback`** ✓; adherence **7/7** (fourth consecutive 100%
+window — the guide's §3b "minority of cycles" claim is now
+comprehensively refuted).
+
+**FIL 1322 completed the first FULL trade lifecycle under Plan 26:**
+open 153.32 @ 0.6813 (deviated) → reduce 0.5 @ 0.6797 **+$0.0992**
+(revised) → close @ 0.6805 **+$0.0379** (deviated) ≈ **+$0.137**
+realized; run stays `running`. Both covers `railed: {}`. Two-agent
+review dispatched — this is the first trade judgeable **against its own
+published plan** (guide §3), and the first live opportunity to test
+whether **#450**'s position-scoped trail changed anything for a run
+holding a second leg after banking.
+
+SUI 1306 opened a fresh short 69.69 @ 0.6774. Book: LTC, DOT, SUI.
+0 tracebacks. Day ledger +$2.74 → to be re-read after these closes.
+
+---
+
 ## Cycle 23 — 10:4xZ (anchor 10:49:31): **STOP-ECHO INVARIANT PASSES**; us-stock sweeper coverage arrives; FIL halved for +$0.099
 
 **Plan 26 — the armed test resolved ✓.** Run 1322's next outlook
