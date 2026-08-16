@@ -107,3 +107,47 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ### R-B — max_loss on the no-stop cash runs · **APPLIED (2026-08-01)**
 - Desk (gpt-oss:120b) specified $40 (~4% of the $1k bet) for runs 912 ETH / 915 TSLA; applied to `stop_conditions_json`, shape validated through the deployed validator, effective immediately.
+
+### R9 — Fleet AI auto-tune: entitlement clamp + scope decision · PARKED (2026-08-12, owner paused monitoring to build USA-stock modules)
+- **Shipped LIVE:** PR #381, image `20260812-fleetautotune`. `fleet_auto_tune.py` rides the tick and sets each non-terminal fleet's slots = `recommended_max_slots(budget)` and goal = edge-derived (5–30%). Verified working on fleet 29 (agent 6): slots 6→10, goal 20%→5%.
+- **OPEN BUG (contained, non-fatal):** the tuner runs on ALL agents' fleets. On fleet 30 (agent 58, $20k budget) `recommended_max_slots` returns 25 but that plan caps at 10 → `set_fleet_size` raises `EntitlementDenied` every ~30 min. Caught by per-fleet try/except (tick survives, fleet 29 unaffected, agent 58's fleet NOT changed — goal block returned None). Pure log noise today, but it recurs.
+- **OPEN DECISION (owner's, unanswered — asked 2026-08-12, owner replied "stop all monitoring"):** should the tuner be **(a) scoped to the automation fleet only** (surgical, never overrides another paying user's manual slots/goal), or **(b) platform-wide with a plan-cap clamp** (AI manages every user's fleet)? The fix differs by answer: (a) scope the query; (b) clamp `recommended_max_slots` to the agent's entitlement. Do NOT deploy either until the owner picks — (b) actively changes other users' accounts.
+- **Kill-switch if needed meanwhile:** `FLEET_AUTO_TUNE=0` on prod disables the whole tuner.
+
+### R8 — Tail losses are RETIRE/TIME-LIMIT closures of underwater runs, not floor hits · STAGED (2026-08-11, agent 6 / fleet 29)
+- **Question from owner:** alert cards show the open-run snapshot persistently red ("활성 런 전체 손익 합계 −1.34"); "why do we keep losing, how do we make plus profit."
+- **First: the red card is a work-in-progress mark, not a loss.** Total = seed 1000 + realized +5.97 + open ≈ **1007 net +6/+7 over seed. The book IS net positive.** Winners get banked (leave the open set); small losers linger to their stop → the open snapshot always skews red. Timing artifact of a winning strategy.
+- **Profit shape is healthy:** 85 runs, 32 wins (+16.09) vs 39 losses (−10.11), net +5.97; avg win +0.50 vs avg loss −0.26 = **~2:1, +expectancy**. Break-even for 2:1 is a 33% win rate; desk is at ~45%.
+- **Finding (evidence, worst 12 losses):** NONE hit the max-loss floor — closed at **7–42% of floor**. Reasons: `adapt_retired` (SI −1.59 @39% of $4.12 floor; KAITO −1.19 @88%; HYPE), `desk_retired` (SOL ×2), `stop_event:at_time` (ADBE −0.73, HG −0.35), `trailing_lock` (ZEC, SOL, ADBE). **The biggest single loss (SI −1.59) was the ADAPT system retiring the run while underwater and dumping the full book far inside its own stop** — the `desk-cannot-see-the-rail-that-retires-it` (#244) pattern, still live.
+- **Leverage is NOT the net lever** (checked): 2:1 ratio is scale-invariant; 3×→2× multiplies wins AND losses by 2/3 → net +5.97 → +3.98 (lower). Cutting leverage cuts profit. More size = more net (bounded by risk) — the daily-compound #363 already does this.
+- **R:R geometry basically fine:** only 3/85 runs have target<stop. (Withdrew an earlier over-weighted USDKRW lead.)
+- **Real lever — AI-FIRST framing (owner corrected 2026-08-11; `decisions-become-skills`):** the fix is a **sooppiy-AI skill/judgment, NOT a platform rail.** Split by who decides today:
+  - **`desk_retired`** (SOL ×2) is already the AI choosing `retire` → pure **skill gap**: the exit-verb skill covers `close` but not the `retire` verb; teach the desk that `retire` on a within-stop live thesis is a full-book close with the same cost. Target the win/loss SHAPE, not zero losses.
+  - **`adapt_retired` / `at_time`** (SI −1.59, KAITO, ADBE, HG) are **platform-forced with NO desk say** — SI was adapt-dumped while the desk had no vote. AI-first fix = **build the PATH to route that moment to the desk for a hold/reduce/close judgment**, not a platform rule that defers retirement. Build the daemon path, don't patch the row (`trading-decisions-belong-to-sooppiy-ai`, `never-touch-live-trading-config`). Platform only surfaces the situation; judgment is the AI's.
+- **Next analysis pass (backtest-first, R6 discipline):** trace the `adapt_retire`/`at_time` close path; of the 39 losses quantify retire/time-driven vs own-stop and the recoverable fraction; then propose the retire-verb skill + the decision-routing path (both AI-first) for owner/desk approval.
+- **Self-correction log this investigation:** (1) my monitoring short-P&L sign was inverted — fixed, memory `position-upnl-sign-convention`; (2) "desk ignores its reduce skill / empty why" was wrong — `why` isn't a persisted field, the real reason lives in `report`; (3) "tail = max-loss floor firing" was wrong — floors are $3–5, losses closed at 7–42% of floor; the true cause is retire/time-limit. Reported each plainly.
+
+### R10 — Size-vs-loss-floor coherence · **SHIPPED (2026-08-14, PR #417, image 20260814-solutions-r10-rag)** — add-aware clamp + entry rail line + per-run-type rail
+- **Evidence (n=3 in one day, −$118):** SPCX 1159 (stop 6.4% ⇒ $212 at full size vs $44 budget → brake fired at −1.07%, 26 min in), SOL 1099 aggregate (6 tranches made the AI's own $76.7 invalidation unreachable — floor at ~0.7% adverse vs stop at ~1.4%), GC 1186 (1.31% stop ⇒ $27.5 vs ~$13 floor). In every case the platform rail fired FIRST and the AI's authored stop was fiction. #244 gave the desk VISIBILITY of the rail; it still doesn't SIZE against it.
+- **AI-first design:** prompt/skill lesson — "worst-case USD at your stop (notional × stop%) must fit the run's REMAINING loss budget; size down until it does." Platform fallback: shrink-only clamp in order-params apply (size_frac ↓ until stop-USD ≤ remaining budget) — composes with existing shrink-only rails (#81/#82).
+- **Blocker to resolve first:** skills catalogue is AT CAPACITY (handoff trap 2026-08-06) — needs a merge/drop decision; and the clamp needs the wiring test pattern (brief-line trap).
+
+### R11 — Momentum-chase against the desk's own written invalidation · **SHIPPED (2026-08-14, PR #417)** — last-cycle word line (age-stamped, errored-cycle-proof); owner ordered immediate ship
+- QNT 1157 (bought 29 min after itself writing "thesis already invalidated"), INTC 1169 (bought after twice writing the bracket doesn't work), SPCX 1159 (full size into a +34%/5d extended mover). Candidate lesson: "a condition you wrote as invalidation stays binding across cycles unless the thesis is re-derived." Wait for one more day of tape before drafting the skill (2+ cycles rule; catalogue capacity).
+
+### R12 — Event-table spam ~2,500 rows/day · **SHIPPED (2026-08-14, PR #417)** — change-driven + 30-min heartbeat
+- Fleet 31 re-emits `fleet_status replenishing` every ~62s (×1,385/day); run 1161's queued flatten retries every ~33s writing `gate_skip` (×1,144 over 10.5h). No P&L impact; dedupe/backoff when convenient.
+
+### R13 — pnl_audit entry-side fee asymmetry · **SHIPPED (2026-08-14, PR #417)** — fee_asym/resid columns
+- 08-13 DRIFT flag (−7.38) proven benign to the cent: adapt nets exit-side fees only. Make the tool compute the expected fee asymmetry (or scale tolerance by open-leg fees) so real drift stays loud.
+
+### R14 — Swing universe cannot fill 25 slots · **SHIPPED (2026-08-14, PR #417)** — S&P-100 seed roster, gates untouched (owner chose widen-universe via 'full make solutions')
+- Fleet 31 stuck 17/25 all day; gates honestly drop everything (swing_history_thin 42–62 bars; backtest expectancy −72…−502 USD/trade). Options: widen the researched us-stock universe, or lower n_runs. Gates themselves are correct — do NOT loosen them.
+
+### R16 — Cross-run same-symbol memory + desk_retired cooldown · STAGED (2026-08-14 sweep, n=1 pair + prior churn chains)
+- **Evidence:** NQ 1184 desk-retired 09:47Z citing "no safe bracket"; fleet rebuilt NQ, and successor 1197 re-longed at a HIGHER price 4h later with zero reference to the predecessor — −2.42 then −2.15 same day. `desk_retired` symbols carry no cooldown (only adapt-retires get 24h); no prompt line carries cross-run same-symbol history (R11 is within-run only). Also the swing-side WMT/UBER/SBUX/PFE instant-rebuild chains (08-13, $0 each).
+- **AI-first design:** a predecessor-run brief line at build/first-cycle — "this agent's previous run on {symbol} today: retired ({reason}), P&L {x}" — so the desk re-underwrites with its own history in view. Platform fallback: extend the 24h symbol cooldown to desk_retired (riskier — blocks legitimate re-entries on genuinely changed tape; prefer the brief line first).
+- **Gate:** one more day of tape (2+ cycles rule). If the repeat-entry-after-retire shape recurs with losses, ship the brief line.
+
+### W-fence — Execute-stage lease-expired skips deferring exits · WATCH (2026-08-14 sweep)
+- 12 lease-expired skips in one day, 11 in market hours, one deferred a desk CLOSE (run 1116 JPM 15:42:44Z; retried next cycle). A fence that can defer an exit points the forbidden direction. Count daily; if closes get deferred again, investigate the claim/lease path.

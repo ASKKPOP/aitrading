@@ -8,6 +8,392 @@ for the v1 bar this fleet must beat.
 
 ---
 
+## Cycle 41 — 23:3xZ (anchor 23:33:37): quiet — #448 proven at scale; FIL short +$3.10
+
+**`run_expiry` renders on ALL 10 decisions this window** (flat and
+held) — #448 behaviourally proven at scale within an hour of deploy.
+FIL 1305's $209 short is **+$3.10** (price −1.49%), the day's largest
+favorable move — the desk held at 0.62 with the full held-book brief
+set; 0.6932 arm standing, target 8.4% further. All holds, no trades,
+0 tracebacks. Day: 9 closes ≈ +$0.01 realized, +$3.10 open.
+
+---
+
+## Cycle 40 — 23:0xZ: JTO verdict — NOT the trailing lock; the breakeven ratchet is guaranteed-negative by construction
+
+**CORRECTION to cycle 39 (mine):** the event label lied and I repeated
+it. B's reconstruction: the configured trail (arm $0.76) NEVER armed —
+peak was $0.10. What fired was the **breakeven ratchet**, which reuses
+the `stop_event:trailing_lock` label. Detection lag ≈ 0; the loss
+decomposes −$0.011 structural + −$0.035 one 61s poll gap.
+
+**P&L first: −$0.046 net — and the ratchet was the BEST branch**
+(holding = −$0.092 at mark; the desk's stop untouched). The defects:
+
+- **Agent B (rails):** the ratchet floor is `total ≤ 0` GROSS of exit
+  fee — **every fire nets a loss; best case is −1 exit fee** — while
+  the label and fleet disposition (`banked winner — replace at once`)
+  report it as a win, corrupting downstream attribution (including
+  ours, until now). "n=2 lock defect" REFUTED: 1303 was the real trail
+  (mark lag), 1304 the ratchet — two mechanisms, one label, a debt
+  ratchet_audit.py already admits. Poll-speed fix refuted (≤$0.035 on
+  a $25 book); arm-floor-raise refuted (would have left 1304 unarmed
+  → −$0.092).
+- **Agent A (desk):** the desk authored the loss three ways — bought an
+  entry it had itself rejected TWICE ("no positive-expectancy entry",
+  written at two lower prices, chased at the range top with nothing
+  new); placed a 0.586 arm ~2× beyond any measured next-look move
+  (empty why) and never repaired it though the reachability lesson was
+  served in recall BOTH management cycles; deferred to the dead arm at
+  the peak (+$0.074 was available). Read-and-overridden again.
+
+**#449 DEPLOYED — 23:3xZ addendum.** PR MERGED (`4cc693f`), image
+`sooppiy-backend:20260815-ratchet-fee-floor` live; functional
+in-container proof: the floor fires at total ≤ exit fee and stands
+above it. 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-run-expiry`. Day ship count:
+#439–#449 (11 PRs).
+
+**Actions:**
+1. SHIP NOW (B): ratchet floor `total ≤ 0` → `total ≤ est. exit fee`
+   (every fire becomes ≥$0-net-capable) + a `mechanism` payload
+   discriminator so ratchet fires stop masquerading as trail fires.
+2. NEXT SESSION (A, designed, evidenced): arm-reachability rail at
+   intent time — clamp reduce-arms beyond the measured next-look range
+   (skill served twice and overridden; 60+ arms, 3 fired). Backlogged
+   as first implementation task, not dropped.
+
+---
+
+## Cycle 39 — 22:5xZ (anchor 22:51:59): JTO closed by a trailing lock AT A LOSS — agents dispatched; FIL goes triple-digit
+
+- **JTO 1304: trailing lock flattened the long at 0.58006 — BELOW the
+  0.5806 entry — net ≈ −$0.046.** A lock exists to bank profit; this
+  one realized a loss (peak was ~+0.38%). Second lock underperformance
+  today (n=1: 44%-of-peak fire; n=2: negative fire). Two-agent review
+  dispatched: was it poll-lag, a lock level computed below
+  breakeven+fees, or something else.
+- **FIL 1305 opened the fleet's first triple-digit position**: short
+  304 units @ 0.687 ($209 notional, $104 margin) from a $522 max_bet
+  slot — sane bracket (3.4/9.8), currently +$0.41. `predecessor_run`
+  (R16) visibly rendering the ancestor run's history. But: authored a
+  NEGATIVE target again at cycle 6 (−2.97, rails rebuilt) and an
+  empty-why arm (n=5).
+- `run_expiry` not yet in the 22:46 brief — that cycle ran seconds
+  before the #448 restart; next held-book cycle must show it (watch).
+
+---
+
+## Cycle 38 — 22:1xZ: SUI at_time flatten −$0.014 — information failure verdict; my ladder claim corrected
+
+**P&L first: −$0.014 net** (gross +$0.014, fees $0.028); fleet 35 day:
+8 closes, ≈ +$0.06. Counterfactual at both agents' marks: the flatten
+BEAT holding (~$0.004-0.007) — SUI went nowhere; TTL cost nothing this
+time.
+
+**Agent A (desk):** the desk's best-managed position of the day — held
+3 cycles per plan, no scratch-bank, coherent arm — killed by an 8h
+run TTL it structurally could not see: the at_time comes from the
+BUILD-time research thesis (horizon_hours 8), the desk authored 24h,
+and none of the ~20 composer lines conveys run life (A inventoried
+all). The platform journaled the contradiction 3× (`horizon_shadow`)
+then killed the run. Information failure, not management failure. The
+hazard: the same blindness amputates a WORKING winner at 1/12 of its
+thesis life.
+
+**Agent B (rails), correcting MY brief twice:** (1) the at_time flatten
+logged `flatten_close` — journal-only, ZERO ladder/cooldown effect
+(#249); my "platform-forced closes feed the loss ladder" claim does
+NOT replicate on this path — doctrine case NARROWED to the
+dust-escalation path (ETH, n=1). (2) The REAL defect:
+`leg_outcomes` charges only the CLOSING leg's fee (docstring claims
+"net of fees") — this fee-complete −$0.014 trade journals +$0.0002 and
+would ladder as a WIN. The fee-flip class is arithmetically invisible
+to the discipline written to catch it.
+
+**#448 DEPLOYED — 22:5xZ addendum.** PR MERGED (`b7ab432`), image
+`sooppiy-backend:20260815-run-expiry` live. Functional in-container
+proof on the live JTO run: "Run life: this run HARD-ENDS at
+2026-08-16T07:48:16Z (8h 56m remaining)…" renders. 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260815-direction-coherence`.
+Day ship count: #439–#448 (10 PRs).
+
+**Actions:**
+1. SHIP NOW — run-TTL brief line (`run_expiry`, both agents' #1): the
+   desk sees "this run ends at T, Xh Ym left" and authors horizons/
+   targets against remaining life. Pure information, no doctrine.
+2. OWNER PACKAGE (backlog updated): full-fee accounting in
+   leg_outcomes (aligns code with its own docstring) + scratch band —
+   these interlock: full fees alone makes the ladder HARSHER on
+   scratches; the band alone hides real churn. Decide together.
+3. Shadow-score the research-8h vs desk-24h horizon disagreement (3×
+   journaled on this run alone).
+
+---
+
+## Cycle 37 — 21:4xZ (anchor 21:40:42): quiet — UNI re-entry blocked by its own tightened gate
+
+UNI 1293 authored a sane re-entry short (stop 2.3 / target 7.6, >3:1;
+floor raise fired again) but conf 0.58 fell below its adapt-raised 0.60
+gate — the post-loss tightening doing exactly its job on a real prior
+loss. Book: SUI +$0.01, JTO −$0.11 (stop 2.1% away). 0 tracebacks, no
+closed trades.
+
+---
+
+## Cycle 36 — 21:1xZ (anchor 21:10:39): quiet — JTO's replacement authored a SANE bracket
+
+JTO 1304 (replacing the unit-slip run) opened long 43.49 @ 0.5806 with
+a fully coherent bracket: stop 2.5 / target 5.5 / trail_arm 3.0 /
+12 h — "stop clears daily noise" now true. Converter correctly idle.
+Its 21:09 banking arm (price_above 0.586 → reduce 0.5) carries an
+empty why — **n=4**; and a half-reduce of the $25 book would escalate.
+Book: SUI +$0.04, JTO −$0.01. Cooldowns continuing (LTC/ETH), 0
+tracebacks, no closed trades.
+
+---
+
+## Cycle 35 — 20:3xZ (anchor 20:39:25): quiet-ish — FIL retired by horizon on a flat book; cooldown grind
+
+- FIL 1286 retired `stop_event:at_time` (20:33:52) — the desk's own 1 h
+  horizon from its 19:34 close order, fired on an already-flat run. 29 s
+  later an in-flight desk cycle emitted "close to lock loss" on the
+  flat book — the intent compiler correctly no-oped it
+  (`close_on_flat_noop`); no money moved, rails absorbed the race.
+- Cooldown grind: LTC + ETH (and UNI churning holds) in loss cooldowns
+  — per design after real losses this time.
+- SUI: favorable +$0.06, desk armed price_below 0.674 → reduce 0.5 with
+  an EMPTY why (n=3 on the empty-why watch); if it fires, the $15.5
+  remainder escalates to full close — the desk is not applying the
+  reduce-geometry line to ARM sizing (the line speaks to reduces; arms
+  compile to reduces at fire time — extension candidate if it fires).
+- New run 1305 building; 0 tracebacks; fleet 33 unchanged.
+
+---
+
+## Cycle 34 — 20:0xZ: three closes (net −$0.03), cross-checked — direction-confused exit, fee-flip adapt poisoning
+
+**P&L first: ETH leg −$0.006 / FIL +$0.040 / LTC −$0.066 → −$0.03 this
+batch; fleet 35 day ≈ +$0.07 over 7 closed trades.** Desk exits alone
+this batch: −$0.046.
+
+**Agent A (desk), accepted:** LTC direction incoherence CONFIRMED — the
+desk closed a SHORT citing bearish confluence, downside warnings, and
+crowded longs (3.04:1): every cited factor was its own thesis working;
+the panel had proposed ADDING to the short the same cycle; it even
+cited its own 43.9 profit arm as a market factor. At A's mark the
+"feared downside" began materializing — without the position. FIL:
+"the short bias remains justified" → full close anyway at 6.25% of
+path (scratch-bank n=2 same symbol, honestly pre-skill: exit-discipline
+updated_at 19:58:37Z post-dates all three closes — timing corrected).
+ETH: paid a $0.011 fee to protect a $0.006 gain. FEAR IS BIDIRECTIONAL:
+the same +7 fear spike OPENED the SUI short at 19:44 and CLOSED the LTC
+short at 19:51 — ambient flags functioning as post-hoc justification.
+
+**Agent B (rails), accepted:** all rails per design; the three
+escalations cumulatively **+$0.0008 — noise on price**. THE REAL COST:
+run 1302's two adapt "losses" were both GROSS-POSITIVE fee-flipped
+scratches (−$0.0006, −$0.0059), the second RAIL-FORCED
+(dust_remainder_closed) — yet they halved size_mult (1.0→0.5), raised
+the conf gate +0.1, and blocked a cycle. Penalty ≈1000× the trigger.
+B verified scratch-as-loss is DOCUMENTED design ("churn IS the failure
+mode being disciplined") — the premise fails when the platform forces
+the churn. LTC's 43.9 arm correctly stood (low 44.043). #446 converter
+unexercised (SUI's sane 2.06/6.04 correctly untouched). SUI re-entry
+structurally improved (named invalidation, 2.93:1 — desk claimed 3:1,
+small overstatement flagged).
+
+**#447 DEPLOYED — 20:3xZ addendum.** PR MERGED (`ff2265b`), image
+`sooppiy-backend:20260815-direction-coherence` live; DIRECTION
+COHERENCE renders in the live trader skills block (functional
+in-container check). 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-unit-slip`. Day ship count:
+#439–#447 (9 PRs).
+
+**Actions:**
+1. SHIP NOW — direction-coherence exit lesson: before any close/reduce
+   state position sign, cited-risk direction, and that the risk is
+   AGAINST the position (LTC's every cited risk favored it).
+2. OWNER DECISION REQUIRED (top of recommendations backlog): the adapt
+   ladder punishes fee-flipped scratches as losses — narrow fix
+   (rail-escalated closes don't feed the loss ladder) or full scratch
+   band (|realized| ≤ leg fee → neutral). Both REVERSE documented
+   churn-discipline doctrine; per §7e this is flagged, not shipped.
+3. Watches: #446 first live conversion; SUI open short (−$0.03 uPNL,
+   inside its stop); ETH second cooldown expiry.
+
+---
+
+## Cycle 33 — 19:1xZ: SUI +$0.020 (desk) and JTO +$0.024 (trailing lock) — cross-checked verdict; UNIT-SLIP reframe
+
+**P&L first: +$0.043 across the two closes; fleet 35 day now 4 closed
+trades, ≈ +$0.10 net.** Both wins real; NEITHER earned by its stated
+logic.
+
+**Agent A (desk axis):** SUI's exit reason is factually false — it
+called a stop 2.16% away "nearby", after INVENTING a 1.03% stop
+mid-life (bracket is write-once; the desk reasoned against a stop that
+does not exist), and abandoned its own entry plan ("lock half at +2%")
+by full-closing at +0.19% — with the panel bumping confidence
+0.55→0.66, exactly clearing the 0.65 gate. Scratch-bank pattern n=4
+quantified: **banking <13% of path against ~2% stops needs a 91–95%
+win rate — structurally negative expectancy regardless of entry edge.**
+Skills are being READ AND OVERRIDDEN (the exit report computed the
+path % then ignored it). Flags: exit-recall queries pre-seeded with
+banking vocabulary; the 0.55→0.66 gate-clearing bump.
+
+**Agent B (rail axis):** all rails per design; trailing lock banked
+44% of peak vs the designed 80% (poll granularity, ~$0.034 on a
+$0.024 trade — material at 21-min timescales, quantified not
+defected); retirement-on-lock per enumerated taxonomy; **replenish
+stall signature live** (5/25, `built: 0` 30+ min — watch).
+**THE REFRAME (disagreement chased, B's evidence wins): JTO was a
+UNIT SLIP, not garbage** — authored 0.05/0.09/0.06 = 5%/9%/6% as
+fractions (its narrative said "~4.5% gain → reduce half" ≈ half of
+9%; same desk wrote correct percents on SUI 50 min earlier). Three
+floors silently rebuilt a coherent swing bracket 100× tighter.
+Retroactively: SOL 0.016 → 1.6%, BTC 0.007 → 0.7% — the historical
+"garbage" reads as unit slips too. #440 n=5: every ask exactly the
+advertised 0.05 — the desk rationally quotes a fictional minimum;
+per-run number in the prompt now evidenced.
+
+**#446 DEPLOYED — 19:4xZ addendum.** PR MERGED (`9fee7ee`), image
+`sooppiy-backend:20260815-unit-slip` live. Verified with a functional
+test IN the container: `parse_order_block({stop 0.05, target 0.09,
+trail_arm 0.06})` → **5.0 / 10.0 / 6.0** — the exact JTO bracket now
+restores to the desk's intended geometry; TRUTHFUL EXIT renders in the
+live trader skills block. 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-sweep-docs`. Day ship count:
+#439–#446 (8 PRs).
+
+**Actions (implement-every-time):**
+1. SHIP NOW — unit-slip reinterpretation: when ALL authored pct
+   fields (stop/target/trail_arm) are sub-floor simultaneously,
+   interpret as fractions ×100, journaled; plus a units example in
+   the schema line.
+2. SHIP NOW — truthful-exit skill: full-closing a winner <30% of path
+   requires the ACTUAL stop distance as a number (a "nearby" claim
+   >1% away voids the rationale) and either the entry plan's banking
+   level or a named new invalidation.
+3. Backlog: per-run size minimum in the prompt (authorship, not P&L);
+   trailing-lock poll cadence at short timescales; banking-seeded
+   recall queries; panel confidence-bump audit.
+
+---
+
+## Cycle 32 — 18:4xZ (anchor 18:40:43): garbage stop returns (JTO); a −$0.001 leg silences a desk holding $25 — two watches armed
+
+- **Stop-shape watch FIRED**: JTO 1303 opened the fleet's first LONG
+  with an authored **stop_pct 0.05** ("beyond noise" — 0.05% is inside
+  noise on any crypto) → floored to 0.3. The SOL/BTC garbage class,
+  first appearance on fleet 35. Bracket now stop −0.3% / target +0.6%
+  on a small-cap — high probability of a fast stop-out; if it stops
+  quickly that is evidence toward a stop-vs-sigma coherence lesson
+  (n=1, watch). Note the rails caught it (floor note journaled), and
+  #440 fired its FOURTH save on the same order (0.05 → 0.0581).
+- **Cooldown mechanics on a held book (n=1, watch)**: ETH 1302's
+  −$0.001 reduce leg was classified `losing_close` — magnitude-blind —
+  stepping size down, bumping the conf gate, and silencing the desk
+  for 60 min WHILE IT HOLDS the $25.5 remainder. The book is fully
+  guarded watcher-side (stop 1895.2 / target 1823.6 / standing arm
+  1875 all fire during cooldown), so risk is bounded — but the desk
+  cannot manage its own remainder. Two candidate fixes if reproduced:
+  (a) scratch band — a close inside fee-noise (|realized| < ~1 fee
+  round trip) is neither win nor loss; (b) held-book cooldown yields
+  for manage/exit verbs, blocks only new opens. NOT shipping at n=1.
+
+Book: 4 shorts + 1 long (JTO), all bracketed; 0 tracebacks.
+
+---
+
+## Cycle 31 — 18:1xZ (anchor 18:10:37): first SURVIVING partial reduce (boundary proven from the other side); 4 shorts
+
+- **ETH 1302 half-reduce SURVIVED** (17:54:49): `railed: {}` — no
+  escalation; cover 0.01355 @ 1883.1, remainder $25.5 ≥ $25 floor by
+  fifty cents. The dust-remainder boundary is now proven live from BOTH
+  sides (UNI/FIL escalated below it; ETH survived above it). The
+  realized half-leg: +$0.011 gross − $0.011 fee ≈ **−$0.001 net** —
+  reason: the desk banked half at a +0.04% move, premature banking with
+  an empty `why`; full two-agent treatment deferred to the position's
+  final close (leg is ±$0.001, position still open).
+- **#440 third save**: SUI 1296 short 29.34 @ 0.6816 — desk authored
+  0.05 for the third time (habit unchanged by the schema note), rail
+  raised to 0.0642, filled. Sane bracket (stop 1.97 / target 2×).
+- **Second `desk_retired`**: BTC 1301, desk action "retire" conf 0.66 —
+  the retire verb used deliberately twice in 3 h.
+- **Post-#444 watch opened**: TWO standing orders this cycle carry an
+  empty `why` (ETH reduce, FIL banking arm price_below 0.684 → reduce
+  1.0) — the one-invalidation skill forbids this but skills are
+  advisory; if the pattern persists, the candidate escalation is an
+  order_intent rail requiring a why on arms (n=2, monitor only).
+
+Book: 4 shorts (LTC, ETH-half, FIL, SUI), new run 1303 deliberating,
+0 tracebacks, fleet 33 unchanged.
+
+---
+
+## Cycle 30 — 17:4xZ (anchor 17:40:38): #443 positive render PROVEN both ways; #440 second live save; book 3 shorts
+
+**#443 EXERCISED, both branches:** LTC 1297 (notional $26.3, inside the
+25–50 band) rendered **`reduce_geometry`** in its held-book brief; ETH
+1302 (notional $51.0, just above 2× floor) correctly did NOT. The line
+renders exactly on its designed boundary.
+
+**#440 second live save:** FIL 1286 re-entered short (cycle 19,
+17:35:53Z) — the desk authored size_frac 0.05 AGAIN (the schema note
+has not changed its habit), rail raised to 0.0580, **short 29.07 @
+0.688 filled** at the $10 minimum. Stop 0.7040 (+2.32%, structural),
+target 0.6560, horizon 72 h — sane shape, longer thesis this time.
+
+Book: three shorts — LTC (−0.595 @ 44.16), ETH (−0.0271 @ 1883.9, desk
+ARMED price_below 1875 → reduce 0.5, a banking arm per the skill), FIL
+(−29.07 @ 0.688). One more `conf 0.0` no-LLM-verdict fail-safe hold
+(UNI 17:22). 7 runs running, replenish continuing, 0 tracebacks.
+
+**Process correction (mine):** cycles 28–29 queried `run_id BETWEEN
+1286 AND 1295` and were blind to the new runs' entries (LTC 15:21,
+ETH 16:37 — found now, entries only, nothing closed, no analysis owed).
+Sweeps now use `run_id >= 1286`.
+
+---
+
+## Cycle 29 — 17:1xZ (anchor 17:10:36): fleet self-restructured — 8 idle-retires, auto-tune growth 10→25, replenish underway
+
+Not quiet after all — the platform machinery had a busy 3 hours, all
+per design:
+
+- **8 of the 10 original runs idle-retired** (13:54–14:08Z) — none ever
+  opened a position in ~5.5 h; the rail returned their capital. Only
+  FIL 1286 and UNI 1293 (the two that traded) survive.
+- **Auto-tune grew the fleet 10→25 slots** (slot_created
+  `underfill_backfill` ×15, $400 allocations). `user_size_cap` is NULL
+  — correct **#437 semantics**: creation size does not pin, only a
+  user resize does, and auto-tune remains free. Consistent with the
+  owner's morning question ("Slot doesn't increased, why?") — growth is
+  the desired behavior. If the owner ever wants 10 to STICK, a UI
+  resize will stamp the pin.
+- **Replenish 7/25**: fresh builds SUI 1296, LTC 1297, ZEC 1298
+  (13:41–13:49), BTC 1301 (15:43), ETH 1302 (16:34, slot 4, $1,719).
+  **BCH refused by the expectancy gate on every round** (−$255.02/trade
+  over 10 closed) — the corpus gate visibly constraining replacement.
+- **First `desk_retired` on fleet 35**: KAITO 1300 — the desk retired
+  its own thesis after 1 h (AI-decided close-reason, correct taxonomy);
+  ETHFI 1299 also built-and-stopped quickly.
+
+Watches: new runs' first entries will exercise #443's positive render
+and the new skills; brief arrays to verify on the replacements. Flat
+book, 0 tracebacks, fleet 33 unchanged.
+
+---
+
+## Cycle 28 — 16:4xZ (anchor 16:40:34): quiet — one hold, flat
+
+---
+
+## Cycle 27 — 16:2xZ (anchor 16:25:31): quiet — UNI out of loss cooldown, all flat
+
+---
+
 ## 24-HOUR SWEEP — 15:3x–16:0xZ (window 08-14 15:35Z → 08-15 15:35Z): adversarial re-proof of the day
 
 ### Ships re-proven in the RUNNING container (single cumulative image `20260815-one-invalidation`, 0 tracebacks)
