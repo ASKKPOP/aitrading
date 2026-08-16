@@ -23,6 +23,17 @@ flag comes off.
 
 ---
 
+## Cycle 18 — 09:1xZ (anchor 09:19:27): quiet — 3 holds; conf-0.0 on a HELD book again (n=5)
+
+DOT 1308 (held short, −$0.08) took another `conf 0.0` no-LLM-verdict
+hold at 09:07 — **n=5 on the repeat watch, and the third on a HELD
+book**. Fail-safe holding is safe (bracket guards it) but it is a
+management look lost on a live position; FIL's flatten was preceded by
+exactly this pattern. LTC drifting to 0.39% from its stop. 0 trades,
+0 tracebacks. Plan 26 guide absent at 09:19Z.
+
+---
+
 ## Cycle 17 — 08:5xZ (anchor 08:57:05): quiet — 13 holds, no trades; Plan 26 guide still absent
 
 Both shorts underwater but well inside their stops (LTC −$0.11, entry
