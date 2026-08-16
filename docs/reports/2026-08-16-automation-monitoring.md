@@ -10,6 +10,47 @@ AUDCHF 1147 flatten at Sunday 21:00Z FX open, fleet 33 `stopping`.
 
 ---
 
+## Cycle 3 — 00:5xZ: FIL +$3.04 verdict cross-checked — the win is the DESK'S; both agents independently demand the same fix
+
+**P&L first: +$3.04 net, verified to the cent against the ledger (2×).**
+Counterfactual at both marks: the close cost ~$0.03 vs holding — a wash.
+
+**Where the money came from (A, accepted):** entry timing (3.5 h of
+patient refusal, then short at the local range top when momentum
+jumped 0.45→0.80) × size ($209 notional — the same 1.54% move at
+floor-scale is a scratch) × one hour of correct patience (96% of gross
+earned in hour one). The 3.4% stop bought permission to hold, never
+tested.
+
+**Rails (B, accepted):** ALL per design — leverage cap 3×→2× (cost
+$1.52 on this winner; its job), ratchet armed at $0.42 and correctly
+silent (floor never approached; #449 live for the final 45 min,
+out of range), trail/arm/stop/target untouched, TTL visible (44 h
+left) and rightly unreferenced. The profit-retention band between
+ratchet arm ($0.42) and trail arm ($10.45) remains 100% desk
+discretion — this time the desk gave back only $0.50 from peak.
+
+**The defect BOTH agents found independently: side confusion.** The
+exit report reasoned "Given we are LONG…" against a −304 SHORT book
+(position_state rendered in its own brief); the panel proposed `buy`;
+params why said "close the existing long"; the intent compiler alone
+produced the correct `cover`. Truthful-exit and direction-coherence
+both FAILED in prose (my cycle-2 credit to the exit was too generous —
+corrected). Side confusion is n=2 today (LTC, FIL). On an ADD intent
+the same slip flips exposure instead of closing it.
+
+**Actions (next-session implementation queue, specs in backlog):**
+1. Side-coherence check on exit/add cycles: stated side vs
+   position_qty sign — telemetry flag + quote the contradiction back
+   (#441 pattern). Both agents' #1.
+2. Arm-reachability rail (queued from JTO).
+3. Journal hygiene: params sizing non-authoritative on intent-close
+   cycles (attribution keeps tripping on it).
+
+Fleet 35 totals: 10 closes, **+$3.05 realized**; open LTC + SUI shorts.
+
+---
+
 ## Cycle 2 — 00:4xZ (anchor 00:40:49): FIL CLOSED **+$3.04 NET** — the fleet's first material win; agents dispatched
 
 Desk-authored at both ends: short 304.09 @ 0.687 (22:17Z) → full cover
