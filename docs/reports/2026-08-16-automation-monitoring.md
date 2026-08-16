@@ -29,15 +29,30 @@ Queued cycle prompts stacked while the FIL verdict ran; this note covers
 the whole 7.5 h gap in one sweep. Agents dispatched on the batch.
 
 **P&L first (pnl_audit, flatten-reconciled, resid 0.01, 1 flatten):
-UTC 08-16 ledger = +$2.69.**
+UTC 08-16 ledger = +$2.69 — BUT the overnight desk authorship was
+NET NEGATIVE −$0.494** (Agent A, fee-complete). The +$2.69 exists
+because of the 00:17 FIL bank (+$3.04) on a position opened 08-15
+22:17Z. Strip that and this batch is a loss. Headline honesty: the
+day is green on yesterday's trade, not on tonight's decisions.
 
-**WORKED — the fleet learned to exit in stages.** SUI 1306 covered
-40% of its book (27.9 of 69.8) leaving ~$28.3 — ABOVE the $25
-dust-remainder floor, so it did NOT escalate — then closed the rest;
-re-shorted and banked +$0.209. DOT 1308 did the same (two partial
-covers, still holding 33.4). **First surviving partial exits this
-fleet has ever produced**; the #443 reduce-geometry line tells the desk
-exactly that bound. Agents are testing causation vs coincidence.
+**WORKED — #443 PROVEN CAUSAL (Agent A, and it refuted MY framing).**
+My "first surviving partial exits this fleet has ever produced" was
+**FALSE** — ETH 1302's half-reduce already survived the floor on
+08-15 (my own cycle-31 note, commit 392d5d86). What is genuinely new
+is the **non-canonical fraction chosen under the stated bound**:
+- SUI 1306 cyc10: notional $47.11, line renders bound 47%, desk chose
+  **0.40**, and its `why` quotes the number verbatim — *"cutting 40%
+  keeps a meaningful position (>$25)"*. $25 exists nowhere in the
+  desk's world except `_reduce_geometry_line`.
+- DOT 1308 cyc13: notional $33.62, bound 26%, desk chose **0.25**.
+- Both cycles where the line is SUPPRESSED ($67.39, $104.45): the desk
+  reverted to canonical 0.5 / no reduce.
+- Prior: **150 reduce intents before 08-16, 123× 0.5 and 27× 1.0 —
+  zero non-canonical fractions in four days.**
+4/4 correlation with render/suppress. This is the #443 signature.
+**But #443 gives true information, not edge**: the identical mechanism
+produced SUI +$0.0385 and DOT **−$0.119 so far** (its 25% stage left a
+book that then rallied). Stated plainly, not laundered.
 
 **FAILED — FIL 1305 re-entry flattened for −$0.634 by the CONFIGURED
 TRAIL** (no `stop_mechanism` event → #449's discriminator correctly
