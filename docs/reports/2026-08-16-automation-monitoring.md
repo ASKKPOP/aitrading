@@ -23,6 +23,21 @@ flag comes off.
 
 ---
 
+## Cycle 41 — 20:1xZ (anchor 20:19:28): quiet — residual cleared again; no reduces yet post-clamp
+
+**Residual re-read: 0.14 → 0.01, check ok**, ledger unchanged at
+**+$3.32**. Second confirmation that the mid-flight read is transient,
+not drift — the pattern is now understood, so future ~0.1 residuals get
+one re-read and no alarm.
+
+7 holds, no trades. Post-#457 order-intent counters both **0** (no
+clamp, no escalation) — correct, because **no reduce has been authored
+since the 19:56Z restart**; the clamp's first live exercise is still
+pending. Adherence 7/7, `side_contradiction` 0, one conf-0.0,
+0 tracebacks. Book: TRUMP +$0.47, FIL +$0.14, AVAX +$0.03.
+
+---
+
 ## Cycle 40 — 19:5xZ (anchor 19:57:27): two clean desk exits, **+$0.333 combined** — day **+$3.32**
 
 Both closes predate the #457 deploy (worker restarted **19:56:02Z**);
