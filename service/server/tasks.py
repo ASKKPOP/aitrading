@@ -860,6 +860,34 @@ async def desk_brief_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def outlook_refresher_loop():
+    """Plan 26 P2: freshness sweeper for slot strategy outlooks.
+
+    Every OUTLOOK_TICK_INTERVAL seconds (default 300): emit standing
+    outlooks for fleet slots whose newest outlook aged past the market's
+    cadence floor and whose run will not cycle before the floor expires
+    (closed session, non-running run, waiting/dormant slot). Open-market
+    cycling runs are never touched — the cycle owns them. Rule-based, no
+    LLM calls; gated by OUTLOOK_ENABLED (default off).
+    """
+    from outlook_refresher import outlook_enabled, outlook_refresher_tick
+
+    tick_interval = _env_int("OUTLOOK_TICK_INTERVAL", 300, minimum=60)
+
+    await asyncio.sleep(25)
+
+    while True:
+        try:
+            if outlook_enabled():
+                result = await asyncio.to_thread(outlook_refresher_tick)
+                if result.get("emitted"):
+                    print(f"[OutlookRefresher] tick: {result}")
+        except Exception as e:
+            print(f"[OutlookRefresher Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def subscription_enforcer_loop():
     """Background task for Trading Runs entitlements (Plan 10, Phase 5).
 
@@ -1916,6 +1944,7 @@ BACKGROUND_TASK_REGISTRY = {
     "hot_issue_daemon": _hot_issue_daemon_loop,
     "orphan_reclaim": _orphan_reclaim_loop,
     "desk_brief": desk_brief_loop,
+    "outlook_refresher": outlook_refresher_loop,
 }
 
 
@@ -1995,6 +2024,9 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "hot_issue_daemon":        "research",
     # desk brief / monthly review — derived reporting, never touches trading
     "desk_brief":              "research",
+    # Plan 26 — outlook sweeper lives with the runs engine (it writes
+    # run_events rows the desk's next cycle reads back as its standing plan)
+    "outlook_refresher":       "settlement",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")
