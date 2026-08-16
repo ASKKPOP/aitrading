@@ -3680,9 +3680,11 @@ def _net_of_fees_line(run: dict, pos_qty: float) -> str:
         round_trip = notional * rate * 2.0
         gross = float(pnl.get("unrealized") or 0)
         net = gross - round_trip
+        def _usd(v: float) -> str:
+            return f"-${abs(v):,.4f}" if v < 0 else f"${v:,.4f}"
         bits = [f"Fee reality: closing this book costs a round trip of "
-                f"${round_trip:,.4f}. Your open P&L is ${gross:,.4f} gross "
-                f"= ${net:,.4f} NET of that."]
+                f"{_usd(round_trip)}. Your open P&L is {_usd(gross)} gross "
+                f"= {_usd(net)} NET of that."]
         if gross <= round_trip:
             bits.append(
                 "That gain does NOT cover its own round trip — banking it "
