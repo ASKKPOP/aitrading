@@ -818,7 +818,8 @@ def _age_seconds(ts: str) -> float:
 # ── stop-condition evaluation (every scan, running AND paused) ─────────────
 
 def _trailing_lock_hit(peak_pnl: "float | None", current_pnl: float,
-                       trail: "dict | None") -> bool:
+                       trail: "dict | None", baseline_pnl: float = 0.0,
+                       exit_fee_usd: float = 0.0) -> bool:
     """Peak-tracked profit lock. Once the run's best total P&L clears the
     activation floor, exit if it retraces more than giveback_frac from that
     peak — banks a winner that would otherwise round-trip and catches a
@@ -833,19 +834,44 @@ def _trailing_lock_hit(peak_pnl: "float | None", current_pnl: float,
     tighten_usd (the fee-aware "this is a real winner" line) the giveback
     compresses to tighten_giveback_frac, so a large peak is protected far
     harder than the one that just armed. Absent tighten_usd the behaviour is
-    the flat giveback exactly as before."""
+    the flat giveback exactly as before.
+
+    Position-scoped (2026-08-16, FIL run 1305): `activate_usd` is sized off
+    the CURRENT position (2% of its notional) while `peak_pnl_usd` is
+    run-scoped and carries BANKED realized cash. Banked cash therefore armed
+    a lock the live position never earned — that run banked +$3.0368,
+    re-entered, and the new position (own best unrealized $0.019, 0.89% of
+    the $2.089 arm) was flattened with 0.5365% of adverse room against its
+    own 2.00% stop, 3.73x tighter, killing the fleet's only profitable run.
+    The replacement started with peak 0 and an inert trail — the rail
+    punished the run for having banked a winner.
+
+    So both halves are measured on the same axis: the EXCURSION
+    (peak - baseline), where baseline is the banked P&L that cannot
+    round-trip. Giveback applies to the excursion, not to the level —
+    the textbook trailing stop. baseline 0 (a single-position run, and
+    every old caller) is byte-identical to the previous behaviour.
+
+    `exit_fee_usd` closes the second half of the same defect: the fired
+    lock landed $0.073 BELOW the level it fired to defend because closing
+    costs a fee this function did not model — `_breakeven_floor_hit` beside
+    it already takes the fee (#449). Firing at lock + fee lands ON the
+    line."""
     if not trail or peak_pnl is None:
         return False
     activate = float(trail.get("activate_usd") or 0)
     giveback = float(trail.get("giveback_frac") or 0)
     peak = float(peak_pnl)
-    if peak < activate or peak <= 0 or not (0 < giveback < 1):
+    base = float(baseline_pnl or 0)
+    excursion = peak - base
+    if excursion < activate or excursion <= 0 or not (0 < giveback < 1):
         return False
     tighten_at = float(trail.get("tighten_usd") or 0)
     tight = float(trail.get("tighten_giveback_frac") or 0)
-    if tighten_at > 0 and peak >= tighten_at and 0 < tight < giveback:
+    if tighten_at > 0 and excursion >= tighten_at and 0 < tight < giveback:
         giveback = tight
-    return current_pnl <= peak * (1.0 - giveback)
+    lock = peak - giveback * excursion
+    return current_pnl <= lock + max(0.0, float(exit_fee_usd or 0))
 
 
 def _breakeven_ratchet_enabled() -> bool:
@@ -1133,9 +1159,21 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # target reached" for a $2.82 exit against a $413 target. Classified
     # alongside profit_target in the fleet disposition sets so replacement and
     # auto-restart behaviour is unchanged.
+    # One-leg exit fee on the current book — closing costs this much, and
+    # both the trail and the ratchet below must fire early enough to land
+    # ON the level they defend rather than a fee below it.
+    try:
+        _p = pnl.get("position") or {}
+        _exit_fee = abs(float(_p.get("quantity") or 0)) \
+            * float(_p.get("current_price") or 0) \
+            * float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
+    except (TypeError, ValueError):
+        _exit_fee = 0.0
     if has_position and pnl["mark_age_ok"] and \
             _trailing_lock_hit(run.get("peak_pnl_usd"), pnl["total"],
-                               conditions.get("trail")):
+                               conditions.get("trail"),
+                               baseline_pnl=float(pnl.get("realized") or 0),
+                               exit_fee_usd=_exit_fee):
         return "stop_event:trailing_lock"
 
     # Breakeven ratchet (2026-08-06). Deliberately reuses the trailing_lock
