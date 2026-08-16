@@ -114,16 +114,52 @@ class RailTests(unittest.TestCase):
         railed = OI.rail(p, position_notional_usd=0.40)
         self.assertEqual(railed["size_frac"], 1.0)
 
-    def test_dust_remainder_compiles_to_full_close(self):
-        """Plan 24 fix 4 (live run 1083, 2026-08-12): four correct 'cover
-        half' calls left a $4.45 remainder no move can bank. A reduce whose
-        REMAINDER would fall below the manage-worthy floor grows to a full
-        close — shedding risk, so the rail may only grow."""
+    def test_an_over_bound_reduce_is_CLAMPED_to_the_bound(self):
+        """2026-08-16, fleet 35, n=4: the desk authored `reduce 0.5` into an
+        escalation four times — SUI at a $47.32 book where the rendered
+        bound was 47.2% (it missed by 2.8 points), DOT at $40.42, and twice
+        below. Three of those cycles stated an intent to KEEP the remainder
+        ("Partial reduction preserves the short thesis"), and the rail did
+        the opposite of the desk's stated intent.
+
+        Plan 24 fix 4's harm was an UN-BANKABLE $4.45 remainder; clamping to
+        leave exactly the manage-worthy floor prevents that harm too, while
+        preserving desk authorship. So the rail now clamps when a MEANINGFUL
+        partial is still possible and only grows to a full close when it is
+        not."""
+        # $40 book, floor $25 -> max non-escalating reduce = 37.5%.
         p = OI.parse({"intent": "reduce", "size_frac": 0.5})
-        railed = OI.rail(p, position_notional_usd=40.0)   # remainder $20 < $25
+        railed = OI.rail(p, position_notional_usd=40.0)
+        self.assertAlmostEqual(railed["size_frac"], 0.375, places=4)
+        self.assertEqual(railed["railed"]["size_frac"]["why"],
+                         "dust_remainder_clamped")
+        # and the remainder is exactly the floor, not below it
+        self.assertAlmostEqual(40.0 * (1 - railed["size_frac"]), 25.0, places=4)
+
+    def test_a_book_too_small_for_a_meaningful_partial_still_full_closes(self):
+        """DOT 1308 at $25.47: the max non-escalating reduce is 1.8% — a
+        sliver that pays a full round trip to shed nothing. Below the
+        meaningful-partial threshold the old grow-to-1.0 stands."""
+        p = OI.parse({"intent": "reduce", "size_frac": 0.5})
+        railed = OI.rail(p, position_notional_usd=25.47)
         self.assertEqual(railed["size_frac"], 1.0)
         self.assertEqual(railed["railed"]["size_frac"]["why"],
                          "dust_remainder_closed")
+
+    def test_a_book_at_or_under_the_floor_still_full_closes(self):
+        p = OI.parse({"intent": "reduce", "size_frac": 0.5})
+        railed = OI.rail(p, position_notional_usd=20.0)
+        self.assertEqual(railed["size_frac"], 1.0)
+        self.assertEqual(railed["railed"]["size_frac"]["why"],
+                         "dust_remainder_closed")
+
+    def test_the_clamp_never_grows_the_reduce(self):
+        """Monotone: a clamp may only make the reduce SMALLER. A 0.30 ask on
+        a $40 book already leaves $28 — untouched, not grown to 0.375."""
+        p = OI.parse({"intent": "reduce", "size_frac": 0.30})
+        railed = OI.rail(p, position_notional_usd=40.0)
+        self.assertEqual(railed["size_frac"], 0.30)
+        self.assertEqual(railed["railed"], {})
 
     def test_healthy_remainder_is_untouched(self):
         p = OI.parse({"intent": "reduce", "size_frac": 0.5})
