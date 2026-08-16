@@ -23,6 +23,66 @@ flag comes off.
 
 ---
 
+## VERDICT (cross-checked) — the run-level trail is GEOMETRICALLY DEFECTIVE: banked cash arms a lock the live position never earned
+
+**P&L first:** run 1305 banked **+$2.356** against a peak of **+$3.037**
+— the rail surrendered **$0.681 (22.4% of peak)** and landed **$0.073
+BELOW the 2.4294 line it fired to defend**. It was the **only
+meaningfully profitable run in all 36 runs of fleet 35**, and it is now
+dead. Position-level the flatten is immaterial (±$0.07; the sign flips
+between two marks 5 minutes apart). **The loss is the terminated
+compounding of the fleet's only winner.**
+
+**The mechanism (Agent B, arithmetic exact to 8 dp, two bracketing
+equity samples):** `_trailing_lock_hit` compares `activate_usd`
+(POSITION-scaled: 2.089 = 2.0% × $104 notional) against
+`peak_pnl_usd` (RUN-scoped, **including banked realized cash**).
+So the arming test was passed by **banked cash**, not by the new
+position — whose own maximum unrealized profit was **$0.019, i.e.
+0.89% of the arming floor**. A profit lock armed with no profit of its
+own to lock. Consequences, quantified:
+- Adverse room: **0.5365%** of entry vs its own authored stop 2.00% —
+  **the rail was 3.73× tighter than the desk's own stop**; flattened
+  at 4% of its $15.67 max-loss budget, 4h48m into a 36h horizon. The
+  desk's plan was never executable.
+- **The rail punishes success within a run:** replacement run 1322
+  started 30s later with `peak_pnl_usd = 0` → its trail is inert until
+  it earns $2.09 of its own. **Banking a winner makes a run strictly
+  more fragile than never having traded.**
+- The lock cannot defend its own line: 22.42% actual giveback vs 20%
+  designed, because `_trailing_lock_hit` models no exit fee — while
+  `_breakeven_floor_hit` beside it DOES (#449 added it).
+
+**Cross-check A×B: no contradiction, complementary axes.** A: the desk
+authored the re-entry churn (believing itself long) — −$0.68 destroyed,
+$0.22 of it pure adverse re-entry pricing. B: the rail then killed the
+run for it. Both independently priced the position-level flatten as
+noise. Both accepted.
+
+**Rails scorecard:** dust-remainder — correct, silent, `railed:{}` on
+all four partial covers (DOT c13 left $25.22, $0.22 above the floor —
+razor's edge, flagged). **#449 discriminator — working as shipped: its
+ABSENCE is what proved this was the configured trail**, and B manually
+confirmed JTO 1304 was the ratchet. Configured trail — fired per spec,
+**and the spec is wrong**.
+
+**SHIPPING NOW (B's #1 + #2):** position-scope the trail —
+`baseline = run total at position open`, `armed ⟺ (peak − baseline) ≥
+activate_usd`, `lock = peak − giveback × (peak − baseline)` (textbook
+trailing stop: giveback of the EXCURSION, not of the LEVEL). On this
+tape: peak − baseline = 0.047 ≪ 2.089 → inert, no flatten, run alive
+at ~+2.42 with 30h left. Zero regression on single-position runs
+(baseline 0 → identical; verified against 1303 and 1305's own first
+trade). Plus the exit-fee term, at parity with the ratchet.
+
+**BACKLOG (strengthens the OWNER fee package):** `adapt` telemetry
+omits the ENTRY fee — `winning_close` reported 3.1308 vs ledger-true
+3.03676; `flatten_close` −0.6338 vs −0.68076. Systematic optimism of
+one entry fee per trade **in the number that feeds the tightening loop
+and the RAG outcome chunks.**
+
+---
+
 ## Cycles 4-16 CONSOLIDATED — 00:40–08:1xZ (anchor 08:11:09): day **+$2.69**; staged partial exits arrive; a run-level trail flattens a fresh position
 
 Queued cycle prompts stacked while the FIL verdict ran; this note covers
