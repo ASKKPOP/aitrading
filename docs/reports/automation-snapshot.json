@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-16T13:19Z",
+  "as_of": "2026-08-16T13:25Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 3,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$2.55; DOT -$0.176 (banked 2/3 for +$0.039, last third -$0.185 via dust escalation); sell-winners-hold-losers question dispatched"
+    "note": "DOT -$0.1764; staging cost 2.7x all three runs earned; desk reasons GROSS books NET; adherence read 'followed' through a 5x bleed"
   },
   "sweep_24h": {
     "utc_pnl": -3.26,

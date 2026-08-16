@@ -23,6 +23,63 @@ flag comes off.
 
 ---
 
+## VERDICT (Agent A) — staging cost 2.7× everything these runs made; the desk reasons in GROSS and books in NET
+
+**P&L first, fee-complete (A, verified 3 ways to 8 dp): DOT run 1308
+−$0.1764.** And **three corrections to my cycle-29 note**:
+1. The two banks netted **+$0.0199, not +$0.039**. Bank #1 netted
+   **+$0.0008** — it paid a $0.0303 round trip to capture $0.0311 of
+   gross. It banked the fee.
+2. **My "sell winners, hold losers" hypothesis is REFUTED as stated** —
+   only DOT kept a residual; SUI and FIL both staged and fully closed
+   within ~30 min, both tranches profitable.
+3. **conf-0.0 no-LLM-verdict holds today = 9, not 5** (1305×3, 1308×2,
+   1306×2, 1293×1, 1297×1). My watch undercounted by nearly half.
+
+**What survives instead is stronger and 3/3:** a single full close at
+the FIRST reduce decision beats the actual staging in every case today.
+
+| run | staged actual | full close at first reduce | forgone |
+|---|---|---|---|
+| DOT 1308 | −$0.1764 | +$0.0016 | **$0.178** |
+| SUI 1306 | +$0.0385 | +$0.0552 | $0.017 |
+| FIL 1322 | +$0.0901 | +$0.1514 | $0.061 |
+
+**Forgone $0.256 against $0.0954 actually earned — staging cost 2.7× everything these three runs made.** Across the six profitable
+tranches, **fees ate 54% of gross** (DOT's first tranche 97%, FIL's
+second 77%).
+
+**The mechanism, and it is not psychology:** the desk **reasons in
+GROSS and books in NET**. FIL cyc9 wrote *"Lock the $0.10 profit"* —
+net was **+$0.0143**. SUI cyc11 wrote *"captures the $0.12 gain"* —
+net **+$0.0164**. Every staging decision is taken on a number 3–7×
+larger than the one that reaches the ledger.
+
+**DOT specifics:** both banks were taken at **1.2%** and **4.1%** of
+the desk's own 7.7% target — and it logged that fact in its own words
+before doing it. **No `outlook` existed at either bank** (first one came
+5 h after the open). Its only arm in 6.5 h was `price_below 0.75` on a
+SHORT at 0.7581 — **1.35% further INTO profit, dead on arrival.**
+All 7 outlooks carried byte-identical target/entry values: the plan was
+a frozen constant re-narrated, not re-planned.
+
+**⚠️ PLAN 26 FINDING — `plan_adherence` reported healthy while the book
+bled 5×.** It read **`followed` ×6** across uPNL −$0.037 → −$0.176, and
+**never once read `deviated`**. The flag measures compliance with a
+STALE plan, not whether the plan still deserves compliance. Also a
+data-integrity flag: cyc19 stamped **`revised` on a cycle with NO LLM
+verdict** — a revision nobody authored.
+
+**ACTION (A's fix, quantified on today's tape):** make exit decisions
+fee-aware — feed the reduce/close prompt **net-of-round-trip** P&L, and
+compile any `reduce` whose tranche gross is under ~2× the round trip
+into `close 1.0`. On these three trades that turns
+−$0.176/+$0.038/+$0.090 into +$0.002/+$0.055/+$0.151:
+**+$0.0954 → +$0.208, a 2.2× swing with no change to the AI's market
+view.** Holding for Agent B's rail axis before shipping.
+
+---
+
 ## Cycle 29 — 13:1xZ (anchor 13:19:25): **DOT closed at a LOSS via a dust ESCALATION** — the "sell winners, hold losers" shape; agents dispatched
 
 **P&L: run 1308 realized −$0.1764** (day ledger slips +$2.74 → **+$2.55**).
