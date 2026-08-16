@@ -23,6 +23,48 @@ flag comes off.
 
 ---
 
+## Cycles 4-16 CONSOLIDATED — 00:40–08:1xZ (anchor 08:11:09): day **+$2.69**; staged partial exits arrive; a run-level trail flattens a fresh position
+
+Queued cycle prompts stacked while the FIL verdict ran; this note covers
+the whole 7.5 h gap in one sweep. Agents dispatched on the batch.
+
+**P&L first (pnl_audit, flatten-reconciled, resid 0.01, 1 flatten):
+UTC 08-16 ledger = +$2.69.**
+
+**WORKED — the fleet learned to exit in stages.** SUI 1306 covered
+40% of its book (27.9 of 69.8) leaving ~$28.3 — ABOVE the $25
+dust-remainder floor, so it did NOT escalate — then closed the rest;
+re-shorted and banked +$0.209. DOT 1308 did the same (two partial
+covers, still holding 33.4). **First surviving partial exits this
+fleet has ever produced**; the #443 reduce-geometry line tells the desk
+exactly that bound. Agents are testing causation vs coincidence.
+
+**FAILED — FIL 1305 re-entry flattened for −$0.634 by the CONFIGURED
+TRAIL** (no `stop_mechanism` event → #449's discriminator correctly
+silent; not the ratchet). Sequence: banked +$3.131 at 00:17, re-shorted
+154.7 @ 0.675 at 02:47, and at 07:35 the run-level trail
+(activate 2.09, giveback 0.2) flattened the NEW position while the run
+total sat ≈2.62 — i.e. **the previous trade's banked profit set the
+peak, and the fresh position was killed for giving back 20% of a peak
+it never earned.** Its own stop (0.7104) and max_loss ($15.67) were
+never near. Agent B is judging whether that is intended
+"protect banked gains" semantics or a structural bar on re-entry.
+
+**Run churn:** 7 desk_retires + 1 idle_retire; new runs 1308–1322
+built continuously — replenishment healthy.
+**Fail-safe watch (repeat CONFIRMED):** three conf-0.0 no-LLM-verdict
+holds on the HELD losing FIL book (03:16, 06:17, 07:15) — management
+looks lost on the position that then got flattened; n=4 total.
+
+**PLAN 26 (owner order):** guide file
+`docs/reports/plan26-outlook-monitoring-guide.md` **still does not
+exist** (checked 08:11Z). Zero implementation artifacts: `outlook`
+appears 0× in the deployed run_engine.py, and the 4 tape hits are the
+word inside free-text reports, not outlook objects. Nothing to judge
+per §3.7 yet; check re-armed every cycle.
+
+---
+
 ## Cycle 3 — 00:5xZ: FIL +$3.04 verdict cross-checked — the win is the DESK'S; both agents independently demand the same fix
 
 **P&L first: +$3.04 net, verified to the cent against the ledger (2×).**
