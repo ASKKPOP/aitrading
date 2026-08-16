@@ -23,6 +23,47 @@ flag comes off.
 
 ---
 
+## Cycle 32 — 14:4xZ (anchor 14:49:28): **escalation n=5 REPRODUCES the exact defect B predicted** — the line was in front of the desk and it missed by 2.8 points
+
+**P&L: SUI 1306 forced-closed −$0.133** (day ledger +$2.47 → **+$2.32**;
+run 1306 still net +$0.072 overall). Mechanism identical to DOT an hour
+ago: desk authored `reduce 0.5`, rail escalated
+`{"from": 0.5, "to": 1.0, "why": "dust_remainder_closed"}`.
+
+**This is the reproduction B's analysis called for, and it is sharper
+than the DOT case.** The arithmetic:
+- book at the decision: 69.693 × 0.679 = **$47.32** — inside the
+  $25–50 band, so **`reduce_geometry` DID render** (confirmed in the
+  decision's own brief array).
+- the line's stated bound: `1 − 25/47.32` = **47.2%**.
+- **the desk authored 50.0%** — over the line by **2.8 percentage
+  points**, and its `why` reads *"Partial reduction preserves the short
+  thesis"*, i.e. it intended to keep a position the rail then took.
+
+**So the desk had the number, in that cycle's brief, and authored just
+past it.** DOT was "the line spoke too late"; SUI is **"the line spoke
+and was not used."** Both fixes in the backlog are now justified by
+reproduced evidence rather than one instance:
+1. **prospective warning** (B): warn at the cycle that *creates* the
+   trap, not after — DOT's case.
+2. **round the ask to the bound** rather than escalating past it: when
+   an authored reduce exceeds the max non-escalating fraction by a
+   small margin, the honest rail action is to **clamp to the bound**
+   (47.2%) — preserving the desk's stated intent to keep a position —
+   instead of inverting it into a full close. Escalation n=5, and in
+   2 of 5 the desk explicitly said it wanted to KEEP the remainder.
+
+Escalation running tally now **n=5**: UNI −$0.032, FIL +$0.031,
+ETH +$0.0018, DOT −$0.0103, SUI (this one, its own delta to be priced
+next cycle at a live mark). Still not a P&L lever — but it is now
+**twice** an authorship inversion, which is the part worth fixing.
+
+Also this window: DOT 1308 re-shorted 53.09 @ 0.7624; new run 1329
+built and deliberating; adherence 7/7; `side_contradiction` 0;
+Plan 26 §2 green. 0 tracebacks.
+
+---
+
 ## Cycle 31 — 14:1xZ (anchor 14:19:25): quiet — 4 holds, replacement run 1328 built, no closes
 
 New run 1328 started 14:15:12Z (LTC slot replaced after its TTL
