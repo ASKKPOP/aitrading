@@ -3095,3 +3095,63 @@ class RunExpiryBriefTests(unittest.TestCase):
         src = inspect.getsource(run_engine._compose_position_state)
         self.assertIn("_run_expiry_line", src,
                       "missing from the composed brief (both paths)")
+
+
+class TrailPositionScopedTests(unittest.TestCase):
+    """FIL run 1305 (2026-08-16): the run banked +$3.0368, re-entered, and
+    the trail flattened the NEW position for -$0.68 while that position's
+    own best unrealized profit was $0.019 — 0.89% of the $2.089 arming
+    floor. `activate_usd` is POSITION-scaled (2% of notional) but
+    `peak_pnl_usd` is RUN-scoped and carries banked realized cash, so
+    banked cash armed a lock the live position never earned, and gave it
+    0.5365% of adverse room against its own 2.00% stop (3.73x tighter).
+    Worse, the replacement run started with peak 0 and an inert trail —
+    the rail punished the run for having banked a winner.
+
+    Fix: measure the EXCURSION (peak - baseline), where baseline is the
+    banked realized P&L that cannot round-trip. Textbook trailing stop."""
+
+    TRAIL = {"activate_usd": 2.089, "giveback_frac": 0.2}
+
+    def test_banked_cash_alone_does_not_arm_the_lock(self):
+        # The exact prod numbers: peak 3.036759 = banked; live position's
+        # own excursion 0.047 (its entry fee) — nowhere near the 2.089 arm.
+        self.assertFalse(run_engine._trailing_lock_hit(
+            3.036759, 2.403265, self.TRAIL, baseline_pnl=2.989755))
+
+    def test_a_single_position_run_is_unchanged(self):
+        # baseline 0 -> excursion == peak, identical to the old behaviour.
+        self.assertTrue(run_engine._trailing_lock_hit(
+            10.0, 7.9, self.TRAIL, baseline_pnl=0.0))
+        self.assertFalse(run_engine._trailing_lock_hit(
+            10.0, 8.1, self.TRAIL, baseline_pnl=0.0))
+
+    def test_the_default_baseline_keeps_old_callers_identical(self):
+        self.assertTrue(run_engine._trailing_lock_hit(10.0, 7.9, self.TRAIL))
+        self.assertFalse(run_engine._trailing_lock_hit(10.0, 8.1, self.TRAIL))
+
+    def test_a_second_position_that_truly_earns_still_locks(self):
+        # banked 3.0, position earns 5.0 of its own -> peak 8.0,
+        # excursion 5.0 >= arm; lock = 8.0 - 0.2*5.0 = 7.0.
+        self.assertFalse(run_engine._trailing_lock_hit(
+            8.0, 7.1, self.TRAIL, baseline_pnl=3.0))
+        self.assertTrue(run_engine._trailing_lock_hit(
+            8.0, 6.9, self.TRAIL, baseline_pnl=3.0))
+
+    def test_the_lock_defends_its_line_after_the_exit_fee(self):
+        # Prod: the fired lock landed $0.073 BELOW the level it defended
+        # because no exit fee is modelled (the ratchet models one, #449).
+        # Firing at lock + fee makes the post-fee landing hit the line.
+        # lock = 10 - 0.2*10 = 8.00; 8.05 sits between lock and lock+fee.
+        self.assertTrue(run_engine._trailing_lock_hit(
+            10.0, 8.05, self.TRAIL, baseline_pnl=0.0, exit_fee_usd=0.10))
+        self.assertFalse(run_engine._trailing_lock_hit(
+            10.0, 8.05, self.TRAIL, baseline_pnl=0.0))
+
+    def test_the_call_site_passes_baseline_and_fee(self):
+        import inspect
+        src = inspect.getsource(run_engine._evaluate_stop)
+        self.assertIn("_trailing_lock_hit", src)
+        # the VALUE matters: zeroing it silently restores the defect.
+        self.assertIn('baseline_pnl=float(pnl.get("realized") or 0)', src)
+        self.assertIn("exit_fee_usd=_exit_fee", src)
