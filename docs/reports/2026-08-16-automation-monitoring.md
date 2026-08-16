@@ -66,6 +66,18 @@ ABSENCE is what proved this was the configured trail**, and B manually
 confirmed JTO 1304 was the ratchet. Configured trail — fired per spec,
 **and the spec is wrong**.
 
+**#450 DEPLOYED — 08:5xZ addendum.** PR MERGED (`cd4c320`), image
+`sooppiy-backend:20260816-trail-position-scoped` live. Verified in the
+running container by REPLAYING THE EXACT PROD NUMBERS:
+- FIL 1305 (peak 3.036759, total 2.403265, baseline 2.989755) → **False**
+  — the flatten that killed the fleet's only winner no longer fires.
+- single-position run (baseline 0) → **True** — unchanged, no regression.
+- genuine second-position excursion (peak 8.0, baseline 3.0) → **True**
+  — a position that truly earns is still locked.
+0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260815-ratchet-fee-floor`.
+Session ship count: #439–#450 (12 PRs).
+
 **SHIPPING NOW (B's #1 + #2):** position-scope the trail —
 `baseline = run total at position open`, `armed ⟺ (peak − baseline) ≥
 activate_usd`, `lock = peak − giveback × (peak − baseline)` (textbook
