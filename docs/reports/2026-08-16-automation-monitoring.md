@@ -23,6 +23,36 @@ flag comes off.
 
 ---
 
+## Cycle 23 — 10:4xZ (anchor 10:49:31): **STOP-ECHO INVARIANT PASSES**; us-stock sweeper coverage arrives; FIL halved for +$0.099
+
+**Plan 26 — the armed test resolved ✓.** Run 1322's next outlook
+(10:47:04Z) carries `stop_ref_px` **0.688999**, byte-equal to the live
+stop 0.688999 — the previous null was correctly a flat-book artifact
+(authored 1 s before the fill). The guide's load-bearing invariant
+("the model's stop is discarded in code — write-once stop rule") holds
+on a position opened AFTER the flag flip.
+
+**us-stock coverage appeared** (runs 1323–1327, 5 outlooks, newest
+10:47:44Z) — **all `sweeper`-sourced**, which is exactly right: the
+session is closed on a Sunday, and the guide reserves sweeper rows for
+closed sessions / dormant slots. No cycle-sourced us-stock rows =
+**no double-writing** ✓.
+
+Other §2 checks: freshness crypto 10:47:15Z / us-stock 10:47:44Z, both
+minutes old ✓; verdict mix sweeper adopted 5 · adjusted 3, cycle
+adopted 3 · adjusted 3 · overridden 1 — **no `algo_fallback`** ✓;
+adherence **7/7** (third consecutive 100% window).
+
+**Trade:** FIL 1322 reduced exactly half (153.32 → 76.66) at 0.6797,
+realizing **+$0.099**; `railed: {}` — remainder ~$52 is double the $25
+floor, so no escalation, correct silence. The cycle was labelled
+`revised` and the reduce came through the intent path (`reduce 0.5`).
+Day ledger **+$2.74**.
+
+Book: LTC −$0.11, DOT −$0.02, FIL +$0.11 (half-size). 0 tracebacks.
+
+---
+
 ## Cycle 22 — 10:1xZ (anchor 10:19:27): Plan 26 §2 all green; new FIL short opened on a `deviated` cycle
 
 **Plan 26 (guide §2):** outlook freshness **6 seconds** (newest
