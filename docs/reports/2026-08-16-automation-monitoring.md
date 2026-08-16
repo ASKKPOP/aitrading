@@ -23,6 +23,63 @@ flag comes off.
 
 ---
 
+## Cycle 25 — 11:2xZ: first Plan-26 round trip, cross-checked — **+$0.0901 net**, and #450 was NOT exercised
+
+**P&L first (both agents, independently, matching `peak_pnl_usd` to
+8 dp): +$0.0901 net.** Gross $0.184, **fees 51.1% of gross**, +0.17%
+on $52 margin. My reported +$0.137 was the DB figure — corrected.
+
+**Agent A (desk):** the plan never constrained the trade. Published
+target 0.65; exits at **5.11%** and **2.56%** of that distance with
+43.5 of 48 horizon hours unused, both immediately after a
+`horizon_shadow` saying HOLD. Cycle 9 carried **three falsehoods**:
+"the current long trade", "opening a long… closing corrects the
+mis-direction", and "lock profit before a likely further drop" — a drop
+PAYS a short. It closed a winning, correctly-directed short to fix a
+violation that never happened. Confidence was manufactured: proposed
+0.55 → final 0.68, **identical +0.13 on cycles 7, 8 AND 9**, landing
+just above the 0.65 gate.
+
+**Agent B (rails):** every rail per design — leverage cap fired (3→2,
+cost $0.045 of this winner, its job); #440 silent (ask was 5× the
+floor); #446 silent (desk authored PERCENT form — correct
+discrimination, and it also abstained on `stop_pct 0`, which is "no
+bracket", not a unit slip); dust-remainder silent (remainder 2.09×
+the floor). **The intent compiler SAVED the trade**: cycle 9 emitted
+`legacy_action: short` to CLOSE a short — on the legacy path it would
+have opened a SECOND short. Independent confirmation of A.
+
+**⚠️ CORRECTION TO MY CYCLE-24 FRAMING: #450 was NOT exercised.**
+I called this "the first live opportunity to test #450". B's
+arithmetic: peak run total 0.2029 vs arm 2.09 — **neither the old nor
+the new geometry arms** (10.3× and 13.9× short). The old code would
+NOT have flattened this leg. **Report #450 as untested, not verified.**
+
+**NEW DEFECT — in code I shipped (B):** `_breakeven_arm_usd` and the
+exit-fee terms I added in #449/#450 read the flat
+`BREAKEVEN_FEE_RATE=0.001` while `fees.fee_rate(market)` is live and
+returns **0.00045** for crypto. Same class already fixed once in
+`fleet_planner.trail_config`. Effect: the ratchet's arm bar is
+**2.22× too high** (protection arms far later than designed — precisely
+why it missed here by $0.0055) while the exit-fee term fires **2.22×
+too early**. On us-stock/forex the multiple is ~10×/12.5×.
+**One wrong constant, two opposite-direction errors, on the rail whose
+whole purpose is to work without the desk.** Next ship.
+
+**Sweeper waste quantified (B, code-verified):** `_cold_reason` returns
+`run_idle` for any `status != running`, so `stopped` (terminal) is
+treated like `dormant` (will resume). **15 of 25 sweeper outlooks (60%)
+went to runs that can never trade again**, each an LLM call recurring
+~every 33 min. Intended path, real waste; fix is one condition.
+
+**SHIPPED THIS CYCLE:** side-coherence detection — the desk's prose is
+checked against the sign of its own book, journaled on the decision,
+and quoted back next cycle (#441 pattern). Detection only, never blocks
+(#119). 11 tests, mutants killed (one survived because MY flat-book
+test used a claim silent either way — test fixed, re-killed).
+
+---
+
 ## Cycle 24 — 11:1xZ (anchor 11:19:26): first FULL round trip under Plan 26 (+$0.137); no double-writing; sweeper spends on STOPPED runs
 
 **Plan 26 §2 — the double-write check, run by run.** Crypto showed both
