@@ -213,8 +213,20 @@ own next decision, so the AI remains the author of every order.</p>
               "time_exit": "2026-08-16T14:00Z" },   // or null
   "invalidation": "daily close below 2.86 kills the long thesis",
   "horizon_hours": 18,
-  "narrative": "Two sentences of forward reasoning, in the desk's voice."
+  "narrative": "Two sentences of forward reasoning, in the desk's voice.",
+  "basis": {                                        // the LLM ⇄ algorithm discussion record
+    "algo": { "entry_low": 2.99, "entry_high": 3.04, "target_px": 3.38,
+              "stop_ref_px": 2.86, "time_exit": "2026-08-16T14:00Z" },
+    "verdict": "adopted" | "adjusted" | "overridden" | "algo_fallback",
+    "discussion": "why the final targets beat (or keep) the algorithmic candidate (≤300)" }
 }</code></pre>
+<p><strong>The discussion (owner directive):</strong> the LLM and the deterministic algorithm must discuss which
+targets are best — neither is simply trusted. A pure function (<code>algo_candidate</code>) derives a candidate
+plan from the thesis block: expected-move levels floored at the 2.40% fee hurdle, a pullback entry band, the
+existing stop echoed, horizon as time exit. That candidate goes into the prompt; the desk must <em>adopt,
+adjust, or override</em> it with a stated reason, and both sides plus the verdict are stored in
+<code>basis</code>. If the LLM is unavailable (sweeper fallback), the candidate becomes the plan with verdict
+<code>algo_fallback</code> — the schedule never slips.</p>
 <p class="kbd-note">Numeric fields are clamped and NaN-scrubbed at parse (NaN in a persisted JSON column
 permanently 500s reads — known trap). <code>stop_ref_px</code> is an echo of the live stop for display; the write-once
 stop rule is untouched.</p>
@@ -488,7 +500,10 @@ ledger via <code>pnl_audit</code> (forced flattens included — raw adapt-realiz
 <code>plan_adherence</code>. Pass = expectancy per trade at or above the pre-flag baseline, and
 plan-following cycles not underperforming deviations. Fail = <code>OUTLOOK_ENABLED=0</code> (prompt reverts to
 its pre-plan shape instantly) and the plan logic is revised — a small favorable delta on a large loss is not
-improvement and will not be reported as one.</p>
+improvement and will not be reported as one. The same replay also splits by <code>basis.verdict</code>: if
+algorithmic candidates outperform LLM-adjusted targets — or the reverse — that measured difference, not
+anyone’s preference, decides which author leads the next iteration. “Which is the best target” is answered
+in realized P&amp;L.</p>
 
 <h2 id="phases">4 · Implementation phases (each self-contained, copy-from cited)</h2>
 
