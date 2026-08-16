@@ -23,6 +23,17 @@ flag comes off.
 
 ---
 
+## Cycle 36 — 17:4xZ (anchor 17:49:27): quiet — FIL re-entered at a $209 book, above the divisibility line
+
+FIL 1322 re-shorted 153.27 @ 0.6815 (17:47:30Z, `followed`) — notional
+**$104 margin / $209 book**, i.e. **8× the dust floor**, the regime
+cycle 35 showed a reduce actually survives in. No closes. Adherence
+7/7, `net_of_fees` on all 3 held books, `side_contradiction` 0, one
+conf-0.0, outlook fresh (17:47:30Z), 0 tracebacks. Book: 4 shorts
+(DOT −$0.02, SUI +$0.44, TRUMP +$0.62, FIL −$0.03); day ledger ~+$2.52.
+
+---
+
 ## Cycle 35 — 17:1xZ (anchor 17:19:27): **the counter-example** — a partial reduce that worked exactly as authored, +$0.287
 
 TRUMP 1329 `reduce 0.5` on a **$187 book**: `railed: {}` — no
