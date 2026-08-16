@@ -6,6 +6,7 @@ import { planFeatures } from '../entitlements'
 import { AnalysisMonitorPanel, analysisStepLabels, useAnalysisRun } from '../components/AnalysisPipelineViz'
 import { DeskCyclesPanel } from '../components/DeskCyclesPanel'
 import { FleetPanel } from '../components/FleetPanel'
+import { SlotOutlookPanel } from '../components/SlotOutlookPanel'
 import { HelpTip } from '../components/HelpTip'
 import { SymbolSelect } from '../components/SymbolSelect'
 import { fearGreedLabel, tr } from '../i18n'
@@ -142,6 +143,8 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
 
   // AI Analysis — the desk's own 30-minute cycles, read from the run journal.
   const [showCycles, setShowCycles] = useState(false)
+  // Slot Strategy Outlook (Plan 26) — the desk's kept forward plan per slot.
+  const [showOutlook, setShowOutlook] = useState(false)
   const [anSymbol, setAnSymbol] = useState('BTC')
   const [anMarket, setAnMarket] = useState('crypto')
   const analyze = useAnalysisRun(token)
@@ -285,6 +288,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     sumCurrentRails: tr(language, { ko: '현재 청산 구조', en: 'current exit rails', ja: '現行の決済ルール', th: 'กติกาปิดสถานะปัจจุบัน', vi: 'cơ chế thoát hiện tại', id: 'aturan keluar saat ini' }),
     sumRailsSince: tr(language, { ko: '이후 실현', en: 'realized since', ja: '以降の実現', th: 'รับรู้แล้วตั้งแต่', vi: 'đã chốt từ', id: 'direalisasi sejak' }),
     aiAnalysis: tr(language, { ko: 'AI 분석 (30분)', en: 'AI Analysis (30 min)', ja: 'AI分析（30分）', th: 'การวิเคราะห์ AI (30 นาที)', vi: 'Phân tích AI (30 phút)', id: 'Analisis AI (30 menit)' }),
+    slotOutlook: tr(language, { ko: '슬롯 전략 전망', en: 'Slot Strategy Outlook', ja: 'スロット戦略アウトルック', th: 'แผนกลยุทธ์ของสล็อต', vi: 'Triển vọng chiến lược slot', id: 'Prospek Strategi Slot' }),
     sumDeposit: tr(language, { ko: '현재 예치금', en: 'Current Deposit', ja: '現在の預入', th: 'เงินฝากปัจจุบัน', vi: 'Số dư hiện tại', id: 'Setoran saat ini' }),
     sumLifetime: tr(language, { ko: '운영 기간', en: 'Lifetime', ja: '運用期間', th: 'ระยะเวลา', vi: 'Thời gian hoạt động', id: 'Sepanjang waktu' }),
     sumProfit: tr(language, { ko: '총 수익', en: 'Profit', ja: '総収益', th: 'กำไรรวม', vi: 'Lợi nhuận', id: 'Keuntungan' }),
@@ -924,12 +928,22 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       </div>
       {/* The desk's 30-minute analysis sits under the tiles it explains: the
           tiles say what the number is, this says what the desk did to it. */}
-      <button onClick={() => setShowCycles(true)}
-        style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
-          border: '1px solid var(--border-color,rgba(0,0,0,0.12))', background: 'transparent',
-          color: 'var(--text-secondary,#8a8073)' }}>
-        🧠 {T.aiAnalysis}
-      </button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button onClick={() => setShowCycles(true)}
+          style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+            border: '1px solid var(--border-color,rgba(0,0,0,0.12))', background: 'transparent',
+            color: 'var(--text-secondary,#8a8073)' }}>
+          🧠 {T.aiAnalysis}
+        </button>
+        {/* The desk's KEPT forward plan per fleet slot (Plan 26) — what the
+            analysis above decided to do NEXT, and whether it was followed. */}
+        <button onClick={() => setShowOutlook(true)}
+          style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+            border: '1px solid var(--border-color,rgba(0,0,0,0.12))', background: 'transparent',
+            color: 'var(--text-secondary,#8a8073)' }}>
+          📋 {T.slotOutlook}
+        </button>
+      </div>
       </div>
     )
   })()
@@ -1181,6 +1195,8 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       })()}
 
       {showCycles && <DeskCyclesPanel token={token} onClose={() => setShowCycles(false)} />}
+
+      {showOutlook && <SlotOutlookPanel token={token} onClose={() => setShowOutlook(false)} />}
 
       {showAnalyst && (
         <div role="dialog" aria-modal="true" aria-label={T.makeByAnalyst}
