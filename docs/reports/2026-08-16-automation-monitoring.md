@@ -116,7 +116,7 @@ queued).
 | LTC −$0.131 | held into a TTL flatten it could see | #448 landed in narrative; escalation queued if n≥2 |
 | SUI forced close | desk authored 50% against a rendered 47.2% bound | **clamp-not-invert QUEUED** (reproduced n=2) |
 | FIL 1322 fee drag (51% of gross) | gross-vs-net blindness | **#455 SHIPPED** |
-| the day's *structural* loss (one trade = 114%) | winners capped, losers forced | truthful-exit/#446/#455 all target it; **the測 test is whether tomorrow's realized comes from >1 run** |
+| the day's *structural* loss (one trade = 114%) | winners capped, losers forced | truthful-exit/#446/#455 all target it; **the test is whether tomorrow's realized comes from >1 run** |
 
 **Un-shipped by choice, with reason:** `BREAKEVEN_FEE_RATE` (2.22× wrong
 on crypto, worth +$0.131 on DOT alone) — Agent B requires a fleet-wide
