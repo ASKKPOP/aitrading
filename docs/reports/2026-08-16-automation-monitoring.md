@@ -23,6 +23,44 @@ flag comes off.
 
 ---
 
+## Cycle 45 — 22:1xZ (anchor 22:19:29): TRUMP closes **+$1.064**, the day's biggest leg — and I finally have the RIGHT explanation for the residual
+
+**P&L: TRUMP 1329 final cover 32.86 @ 1.394 = +$1.064.** The run's full
+arc: short 131.4 @ 1.427 → three covers (+$0.287, +$0.341, **+$1.064**)
+= **+$1.692 realized on one thesis**, all three reduces honoured
+(books $187, $93, $46). Day ledger **+$5.05**.
+
+**⚠️ My "transient mid-flight read" explanation was WRONG, and the
+re-read proved it:** I predicted resid 0.65 would clear; it **grew to
+1.07**. So I chased it instead of restating the assumption, and the
+mechanism is now identified:
+
+- 22 closing legs today, **21 `adapt` events** — exactly one missing.
+- The missing one is TRUMP's 22:06:51 cover, `+$1.064` — and
+  **resid = 1.07**. The numbers match.
+- The cover has a `trade` event but no `adapt`: `ingest_outcomes` reads
+  legs on the run's **NEXT** cycle. Run 1329 closed at 22:06 and its
+  next cycle has not run yet.
+
+**So resid is not noise and not drift — it is the size of the closing
+legs that have not yet reached their run's next adapt pass.** That also
+retro-explains the 0.16 and 0.14 readings (which cleared once the next
+cycle ran) far better than "mid-flight read" did.
+
+**Testable prediction for next cycle:** once run 1329 cycles, resid
+should fall to ≈0 and adapt should show 22/22. If it does NOT, then a
+closing leg is being permanently missed by the learning loop — which
+would matter, because the adapt ladder and the RAG outcome chunks would
+be blind to the fleet's **largest winning leg of the day**.
+
+Honoured-reduce scoreboard now **6/6, +$2.633 combined**; boundary
+**9/9**. 11 decisions, adherence 11/11, `side_contradiction` 0, no
+conf-0.0, clamp still unexercised, 0 tracebacks. Still zero forex runs
+1.3 h after the open (all 10 slots crypto). Book: FIL +$0.63,
+AVAX +$0.18.
+
+---
+
 ## Cycle 44 — 21:4xZ (anchor 21:49:30): FIL banks **+$0.645** — the day's second-largest leg, from an honoured reduce; day **+$3.99**
 
 **FIL 1322 `reduce 0.5` on a $52 book → honoured** (`railed: {}`),
