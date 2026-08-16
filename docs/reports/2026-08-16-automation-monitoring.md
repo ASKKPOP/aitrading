@@ -23,6 +23,651 @@ flag comes off.
 
 ---
 
+# 24-HOUR SWEEP — 08-15 16:00Z → 08-16 16:18Z (anchor 16:18:17)
+
+## 1 · True P&L, flatten-reconciled, both frames
+| frame | ledger | flattens | resid |
+|---|---|---|---|
+| **UTC 08-16** | **+$2.19** | 2 | 0.00 ok |
+| KST day (08-15 15:00Z→) | **+$2.17** | 5 | 0.01 ok |
+
+**Open book carries the day**: 4 shorts, all modestly adverse
+(FIL −$0.16, DOT −$0.25, SUI −$0.17, TRUMP −$0.17 ≈ **−$0.75 unrealized**).
+Realized +$2.19 against −$0.75 open = **+$1.44 mark-to-market.**
+
+## 2 · SHAPE of the day — one trade is the day
+| run | db_pnl | share |
+|---|---|---|
+| **FIL 1305** | **+$2.497** | **114% of realized** |
+| SUI 1306 +$0.136 · FIL 1322 +$0.137 · FIL 1286 +$0.049 · JTO 1303 +$0.033 · SUI 1296 +$0.029 | +$0.384 | 18% |
+| ETH 1302 −$0.007 · JTO 1304 −$0.035 · LTC 1297 −$0.131 · DOT 1308 −$0.146 | −$0.319 | −15% |
+
+**Strip FIL 1305 and the fleet is +$0.065 across nine other runs** — a
+rounding error on ~$10k of capital. **The day is one good short, not a
+working system.** Wins are small and fee-heavy; losses are the two
+forced exits (LTC TTL-flatten, DOT dust-escalation) plus scratches.
+Stated plainly: **the shape is "one outlier funds twelve hours of
+churn."**
+
+## 3 · Every fix RE-PROVEN in the running container (`20260816-net-of-fees`)
+All 12 present: #439 `_cooldown_blocks`(3) · #440 `min_size_frac`(4) ·
+#441 discard note(1) · #443 `_reduce_geometry_line`(2) · #446 unit
+slip(1) · #447 DIRECTION COHERENCE(1) · #448 `_run_expiry_line`(2) ·
+#449 `stop_mechanism`(1) · #450 `baseline_pnl`(3) · #454
+`_side_contradiction`(6) · #455 `_net_of_fees_line`(2) · Plan 26
+outlook(72, flag on). **0 tracebacks in 24 h.**
+
+## 4 · Behaviour over the day — adversarial, fix by fix
+**PROVEN AT SCALE:**
+- **#438 briefs: 366/366 decisions (100%)** — no regression in 24 h.
+- **Plan 26: 184 outlooks**, adherence on 91 decisions; freshness never
+  breached; **no `algo_fallback` all day**.
+- **#443 causal** (proven cycle-24: non-canonical fractions under the
+  stated bound, 4/4 vs 150/150 canonical before).
+- **#440: 6 floor raises** — repeated, not n=1.
+
+**PROVEN ONCE, HONESTLY n=1:** #446 unit-slip converter (its behaviour
+was proven at deploy by replay, but **0 live fires in 24 h** — no
+fraction-form bracket has occurred since).
+
+**DEPLOYED BUT NEVER EXERCISED — say it plainly:**
+- **#439 BYPASSED: 0 occurrences.** No stop hit during a cooldown all
+  day. Code-verified, behaviour unproven.
+- **#449 `stop_mechanism`: 0 rows.** Its silence *did* do work (it is
+  how B proved the FIL flatten was the configured trail, not the
+  ratchet) — but the discriminator itself has never fired.
+- **#450: 0 exercises.** Confirmed twice; both re-entries had
+  excursions 13–23× short of the arm. **Untested, not verified.**
+- **#454 side-coherence: 0 flags in 4.5 h live.** The detector was
+  proven against the real failing text at deploy; zero live hits since.
+- **#455: deployed 15:5xZ, 0 live renders yet** (no held-book decision
+  since). Verified by replay only.
+
+**DID NOT MOVE ANYTHING — and what happens instead:**
+- **#443 did NOT prevent the escalations it exists to prevent.** Two
+  more today (DOT 13:09, SUI 14:25). SUI is the damning one: the line
+  RENDERED in that cycle's brief stating a 47.2% bound and the desk
+  authored **50.0%**. → **Queued: clamp an over-bound reduce to the
+  bound instead of inverting it to a full close** (n=2 authorship
+  inversions), plus make the line **prospective** (warn at the cycle
+  that creates the trap — DOT's case).
+- **#448 landed in NARRATIVE, not ACTION.** LTC's desk wrote *"before
+  timeout"* — it saw the deadline — then held into the flatten anyway.
+  Information reaches the report, not the order. n=1; watching.
+
+## 5 · Watch triggers
+`conf 0.0` no-LLM-verdict: **13 in 24 h** (my earlier count of 5 was
+wrong; A found 9 by mid-afternoon, the day closed at 13). Escalations
+**n=5 cumulative, sign 2:2 → NOISE on P&L, but 2 authorship
+inversions.** Empty-why arms n=6. AUDCHF 1147 still pending Sunday
+21:00Z; fleet 33 `stopping`; fleet 35 `active`.
+
+## 6 · Regression check vs the prior day
+Yesterday's shipped counters all still present and none regressed
+(brief coverage 100% both days; recall serving; expectancy gate active).
+**New regressions: none.** New defects found today: 4 (trail geometry
+#450, side confusion #454, gross-vs-net #455, escalation inversion —
+queued).
+
+## 7 · OWNER OBLIGATION — today's losses → today's solutions
+| loss | cause | solution |
+|---|---|---|
+| DOT −$0.146 | banked 2/3 at ~net-zero on gross-framed numbers, last third forced out | **#455 SHIPPED** (net-of-fees in front of the desk) |
+| LTC −$0.131 | held into a TTL flatten it could see | #448 landed in narrative; escalation queued if n≥2 |
+| SUI forced close | desk authored 50% against a rendered 47.2% bound | **clamp-not-invert QUEUED** (reproduced n=2) |
+| FIL 1322 fee drag (51% of gross) | gross-vs-net blindness | **#455 SHIPPED** |
+| the day's *structural* loss (one trade = 114%) | winners capped, losers forced | truthful-exit/#446/#455 all target it; **the test is whether tomorrow's realized comes from >1 run** |
+
+**Un-shipped by choice, with reason:** `BREAKEVEN_FEE_RATE` (2.22× wrong
+on crypto, worth +$0.131 on DOT alone) — Agent B requires a fleet-wide
+replay first because the same change also forfeits better exits. Not
+shipping a rail on one run.
+
+---
+
+## #455 DEPLOYED — 15:5xZ: the net-of-fees line, verified on the exact book that caused it
+
+PR MERGED (`0f2d165`), image `sooppiy-backend:20260816-net-of-fees`.
+Verified by rendering DOT 1308's REAL first-bank book (44.49 @ 0.7574)
+inside the running container:
+
+> *"Fee reality: closing this book costs a round trip of **$0.0303**.
+> Your open P&L is **$0.0311** gross = **$0.0008** NET of that. Quote
+> the NET figure when you reason about an exit, and size a partial so
+> its OWN slice clears its OWN round trip; a tranche too small to pay
+> for itself is a fee donation."*
+
+That is the trade the desk described to itself as banking a gain. The
+line now puts $0.0008 in front of it **before** it authors the exit.
+Deploy-rebuild check applied: Plan 26 (66 hits, flag on) and
+side-coherence (6 hits) both survived. 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260816-side-coherence`.
+**Session ship count: 14 PRs (#439–#455).**
+
+---
+
+## Cycle 33 — 15:1xZ (anchor 15:19:31): quiet — 7 holds, no closes; new run 1330 built
+
+Adherence 7/7, `side_contradiction` 0, outlook freshness 15:16:23Z
+(3 min) ✓. Book: FIL −$0.14, DOT −$0.17, both inside stops. Day
+ledger +$2.32. 0 tracebacks.
+
+---
+
+## Cycle 32 — 14:4xZ (anchor 14:49:28): **escalation n=5 REPRODUCES the exact defect B predicted** — the line was in front of the desk and it missed by 2.8 points
+
+**P&L: SUI 1306 forced-closed −$0.133** (day ledger +$2.47 → **+$2.32**;
+run 1306 still net +$0.072 overall). Mechanism identical to DOT an hour
+ago: desk authored `reduce 0.5`, rail escalated
+`{"from": 0.5, "to": 1.0, "why": "dust_remainder_closed"}`.
+
+**This is the reproduction B's analysis called for, and it is sharper
+than the DOT case.** The arithmetic:
+- book at the decision: 69.693 × 0.679 = **$47.32** — inside the
+  $25–50 band, so **`reduce_geometry` DID render** (confirmed in the
+  decision's own brief array).
+- the line's stated bound: `1 − 25/47.32` = **47.2%**.
+- **the desk authored 50.0%** — over the line by **2.8 percentage
+  points**, and its `why` reads *"Partial reduction preserves the short
+  thesis"*, i.e. it intended to keep a position the rail then took.
+
+**So the desk had the number, in that cycle's brief, and authored just
+past it.** DOT was "the line spoke too late"; SUI is **"the line spoke
+and was not used."** Both fixes in the backlog are now justified by
+reproduced evidence rather than one instance:
+1. **prospective warning** (B): warn at the cycle that *creates* the
+   trap, not after — DOT's case.
+2. **round the ask to the bound** rather than escalating past it: when
+   an authored reduce exceeds the max non-escalating fraction by a
+   small margin, the honest rail action is to **clamp to the bound**
+   (47.2%) — preserving the desk's stated intent to keep a position —
+   instead of inverting it into a full close. Escalation n=5, and in
+   2 of 5 the desk explicitly said it wanted to KEEP the remainder.
+
+Escalation running tally now **n=5**: UNI −$0.032, FIL +$0.031,
+ETH +$0.0018, DOT −$0.0103, SUI (this one, its own delta to be priced
+next cycle at a live mark). Still not a P&L lever — but it is now
+**twice** an authorship inversion, which is the part worth fixing.
+
+Also this window: DOT 1308 re-shorted 53.09 @ 0.7624; new run 1329
+built and deliberating; adherence 7/7; `side_contradiction` 0;
+Plan 26 §2 green. 0 tracebacks.
+
+---
+
+## Cycle 31 — 14:1xZ (anchor 14:19:25): quiet — 4 holds, replacement run 1328 built, no closes
+
+New run 1328 started 14:15:12Z (LTC slot replaced after its TTL
+flatten) and deliberated immediately — `deviated`, i.e. it declined the
+standing plan on its first look. Adherence 4/4, `side_contradiction` 0,
+Plan 26 §2 green (crypto 14:16:10Z / us-stock 14:09:11Z, no
+`algo_fallback`). Book: SUI −$0.06, FIL −$0.18 (both inside stops;
+FIL is 2.0% from its 0.695164). Day ledger +$2.47. 0 tracebacks.
+
+---
+
+## Cycle 30 — 13:4xZ (anchor 13:49:27): LTC TTL-flattened −$0.077 — but **#448 LANDED**: the desk saw the deadline and said so
+
+**P&L: run 1297 flattened by `stop_event:at_time` at 13:46:22Z**, cover
+0.4536 @ 44.24 = **−$0.077** (run total −$0.151). Day ledger
++$2.55 → **+$2.47**.
+
+**This is the same class as the 08-15 SUI at_time flatten** — the case
+#448 (`run_expiry`) was built for — so instead of re-dispatching two
+agents on a solved class, I tested the one NEW question directly: **did
+the desk USE the deadline it can now see?**
+
+**It did.** Its 12:49 report reads *"We hold the short as planned,
+awaiting a drop toward the 42.78 target **before timeout**"* — the desk
+reasoning explicitly against run life. Its final brief carried
+`run_expiry` alongside `standing_plan`. On 08-15 the desk authored a
+24 h thesis on an 8 h vehicle because nothing told it; today it planned
+around the clock it was given. **#448 is landing.**
+
+**What it did NOT do is act on it.** Knowing the deadline, it held to
+the end rather than closing ahead of a flatten it could see coming
+(`horizon_until` 11:51 had already passed; `at_time` 13:46 was
+rendered). Seeing the deadline changed the NARRATIVE, not the ACTION —
+which is the same gross/net-blindness shape A found: information
+reaches the report but not the order. Logged, n=1 on this specific
+"saw-it-held-anyway" pattern; not shipping on one instance.
+
+Otherwise: adherence 4/4 (`followed` ×4), `side_contradiction` 0,
+Plan 26 §2 green (crypto 13:45:06Z / us-stock 13:35:46Z, no
+`algo_fallback`). Book: SUI −$0.03, FIL +$0.08. 0 tracebacks.
+
+---
+
+## CROSS-CHECK (A × B) — one root cause from two axes: **fee blindness**, desk-side and rail-side
+
+**P&L: −$0.1764 fee-complete.** B's attribution: adverse price move
+−$0.1157 (66%), **fees $0.0608 (34%)**. Third independent confirmation
+that `signals.pnl` omits the open fee (realized before the final leg was
++$0.0199, not the +$0.039 I first reported).
+
+**They converge without collusion:**
+- **A (desk):** the desk **reasons in GROSS and books in NET** — every
+  staging decision taken on a number 3–7× the ledger figure. Staging
+  cost 2.7× everything three runs earned today (3/3).
+- **B (rails):** `BREAKEVEN_FEE_RATE` is a hardcoded **0.001** while the
+  platform's real crypto fee is **0.00045** (verified exactly from the
+  tape). So the ratchet's arm sits **2.22× too high on every crypto
+  run** — DOT's peak cleared its TRUE round trip by 1.63× and the rail
+  still declined to protect it. **Not a near-miss: a defect against the
+  rail's own docstring** ("its own round-trip cost").
+  B's replay at the correct rate: exit at −$0.0456 vs actual −$0.1764 =
+  **+$0.131 on this run alone, 12× the escalation question.**
+
+**B refuses to oversell, and I'm adopting the caution:** the corrected
+ratchet also forfeits the 06:38 dip where a full close was +$0.153. It
+is *a floor, not alpha*, and B says plainly **do not ship it on one
+run — replay fleet-wide first**, because a rail that turns losers into
+smaller losers while turning winners into scratches is not a profit fix.
+
+**Dust escalation, n=4, settled: NOISE.** UNI −$0.032, FIL +$0.031,
+ETH +$0.0018, DOT −$0.0103 → cumulative **−$0.0115, sign 2:2**. It cost
+5.9% of this loss. It remains an authorship defect (a rail issuing a
+close the desk declined) — worth fixing on principle, **never to be
+sold as a P&L lever.**
+
+**#443 is DESCRIPTIVE, not PROSPECTIVE — and that is why it failed
+here.** B's table: the trap was set at **cover 1** ($67.45 → $33.70),
+and at that cycle the line **said nothing** (it only speaks below
+2×floor = $50). It first spoke at cover 2, *after* the book was already
+binary. Cover 2 survived only because the desk picked 0.25 against a
+0.258 ceiling — **a $0.21 margin, luck not design.**
+
+**idle_retire on 1319/1320: CORRECT** (12 worked cycles, flat, zero
+trades, both theses' entry zones never triggered). If anything the rail
+is **late** — 1320's entry zone was stale from cycle 1.
+
+**SHIPPING NOW (the AI-first half of A's fix):** feed the exit prompt
+**net-of-round-trip** P&L instead of gross. Pure information, no rail —
+the pattern that has worked all session (#443, #448). The
+forced-close-compilation half and the fee-rate constant both wait for
+the fleet-wide replay B requires.
+
+---
+
+## VERDICT (Agent A) — staging cost 2.7× everything these runs made; the desk reasons in GROSS and books in NET
+
+**P&L first, fee-complete (A, verified 3 ways to 8 dp): DOT run 1308
+−$0.1764.** And **three corrections to my cycle-29 note**:
+1. The two banks netted **+$0.0199, not +$0.039**. Bank #1 netted
+   **+$0.0008** — it paid a $0.0303 round trip to capture $0.0311 of
+   gross. It banked the fee.
+2. **My "sell winners, hold losers" hypothesis is REFUTED as stated** —
+   only DOT kept a residual; SUI and FIL both staged and fully closed
+   within ~30 min, both tranches profitable.
+3. **conf-0.0 no-LLM-verdict holds today = 9, not 5** (1305×3, 1308×2,
+   1306×2, 1293×1, 1297×1). My watch undercounted by nearly half.
+
+**What survives instead is stronger and 3/3:** a single full close at
+the FIRST reduce decision beats the actual staging in every case today.
+
+| run | staged actual | full close at first reduce | forgone |
+|---|---|---|---|
+| DOT 1308 | −$0.1764 | +$0.0016 | **$0.178** |
+| SUI 1306 | +$0.0385 | +$0.0552 | $0.017 |
+| FIL 1322 | +$0.0901 | +$0.1514 | $0.061 |
+
+**Forgone $0.256 against $0.0954 actually earned — staging cost 2.7× everything these three runs made.** Across the six profitable
+tranches, **fees ate 54% of gross** (DOT's first tranche 97%, FIL's
+second 77%).
+
+**The mechanism, and it is not psychology:** the desk **reasons in
+GROSS and books in NET**. FIL cyc9 wrote *"Lock the $0.10 profit"* —
+net was **+$0.0143**. SUI cyc11 wrote *"captures the $0.12 gain"* —
+net **+$0.0164**. Every staging decision is taken on a number 3–7×
+larger than the one that reaches the ledger.
+
+**DOT specifics:** both banks were taken at **1.2%** and **4.1%** of
+the desk's own 7.7% target — and it logged that fact in its own words
+before doing it. **No `outlook` existed at either bank** (first one came
+5 h after the open). Its only arm in 6.5 h was `price_below 0.75` on a
+SHORT at 0.7581 — **1.35% further INTO profit, dead on arrival.**
+All 7 outlooks carried byte-identical target/entry values: the plan was
+a frozen constant re-narrated, not re-planned.
+
+**⚠️ PLAN 26 FINDING — `plan_adherence` reported healthy while the book
+bled 5×.** It read **`followed` ×6** across uPNL −$0.037 → −$0.176, and
+**never once read `deviated`**. The flag measures compliance with a
+STALE plan, not whether the plan still deserves compliance. Also a
+data-integrity flag: cyc19 stamped **`revised` on a cycle with NO LLM
+verdict** — a revision nobody authored.
+
+**ACTION (A's fix, quantified on today's tape):** make exit decisions
+fee-aware — feed the reduce/close prompt **net-of-round-trip** P&L, and
+compile any `reduce` whose tranche gross is under ~2× the round trip
+into `close 1.0`. On these three trades that turns
+−$0.176/+$0.038/+$0.090 into +$0.002/+$0.055/+$0.151:
+**+$0.0954 → +$0.208, a 2.2× swing with no change to the AI's market
+view.** Holding for Agent B's rail axis before shipping.
+
+---
+
+## Cycle 29 — 13:1xZ (anchor 13:19:25): **DOT closed at a LOSS via a dust ESCALATION** — the "sell winners, hold losers" shape; agents dispatched
+
+**P&L: run 1308 realized −$0.1764** (day ledger slips +$2.74 → **+$2.55**).
+The shape is the concern, not the size:
+
+| leg | ts | qty | price | signals.pnl |
+|---|---|---|---|---|
+| open short | 05:10:56 | 88.98 | 0.7581 | — |
+| bank #1 | 06:08:45 | 44.49 | 0.7574 | +$0.016 |
+| bank #2 | 06:38:45 | 11.12 | 0.7557 | +$0.023 |
+| **forced full close** | **13:09:12** | **33.37** | **0.7633** | **−$0.185** |
+
+The desk banked **two-thirds of the book for +$0.039**, then left the
+last third exposed for **6.5 hours** to lose **5× that**. And the final
+exit was not the desk's: it authored `reduce 0.5` and the rail
+escalated to 1.0 (`dust_remainder_closed` — the ~$12.7 remainder is
+under the $25 floor). **Escalation n=4+ on this fleet.**
+
+Both agents dispatched with the central question stated plainly: **is
+staged exiting making this fleet sell its winners and hold its losers?**
+— tested against today's other staged exits (SUI 1306, FIL 1322) — and
+whether the reduce-geometry line warns the desk *before* it stages down
+to a book too small to reduce again, or only once it is already trapped.
+
+Also: runs 1319 and 1320 `idle_retired` (12:57, 13:01) — sent to Agent B
+to confirm correct vs premature. Adherence 7/7 (seventh window),
+`side_contradiction` 0 flags, Plan 26 §2 green. 0 tracebacks. Book:
+LTC −$0.09, SUI −$0.06, FIL +$0.09.
+
+---
+
+## Cycle 28 — 12:4xZ (anchor 12:49:27): quiet — 7 holds, no trades, all four shorts inside their stops
+
+Adherence 7/7 (sixth consecutive 100% window), `side_contradiction`
+**0 flags**, Plan 26 §2 green (crypto 12:46:59Z / us-stock 12:29:15Z;
+adjusted 7 · adopted 4 · overridden 2; no `algo_fallback`). Book:
+LTC −$0.09 (0.57% from stop), DOT −$0.16, SUI +$0.03, FIL −$0.07.
+0 tracebacks.
+
+---
+
+## Cycle 27 — 12:1xZ (anchor 12:19:26): quiet — FIL 1322 re-entered (4th short open); no closes
+
+Short 17-min window. FIL 1322 re-shorted 76.78 @ 0.6802 (12:16:33Z,
+`revised`) — its second entry after this morning's +$0.0901 round trip;
+stop 0.695164. **No closed-trade tape**, so no agent dispatch. Plan 26
+§2 green: freshness crypto 12:16:32Z / us-stock 12:17:16Z ✓, verdicts
+adopted 2 · adjusted 1, **no `algo_fallback`** ✓, adherence 2/2,
+`side_contradiction` **0 flags**. Book: 4 shorts (LTC −$0.10,
+DOT −$0.09, SUI +$0.09, FIL +$0.01). 0 tracebacks.
+
+**Note for the next re-entry watch:** this is exactly the shape #450
+was built for — a run that banked a winner and re-entered. Its realized
+is +$0.0901 and the trail arm is $2.09, so the trail stays inert
+(excursion 23× short of the arm); #450 remains **untested** rather than
+exercised.
+
+---
+
+## Cycle 26 — 12:0xZ (anchor 12:02:21): quiet — 11 holds; side-coherence live with **0 flags**
+
+No trades. Adherence **11/11** (fifth consecutive 100% window).
+`side_contradiction` present on the decision path since #454 and
+**0 flagged** — the clean state, not a silent failure (the detector was
+proven against the real failing text at deploy). Plan 26 §2: freshness
+crypto 12:00:55Z / us-stock 11:54:06Z ✓, verdict mix adjusted 11 ·
+adopted 7 · overridden 5, **no `algo_fallback`** ✓. Book: LTC −$0.13
+(0.36% from its stop — closest of the three), DOT −$0.12, SUI +$0.07.
+0 tracebacks.
+
+---
+
+## Cycle 25 — 11:2xZ: first Plan-26 round trip, cross-checked — **+$0.0901 net**, and #450 was NOT exercised
+
+**P&L first (both agents, independently, matching `peak_pnl_usd` to
+8 dp): +$0.0901 net.** Gross $0.184, **fees 51.1% of gross**, +0.17%
+on $52 margin. My reported +$0.137 was the DB figure — corrected.
+
+**Agent A (desk):** the plan never constrained the trade. Published
+target 0.65; exits at **5.11%** and **2.56%** of that distance with
+43.5 of 48 horizon hours unused, both immediately after a
+`horizon_shadow` saying HOLD. Cycle 9 carried **three falsehoods**:
+"the current long trade", "opening a long… closing corrects the
+mis-direction", and "lock profit before a likely further drop" — a drop
+PAYS a short. It closed a winning, correctly-directed short to fix a
+violation that never happened. Confidence was manufactured: proposed
+0.55 → final 0.68, **identical +0.13 on cycles 7, 8 AND 9**, landing
+just above the 0.65 gate.
+
+**Agent B (rails):** every rail per design — leverage cap fired (3→2,
+cost $0.045 of this winner, its job); #440 silent (ask was 5× the
+floor); #446 silent (desk authored PERCENT form — correct
+discrimination, and it also abstained on `stop_pct 0`, which is "no
+bracket", not a unit slip); dust-remainder silent (remainder 2.09×
+the floor). **The intent compiler SAVED the trade**: cycle 9 emitted
+`legacy_action: short` to CLOSE a short — on the legacy path it would
+have opened a SECOND short. Independent confirmation of A.
+
+**⚠️ CORRECTION TO MY CYCLE-24 FRAMING: #450 was NOT exercised.**
+I called this "the first live opportunity to test #450". B's
+arithmetic: peak run total 0.2029 vs arm 2.09 — **neither the old nor
+the new geometry arms** (10.3× and 13.9× short). The old code would
+NOT have flattened this leg. **Report #450 as untested, not verified.**
+
+**NEW DEFECT — in code I shipped (B):** `_breakeven_arm_usd` and the
+exit-fee terms I added in #449/#450 read the flat
+`BREAKEVEN_FEE_RATE=0.001` while `fees.fee_rate(market)` is live and
+returns **0.00045** for crypto. Same class already fixed once in
+`fleet_planner.trail_config`. Effect: the ratchet's arm bar is
+**2.22× too high** (protection arms far later than designed — precisely
+why it missed here by $0.0055) while the exit-fee term fires **2.22×
+too early**. On us-stock/forex the multiple is ~10×/12.5×.
+**One wrong constant, two opposite-direction errors, on the rail whose
+whole purpose is to work without the desk.** Next ship.
+
+**Sweeper waste quantified (B, code-verified):** `_cold_reason` returns
+`run_idle` for any `status != running`, so `stopped` (terminal) is
+treated like `dormant` (will resume). **15 of 25 sweeper outlooks (60%)
+went to runs that can never trade again**, each an LLM call recurring
+~every 33 min. Intended path, real waste; fix is one condition.
+
+**#454 DEPLOYED — 11:4xZ addendum.** PR MERGED (`4bec711`), image
+`sooppiy-backend:20260816-side-coherence` live. Verified by REPLAYING
+THE REAL FAILING TEXT in the running container:
+- FIL 1322 cyc9 *"limited upside for the current long trade"* on a −76.66
+  book → **caught**: "a long claim on a SHORT position".
+- FIL 1305 cyc9 *"Given we are long"* on a −304 book → **caught**.
+- coherent short text → **None** (no false positive).
+- flat book → **None** (exemption holds).
+Plan 26 survived the rebuild (66 `outlook` hits, `OUTLOOK_ENABLED=1`) —
+the deploy-rebuilds-from-main rule applied. 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260816-plan26-guide`.
+Session ship count: 13 PRs (#439–#454).
+
+**SHIPPED THIS CYCLE:** side-coherence detection — the desk's prose is
+checked against the sign of its own book, journaled on the decision,
+and quoted back next cycle (#441 pattern). Detection only, never blocks
+(#119). 11 tests, mutants killed (one survived because MY flat-book
+test used a claim silent either way — test fixed, re-killed).
+
+---
+
+## Cycle 24 — 11:1xZ (anchor 11:19:26): first FULL round trip under Plan 26 (+$0.137); no double-writing; sweeper spends on STOPPED runs
+
+**Plan 26 §2 — the double-write check, run by run.** Crypto showed both
+`cycle` (7) and `sweeper` (2) rows this window, which is the guide's
+known-gap signature — so I checked per run rather than in aggregate:
+every **`running`** crypto run got **only cycle rows**; both sweeper
+rows belong to runs **1315 and 1321, which are `stopped`**.
+**No double-writing** ✓.
+**But:** the sweeper is authoring outlooks for runs that are STOPPED —
+a stopped run has no slot left to plan for, and each row costs an LLM
+call. That is guide known-gap #1 ("non-running runs treated as cold");
+logging it as instructed, **n=2**, dispatched to Agent B for a code
+verdict (waste vs defect vs intended).
+
+Other checks: freshness crypto 11:19:26Z / us-stock 11:14:08Z ✓;
+verdict mix adopted 5 · adjusted 4 · overridden 3 — **no
+`algo_fallback`** ✓; adherence **7/7** (fourth consecutive 100%
+window — the guide's §3b "minority of cycles" claim is now
+comprehensively refuted).
+
+**FIL 1322 completed the first FULL trade lifecycle under Plan 26:**
+open 153.32 @ 0.6813 (deviated) → reduce 0.5 @ 0.6797 (revised) →
+close @ 0.6805 (deviated). **P&L CORRECTED (Agent A): true net
++$0.0901, NOT the +$0.137 I reported** — `signals.pnl` nets only the
+CLOSING fee on each leg and never subtracts the $0.047 open fee, so the
+DB figure overstates net by 52%. Gross $0.184, **fees 51.1% of gross**,
+return +0.086% on $104 notional. Run stays `running`. Both covers `railed: {}`. Two-agent
+review dispatched — this is the first trade judgeable **against its own
+published plan** (guide §3), and the first live opportunity to test
+whether **#450**'s position-scoped trail changed anything for a run
+holding a second leg after banking.
+
+SUI 1306 opened a fresh short 69.69 @ 0.6774. Book: LTC, DOT, SUI.
+0 tracebacks. Day ledger +$2.74 → to be re-read after these closes.
+
+---
+
+## Cycle 23 — 10:4xZ (anchor 10:49:31): **STOP-ECHO INVARIANT PASSES**; us-stock sweeper coverage arrives; FIL halved for +$0.099
+
+**Plan 26 — the armed test resolved ✓.** Run 1322's next outlook
+(10:47:04Z) carries `stop_ref_px` **0.688999**, byte-equal to the live
+stop 0.688999 — the previous null was correctly a flat-book artifact
+(authored 1 s before the fill). The guide's load-bearing invariant
+("the model's stop is discarded in code — write-once stop rule") holds
+on a position opened AFTER the flag flip.
+
+**us-stock coverage appeared** (runs 1323–1327, 5 outlooks, newest
+10:47:44Z) — **all `sweeper`-sourced**, which is exactly right: the
+session is closed on a Sunday, and the guide reserves sweeper rows for
+closed sessions / dormant slots. No cycle-sourced us-stock rows =
+**no double-writing** ✓.
+
+Other §2 checks: freshness crypto 10:47:15Z / us-stock 10:47:44Z, both
+minutes old ✓; verdict mix sweeper adopted 5 · adjusted 3, cycle
+adopted 3 · adjusted 3 · overridden 1 — **no `algo_fallback`** ✓;
+adherence **7/7** (third consecutive 100% window).
+
+**Trade:** FIL 1322 reduced exactly half (153.32 → 76.66) at 0.6797,
+realizing **+$0.0757 true net** (I reported +$0.099 — that was the DB
+figure, which omits the open fee; see cycle 25); `railed: {}` —
+remainder ~$52 is double the $25 floor, so no escalation, correct
+silence. The cycle was labelled
+`revised` and the reduce came through the intent path (`reduce 0.5`).
+Day ledger **+$2.74**.
+
+Book: LTC −$0.11, DOT −$0.02, FIL +$0.11 (half-size). 0 tracebacks.
+
+---
+
+## Cycle 22 — 10:1xZ (anchor 10:19:27): Plan 26 §2 all green; new FIL short opened on a `deviated` cycle
+
+**Plan 26 (guide §2):** outlook freshness **6 seconds** (newest
+10:19:21Z) ✓; verdict mix cycle overridden 3 / adjusted 2 / adopted 1 +
+sweeper adjusted 2 / adopted 1 — **no `algo_fallback`** ✓; adherence
+**7/7 = 100%** — second independent confirmation that the guide's
+§3b "minority of cycles" claim is wrong.
+Adherence mix: followed 3 · **deviated 3** · revised 1.
+
+**Per-trade check on all three deviations (guide: a deviation without a
+stated reason is a finding).** All three DO state reasons — verified
+individually:
+- 1293: *"holding flat preserves capital as the short thesis lacks a
+  clear positive expectancy within the remaining ~11 hours"* — note it
+  is reasoning against **run life**, i.e. #448 still steering.
+- 1306: 600-char report (fear/greed contrarian read, crowded longs,
+  desk memory) ✓.
+- 1322: full technical + sentiment + news rationale, and it **acted** —
+  short 153.32 FIL @ 0.6813, stop 0.688999.
+
+**⚠️ My own false alarm, corrected before reporting:** 1306's report
+first read as EMPTY and looked like the first Plan-26 defect. It was a
+display artifact — a binary byte in the payload made `grep` swallow the
+row. Re-fetched with `-N | tr -d '\000'`: 600 chars present. **No
+defect.** Query hygiene noted for the loop.
+
+**Stop-echo invariant — not yet testable on 1322, watch armed:** all
+three of its outlooks carry `stop_ref_px: null`, but the newest
+(10:16:24Z) was authored **1 second before** the position opened
+(10:16:25Z) — null is correct while flat. The real test is its NEXT
+outlook (~10:46Z), which must echo **0.688999**.
+
+Book: 3 shorts (LTC −$0.12, DOT −$0.02, FIL +$0.13). 0 tracebacks.
+
+---
+
+## Cycle 21 — 09:4xZ (anchor 09:49:21): quiet — Plan 26 healthy; guide now in main and pulled into the tree
+
+Short 6-min window. Plan 26 per guide §2: crypto outlook newest
+09:44:57Z (**4 min old vs 30-min floor** ✓); source/verdict split
+sweeper·adjusted 1 + cycle·overridden 1 — **no `algo_fallback`** ✓;
+adherence 1/1 (`followed`) ✓. No trades. Both shorts inside stops
+(LTC −$0.12, DOT −$0.04). 0 tracebacks. The guide is now merged to
+main (#452 chain) and pulled into the working tree, so the
+existence check is closed — future cycles read it locally.
+
+---
+
+## Cycle 20 — 09:4xZ (anchor 09:43:18): docs deploy verified NOT to have reverted Plan 26 — and a process risk I took
+
+The docs PR #452 chain rebuilds the image **from main** and replaced
+`20260816-plan26-outlook` with `20260816-notes-0816`. **I did not check
+before deploying whether Plan 26 was merged to main.** It was —
+`2b058b03 feat(outlook) … (#451)` sits one commit below my docs merge,
+and the running image carries 66 `outlook` hits with
+`OUTLOOK_ENABLED=1`; outlooks kept writing straight through the restart
+(2 more by 09:42:29Z, adherence 1/1). No harm done.
+
+**But the risk was real and is structural:** every docs deploy I run
+rebuilds prod from main, so ANY feature deployed from an unmerged
+branch would be **silently reverted by my next routine docs deploy**.
+Standing rule added for this loop: before any deploy, diff the running
+image's feature surface against main, or confirm the feature's PR is
+merged. Cheap check, silent failure mode.
+
+---
+
+## Cycle 19 — 09:3xZ (anchor 09:35:48): **PLAN 26 IS LIVE** — guide found, checks run, and its baseline table is WRONG
+
+**The guide exists** — on branch `fix/plan26-monitoring-guide`
+(commit ebaee986), not in this working tree, which is why every prior
+cycle's existence check failed honestly. Read and now binding.
+**Plan 26 shipped**: image `sooppiy-backend:20260816-plan26-outlook`,
+`OUTLOOK_ENABLED=1` in both .env and the container, flag flipped
+09:10Z.
+
+### §1 deploy verification — ALL GREEN
+| check | result |
+|---|---|
+| outlook rows by market | crypto 8, newest 09:30:49Z — **4 min old vs a 30-min floor** ✓ |
+| source split | cycle 5 / sweeper 3 — no double-writing on open+cycling runs ✓ |
+| `basis.verdict` mix | adopted 2 · adjusted 2 · overridden 4 — **no `algo_fallback`**, LLM path alive ✓ |
+| **stop-echo invariant** | run 1297: `stop_ref_px` **44.5309** = live stop **44.5309**, byte-equal ✓ (the other 7 are flat runs → null, correct) |
+| adherence mix | followed 4 · revised 1 · deviated 1 |
+| deviated-with-reason | 1322 states it: *"weak momentum, low volume, sub-coin-flip confidence, the short entry lacks positive expectancy; we stay flat"* — compliant ✓ |
+| errors | 0 outlook errors, 0 tracebacks ✓ |
+
+### ⚠️ MATERIAL CORRECTION TO THE GUIDE'S §3b BASELINE
+The guide's table says *"decisions | 395 | 181"* and *"3 adherence
+stamps"* in the first 30 min, and tells sessions to chase
+**"compliance trending to zero."** Measured here, twice, independently:
+
+- decisions in 09:10–09:40 = **6** (not 181). **181/208 is the count of
+  ALL `run_events`** in that window, not decisions.
+- The guide's own numbers are internally inconsistent: 395 decisions/24 h
+  is ~8 per 30 min, so 181 decisions in 30 min would be a 55× rate jump.
+  My 6-in-25-min matches 397/24 h exactly.
+- **`plan_adherence` coverage is 6/6 = 100%**, not 3/181 ≈ 1.7%.
+
+Consequence if followed blindly: a session would report "outlook
+coverage is thin / compliance failing" when compliance is **complete**.
+The §3b conclusion *"the model emits the block on a minority of
+cycles"* is **not supported** by this measurement. Not editing another
+session's branch (parallel-session rule); flagged here and to the owner.
+
+**Verdict per §3.7:** too early for the profit test (day-7 ledger split
+by adherence and verdict). Nothing to judge on P&L yet; the feature is
+healthy on every process check the guide defines.
+
+---
+
 ## Cycle 18 — 09:1xZ (anchor 09:19:27): quiet — 3 holds; conf-0.0 on a HELD book again (n=5)
 
 DOT 1308 (held short, −$0.08) took another `conf 0.0` no-LLM-verdict
