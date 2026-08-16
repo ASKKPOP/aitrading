@@ -1,5 +1,5 @@
 {
-  "cycle": "2026-08-16/34",
+  "cycle": "2026-08-16/35",
   "captured_at_utc": "2026-08-15T09:15Z",
   "prod_image": "20260815-brief-journal",
   "C9_ETH_ROUND_TRIP_CLOSED": "1272 total -1.8708 ledger-verified: entry fee -0.4455 (01:56 PANEL-CRASH FALLBACK buy the panel had vetoed 3 consecutive cycles) + trim -0.2122 (02:56, fee 21x gain) + final -1.2130 (05:56 floor-rule exit @1879.83). LOSS AUTHORED AT ENTRY; fees = 48%. Trim's real cost structural: losing_close -> 1h59m lockout spanning the remainder's entire profitable window (peak +0.37) + burned 0.66 floor headroom. Cycle-10 belief 'existing arm protect downside' FALSE (1865 arm behind the floor). The 05:56 exit itself is a WASH at live mark (1879.75 vs 1879.83). Post-close adapt: size 0.5, cooldown 08:24:05Z, flat book - watch re-entry. FIL 1283 = the counter-example: same tape read SHORT, panel twice protected the winner, partials cleared fees 5.7x/6.6x, +0.171 realized.",
@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-16T16:50Z",
+  "as_of": "2026-08-16T17:20Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 3,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "#455 rendering live 4/7 briefs; FIL +$0.038; NEW route: absent order block -> legacy full close (no railed trail), n=1"
+    "note": "TRUMP reduce 0.5 SURVIVED on a $187 book +$0.287 \u2014 control case: reduce is only real above ~2x the dust floor"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

@@ -23,6 +23,34 @@ flag comes off.
 
 ---
 
+## Cycle 35 — 17:1xZ (anchor 17:19:27): **the counter-example** — a partial reduce that worked exactly as authored, +$0.287
+
+TRUMP 1329 `reduce 0.5` on a **$187 book**: `railed: {}` — no
+escalation, no legacy takeover — cover 65.717 @ 1.4220 for
+**+$0.287**, the largest single realized leg since FIL 1305, and it
+**kept the other half** (remainder $93.4, 3.7× the $25 floor). Day
+ledger **+$2.23 → ~+$2.52**.
+
+**This is the control case the three failure routes needed.** Same
+verb, same 0.5 fraction, same brief set including `net_of_fees` — and
+it honoured the desk's intent because the **book was big enough to be
+divisible**. DOT ($25.5), SUI ($47.3) and FIL (absent order block) all
+failed at the small-book end; TRUMP at $187 did not.
+
+**That sharpens the diagnosis and I am revising my own framing:** the
+problem is not "staging is bad" (my cycle-29 hypothesis, already
+refuted by A) nor "reduce is broken" — it is that **a reduce is only a
+real instrument above ~2× the dust floor, and this fleet's slot sizes
+put most books below that line.** The three queued fixes still stand,
+but the ranking changes: **clamp-not-invert** matters precisely because
+the small-book regime is where the desk lives.
+
+Rest: 6 decisions, adherence 6/6, `net_of_fees` on 3 (all held books),
+`side_contradiction` 0, no conf-0.0 this window, outlook freshness
+17:16:39Z, 0 tracebacks. Book: DOT −$0.13, SUI +$0.25, TRUMP +$0.43.
+
+---
+
 ## Cycle 34 — 16:4xZ (anchor 16:49:17): **#455 RENDERING LIVE** — and a THIRD route by which "reduce half" becomes a full close
 
 **#455 behaviourally proven, 4.5 h after deploy:** `net_of_fees`
