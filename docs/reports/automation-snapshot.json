@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-16T00:55Z",
+  "as_of": "2026-08-16T01:00Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -847,5 +847,6 @@
       "#437",
       "#434"
     ]
-  }
+  },
+  "plan26_watch": "guide file absent 00:55Z; per-cycle existence check armed; judge rollout per plan \u00a73.7 (realized P&L)"
 }

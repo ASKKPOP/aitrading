@@ -3,10 +3,23 @@
 Continued from [2026-08-15](2026-08-15-automation-monitoring.md) (fleet 35
 day one: 9 closed trades ≈ +$0.01 realized; 11 PRs #439–#449 shipped from
 live tape). Target: **info@askkpop.com — user 5 / agent 6 / FLEET 35**.
-Open watches: arm-reachability rail (next-session implementation),
-fee-accounting + scratch-band owner package, empty-why arms (n=5),
-#446 unit-slip converter first live fire, #439 BYPASSED first exercise,
-AUDCHF 1147 flatten at Sunday 21:00Z FX open, fleet 33 `stopping`.
+Open watches: arm-reachability rail + side-coherence check
+(next-session implementations), fee-accounting + scratch-band owner
+package, empty-why arms (n=6), #446 unit-slip converter first live
+fire, #439 BYPASSED first exercise, AUDCHF 1147 flatten at Sunday
+21:00Z FX open, fleet 33 `stopping`.
+
+**OWNER ORDER (2026-08-16 ~00:5xZ): monitor Plan 26 (Slot Strategy
+Outlook / Forward Book)** per
+`docs/reports/plan26-outlook-monitoring-guide.md`. That guide file
+DOES NOT EXIST YET (checked 00:55Z; the plan itself,
+docs/plan/26-slot-strategy-outlook.html, is marked PROPOSAL — nothing
+shipped). Standing per-cycle check added: the moment the guide appears
+its instructions bind this loop; until then, watch for Plan 26
+implementation artifacts (outlook objects in decision JSON, per-slot
+standing plans, plan-following cycles) and judge them per §3.7 —
+realized-P&L terms, plan-following cycles must ADD expectancy or the
+flag comes off.
 
 ---
 
