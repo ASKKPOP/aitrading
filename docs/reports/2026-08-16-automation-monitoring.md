@@ -44,9 +44,12 @@ window — the guide's §3b "minority of cycles" claim is now
 comprehensively refuted).
 
 **FIL 1322 completed the first FULL trade lifecycle under Plan 26:**
-open 153.32 @ 0.6813 (deviated) → reduce 0.5 @ 0.6797 **+$0.0992**
-(revised) → close @ 0.6805 **+$0.0379** (deviated) ≈ **+$0.137**
-realized; run stays `running`. Both covers `railed: {}`. Two-agent
+open 153.32 @ 0.6813 (deviated) → reduce 0.5 @ 0.6797 (revised) →
+close @ 0.6805 (deviated). **P&L CORRECTED (Agent A): true net
++$0.0901, NOT the +$0.137 I reported** — `signals.pnl` nets only the
+CLOSING fee on each leg and never subtracts the $0.047 open fee, so the
+DB figure overstates net by 52%. Gross $0.184, **fees 51.1% of gross**,
+return +0.086% on $104 notional. Run stays `running`. Both covers `railed: {}`. Two-agent
 review dispatched — this is the first trade judgeable **against its own
 published plan** (guide §3), and the first live opportunity to test
 whether **#450**'s position-scoped trail changed anything for a run
@@ -78,8 +81,10 @@ adopted 3 · adjusted 3 · overridden 1 — **no `algo_fallback`** ✓;
 adherence **7/7** (third consecutive 100% window).
 
 **Trade:** FIL 1322 reduced exactly half (153.32 → 76.66) at 0.6797,
-realizing **+$0.099**; `railed: {}` — remainder ~$52 is double the $25
-floor, so no escalation, correct silence. The cycle was labelled
+realizing **+$0.0757 true net** (I reported +$0.099 — that was the DB
+figure, which omits the open fee; see cycle 25); `railed: {}` —
+remainder ~$52 is double the $25 floor, so no escalation, correct
+silence. The cycle was labelled
 `revised` and the reduce came through the intent path (`reduce 0.5`).
 Day ledger **+$2.74**.
 
