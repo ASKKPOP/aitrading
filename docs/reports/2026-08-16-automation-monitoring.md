@@ -23,6 +23,44 @@ flag comes off.
 
 ---
 
+## Cycle 34 — 16:4xZ (anchor 16:49:17): **#455 RENDERING LIVE** — and a THIRD route by which "reduce half" becomes a full close
+
+**#455 behaviourally proven, 4.5 h after deploy:** `net_of_fees`
+appears in **4 of 7** decision briefs this window — every held-book
+cycle (1306, 1329, 1308, 1322). Deploy-time proof was a replay; this is
+the line reaching real decisions. Watch closes.
+
+**FIL 1322 closed +$0.038** (run realized **+$0.1045**, still
+`running`). And it exposes a **new mechanism** for the same failure
+shape I have now logged three ways:
+- the desk's report says *"**reduce half** to lock remaining gain while
+  keeping upside"*;
+- but its `order_params` is `{"action":"buy","deferred":true,
+  "outcome":"absent"}` — **it authored NO order block at all**;
+- with no structured intent, the **legacy path** took the verb `buy` on
+  a short book and covered the **entire 76.78** — no `order_intent`
+  row, no `railed` note, no escalation.
+
+So: **stated partial → full close, this time because the desk never
+emitted the intent object.** DOT/SUI were rail escalations; this is
+prose-only intent evaporating into the legacy sizer. Same outcome,
+different cause — and unlike the escalations this one leaves **no
+`railed` audit trail**, so it is invisible to the escalation tally.
+**n=1 on this specific route; watch armed.** If it repeats, the fix is
+to treat a prose-stated partial with an absent order block as a defect
+worth re-prompting, not a silent full close.
+
+Also: `net_of_fees` was IN that decision's brief and the report still
+reasoned in prose about "remaining gain" without quoting a net figure —
+**n=1 of "line present, not quoted"**; too early to judge, the desk has
+had it for one exit.
+
+Rest: adherence 7/7, `side_contradiction` 0, one conf-0.0, outlook
+freshness 11 s, 0 tracebacks. Book: DOT −$0.11, SUI +$0.16,
+TRUMP +$0.55.
+
+---
+
 # 24-HOUR SWEEP — 08-15 16:00Z → 08-16 16:18Z (anchor 16:18:17)
 
 ## 1 · True P&L, flatten-reconciled, both frames
