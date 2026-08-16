@@ -23,6 +23,40 @@ flag comes off.
 
 ---
 
+## Cycle 38 — 18:4xZ (anchor 18:49:27): residual RESOLVED; escalation n=6 — and it lands **exactly** on the divisibility line
+
+**The 0.16 residual I flagged last cycle was transient**: re-read now
+gives **resid 0.02, check ok**, ledger **+$2.66**. It was a mid-flight
+read (a leg booked between the ledger and adapt passes), not drift.
+Flag cleared — and I would rather have re-read it than assume.
+
+**Escalation n=6, and it is the cleanest confirmation yet.** DOT 1308
+authored `reduce 0.5` on a book of 53.086 × 0.76148 = **$40.42** —
+below the ~$50 divisibility line — and the rail escalated to a full
+close: +$0.031 on the leg, run realized **−$0.164**.
+
+Updated table, now 5/5 on the boundary and 6 escalations total:
+
+| book at the reduce | outcome |
+|---|---|
+| DOT $25.5 | escalated (−$0.185) |
+| **DOT $40.4** | **escalated (+$0.031)** |
+| SUI $47.3 | escalated (−$0.133) |
+| SUI $93.8 | honoured (+$0.166) |
+| TRUMP $187 | honoured (+$0.287) |
+
+**Every book under ~$50 escalated; every book over it was honoured.
+5/5, no exceptions.** The desk has now authored `reduce 0.5` into an
+escalation **four times**, three of them stating an intent to keep the
+remainder. This is no longer a "watch" — the **clamp-not-invert** fix
+has all the evidence it needs, and the small-book regime is where this
+fleet spends most of its life.
+
+Rest: adherence 8/8, `net_of_fees` on 4, `side_contradiction` 0, three
+conf-0.0, 0 tracebacks. Book: SUI +$0.27, TRUMP +$0.56, FIL −$0.08.
+
+---
+
 ## Cycle 37 — 18:1xZ (anchor 18:19:27): **second surviving reduce confirms the divisibility line**; day +$2.63
 
 **SUI 1306 `reduce 0.5` on a $93.8 book → honoured, +$0.166.**
