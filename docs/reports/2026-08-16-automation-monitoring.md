@@ -23,6 +23,25 @@ flag comes off.
 
 ---
 
+## Cycle 20 — 09:4xZ (anchor 09:43:18): docs deploy verified NOT to have reverted Plan 26 — and a process risk I took
+
+The docs PR #452 chain rebuilds the image **from main** and replaced
+`20260816-plan26-outlook` with `20260816-notes-0816`. **I did not check
+before deploying whether Plan 26 was merged to main.** It was —
+`2b058b03 feat(outlook) … (#451)` sits one commit below my docs merge,
+and the running image carries 66 `outlook` hits with
+`OUTLOOK_ENABLED=1`; outlooks kept writing straight through the restart
+(2 more by 09:42:29Z, adherence 1/1). No harm done.
+
+**But the risk was real and is structural:** every docs deploy I run
+rebuilds prod from main, so ANY feature deployed from an unmerged
+branch would be **silently reverted by my next routine docs deploy**.
+Standing rule added for this loop: before any deploy, diff the running
+image's feature surface against main, or confirm the feature's PR is
+merged. Cheap check, silent failure mode.
+
+---
+
 ## Cycle 19 — 09:3xZ (anchor 09:35:48): **PLAN 26 IS LIVE** — guide found, checks run, and its baseline table is WRONG
 
 **The guide exists** — on branch `fix/plan26-monitoring-guide`
