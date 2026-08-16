@@ -23,6 +23,17 @@ flag comes off.
 
 ---
 
+## Cycle 17 — 08:5xZ (anchor 08:57:05): quiet — 13 holds, no trades; Plan 26 guide still absent
+
+Both shorts underwater but well inside their stops (LTC −$0.11, entry
+44.09 / mark 44.332 / stop 44.531; DOT −$0.08, 0.7581 / 0.76048 /
+0.775536) — this is exactly the regime #450 now protects: neither run
+has banked cash that could arm a lock against them. One idle_retire
+(1315). 0 tracebacks. Plan 26: guide file absent at 08:57Z, no
+implementation artifacts.
+
+---
+
 ## VERDICT (cross-checked) — the run-level trail is GEOMETRICALLY DEFECTIVE: banked cash arms a lock the live position never earned
 
 **P&L first:** run 1305 banked **+$2.356** against a peak of **+$3.037**
