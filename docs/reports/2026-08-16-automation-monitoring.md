@@ -23,6 +23,19 @@ flag comes off.
 
 ---
 
+## Cycle 26 — 12:0xZ (anchor 12:02:21): quiet — 11 holds; side-coherence live with **0 flags**
+
+No trades. Adherence **11/11** (fifth consecutive 100% window).
+`side_contradiction` present on the decision path since #454 and
+**0 flagged** — the clean state, not a silent failure (the detector was
+proven against the real failing text at deploy). Plan 26 §2: freshness
+crypto 12:00:55Z / us-stock 11:54:06Z ✓, verdict mix adjusted 11 ·
+adopted 7 · overridden 5, **no `algo_fallback`** ✓. Book: LTC −$0.13
+(0.36% from its stop — closest of the three), DOT −$0.12, SUI +$0.07.
+0 tracebacks.
+
+---
+
 ## Cycle 25 — 11:2xZ: first Plan-26 round trip, cross-checked — **+$0.0901 net**, and #450 was NOT exercised
 
 **P&L first (both agents, independently, matching `peak_pnl_usd` to
