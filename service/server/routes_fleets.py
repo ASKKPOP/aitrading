@@ -210,6 +210,144 @@ def fleet_index(fleet: dict, equity: "dict | None") -> "dict | None":
     }
 
 
+# ── Plan 26: slot strategy outlook (read side) ─────────────────────────────
+try:  # single source of truth once the Phase-2 sweeper module lands
+    from outlook_refresher import (OUTLOOK_CADENCE_DEFAULT_MIN,
+                                   OUTLOOK_CADENCE_MIN)
+except ImportError:  # mirrors outlook_refresher
+    OUTLOOK_CADENCE_MIN = {"us-stock": 30, "crypto": 30, "forex": 30}
+    OUTLOOK_CADENCE_DEFAULT_MIN = 60
+
+
+def _next_refresh_by(outlook_ts: "str | None", market: "str | None") -> "str | None":
+    """outlook ts + the market's cadence floor (30 min fast markets, 60 rest)."""
+    if not outlook_ts:
+        return None
+    from datetime import datetime, timedelta, timezone
+    try:
+        base = datetime.strptime(outlook_ts, trading_runs.TS_FMT).replace(
+            tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+    minutes = OUTLOOK_CADENCE_MIN.get(market or "", OUTLOOK_CADENCE_DEFAULT_MIN)
+    return (base + timedelta(minutes=minutes)).strftime(trading_runs.TS_FMT)
+
+
+def _payload_dict(raw: Any) -> dict:
+    try:
+        p = _json.loads(raw or "{}")
+        return p if isinstance(p, dict) else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _fleet_outlook_slots(fleet_id: int, lang: str, dialog_limit: int) -> list[dict]:
+    """Slots × standing outlook × dialog tail (Plan 26 §3.2/§3.5).
+
+    Dialog tails and the latest outlook are fetched PER RUN — never
+    LEFT-JOINed into the slot list (JOIN fan-out corrupts LIMIT/total).
+    run_events is ordered by ts (there is no created_at column)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT slot_index, state, current_run_id FROM fleet_slots "
+            "WHERE fleet_id = ? ORDER BY slot_index", (fleet_id,))
+        slot_rows = [dict(r) for r in cursor.fetchall()]
+        run_ids = sorted({int(r["current_run_id"]) for r in slot_rows
+                          if r.get("current_run_id")})
+        runs: dict[int, dict] = {}
+        if run_ids:
+            marks = ",".join("?" for _ in run_ids)
+            cursor.execute(
+                f"SELECT id, symbol, market, status, config_snapshot_json "
+                f"FROM trading_runs WHERE id IN ({marks})", run_ids)
+            runs = {int(r["id"]): dict(r) for r in cursor.fetchall()}
+        dialogs: dict[int, list[dict]] = {}
+        latest: dict[int, dict] = {}
+        for rid in runs:
+            cursor.execute(
+                """SELECT event_type, ts, payload FROM run_events
+                    WHERE run_id = ? AND event_type IN ('decision', 'outlook')
+                    ORDER BY ts DESC, seq DESC LIMIT ?""",
+                (rid, dialog_limit))
+            tail = [dict(r) for r in cursor.fetchall()]
+            tail.reverse()  # chronological — newest last
+            dialogs[rid] = tail
+            cursor.execute(
+                """SELECT ts, payload FROM run_events
+                    WHERE run_id = ? AND event_type = 'outlook'
+                    ORDER BY ts DESC, seq DESC LIMIT 1""", (rid,))
+            row = cursor.fetchone()
+            if row:
+                latest[rid] = dict(row)
+    finally:
+        conn.close()
+
+    slots: list[dict] = []
+    # Localization slots, localize_desk_cycles-style: collect every free-text
+    # string, one cache-only batch, write back 1:1. Never blocks a request.
+    l10n_strings: list[str] = []
+    l10n_slots: list[tuple[dict, str]] = []
+
+    def _collect(container: dict, key: str) -> None:
+        val = container.get(key)
+        if isinstance(val, str) and val.strip():
+            l10n_strings.append(val)
+            l10n_slots.append((container, key))
+
+    for s in slot_rows:
+        rid = int(s["current_run_id"]) if s.get("current_run_id") else None
+        run = runs.get(rid) if rid else None
+        entry: dict[str, Any] = {
+            "slot_index": s["slot_index"], "state": s["state"],
+            "run_id": rid if run else None,
+            "symbol": run["symbol"] if run else None,
+            "market": run["market"] if run else None,
+            "status": run["status"] if run else None,
+            "thesis": None, "outlook": None, "outlook_ts": None,
+            "next_refresh_by": None, "dialog": [],
+        }
+        if run:
+            thesis = _payload_dict(run.get("config_snapshot_json")).get("thesis")
+            if isinstance(thesis, dict):
+                entry["thesis"] = {
+                    "direction": thesis.get("direction"),
+                    "horizon_hours": thesis.get("horizon_hours"),
+                }
+            newest = latest.get(rid)
+            if newest:
+                outlook = _payload_dict(newest.get("payload"))
+                entry["outlook"] = outlook
+                entry["outlook_ts"] = newest.get("ts")
+                entry["next_refresh_by"] = _next_refresh_by(
+                    newest.get("ts"), run["market"])
+                _collect(outlook, "narrative")
+                _collect(outlook, "invalidation")
+            for ev in dialogs.get(rid) or []:
+                p = _payload_dict(ev.get("payload"))
+                kind = ev["event_type"]
+                line = {
+                    "ts": ev["ts"], "kind": kind,
+                    "text": (p.get("report") if kind == "decision"
+                             else p.get("narrative")) or None,
+                    "plan_adherence": p.get("plan_adherence")
+                    if kind == "decision" else None,
+                    "source": p.get("source") if kind == "outlook" else None,
+                }
+                _collect(line, "text")
+                entry["dialog"].append(line)
+        slots.append(entry)
+
+    if l10n_strings:
+        import market_i18n
+        if market_i18n.normalize_lang(lang) != "en":
+            localized = market_i18n.localize_texts(l10n_strings, lang)
+            for (container, key), value in zip(l10n_slots, localized):
+                container[key] = value
+    return slots
+
+
 def _members_public(fleet_id: int) -> list[dict]:
     members = []
     for m in fleet_planner.list_members(fleet_id):
@@ -509,6 +647,21 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
         finally:
             conn.close()
         return {"events": events}
+
+    @app.get("/api/fleets/{fleet_id}/outlook")
+    async def fleet_outlook(fleet_id: int, lang: str = "en",
+                            dialog_limit: int = 12,
+                            authorization: str = Header(None)):
+        """Plan 26 Phase 3: per-slot standing plan + desk dialog tail.
+
+        Read-only composition of fleet_slots × trading_runs × run_events;
+        narrative/report/invalidation localized cache-only (English
+        fallback, never blocking)."""
+        agent = _auth(authorization)
+        _fleet_or_404(fleet_id, agent)
+        limit = max(1, min(int(dialog_limit), 48))
+        return {"fleet_id": fleet_id,
+                "slots": _fleet_outlook_slots(fleet_id, lang, limit)}
 
     @app.get("/api/fleet/research")
     async def fleet_research(authorization: str = Header(None)):
