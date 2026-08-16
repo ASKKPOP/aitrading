@@ -72,6 +72,19 @@ treated like `dormant` (will resume). **15 of 25 sweeper outlooks (60%)
 went to runs that can never trade again**, each an LLM call recurring
 ~every 33 min. Intended path, real waste; fix is one condition.
 
+**#454 DEPLOYED — 11:4xZ addendum.** PR MERGED (`4bec711`), image
+`sooppiy-backend:20260816-side-coherence` live. Verified by REPLAYING
+THE REAL FAILING TEXT in the running container:
+- FIL 1322 cyc9 *"limited upside for the current long trade"* on a −76.66
+  book → **caught**: "a long claim on a SHORT position".
+- FIL 1305 cyc9 *"Given we are long"* on a −304 book → **caught**.
+- coherent short text → **None** (no false positive).
+- flat book → **None** (exemption holds).
+Plan 26 survived the rebuild (66 `outlook` hits, `OUTLOOK_ENABLED=1`) —
+the deploy-rebuilds-from-main rule applied. 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260816-plan26-guide`.
+Session ship count: 13 PRs (#439–#454).
+
 **SHIPPED THIS CYCLE:** side-coherence detection — the desk's prose is
 checked against the sign of its own book, journaled on the decision,
 and quoted back next cycle (#441 pattern). Detection only, never blocks
