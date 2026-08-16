@@ -3640,6 +3640,62 @@ def _reduce_geometry_line(run: dict, pos_qty: float) -> str:
         return ""
 
 
+def _net_of_fees_line(run: dict, pos_qty: float) -> str:
+    """Put the round trip in front of the desk BEFORE it authors an exit.
+
+    Measured 2026-08-16 across three runs, 3/3: the desk REASONS IN GROSS
+    and BOOKS IN NET. FIL 1322 cycle 9 wrote "Lock the $0.10 profit" — the
+    net was +$0.0143. SUI 1306 cycle 11 wrote "captures the $0.12 gain" —
+    net +$0.0164. DOT 1308's first bank captured $0.0311 of gross move and
+    paid $0.0303 in fees: it banked the fee, netting +$0.0008. Across the
+    six profitable staged tranches that day, fees ate 54% of gross (97% on
+    DOT's first, 77% on FIL's second), and a single full close at each
+    run's FIRST reduce decision would have beaten the actual staging in
+    every case — $0.256 forgone against $0.0954 earned.
+
+    Every one of those decisions was taken on a number 3-7x larger than
+    the one that reached the ledger, because nothing in the prompt ever
+    showed the desk its own round trip. This supplies it: the position's
+    round-trip cost at the live mark, the open P&L NET of it, and — when
+    the gain does not clear the round trip — that fact stated plainly.
+
+    Information only; it authors no order and blocks nothing. Held books
+    only, fail-soft to ""."""
+    if not pos_qty:
+        return ""
+    try:
+        pnl = compute_run_pnl(run) or {}
+        if not pnl.get("mark_age_ok"):
+            return ""
+        pos = pnl.get("position") or {}
+        mark = float(pos.get("current_price") or 0)
+        if mark <= 0:
+            return ""
+        try:
+            from fees import fee_rate as _mkt_fee
+            rate = float(_mkt_fee(run.get("market")))
+        except Exception:  # noqa: BLE001
+            rate = 0.001
+        notional = abs(float(pos_qty)) * mark
+        round_trip = notional * rate * 2.0
+        gross = float(pnl.get("unrealized") or 0)
+        net = gross - round_trip
+        bits = [f"Fee reality: closing this book costs a round trip of "
+                f"${round_trip:,.4f}. Your open P&L is ${gross:,.4f} gross "
+                f"= ${net:,.4f} NET of that."]
+        if gross <= round_trip:
+            bits.append(
+                "That gain does NOT cover its own round trip — banking it "
+                "here books a loss, whatever the gross number says.")
+        bits.append(
+            "Quote the NET figure when you reason about an exit, and size "
+            "a partial so its OWN slice clears its OWN round trip; a "
+            "tranche too small to pay for itself is a fee donation.")
+        return " ".join(bits) + "\n"
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _exit_size_line(run: dict, pos_qty: float) -> str:
     """Scale the adverse move the desk is reacting to, and name the verb.
 
@@ -4035,6 +4091,7 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("brake_distance", _brake_distance_line(run, pos_qty)),
         ("entry_rail", _entry_rail_line(run, pos_qty)),
         ("reduce_geometry", _reduce_geometry_line(run, pos_qty)),
+        ("net_of_fees", _net_of_fees_line(run, pos_qty)),
         ("exit_size", _exit_size_line(run, pos_qty)),
         ("mark_freshness", _mark_freshness_line(run, pos_qty)),
         ("big_trader", _big_trader_line(run)),

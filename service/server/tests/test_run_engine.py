@@ -3229,3 +3229,66 @@ class SideCoherenceTests(unittest.TestCase):
     def test_the_brief_line_is_silent_when_coherent(self):
         self.assertEqual(run_engine._side_contradiction_line(
             "our existing short position", -304.0), "")
+
+
+class NetOfFeesExitTests(unittest.TestCase):
+    """2026-08-16, three runs, 3/3: the desk REASONS IN GROSS and BOOKS IN
+    NET. FIL 1322 cyc9 wrote "Lock the $0.10 profit" — net was +$0.0143.
+    SUI 1306 cyc11 wrote "captures the $0.12 gain" — net +$0.0164. DOT
+    1308's first bank captured $0.0311 gross and paid $0.0303 in fees:
+    net +$0.0008. Across six profitable staged tranches that day fees ate
+    54% of gross. Every staging decision was taken on a number 3-7x the
+    one that reached the ledger.
+
+    This line puts the round trip in front of the desk BEFORE it authors
+    the exit: what the open P&L is worth net, and what a tranche must
+    clear to be worth taking at all."""
+
+    def _pnl(self, unreal, qty, mark):
+        return {"mark_age_ok": True, "unrealized": unreal,
+                "position": {"quantity": qty, "current_price": mark}}
+
+    def test_it_states_the_net_and_the_round_trip(self):
+        # 76.66 @ 0.68 = $52.1 notional; round trip 2 x 0.045% = $0.047.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(0.10, -76.66, 0.68)):
+            line = run_engine._net_of_fees_line({"id": 1, "market": "crypto"},
+                                                -76.66)
+        self.assertIn("round trip", line)
+        self.assertIn("net", line.lower())
+
+    def test_a_gain_under_its_round_trip_is_named_as_such(self):
+        # gross $0.02 on a $52 book: the round trip is larger than the gain.
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(0.02, -76.66, 0.68)):
+            line = run_engine._net_of_fees_line({"id": 1, "market": "crypto"},
+                                                -76.66)
+        self.assertIn("does NOT cover", line)
+
+    def test_a_gain_well_clear_of_fees_is_not_warned(self):
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value=self._pnl(3.20, -304.0, 0.68)):
+            line = run_engine._net_of_fees_line({"id": 1, "market": "crypto"},
+                                                -304.0)
+        self.assertNotIn("does NOT cover", line)
+
+    def test_a_flat_book_says_nothing(self):
+        self.assertEqual(
+            run_engine._net_of_fees_line({"id": 1, "market": "crypto"}, 0.0), "")
+
+    def test_a_stale_mark_says_nothing(self):
+        with patch.object(run_engine, "compute_run_pnl",
+                          return_value={"mark_age_ok": False}):
+            self.assertEqual(run_engine._net_of_fees_line(
+                {"id": 1, "market": "crypto"}, -76.66), "")
+
+    def test_it_fails_soft(self):
+        with patch.object(run_engine, "compute_run_pnl",
+                          side_effect=RuntimeError("down")):
+            self.assertEqual(run_engine._net_of_fees_line(
+                {"id": 1, "market": "crypto"}, -76.66), "")
+
+    def test_it_is_WIRED_into_the_composed_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_net_of_fees_line", src)
