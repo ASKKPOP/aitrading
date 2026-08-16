@@ -23,6 +23,24 @@ flag comes off.
 
 ---
 
+## Cycle 27 — 12:1xZ (anchor 12:19:26): quiet — FIL 1322 re-entered (4th short open); no closes
+
+Short 17-min window. FIL 1322 re-shorted 76.78 @ 0.6802 (12:16:33Z,
+`revised`) — its second entry after this morning's +$0.0901 round trip;
+stop 0.695164. **No closed-trade tape**, so no agent dispatch. Plan 26
+§2 green: freshness crypto 12:16:32Z / us-stock 12:17:16Z ✓, verdicts
+adopted 2 · adjusted 1, **no `algo_fallback`** ✓, adherence 2/2,
+`side_contradiction` **0 flags**. Book: 4 shorts (LTC −$0.10,
+DOT −$0.09, SUI +$0.09, FIL +$0.01). 0 tracebacks.
+
+**Note for the next re-entry watch:** this is exactly the shape #450
+was built for — a run that banked a winner and re-entered. Its realized
+is +$0.0901 and the trail arm is $2.09, so the trail stays inert
+(excursion 23× short of the arm); #450 remains **untested** rather than
+exercised.
+
+---
+
 ## Cycle 26 — 12:0xZ (anchor 12:02:21): quiet — 11 holds; side-coherence live with **0 flags**
 
 No trades. Adherence **11/11** (fifth consecutive 100% window).
