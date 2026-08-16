@@ -23,6 +23,28 @@ flag comes off.
 
 ---
 
+## #457 DEPLOYED — 19:5xZ: clamp-not-invert, verified by replaying every real escalation
+
+PR MERGED (`d9ad692`), image `sooppiy-backend:20260816-clamp-not-invert`.
+Verified in the running container against **the actual books from
+today's tape**:
+
+| real case | before | now | remainder |
+|---|---|---|---|
+| SUI $47.32 (desk asked 0.5, bound 47.2%) | full close | **sf 0.4717 `clamped`** | **$25.00 kept** |
+| DOT $40.42 | full close | **sf 0.3815 `clamped`** | **$25.00 kept** |
+| DOT $25.47 (max shed 1.8%) | full close | **sf 1.0 `closed`** | $0 — correct, no sliver |
+| SUI $93.8 (already viable) | 0.5 untouched | **0.5, `railed: {}`** | $46.90 — untouched |
+
+Both inversions that took the desk's stated "keep the remainder" intent
+and did the opposite now preserve it, the un-viable book still closes,
+and the healthy book is untouched. Deploy-rebuild check applied: Plan 26
+(66, flag on) and #455 net-of-fees (2) both survived. 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260816-sweep-docs-0816`.
+**Session ship count: 15 PRs.**
+
+---
+
 ## Cycle 39 — 19:1xZ (anchor 19:19:27): boundary now **6/6** — TRUMP honoured a second reduce on a $93 book
 
 TRUMP 1329 `reduce 0.5` again, book 65.72 × 1.4178 = **$93.2**, above
