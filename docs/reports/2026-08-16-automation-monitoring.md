@@ -23,6 +23,37 @@ flag comes off.
 
 ---
 
+## Cycle 43 — 21:1xZ (anchor 21:19:42): **AUDCHF FLATTEN FIRED ON TIME — the longest-standing watch closes**
+
+**The 08-15 watch resolves affirmatively.** Queued flatten executed
+**21:00:04Z — four seconds after the FX open**, exactly as designed:
+
+- 20:56:48Z `gate_skip {"stage":"flatten","reason":"market closed —
+  flatten queued to the next open"}` — the queue holding, correctly.
+- 21:00:04Z `trade` sell 51.647 AUDCHF @ 0.57543 →
+  **+$0.028** (matches the +$0.030 uPNL I captured pre-flatten last
+  cycle — the before-picture was worth taking).
+- 21:00:04Z `adapt {"trigger":"flatten_close"}` — journal-only, does
+  NOT feed the loss ladder (the #249 behaviour Agent B verified).
+- 21:00:04Z `run_status → stopped, reason fleet_stop_all`.
+
+**Run 1147 closed at +$0.155 realized; fleet 33 is now `stopped`.**
+A flatten parked for ~36 h across a weekend fired within 4 s of the
+session opening. No stall, no missed trigger — the mechanism does what
+the handoff claimed. **Watch closed; fleet 33 drops off the standing
+list.**
+
+**Process note against myself:** my first query this cycle was
+malformed (a `SELECT ... status ...` with no `FROM`) and returned
+nothing but `NOW`. I re-ran it rather than reporting "no data" — a
+silent empty result is exactly how a missed flatten would have looked.
+
+Fleet 35: 10 decisions, adherence 10/10, `side_contradiction` 0,
+clamp count still 0 (no reduce authored yet), 0 tracebacks. Book has
+moved favourably: TRUMP +$0.61, FIL +$0.63, AVAX +$0.22.
+
+---
+
 ## Cycle 42 — 20:4xZ (anchor 20:49:31): quiet — **AUDCHF flatten is T-minus ~10 min**, position confirmed live
 
 11 holds, no trades, 0 tracebacks; adherence 11/11,
