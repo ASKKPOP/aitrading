@@ -33,11 +33,13 @@ authors every order, §7c two-axis attribution, §7e two-subagent outcome rules)
    SELECT JSON_UNQUOTE(JSON_EXTRACT(payload,'$.plan_adherence')) a, COUNT(*)
    FROM run_events WHERE event_type='decision' AND ts > NOW() - INTERVAL 1 HOUR GROUP BY a;
    ```
-   **Do NOT read `NULL` as a regression.** Measured at the 2026-08-16 flip: `plan_adherence` and `outlook`
-   ride the decision only when the desk model actually emits those fields, and the local model
-   (`gpt-oss:120b`) complies on a minority of cycles. In the first 30 minutes: 181 decisions, 3 cycle-authored
-   outlooks, 3 adherence stamps. The finding to chase is **compliance trending to zero**, not a NULL row.
-   `NULL` on a decision whose `scores` are also absent is simply a cycle the model did not answer in full.
+   **Do NOT read `NULL` as a regression, and do not average across a restart.** `plan_adherence` and
+   `outlook` ride a decision only when the desk model emits those fields. Measured at the 2026-08-16 flip,
+   the aggregate looked alarming (184 decisions, 7 stamps) purely because ~182 of those decisions landed in a
+   **~3-minute catch-up burst** right after the worker restart, when every run came due at once. In the
+   steady state that followed, stamping was **2 of 2**. Always bucket by time before judging coverage; a
+   post-restart window is not a sample. The finding to chase is **stamping trending to zero in steady
+   state**, not a NULL row and not a restart burst.
 
 ## 2 · Ongoing per-cycle checks (add to the normal ~30-min sweep)
 
@@ -75,19 +77,24 @@ Taken on prod immediately after `OUTLOOK_ENABLED=1`, so drift is measurable rath
 
 | Signal | Before flip (24 h) | First ~30 min after |
 |---|---|---|
-| decisions | 395 | 181 |
+| decisions | 395 | 184 (≈182 in one post-restart burst) |
 | action mix | hold 91.1% · sell 5.3% · retire 2.5% · buy 1.0% | hold 91.7% · sell 4.4% · retire 3.9% |
 | avg confidence | 0.505 | 0.500 |
 | decisions missing `scores` | 7 (1.8%) | 5 (2.8%) |
-| cycle-authored outlooks | — | 3 |
-| sweeper-authored outlooks | — | 3 |
-| `basis.verdict` seen | — | adopted, adjusted, overridden |
+| cycle-authored outlooks | — | 5 (overridden 4 · adopted 1) |
+| sweeper-authored outlooks | — | 5 (adjusted 3 · adopted 2) |
+| adherence stamps | — | 7 (steady state 2/2) |
+| crypto outlook freshness | — | 0.2 min (floor 30) |
 
 Two conclusions from this table. **The prompt change did not degrade decisions** — action mix and average
-confidence are flat, which is the thing that would have cost money. **Outlook coverage is thin**: the model
-emits the block on a minority of cycles, so "every outcome carries its plan-vs-action reason" is an
-aspiration, not yet a fact. If coverage does not rise, the lever to pull is prompt compliance (or a stronger
-tier for the desk), not more rails.
+confidence are flat, which is the thing that would have cost money. **Coverage could not be judged in the first half hour** —
+the restart burst dominates the aggregate, and the steady-state sample (2 decisions) is too small to
+conclude from. Establish the real rate over a full session before claiming "every outcome carries its
+plan-vs-action reason"; if steady-state stamping does turn out low, the lever is prompt compliance (or a
+stronger desk tier), not more rails.
+
+Note the verdict mix already refutes rubber-stamping: on cycle-authored plans the desk **overrode** the
+algorithmic targets 4 times out of 5. The discussion is real.
 
 The stop-echo invariant was verified live at the flip: run 1297's outlook carried `stop_ref_px 44.5309`,
 byte-equal to the position's live stop, while the algorithmic candidate's own stop was null — i.e. the code
