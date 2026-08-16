@@ -23,6 +23,27 @@ flag comes off.
 
 ---
 
+## #455 DEPLOYED — 15:5xZ: the net-of-fees line, verified on the exact book that caused it
+
+PR MERGED (`0f2d165`), image `sooppiy-backend:20260816-net-of-fees`.
+Verified by rendering DOT 1308's REAL first-bank book (44.49 @ 0.7574)
+inside the running container:
+
+> *"Fee reality: closing this book costs a round trip of **$0.0303**.
+> Your open P&L is **$0.0311** gross = **$0.0008** NET of that. Quote
+> the NET figure when you reason about an exit, and size a partial so
+> its OWN slice clears its OWN round trip; a tranche too small to pay
+> for itself is a fee donation."*
+
+That is the trade the desk described to itself as banking a gain. The
+line now puts $0.0008 in front of it **before** it authors the exit.
+Deploy-rebuild check applied: Plan 26 (66 hits, flag on) and
+side-coherence (6 hits) both survived. 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260816-side-coherence`.
+**Session ship count: 14 PRs (#439–#455).**
+
+---
+
 ## Cycle 33 — 15:1xZ (anchor 15:19:31): quiet — 7 holds, no closes; new run 1330 built
 
 Adherence 7/7, `side_contradiction` 0, outlook freshness 15:16:23Z
