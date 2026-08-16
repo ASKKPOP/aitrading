@@ -23,6 +23,38 @@ flag comes off.
 
 ---
 
+## Cycle 30 — 13:4xZ (anchor 13:49:27): LTC TTL-flattened −$0.077 — but **#448 LANDED**: the desk saw the deadline and said so
+
+**P&L: run 1297 flattened by `stop_event:at_time` at 13:46:22Z**, cover
+0.4536 @ 44.24 = **−$0.077** (run total −$0.151). Day ledger
++$2.55 → **+$2.47**.
+
+**This is the same class as the 08-15 SUI at_time flatten** — the case
+#448 (`run_expiry`) was built for — so instead of re-dispatching two
+agents on a solved class, I tested the one NEW question directly: **did
+the desk USE the deadline it can now see?**
+
+**It did.** Its 12:49 report reads *"We hold the short as planned,
+awaiting a drop toward the 42.78 target **before timeout**"* — the desk
+reasoning explicitly against run life. Its final brief carried
+`run_expiry` alongside `standing_plan`. On 08-15 the desk authored a
+24 h thesis on an 8 h vehicle because nothing told it; today it planned
+around the clock it was given. **#448 is landing.**
+
+**What it did NOT do is act on it.** Knowing the deadline, it held to
+the end rather than closing ahead of a flatten it could see coming
+(`horizon_until` 11:51 had already passed; `at_time` 13:46 was
+rendered). Seeing the deadline changed the NARRATIVE, not the ACTION —
+which is the same gross/net-blindness shape A found: information
+reaches the report but not the order. Logged, n=1 on this specific
+"saw-it-held-anyway" pattern; not shipping on one instance.
+
+Otherwise: adherence 4/4 (`followed` ×4), `side_contradiction` 0,
+Plan 26 §2 green (crypto 13:45:06Z / us-stock 13:35:46Z, no
+`algo_fallback`). Book: SUI −$0.03, FIL +$0.08. 0 tracebacks.
+
+---
+
 ## CROSS-CHECK (A × B) — one root cause from two axes: **fee blindness**, desk-side and rail-side
 
 **P&L: −$0.1764 fee-complete.** B's attribution: adverse price move
