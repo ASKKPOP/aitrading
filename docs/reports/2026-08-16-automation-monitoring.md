@@ -23,6 +23,45 @@ flag comes off.
 
 ---
 
+## Cycle 46 — 22:4xZ (anchor 22:49:29): **prediction CONFIRMED** — and the clamp's first live test FAILED to fire
+
+**1 · The residual hypothesis is confirmed, cleanly.** I predicted run
+1329's missing adapt would land on its next cycle. It did:
+`22:20:57Z adapt {"trigger":"pending_close","signal_id":1415,
+"realized":1.0637}` — the exact leg, one cycle later. Today's count is
+now **22 adapt / 23 legs**, the gap again being precisely the newest
+un-ingested close (FIL, 22:49:14Z), and **resid fell 1.07 → 0.58**,
+tracking that leg's size. **Resid = un-ingested closing legs. Settled,
+and my earlier "mid-flight read" story is retired.**
+
+**2 · FAILED — the clamp did not apply where it should have.**
+FIL 1322 authored `reduce 0.5` at 22:49:13Z and the payload reads
+`{"size_frac":{"from":0.5,"to":1.0,"why":"dust_remainder_closed"}}` —
+**escalated to a full close, not clamped**, despite #457 being live
+since 19:56Z. Cover 38.32 @ 0.6661 = **+$0.579** (run 1322 now
++$1.411 realized).
+
+Why: book = 38.32 × 0.6661 = **$25.53**, so max non-escalating reduce
+= 1 − 25/25.53 = **2.1%**, which is below the `_MEANINGFUL_PARTIAL`
+0.25 guard I shipped — so the code took the `dust_remainder_closed`
+branch **by design**. This is the DOT $25.47 case exactly.
+
+**So the clamp behaved correctly, and my watch framing was wrong:**
+I have been waiting for "the first live clamp" as if any sub-line
+reduce would produce one. It will not — only books between **$33.3
+and $50** can clamp (below $33.3 the max reduce is under 25%; above
+$50 nothing escalates). That is a **narrow band**, and today's tape had
+exactly two books in it ($40.4, $47.3). **Honest consequence: #457 will
+fire rarely.** It is still right — it converts the two worst
+authorship inversions of the day — but I over-sold its reach, and the
+correction belongs on the record.
+
+Book: AVAX only (−$0.02 uPNL... mark 6.3167 vs 6.345 entry = +$0.22).
+Day ledger **+$5.63**. 10 decisions, adherence 10/10,
+`side_contradiction` 0, 0 tracebacks. Still zero forex runs.
+
+---
+
 ## Cycle 45 — 22:1xZ (anchor 22:19:29): TRUMP closes **+$1.064**, the day's biggest leg — and I finally have the RIGHT explanation for the residual
 
 **P&L: TRUMP 1329 final cover 32.86 @ 1.394 = +$1.064.** The run's full
