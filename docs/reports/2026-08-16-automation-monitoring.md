@@ -23,6 +23,108 @@ flag comes off.
 
 ---
 
+# 24-HOUR SWEEP — 08-15 16:00Z → 08-16 16:18Z (anchor 16:18:17)
+
+## 1 · True P&L, flatten-reconciled, both frames
+| frame | ledger | flattens | resid |
+|---|---|---|---|
+| **UTC 08-16** | **+$2.19** | 2 | 0.00 ok |
+| KST day (08-15 15:00Z→) | **+$2.17** | 5 | 0.01 ok |
+
+**Open book carries the day**: 4 shorts, all modestly adverse
+(FIL −$0.16, DOT −$0.25, SUI −$0.17, TRUMP −$0.17 ≈ **−$0.75 unrealized**).
+Realized +$2.19 against −$0.75 open = **+$1.44 mark-to-market.**
+
+## 2 · SHAPE of the day — one trade is the day
+| run | db_pnl | share |
+|---|---|---|
+| **FIL 1305** | **+$2.497** | **114% of realized** |
+| SUI 1306 +$0.136 · FIL 1322 +$0.137 · FIL 1286 +$0.049 · JTO 1303 +$0.033 · SUI 1296 +$0.029 | +$0.384 | 18% |
+| ETH 1302 −$0.007 · JTO 1304 −$0.035 · LTC 1297 −$0.131 · DOT 1308 −$0.146 | −$0.319 | −15% |
+
+**Strip FIL 1305 and the fleet is +$0.065 across nine other runs** — a
+rounding error on ~$10k of capital. **The day is one good short, not a
+working system.** Wins are small and fee-heavy; losses are the two
+forced exits (LTC TTL-flatten, DOT dust-escalation) plus scratches.
+Stated plainly: **the shape is "one outlier funds twelve hours of
+churn."**
+
+## 3 · Every fix RE-PROVEN in the running container (`20260816-net-of-fees`)
+All 12 present: #439 `_cooldown_blocks`(3) · #440 `min_size_frac`(4) ·
+#441 discard note(1) · #443 `_reduce_geometry_line`(2) · #446 unit
+slip(1) · #447 DIRECTION COHERENCE(1) · #448 `_run_expiry_line`(2) ·
+#449 `stop_mechanism`(1) · #450 `baseline_pnl`(3) · #454
+`_side_contradiction`(6) · #455 `_net_of_fees_line`(2) · Plan 26
+outlook(72, flag on). **0 tracebacks in 24 h.**
+
+## 4 · Behaviour over the day — adversarial, fix by fix
+**PROVEN AT SCALE:**
+- **#438 briefs: 366/366 decisions (100%)** — no regression in 24 h.
+- **Plan 26: 184 outlooks**, adherence on 91 decisions; freshness never
+  breached; **no `algo_fallback` all day**.
+- **#443 causal** (proven cycle-24: non-canonical fractions under the
+  stated bound, 4/4 vs 150/150 canonical before).
+- **#440: 6 floor raises** — repeated, not n=1.
+
+**PROVEN ONCE, HONESTLY n=1:** #446 unit-slip converter (its behaviour
+was proven at deploy by replay, but **0 live fires in 24 h** — no
+fraction-form bracket has occurred since).
+
+**DEPLOYED BUT NEVER EXERCISED — say it plainly:**
+- **#439 BYPASSED: 0 occurrences.** No stop hit during a cooldown all
+  day. Code-verified, behaviour unproven.
+- **#449 `stop_mechanism`: 0 rows.** Its silence *did* do work (it is
+  how B proved the FIL flatten was the configured trail, not the
+  ratchet) — but the discriminator itself has never fired.
+- **#450: 0 exercises.** Confirmed twice; both re-entries had
+  excursions 13–23× short of the arm. **Untested, not verified.**
+- **#454 side-coherence: 0 flags in 4.5 h live.** The detector was
+  proven against the real failing text at deploy; zero live hits since.
+- **#455: deployed 15:5xZ, 0 live renders yet** (no held-book decision
+  since). Verified by replay only.
+
+**DID NOT MOVE ANYTHING — and what happens instead:**
+- **#443 did NOT prevent the escalations it exists to prevent.** Two
+  more today (DOT 13:09, SUI 14:25). SUI is the damning one: the line
+  RENDERED in that cycle's brief stating a 47.2% bound and the desk
+  authored **50.0%**. → **Queued: clamp an over-bound reduce to the
+  bound instead of inverting it to a full close** (n=2 authorship
+  inversions), plus make the line **prospective** (warn at the cycle
+  that creates the trap — DOT's case).
+- **#448 landed in NARRATIVE, not ACTION.** LTC's desk wrote *"before
+  timeout"* — it saw the deadline — then held into the flatten anyway.
+  Information reaches the report, not the order. n=1; watching.
+
+## 5 · Watch triggers
+`conf 0.0` no-LLM-verdict: **13 in 24 h** (my earlier count of 5 was
+wrong; A found 9 by mid-afternoon, the day closed at 13). Escalations
+**n=5 cumulative, sign 2:2 → NOISE on P&L, but 2 authorship
+inversions.** Empty-why arms n=6. AUDCHF 1147 still pending Sunday
+21:00Z; fleet 33 `stopping`; fleet 35 `active`.
+
+## 6 · Regression check vs the prior day
+Yesterday's shipped counters all still present and none regressed
+(brief coverage 100% both days; recall serving; expectancy gate active).
+**New regressions: none.** New defects found today: 4 (trail geometry
+#450, side confusion #454, gross-vs-net #455, escalation inversion —
+queued).
+
+## 7 · OWNER OBLIGATION — today's losses → today's solutions
+| loss | cause | solution |
+|---|---|---|
+| DOT −$0.146 | banked 2/3 at ~net-zero on gross-framed numbers, last third forced out | **#455 SHIPPED** (net-of-fees in front of the desk) |
+| LTC −$0.131 | held into a TTL flatten it could see | #448 landed in narrative; escalation queued if n≥2 |
+| SUI forced close | desk authored 50% against a rendered 47.2% bound | **clamp-not-invert QUEUED** (reproduced n=2) |
+| FIL 1322 fee drag (51% of gross) | gross-vs-net blindness | **#455 SHIPPED** |
+| the day's *structural* loss (one trade = 114%) | winners capped, losers forced | truthful-exit/#446/#455 all target it; **the測 test is whether tomorrow's realized comes from >1 run** |
+
+**Un-shipped by choice, with reason:** `BREAKEVEN_FEE_RATE` (2.22× wrong
+on crypto, worth +$0.131 on DOT alone) — Agent B requires a fleet-wide
+replay first because the same change also forfeits better exits. Not
+shipping a rail on one run.
+
+---
+
 ## #455 DEPLOYED — 15:5xZ: the net-of-fees line, verified on the exact book that caused it
 
 PR MERGED (`0f2d165`), image `sooppiy-backend:20260816-net-of-fees`.
