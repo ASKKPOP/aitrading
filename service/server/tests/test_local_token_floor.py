@@ -35,11 +35,18 @@ class LocalTokenFloor(unittest.TestCase):
         os.environ["ANTHROPIC_API_KEY"] = "test-key"
         llm_client.invalidate_admin_llm_settings_cache()
         self.calls = []
+        self.tiers = []
         self._real_openai = llm_client._generate_openai_compatible
         self._real_anthropic = llm_client._generate_anthropic
 
-        def fake(ap, prompt, system, max_tokens, temperature):
+        def fake(ap, prompt, system, max_tokens, temperature, tier=None):
+            # `tier` is passed through so the decision tier can carry its own
+            # wall-clock cap. A fake without it raises TypeError, which
+            # generate_text's bare except swallows into a None return — the
+            # same shape a provider timeout takes, which is exactly how this
+            # broke silently. Record it so the pass-through stays covered.
             self.calls.append((ap.spec.name, max_tokens))
+            self.tiers.append(tier)
             return "ok", (1, 1)
         llm_client._generate_openai_compatible = fake
         llm_client._generate_anthropic = fake
@@ -54,6 +61,13 @@ class LocalTokenFloor(unittest.TestCase):
                 os.environ[k] = v
         llm_client.invalidate_admin_llm_settings_cache()
         self.tmp.cleanup()
+
+    def test_the_tier_reaches_the_generator(self):
+        from platform_settings import set_setting
+        set_setting("llm_decision_provider", "local")
+        llm_client.invalidate_admin_llm_settings_cache()
+        assert generate_text("p", max_tokens=200, tier="decision") == "ok"
+        assert self.tiers == ["decision"]
 
     def test_local_floors_small_budgets(self):
         from platform_settings import set_setting
