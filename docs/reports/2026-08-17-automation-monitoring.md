@@ -137,6 +137,36 @@ cycle had run yet.
 AUDCHF 1147 **stopped** and fleet 33 **stopped** — both closed, dropping off
 the list. Unit-slip converter 3 fires, dust clamp 1 fire, `no_verdict` 1 fire.
 
+### #460 DEPLOYED and verified — 02:31:57Z, image `20260817-loss-floor-cfg` (merge `80460a3`)
+
+Re-ran the exact measurement that found the defect: **20/20 running runs now
+floor correctly, 0 mismatches.** Run-1344-class floor is **$10.3149**, and the
+brief no longer renders the wound line on run 1344's exact numbers.
+
+Second pass, boundary behaviour (guarding against having simply disabled the
+floor):
+
+| run total | wound rendered? |
+|---|---|
+| −$1.25 | no |
+| −$9.99 | no |
+| **−$10.32** | **yes** — "past the $-10.31 floor. That is 241% of one ordinary day" |
+| −$25.00 | yes — 584% of one ordinary day |
+
+No-budget fallback still fires at $0.99; a $50 budget still keeps the owner's
+dollar floor. #459 diagnostic, dust clamp and the Plan 26 flag all survived
+the from-main rebuild. 0 tracebacks, RestartCount 0.
+
+**Process defect found in my own chain script:** it ran `scripts/deploy.sh`
+from the primary working tree, which sits on `feat/i18n-followups` and has no
+`scripts/` directory — the merge landed and the deploy silently did not run.
+Prod sat on the old image until I checked the running container rather than
+trusting the chain's exit code. Deploys must run from the `wt-recall`
+worktree. **A green exit code from a chain is not evidence that the deploy
+happened; the running image is.**
+
+**Session ship count: 17 PRs.**
+
 ---
 
 ## #459 DEPLOYED — 01:1xZ: the no-verdict diagnostic is live and discriminating
