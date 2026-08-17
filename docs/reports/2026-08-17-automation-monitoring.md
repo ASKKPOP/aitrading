@@ -9,6 +9,32 @@ arm-reachability rail.
 
 ---
 
+## #459 DEPLOYED — 01:1xZ: the no-verdict diagnostic is live and discriminating
+
+PR MERGED (`32a66a8`), image `sooppiy-backend:20260817-no-verdict-diag`.
+Verified in the running container — all four failure modes separate
+correctly:
+
+| input | classified |
+|---|---|
+| `None` | **empty** (chars 0) |
+| `"I cannot answer"` | **no_json** (15) |
+| `{"action": "hold", "sc` | **truncated** (22) |
+| `{"a": x}` | **malformed** (8) |
+
+Deploy-rebuild check applied: clamp (1), net-of-fees (2), Plan 26 flag
+(on) all survived. 0 tracebacks. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260817-notes-0816-late`.
+
+**What this buys:** from the next no-verdict cycle onward the tape says
+WHICH failure occurred. The 5.4× regression stops being an argument and
+becomes a count. **Next sweep reads the `no_verdict` kind mix** — that
+is the deciding evidence, and I will not propose a fix before it.
+
+**Session ship count: 16 PRs.**
+
+---
+
 ## Cycle 2 — 00:4xZ (anchor 00:49:29): quiet on tape; **shipping the diagnostic I recommended last cycle**
 
 12 decisions, 2 no-verdict (17%), no trades, no closes, clamp holds at
