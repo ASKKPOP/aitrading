@@ -7,6 +7,62 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 8 — 05:2xZ (anchor 05:27:14): quiet on trades; **#463 proved itself live, and the no-verdict tape is now decisive enough to act on**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **3h03m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00). 10 decisions, all
+`hold`. 0 salvage fires.
+
+### WORKED — #463's branch fired live, exactly as designed
+
+Last cycle I refused to call #463 verified because the branch it changes had
+never executed on prod. It has now:
+
+> **run 1347, 05:11:45Z** — `"confidence": 0.0, "conviction": null,
+> "scores": null` and **no `plan_adherence` key at all**. The paired
+> `no_verdict` event fired at the same second.
+
+Before the fix that cycle would have been journaled `plan_adherence:
+"revised"` — a plan revision by a desk that said nothing. Adherence since
+#463: **followed x14, deviated x1, NONE x1** — and the NONE is the silent
+cycle, where it belongs.
+
+### The measurement that unblocks the last unexplained class
+
+Diagnostic fires since #459, n=4:
+
+| kind | count |
+|---|---|
+| **empty** | **3 (75%)** |
+| truncated | 1 (25%) |
+
+Truncation — the class #462 now salvages — explains a quarter. **`empty` is
+the dominant class, and my own instrument could not tell what it meant.** The
+light path's decision call sits in a bare `except` that sets `text = None`,
+so a call that RAISED and a model that RETURNED NOTHING file as the same
+event. Those need opposite fixes: one is infrastructure, one is prompt or
+model behaviour.
+
+**Shipped as [#465]**: a raised call files as `kind: "error"` with a bounded
+note naming the exception class; a genuinely empty response is still
+`empty`; and **text always wins** — a retry that succeeded is never filed as
+an error. 6 tests fail-before, **4 mutants killed** (err ignored → red;
+note unbounded → red; err checked before text → red; capture unwired → red).
+
+Why this clears the bar when three findings last cycle did not: this changes
+**no decision and no order**. The bar I have been holding is for behaviour —
+rails, sizing, funding — where a wrong fix costs money. An instrument that
+cannot distinguish its own dominant failure class costs nothing to sharpen
+and is the only thing standing between me and an answer. Same reasoning as
+#459 itself.
+
+### Recommendation
+
+**Read the kind mix again once `error` has fired.** If `error` dominates,
+the next question is llm_client timeouts/retries and it is an infrastructure
+fix; if `empty` survives the split, it is the prompt or the model and the
+fix is on that side. **I will not propose either until the tape says which.**
+
 ## Cycle 7 — 04:5xZ (anchor 04:59:02): quiet; **the three "lost sells" dissolved into three rare causes — no fix shipped, and that is the correct outcome**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **2h35m**.
