@@ -354,3 +354,35 @@ forecast" and "never given a chance" are not separated.
 **Do not act on H5 before this runs** — the two outcomes imply opposite
 remedies.
 
+## MEASURED 2026-08-17 cycles 21-22 — target_pct is decoration, and the reachable band is now known
+
+**H6 (cycle 21):** replayed 34 crypto legs from close to the run's OWN
+original `at_time`. Target reached **4 / 34**, and all four had targets of
+**0.60%, 2.00%, 0.60%, 0.60%**. **No target above 2.00% has ever been
+reached**, median target 4.80%. Exit policy exonerated; the
+arm/at_time precedence question is CLOSED (the n=4 hint from cycle 15 does
+not survive at n=34).
+
+**H7 (cycle 22):** max favourable excursion available inside each run's own
+horizon, 29 crypto entries — **p25 0.52%, median 1.14%, p75 1.89%, max
+4.24%**. Desk target median **4.55%**; the market **offered** that target on
+**1 of 28 legs (4%)**.
+
+**Arithmetic of the remedy:** the R:R gate demands target >= 2x stop. At the
+median available excursion of 1.14%, a 2:1 ratio requires a stop **<=0.57%**.
+The crypto fee hurdle is ~0.09%, so 0.57% is ~6x the fee — structurally
+viable. Measured design band: **stop ~0.5-0.6%, target ~1.1-1.2%** against
+today's ~1.2-2.5% / ~4.55%.
+
+**The gate is not wrong; its inputs are drawn from a market that does not
+exist.** Do NOT change the R:R ratio itself.
+
+**LAST MEASUREMENT NEEDED before any change:** replay each entry against its
+horizon and count, per candidate (stop, target) pair, how often the STOP is
+hit BEFORE the target. Tighter pairs buy reachability with more stop-outs;
+expectancy of the tighter band is unmeasured and is the only remaining
+unknown.
+
+**Method note:** a percentile-index bug in the cycle-22 probe printed
+"3.47% -> 90% of legs". Inverted — 3.47% is near the TOP, offered on ~10%.
+

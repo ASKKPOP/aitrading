@@ -7,6 +7,89 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 22 — 13:1xZ (anchor 13:19:28): **H7 — the market offers 1.14%, the gate demands 4.55%. The remedy is now specified by measurement.**
+
+**PROFIT-OR-LOSS FIRST.** No closes. SOL run 1367 short holding **+$0.095**
+unrealized. Day 08-17 **+$4.26**. 11 decisions, 0 no-verdicts.
+
+### H7 — "the market does not offer what the R:R gate demands" → **CONFIRMED**
+
+*Falsifier: available excursion routinely meets or exceeds the mandated
+targets.* Replayed 29 crypto entries against 1-minute candles across each
+run's **own original horizon**, measuring the maximum favourable excursion
+actually available from the entry price:
+
+| MFE available inside the run's own horizon | |
+|---|---|
+| p25 | **0.52%** |
+| **median** | **1.14%** |
+| p75 | **1.89%** |
+| **max, across all 29** | **4.24%** |
+
+Against the desk's own targets on the same legs (n=28):
+
+| | |
+|---|---|
+| target, median | **4.55%** |
+| MFE, median | **1.14%** |
+| **legs where the market OFFERED the target at all** | **1 / 28 (4%)** |
+
+**The desk aims at 4.55% in a market whose best excursion across 29 entries
+was 4.24%, and whose median is 1.14%.** The target is not merely unreached —
+on 96% of legs it was never on offer.
+
+### Correcting my own output before anyone reads it
+
+My probe printed a line claiming *"a target set at 3.47% would have been
+offered on 90% of legs."* **That label is inverted** — a percentile-index bug
+in my own script. 3.47% sits near the TOP of the distribution and would have
+been offered on roughly 10% of legs. The corrected mapping:
+
+* a target at **0.52%** is offered on ~75% of legs
+* a target at **1.14%** on ~50%
+* a target at **1.89%** on ~25%
+
+Recording it because an inverted percentile is exactly the kind of number
+that gets quoted downstream as a design target.
+
+### What this specifies, arithmetically
+
+The R:R gate demands **target ≥ 2× stop**. Current stops run ~1.2–2.5%, so
+the gate mandates targets of **2.4–5%** — a band the market offered on 4% of
+legs. For a 2:1 ratio to be satisfiable at the median available excursion of
+1.14%, the stop would have to be **≤0.57%**.
+
+Is 0.57% viable against costs? The crypto round-trip fee hurdle is **~0.09%**,
+so a 0.57% stop is **~6× the fee** — structurally viable, unlike the
+fee-scale scratches of cycle 18.
+
+So the measured design band is roughly **stop ~0.5–0.6%, target ~1.1–1.2%**,
+against the current ~1.2–2.5% / ~4.55%. **The gate is not wrong; the numbers
+fed into it are drawn from a market that does not exist.**
+
+### ISSUE — I am NOT shipping this, and the reason is a specific unknown
+
+H7 establishes what the market **offers**. It does not establish that trading
+that band is **profitable**: a 0.57% stop is crossed far more often than a
+2.5% stop, so tighter pairs buy reachability with more stop-outs. The
+expectancy of the tighter band is an open question, and the whole point of
+the last four cycles has been not to trade one unmeasured assumption for
+another.
+
+**The experiment that closes it:** replay each entry against its horizon and
+count, for candidate (stop, target) pairs, how often the stop is hit BEFORE
+the target. That yields realized expectancy per pair from the same candle
+data, and it is the last measurement needed before any gate change.
+
+### Recommendations
+
+1. **Run the stop-before-target replay** across candidate pairs. It is the
+   final input; everything else is now measured.
+2. **Do not change the R:R floor itself** — H7 says the inputs are wrong, not
+   the ratio.
+3. **`target_pct` remains non-predictive above ~2%** (cycle 21) and now has a
+   measured explanation: above 2% the market rarely offers it.
+
 ## Cycle 21 — 12:4xZ (anchor 12:49:28): **H6 REFUTED — the targets were never cut off, they were never reachable. `target_pct` above ~2% is decoration.**
 
 **PROFIT-OR-LOSS FIRST.** No closes. SOL run 1367 short now **+$0.097**
