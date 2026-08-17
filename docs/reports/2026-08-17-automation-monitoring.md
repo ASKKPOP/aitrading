@@ -7,6 +7,77 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 19 — 11:4xZ (anchor 11:49:31): **H4 refuted — the fee-hurdle ratio predicts nothing, which kills a remedy before it was built**
+
+**PROFIT-OR-LOSS FIRST.** No closes. Book flat. Day 08-17 **+$4.26**. 12
+decisions, **0 no-verdicts** — fourth consecutive clean window.
+
+### H4 — "the fee-hurdle ratio at entry predicts which legs land in the fee-scale scratch band" → **REFUTED**
+
+*Falsifier: scratch and non-scratch legs show the same ratio distribution.*
+Ratio = the desk's own `target_pct` ÷ the round-trip fee as a % of notional.
+36 closed legs since the reset carried a desk target:
+
+| | n | median ratio | mean ratio | total net |
+|---|---|---|---|---|
+| **SCRATCH** (\|net\| < own round-trip fee) | 14 | **34.81** | 37.99 | −$0.0828 |
+| **NON-SCRATCH** | 22 | **36.63** | 43.79 | +$8.2962 |
+
+**The medians are 34.8 versus 36.6 — indistinguishable.** By band, the
+scratch rate runs 50% / 57% / 29% / 36% across increasing ratios: no
+monotone relationship, and the 0–10 band is not worse than the 50+ band.
+
+**The falsifier is met. The ratio carries no information about the outcome.**
+
+### Why this result matters more than a confirmation would have
+
+Cycle 18 ended by proposing exactly this test before suppressing churn, and
+said plainly: *"If it does not predict, suppressing small trades would cut
+winners too and must not be attempted."* **It does not predict.** So:
+
+* **A `min_edge`-style gate raised to suppress the scratch band is not
+  supported.** It would cut across both groups — the non-scratch legs hold
+  **+$8.30** of the account's **+$9.65** and sit at the *same* ratios as the
+  scratches.
+* This is a remedy that would have looked obviously correct in a plan
+  document and would have removed profit. It is now struck before anyone
+  built it.
+
+### The finding hiding inside the negative result
+
+**Every leg's target is enormous relative to its fee hurdle — median ~35×.**
+The desk always claims a target far above the cost of trading, and 36% of
+legs still finish inside the fee band. Combined with cycle 16 (SUI 1356 moved
+its target 2.5× solely to clear the 2:1 R:R floor, `basis.discussion: null`),
+the reading is that **`target_pct` is not a forecast — it is a number that
+satisfies a gate.** A field with no predictive content cannot be used to size
+or select, and should not be trusted by anything downstream that treats it as
+an expectation.
+
+That is a hypothesis in its own right, not a conclusion: it predicts that
+`target_pct` has no correlation with realized move in ANY band, not merely
+with scratch membership. Worth testing next.
+
+### Honest limits
+
+n=36. I used the last `parsed` `order_params` target before each close, which
+is not guaranteed to be the entry cycle's target on every leg. Non-crypto fee
+rates were assumed per market rather than read from each fill. Neither
+weakness plausibly manufactures a null result — both would add noise, and
+noise cannot create the near-identical medians observed — but the numbers
+should be re-derived from per-fill fees before anything is built on them.
+
+### Recommendations
+
+1. **Do not raise the min-edge / fee-feasibility gate to suppress churn.**
+   Struck by this experiment.
+2. **Next experiment: does `target_pct` correlate with realized move at
+   all?** If it does not, every downstream consumer that treats it as an
+   expectation — R:R gating, sizing, the outlook's `exit.target_px` — is
+   built on a number that means nothing.
+3. Unchanged and still gated: ratchet baseline + round-trip package, fleet
+   slot-ledger over-commitment, panel-fallback governance item.
+
 ## Cycle 18 — 11:1xZ (anchor 11:19:32): **H3 — the account's profit is two trades, and only one of them is a defect**
 
 **PROFIT-OR-LOSS FIRST.** No closes. Book flat. Day 08-17 **+$4.26**. 11
