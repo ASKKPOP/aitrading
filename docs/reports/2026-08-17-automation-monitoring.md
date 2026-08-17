@@ -7,6 +7,90 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 24 — 14:1xZ (anchor 14:19:28): **I tried to kill my own recommendation and it survived — but only after a census nearly made me report dead code**
+
+**PROFIT-OR-LOSS FIRST.** Day 08-17 **+$4.13** (down from +$4.26 — the SOL
+1367 loss settled). AVAX run 1370 short open, **−$0.101** unrealized. No new
+closes. **0 no-verdicts in 32 decisions.**
+
+### Testing whether last cycle's recommendation is actually shippable
+
+H8 said: cut the target band 4.55% → 2.50%. Before proposing that again I
+checked what `target_pct` actually does. Three steps, and the middle one
+nearly produced a false finding.
+
+**Step 1 — the mechanism that sets it.** `order_params.py` has `RR_FLOOR =
+2.0`, which only ever **raises** a target (`target_pct >= 2 × stop_pct`), plus
+a fee floor. **There is no ceiling** beyond the 0.30–40.00 range clamp. So the
+median 4.55% is the desk's own choice, not the gate's — the gate at a 1.24%
+stop demands only 2.48%. **The desk overshoots the gate by ~1.8×.**
+
+**Step 2 — the census that nearly misled me.** Across **210 stopped runs,
+ZERO ever closed on a take-profit**:
+
+| close reason | runs |
+|---|---|
+| idle_retired | 63 |
+| desk_retired | 53 |
+| fleet_stop_all | 44 |
+| stop_event:at_time | 21 |
+| adapt_retired | 16 |
+| stop_event:trailing_lock | 11 |
+| stop_event:max_loss | 1 |
+| **take-profit** | **0** |
+
+I was one step from writing *"the take-profit is dead code; the
+recommendation is unshippable because the target has no execution path."*
+
+**Step 3 — the code refuted that.** `risk_engine.py:731/736` closes positions
+whose polled price crosses `take_profit`, in both directions. And the live
+AVAX position carries a real level:
+
+```
+AVAX 1370 short: entry 6.2950   stop 6.37998 (+1.35%)   target 6.06838 (−3.60%)
+```
+
+**The mechanism is live and the level is set.** The reason for 0-in-210 is
+not absence — it is **unreachability**, which is exactly H6 (no target above
+2.00% ever reached) and H7 (the market offered the target on 1 leg in 28).
+
+### The recommendation survives, and now with its mechanism named
+
+Clamping `target_pct` toward ~2.50% does not merely change a number in a
+plan — **it moves a live watcher level into the range the market actually
+trades.** On the current AVAX position it would put the target at **6.1376
+instead of 6.06838**, 0.069 closer to entry.
+
+**The caveat I have to attach:** H8's "6 wins in 30" counted target-before-stop
+across the full horizon. In practice rails close positions early — at_time,
+trailing_lock, idle_retire — so some of those 6 would be pre-empted. That is
+a real haircut on the upside. **It is not fatal, because 0 wins at 4.55% is 0
+regardless of what the rails do.**
+
+### What this cycle actually demonstrates
+
+The census result (0/210) was true, and the inference I nearly drew from it
+was false. **A true number and a wrong conclusion, separated only by reading
+the code.** Had I stopped at the DB, I would have struck a sound
+recommendation and recorded "take-profit is dead code" into the corpus, where
+it would have misled every later session.
+
+That is the same shape as cycle 20's `entry_price`-overwritten bug and cycle
+22's inverted percentile: **the failure mode of this loop is not bad data, it
+is a plausible reading of good data.**
+
+### Recommendations
+
+1. **Ship the target clamp** — a ceiling that pulls `target_pct` toward the
+   R:R floor (~2× stop) instead of leaving it unbounded. Mechanism confirmed
+   live; evidence is H6 (0/34 above 2% ever reached), H7 (offered on 1/28),
+   H8 (6/30 vs 0/30 wins). **This is the one change in the session with a
+   measured result, a named mechanism, and no known counter-evidence.**
+2. **Do NOT touch the R:R floor or the stop** — H8 showed tighter stops are
+   strictly worse (16–17 of 30 stop out).
+3. Ratchet package still held — every single-defect fix makes it worse or
+   knife-edge (cycle 23).
+
 ## Cycle 23 — 13:4xZ (anchor 13:49:37): **H8 refutes the remedy I derived last cycle, and the ratchet's third fire is its worst**
 
 **PROFIT-OR-LOSS FIRST.** SOL run 1367 closed 13:35:19Z at **−$0.11402031**
