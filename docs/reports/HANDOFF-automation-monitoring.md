@@ -556,6 +556,28 @@ statement of the problem:
 
 ## 10. Traps that have already bitten
 
+### Added 2026-08-17 (#475) — IN-IMAGE TESTS FAIL ON PROD'S OWN ENV
+
+`docker exec … python -m unittest tests.test_x` inside the prod container
+inherits the prod environment. **Prod sets `ENTITLEMENTS_ENFORCED=true`**,
+so any fixture that creates a run from an unlinked agent 400s at setup
+(`"runs require an agent linked to a user account"`) — 5 tests "failed"
+in-image while the code was correct. Run in-image verification as
+`docker exec -e ENTITLEMENTS_ENFORCED=false -w /app/service/server …`.
+A setup-stage failure in-image is the environment until proven otherwise —
+diagnose the traceback's stage before doubting the shipped change.
+
+### Added 2026-08-17 (#475) — THE LEASE FENCE WAS EATING THE DESK'S OWN ORDERS
+
+`RUN_LEASE_TTL` (300s) stopped covering the worst-case cycle once decision
+LLM calls could take up to 300s (#468) — 21 authored orders (8 opens,
+7 reduces, 1 close; ZERO holds — the fence only runs when there are steps)
+died as `gate_skip: "fence: lease expired"` over 08-14..17, including BOTH
+of fleet 36's only entry attempts. Fixed by `_renew_lease` before the trade
+txn (#475, image `20260817-20260817-leaserenew`). **Standing watch: daily
+`fence: lease expired` count must stay ~0; any fire post-08-17 means the
+renewal has a residual gap and the fix must be re-reported as FAILED.**
+
 ### Added 2026-08-06 (#260/#261) — the skills catalogue is AT CAPACITY
 
 - **`trader/us-stock` sits at ~33,890 of 34,000 — about 110 chars spare.**
