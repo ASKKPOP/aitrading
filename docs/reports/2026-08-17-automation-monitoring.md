@@ -9,6 +9,24 @@ arm-reachability rail.
 
 ---
 
+## Cycle 2 — 00:4xZ (anchor 00:49:29): quiet on tape; **shipping the diagnostic I recommended last cycle**
+
+12 decisions, 2 no-verdict (17%), no trades, no closes, clamp holds at
+1, TRUMP $387 short still open (−$0.11 as price ticked to 1.4009),
+0 tracebacks.
+
+**Shipped rather than deferred:** a `no_verdict` telemetry event that
+labels WHY a light cycle produced nothing — `empty` | `no_json` |
+`truncated` | `malformed` — with the response length and a bounded
+200-char tail. Today all four failure modes emit an identical event,
+which is exactly why the 5.4× regression is still unexplained; one
+field turns it into a decided question within a day of tape.
+Diagnostic only: it changes no decision and no order, so it carries no
+risk of masking the thing it is measuring. Fail-before red→green
+(7 tests), mutants running.
+
+---
+
 ## Cycle 1 — 00:1xZ (anchor 00:19:18): **MEASURED REGRESSION — the no-verdict rate rose 5.4× at the Plan 26 flip**
 
 **FAILED (measured, not inferred).** The `conf 0.0 / "light cycle: no
