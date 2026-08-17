@@ -7,6 +7,96 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 26 — 15:1xZ (anchor 15:19:23): **closed the CI evidence gap — and the dependency audit FAILS, on 9 packages, unrelated to my PR**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.139**
+unrealized, deepening from −$0.022 last cycle. Day 08-17 **+$4.13**. **0
+no-verdicts in 22 decisions.** GitHub Actions still **major_outage**.
+
+### The one CI job I could not run, now run
+
+Last cycle I reported pip-audit as **NOT RUN** rather than imply coverage I
+did not have. The failure was not pip-audit — it was `ensurepip` aborting
+(SIGABRT) inside the venv that pip-audit creates, on uv's managed CPython.
+Both `uv tool install` and `uv run --with` hit the same wall, and `--no-deps`
+does not avoid it.
+
+**Fix: force the system interpreter**, whose `ensurepip` works:
+
+```
+VIRTUAL_ENV= uv run --with pip-audit --python /usr/bin/python3 \
+    pip-audit -r requirements.txt
+```
+
+### FAILED — the audit exits 1, on 32 advisories across 9 packages
+
+| package | pinned | first fixed |
+|---|---|---|
+| **aiohttp** | 3.13.5 | **3.14.3** |
+| **python-multipart** | 0.0.20 | **0.0.31** |
+| **starlette** | 0.49.3 | **1.3.1** |
+| requests | 2.32.5 | 2.33.0 |
+| urllib3 | 2.6.3 | 2.7.0 |
+| click | 8.1.8 | 8.3.3 |
+| curl-cffi | 0.13.0 | 0.15.0 |
+| pyarrow | 21.0.0 | 23.0.1 |
+| python-dotenv | 1.2.1 | 1.2.2 |
+
+**`pip-audit` exit code 1 — the CI job would fail.**
+
+**It is not my PR.** The diff touches `order_params.py`, its tests, and three
+docs files — **no dependency file is modified** (verified against
+`origin/main`). And the same job reported **SUCCESS** on #465/#466/#468 only
+hours ago, so these advisories were published in the interim; the PYSEC
+numbers (2026-3036…3040, 2026-3545…3547) are consistent with very recent
+publication.
+
+**So the repo's dependency audit has gone red today, on main, independently
+of anything I shipped.** That is the finding, and it is worth more than the
+PR it was blocking.
+
+### WORKED — the outage procedure earned its keep
+
+The standing rule says replicate every job locally when the provider is down.
+Following it produced a security finding that the outage would otherwise have
+hidden until Actions recovered: **9 packages with published fixes, three of
+them (`aiohttp`, `python-multipart`, `starlette`) directly in the request
+path of a web service.**
+
+Had I merged #471 on "4 of 6 jobs pass", I would have merged into a repo
+whose security workflow was already failing, and not known it.
+
+### Merge status — #471 still held, now for a stated reason
+
+**[#471] remains unmerged.** The reason has changed and I am recording the
+change rather than quietly keeping the same verdict:
+
+* **Last cycle:** held because pip-audit had no local evidence.
+* **This cycle:** pip-audit ran and **fails** — not because of this PR, but
+  merging while the security workflow is red would bury a live finding under
+  an unrelated change.
+
+The full local CI picture for #471 now reads **5 pass, 1 pre-existing fail**:
+ruff PASS · pytest 4,442 PASS · frontend build PASS · npm audit PASS (2
+moderate, below the `high` gate) · **pip-audit FAIL (pre-existing)** ·
+gitleaks: diff clean, 5 pre-existing history findings.
+
+### Recommendations
+
+1. **Dependency bump is now the priority over the R:R ceiling.** `aiohttp`,
+   `python-multipart` and `starlette` are request-path packages with
+   published fixes. This is an owner call because a `starlette` 0.49 → 1.3
+   major bump can break FastAPI compatibility and must not be done blind
+   during an Actions outage.
+2. **Record the pip-audit invocation** — the `ensurepip` SIGABRT will recur
+   on this machine every outage; the system-interpreter workaround above is
+   the way through.
+3. `.gitleaks.toml`'s stale "only finding ever" comment still stands from
+   last cycle, and `docs/ops/apple-signin-setup.html` still wants an owner
+   glance.
+
+---
+
 ### CI OUTAGE 14:5xZ — GitHub Actions in major outage, jobs replicated locally
 
 `githubstatus.com/api/v2/components.json` at the time of the PR:
