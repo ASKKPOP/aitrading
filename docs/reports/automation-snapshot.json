@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T15:55Z",
+  "as_of": "2026-08-17T16:20Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.13, AVAX 1370 -$0.167 (3rd deepening, 26% to stop, last decision was a conf-0.0 no-verdict on a HELD book); built classify_arm + arm_level_implausible (43% of arms fire on the losing side); PR blocked by GitHub outage"
+    "note": "day +$4.13, AVAX 1370 recovered to -$0.103, 0 no-verdicts in 25; H9 CONFIRMED: HELD books lose 9.23% of decision cycles vs 2.82% FLAT = 3.27x - the aggregate rate was hiding the distribution"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

@@ -7,6 +7,82 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 28 — 16:1xZ (anchor 16:19:30): **H9 — a held book is 3.3x more likely to lose its decision cycle than a flat one**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short recovered to
+**−$0.103** (from −$0.167). Day 08-17 **+$4.13**. 25 decisions, **0
+no-verdicts**. 10 running runs. GitHub still **major_outage**.
+
+### The method error I caught before reporting it
+
+My first H9 query matched each decision to the `order_intent` from the same
+cycle to read `position_qty`. It returned **0 no-verdicts in both buckets** —
+and I know there are dozens.
+
+**A no-verdict cycle emits no `order_intent`.** Every case I was measuring
+fell into the unmatched bucket, so the method excluded exactly the population
+under test. A clean 0.00%/0.00% would have read as a tidy refutation.
+
+Re-run against **`equity` events**, which are emitted every ~64s regardless
+of whether a verdict arrived — the one signal that survives the failure being
+measured.
+
+### H9 — "no-verdicts concentrate on held books" → **CONFIRMED**
+
+*Falsifier: the rate is the same for held and flat.* 2,487 decisions
+classified by whether the run carried an open position at that moment:
+
+| book state | decisions | no_verdict | rate |
+|---|---|---|---|
+| **HELD (position open)** | 574 | 53 | **9.23%** |
+| FLAT (no position) | 1,913 | 54 | **2.82%** |
+| | | **ratio** | **3.27×** |
+
+**The cycle that matters most is the one most often lost.** A flat run that
+misses a cycle costs nothing — it had no position to manage. A held run that
+misses one is an open position going unmanaged for a full interval, which is
+exactly what AVAX 1370 did at 15:21:20Z while sitting at a loss.
+
+This is consistent with cycle 1's independent measure (already-traded runs
+15.6% vs never-traded 6.2%, ~2.5×), reached by a different route.
+
+### The mechanism hypothesis — named, NOT claimed
+
+The obvious candidate is prompt size: a held book renders position state,
+the brief lines, the order-intent schema and the Plan 26 outlook, so its
+request is materially larger, and cycle 26 established that these failures
+are **provider timeouts**. Bigger request → longer generation → more exposure
+to the tail.
+
+**I am not asserting it.** One fact already cuts against a naive version:
+the light path already grants held books MORE output budget
+(`max_tokens = 280 if pos_qty else 200`), so if size alone were the driver
+the compensation is at least partly in place.
+
+**The test that settles it:** log prompt character count and elapsed time per
+decision-tier call, then compare held vs flat. Until that runs, "held books
+time out more" is the measurement and "because the prompt is bigger" is a
+guess.
+
+### Why this matters more than the headline rate
+
+Cycle 17 showed the aggregate no-verdict rate is episodic and currently ~0%.
+That made the whole issue look closed. **H9 says the aggregate was hiding the
+distribution**: even at a low overall rate, the losses land 3.3× more often
+on the books that have money at risk. A 1% aggregate rate is not 1% of
+managed positions going unmanaged.
+
+### Recommendations
+
+1. **Instrument prompt size and latency per call, split held/flat.** That is
+   one field on an existing event, and it converts the mechanism from
+   hypothesis to measurement.
+2. **Do not raise budgets or trim the prompt before that runs** — the
+   compensation already present makes the naive fix as likely to do nothing
+   as #468 did.
+3. Merge queue unchanged: `c27` pushed and awaiting a PR, #471 held, and the
+   red dependency audit still the priority owner call.
+
 ## Cycle 27 — 15:4xZ (anchor 15:49:23): **built the sweep's solution — arms are now labelled protective or defensive**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.167**
