@@ -9,6 +9,30 @@ Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 39 addendum — 23:2xZ (anchor 23:24:06): **#475 SHIPPED to prod, verified 3×**
+
+PR #475 merged (`71ecd1e7`) after full CI (5/5 checks); deployed as image
+`sooppiy-backend:20260817-20260817-leaserenew` (deploy.sh prefixes the
+date — the tag is double-dated but correct). Rollback:
+`20260817-handoff-takeover`. Verified:
+
+1. **Wired in the running worker** — `inspect.getsource` confirms
+   `_renew_lease(run_id)` sits before `execute_paper_trade` in the live
+   container.
+2. **In-image tests 5/5 OK** — the 3 new renewal tests + the two existing
+   fence-protection tests (zombie reclaim, stop-mid-cycle). ⚠️ NEW TRAP for
+   the runbook: the first in-image run showed 5 setup failures because
+   **prod sets `ENTITLEMENTS_ENFORCED=true`** and the fixtures use an
+   unlinked agent — run in-image tests with
+   `docker exec -e ENTITLEMENTS_ENFORCED=false …`. The failures were the
+   fixture, not the fix.
+3. **Live health** — events flowing (MAX(ts) 22s behind NOW), 0 tracebacks.
+
+**The binding post-ship metric:** daily `fence: lease expired` count.
+Baseline 8/1/3/9 (08-14..17). Expected ~0 from 08-18. If a fenced order
+appears WITH the renewal live, the fix is FAILED and the residual mechanism
+(a >TTL stall between renewal and the fence's own read) must be chased.
+
 ## Cycle 39 — 22:2xZ (anchor 22:27:10, NEW SESSION/ACCOUNT): scope now TWO users; **21 authored orders have been dying at the fence — fix built, in pipeline**
 
 New session (account rotation). Crons re-armed (30-min `0961ff91`, 24h sweep
