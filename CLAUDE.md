@@ -72,29 +72,6 @@ An independent agent-native trading platform. Sooppiy is a standalone product.
 
 **Repo:** `origin` → `https://github.com/ASKKPOP/aitrading.git`. Single remote.
 
-### THE TARGET — plus profit, or it is garbage (owner rule 2026-08-09)
-
-The whole project — every layer, every skill, every line of trading logic —
-exists to make **plus (net) profit**. Logic or code whose expected outcome is
-negative profit is **garbage; never build it.** This is the acceptance test
-for any trading change before it ships: does its expected contribution to
-*net realized* profit clear its own cost? If not, it does not go in.
-
-Read this precisely, so it is not mis-applied:
-
-- The target is **NET realized profit over the book**, not a zero-loss book.
-  A design that forbids ever realizing a single minus is itself garbage — it
-  holds losers until they are large, which is how a book actually loses.
-  **Cutting a loser small is on-target, not a violation.**
-- "Garbage" means the **negative-expectancy** decision, feature, or rail: an
-  entry with no edge that clears its round-trip cost, a trade for activity's
-  sake, a skill that adds noise, a change that churns fees. Those are the
-  things to never make.
-- The one wording lives in `trading_skills.MANDATE_CORE` and is drift-tested
-  against the desk header and `symbol_research._research_mandate()`. Change
-  the target's wording in ONE place. See memory
-  [[profit-is-the-target-every-layer]].
-
 ### What this project actually is
 
 A **signal and copy-trading platform** first. Agents register, publish signals (strategies, operations, discussions), and followers mirror trades. Positions are tracked by polling prices via `price_fetcher.py`; the internal simulated ledger is the default for everything. Since 2026-07-19 a real execution layer exists (`service/server/execution/` — see extension area 2), but it is opt-in per automation rule (`account_type: live`) and gated behind gateway credentials + consent. Feature work should still assume the simulated ledger unless it is explicitly about live routing.
@@ -156,45 +133,6 @@ Durable strategic thinking lives under [docs/](docs/README.md) — read the inde
 - [docs/plan/01-technical-roadmap.md](docs/plan/01-technical-roadmap.md) — codebase state and 4-phase technical roadmap.
 
 When a finding turns out wrong, **edit the relevant section with a dated note** rather than starting a new document. The "Suggested first sprint" in [docs/README.md](docs/README.md) is the current execution focus.
-
-### THE TARGET (owner, 2026-08-07) — binds every layer
-
-> **AI Analysis, Macro, the Desk, and every part of this project have one
-> target: make plus profit. Think always: make plus profit.**
-
-Not a slogan to quote — the thing each layer is measured against, stated to
-each of them in their own verb:
-
-| layer | where it is stated | the form it takes there |
-|---|---|---|
-| Desk (trader / light / planner / verifier) | `trading_skills._HEADER` | "YOUR PURPOSE IS REALIZED PROFIT — not activity, not being right, not holding on." |
-| AI Analysis (research → what the fleet trades) | `symbol_research._research_mandate()` | every thesis is a **profit case**; a move that does not clear its round-trip cost is not an opportunity |
-| Macro / market intel | *deliberately NOT given a profit motive* | its job is to be **accurate** — a macro read motivated to find profit produces confident bad trades. It must be honest about uncertainty precisely because profit decisions rest on it. |
-| This session (monitoring) | the operating model below | every fix is judged by whether it changes the win/loss **shape**, not by whether it is clever |
-
-`trading_skills.MANDATE_CORE` is the single source of the wording. If the desk
-and the research layer state it differently, the layer picking the universe and
-the layer trading it are optimising for different things — a test asserts they
-do not drift.
-
-**REALIZED** and **not activity** are load-bearing. An unrealized gain is not
-profit: winners have given back 34-49% of peak. And this desk's failure mode is
-not timidity — runs have been underwater on their entry fee alone — so a bare
-"make profit" pushes toward more trades, the one direction the evidence says
-loses.
-
-### The corpus must be READ, not just written (owner, 2026-08-07)
-
-> *"from tomorrow sooppiy and this session must be ref RAG"*
-
-`desk_memory` holds the monitoring analysis, the desk's own decisions, and run
-outcomes. From 2026-08-08 both sides consult it:
-
-- **The desk** — `run_engine._recall_line` puts past findings matching the
-  current *situation* (not the symbol) into the position brief, labelled as
-  past material, capped and fail-soft (`DESK_RECALL_ENABLED=0` disables).
-- **This session** — search the corpus BEFORE proposing any fix, and say what
-  it returned. A finding already recorded must not be rediscovered as new.
 
 ### Automation monitoring sessions (operating model)
 
@@ -389,3 +327,42 @@ Binding procedure — TWO-SUBAGENT MONITORING:
 
 Authority chain: docs/reports/HANDOFF-n-slot-monitoring.md §7e (this rule),
 §7b (the AI is the final author of every order), §7c (two-axis attribution).
+
+## Rule of Analysis & Monitoring — EXPERIMENTAL MINDSET (OWNER, 2026-08-17 — non-negotiable)
+
+Owner rule, verbatim:
+
+> "all Analysis thinking about experiment ( Must be thinking Experimental
+> mindset ) — also Implement by Experimental result"
+
+**Every analysis is an experiment. Every implementation follows an
+experimental result.** This binds monitoring, investigation, and shipping.
+
+1. **State the hypothesis before the data.** Write down what you believe and
+   what would falsify it. An observation with no prior hypothesis is a
+   description, not an experiment.
+2. **Design the measurement so it CAN refute you.** If no possible result
+   would change your mind, you are not running an experiment. Prefer a
+   probe, an A/B, or a replay over reasoning from the code.
+3. **Run it, and report the refutations.** Hypotheses killed by measurement
+   are the primary output, not an embarrassment. Record them by name so no
+   future session re-runs a dead theory.
+4. **Implement ONLY on an experimental result.** A fix justified by "the code
+   plainly says so" or "it is obviously wrong-ordered" is a guess. If the
+   change alters money paths, the experiment must include the counterfactual
+   P&L at the live mark.
+5. **After shipping, measure the same quantity again.** A fix that does not
+   move its own metric FAILED, and must be reported as failed in the same
+   terms it was justified in — no re-framing.
+6. **Name the n, and never let one outlier stand as a result.** Report the
+   figure with and without the largest contributor; if stripping it flips
+   the sign, the experiment is inconclusive and must be stated as such.
+
+**Worked precedent, 2026-08-17 (why this rule exists):** the no-verdict
+regression produced four hypotheses — model too slow, concurrency queueing,
+Plan 26 outlook schema, cap set too tight. Probes refuted all four
+(4.9-7.4s idle; 4 concurrent = same wall as 1; without-outlook was SLOWER;
+raising the cap moved the rate 18.5% -> 23.1%). Only `llm_usage` arithmetic
+(~178 calls/h x ~100s vs 3600s available = ~5x oversubscribed) survived
+measurement. A fix (#468) shipped on sound REASONING rather than an
+experiment did not work.

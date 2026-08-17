@@ -7,6 +7,603 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 18 — 11:1xZ (anchor 11:19:32): **H3 — the account's profit is two trades, and only one of them is a defect**
+
+**PROFIT-OR-LOSS FIRST.** No closes. Book flat. Day 08-17 **+$4.26**. 11
+decisions, **0 no-verdicts** — third consecutive clean window, consistent
+with cycle 17's finding that the 06h–08h spike was episodic.
+
+### H3 — "realized P&L is dominated by a few outliers; the median trade is a fee-scale scratch" → **CONFIRMED**
+
+*Falsifier: removing the top contributor leaves the total materially
+unchanged.* Every closed leg for agent 6 since the 08-15 09:00Z reset:
+
+| | |
+|---|---|
+| closed legs | **39** |
+| **TOTAL net** | **+$9.6509** |
+| median net | **+$0.0093** — under one cent |
+| mean net | +$0.2475 |
+| wins | 23 (59%) |
+| **TOTAL ex-top-1** | **+$4.4791** |
+| **TOTAL ex-top-3** | **+$0.4630** |
+| legs whose \|net\| is smaller than their OWN round-trip fee | **14 / 39 (36%)** |
+
+**Three trades are 95% of everything. The other 36 legs made $0.46
+between them** — across 36 round trips. The median leg nets under a cent
+against round-trip fees of $0.04–$0.43, so **the median trade does not cover
+a tenth of its own fee.**
+
+### The provenance test — and it refutes the darker reading I was heading toward
+
+I expected both top contributors to trace to the `order_params: absent`
+sizing defect, which would have meant the account's profit was essentially a
+bug. **It does not.**
+
+| rank | leg | net | `order_params` on the entry cycle | authored |
+|---|---|---|---|---|
+| 1 | run 1322 FIL, 02:24:43Z | **+$5.17** | **`absent`** (cyc 39) | default sizing — **the defect** |
+| 2 | run 1305 FIL, 00:17:32Z | **+$3.04** | **`parsed`, size_frac 0.2** (cyc 5) | **desk-authored, desk-sized, desk-closed** (`run:1305:cyc:9`) |
+
+**#2 is a clean trade.** Short 304 FIL @ 0.687 → cover @ 0.6764 on ~$209
+notional, **+1.46% on notional**, with the desk choosing 0.2 size_frac and
+closing it on its own cycle. That is what a working desk trade looks like,
+and it is the counter-example to the "the desk only wins by accident"
+reading I have been circling for several cycles.
+
+So the corrected picture: **profit is real but concentrated on two pillars,
+one of which is a defect and one of which is legitimate.** Strip the defect
+and the account is **+$4.48 over 38 legs** — still positive, still carried by
+a single genuine win.
+
+### WHY this matters more than the winners
+
+The problem this exposes is not the tail, it is the body. **36 of 39 legs
+together produce $0.46**, and **36% of all legs are fee-scale scratches**
+whose entire outcome is smaller than the fees they paid. A positive-skew
+distribution is a legitimate profile — but a body of 36 trades that nets
+nothing while paying ~36 round trips is pure churn, and it is where the
+fee-hurdle findings from cycles 13 and 16 land.
+
+### Recommendation
+
+**Test whether the churn is predictable before trying to suppress it.** The
+next experiment: does the fee-hurdle ratio at entry (expected move ÷
+round-trip fee) predict which legs land in the fee-scale band? If it does,
+the gate already exists conceptually — the `min_edge`/fee-infeasible check in
+the fleet build path — and the question becomes why 36% of legs still clear
+it. If it does not predict, suppressing small trades would cut winners too
+and must not be attempted.
+
+I am not proposing a change on this cycle's evidence. H3 tells us where the
+money is, not what to do about it.
+
+## Cycle 17 — 10:5xZ (anchor 10:50:29): **first cycle under the experimental rule — three hypotheses stated, three refuted, including my own cycle-12 conclusion**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 10:15:05Z. Book flat. Day 08-17
+**+$4.26**. 11 decisions, **0 no-verdicts**.
+
+Per the owner rule added this session, hypotheses were written before the
+data and each carries its falsifier.
+
+### H1 — "the no-verdict rate fell because I stopped probing the host" → **REFUTED**
+
+*Falsifier: the rate stays low across a window with no probes and unchanged
+call volume.* Measured the hourly rate for the whole day:
+
+| hour | no_verdict / decisions | rate |
+|---|---|---|
+| 00h–05h | 0/21, 1/21, 2/24, 0/21, 0/20, 1/20 | **~3% baseline** |
+| **06h** | **5/25** | **20.0%** |
+| **07h** | **4/23** | **17.4%** |
+| **08h** | **3/23** | **13.0%** |
+| 09h | 0/19 | **0%** |
+| 10h | 0/18 | **0%** |
+
+**My first probe ran at ~07:0x. The 06h hour — the worst of the day at 20% —
+predates every probe I made.** My probing cannot explain the spike. It may
+have prolonged 07h/08h; it did not start it.
+
+### The bigger refutation: my own cycle-12 root cause does not survive re-measurement
+
+Cycle 12 concluded the local model host was **~5× oversubscribed**, from
+`178 calls/h × ~100s per call = 17,800 GPU-seconds demanded vs 3,600
+available`. **The ~100s input was sampled during the 06h–08h anomaly.**
+
+Re-measured now, call volume unchanged:
+
+```
+cycle-12 claim: 178 calls/h x ~100s = 17,800s vs 3,600  =>  4.9x oversubscribed
+re-measured   : 189 calls/h x  ~5.5s =  1,040s vs 3,600  =>  0.29x
+```
+
+Two decision-tier calls just now: **7.0s and 3.9s.** Call volume is if
+anything *higher* (189/h vs 178/h) and the host is **not oversubscribed at
+all**.
+
+**So the structural explanation is wrong.** What actually happened was a
+**transient latency episode spanning 06h–08h** — during which the
+timeouts-matched-to-the-second finding still holds — against a ~3% baseline
+before it and 0% after. Cause of the episode: still unknown, and I am not
+going to invent one. It is now bounded as *episodic, not structural*, which
+is a different problem from the one I reported.
+
+**What survives from cycles 10–12:** #468 did not reduce the rate (measured,
+still true); the four earlier hypotheses stay refuted; the timeouts during
+the episode were real. **What does not survive:** the oversubscription
+arithmetic and the "reduce call volume or add capacity" recommendation built
+on it. #468 remains cheap and plausibly protective against a repeat episode,
+but it is **not established as effective** and should not be described as
+such.
+
+### H2 — "panel-fallback exits realize worse than panel-authored exits" → **REFUTED**
+
+Cycle 16 found 10 closes/reduces authored by a path labelled *"panel
+fallback (not the AI)"* and I implied that was costing money. Tested across
+every closed leg on the platform:
+
+| | n | total | mean | win rate |
+|---|---|---|---|---|
+| fallback-authored closes | 16 | **−$4.206** | **−$0.263** | 31% |
+| all other closes | 225 | −$180.417 | **−$0.802** | 42% |
+
+**Fallback closes realize BETTER on the mean, not worse.** The hypothesis is
+refuted on P&L. Caveats I will not hide: n=16 against 225, the win rate is
+lower, and book size is an obvious confound I have not controlled for — so
+this is "no evidence of harm", not "the fallback is good".
+
+**The governance point stands on its own terms** — an unreviewed path
+labelling itself "not the AI" closes positions, and §7b says the panel is
+the final author. But it must be argued as governance, **not** as a P&L
+defect, because the P&L evidence does not support that.
+
+### What this cycle produced
+
+Three refutations and no new claim. Under the old habit I would have carried
+"the host is 5× oversubscribed" and "the fallback is losing money" forward
+into the next session's recommendations; both are now struck by measurement.
+**A cycle whose entire output is killed hypotheses is a good cycle** — the
+alternative was two confident wrong answers propagating into the corpus.
+
+### Recommendations
+
+1. **Do not act on the oversubscription finding.** Struck. If the episode
+   repeats, `no_response` (#466) counts it and the hourly-rate query above
+   is the instrument.
+2. **Re-state the fallback item as governance**, with the P&L refutation
+   attached, so nobody re-derives a money argument for it.
+3. Unchanged and still gated: the ratchet baseline + round-trip package
+   (arithmetic, not statistics), and the fleet slot-ledger over-commitment.
+
+## Cycle 16 — 10:1xZ (anchor 10:19:26): **an unreviewed fallback closed the book, and the arm replay's answer is one outlier**
+
+**PROFIT-OR-LOSS FIRST.** SUI run 1356 closed 10:15:05Z: `signals.pnl`
++$0.04999261, open fee $0.02943504 → **true net +$0.02055757** (matches
+`realized_pnl_usd` to 8dp). Day 08-17 **+$4.26**, resid 0.05, 3 flattens.
+Book flat.
+
+On $65.41 notional the gross move was $0.0794 and the round trip took
+**$0.0588 — 74.1% of gross.** It cleared the fee hurdle by **0.031
+percentage points**. A 0.03% adverse tick at the close instant makes it a
+loss. That is a fee-hurdle graze, not an edge.
+
+### FAILED — the close was authored by a rule fallback, not the desk
+
+Both agents converged independently: **no rail fired** (`client_order_id
+run:1356:cyc:9`, zero `stop_mechanism` on the run, and only two on the whole
+platform today — 1335 and 1358). But the closing cycle's discussion event
+reads:
+
+```json
+{"proposed": {"action": "buy", "confidence": 0.55},
+ "error": "panel fallback (not the AI): decision json unparseable"}
+```
+
+`_order_discussion` **fails open**. The 4-analyst panel — the mandated final
+author of every order under §7b — crashed on unparseable JSON, and the cheap
+tier's unreviewed proposal closed the book. The OPEN (cycle 7) *was*
+panel-authored, raised 0.55 → 0.68. **The exit that ended the trade bypassed
+the final author.**
+
+I measured how often this happens: **29 panel fallbacks all time, 10 of them
+on a `close` or `reduce` intent.** Ten positions have been exited or trimmed
+by a path that explicitly labels itself "not the AI".
+
+### WHY the trade produced almost nothing
+
+Agent A's finding, checked against the tape: **the target existed to pass a
+gate, not as a forecast.** Cycle 6 refused the trade at 0.67551 because
+*"risk-reward fails the 2:1 rule"*. With `stop_pct 1.24` the floor demands a
+target ≥2.48%; every target the desk had published failed it (2.14%, 1.35%,
+2.01%, 2.31%). Cycle 7 entered at 0.6756 — **0.013% higher, materially the
+same price** — after moving the target 0.662 → **0.640**, the first value
+that clears the floor, at 5.27% depth. The `basis.verdict` for that change is
+`"adjusted"` with **`discussion: null`**.
+
+0.640 required **1.32%/hour for 4 hours**. SUI's entire realized range over
+the 60-minute hold was **0.21%**. The desk sized on a 4-hour thesis it had
+called unreachable one cycle earlier, then closed at 25% of that horizon
+citing a "stall" — while its own equity tape ran +0.011 → +0.057 → **+0.091
+(the trade's peak)**. It called an accelerating position stalled on a single
+0.018% uptick.
+
+### The two agents disagreed on the counterfactual, and the disagreement IS the finding
+
+* Agent B, live mark 0.67402 at 10:24:58Z: holding = **+$0.0942**, so the
+  close **forfeited $0.0736**.
+* Agent A, live mark 0.67615 at 10:31:13Z: holding = **−$0.1121**, so the
+  close **saved $0.133**.
+
+Both obeyed the live-mark rule. **The counterfactual flipped sign in seven
+minutes.** On a trade whose whole P&L range was $0.14 wide, the counterfactual
+carries no signal — which is itself the verdict on a 60-minute 0.12% noise
+capture. I am recording both numbers rather than picking the one that suits.
+
+### The arm replay — the follow-through I promised, and the answer is one run
+
+For the 4 crossings found in cycle 15, what a half-reduce at the arm level
+would have realized versus letting the rail's exit take the whole book:
+
+| run | side | rail net | half at arm | delta |
+|---|---|---|---|---|
+| 1175 SOL | buy | −0.28620 | −0.26924 | **−0.12614** |
+| 1293 UNI | short | −0.09489 | −0.06128 | **−0.01384** |
+| 1304 JTO | buy | −0.04620 | +0.10601 | **+0.12911** |
+| 1305 FIL | short | −0.72777 | +1.50032 | **+1.86421** |
+| | | | **TOTAL** | **+$1.85334** |
+
+**Strip FIL 1305 and the other three sum to −$0.011.** The entire case for
+arm precedence rests on one run. That is the same shape as the FIL oversize
+that was 100% of a day's P&L — and it means the honest answer to "should arms
+outrank rails" is still **not demonstrated**, on 4 observations with one
+outlier. I will not carry this forward as "arms would have made $1.85".
+
+### Also confirmed
+
+* **The 5-minute mark blindness is designed, not degraded.**
+  `POSITION_REFRESH_INTERVAL=300` is explicitly set on prod (verified). Marks
+  changed 13 times in the 60.4-minute hold — **4.69 min cadence**, matching
+  FIL 1358's 4.74. The whole favourable excursion occupied the last 3 marks.
+* **Ratchet: did not fire and was not close** — peak $0.0616 against a
+  $0.1306 arm (47%). But at the true round-trip rate the arm is $0.0588 and
+  **it would have armed**, with a floor never breached — so the position
+  would still be open. Its inertness did not save this trade.
+* **Ratchet running total unchanged at −$0.13891** over 2 fires.
+* **Today's exits by author: rails +$4.694 (1322, 1335, 1358); desk −$0.431
+  (1344, 1356).** Every dollar of the day came from rail-authored exits. n=5,
+  not a distribution — but it is the opposite of the story the arm-precedence
+  case needs.
+
+### Recommendations
+
+1. **Decide whether `_order_discussion` may fail open on EXITS.** 10 closes
+   or reduces have been authored by a path labelled "not the AI". This is a
+   governance question, not a tuning one.
+2. **Validate `plan_adherence` instead of accepting the desk's self-stamp** —
+   against `position_qty`, the prior cycle's published band, and the prior
+   cycle's target. Cycle 4 of this run asserted *"we keep the current short
+   position"* with `position_qty: 0.0` and stamped itself `followed`.
+3. **A target expansion that newly clears the R:R floor should require a
+   non-null `basis.discussion`.** Cycle 7 moved the target 2.5× with none.
+
+## Cycle 15 — 09:4xZ (anchor 09:49:28): quiet; **the arm replay ran, and it partly refutes my own cycle-14 framing**
+
+**PROFIT-OR-LOSS FIRST.** No closes. SUI run 1356 short still open at
+**−$0.0019**. Day 08-17 **+$4.24**. **0 no-verdicts in 10 decisions.** One more
+`verdict_salvaged` fire (#462). Docs #469 merged.
+
+### I did the measurement I specified — and my specification was wrong
+
+Cycle 14 ended: *"computable from stored marks."* **It is not.** There is no
+price-history table (only `market_news_snapshots` and
+`polymarket_settlements`), and `equity` payloads carry only
+`realized/unrealized/total/trades` — no mark. Anyone taking that spec at
+face value would have found nothing.
+
+The real source is `price_fetcher._hyperliquid_post` with a
+`candleSnapshot` request — **1-minute candles**, which is finer than the
+~4.7-minute mark cadence the rails themselves run on.
+
+### The replay
+
+For every crypto run that ever armed and was then closed by a rail: take the
+LAST arm before the close, and ask whether its level was touched between the
+close and the run's **own original `at_time` horizon**.
+
+18 armed crypto runs closed by a rail; 14 replayable (4 lacked a horizon,
+level, or a usable window).
+
+| | |
+|---|---|
+| arm level **crossed** inside the original horizon | **4 (29%)** |
+| **not** crossed | **10 (71%)** |
+
+The four that would have had their moment:
+
+| run | symbol | arm | outcome |
+|---|---|---|---|
+| 1175 | SOLUSDT | price_below 75.0 | low 74.650 |
+| 1293 | UNIUSDT | price_above 3.27 | high 3.3378 |
+| 1304 | JTOUSDT | price_above 0.586 | high 0.59043 |
+| 1305 | FILUSDT | price_below 0.667 | low 0.65785 |
+
+### FAILED — my cycle-14 conclusion was over-stated
+
+I wrote that *"the one instrument the desk is told to prefer is the one it is
+least allowed to use"*, with the strong implication that rails were robbing
+arms of their moment. **The replay says that is true for 29% of them and
+false for 71%.** Most arms would never have fired even if the run had lived
+to its own horizon. The 132-authored-2-fired ratio is therefore mostly
+**arms that were never going to trigger**, not arms that were cut short.
+
+That materially changes the size of the prize. A remedy that lets arms
+outrank `at_time` would reach roughly 3 runs in 10, not 4 in 5.
+
+### What the replay does NOT establish, and I will not imply it does
+
+**Crossing a level is not the same as profiting from it.** For a short,
+`price_below → reduce` banks profit while `price_above → reduce` cuts a
+loser; the P&L of firing versus the rail's actual exit needs each run's side
+and the mark at the crossing. I have the tooling now and not the answer.
+
+Nor does 4-of-14 constitute a distribution. It is a bound: **at most ~29% of
+armed runs had a live trigger taken from them.**
+
+### Recommendations
+
+1. **Next layer of the same replay:** for the 4 crossings, compute what the
+   half-reduce would have realized at the crossing versus what the rail's
+   exit actually realized. That is the number that decides whether any
+   arm-precedence change is worth making, and it is now one script away.
+2. **Correct the framing in any downstream reading of cycle 14** — the
+   starvation is real but bounded at ~29%, not the 77% rail-closure rate.
+   The 77% is how often a rail ended the run; it is not how often that cost
+   the desk anything.
+
+### Method note worth keeping
+
+Two SQL traps cost me a cycle of tooling time and both are worth recording:
+an **unquoted heredoc** (`<<PYEOF`) let the shell eat `$.at_time` inside JSON
+paths, and the DB wrapper **mangles a quoted `IN (...)` list** — filtering in
+Python instead of SQL was the fix.
+
+## Cycle 14 — 09:1xZ (anchor 09:19:30): quiet; **the arm is structurally starved — 132 authored, 2 ever fired**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 08:28:15Z. One new position: SUI
+run 1356 short, opened 09:14:43Z, **−$0.033 unrealized**. Day 08-17 **+$4.24**.
+No-verdict **1 of 12 decisions (8.3%)** — down from 23.1%, and I have also
+stopped probing the host, so I am not crediting the fall to anything.
+
+### Following the empty-why arm finding to the profit question nobody had asked
+
+Cycle 13 corrected my watch: 131 of 132 arms carry `why: ""`. The obvious
+next question is not *why is the field empty* — it is **does the arm earn
+anything at all.**
+
+| | |
+|---|---|
+| `intent:arm` events authored, all time | **132** |
+| `armed_exit` events, all time | **2 (1.5%)** |
+| both fired on | 2026-08-13 and 08-14 — **none in 3+ days** |
+| runs with `armed_order_json` persisted | 10, **all `stopped`** |
+
+Both fires were mechanically clean — `reduce 0.5` with slippage −0.08% and
++0.01%. The mechanism works. It just almost never runs.
+
+### Two hypotheses of mine, both refuted before I could report them
+
+1. **"The levels are unreachable."** This was the arm-reachability spec
+   already sitting in my backlog. **Refuted.** Measured every arm's level
+   against its run's entry price: distances cluster at **0.1%–1.5%** — well
+   inside an ordinary day for these symbols. Only one outlier (CL, 4.4%).
+   The desk is not setting fantasy levels.
+2. **"Arms are authored once and forgotten."** Refuted — the desk **re-arms
+   every cycle** (run 1122 armed 11 times, run 1147 11, run 1123 9), mostly
+   at the same or a walked level.
+
+### What the data actually shows: the platform closes the book first
+
+Of the **44 runs that ever armed**, the close reasons are:
+
+| close reason | runs | authored by |
+|---|---|---|
+| `stop_event:at_time` | **14 (32%)** | platform |
+| `desk_retired` | 9 (20%) | **desk** |
+| `adapt_retired` | 7 (16%) | platform |
+| `fleet_stop_all` | 7 (16%) | platform/owner |
+| `stop_event:trailing_lock` | 6 (14%) | platform |
+| `positions_held` | 1 | — |
+
+**Only 20% of armed runs ended by the desk's own choice. 77% were ended by a
+rail or a fleet action before the arm could act.** Twelve of those closes
+were `flatten`s.
+
+The light prompt explicitly instructs: *"prefer arm over hold whenever you
+can name the level that would change your mind, because your next cycle is
+far away and the market is not."* The desk complies — 132 times, at
+reachable levels, re-armed every cycle — and the platform closes the book on
+its own schedule 4 times out of 5. **The single instrument the desk is told
+to prefer is the one it is least allowed to use.**
+
+This is the same shape as cycle 13's FIL sequence: rail covers → replacement
+run spawns → replacement defers → thesis intact, position gone, move
+captured by nobody. And `at_time` at 32% means the largest single killer of
+armed runs is the run simply reaching its hard expiry with a live
+conditional exit pending.
+
+### ISSUE — not shipping, and this time the reason is scope not doubt
+
+The candidate remedies are all behaviour changes to money paths: let a live
+arm outrank `at_time`, or lengthen horizons, or make `adapt_retired` yield to
+a pending arm. Each changes when real positions close. On my own standard
+that needs the P&L of the counterfactual, which I do not have — 2 fires is
+not a distribution, and the 130 that never fired have no outcome to compare.
+
+**The measurement that would settle it:** for each armed run closed by a
+rail, whether the arm's level was subsequently hit inside the run's original
+horizon, and what the reduce would have been worth at that level. That is
+computable from stored marks and is the right next piece of work.
+
+### Standing watch corrections carried forward
+
+* **empty-why arms: 131/132, not n=6** (corrected cycle 13).
+* **arm-reachability: refuted as a defect** — levels are 0.1–1.5% away, not
+  unreachable. The spec in the backlog should be struck; the real problem is
+  arm *starvation*, not arm placement.
+
+## Cycle 13 — 08:4xZ (anchor 08:49:25): **a scratch that hides two proven arithmetic defects, and a standing watch of mine that was wrong by 22x**
+
+**PROFIT-OR-LOSS FIRST.** FIL run 1358 closed 08:28:15Z. `signals.pnl`
++$0.01513989, open fee $0.0126108 → **true net +$0.00252909** (matches
+`trading_runs.realized_pnl_usd` to 8dp). Day 08-17 **+$4.24**, resid 0.00.
+Book flat. **No-verdict since 08:18Z: 0 of 13 decisions** — down from 23.1%,
+n too small to credit, and I have also stopped probing the host.
+
+On $28.02 notional the round trip took **90.9% of gross**. The trade cleared
+breakeven by **$0.00006 per unit**. This is not a win to bank; it is a loss
+avoided by rounding.
+
+### FAILED — my own standing watch was wrong by a factor of 22
+
+I have carried "empty-why arms (n=6)" on the watch list for days. Verified
+myself this cycle:
+
+| arm intents, all time | **132** |
+|---|---|
+| with `why: ""` | **131 (99.24%)** |
+| with a real why | **1** |
+
+**An empty why is not an anomaly — it is the default behaviour of the arm
+path**, 131 times out of 132. The single exception proves the field can be
+populated, so this is an unreliable desk emission, not a schema that drops
+it. My watch was scoped to a handful of instances I happened to notice and
+never counted. Corrected here.
+
+### The arm this cycle was dead three ways
+
+08:29:58Z, run 1358: `intent: arm, {"if":"price_above","level":0.68,
+"then":"reduce","size_frac":0.5}`, `why: ""`.
+
+1. **The run stopped at 08:28:15Z** — the arm was authored **103 seconds
+   after the run ended** (verified directly).
+2. **`position_qty: 0.0`** — the only one of 132 arms in history with no
+   position. It armed a half-reduce of nothing.
+3. **0.68 was 2.08% away** at arm time; the run's worst adverse print all
+   session was 0.66943.
+
+It was still persisted to `trading_runs.armed_order_json`. Dead config
+written onto a stopped run, with no stated reason to audit it against.
+
+### WHY the trade was a scratch — the desk broke its own rule at the entry tick
+
+Agent A's finding, which I have checked against the tape:
+
+* **Cycle 1 (06:55:53Z)** published an entry band **0.668945–0.676471** and
+  **refused to trade at 0.6691 — inside its own band** — on an explicit
+  negative-expectancy argument: a defensible stop was >10% away, breaking
+  its 2:1 R:R. It bound itself: re-enter *only on a pullback into the zone*.
+* **Cycle 2 (07:12:27Z)**, 17 minutes later, entered at **0.6668 — 0.3207%
+  BELOW the band floor.** For a short that is not a pullback into the zone;
+  it is a worse fill in the wrong direction. Nothing resolved cycle 1's
+  objection — the swing high had not moved. The desk swapped the defensible
+  stop for an arbitrary 2% stop and re-declared ">2:1 R:R".
+
+Entering at its own band floor with the identical exit nets **+$0.09264**
+against the actual **+$0.00253**. **The desk gave away $0.0902 at entry — 36x
+the entire realized profit — by breaking a rule it had written 17 minutes
+earlier.**
+
+### Plan 26 — the adherence stamp is INVERTED on this run
+
+* Cycle 1 held flat, correctly honouring its own risk rail → stamped
+  **`deviated`**.
+* Cycle 2 entered outside its published band, contradicting cycle 1's
+  explicit re-entry condition → stamped **`followed`**.
+
+**The stamp rewarded the rule-break and penalised the rule-keep.** As a
+§3.7 control that is worse than absent — it is actively misleading. Note
+this is a *content* defect in what the desk emits, not the fabrication bug
+#463 fixed.
+
+Also: outlook published on 3 of 5 cycles, with the 40% silence concentrated
+exactly on the stress window (07:48–08:03, unrealized −$0.1105, margin
+T0→T1). The desk never once asked to exit.
+
+### #449's second fire — the rail is 0-for-2 and its ceiling is $0.00 by design
+
+| fire | position net |
+|---|---|
+| AVAX 1335 pos-2, 02:23:39Z | **−$0.14144302** |
+| FIL 1358, 08:28:14Z | **+$0.00252909** |
+| **running total** | **−$0.13891393** |
+
+Two defects, both **arithmetic and provable from code** — not statistical
+claims needing a distribution:
+
+**(a) unit mismatch, unfixed.** `_breakeven_floor_hit` takes no
+`baseline_pnl`, so `peak`/`current` are run-cumulative while `arm`/`exit_fee`
+are position-scoped. Its sibling `_trailing_lock_hit` does take a baseline.
+**Proven decisive on AVAX:** position 2's own peak excursion was
+0.4228 − 0.0806 = **$0.3422 against a $0.398 arm → it would never have
+armed.** It armed on $0.0806 banked by the desk's earlier covers, then
+flattened at $0.0377 gross against an already-paid $0.0896 open fee — **a
+guaranteed loss the instant it triggered.**
+
+**(b) one leg at an inflated rate, unfixed.** `exit_fee` 0.028 =
+notional × **0.001** × 1 leg (verified: 28.024 × 0.001 = 0.028024). The true
+crypto rate is 0.00045, so a true single leg is $0.012598 — exactly the
+close fee charged. **Proven binding on FIL:** `total` at the fire was
+0.015127, which sits *between* the two floors. At the true rate
+`0.015127 ≤ 0.012598` is **false — the rail would not have fired at all.**
+
+**FIL was a clean test and AVAX was not.** Run 1358 had $0.00 banked before
+this position (2 trade events, verified), so defect (a) had nothing to bite
+on. Same rail, same defects, same day — the only difference in outcome was
+whether there were prior closes to corrupt the baseline.
+
+**Correcting my own cycle-4 record:** I reported AVAX run 1335 as a loss.
+The run as a whole was **+$0.0287** — the desk's two partial covers made
+money; only the ratchet-flattened position 2 lost $0.1414.
+
+### ISSUE — I am NOT shipping the rail fix, and the reason is specific
+
+The diagnosis is solid and arithmetic. The *correction* carries a trap Agent
+B named explicitly: **adding `baseline_pnl` alone moves the best case from
+$0.00 to −1 open fee**, because a position-scoped current is gross while the
+floor is one leg. The floor must move to a full round trip in the same
+change, or every future fire lands one open fee under water.
+
+I have already shipped one fix today that did not work (#468). Shipping a
+money rail whose correction has a named failure mode, in the tail of a
+monitoring cycle, without a replay harness, is how that happens twice.
+
+**Specification for the focused session that should do it:**
+
+1. `_breakeven_floor_hit(peak, current, arm, baseline_pnl, exit_fee)` —
+   mirror `_trailing_lock_hit`; baseline is the banked P&L that cannot
+   round-trip.
+2. In the SAME change, the floor becomes the **round trip**, and the rate
+   comes from `fees.fee_rate(market)`, not `BREAKEVEN_FEE_RATE=0.001`.
+3. Replay both live fires as fail-before tests: **AVAX must not arm**
+   (0.3422 < 0.398 baseline-corrected) and **FIL must not fire**
+   (0.015127 > 0.012598 at the true rate).
+4. Note the residual: even on a single-position run the comparison is off by
+   one open fee, because `total` is net of it while `arm` is gross.
+
+### Also measured
+
+**~4.7-minute mark staleness is the binding constraint, not the threshold.**
+The FIL mark refreshed 16 times in 75.8 minutes; the peak existed for
+**exactly one observation**; the rail armed and fired on **consecutive
+marks**. The $0.0458 giveback happened entirely inside one refresh and was
+invisible to any rail at this resolution. No floor tuning fixes that.
+
+Counterfactuals at the live mark only (FIL 0.66388, AVAX 6.3121): holding
+FIL was worth **+$0.0976**, holding AVAX **+$0.6971** — **0-for-2 on
+realized net and 0-for-2 on opportunity cost.** Two observations is not a
+distribution and I will not present it as one; the case against the rail is
+the arithmetic, not the two outcomes.
+
 ## Cycle 12 — 08:1xZ (anchor 08:18:48): **the timeout fix did NOT work, and the measurement says why**
 
 **PROFIT-OR-LOSS FIRST.** Day 08-17 **+$4.23** (ledger, resid 0.00). One new
