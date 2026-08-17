@@ -7,6 +7,75 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## OWNER ORDER "fix" — 07:0xZ: **the timeout is fixed, after the probe overturned both of my hypotheses**
+
+Owner instructed the fix directly, overriding my "not mine to change" from
+cycle 10. Measured first, then changed.
+
+### The probe killed both theories I was carrying
+
+| condition | latency |
+|---|---|
+| idle, 4 calls | **4.9s, 4.9s, 5.9s, 7.4s** |
+| single call while the fleet was cycling | **78.2s** |
+| 4 concurrent calls while cycling | **79.2s wall**, per-call 69–79s, **4/4 succeeded** |
+
+* **"The model is too slow for 120s"** — refuted. It answers in ~5s idle.
+* **"Concurrency is queueing at a single Ollama endpoint"** — refuted, and
+  this was my stated hypothesis going in. Four concurrent calls cost the
+  same wall-clock as one; the endpoint parallelises.
+
+What is actually there is a **latency tail**: the same call costs ~78s under
+live fleet load, so a 120s cap sits ~1.5× loaded latency and the tail clears
+it several times an hour. **Had I shipped the concurrency limiter I was
+reaching for, it would have cut throughput and fixed nothing.**
+
+### Shipped [#468] — tier-scoped, not global
+
+`_llm_timeout_seconds(tier)`: the decision tier gets 300s
+(`LLM_TIMEOUT_SECONDS_DECISION`), never below the general cap.
+
+**The 120s default is untouched on purpose.** It exists because one stalled
+call took the research loop offline for 30+ minutes while the provider
+answered a fresh probe in 5.7s. Only the decision tier can afford to wait —
+it runs on its own dedicated pool, sized so a slow LLM call cannot starve
+the SL/TP watcher.
+
+### The test break was the finding, not an obstacle
+
+`test_local_token_floor`'s fake generator did not accept `tier`, so the new
+kwarg raised `TypeError` — which `generate_text`'s bare `except` swallows
+into a `None` return, **the same shape a provider timeout takes.** That is
+exactly the confusion #466 was written about, reproduced inside the suite. I
+fixed the fake and added a test asserting the pass-through rather than
+loosening the assertion.
+
+3 mutants killed. Full suite **4,435 passed + 1,346 subtests**.
+
+### Deploy note — a parallel session is active
+
+#468's rollback target is `20260817-monitor-panel`, **not** my previous
+`20260817-no-response-class`. Another session deployed between my two
+deploys. Verified all six of my live changes survived, in-container:
+
+```
+decision timeout: 300.0      general: 120.0
+no_response class: no_response    empty class: empty
+salvage present: True        adherence silent: {}
+loss floor cfg: 10.3149
+```
+
+0 tracebacks. **On a shared box, "my deploy succeeded" is not the same as
+"my change is running" — check the feature, not the chain.**
+
+### What decides whether this worked
+
+`no_response` (#466) is now the counter. If the tail moves past 300s the
+losses return and the tape will say so. This buys headroom against the
+observed tail; it does not make the model faster.
+
+**Session ship count: 22 PRs.**
+
 ## Cycle 10 — 06:4xZ (anchor 06:49:33): **the no-verdict cause is settled — local-provider timeouts — and #465 was mine to correct**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **4h25m**.
