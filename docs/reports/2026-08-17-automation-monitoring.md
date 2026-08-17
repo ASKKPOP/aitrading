@@ -7,6 +7,74 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 35 — 19:4xZ (anchor 19:49:31): **the ceiling corrects the desk silently, and the desk has now asked for the same impossible target three times**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3697**,
+oscillating (−$0.3577 → −$0.1830 → −$0.3697) and now **58% of the way to its
+stop**; a stop-out costs ≈**−$0.637**. Day 08-17 **+$4.13**. 26 decisions,
+**0 no-verdicts**.
+
+### ISSUE — a rail that corrects without informing
+
+Four ceiling fires now, on two runs:
+
+| ts | run | requested | clamped to |
+|---|---|---|---|
+| 17:56:00Z | 1375 | **3.02%** | 1.41 (3× stop 0.47) |
+| 18:27:45Z | 1375 | **3.02%** | 1.425 (3× stop 0.475) |
+| 18:58:45Z | 1370 | 4.1% | 2.4 (3× stop 0.8) |
+| 19:30:06Z | 1375 | **3.02%** | 1.44 (3× stop 0.48) |
+
+**Run 1375 has asked for exactly 3.02% three times in a row.** The clamp
+fires, journals its note, and the desk asks for the identical unreachable
+number on the next cycle. Its stop drifts (0.47 → 0.475 → 0.48) while the
+target stays frozen — so the desk is not deriving the target from the stop at
+all; it is repeating a fixed figure.
+
+Confirmed in code: `order_params` notes **never reach the prompt**, and there
+is **no brief line** for a clamped parameter. The desk is corrected and never
+told.
+
+**This is the same defect class as the arm label** — cycle 27 shipped
+`classify_arm` and noted "nothing consumes the label yet". Now there are two
+rails that know something the desk does not:
+
+* the arm's protective/defensive class, and
+* that its target was cut roughly in half.
+
+A rail that silently corrects a repeated mistake converts a *learnable* error
+into a *permanent* one. The desk will ask for 3.02% forever.
+
+### What this changes about my own recommendation
+
+I deferred the brief line twice — cycle 27 ("needs its own measurement"),
+cycle 32 ("next code cycle"). **The deferral is now costing something
+measurable: three identical wrong requests on one run in 95 minutes.** That
+is not an argument that the brief line *works*; it is an argument that its
+absence has an observable price, which is a different and better reason to
+build it than the one I had.
+
+The measurement it still needs is unchanged: whether telling the desk changes
+what it asks for next cycle. **Run 1375 is now a ready-made before/after** —
+three pre-notification cycles on record, all identical.
+
+### Standing rails
+
+| rail | fires | verdict |
+|---|---|---|
+| R:R ceiling | **4** | exercised, entry-only, **silent** |
+| corrected loss floor | **0** all day | unexercised |
+| arm classify | label only | **silent** |
+| breakeven ratchet | 3 today | −$0.25293, 0 net gains |
+
+### Recommendations
+
+1. **Build the clamp/label brief line next.** Both rails are silent; one
+   change can surface both, and run 1375 supplies the baseline.
+2. **`RR_CEILING=2.0`** — at 1370's 0.8% stop the 3× default still lands
+   above H7's p75.
+3. **AVAX 1370 at 58% to stop** remains the only open book.
+
 ## Cycle 34 — 19:1xZ (anchor 19:19:31): **the ceiling fired on the LIVE book and changed nothing — it is an entry-only rail**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short recovered to

@@ -434,3 +434,26 @@ cd service && VIRTUAL_ENV= uv run --with pip-audit --python /usr/bin/python3 \
     pip-audit -r requirements.txt
 ```
 
+## SILENT RAILS — measured cost, 2026-08-17 cycle 35
+
+Two shipped rails know something the desk does not, and neither tells it:
+
+1. **R:R ceiling** clamps `target_pct` and journals a note. `order_params`
+   notes **never reach the prompt**; there is **no brief line** for a clamped
+   parameter (verified by grep).
+2. **`classify_arm`** labels an armed exit protective/defensive. Nothing
+   consumes the label.
+
+**Measured cost of the silence:** run 1375 requested **target_pct 3.02%
+three times in 95 minutes** (17:56, 18:27, 19:30) while its stop drifted
+0.47 -> 0.475 -> 0.48. The clamp fired every time; the request never changed.
+The desk is not deriving the target from the stop — it repeats a fixed
+figure, and nothing corrects the belief.
+
+**A rail that silently corrects a repeated mistake converts a learnable error
+into a permanent one.**
+
+**Baseline for the fix is already on tape:** three pre-notification cycles on
+run 1375, all identical. The test after shipping a brief line is simply
+whether the requested target changes.
+
