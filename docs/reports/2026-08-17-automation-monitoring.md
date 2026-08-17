@@ -7,6 +7,1126 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 37 — 21:2xZ (anchor 21:23:31): **AVAX 1370 closed −$0.305, and Agent B refuted my own R:R ceiling report**
+
+**PROFIT-OR-LOSS FIRST.** AVAX run 1370 closed 20:24:05Z at **−$0.30509322**
+true net (reconciles to `realized_pnl_usd` exactly). Day 08-17 now **+$3.84**
+(ledger, resid −0.01, 4 flattens). Book flat.
+
+Gross adverse price move is **86.03% of the loss**; fees are 13.97%. **This
+was a directional loss, not a friction loss** — the fee-hurdle story that fits
+so many trades today does not fit this one, and I am not going to force it.
+
+### FAILED — my cycle-33 "the ceiling WORKED" was wrong
+
+I reported the R:R ceiling's first fires as *"the mechanism doing precisely
+what it was built to do, on live tape"* (cycle 33), then narrowed it to
+*"entry-only"* (cycle 34). **Agent B went further and is correct.**
+
+All four ceiling fires landed on **`action = hold`**, and I verified the
+consequence in source:
+
+```
+order_intent.compile_intent:  if kind in ("hold", "arm"): return {"steps": [], "note": kind}
+```
+
+**A hold compiles to no order. The re-priced target is parsed, journalled,
+and discarded.** Not one fire has shaped an entry, an exit, or a live
+bracket.
+
+| run | ts | clamp | action | effect |
+|---|---|---|---|---|
+| 1375 | 17:56:00 | 3.02 → 1.41 | hold | none |
+| 1375 | 18:27:45 | 3.02 → 1.425 | hold | none |
+| 1370 | 18:58:45 | 4.1 → 2.4 | hold | none |
+| 1375 | 19:30:06 | 3.02 → 1.44 | hold | none |
+
+**P&L effect of the R:R ceiling to date: exactly $0.00.** It is telemetry,
+not a rail. "Entry-only" was still too generous — it has not reached an entry
+either, because no fire has yet landed on a buy or sell cycle.
+
+### And my cycle-13 fix specification is inverted by the numbers
+
+I specified: *"do not fix defect (a) alone — the floor must move to a full
+round trip in the same change."* Agent B recomputed run 1335 from `signals`
+and I verified it independently:
+
+```
+pos-2 own peak = run-cum peak 0.422800 − banked 0.170175 = 0.252625
+(a) fixed alone : 0.2526 < arm 0.3980  ->  NO ARM   (saves −$0.141443)
+(a)+(b) fixed   : 0.2526 > arm 0.1791  ->  ARMS     (the loss stands)
+```
+
+**On the one fire where the ratchet lost real money, fixing (a) ALONE
+prevents it and fixing (a)+(b) does not.**
+
+Both statements can hold because they concern different halves: **(a) governs
+whether it ARMS**, and the floor governs **what happens once armed**. Fixing
+(a) alone gives fewer bad arms and a worse floor. My spec collapsed the two.
+**Revised: fix (a) first, independently, and measure — the arming defect is
+the one with a proven −$0.141 attached.**
+
+### The trade itself — the desk's target was never reachable
+
+Agent A's finding, which I accept: the planner said `expected_move_pct 2.5`
+and the algo candidate proposed 6.1354; **the desk overrode both and set
+3.6% → 6.06838, 44% beyond its own planner.** It never moved that target
+across 15 cycles while the horizon decayed 8h → 1h. At cycle 13 it stamped
+its **highest conviction of the run (0.78, `plan_adherence: followed`)** on a
+plan needing **4% in under 2 hours** in an asset whose entire 7-hour range
+was **0.94%**.
+
+**The book was adverse on 356 of 369 samples (96.5%) and was never net-
+profitable at a single sample.**
+
+The arm at 6.25 was **correctly sided** (below breakeven 6.28934) and
+**structurally unreachable** — 0.653% below the run's own best mark, in a
+tape with a 0.94% total range, and never re-priced in 12 cycles where it
+appeared in the brief. **A different failure from SOL 1367's losing-side arm:
+right side, wrong place.**
+
+### Where the agents agreed, and B's correction to me
+
+Both: **the close was desk-authored** (`run:1370:cyc:15`), and
+`stop_event:at_time` stamped a run that had been flat for **57 minutes**.
+Zero rail contribution to the loss.
+
+**B corrected my brief:** worst mark was **6.35020 (65.0% to stop)**, not the
+6.3443/58% I supplied. The tick high was 6.35590 (66.9%).
+
+**B also refused an easy defect:** the ratchet's non-arming was **correct
+under every parameterisation**, including both defects fixed — the corrected
+arm sits at 6.28934 and the true tick low was 6.28950, missing by 0.0026% of
+price. B tested against real ticks rather than 5-minute marks before saying
+so. Ratchet record unchanged: **3 fires, −$0.252934, zero net gains.**
+
+### The scheduled test did not run
+
+Cycle 36's brief line deployed at **21:22:13Z**. Run 1375's last parameter
+cycle was **19:30**, and it has since been `idle_retired` at $0.00. **No
+post-deploy cycle has rendered the line.** `railed_params` appears in **0**
+brief arrays. The test is not answerable yet — not passed, not failed.
+
+### Recommendations
+
+1. **Stop describing the ceiling as working.** Until a fire lands on a
+   buy/sell cycle its P&L effect is $0.00. Reported as such.
+2. **Fix ratchet defect (a) alone, first** — reversing my cycle-13 spec, on
+   the strength of the 1335 recomputation.
+3. **`plan_adherence` measures obedience, not viability** (Agent A). A
+   "followed" stamp certified a 4%-in-2h plan. It needs a reachability test
+   or it will keep rubber-stamping dead plans.
+4. The `fence: lease expired` that killed cycle 12's `reduce` was **+$0.020
+   favourable here** — a real process defect that cost nothing on this tape,
+   and I will not inflate it.
+
+## Cycle 36 — 20:1xZ (anchor 20:19:35): **built the line that breaks the rails' silence — with the before-measurement already on tape**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3045**. Day
+08-17 **+$4.13**. 12 decisions, 1 no-verdict. Ceiling holds at 4 fires.
+
+### The deferral ends because the cost became measurable
+
+I put this off twice on the grounds it "needs its own measurement". Cycle 35
+supplied one: run 1375 requested **`target_pct` 3.02% three times in 95
+minutes** while its stop drifted 0.47 → 0.475 → 0.48. Clamped every time.
+Request never moved. The clamped values it actually received were
+**1.41, 1.425, 1.44** — and it went on asking for 3.02.
+
+`order_params` notes are journalled and never reach the prompt. **The desk
+was corrected and never told.**
+
+### `_railed_params_line` — names the rule, not just the number
+
+> *"A rail changed your last bracket: target_pct 3.02 pulled to R:R ceiling
+> 1.41 (3x stop 0.47) — unreachable targets never fill. Propose your next
+> bracket within that rule rather than re-sending the value it cut — the rail
+> will cut it again."*
+
+The design decision worth stating: **a desk shown "1.41" learns one value; a
+desk shown "3× your stop" can derive the next one itself.** One of the four
+tests exists solely to pin that — it fails if the line degrades to numbers
+alone, and the mutant that stripped the rule was killed by it.
+
+Wired into the brief parts list, so it renders on **flat books too** — which
+matters, because run 1375 has no position and is exactly the run that needed
+telling.
+
+### Verification
+
+* Fail-before red on all 5 tests; green after.
+* **3 mutants, 3 killed** — unwired from the brief; renders when nothing was
+  railed; rule stripped to bare numbers.
+* 320 tests in the two affected files pass; ruff clean; full suite running.
+
+### The after-measurement is already specified and its baseline exists
+
+**Before:** run 1375, three cycles, identical 3.02% request, no notification.
+**Test:** once this deploys, does its requested `target_pct` change?
+
+That is a clean before/after on live tape with no new instrumentation. **If
+the request stays at 3.02%, the line failed and I will report it as such** —
+the same standard that removed #468 from the fixed column.
+
+### Standing rails — one no longer silent
+
+| rail | fires | tells the desk? |
+|---|---|---|
+| R:R ceiling | 4 | **yes, once this deploys** |
+| arm classify | label only | **no — still silent** |
+| corrected loss floor | 0 | unexercised |
+| breakeven ratchet | 3 | −$0.25293, 0 net gains |
+
+`classify_arm`'s label is still unconsumed. The mechanism to surface it now
+exists and reuses this line's shape; that is the next candidate.
+
+### Recommendations
+
+1. **Deploy and watch run 1375's next requested target.** One number decides
+   whether this worked.
+2. **`RR_CEILING=2.0`** still stands — the 3× default lands above H7's p75.
+3. AVAX 1370 remains the only open book.
+
+## Cycle 35 — 19:4xZ (anchor 19:49:31): **the ceiling corrects the desk silently, and the desk has now asked for the same impossible target three times**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3697**,
+oscillating (−$0.3577 → −$0.1830 → −$0.3697) and now **58% of the way to its
+stop**; a stop-out costs ≈**−$0.637**. Day 08-17 **+$4.13**. 26 decisions,
+**0 no-verdicts**.
+
+### ISSUE — a rail that corrects without informing
+
+Four ceiling fires now, on two runs:
+
+| ts | run | requested | clamped to |
+|---|---|---|---|
+| 17:56:00Z | 1375 | **3.02%** | 1.41 (3× stop 0.47) |
+| 18:27:45Z | 1375 | **3.02%** | 1.425 (3× stop 0.475) |
+| 18:58:45Z | 1370 | 4.1% | 2.4 (3× stop 0.8) |
+| 19:30:06Z | 1375 | **3.02%** | 1.44 (3× stop 0.48) |
+
+**Run 1375 has asked for exactly 3.02% three times in a row.** The clamp
+fires, journals its note, and the desk asks for the identical unreachable
+number on the next cycle. Its stop drifts (0.47 → 0.475 → 0.48) while the
+target stays frozen — so the desk is not deriving the target from the stop at
+all; it is repeating a fixed figure.
+
+Confirmed in code: `order_params` notes **never reach the prompt**, and there
+is **no brief line** for a clamped parameter. The desk is corrected and never
+told.
+
+**This is the same defect class as the arm label** — cycle 27 shipped
+`classify_arm` and noted "nothing consumes the label yet". Now there are two
+rails that know something the desk does not:
+
+* the arm's protective/defensive class, and
+* that its target was cut roughly in half.
+
+A rail that silently corrects a repeated mistake converts a *learnable* error
+into a *permanent* one. The desk will ask for 3.02% forever.
+
+### What this changes about my own recommendation
+
+I deferred the brief line twice — cycle 27 ("needs its own measurement"),
+cycle 32 ("next code cycle"). **The deferral is now costing something
+measurable: three identical wrong requests on one run in 95 minutes.** That
+is not an argument that the brief line *works*; it is an argument that its
+absence has an observable price, which is a different and better reason to
+build it than the one I had.
+
+The measurement it still needs is unchanged: whether telling the desk changes
+what it asks for next cycle. **Run 1375 is now a ready-made before/after** —
+three pre-notification cycles on record, all identical.
+
+### Standing rails
+
+| rail | fires | verdict |
+|---|---|---|
+| R:R ceiling | **4** | exercised, entry-only, **silent** |
+| corrected loss floor | **0** all day | unexercised |
+| arm classify | label only | **silent** |
+| breakeven ratchet | 3 today | −$0.25293, 0 net gains |
+
+### Recommendations
+
+1. **Build the clamp/label brief line next.** Both rails are silent; one
+   change can surface both, and run 1375 supplies the baseline.
+2. **`RR_CEILING=2.0`** — at 1370's 0.8% stop the 3× default still lands
+   above H7's p75.
+3. **AVAX 1370 at 58% to stop** remains the only open book.
+
+## Cycle 34 — 19:1xZ (anchor 19:19:31): **the ceiling fired on the LIVE book and changed nothing — it is an entry-only rail**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short recovered to
+**−$0.1830** (from −$0.3577). Day 08-17 **+$4.13**. 24 decisions, 1
+no-verdict.
+
+### FAILED — a scope limit on my own change, found by following it
+
+The ceiling now has **3 fires**, and the third landed on the open book:
+
+| fire | run | note |
+|---|---|---|
+| 17:56:00Z | 1375 | `target_pct 3.02 pulled to 1.41 (3x stop 0.47)` |
+| 18:27:45Z | 1375 | `target_pct 3.02 pulled to 1.425 (3x stop 0.475)` |
+| **18:58:45Z** | **1370 (live short)** | `target_pct 4.1 pulled to 2.4 (3x stop 0.8)` |
+
+**And AVAX 1370's actual take-profit is unchanged at 6.06838 (−3.60%),** the
+value written at entry six hours ago.
+
+Verified in code: `take_profit` is passed once at `open_position` and
+**there is no path that revises it on a live book**. The R:R ceiling clamps
+*parsed params*; parsed params reach a position only at entry.
+
+**So the ceiling is an ENTRY-time rail, not a management rail.** On the one
+fire against a live position — the very book that prompted the whole target
+investigation — **it changed nothing.** Its value is confined to positions
+opened after it shipped.
+
+I described this yesterday as moving "a live watcher level into the range the
+market actually trades" (cycle 24). **That is true only for new entries**,
+and I did not say so at the time.
+
+### Correcting cycle 24 as well: a second cause of the 0-in-210
+
+Cycle 24 concluded the take-profit had never fired in 210 stopped runs
+because the level was **unreachable**. There is a second mechanism I missed:
+
+```
+risk_engine.py:656
+UPDATE positions SET stop_loss = ?, take_profit = NULL WHERE id = ?
+```
+
+**When the trailing stop engages, it DELETES the take-profit.** A position
+that trails loses its profit target outright.
+
+Scope of the correction, measured: **11 of 210 stopped runs** ended
+`stop_event:trailing_lock`, so at most ~5% had their TP nulled this way.
+**Unreachability remains the dominant cause** and cycle 24's conclusion
+survives — but it was not the only one, and the second is a deliberate
+`NULL` rather than a level the market never reached.
+
+### The default is too generous against what the market offers
+
+Even the clamped value is thin. At 1370's 0.8% stop the 3× ceiling gives
+**2.4%**, and H7 measured available excursion at median **1.14%**, p75
+**1.89%**. **2.4% is still above p75.**
+
+`RR_CEILING=2.0` would give **1.6%** on that stop — inside the band. That is
+the config change already documented; today's fires are the first live
+argument for it rather than a replay argument.
+
+### Standing rails
+
+| rail | fires | verdict |
+|---|---|---|
+| R:R ceiling | 3 | behaves as specified, **entry-only**, no P&L yet |
+| corrected loss floor | **0** all day | unexercised |
+| arm classify | label only | nothing consumes it |
+| breakeven ratchet | 3 | −$0.25293, 0 net gains |
+
+Run 1375 (VZ, us-stock) carries the first two clamps and has **0 trades in 10
+cycles** — the clamped target is still untested by a fill.
+
+### Recommendations
+
+1. **Say "entry-only" wherever the ceiling is described.** It cannot help an
+   open book.
+2. **`RR_CEILING=2.0`** now has a live argument, not just a replay one.
+3. **The trailing stop nulling take-profit deserves its own look** — it is
+   deliberate, but nothing tells the desk its target has been deleted.
+
+## Cycle 33 — 18:4xZ (anchor 18:49:29): **the R:R ceiling fired — twice, on real tape, exactly as specified**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3577**. Day
+08-17 **+$4.13** realized, resid −0.00, 4 flattens. 21 decisions, 1
+no-verdict.
+
+### WORKED — first live exercise of a rail I refused to call working
+
+Last cycle I wrote that neither the ceiling nor the loss floor could be
+described as working until each had a live fire. **The ceiling has two.**
+
+| fire | run | desk asked | pulled to | rule |
+|---|---|---|---|---|
+| 17:56:00Z | 1375 cyc 8 | **target 3.02%** at stop 0.47% (R:R 6.43) | **1.41%** | 3× stop |
+| 18:27:45Z | 1375 | target > ceiling at stop 0.475% | **1.425%** | 3× stop |
+
+The journalled note, verbatim:
+
+> `target_pct 3.02 pulled to R:R ceiling 1.41 (3x stop 0.47) — unreachable
+> targets never fill`
+
+**Measured against the evidence that justified it:**
+
+* **H6** — no target above **2.00%** has ever been reached, even given a
+  run's own full horizon. **3.02% sat in the dead zone.**
+* **H7** — available excursion inside a run's horizon is median **1.14%**,
+  p75 **1.89%**. **1.41% is inside the reachable band.**
+
+So the rail moved a target from a region the market has never once delivered
+into one it delivers about half the time. **That is the mechanism doing
+precisely what it was built to do, on live tape, within an hour of deploy.**
+
+### What this is NOT evidence of, stated before it gets quoted
+
+**A reachable target is not a profitable one.** No trade has closed on either
+of these yet. n=2 fires, 0 closes.
+
+And there is a tension I am not going to bury: **run 1375's stop is 0.47%,
+which sits in exactly the band H8 measured as WORST** — at a 0.50% stop, 17
+of 30 legs stop out and expectancy was **−0.11**. The ceiling did not set
+that stop; the desk did. Pulling 3.02% → 1.41% should still help this pair
+(per H6 a 3.02% target wins ~never, so the change trades ~0 wins for some
+wins against the same stop count) — but that is **inference from H8's grid,
+not a measurement of this run.**
+
+**The stop itself is the larger problem here, and the ceiling does not touch
+it.** H8 said tighter stops are strictly worse; a desk choosing 0.47% is
+choosing the worst band in that table.
+
+### Standing rails status
+
+| rail | live fires | verdict |
+|---|---|---|
+| R:R ceiling (#471) | **2** | **exercised** — behaves as specified; P&L unmeasured |
+| corrected loss floor (#460) | **0** all day | still unexercised, still not "working" |
+| arm classify (#472) | label only, nothing consumes it | deployed, inert by design |
+| breakeven ratchet (#449) | 3 | **−$0.25293, 0 net gains** — unchanged |
+
+### Recommendations
+
+1. **Follow run 1375 to close.** It is the first trade carrying a
+   ceiling-clamped target and the cleanest available test of whether
+   reachable targets convert.
+2. **The 0.47% stop deserves its own look** — H8 puts that band at negative
+   expectancy, and the ceiling cannot correct a stop.
+3. AVAX 1370 remains the other open book at −$0.3577 with a correctly-sited
+   protective arm.
+
+## Cycle 32 — 18:1xZ (anchor 18:19:29): **#472 merged; AVAX 1370 deteriorating — and its arm is CORRECT, which matters**
+
+**PROFIT-OR-LOSS FIRST.** No closes. **AVAX run 1370 short −$0.3502**, up
+from −$0.2107 thirty minutes ago. Day 08-17 **+$4.13** realized. 23
+decisions, **0 no-verdicts**.
+
+### The open book is now the story
+
+| | |
+|---|---|
+| entry / mark / stop | 6.2950 / **6.3417** / 6.37998 |
+| travelled toward stop | **55%** (was 26% at 15:49Z) |
+| unrealized | **−$0.3502** |
+| loss if stopped | **≈ −$0.637** |
+| take-profit | 6.06838 (−3.60%, in the never-reached band per H6) |
+
+**But its arm is on the right side**, and that is worth stating because I
+have spent two cycles criticising arms:
+
+```
+entry 6.2950   breakeven (round trip) 6.28933
+arm   price_below 6.2500 -> reduce     =>  PROTECTIVE
+```
+
+6.25 sits **below** breakeven, so firing it banks money. **The desk placed a
+correct protective arm on this position.** The market simply went the other
+way — the arm now needs a 1.45% fall from the current mark to trigger.
+
+**Not every loss is a defect.** SOL 1367 lost because its only arm was
+guaranteed to lose; AVAX 1370 is losing with a properly-sited arm and a stop
+it has not reached. Those are different failures and I am not going to blame
+the same cause twice.
+
+Two blemishes remain on it: the arm's `why` is **empty** (the 133/134
+pattern), and **2 of its 10 cycles were conf-0.0** — 20%, against the 9.25%
+held-book average from H9.
+
+### WORKED — [#472] merged and deploying
+
+All five checks green. Merged `ef2a66cd`, deploying as `arm-classify`. The
+protective/defensive classifier and the implausible-level rail are now in
+main. **Nothing consumes the label yet** — that remains a separate change
+with its own measurement, as stated when it was built.
+
+### The R:R ceiling has not fired
+
+**0 fires in the ~20 minutes since deploy.** Expected: it binds only above
+R:R 3.0, and it shipped inert against every existing case by design. **This
+is not evidence it works** — it is evidence it has not been exercised, the
+same status #460 has carried all day. It goes on the watch list under the
+same rule: no claim of validation until a live parse is actually pulled.
+
+### State
+
+| item | state |
+|---|---|
+| #471 R:R ceiling | merged, deployed, **unexercised** |
+| #472 arm classify | **merged, deploying** |
+| AVAX 1370 | **55% to stop**, protective arm, empty why |
+| dependency "red on main" | retracted (CI passes) |
+| gitleaks on #471 | proved an outage artifact |
+
+### Recommendations
+
+1. **Watch AVAX 1370 to resolution** — it is the only open book and the only
+   live test of whether a correctly-armed losing position exits better than
+   the mis-armed ones did.
+2. **Wire the arm label into the brief** — the measurement that turns 43%
+   into behaviour. Next code cycle.
+3. Neither ceiling nor loss-floor may be described as working until each has
+   a live fire.
+
+## Cycle 31 — 17:4xZ (anchor 17:49:33): **the gitleaks failure WAS an outage artifact — proved it, merged #471, and made a process mistake worth recording**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.2107**. Day
+08-17 **+$4.13** realized. 22 decisions, **0 no-verdicts**.
+
+### AVAX 1370's own cycle tape — both fixes visible on one live losing book
+
+| time | conf | report |
+|---|---|---|
+| 16:21:23 | **0.57** | *"recovered from a truncated verdict — the desk's reasoning was cut off, the decision was not"* |
+| 16:50:57 | **0.0** | `light cycle: no LLM verdict` |
+| 17:22:36 | 0.58 | *"Holding the short position aligns with the standing plan; no action taken beyond existing arm."* |
+
+**#462 earned its keep on a live held position**: 16:21 would have been a
+discarded cycle before it. 16:50 is the one that still gets lost — the H9/H10
+held-book penalty, on the only open book.
+
+### Proved the hypothesis instead of leaving it as one
+
+Cycle 30 said the #471 gitleaks failure was *"most likely an outage
+artifact"* and named the test: re-run it once writes recover. Writes came
+back mid-cycle, so I re-ran the **failed job on the identical SHA**:
+
+```
+Secret scan (gitleaks) -> completed/success
+```
+
+**Same commit, same config, opposite result.** The failure was the action
+posting through the API at 15:06Z, mid-outage — not a leak. Hypothesis
+confirmed by the test that was specified for it, not by argument.
+
+### #471 MERGED and deploying
+
+All five checks green on the identical SHA — pytest, frontend, npm audit,
+**Python dependency audit**, gitleaks. Both reasons I held it for two cycles
+are now gone:
+
+* the dependency finding was **retracted** last cycle (CI passes; my local
+  run could not be reconciled),
+* the gitleaks failure is **proved** an outage artifact.
+
+Merged as `05333d3b`, deploying as `rr-ceiling`. The R:R ceiling ships
+**inert** (default 3.0); `RR_CEILING=2.0` takes H8's measured optimum as a
+config change.
+
+### ISSUE — I probed a write API with a real write
+
+To test whether writes had recovered I ran `gh api -X POST .../pulls` with a
+placeholder title. It succeeded, and **created a real PR #472 titled
+"probe" with no body.** I repurposed it immediately as the proper `c27` PR
+rather than leaving a junk artifact, but the mistake stands: **a probe of a
+mutating endpoint is a mutation.** A read (`gh api repos/...`) had already
+told me reads worked; the write test should have been the actual intended
+write, or nothing.
+
+`c27` is now [#472] with its real title and body.
+
+### State
+
+| item | state |
+|---|---|
+| #471 R:R ceiling | **merged, deploying** |
+| #472 arm protective/defensive (`c27`) | open, awaiting CI |
+| dependency "red on main" | **retracted** — CI passes |
+| gitleaks on #471 | **outage artifact, proved** |
+| AVAX 1370 | only open book, −$0.2107, 26%→ toward stop |
+
+## Cycle 30 — 17:1xZ (anchor 17:19:33): **CI came back and refuted TWO of my outage-period conclusions, in opposite directions**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.2145** — the
+deepest yet (−$0.022 → −$0.139 → −$0.167 → −$0.103 → **−$0.2145**). Day 08-17
+**+$4.13** realized. 22 decisions, 1 no-verdict.
+
+### The outage is NOT over, and the status page is wrong
+
+`githubstatus.com` reports API / Pull Requests / Actions **operational**.
+They are not. REST **reads** work (`gh api repos/...` returns), but **every
+write still 503s** — `gh pr create` on both GraphQL and REST. The status page
+is ahead of reality; **the read path recovering is not the outage ending.**
+
+`c27` still cannot be turned into a PR. Branch is pushed and safe.
+
+### FAILED — my "dependency audit is red on main" finding is refuted by CI
+
+Reads work, so I asked CI directly. On **#471** (checks ran 15:06Z) and on
+**main** (`500d003a`):
+
+| check | #471 | main |
+|---|---|---|
+| Backend pytest | success | success |
+| Frontend build | success | success |
+| npm audit | success | success |
+| **Python dependency audit** | **success** | **success** |
+| **Secret scan (gitleaks)** | **FAILURE** | **success** |
+
+**CI's pip-audit passes.** My local run reported **32 advisories across 9
+packages** using what the workflow shows is the *identical* command
+(`pip-audit -r requirements.txt`, `working-directory: service`, no ignore
+flags). I cannot reproduce CI's environment and I cannot explain the
+difference — most plausibly my local resolution pulled different transitive
+versions than a clean `pip install pip-audit` on ubuntu/3.12.
+
+**I blocked #471 for two cycles on that finding, and called it "the
+highest-priority owner call". It is not supported.** Retracted as a finding;
+it survives only as "local resolution differs from CI, unexplained".
+
+### And the failure I DID explain away is the real one — probably
+
+gitleaks **fails on #471 and passes on main**, which inverts what I wrote at
+cycle 25: I found 5 findings in full history, checked my diff, found nothing,
+and speculated CI "may scan differently".
+
+Checked again now, two ways: **no credential in my notes** (the DB password
+appears 0 times), and `gitleaks --log-opts origin/main..c25` reports **no
+leaks found**. So the diff is clean by local measurement, main passes, and
+only the PR check fails.
+
+**Most likely an outage artifact**: `gitleaks-action@v2` posts results
+through the GitHub API, and the checks ran at **15:06Z — mid-outage**. That
+is a hypothesis, not a conclusion; the test is re-running the check once
+writes recover.
+
+### The lesson, which is mine
+
+Both errors share one root: **during the outage I treated my local
+replication as the verdict, and kept treating it as the verdict after reads
+came back.** The standing rule says replicate every job locally as merge
+evidence when the provider is down. It does not say local results outrank CI
+once CI is readable again — and I let a local pip-audit result block a merge
+for two cycles while CI's own answer was sitting there, retrievable by a read
+that was working.
+
+### Recommendations
+
+1. **Re-run #471's checks the moment writes recover**, then judge gitleaks on
+   that result rather than on my speculation.
+2. **Do not act on the dependency bump.** It rested on a local finding CI
+   contradicts. If it is real it will reappear in CI; if it does not, it was
+   never there.
+3. `c27` awaits a PR. Queue unchanged otherwise.
+4. **AVAX 1370 is at its worst mark** and is the only open book — worth the
+   next cycle's first look.
+
+## Cycle 29 — 16:4xZ (anchor 16:49:38): **H10 — the held-book excess survives controlling for host load. It is structural.**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.103**,
+unchanged. Day 08-17 **+$4.13**. 24 decisions, **0 no-verdicts**. GitHub
+still **major_outage**.
+
+### The circular test I caught and threw away
+
+My first H10 design split decisions by "minutes containing any no-verdict"
+and compared inside vs outside. It returned **0.00% outside** for both held
+and flat — which is a **tautology**: a minute is only "outside" if it
+contains no failures, so the outside bucket is 0% by construction. It looked
+like a clean result and measured nothing.
+
+### H10 — "the held-book excess is just shared host load" → **REFUTED**
+
+*Falsifier: with load controlled, held and flat converge.* Grouped every
+decision by HOUR, kept only the **111 hours containing BOTH held and flat
+decisions** — so both states faced the same host conditions — then compared:
+
+| within the same hours | decisions | no_verdict | rate |
+|---|---|---|---|
+| **HELD** | 573 | 53 | **9.25%** |
+| FLAT | 1,693 | 47 | **2.78%** |
+| | | **matched ratio** | **3.33×** |
+
+Controlling for load did not shrink the gap — it moved from 3.27× (H9,
+uncontrolled) to **3.33×**. **Held books are not merely cycling during busy
+periods; they fail more within the same hours.** The excess is structural to
+carrying a position.
+
+### The size delta, measured rather than assumed
+
+Rendered both prompt shapes against a real run (AVAX 1370's own numbers):
+
+| block | chars |
+|---|---|
+| position-state block, HELD | **1,593** |
+| position-state block, FLAT | **0** |
+| order-intent + arm instructions (renders only when `pos_qty`) | **~710** |
+| **held-book prompt surplus** | **≈2,300 chars** |
+
+So a held book carries roughly **2,300 extra characters** of prompt that a
+flat book never sends, on top of an already-large context. That is a real,
+measured difference in the same direction as the failure rate.
+
+**It is still not proof.** Two things I will not skip past:
+
+1. The light path already grants held books more OUTPUT budget
+   (`max_tokens = 280 if pos_qty else 200`) — partial compensation exists.
+2. **Correlation of direction is not causation of magnitude.** ~2,300 extra
+   input characters producing a 3.3× failure multiplier is a large lever for
+   a modest input change, and I have no per-call latency-vs-size data to
+   justify that slope.
+
+### What will be done
+
+**Log prompt characters and elapsed seconds on the decision event, split by
+`pos_qty`.** That is one field on an event that already exists, it is pure
+telemetry, and it converts the last hypothesis in this chain into a
+measurement. It is the same move that turned the no-verdict argument into
+the timeout answer (#459 → #466 → cycle 26).
+
+**I am not shipping it during the outage.** The branch queue is already two
+deep and unmergeable (`c27`, #471); a third would just be more code that
+cannot reach prod. It goes in the moment Actions returns.
+
+### Why this chain matters in P&L terms
+
+A held book losing its cycle is an open position going unmanaged for a full
+interval. AVAX 1370 did exactly that at 15:21:20Z while sitting at a loss.
+**9.25% of held-book cycles are lost** — roughly one management look in
+eleven, on the only books that have money at risk.
+
+## Cycle 28 — 16:1xZ (anchor 16:19:30): **H9 — a held book is 3.3x more likely to lose its decision cycle than a flat one**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short recovered to
+**−$0.103** (from −$0.167). Day 08-17 **+$4.13**. 25 decisions, **0
+no-verdicts**. 10 running runs. GitHub still **major_outage**.
+
+### The method error I caught before reporting it
+
+My first H9 query matched each decision to the `order_intent` from the same
+cycle to read `position_qty`. It returned **0 no-verdicts in both buckets** —
+and I know there are dozens.
+
+**A no-verdict cycle emits no `order_intent`.** Every case I was measuring
+fell into the unmatched bucket, so the method excluded exactly the population
+under test. A clean 0.00%/0.00% would have read as a tidy refutation.
+
+Re-run against **`equity` events**, which are emitted every ~64s regardless
+of whether a verdict arrived — the one signal that survives the failure being
+measured.
+
+### H9 — "no-verdicts concentrate on held books" → **CONFIRMED**
+
+*Falsifier: the rate is the same for held and flat.* 2,487 decisions
+classified by whether the run carried an open position at that moment:
+
+| book state | decisions | no_verdict | rate |
+|---|---|---|---|
+| **HELD (position open)** | 574 | 53 | **9.23%** |
+| FLAT (no position) | 1,913 | 54 | **2.82%** |
+| | | **ratio** | **3.27×** |
+
+**The cycle that matters most is the one most often lost.** A flat run that
+misses a cycle costs nothing — it had no position to manage. A held run that
+misses one is an open position going unmanaged for a full interval, which is
+exactly what AVAX 1370 did at 15:21:20Z while sitting at a loss.
+
+This is consistent with cycle 1's independent measure (already-traded runs
+15.6% vs never-traded 6.2%, ~2.5×), reached by a different route.
+
+### The mechanism hypothesis — named, NOT claimed
+
+The obvious candidate is prompt size: a held book renders position state,
+the brief lines, the order-intent schema and the Plan 26 outlook, so its
+request is materially larger, and cycle 26 established that these failures
+are **provider timeouts**. Bigger request → longer generation → more exposure
+to the tail.
+
+**I am not asserting it.** One fact already cuts against a naive version:
+the light path already grants held books MORE output budget
+(`max_tokens = 280 if pos_qty else 200`), so if size alone were the driver
+the compensation is at least partly in place.
+
+**The test that settles it:** log prompt character count and elapsed time per
+decision-tier call, then compare held vs flat. Until that runs, "held books
+time out more" is the measurement and "because the prompt is bigger" is a
+guess.
+
+### Why this matters more than the headline rate
+
+Cycle 17 showed the aggregate no-verdict rate is episodic and currently ~0%.
+That made the whole issue look closed. **H9 says the aggregate was hiding the
+distribution**: even at a low overall rate, the losses land 3.3× more often
+on the books that have money at risk. A 1% aggregate rate is not 1% of
+managed positions going unmanaged.
+
+### Recommendations
+
+1. **Instrument prompt size and latency per call, split held/flat.** That is
+   one field on an existing event, and it converts the mechanism from
+   hypothesis to measurement.
+2. **Do not raise budgets or trim the prompt before that runs** — the
+   compensation already present makes the naive fix as likely to do nothing
+   as #468 did.
+3. Merge queue unchanged: `c27` pushed and awaiting a PR, #471 held, and the
+   red dependency audit still the priority owner call.
+
+## Cycle 27 — 15:4xZ (anchor 15:49:23): **built the sweep's solution — arms are now labelled protective or defensive**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.167**
+unrealized — third consecutive deepening (−$0.022 → −$0.139 → −$0.167). Day
+08-17 **+$4.13**. GitHub Actions still **major_outage**.
+
+### Live risk on the open book
+
+| | |
+|---|---|
+| entry / mark / stop | 6.2950 / 6.3173 / **6.37998** |
+| stop distance from mark | **0.99%** |
+| travelled toward stop | **26.2%** |
+| take-profit | 6.06838 (−3.60%, in the never-reached band per H6) |
+
+Not urgent. But its **last decision at 15:21:20Z was `conf 0.0 / "light cycle:
+no LLM verdict"`** — a held, losing book that got no management look that
+cycle. That is the repeat watch firing on a live position, not an idle one.
+
+### The solution the sweep demanded, built
+
+The sweep found the day's three losses shared one cause: **every exit was
+priced against a number that did not describe the position's own P&L.** The
+general measurement was 134 arms with a live position — **57 (43%) fire on
+the losing side of breakeven.**
+
+Shipped into `order_intent.py` (branch `c27`, PR blocked by the outage):
+
+**1. `classify_arm(...) -> "protective" | "defensive" | None`** — fee-inclusive,
+so the band between breakeven and entry, which looks profitable on price
+alone, classifies as defensive. **It is a label, never a veto**: a defensive
+arm is a legitimate stop. The defect is that the two are indistinguishable,
+so SOL 1367 described a guaranteed-loss level as *"preserving profit"* and
+never placed the profit-side arm it believed it already held.
+
+**2. `arm_level_implausible(...)`** — run 1297 LTCUSDT armed at **44700.00**
+against an entry of **44.09**, ~1000× out and unfireable for the run's life.
+#446's unit-slip converter rails `order_params` percentages; **nothing
+covered arm levels**. Deliberately loose at 10× so it catches decimal slips,
+not aggressive targets.
+
+### Verification
+
+* Fail-before red on all 7 tests; green after.
+* **4 mutants, 4 killed** — fees dropped from the boundary; short direction
+  inverted; implausibility made one-sided; condition guard deleted.
+* **M4 initially SURVIVED.** My junk-input test used arms with a *missing
+  level*, all caught by the level parse, so nothing exercised a **bad
+  condition with a valid level**. Added `price_sideways` / `""` /
+  `"PRICE_ABOVE_OR_SO"` / `None` at a valid level. Then it killed.
+* ruff clean; full suite running.
+
+### What this does NOT do, stated before anyone assumes it
+
+It labels; it changes no exit. **Nothing consumes the label yet.** The next
+step is a brief line telling the desk which kind of arm it holds — that is
+where the 43% turns into behaviour. I am not adding it in the same change,
+because the label's correctness is arithmetic and testable now, while the
+brief line's effect on desk behaviour is neither and needs its own
+measurement.
+
+### Recommendations
+
+1. **Wire the label into the position brief** once merged, then measure
+   whether profit-side arms start appearing.
+2. Merge queue is blocked: **#471 (R:R ceiling)** and now **c27** both wait
+   on the outage and on the red dependency audit.
+3. Dependency bump (`aiohttp`, `python-multipart`, `starlette`) remains the
+   highest-priority owner call.
+
+---
+
+# 24-HOUR VERIFICATION SWEEP — 2026-08-17 15:37Z (anchor 15:37:24)
+
+Adversarial pass over this loop's own output. Running image
+`20260817-notes-0817-c18`, RestartCount 0.
+
+## 1. P&L, both calendars, flatten-reconciled
+
+| window | closes | opens | sum(signals.pnl) | open fees | **TRUE NET** |
+|---|---|---|---|---|---|
+| **UTC day 08-17** | 7 | 6 | +4.6904 | −0.5621 | **+$4.1283** |
+| **KST day 08-17** (16th 15:00Z → 17th 15:00Z) | 19 | 11 | +8.3650 | −0.9325 | **+$7.4325** |
+| UTC 08-16 (prior) | 24 | 13 | +6.2217 | −0.6002 | +$5.6215 |
+
+`pnl_audit` by UTC day: 08-15 **−3.42**, 08-16 **+5.65**, 08-17 **+4.13**;
+resid 0.00 on all three, 10 flattens, `check ok`. **Since the reset: +$6.36.**
+
+**Regression vs the prior day: DOWN.** 08-16 closed +$5.62 on 24 legs;
+08-17 closed +$4.13 on 7. Fewer trades, smaller total.
+
+## 2. SHAPE of the 24h (KST window, n=19, 79% wins, median +$0.130)
+
+| | |
+|---|---|
+| top 1 — FIL 1322 02:24:43Z | **+$5.2188** |
+| top 2 — TRUMP 1329 | +$1.0637 |
+| top 3 — FIL 1322 | +$0.6449 |
+| **ex-top-1** | **+$3.1462** |
+| **ex-top-3** | **+$1.4376 across 16 legs** |
+| bottom 3 | TRUMP 1344 −$0.451 · AVAX 1335 −$0.052 · SOL 1367 −$0.045 |
+
+**One trade is 62% of the day.** And that trade is the `order_params: absent`
+oversize — 87.8% of it a sizing defect (cycle 16). A 79% win rate on a median
+of thirteen cents is not an edge; it is a lot of scratches with one accident.
+
+## 3. Every fix re-proved in the running container
+
+| PR | state | did it MOVE anything in 24h? |
+|---|---|---|
+| #459 no_verdict diagnostic | PRESENT | **YES** — 18 fires; produced the timeout answer |
+| #460 loss floor from cfg | PRESENT | **NO — 0 House-floor briefs in 13h** |
+| #462 truncation salvage | PRESENT | **YES — 10 fires**, up from 2 at cycle 9 |
+| #463 silent cycle → no stamp | PRESENT | **YES** — 15 decisions correctly unstamped |
+| #465 error class | PRESENT | superseded by #466 within a cycle |
+| #466 no_response class | PRESENT | **YES** — 4 fires, all timeouts |
+| #468 decision tier 300s | PRESENT | **NO — cannot be credited** |
+| #471 R:R ceiling | **correctly ABSENT** | held, not merged |
+
+### The two that did not move anything — stated plainly
+
+**#460 has never fired.** Zero `House floor` briefs in the 13 hours since
+deploy. The replay proof was real and the arithmetic is right, but **in
+production this fix is unexercised**. It is not "working"; it is untested.
+*What will be done instead:* nothing further — the fix is correct and the
+band simply has not been entered. It stays on the watch list until a run
+enters −$0.99…−$13.07, and I will not report it as validated before then.
+
+**#468 cannot be credited.** Post-deploy 9/243 (3.7%); post-episode 2/199
+(1.0%). But cycle 17 established the hourly rate was ~3% baseline, spiked to
+20/17/13% at 06h/07h/08h, and fell to 0% at 09h — **the fall is the episode
+ending, not the cap.** During the episode the cap made no difference at all
+(18.5% → 23.1%). *What will be done instead:* the timeout stays because it
+is cheap and plausibly protective against a repeat, but it is **removed from
+the "fixed" column**. `no_response` is the counter that would show a repeat.
+
+## 4. Watch triggers
+
+| watch | state |
+|---|---|
+| #449 ratchet | **3 fires, cumulative −$0.25293, 0 net gains**, slippage 41% / 46% / **273%** |
+| #446 unit-slip | 8 fires (was 4) |
+| AUDCHF 1147 / fleet 33 | both **stopped** — closed, drop from list |
+| empty-why arms | **133 / 134 (99.3%)** — worse than the 131/132 I corrected to at cycle 13 |
+| conf-0.0 no-verdict | 2/199 since 09:00Z |
+| #439 BYPASSED | still unexercised |
+
+## 5. THE SOLUTION for today's losses
+
+The three closed losses were TRUMP 1344 (−$0.625 true), AVAX 1335 (−$0.141),
+SOL 1367 (−$0.114). They look unrelated. They are not:
+
+* **1344** was closed on a house floor computed from a budget the function
+  never read — a number with no relation to the position.
+* **1335** was flattened on a peak that included **$0.081 banked by earlier
+  trades** — a number belonging to other positions.
+* **1367** was armed at 75.56 when its breakeven was **75.4421** — a
+  "protection" level on the losing side of its own economics.
+
+**Common cause: every one of these exits was priced against a number that did
+not describe the position's own P&L.**
+
+I measured how general that is. Across **134 arms with a live position**:
+
+| | |
+|---|---|
+| fire-side **banks** money (genuinely protective) | 77 |
+| fire-side **loses** money (mislabelled protection) | **57 — 43%** |
+
+SOL 1367's report called its losing-side arm *"preserving profit."* **43% of
+all arms have that shape.**
+
+**And one is a unit error visible to the naked eye:** run 1297 LTCUSDT, entry
+**44.09**, arm level **44700.00** — ~1000× out, unfireable. #446's converter
+rails `order_params` percentages; **it does not cover arm levels.**
+
+### What will be done
+
+1. **Classify every arm at compile time as `protective` (fires in profit) or
+   `defensive` (fires in loss), computed from entry + round-trip fees, and
+   journal it.** Not a rejection — a defensive arm is a legitimate stop; the
+   defect is that it is indistinguishable from profit-taking, so the desk
+   describes a stop as *"preserving profit"* and never places the profit-side
+   arm it thinks it already has. Making the class explicit lets the brief
+   tell the desk which one it actually holds.
+2. **Sanity-rail arm levels against the mark** — an arm 1000× away is not a
+   plan. Extend #446's unit-slip reasoning to the arm path.
+3. Both are arithmetic, both are checkable at compile time, and both trace
+   directly to a loss that happened today.
+
+## 6. Held, with reasons unchanged
+
+* **Ratchet package** — every single-defect fix makes it worse or
+  knife-edge (cycle 23). Needs redesign, not a patch.
+* **#471 R:R ceiling** — merge blocked while the dependency audit is red.
+* **Dependency audit RED on main** — 32 advisories / 9 packages including
+  `aiohttp`, `python-multipart`, `starlette`. Owner call; not caused by any
+  PR of mine.
+
+---
+
+## Cycle 26 — 15:1xZ (anchor 15:19:23): **closed the CI evidence gap — and the dependency audit FAILS, on 9 packages, unrelated to my PR**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.139**
+unrealized, deepening from −$0.022 last cycle. Day 08-17 **+$4.13**. **0
+no-verdicts in 22 decisions.** GitHub Actions still **major_outage**.
+
+### The one CI job I could not run, now run
+
+Last cycle I reported pip-audit as **NOT RUN** rather than imply coverage I
+did not have. The failure was not pip-audit — it was `ensurepip` aborting
+(SIGABRT) inside the venv that pip-audit creates, on uv's managed CPython.
+Both `uv tool install` and `uv run --with` hit the same wall, and `--no-deps`
+does not avoid it.
+
+**Fix: force the system interpreter**, whose `ensurepip` works:
+
+```
+VIRTUAL_ENV= uv run --with pip-audit --python /usr/bin/python3 \
+    pip-audit -r requirements.txt
+```
+
+### FAILED — the audit exits 1, on 32 advisories across 9 packages
+
+| package | pinned | first fixed |
+|---|---|---|
+| **aiohttp** | 3.13.5 | **3.14.3** |
+| **python-multipart** | 0.0.20 | **0.0.31** |
+| **starlette** | 0.49.3 | **1.3.1** |
+| requests | 2.32.5 | 2.33.0 |
+| urllib3 | 2.6.3 | 2.7.0 |
+| click | 8.1.8 | 8.3.3 |
+| curl-cffi | 0.13.0 | 0.15.0 |
+| pyarrow | 21.0.0 | 23.0.1 |
+| python-dotenv | 1.2.1 | 1.2.2 |
+
+**`pip-audit` exit code 1 — the CI job would fail.**
+
+**It is not my PR.** The diff touches `order_params.py`, its tests, and three
+docs files — **no dependency file is modified** (verified against
+`origin/main`). And the same job reported **SUCCESS** on #465/#466/#468 only
+hours ago, so these advisories were published in the interim; the PYSEC
+numbers (2026-3036…3040, 2026-3545…3547) are consistent with very recent
+publication.
+
+**So the repo's dependency audit has gone red today, on main, independently
+of anything I shipped.** That is the finding, and it is worth more than the
+PR it was blocking.
+
+### WORKED — the outage procedure earned its keep
+
+The standing rule says replicate every job locally when the provider is down.
+Following it produced a security finding that the outage would otherwise have
+hidden until Actions recovered: **9 packages with published fixes, three of
+them (`aiohttp`, `python-multipart`, `starlette`) directly in the request
+path of a web service.**
+
+Had I merged #471 on "4 of 6 jobs pass", I would have merged into a repo
+whose security workflow was already failing, and not known it.
+
+### Merge status — #471 still held, now for a stated reason
+
+**[#471] remains unmerged.** The reason has changed and I am recording the
+change rather than quietly keeping the same verdict:
+
+* **Last cycle:** held because pip-audit had no local evidence.
+* **This cycle:** pip-audit ran and **fails** — not because of this PR, but
+  merging while the security workflow is red would bury a live finding under
+  an unrelated change.
+
+The full local CI picture for #471 now reads **5 pass, 1 pre-existing fail**:
+ruff PASS · pytest 4,442 PASS · frontend build PASS · npm audit PASS (2
+moderate, below the `high` gate) · **pip-audit FAIL (pre-existing)** ·
+gitleaks: diff clean, 5 pre-existing history findings.
+
+### Recommendations
+
+1. **Dependency bump is now the priority over the R:R ceiling.** `aiohttp`,
+   `python-multipart` and `starlette` are request-path packages with
+   published fixes. This is an owner call because a `starlette` 0.49 → 1.3
+   major bump can break FastAPI compatibility and must not be done blind
+   during an Actions outage.
+2. **Record the pip-audit invocation** — the `ensurepip` SIGABRT will recur
+   on this machine every outage; the system-interpreter workaround above is
+   the way through.
+3. `.gitleaks.toml`'s stale "only finding ever" comment still stands from
+   last cycle, and `docs/ops/apple-signin-setup.html` still wants an owner
+   glance.
+
+---
+
+### CI OUTAGE 14:5xZ — GitHub Actions in major outage, jobs replicated locally
+
+`githubstatus.com/api/v2/components.json` at the time of the PR:
+
+```
+API Requests     major_outage
+Pull Requests    major_outage
+Actions          major_outage
+Webhooks         partial_outage
+Git Operations   operational
+```
+
+The PR call returned **HTTP 503**; the push had already succeeded, and a
+retry created [#471]. Per the standing owner rule, every CI job was
+replicated locally from `.github/workflows/*.yml` using the exact commands
+and working directories.
+
+| # | job | result |
+|---|---|---|
+| 1 | Lint (ruff), `wd=service` | **PASS** — `All checks passed!` |
+| 2 | Backend pytest, `wd=service/server` | **PASS** — 4,442 passed + 1,346 subtests |
+| 3 | Frontend `npm ci` + `npm run build` | **PASS** — built in 1.29s |
+| 4 | `npm audit --audit-level=high --omit=dev` | **PASS** — 2 *moderate* (react-router), below the `high` gate |
+| 5 | Python dependency audit (pip-audit) | **NOT RUN** |
+| 6 | Secret scan (gitleaks) | **diff clean; 5 pre-existing findings in history** |
+
+**Job 5 did not run and I am not going to imply otherwise.** The project venv
+has no `pip`, and `uv tool install pip-audit` aborts in `ensurepip`
+(SIGABRT). This is the one CI check with no local evidence.
+
+**Job 6 needs care.** My diff contains no secret-shaped literals (checked
+directly). A full-history scan **with the repo's own `.gitleaks.toml`** finds
+**5 findings across 3 files, all predating this branch**:
+
+| rule | file | dated |
+|---|---|---|
+| private-key ×2 | `docs/ops/apple-signin-setup.html` | 2026-08-09 |
+| generic-api-key | `service/server/tests/test_user_api_settings.py` | 2026-07-15 |
+| generic-api-key ×2 | `skills/sooppiy/SKILL.md` | 2026-05-29 |
+
+**`.gitleaks.toml`'s own comment says the escaped-placeholder rule is "the
+only finding the scan has ever produced on this repo." That is now false**,
+and anyone reading the config would conclude the repo is clean.
+
+On the private-key hits: the matched block is **a single line**, where a real
+PEM key spans many — consistent with an inline placeholder, **but I am not
+asserting it is one**, and I have not printed any of it. The file is live on
+this branch (`docs/ops/apple-signin-setup.html`, from #354). **Owner review
+item.**
+
+Whether CI itself fails on these depends on the gitleaks action's scan
+scope, which I could not fully read from the workflow. A full-history local
+scan is stricter than a PR-range scan, so this may be a difference in method
+rather than a broken check.
+
+**What a local run does NOT give**, stated as the rule requires: a clean-room
+runner, the PR's audit trail, and any check needing provider secrets.
+
+### Merge held
+
+**[#471] is NOT merged.** One CI job has no local evidence, and the change is
+**inert by default** — there is no urgency that justifies merging on
+incomplete evidence during a provider outage. It waits for Actions to
+recover.
+
+---
+
 ## Cycle 25 — 14:4xZ (anchor 14:49:47): **shipped the R:R ceiling — INERT by default, because the measured optimum contradicts nine existing tests**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.022**

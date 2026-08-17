@@ -386,3 +386,74 @@ unknown.
 **Method note:** a percentile-index bug in the cycle-22 probe printed
 "3.47% -> 90% of legs". Inverted — 3.47% is near the TOP, offered on ~10%.
 
+## RETRACTED 2026-08-17 cycle 30 — "dependency audit is RED on main" is NOT supported by CI
+
+CI's `Python dependency audit` reports **success on both main (500d003a) and
+PR #471**, using the identical command this entry was based on. The local run
+below found 32 advisories across 9 packages and cannot be reconciled with
+CI's environment. **Do not act on it.** If the vulnerabilities are real they
+will appear in CI; they have not.
+
+Kept below only as a record of what the local run said, and of the mistake:
+a local replication made during a provider outage was allowed to block a
+merge for two cycles after CI's own verdict had become readable.
+
+### (original entry, retracted) dependency audit local finding
+
+Surfaced only because GitHub Actions was in major outage and the standing
+rule required replicating every CI job locally.
+
+| package | pinned | first fixed |
+|---|---|---|
+| **aiohttp** | 3.13.5 | **3.14.3** |
+| **python-multipart** | 0.0.20 | **0.0.31** |
+| **starlette** | 0.49.3 | **1.3.1** |
+| requests | 2.32.5 | 2.33.0 |
+| urllib3 | 2.6.3 | 2.7.0 |
+| click | 8.1.8 | 8.3.3 |
+| curl-cffi | 0.13.0 | 0.15.0 |
+| pyarrow | 21.0.0 | 23.0.1 |
+| python-dotenv | 1.2.1 | 1.2.2 |
+
+`pip-audit -r requirements.txt` exits **1**. The same CI job reported SUCCESS
+on #465/#466/#468 hours earlier, so these advisories are newly published —
+**pre-existing on main, caused by no PR.**
+
+`aiohttp`, `python-multipart` and `starlette` sit in the request path of a
+web service. **Owner call**: `starlette` 0.49 -> 1.3 is a major bump that can
+break FastAPI compatibility and must not be attempted blind during an
+Actions outage.
+
+**HOW TO RUN pip-audit ON THIS MACHINE** (the venv has no `pip`, and
+pip-audit's internal venv creation dies with `ensurepip` SIGABRT on uv's
+managed CPython — `uv tool install`, `uv run --with` and `--no-deps` all hit
+it):
+
+```
+cd service && VIRTUAL_ENV= uv run --with pip-audit --python /usr/bin/python3 \
+    pip-audit -r requirements.txt
+```
+
+## SILENT RAILS — measured cost, 2026-08-17 cycle 35
+
+Two shipped rails know something the desk does not, and neither tells it:
+
+1. **R:R ceiling** clamps `target_pct` and journals a note. `order_params`
+   notes **never reach the prompt**; there is **no brief line** for a clamped
+   parameter (verified by grep).
+2. **`classify_arm`** labels an armed exit protective/defensive. Nothing
+   consumes the label.
+
+**Measured cost of the silence:** run 1375 requested **target_pct 3.02%
+three times in 95 minutes** (17:56, 18:27, 19:30) while its stop drifted
+0.47 -> 0.475 -> 0.48. The clamp fired every time; the request never changed.
+The desk is not deriving the target from the stop — it repeats a fixed
+figure, and nothing corrects the belief.
+
+**A rail that silently corrects a repeated mistake converts a learnable error
+into a permanent one.**
+
+**Baseline for the fix is already on tape:** three pre-notification cycles on
+run 1375, all identical. The test after shipping a brief line is simply
+whether the requested target changes.
+
