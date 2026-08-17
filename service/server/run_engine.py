@@ -3445,6 +3445,40 @@ def _last_decision_report(run: dict) -> str:
         return ""
 
 
+def _no_verdict_diagnostic(text: Any) -> dict:
+    """Why a light cycle produced no verdict — recorded, not guessed.
+
+    Measured 2026-08-16/17: the `conf 0.0 / "light cycle: no LLM verdict"`
+    rate rose from 2.0% (8 of 405 decisions) before the Plan 26 flag flip
+    to 10.8% (26 of 240) after — 5.4x on 645 decisions, concentrated on
+    runs that have already traded (15.6% vs 6.2% for never-traded). It is
+    not an outage (16 consecutive HTTP 200s, zero timeouts in the window)
+    and the obvious truncation mechanism is already guarded
+    (`max_tokens += 180` when outlook is enabled). The cause is unexplained.
+
+    It stays unexplained because an empty response, a response carrying no
+    JSON, a response cut off mid-object, and a balanced-but-invalid object
+    all emit the SAME event today. This labels which one occurred and keeps
+    a bounded tail, so a day of tape decides the question instead of
+    another round of inference. Every no-verdict cycle costs the desk a
+    management look — the pattern preceded FIL 1305's flatten three times —
+    so deciding it is worth one field.
+
+    Diagnostic only: it changes no decision and no order."""
+    try:
+        if not isinstance(text, str) or not text.strip():
+            return {"kind": "empty", "chars": 0, "tail": ""}
+        chars = len(text)
+        tail = text[-200:]
+        if "{" not in text:
+            return {"kind": "no_json", "chars": chars, "tail": tail}
+        if text.count("{") != text.count("}"):
+            return {"kind": "truncated", "chars": chars, "tail": tail}
+        return {"kind": "malformed", "chars": chars, "tail": tail}
+    except Exception:  # noqa: BLE001 — a diagnostic must never cost a cycle
+        return {"kind": "empty", "chars": 0, "tail": ""}
+
+
 def _side_contradiction(text: Any, pos_qty: float) -> Optional[str]:
     """Does the desk's own prose claim a side its book contradicts?
 
@@ -5439,6 +5473,13 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     # (stop_pct/target_pct only — the full block would defeat the cheap path).
     # Without the ask, every light cycle journaled 'not_eligible' and the
     # shadow dataset stayed empty while 100% of live runs routed here.
+    if report == "light cycle: no LLM verdict":
+        # Record WHY there was no verdict; see _no_verdict_diagnostic.
+        try:
+            emit_telemetry_event(run["id"], "no_verdict",
+                                 _no_verdict_diagnostic(text))
+        except Exception:  # noqa: BLE001
+            pass
     decision = {"action": action, "confidence": confidence,
                 "entry": entry, "report": report, "scores": scores}
     if order_block:

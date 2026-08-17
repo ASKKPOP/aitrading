@@ -3297,3 +3297,52 @@ class NetOfFeesExitTests(unittest.TestCase):
         import inspect
         src = inspect.getsource(run_engine._compose_position_state)
         self.assertIn("_net_of_fees_line", src)
+
+
+class NoVerdictDiagnosticTests(unittest.TestCase):
+    """Measured 2026-08-16/17: the `conf 0.0 / "light cycle: no LLM verdict"`
+    rate rose from 2.0% (8/405) before the Plan 26 flag flip to 10.8%
+    (26/240) after — 5.4x on 645 decisions, concentrated on runs that have
+    already traded (15.6% vs 6.2%). Not an outage (16x HTTP 200, zero
+    timeouts), and the obvious truncation mechanism is already guarded
+    (max_tokens += 180 when outlook is on). CAUSE UNEXPLAINED.
+
+    Three candidates are indistinguishable from the current tape because a
+    parse failure and an empty response produce the identical event. This
+    records which one happened, so one day of tape decides it instead of
+    another round of guessing."""
+
+    def test_an_empty_response_is_labelled(self):
+        d = run_engine._no_verdict_diagnostic(None)
+        self.assertEqual(d["kind"], "empty")
+        self.assertEqual(d["chars"], 0)
+
+    def test_a_response_with_no_json_object_is_labelled(self):
+        d = run_engine._no_verdict_diagnostic("I cannot answer that.")
+        self.assertEqual(d["kind"], "no_json")
+        self.assertEqual(d["chars"], 21)
+
+    def test_truncated_json_is_distinguished_from_malformed(self):
+        # Unbalanced braces = the model was cut off mid-object.
+        d = run_engine._no_verdict_diagnostic('{"action": "hold", "sc')
+        self.assertEqual(d["kind"], "truncated")
+        self.assertTrue(d["chars"] > 0)
+
+    def test_balanced_but_invalid_json_is_malformed(self):
+        d = run_engine._no_verdict_diagnostic('{"action": hold,}')
+        self.assertEqual(d["kind"], "malformed")
+
+    def test_the_tail_is_captured_and_bounded(self):
+        d = run_engine._no_verdict_diagnostic("x" * 5000)
+        self.assertLessEqual(len(d["tail"]), 200)
+        self.assertEqual(d["chars"], 5000)
+
+    def test_it_fails_soft_on_junk(self):
+        for bad in (123, {"a": 1}, []):
+            self.assertEqual(
+                run_engine._no_verdict_diagnostic(bad)["kind"], "empty")
+
+    def test_it_is_WIRED_into_the_light_path(self):
+        import inspect
+        src = inspect.getsource(run_engine._light_analysis)
+        self.assertIn("_no_verdict_diagnostic", src)
