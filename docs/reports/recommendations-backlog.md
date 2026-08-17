@@ -178,3 +178,21 @@ per-market fee floor. Do not ship a sizing change before it.
 
 **Shippable independently once the above is decided:** the status string.
 `replenishing:k/N` on a fleet with no headroom should read budget-capped.
+
+## Three blocked-order paths (found 2026-08-17 cycle 7) — all BELOW the evidence bar
+
+Runs 1336/1338/1341 each authored a trade that produced no order and were
+then `idle_retired` at $0.00. Three distinct causes; none shipped.
+
+1. **Idle-retire vs in-flight cycle.** run 1336: retired 00:27:55Z, cycle 12
+   completed 00:29:24Z with a full short (stop $612, target $570), killed by
+   `fence: run is stopped`. The fence is right; the idleness verdict ignores
+   a dispatched cycle. **All time: 2.** Needs: count of retires with a cycle
+   in flight, and the realized outcome of those orders.
+2. **`fence: lease expired`** — all time 12. Needs: lease TTL vs p99 cycle
+   duration.
+3. **Spot `sell` via the discussion path.** run 1338 (`market_type: spot`):
+   `order_discussion {proposed: buy 0.65, final: sell 0.58}` → refused as
+   "spot sell with no inventory". The light prompt already withholds the verb
+   via `can_sell`. **All time: 2** (08-13, 08-17), down from ~33/week before
+   the prompt fix. Needs: does the discussion prompt get the same gate. n=1.
