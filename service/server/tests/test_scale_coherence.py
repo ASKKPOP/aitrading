@@ -47,6 +47,32 @@ class LossFloorScalingTests(unittest.TestCase):
             self.assertAlmostEqual(
                 run_engine._loss_floor_usd({"run_budget_usd": 1579.72}), 0.99)
 
+    def test_a_PROD_SHAPED_run_row_carries_no_budget_so_cfg_must_supply_it(self):
+        """Measured on prod 2026-08-17: 20/20 running runs were judged at
+        $0.99 because `run_budget_usd` is NOT a column on `trading_runs` —
+        the budget lives in `config_snapshot_json`, reached through `cfg`.
+        Every test above hands the key inside the RUN dict, a shape prod
+        never produces, so the arithmetic was proven while the wiring was
+        dead. Run 1344's real row + real cfg, the trade that exposed it."""
+        run = {"id": 1344, "symbol": "TRUMPUSDT", "market": "crypto"}
+        cfg = {"run_budget_usd": 1719.15}
+        self.assertAlmostEqual(run_engine._loss_floor_usd(run, cfg),
+                               10.3149, places=3)
+
+    def test_the_run_1344_close_would_not_have_been_prompted(self):
+        """The desk closed run 1344 quoting "$-1.25 past the $-0.99 floor".
+        At the intended floor ($10.31) the line does not render at all."""
+        run = {"id": 1344, "symbol": "TRUMPUSDT", "market": "crypto"}
+        cfg = {"run_budget_usd": 1719.15}
+        pnl = {"total": -1.2539,
+               "position": {"quantity": -276.886, "current_price": 1.4009}}
+        with patch.object(run_engine, "_typical_daily_move_pct",
+                          return_value=1.1028):
+            self.assertEqual(run_engine._loss_verdict_line(run, pnl, cfg), "",
+                             "a fee-scale loss on a $1,719 book is not a wound")
+            self.assertIn("House floor",
+                          run_engine._loss_verdict_line(run, pnl, None))
+
     def test_slv_class_loss_is_no_longer_past_a_scaled_floor(self):
         # SLV run 1100 (budget $399.9): cumulative −2.51 was reported "past
         # the −0.99 floor" and fully closed at the day's low. At 0.6% of
