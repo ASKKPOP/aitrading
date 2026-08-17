@@ -7,6 +7,87 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 21 — 12:4xZ (anchor 12:49:28): **H6 REFUTED — the targets were never cut off, they were never reachable. `target_pct` above ~2% is decoration.**
+
+**PROFIT-OR-LOSS FIRST.** No closes. SOL run 1367 short now **+$0.097**
+unrealized (was −$0.05 last cycle). Day 08-17 **+$4.26**. 10 decisions, 1
+no-verdict.
+
+### H6 — "the targets were sound but cut off by early exits" → **REFUTED**
+
+*Falsifier: targets go unhit even given the full horizon.* Replayed all 34
+replayable crypto legs against 1-minute candles from the close to the run's
+**own original `at_time`** — the full life the desk wrote the target for:
+
+| | |
+|---|---|
+| target reached inside the original horizon | **4** |
+| **NOT reached** | **30** |
+| skipped (non-crypto, no horizon, no window) | 5 |
+
+**12%.** And the four that were reached are the finding:
+
+| leg | target |
+|---|---|
+| run 1303 JTO long | **0.60%** |
+| run 1305 FIL short | **2.00%** |
+| run 1306 SUI short | **0.60%** |
+| run 1322 FIL short | **0.60%** |
+
+**Not one target above 2.00% was ever reached — not during the position's
+life, and not given the entire horizon the desk wrote it for.** The overall
+median target is **4.80%**.
+
+### What this settles, and what it exonerates
+
+Cycle 20 could not separate *"bad forecast"* from *"never given a chance"*.
+**It is the forecast.** Giving every leg its full original horizon changes the
+hit rate from 0/36 to 4/34, and every one of those four sits at or below 2%.
+
+* **The exit policy is exonerated on this measure.** Rails and desk exits were
+  not robbing targets that would otherwise have printed. This also closes the
+  arm/at_time precedence question I reopened at cycle 20 — the n=36 rerun
+  does **not** support it.
+* **`target_pct` above ~2% carries no forecast content.** r² was 0.024 in
+  cycle 20; H6 explains why — the number is not describing a move anyone
+  expects.
+
+### The structural irony worth naming
+
+**The R:R gate demands target ≥ 2× stop. Large targets are exactly the ones
+that are never reached.** So the gate meant to ensure trade quality is the
+mechanism pushing the target into the region where it means nothing — which
+is precisely what SUI 1356 did on tape at cycle 16: refused the trade for
+failing 2:1, then moved its target **2.5× to 0.640** (5.27% deep) to clear
+the floor, with `basis.discussion: null`, and entered at materially the same
+price.
+
+Every consumer treating `target_pct` as an expectation — the R:R gate,
+sizing, `outlook.exit.target_px` — is standing on a number that has been
+achieved **4 times in 34 attempts and never above 2%**.
+
+### ISSUE — the problem is established; the remedy is NOT, and I am not shipping one
+
+The experiment proves `target_pct` is not a forecast. It does **not** tell me
+what the gate should compare against. Three candidate remedies exist — lower
+the R:R floor, judge R:R against a *reachable* target, or stop consuming
+`target_pct` as an expectation — and choosing between them now would be
+preference, not evidence. Under the owner rule, implementation follows an
+experimental **result**, and I have a result about the problem only.
+
+**The next experiment specifies the remedy directly:** for each run, what was
+the maximum favourable excursion actually available inside its horizon, as a
+percentage? That yields the distribution of *achievable* targets, and the
+gate can then be tested against a number the market actually offers. The
+candle tooling already does this.
+
+### Recommendations
+
+1. **Run the reachable-excursion distribution** before touching the R:R gate.
+2. **Treat `target_pct` as non-predictive above ~2%** wherever consumed.
+3. **The arm/at_time precedence question is closed by this experiment** — the
+   n=4 hint from cycle 15 does not survive at n=34.
+
 ## Cycle 20 — 12:1xZ (anchor 12:19:28): **H5 — the desk has never once reached a target in 36 legs, and I nearly reported a query bug as the proof**
 
 **PROFIT-OR-LOSS FIRST.** No closes. New position: SOL run 1367 short,
