@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T11:50Z",
+  "as_of": "2026-08-17T12:20Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.26, flat, 0 no-verdicts x4 windows; H4 REFUTED - fee-hurdle ratio does NOT predict scratches (median 34.8 vs 36.6), so a min-edge gate would cut the +$8.30 winners too; next: does target_pct predict realized move at all?"
+    "note": "day +$4.26, SOL 1367 short open -$0.05, 0 no-verdicts x5 windows; H5: target median 4.8% vs realized median 0.15%, 0/36 targets ever reached, r2=0.024 - CONFOUNDED by ~1h holds vs multi-hour targets; horizon replay is next"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

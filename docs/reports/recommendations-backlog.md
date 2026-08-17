@@ -317,3 +317,40 @@ The governance concern is unchanged and must be argued on its own terms:
 `_order_discussion` fails OPEN, so a path that labels itself "not the AI"
 has authored 10 closes/reduces while §7b makes the panel the final author.
 
+## SQL TRAP (found the hard way 2026-08-17 cycle 20): close rows overwrite entry_price
+
+On a CLOSING `signals` row (`exit_price IS NOT NULL`), **`entry_price` is
+overwritten with the exit price** — e.g. FIL 1358 `ep=0.66614 xp=0.66614`,
+SUI 1356 `ep=0.67478 xp=0.67478`. Computing a realized move from a close row
+alone yields **exactly 0.0000% on every leg**, which reads like a clean null
+result and is a query bug.
+
+Entry must be taken from the run's OPENING row (`exit_price IS NULL`).
+
+Joins the standing trap list: `ts` not `created_at`; CONCAT with any NULL
+returns NULL and the row vanishes; `dec` is reserved in MySQL; the DB wrapper
+mangles a quoted `IN ('a','b')` list; an unquoted ssh heredoc eats `$.json`
+paths.
+
+## NEXT EXPERIMENT — horizon replay of target_pct (specified 2026-08-17 cycle 20)
+
+H5 measured: target median **4.800%**, realized median **0.1478%**, **0 of 36
+legs ever reached their own target**, r(target, realized) = **+0.155**
+(r² 0.024).
+
+**Confounded:** positions close in ~1h against multi-hour targets, so "bad
+forecast" and "never given a chance" are not separated.
+
+**The separating measurement** (tooling built in cycle 15 — 1-minute
+`candleSnapshot` from close to the run's ORIGINAL `at_time`): for each of the
+36 legs closed early, was `target_pct` subsequently hit inside that horizon?
+
+* hit after exit → forecasts are sound, exit policy cuts them off; re-opens
+  the arm/at_time precedence question with n=36 instead of n=4.
+* not hit even with the full horizon → `target_pct` is decoration, and R:R
+  gating, sizing and `outlook.exit.target_px` all consume a number with no
+  content.
+
+**Do not act on H5 before this runs** — the two outcomes imply opposite
+remedies.
+

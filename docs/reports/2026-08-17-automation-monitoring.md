@@ -7,6 +7,86 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 20 — 12:1xZ (anchor 12:19:28): **H5 — the desk has never once reached a target in 36 legs, and I nearly reported a query bug as the proof**
+
+**PROFIT-OR-LOSS FIRST.** No closes. New position: SOL run 1367 short,
+opened 12:12:49Z, **−$0.0498 unrealized**. Day 08-17 **+$4.26**. 13
+decisions, **0 no-verdicts** — fifth consecutive clean window.
+
+### The near-miss first, because it almost became a false finding
+
+My first H5 query returned **realized move = 0.0000% on all 36 legs** — which
+would have "proved" the target has no relationship to anything. It was a bug
+in my query, not a result: **on a CLOSING `signals` row, `entry_price` is
+overwritten with the exit price.** I had seen this twice already this session
+(FIL 1358 `ep=0.66614 xp=0.66614`, SUI 1356 `ep=0.67478 xp=0.67478`) without
+drawing the inference.
+
+A null result that clean is not evidence, it is a smell. Entry must come from
+the run's OPENING row (`exit_price IS NULL`). **Recording it as a standing SQL
+trap** alongside the `ts`-not-`created_at`, CONCAT-NULL, reserved-word `dec`,
+mangled `IN (...)`, and unquoted-heredoc traps.
+
+### H5 — "`target_pct` is a gate-satisfying number, not a forecast" → **SUPPORTED, with a confound I cannot yet separate**
+
+*Falsifier: a positive correlation between the stated target and the move
+achieved.* Re-run correctly, 36 closed legs since the reset:
+
+| | |
+|---|---|
+| target_pct | mean **4.363%**, median **4.800%** |
+| realized move (in the position's own direction) | mean **+0.2746%**, median **+0.1478%** |
+| **Pearson r** | **+0.1553** |
+| **r²** | **0.0241 — the target explains 2.4% of the variance** |
+| **legs reaching their own target** | **0 / 36 (0%)** |
+| median realized as a fraction of its own target | **+5.2%** |
+
+By band, no clean monotone signal either: 0–3% targets realized +0.368%,
+3–6% realized +0.167%, 6%+ realized +0.545%.
+
+**The desk sets a median 4.8% target, achieves a median 0.15% move — 3% of
+what it aims for — and has not hit a single target in 36 attempts.**
+
+### The confound, stated plainly rather than buried
+
+**0-for-36 does not by itself prove the forecasts are bad.** Positions are
+closed in ~1 hour by rails or by the desk, against targets written for
+multi-hour horizons. The target may never have been given the time to be
+right or wrong. I cannot separate *"bad forecast"* from *"never given a
+chance"* with this measurement, and I will not report the stronger claim.
+
+What the r² does say independently of holding time: **whether a target is 1%
+or 7% tells you almost nothing (2.4%) about the move that follows.** That is
+a statement about the target's informational content, not about exit policy —
+and it is consistent with cycle 16's SUI 1356, where the target moved 2.5×
+purely to clear the R:R floor with `basis.discussion: null`.
+
+### The decisive follow-up, and I already have the tooling
+
+Cycle 15 built exactly the instrument this needs: 1-minute `candleSnapshot`
+replay from the close to the run's **own original horizon**. Applied here it
+separates the two explanations directly — **for the legs closed early, was
+the target subsequently hit inside the horizon the desk wrote it for?**
+
+* If targets get hit after the exit → the forecasts are reasonable and the
+  exit policy is cutting them off. That would raise the arm/at_time
+  precedence question again, this time with 36 observations instead of 4.
+* If they are not hit even given the full horizon → the targets are
+  decoration, and every consumer that treats `target_pct` as an expectation
+  (R:R gating, sizing, `outlook.exit.target_px`) is standing on nothing.
+
+**That is the next experiment.** I am not proposing any change until it runs —
+both explanations point at completely different remedies, and acting now would
+be choosing one by preference rather than evidence.
+
+### Recommendations
+
+1. **Run the horizon replay on all 36 legs** (tooling exists, cycle 15).
+2. **Until then, treat `target_pct` as unvalidated** wherever it is consumed
+   as an expectation. Not "wrong" — unvalidated.
+3. Unchanged and still gated: ratchet baseline + round-trip package, fleet
+   slot-ledger over-commitment, panel-fallback governance item.
+
 ## Cycle 19 — 11:4xZ (anchor 11:49:31): **H4 refuted — the fee-hurdle ratio predicts nothing, which kills a remedy before it was built**
 
 **PROFIT-OR-LOSS FIRST.** No closes. Book flat. Day 08-17 **+$4.26**. 12
