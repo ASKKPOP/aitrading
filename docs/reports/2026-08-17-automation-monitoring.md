@@ -7,6 +7,77 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 18 — 11:1xZ (anchor 11:19:32): **H3 — the account's profit is two trades, and only one of them is a defect**
+
+**PROFIT-OR-LOSS FIRST.** No closes. Book flat. Day 08-17 **+$4.26**. 11
+decisions, **0 no-verdicts** — third consecutive clean window, consistent
+with cycle 17's finding that the 06h–08h spike was episodic.
+
+### H3 — "realized P&L is dominated by a few outliers; the median trade is a fee-scale scratch" → **CONFIRMED**
+
+*Falsifier: removing the top contributor leaves the total materially
+unchanged.* Every closed leg for agent 6 since the 08-15 09:00Z reset:
+
+| | |
+|---|---|
+| closed legs | **39** |
+| **TOTAL net** | **+$9.6509** |
+| median net | **+$0.0093** — under one cent |
+| mean net | +$0.2475 |
+| wins | 23 (59%) |
+| **TOTAL ex-top-1** | **+$4.4791** |
+| **TOTAL ex-top-3** | **+$0.4630** |
+| legs whose \|net\| is smaller than their OWN round-trip fee | **14 / 39 (36%)** |
+
+**Three trades are 95% of everything. The other 36 legs made $0.46
+between them** — across 36 round trips. The median leg nets under a cent
+against round-trip fees of $0.04–$0.43, so **the median trade does not cover
+a tenth of its own fee.**
+
+### The provenance test — and it refutes the darker reading I was heading toward
+
+I expected both top contributors to trace to the `order_params: absent`
+sizing defect, which would have meant the account's profit was essentially a
+bug. **It does not.**
+
+| rank | leg | net | `order_params` on the entry cycle | authored |
+|---|---|---|---|---|
+| 1 | run 1322 FIL, 02:24:43Z | **+$5.17** | **`absent`** (cyc 39) | default sizing — **the defect** |
+| 2 | run 1305 FIL, 00:17:32Z | **+$3.04** | **`parsed`, size_frac 0.2** (cyc 5) | **desk-authored, desk-sized, desk-closed** (`run:1305:cyc:9`) |
+
+**#2 is a clean trade.** Short 304 FIL @ 0.687 → cover @ 0.6764 on ~$209
+notional, **+1.46% on notional**, with the desk choosing 0.2 size_frac and
+closing it on its own cycle. That is what a working desk trade looks like,
+and it is the counter-example to the "the desk only wins by accident"
+reading I have been circling for several cycles.
+
+So the corrected picture: **profit is real but concentrated on two pillars,
+one of which is a defect and one of which is legitimate.** Strip the defect
+and the account is **+$4.48 over 38 legs** — still positive, still carried by
+a single genuine win.
+
+### WHY this matters more than the winners
+
+The problem this exposes is not the tail, it is the body. **36 of 39 legs
+together produce $0.46**, and **36% of all legs are fee-scale scratches**
+whose entire outcome is smaller than the fees they paid. A positive-skew
+distribution is a legitimate profile — but a body of 36 trades that nets
+nothing while paying ~36 round trips is pure churn, and it is where the
+fee-hurdle findings from cycles 13 and 16 land.
+
+### Recommendation
+
+**Test whether the churn is predictable before trying to suppress it.** The
+next experiment: does the fee-hurdle ratio at entry (expected move ÷
+round-trip fee) predict which legs land in the fee-scale band? If it does,
+the gate already exists conceptually — the `min_edge`/fee-infeasible check in
+the fleet build path — and the question becomes why 36% of legs still clear
+it. If it does not predict, suppressing small trades would cut winners too
+and must not be attempted.
+
+I am not proposing a change on this cycle's evidence. H3 tells us where the
+money is, not what to do about it.
+
 ## Cycle 17 — 10:5xZ (anchor 10:50:29): **first cycle under the experimental rule — three hypotheses stated, three refuted, including my own cycle-12 conclusion**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 10:15:05Z. Book flat. Day 08-17
