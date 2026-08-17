@@ -7,6 +7,29 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+### #463 DEPLOYED and verified — image `20260817-adherence-stamp` (merge `a26b685`)
+
+All four branches confirmed against the deployed function in the container:
+
+| decision | stamp |
+|---|---|
+| silent cycle (no verdict) | **`{}`** — nothing recorded |
+| real verdict, key missing | `{'plan_adherence': 'revised'}` |
+| authored `followed` | `{'plan_adherence': 'followed'}` |
+| salvaged verdict (#462) | `{'plan_adherence': 'revised'}` — still counted |
+
+Salvage (#462), the corrected loss floor (#460) and the no-verdict diagnostic
+(#459) all survived the from-main rebuild. Plan 26 flag on, 0 tracebacks.
+
+**From here the §3.7 table is measuring the desk and not the fallback.** The
+115/24/16 baseline recorded above is the last reading taken on contaminated
+data and must not be compared with what follows — the next clean table starts
+now.
+
+**Session ship count: 19 PRs.**
+
+---
+
 ## Cycle 6 — 04:1xZ (anchor 04:19:23): quiet on trades; **the first §3.7 measurement of Plan 26, and it is not flattering**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **1h55m**.
