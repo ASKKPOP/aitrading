@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T09:20Z",
+  "as_of": "2026-08-17T09:50Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.24, SUI 1356 short open -$0.03; arms 132 authored / 2 ever fired; 77% of armed runs killed by a rail before the arm could act; arm-reachability spec REFUTED (levels are 0.1-1.5% away)"
+    "note": "day +$4.24, SUI 1356 short -$0.002; ARM REPLAY: 4/14 (29%) armed levels were crossed inside the original horizon - cycle-14 'starvation' framing over-stated, bounded at ~29% not 77%"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

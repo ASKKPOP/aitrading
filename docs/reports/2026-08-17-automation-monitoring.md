@@ -7,6 +7,87 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 15 — 09:4xZ (anchor 09:49:28): quiet; **the arm replay ran, and it partly refutes my own cycle-14 framing**
+
+**PROFIT-OR-LOSS FIRST.** No closes. SUI run 1356 short still open at
+**−$0.0019**. Day 08-17 **+$4.24**. **0 no-verdicts in 10 decisions.** One more
+`verdict_salvaged` fire (#462). Docs #469 merged.
+
+### I did the measurement I specified — and my specification was wrong
+
+Cycle 14 ended: *"computable from stored marks."* **It is not.** There is no
+price-history table (only `market_news_snapshots` and
+`polymarket_settlements`), and `equity` payloads carry only
+`realized/unrealized/total/trades` — no mark. Anyone taking that spec at
+face value would have found nothing.
+
+The real source is `price_fetcher._hyperliquid_post` with a
+`candleSnapshot` request — **1-minute candles**, which is finer than the
+~4.7-minute mark cadence the rails themselves run on.
+
+### The replay
+
+For every crypto run that ever armed and was then closed by a rail: take the
+LAST arm before the close, and ask whether its level was touched between the
+close and the run's **own original `at_time` horizon**.
+
+18 armed crypto runs closed by a rail; 14 replayable (4 lacked a horizon,
+level, or a usable window).
+
+| | |
+|---|---|
+| arm level **crossed** inside the original horizon | **4 (29%)** |
+| **not** crossed | **10 (71%)** |
+
+The four that would have had their moment:
+
+| run | symbol | arm | outcome |
+|---|---|---|---|
+| 1175 | SOLUSDT | price_below 75.0 | low 74.650 |
+| 1293 | UNIUSDT | price_above 3.27 | high 3.3378 |
+| 1304 | JTOUSDT | price_above 0.586 | high 0.59043 |
+| 1305 | FILUSDT | price_below 0.667 | low 0.65785 |
+
+### FAILED — my cycle-14 conclusion was over-stated
+
+I wrote that *"the one instrument the desk is told to prefer is the one it is
+least allowed to use"*, with the strong implication that rails were robbing
+arms of their moment. **The replay says that is true for 29% of them and
+false for 71%.** Most arms would never have fired even if the run had lived
+to its own horizon. The 132-authored-2-fired ratio is therefore mostly
+**arms that were never going to trigger**, not arms that were cut short.
+
+That materially changes the size of the prize. A remedy that lets arms
+outrank `at_time` would reach roughly 3 runs in 10, not 4 in 5.
+
+### What the replay does NOT establish, and I will not imply it does
+
+**Crossing a level is not the same as profiting from it.** For a short,
+`price_below → reduce` banks profit while `price_above → reduce` cuts a
+loser; the P&L of firing versus the rail's actual exit needs each run's side
+and the mark at the crossing. I have the tooling now and not the answer.
+
+Nor does 4-of-14 constitute a distribution. It is a bound: **at most ~29% of
+armed runs had a live trigger taken from them.**
+
+### Recommendations
+
+1. **Next layer of the same replay:** for the 4 crossings, compute what the
+   half-reduce would have realized at the crossing versus what the rail's
+   exit actually realized. That is the number that decides whether any
+   arm-precedence change is worth making, and it is now one script away.
+2. **Correct the framing in any downstream reading of cycle 14** — the
+   starvation is real but bounded at ~29%, not the 77% rail-closure rate.
+   The 77% is how often a rail ended the run; it is not how often that cost
+   the desk anything.
+
+### Method note worth keeping
+
+Two SQL traps cost me a cycle of tooling time and both are worth recording:
+an **unquoted heredoc** (`<<PYEOF`) let the shell eat `$.at_time` inside JSON
+paths, and the DB wrapper **mangles a quoted `IN (...)` list** — filtering in
+Python instead of SQL was the fix.
+
 ## Cycle 14 — 09:1xZ (anchor 09:19:30): quiet; **the arm is structurally starved — 132 authored, 2 ever fired**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 08:28:15Z. One new position: SUI

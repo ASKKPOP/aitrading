@@ -260,3 +260,29 @@ positions close): for each armed run closed by a rail, was the arm's level
 subsequently hit inside the run's ORIGINAL horizon, and what would the
 reduce have been worth at that level? Computable from stored marks.
 
+## Arm starvation — MEASURED 2026-08-17 cycle 15, bounded at ~29% (was implied 77%)
+
+Replayed every crypto run that armed and was then closed by a rail, against
+1-minute Hyperliquid candles from the close to the run's OWN original
+`at_time` horizon. 18 such runs, 14 replayable.
+
+**4 of 14 (29%) had the arm level crossed inside the original horizon; 10
+(71%) did not.** Crossings: 1175 SOL below 75.0 (low 74.650), 1293 UNI above
+3.27 (high 3.3378), 1304 JTO above 0.586 (high 0.59043), 1305 FIL below
+0.667 (low 0.65785).
+
+**This corrects cycle 14.** The 77% rail-closure rate is how often a rail
+ended the run — NOT how often that cost the desk a trigger. Most arms would
+never have fired anyway.
+
+**Correction to the cycle-14 spec:** it said "computable from stored marks".
+There is no price-history table and `equity` payloads carry no mark. The
+source is `price_fetcher._hyperliquid_post` with `candleSnapshot` at 1m —
+finer than the ~4.7-min mark cadence the rails run on.
+
+**NEXT LAYER (one script away, decides the whole question):** for the 4
+crossings, what would the half-reduce have realized at the crossing versus
+what the rail's exit actually realized? Crossing a level is not profiting
+from it — for a short, `price_below → reduce` banks, `price_above → reduce`
+cuts a loser.
+
