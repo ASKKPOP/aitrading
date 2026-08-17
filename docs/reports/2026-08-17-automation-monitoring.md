@@ -7,6 +7,87 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 10 — 06:4xZ (anchor 06:49:33): **the no-verdict cause is settled — local-provider timeouts — and #465 was mine to correct**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **4h25m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00).
+
+### The question is answered, and not by inference
+
+Four `no_verdict` events since #465 deployed (06:12:09Z), all `kind:
+"empty"`. Each matches, **to the second**, a worker warning:
+
+| no_verdict | worker log |
+|---|---|
+| 06:18:27Z run 1352 | `06:18:27,285 LLM generation failed (provider=local): Request timed out.` |
+| 06:23:44Z run 1344 | `06:23:44,438 …Request timed out.` |
+| 06:23:49Z run 1355 | `06:23:49,164 …Request timed out.` |
+| 06:25:25Z run 1353 | `06:25:25,957 …Request timed out.` |
+
+**The dominant no-verdict class is the local model timing out.** Not
+truncation, not a silent model, not a prompt problem. Measured rate in the
+covered window: **7 timeouts in 37 minutes, and 4 of 15 decisions (27%)
+produced no verdict.**
+
+Config, all read from prod: `LLM_TIMEOUT_SECONDS` defaults to **120s** with
+`max_retries=1`; provider is `local` at an Ollama endpoint; and local calls
+are floored at `max_tokens = max(max_tokens, 2000)` because the reasoning
+model spends budget on hidden chain-of-thought before any visible content.
+So the shape is: **a reasoning model asked for ≥2000 tokens does not always
+finish inside 120 seconds under load.**
+
+### FAILED — my own #465, one cycle after shipping it
+
+#465 split `error` from `empty` inside `_light_analysis`. That is **one layer
+too high.** `generate_text` catches provider errors itself and returns None
+— its own docstring says so: *"Returns None on any failure so callers can
+fall back to their own deterministic summary."* The caller's `except`
+therefore almost never fires, and the class I added to catch infrastructure
+failures could not see the infrastructure failure that dominates the tape.
+
+I shipped a diagnostic that classified 4 provable timeouts as a silent model.
+
+**Corrected as [#466].** The signal was already in the return value: `None`
+means the call never came back, `""` means the model answered with nothing.
+`None` now files as **`no_response`**. Two existing tests — one from #459,
+one from #465 — asserted `None → "empty"` and so encoded the mistake; both
+are corrected in place with a comment saying why, rather than quietly
+edited.
+
+Why this is worth a PR rather than a note: **container logs are lost on every
+deploy** — I hit exactly that last cycle chasing the salvage timestamps — so
+a failure class that can only be resolved from logs cannot be resolved at
+all. The tape has to carry it.
+
+3 mutants killed (branch removed; branch swallowing `""` too; `no_response`
+beating a named error).
+
+### ISSUE — the timeout itself is NOT mine to change
+
+The obvious remedies all trade against each other, and the code says so:
+
+* **Raise `LLM_TIMEOUT_SECONDS`** — the 120s cap exists because a stalled
+  call once took the research loop offline for 30+ minutes while the
+  provider answered a fresh probe in 5.7s.
+* **Lower local `max_tokens`** — the `max(max_tokens, 2000)` floor exists
+  because starving a reasoning model produces *exactly* the empty output
+  this is about.
+* **Lower cycle concurrency** — reduces the fleet's decision throughput.
+
+This is capacity on the owner's own local model host, and every lever has a
+documented reason for its current value. **Reporting it with numbers;
+changing nothing.**
+
+### Recommendations
+
+1. **The 27% figure is the one to act on, and it is an owner decision.**
+   Roughly a quarter of decision cycles currently produce no verdict, each
+   one a held book that got no management look. The three levers above are
+   the choice; the measurement to make it with is p50/p99 local call latency
+   against the 120s cap.
+2. Still open from cycle 9: whether a salvaged verdict's fields reach the
+   journal (`plan_adherence` disagreed on run 1346). Not settled this cycle.
+
 ## Cycle 9 — 06:1xZ (anchor 06:13:29): quiet on trades; **#462 fired twice and worked — after I nearly recorded it as a bug of my own**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **3h49m**.
