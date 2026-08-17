@@ -73,6 +73,29 @@ class LossFloorScalingTests(unittest.TestCase):
             self.assertIn("House floor",
                           run_engine._loss_verdict_line(run, pnl, None))
 
+    def test_the_BRIEF_THE_DESK_READS_no_longer_carries_the_false_line(self):
+        """Behavioural, not a source grep: drive the whole position brief the
+        way a cycle does and assert the wound line is absent when the budget
+        makes it fee-scale. A pass-through that is dropped at the call site
+        renders the $0.99 wound again, which is what run 1344 acted on."""
+        run = {"id": 1344, "symbol": "TRUMPUSDT", "market": "crypto",
+               "status": "running", "created_at": "2026-08-16T23:23:20Z"}
+        cfg = {"run_budget_usd": 1719.15}
+        pnl = {"total": -1.2539, "realized": 0.0, "unrealized": -1.2539,
+               "mark_age_ok": True,
+               "position": {"quantity": -276.886, "entry_price": 1.397,
+                            "current_price": 1.4009, "leverage": 2.0}}
+        with patch.object(run_engine, "compute_run_pnl", return_value=pnl), \
+             patch.object(run_engine, "_typical_daily_move_pct",
+                          return_value=1.1028), \
+             patch.object(run_engine, "_margin_state_line", return_value=""):
+            brief = run_engine._position_state_line(run, cfg, -276.886, {})
+            starved = run_engine._position_state_line(run, {}, -276.886, {})
+        self.assertNotIn("House floor", brief,
+                         "a $1.25 loss on a $1,719 book is not a wound")
+        self.assertIn("House floor", starved,
+                      "without a budget the plain dollar floor still applies")
+
     def test_slv_class_loss_is_no_longer_past_a_scaled_floor(self):
         # SLV run 1100 (budget $399.9): cumulative −2.51 was reported "past
         # the −0.99 floor" and fully closed at the day's low. At 0.6% of
