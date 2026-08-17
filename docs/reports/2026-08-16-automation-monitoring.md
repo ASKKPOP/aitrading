@@ -23,6 +23,484 @@ flag comes off.
 
 ---
 
+## Cycle 48 — 23:4xZ (anchor 23:49:31): quiet — new TRUMP short at the fleet's largest size yet ($387)
+
+TRUMP 1344 short **276.886 @ 1.397 = $387 notional** (23:23:20Z), the
+largest single book fleet 35 has opened — 15× the dust floor, so its
+reduces are fully divisible and neither the escalation nor the clamp
+band applies. Worth watching precisely because every honoured reduce
+today came from a big book.
+
+Day ledger **+$5.65**, **resid 0.00** — the adapt ledger has now fully
+caught up (the +$5.82/0.06 read last cycle was AVAX's close awaiting
+its pass, exactly as the confirmed mechanism predicts; the small ledger
+move is that leg settling). 11 decisions, adherence 11/11,
+`side_contradiction` 0, one conf-0.0, clamp count holds at 1,
+0 tracebacks. Slots: 9 crypto + 1 forex.
+
+---
+
+## Cycle 47 — 23:1xZ (anchor 23:19:31): **#457's FIRST LIVE CLAMP FIRED** — and it did exactly what it was built to do
+
+**The watch closes affirmatively.** AVAX 1335, 22:49:57Z:
+
+```
+intent reduce, from 0.5 -> to 0.49463133911708423,
+why: "dust_remainder_clamped"
+```
+
+Book was 7.842 × 6.308 = **$49.47** — inside the narrow $33–50 band I
+identified last cycle. Max non-escalating reduce = 1 − 25/49.47 =
+**49.46%**; the desk asked **50%**, over by **0.54 of a percentage
+point**. Pre-#457 that 0.54-point miss would have inverted the desk's
+partial into a **full close**. Instead:
+
+- cover **3.879** @ 6.308 = **+$0.133**, remainder **$25.00 kept**;
+- the desk then closed the rest deliberately at 23:18:01 for
+  **+$0.060**. Run 1335 realized **+$0.170**.
+
+**So the clamp preserved the desk's stated intent, the remainder was
+managed, and the second exit was the desk's own choice rather than a
+rail's.** That is the whole argument for the fix, demonstrated on live
+money 3.5 h after deploy — and it landed in the band I had just
+finished warning would make it rare. Both statements were right: **rare
+AND correct.**
+
+**Second first: FOREX arrived.** Run 1341 **AUDUSD** is running —
+fleet 35's first non-crypto trading slot (9 crypto + 1 forex). The
+market_scope-NULL universe reached FX ~2.3 h after the open; the
+"no forex yet" watch closes.
+
+Day ledger **+$5.82**, resid 0.06 (adapt 24/25 — the one gap is
+AVAX's 23:18 close awaiting its next cycle, exactly the confirmed
+mechanism). 11 decisions, adherence 11/11, `side_contradiction` 0,
+0 tracebacks. **Book is flat** — no open positions.
+
+---
+
+## OWNER QUESTION (22:5xZ) — "is Plan 26 working well?" Verified against prod, not the screenshot
+
+**Values in the panel match prod exactly** (FIL slot 0: target 0.6466,
+stop_ref 0.69513, verdict `adjusted`, written 22:49:13Z; panel clock is
+UTC−7, hence "15:49"). So the pipeline is real, not a mock.
+
+**WORKS:**
+- **Stop echo holds live**: AVAX 1335 outlook `stop_ref_px 6.47824` =
+  its position's actual `stop_loss` 6.47824, to the digit.
+- **#448 visibly steering**: DOT slot 3 — *"short thesis still valid,
+  but only ~2 h to the deadline so the expected 3.5% move is
+  unachievable → hold"*, and its dialog line **"Algorithmic entry
+  targets are ignored because time horizon is insufficient."** The desk
+  is refusing entries it cannot finish.
+- **Deviations carry reasons** (FIL: *"We deviate from the original
+  full-size hold by reducing half the position"*) — the guide's §2 rule
+  satisfied.
+- Coverage widened: us-stock slots (PYPL, SLV, DIS, UBER) now carry
+  targets; `null` stop_ref on all of them is correct — they are flat.
+
+**⚠️ DEFECT FOUND — the panel can publish a plan the book does not
+match.** FIL slot 0 tells the reader the desk **reduced half** and
+still holds a short. It does not: **at 22:49:13Z the outlook published
+"reduce half", and at 22:49:14Z the dust-remainder rail escalated that
+same intent to a FULL close.** Run 1322 is flat. The outlook records
+the desk's INTENT, never the EXECUTED action, so whenever a rail
+rewrites the order the published plan is wrong from the second it is
+written — and a user reading this panel believes they hold a position
+they do not.
+**Not money lost; it is a truthfulness defect in the user-facing
+artifact**, and it is the escalation problem surfacing in the UI.
+**Fix (queued): reconcile the outlook against the executed order —
+either publish after execution, or stamp the row with what actually
+filled.**
+
+**Internal inconsistency, same card:** stop_ref **0.69513** (the real
+stop) vs the prose invalidation **"$0.689"**. Two different levels in
+one plan; the desk's narrative and its bracket disagree.
+
+**Verdict in profit terms, per §3.7:** the profit test is **day-7 and
+not yet due**. Today: realized **+$5.63**, and the plan-era trades are
+the good ones — TRUMP +$1.69 and FIL +$1.41 across honoured reduces.
+But adherence is NOT profit: I measured `followed` ×6 while DOT bled
+5× earlier today. **So: the plumbing works, the discipline is
+improving, and the profit claim stays unproven until the day-7 split.**
+
+---
+
+## Cycle 46 — 22:4xZ (anchor 22:49:29): **prediction CONFIRMED** — and the clamp's first live test FAILED to fire
+
+**1 · The residual hypothesis is confirmed, cleanly.** I predicted run
+1329's missing adapt would land on its next cycle. It did:
+`22:20:57Z adapt {"trigger":"pending_close","signal_id":1415,
+"realized":1.0637}` — the exact leg, one cycle later. Today's count is
+now **22 adapt / 23 legs**, the gap again being precisely the newest
+un-ingested close (FIL, 22:49:14Z), and **resid fell 1.07 → 0.58**,
+tracking that leg's size. **Resid = un-ingested closing legs. Settled,
+and my earlier "mid-flight read" story is retired.**
+
+**2 · FAILED — the clamp did not apply where it should have.**
+FIL 1322 authored `reduce 0.5` at 22:49:13Z and the payload reads
+`{"size_frac":{"from":0.5,"to":1.0,"why":"dust_remainder_closed"}}` —
+**escalated to a full close, not clamped**, despite #457 being live
+since 19:56Z. Cover 38.32 @ 0.6661 = **+$0.579** (run 1322 now
++$1.411 realized).
+
+Why: book = 38.32 × 0.6661 = **$25.53**, so max non-escalating reduce
+= 1 − 25/25.53 = **2.1%**, which is below the `_MEANINGFUL_PARTIAL`
+0.25 guard I shipped — so the code took the `dust_remainder_closed`
+branch **by design**. This is the DOT $25.47 case exactly.
+
+**So the clamp behaved correctly, and my watch framing was wrong:**
+I have been waiting for "the first live clamp" as if any sub-line
+reduce would produce one. It will not — only books between **$33.3
+and $50** can clamp (below $33.3 the max reduce is under 25%; above
+$50 nothing escalates). That is a **narrow band**, and today's tape had
+exactly two books in it ($40.4, $47.3). **Honest consequence: #457 will
+fire rarely.** It is still right — it converts the two worst
+authorship inversions of the day — but I over-sold its reach, and the
+correction belongs on the record.
+
+Book: AVAX only (−$0.02 uPNL... mark 6.3167 vs 6.345 entry = +$0.22).
+Day ledger **+$5.63**. 10 decisions, adherence 10/10,
+`side_contradiction` 0, 0 tracebacks. Still zero forex runs.
+
+---
+
+## Cycle 45 — 22:1xZ (anchor 22:19:29): TRUMP closes **+$1.064**, the day's biggest leg — and I finally have the RIGHT explanation for the residual
+
+**P&L: TRUMP 1329 final cover 32.86 @ 1.394 = +$1.064.** The run's full
+arc: short 131.4 @ 1.427 → three covers (+$0.287, +$0.341, **+$1.064**)
+= **+$1.692 realized on one thesis**, all three reduces honoured
+(books $187, $93, $46). Day ledger **+$5.05**.
+
+**⚠️ My "transient mid-flight read" explanation was WRONG, and the
+re-read proved it:** I predicted resid 0.65 would clear; it **grew to
+1.07**. So I chased it instead of restating the assumption, and the
+mechanism is now identified:
+
+- 22 closing legs today, **21 `adapt` events** — exactly one missing.
+- The missing one is TRUMP's 22:06:51 cover, `+$1.064` — and
+  **resid = 1.07**. The numbers match.
+- The cover has a `trade` event but no `adapt`: `ingest_outcomes` reads
+  legs on the run's **NEXT** cycle. Run 1329 closed at 22:06 and its
+  next cycle has not run yet.
+
+**So resid is not noise and not drift — it is the size of the closing
+legs that have not yet reached their run's next adapt pass.** That also
+retro-explains the 0.16 and 0.14 readings (which cleared once the next
+cycle ran) far better than "mid-flight read" did.
+
+**Testable prediction for next cycle:** once run 1329 cycles, resid
+should fall to ≈0 and adapt should show 22/22. If it does NOT, then a
+closing leg is being permanently missed by the learning loop — which
+would matter, because the adapt ladder and the RAG outcome chunks would
+be blind to the fleet's **largest winning leg of the day**.
+
+Honoured-reduce scoreboard now **6/6, +$2.633 combined**; boundary
+**9/9**. 11 decisions, adherence 11/11, `side_contradiction` 0, no
+conf-0.0, clamp still unexercised, 0 tracebacks. Still zero forex runs
+1.3 h after the open (all 10 slots crypto). Book: FIL +$0.63,
+AVAX +$0.18.
+
+---
+
+## Cycle 44 — 21:4xZ (anchor 21:49:30): FIL banks **+$0.645** — the day's second-largest leg, from an honoured reduce; day **+$3.99**
+
+**FIL 1322 `reduce 0.5` on a $52 book → honoured** (`railed: {}`),
+cover 38.32 @ 0.66437 = **+$0.645**, remainder 38.32 kept. FIL fell
+from 0.6815 to 0.663 — the short worked and the desk took half at the
+right moment. **Boundary now 8/8.**
+
+Day ledger **+$3.99** (resid 0.65 on this read — the familiar
+mid-flight shape, third occurrence; re-read next cycle per the
+established pattern, not treated as drift).
+
+**Honoured-reduce scoreboard, today:** SUI +$0.166 · TRUMP +$0.287 ·
+TRUMP +$0.341 · FIL +$0.130 · **FIL +$0.645** — five for five,
+**+$1.569 combined**, every one from a book above the divisibility
+line. Against that, the four escalated (sub-line) reduces produced
+−$0.185, −$0.133, +$0.031 and a forced close. **The instrument works
+where the book can carry it** — which is exactly the regime #457's
+clamp now extends downward.
+
+**FX open: no forex runs yet.** All 10 running slots are still crypto
+(outlooks: crypto 11, us-stock 6, forex 0) an hour after the 21:00Z
+open. Fleet 35's `market_scope` is NULL so forex is eligible — worth
+watching whether the next build round reaches for it or the universe
+stays crypto-only. Not a defect yet; noted.
+
+12 decisions, adherence 12/12, `side_contradiction` 0, one conf-0.0,
+clamp count still 0, 0 tracebacks. Book: TRUMP +$1.08, FIL +$0.70,
+AVAX +$0.39.
+
+---
+
+## Cycle 43 — 21:1xZ (anchor 21:19:42): **AUDCHF FLATTEN FIRED ON TIME — the longest-standing watch closes**
+
+**The 08-15 watch resolves affirmatively.** Queued flatten executed
+**21:00:04Z — four seconds after the FX open**, exactly as designed:
+
+- 20:56:48Z `gate_skip {"stage":"flatten","reason":"market closed —
+  flatten queued to the next open"}` — the queue holding, correctly.
+- 21:00:04Z `trade` sell 51.647 AUDCHF @ 0.57543 →
+  **+$0.028** (matches the +$0.030 uPNL I captured pre-flatten last
+  cycle — the before-picture was worth taking).
+- 21:00:04Z `adapt {"trigger":"flatten_close"}` — journal-only, does
+  NOT feed the loss ladder (the #249 behaviour Agent B verified).
+- 21:00:04Z `run_status → stopped, reason fleet_stop_all`.
+
+**Run 1147 closed at +$0.155 realized; fleet 33 is now `stopped`.**
+A flatten parked for ~36 h across a weekend fired within 4 s of the
+session opening. No stall, no missed trigger — the mechanism does what
+the handoff claimed. **Watch closed; fleet 33 drops off the standing
+list.**
+
+**Process note against myself:** my first query this cycle was
+malformed (a `SELECT ... status ...` with no `FROM`) and returned
+nothing but `NOW`. I re-ran it rather than reporting "no data" — a
+silent empty result is exactly how a missed flatten would have looked.
+
+Fleet 35: 10 decisions, adherence 10/10, `side_contradiction` 0,
+clamp count still 0 (no reduce authored yet), 0 tracebacks. Book has
+moved favourably: TRUMP +$0.61, FIL +$0.63, AVAX +$0.22.
+
+---
+
+## Cycle 42 — 20:4xZ (anchor 20:49:31): quiet — **AUDCHF flatten is T-minus ~10 min**, position confirmed live
+
+11 holds, no trades, 0 tracebacks; adherence 11/11,
+`side_contradiction` 0, no conf-0.0 this window; clamp still awaiting
+its first live reduce (count 0, no reduce authored since restart).
+Book: TRUMP +$0.51, FIL +$0.24, AVAX +$0.06.
+
+**AUDCHF 1147 pre-flatten state captured** (the watch has been standing
+since 08-15): run `stopping`, fleet 33 `stopping`, position **LONG
+51.647 @ 0.57484, mark 0.57543 → +$0.030 unrealized**, run realized
+already **+$0.127**. Its `at_time` (2026-08-15T09:12:10Z) is long past —
+the run has been parked in `stopping` awaiting the FX open to flatten,
+which is the queued behaviour, not a stall. **Next cycle verifies the
+flatten actually executes at the 21:00Z open** and prices it; if it
+does not fire, that is the finding.
+
+---
+
+## Cycle 41 — 20:1xZ (anchor 20:19:28): quiet — residual cleared again; no reduces yet post-clamp
+
+**Residual re-read: 0.14 → 0.01, check ok**, ledger unchanged at
+**+$3.32**. Second confirmation that the mid-flight read is transient,
+not drift — the pattern is now understood, so future ~0.1 residuals get
+one re-read and no alarm.
+
+7 holds, no trades. Post-#457 order-intent counters both **0** (no
+clamp, no escalation) — correct, because **no reduce has been authored
+since the 19:56Z restart**; the clamp's first live exercise is still
+pending. Adherence 7/7, `side_contradiction` 0, one conf-0.0,
+0 tracebacks. Book: TRUMP +$0.47, FIL +$0.14, AVAX +$0.03.
+
+---
+
+## Cycle 40 — 19:5xZ (anchor 19:57:27): two clean desk exits, **+$0.333 combined** — day **+$3.32**
+
+Both closes predate the #457 deploy (worker restarted **19:56:02Z**);
+`dust_remainder_clamped` count is **0**, which is the correct state,
+not a silent failure — no reduce has been authored since the restart.
+
+- **SUI 1306: deliberate `close` 1.0** (`railed: {}` — a close is never
+  railed), cover 69.41 @ 0.67697 = **+$0.203**. The desk chose a full
+  exit outright rather than authoring a doomed partial. Run 1306 has
+  now produced +$0.166 (honoured reduce) then +$0.203 (clean close).
+- **FIL 1322: `reduce 0.5` on a $104 book → honoured**, `railed: {}`,
+  cover 76.64 @ 0.6795 = **+$0.130**, remainder $52 kept. **Boundary
+  now 7/7.**
+
+Day ledger **+$3.32** (resid 0.14 — same mid-flight-read shape as the
+0.16 I cleared in cycle 38; re-read next cycle rather than assumed).
+15 decisions, adherence 15/15, `side_contradiction` 0, three conf-0.0,
+0 tracebacks. New AVAX short opened (1335, 7.84 @ 6.345). Book:
+TRUMP +$0.37, FIL +$0.13, AVAX +$0.04.
+
+**Standing note:** every one of today's honoured reduces (SUI $93.8,
+TRUMP ×2, FIL $104) came from a book above the line, and all four were
+profitable. The clamp now extends that regime downward — first live
+clamp is the next thing to watch for.
+
+---
+
+## #457 DEPLOYED — 19:5xZ: clamp-not-invert, verified by replaying every real escalation
+
+PR MERGED (`d9ad692`), image `sooppiy-backend:20260816-clamp-not-invert`.
+Verified in the running container against **the actual books from
+today's tape**:
+
+| real case | before | now | remainder |
+|---|---|---|---|
+| SUI $47.32 (desk asked 0.5, bound 47.2%) | full close | **sf 0.4717 `clamped`** | **$25.00 kept** |
+| DOT $40.42 | full close | **sf 0.3815 `clamped`** | **$25.00 kept** |
+| DOT $25.47 (max shed 1.8%) | full close | **sf 1.0 `closed`** | $0 — correct, no sliver |
+| SUI $93.8 (already viable) | 0.5 untouched | **0.5, `railed: {}`** | $46.90 — untouched |
+
+Both inversions that took the desk's stated "keep the remainder" intent
+and did the opposite now preserve it, the un-viable book still closes,
+and the healthy book is untouched. Deploy-rebuild check applied: Plan 26
+(66, flag on) and #455 net-of-fees (2) both survived. 0 tracebacks.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260816-sweep-docs-0816`.
+**Session ship count: 15 PRs.**
+
+---
+
+## Cycle 39 — 19:1xZ (anchor 19:19:27): boundary now **6/6** — TRUMP honoured a second reduce on a $93 book
+
+TRUMP 1329 `reduce 0.5` again, book 65.72 × 1.4178 = **$93.2**, above
+the line → **honoured**, position halved to 32.86 with the remainder
+kept. Sixth consecutive data point, still no exception:
+**every book above ~$50 honoured, every book below escalated.**
+
+10 holds otherwise, adherence 10/10, `side_contradiction` 0, one
+conf-0.0, two new runs (1335, 1336) built, 0 tracebacks. Book: SUI
++$0.23, TRUMP +$0.30, FIL +$0.34.
+
+**Shipping clamp-not-invert now** — the evidence is no longer marginal:
+4 escalations originated from a `reduce 0.5` the book could not honour,
+3 of them while the desk stated it wanted to keep the remainder, and
+the boundary is 6/6.
+
+---
+
+## Cycle 38 — 18:4xZ (anchor 18:49:27): residual RESOLVED; escalation n=6 — and it lands **exactly** on the divisibility line
+
+**The 0.16 residual I flagged last cycle was transient**: re-read now
+gives **resid 0.02, check ok**, ledger **+$2.66**. It was a mid-flight
+read (a leg booked between the ledger and adapt passes), not drift.
+Flag cleared — and I would rather have re-read it than assume.
+
+**Escalation n=6, and it is the cleanest confirmation yet.** DOT 1308
+authored `reduce 0.5` on a book of 53.086 × 0.76148 = **$40.42** —
+below the ~$50 divisibility line — and the rail escalated to a full
+close: +$0.031 on the leg, run realized **−$0.164**.
+
+Updated table, now 5/5 on the boundary and 6 escalations total:
+
+| book at the reduce | outcome |
+|---|---|
+| DOT $25.5 | escalated (−$0.185) |
+| **DOT $40.4** | **escalated (+$0.031)** |
+| SUI $47.3 | escalated (−$0.133) |
+| SUI $93.8 | honoured (+$0.166) |
+| TRUMP $187 | honoured (+$0.287) |
+
+**Every book under ~$50 escalated; every book over it was honoured.
+5/5, no exceptions.** The desk has now authored `reduce 0.5` into an
+escalation **four times**, three of them stating an intent to keep the
+remainder. This is no longer a "watch" — the **clamp-not-invert** fix
+has all the evidence it needs, and the small-book regime is where this
+fleet spends most of its life.
+
+Rest: adherence 8/8, `net_of_fees` on 4, `side_contradiction` 0, three
+conf-0.0, 0 tracebacks. Book: SUI +$0.27, TRUMP +$0.56, FIL −$0.08.
+
+---
+
+## Cycle 37 — 18:1xZ (anchor 18:19:27): **second surviving reduce confirms the divisibility line**; day +$2.63
+
+**SUI 1306 `reduce 0.5` on a $93.8 book → honoured, +$0.166.**
+Remainder $46.9 = 1.9× the floor. That is the divisibility prediction
+made in cycle 35 holding on its first independent test:
+
+| book at the reduce | outcome |
+|---|---|
+| DOT $25.5 | escalated to full close (−$0.185) |
+| SUI $47.3 | escalated to full close (−$0.133) |
+| **TRUMP $187** | **honoured, +$0.287** |
+| **SUI $93.8** | **honoured, +$0.166** |
+
+Clean separation at ~2× the floor, 4/4. **Both of today's honoured
+reduces are also the day's two largest profitable legs** — the desk's
+partial-exit instrument works exactly when the book can carry it.
+
+Day ledger **+$2.63** (resid 0.16 — flagged, next sweep re-reads it).
+Fleet replenishing: four new runs 1331–1334 built 17:52Z. Adherence
+8/8, `net_of_fees` on 4, `side_contradiction` 0, two conf-0.0,
+outlook fresh, 0 tracebacks. Book: DOT +$0.02, SUI +$0.29,
+TRUMP +$0.62, FIL +$0.01.
+
+---
+
+## Cycle 36 — 17:4xZ (anchor 17:49:27): quiet — FIL re-entered at a $209 book, above the divisibility line
+
+FIL 1322 re-shorted 153.27 @ 0.6815 (17:47:30Z, `followed`) — notional
+**$104 margin / $209 book**, i.e. **8× the dust floor**, the regime
+cycle 35 showed a reduce actually survives in. No closes. Adherence
+7/7, `net_of_fees` on all 3 held books, `side_contradiction` 0, one
+conf-0.0, outlook fresh (17:47:30Z), 0 tracebacks. Book: 4 shorts
+(DOT −$0.02, SUI +$0.44, TRUMP +$0.62, FIL −$0.03); day ledger ~+$2.52.
+
+---
+
+## Cycle 35 — 17:1xZ (anchor 17:19:27): **the counter-example** — a partial reduce that worked exactly as authored, +$0.287
+
+TRUMP 1329 `reduce 0.5` on a **$187 book**: `railed: {}` — no
+escalation, no legacy takeover — cover 65.717 @ 1.4220 for
+**+$0.287**, the largest single realized leg since FIL 1305, and it
+**kept the other half** (remainder $93.4, 3.7× the $25 floor). Day
+ledger **+$2.23 → ~+$2.52**.
+
+**This is the control case the three failure routes needed.** Same
+verb, same 0.5 fraction, same brief set including `net_of_fees` — and
+it honoured the desk's intent because the **book was big enough to be
+divisible**. DOT ($25.5), SUI ($47.3) and FIL (absent order block) all
+failed at the small-book end; TRUMP at $187 did not.
+
+**That sharpens the diagnosis and I am revising my own framing:** the
+problem is not "staging is bad" (my cycle-29 hypothesis, already
+refuted by A) nor "reduce is broken" — it is that **a reduce is only a
+real instrument above ~2× the dust floor, and this fleet's slot sizes
+put most books below that line.** The three queued fixes still stand,
+but the ranking changes: **clamp-not-invert** matters precisely because
+the small-book regime is where the desk lives.
+
+Rest: 6 decisions, adherence 6/6, `net_of_fees` on 3 (all held books),
+`side_contradiction` 0, no conf-0.0 this window, outlook freshness
+17:16:39Z, 0 tracebacks. Book: DOT −$0.13, SUI +$0.25, TRUMP +$0.43.
+
+---
+
+## Cycle 34 — 16:4xZ (anchor 16:49:17): **#455 RENDERING LIVE** — and a THIRD route by which "reduce half" becomes a full close
+
+**#455 behaviourally proven, 4.5 h after deploy:** `net_of_fees`
+appears in **4 of 7** decision briefs this window — every held-book
+cycle (1306, 1329, 1308, 1322). Deploy-time proof was a replay; this is
+the line reaching real decisions. Watch closes.
+
+**FIL 1322 closed +$0.038** (run realized **+$0.1045**, still
+`running`). And it exposes a **new mechanism** for the same failure
+shape I have now logged three ways:
+- the desk's report says *"**reduce half** to lock remaining gain while
+  keeping upside"*;
+- but its `order_params` is `{"action":"buy","deferred":true,
+  "outcome":"absent"}` — **it authored NO order block at all**;
+- with no structured intent, the **legacy path** took the verb `buy` on
+  a short book and covered the **entire 76.78** — no `order_intent`
+  row, no `railed` note, no escalation.
+
+So: **stated partial → full close, this time because the desk never
+emitted the intent object.** DOT/SUI were rail escalations; this is
+prose-only intent evaporating into the legacy sizer. Same outcome,
+different cause — and unlike the escalations this one leaves **no
+`railed` audit trail**, so it is invisible to the escalation tally.
+**n=1 on this specific route; watch armed.** If it repeats, the fix is
+to treat a prose-stated partial with an absent order block as a defect
+worth re-prompting, not a silent full close.
+
+Also: `net_of_fees` was IN that decision's brief and the report still
+reasoned in prose about "remaining gain" without quoting a net figure —
+**n=1 of "line present, not quoted"**; too early to judge, the desk has
+had it for one exit.
+
+Rest: adherence 7/7, `side_contradiction` 0, one conf-0.0, outlook
+freshness 11 s, 0 tracebacks. Book: DOT −$0.11, SUI +$0.16,
+TRUMP +$0.55.
+
+---
+
 # 24-HOUR SWEEP — 08-15 16:00Z → 08-16 16:18Z (anchor 16:18:17)
 
 ## 1 · True P&L, flatten-reconciled, both frames
