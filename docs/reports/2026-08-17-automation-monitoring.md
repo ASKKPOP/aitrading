@@ -7,6 +7,168 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 12 — 08:1xZ (anchor 08:18:48): **the timeout fix did NOT work, and the measurement says why**
+
+**PROFIT-OR-LOSS FIRST.** Day 08-17 **+$4.23** (ledger, resid 0.00). One new
+position: FIL run 1358 short, opened 07:12:27Z, **+$0.024 unrealized** — the
+first entry in ~5 hours. 10 running runs.
+
+### FAILED — my own #468, and the rate is the verdict
+
+| window | decisions | no_verdict | rate |
+|---|---|---|---|
+| PRE-fix 06:00–07:05 | 27 | 5 | **18.5%** |
+| POST-fix 07:05–08:18 | 26 | 6 | **23.1%** |
+
+**The 120s → 300s decision-tier timeout did not reduce the no-verdict rate.**
+It is marginally worse, which at these n is noise — but it is certainly not
+better. The fix has not delivered.
+
+Post-fix kinds: `no_response` x4, `empty` x2.
+
+### Three hypotheses, all mine, all refuted by measurement
+
+1. **"The model is too slow for a 120s cap."** Refuted last cycle — it
+   answers in **4.9–7.4s idle**.
+2. **"Concurrent cycles queue at a single Ollama endpoint."** Refuted last
+   cycle — 4 concurrent calls cost **79.2s wall vs 78.2s for one**.
+3. **"Plan 26's outlook object inflates the schema and the latency."** My
+   leading theory going into this cycle. Refuted by A/B on the live host:
+
+   | prompt | latency |
+   |---|---|
+   | WITHOUT outlook | **146.7s, 132.4s** |
+   | WITH outlook | **80.6s, 135.3s** |
+
+   Without the outlook block it was *slower*. The outlook is not the driver.
+
+### What the data actually supports
+
+Raw-API probe with `finish_reason` exposed:
+
+* `max_tokens=460` → **`finish_reason: "length"`**, 460 completion tokens,
+  716 chars — cut off mid-object. That is the `truncated` class, and #462
+  now salvages it.
+* `max_tokens=2000` → `finish_reason: "stop"`, 444 tokens, **124.2s**.
+
+And the load, from `llm_usage` (no extra GPU cost to measure):
+
+```
+mean total LLM calls/hour today: 178   (decision 85-144/h + brief 63-85/h)
+at ~100s per decision call:      ~17,800 GPU-seconds demanded per hour
+available:                        3,600 seconds of wall clock per hour
+                                  => ~5x oversubscribed
+```
+
+Journaled decisions run **20–25/hour**, so the platform is making roughly
+**6 decision-tier LLM calls per journaled decision** (panel, discussion,
+brief, retries).
+
+**That reconciles every observation, including the ones that refuted me.**
+Idle 5s versus loaded 80–150s is a ~20× queueing multiplier on a saturated
+host. My "4 concurrent = same wall as 1" probe measured marginal cost
+against a queue that was *already* deep — which is why adding calls looked
+free. And it is why the cap does not matter: at ~5× oversubscription, calls
+breach 120s and 300s alike.
+
+**I fixed a symptom.** The reasoning behind #468 was sound for the data I had
+— the tail genuinely was breaching 120s — but the tail is a consequence of
+oversubscription, not of a cap set too tight. #468 buys headroom and should
+stay; it does not solve this.
+
+### ISSUE — the real lever is call volume or host capacity, and both are the owner's
+
+Nothing in the timeout, token, or concurrency settings fixes a 5×
+oversubscribed model host. The two honest levers:
+
+1. **Reduce calls per decision.** ~6 decision-tier calls per journaled
+   decision is the multiplier. `order_discussion` alone adds a second
+   decision-tier call per cycle — cycle 9 measured it adding 2m43s between
+   light analysis and the journal. Cutting it on light cycles would roughly
+   halve decision-tier volume. **This changes desk behaviour, so it is an
+   owner call, and I have not made it.**
+2. **Add host capacity**, or route the decision tier to a second provider.
+
+**Recommended measurement before either:** realized-P&L contribution of
+`order_discussion` cycles versus light-only cycles. If the discussion call is
+not earning its ~100s, it is the obvious cut.
+
+### Note
+
+I have now shipped three diagnostics and one fix against this single
+problem. The diagnostics were each justified — they are what turned an
+argument into these numbers — but the fix did not work, and saying so is the
+point of the loop.
+
+## OWNER ORDER "fix" — 07:0xZ: **the timeout is fixed, after the probe overturned both of my hypotheses**
+
+Owner instructed the fix directly, overriding my "not mine to change" from
+cycle 10. Measured first, then changed.
+
+### The probe killed both theories I was carrying
+
+| condition | latency |
+|---|---|
+| idle, 4 calls | **4.9s, 4.9s, 5.9s, 7.4s** |
+| single call while the fleet was cycling | **78.2s** |
+| 4 concurrent calls while cycling | **79.2s wall**, per-call 69–79s, **4/4 succeeded** |
+
+* **"The model is too slow for 120s"** — refuted. It answers in ~5s idle.
+* **"Concurrency is queueing at a single Ollama endpoint"** — refuted, and
+  this was my stated hypothesis going in. Four concurrent calls cost the
+  same wall-clock as one; the endpoint parallelises.
+
+What is actually there is a **latency tail**: the same call costs ~78s under
+live fleet load, so a 120s cap sits ~1.5× loaded latency and the tail clears
+it several times an hour. **Had I shipped the concurrency limiter I was
+reaching for, it would have cut throughput and fixed nothing.**
+
+### Shipped [#468] — tier-scoped, not global
+
+`_llm_timeout_seconds(tier)`: the decision tier gets 300s
+(`LLM_TIMEOUT_SECONDS_DECISION`), never below the general cap.
+
+**The 120s default is untouched on purpose.** It exists because one stalled
+call took the research loop offline for 30+ minutes while the provider
+answered a fresh probe in 5.7s. Only the decision tier can afford to wait —
+it runs on its own dedicated pool, sized so a slow LLM call cannot starve
+the SL/TP watcher.
+
+### The test break was the finding, not an obstacle
+
+`test_local_token_floor`'s fake generator did not accept `tier`, so the new
+kwarg raised `TypeError` — which `generate_text`'s bare `except` swallows
+into a `None` return, **the same shape a provider timeout takes.** That is
+exactly the confusion #466 was written about, reproduced inside the suite. I
+fixed the fake and added a test asserting the pass-through rather than
+loosening the assertion.
+
+3 mutants killed. Full suite **4,435 passed + 1,346 subtests**.
+
+### Deploy note — a parallel session is active
+
+#468's rollback target is `20260817-monitor-panel`, **not** my previous
+`20260817-no-response-class`. Another session deployed between my two
+deploys. Verified all six of my live changes survived, in-container:
+
+```
+decision timeout: 300.0      general: 120.0
+no_response class: no_response    empty class: empty
+salvage present: True        adherence silent: {}
+loss floor cfg: 10.3149
+```
+
+0 tracebacks. **On a shared box, "my deploy succeeded" is not the same as
+"my change is running" — check the feature, not the chain.**
+
+### What decides whether this worked
+
+`no_response` (#466) is now the counter. If the tail moves past 300s the
+losses return and the tape will say so. This buys headroom against the
+observed tail; it does not make the model faster.
+
+**Session ship count: 22 PRs.**
+
 ## Cycle 10 — 06:4xZ (anchor 06:49:33): **the no-verdict cause is settled — local-provider timeouts — and #465 was mine to correct**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **4h25m**.
