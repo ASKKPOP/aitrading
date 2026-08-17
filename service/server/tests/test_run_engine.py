@@ -2484,6 +2484,68 @@ class NoVerdictErrorClassTests(unittest.TestCase):
                       "the captured error never reaches the diagnostic")
 
 
+class RailedParamsBriefTests(unittest.TestCase):
+    """Measured 2026-08-17: run 1375 requested **target_pct 3.02% three times
+    in 95 minutes** (17:56, 18:27, 19:30) while its stop drifted
+    0.47 -> 0.475 -> 0.48. The R:R ceiling clamped it every time and the
+    request never changed.
+
+    `order_params` notes are journalled and **never reach the prompt**; there
+    is no brief line for a clamped parameter. So the desk is corrected and
+    never told, which turns a learnable error into a permanent one — it will
+    ask for 3.02% forever.
+
+    The same silence covers `classify_arm`'s protective/defensive label.
+    This line breaks it."""
+
+    def _mk(self, notes):
+        payload = json.dumps({"cycle": 8, "params": {"target_pct": 1.41,
+                                                     "stop_pct": 0.47,
+                                                     "notes": notes}})
+        return payload
+
+    def test_it_quotes_what_the_rail_changed(self):
+        note = ("target_pct 3.02 pulled to R:R ceiling 1.41 (3x stop 0.47) "
+                "\u2014 unreachable targets never fill")
+        with patch.object(run_engine, "_last_order_params_notes",
+                          return_value=[note]):
+            line = run_engine._railed_params_line({"id": 1375})
+        self.assertIn("3.02", line)
+        self.assertIn("1.41", line)
+        self.assertIn("rail", line.lower())
+
+    def test_silence_when_nothing_was_railed(self):
+        with patch.object(run_engine, "_last_order_params_notes",
+                          return_value=[]):
+            self.assertEqual(run_engine._railed_params_line({"id": 1}), "")
+
+    def test_it_fails_soft_on_junk(self):
+        for bad in (None, "nope", [None], [{}]):
+            with patch.object(run_engine, "_last_order_params_notes",
+                              return_value=bad):
+                self.assertIsInstance(
+                    run_engine._railed_params_line({"id": 1}), str)
+
+    def test_it_tells_the_desk_the_rule_not_just_the_number(self):
+        """A number alone teaches nothing — the desk must learn the rule that
+        produced it, or it will keep proposing values the rail will cut."""
+        note = "target_pct 3.02 pulled to R:R ceiling 1.41 (3x stop 0.47)"
+        with patch.object(run_engine, "_last_order_params_notes",
+                          return_value=[note]):
+            line = run_engine._railed_params_line({"id": 1375})
+        self.assertTrue(
+            any(w in line.lower() for w in ("propose", "ask", "next", "within")),
+            f"line must tell the desk what to do differently: {line!r}")
+
+    def test_it_is_WIRED_into_the_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._build_brief_parts) \
+            if hasattr(run_engine, "_build_brief_parts") else \
+            inspect.getsource(run_engine)
+        self.assertIn('("railed_params", _railed_params_line(run))', src,
+                      "the clamp is still invisible to the desk")
+
+
 class TruncatedVerdictSalvageTests(unittest.TestCase):
     """Measured 2026-08-17, AVAX run 1335 cycle 16.
 
