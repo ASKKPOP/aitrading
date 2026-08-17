@@ -59,6 +59,30 @@ logger = logging.getLogger(__name__)
 FEE_MULTIPLE = 3.0
 # target_pct >= RR_FLOOR * stop_pct. The single most valuable invariant here.
 RR_FLOOR = 2.0
+# target_pct <= RR_CEILING * stop_pct. The floor's mirror, added 2026-08-17
+# after four experiments agreed the target was set past anything the market
+# offers: no target above 2.00% has EVER been reached even given a run's own
+# full horizon (4/34, all 0.60-2.00%); the maximum favourable excursion
+# available inside that horizon is median 1.14% against a median target of
+# 4.80%; the market OFFERED the desk's target on 1 leg in 28; and a
+# stop-vs-target-first replay wins 6 times in 30 at a 2.50% target versus
+# ZERO at 4.55%. `take_profit` is live in risk_engine and carried on every
+# position — 0 of 210 stopped runs closed on it because the level is
+# unreachable, not because the path is dead. Only the floor existed, so the
+# desk overshot its own gate by ~1.8x with nothing to pull it back.
+# THE MEASURED OPTIMUM IS 2.0 AND THIS DEFAULT IS 3.0. That gap is deliberate
+# and should not be quietly closed. Existing tests encode brackets at R:R
+# 2.5, 2.67 and 3.0 as intended behaviour; a 2.0 ceiling contradicts nine of
+# them and a 2.5 ceiling contradicts two. Overriding tests that record an
+# earlier deliberate decision, on the strength of a 30-entry replay, would be
+# fitting the tests to the code — so the default ships INERT against every
+# existing case and only binds above R:R 3.0 (a 4.55% target at a 1.24% stop
+# becomes 3.72%, roughly doubling how often the level is offered).
+#
+# Set RR_CEILING=2.0 to take H8's optimum. That is a config change, not a
+# code change, precisely so the decision stays with whoever owns the
+# doctrine those tests encode.
+RR_CEILING_DEFAULT = 3.0
 
 # (minimum, maximum) per field. Absolute outer bounds — the tier leverage cap
 # tightens the leverage rail further at call time.
@@ -229,8 +253,7 @@ def parse_order_block(raw: Any, *, leverage_cap: float = 10.0,
     # ── the two floors that make a bad parameter set harmless ──────────────
     # Fee floor first: a target under its own round trip is not a target.
     if out.target_pct is not None:
-        rate = fee_rate if fee_rate is not None else _fee_rate()
-        min_target = rate * 2 * 100.0 * FEE_MULTIPLE
+        min_target = _fee_floor_target(fee_rate)
         if out.target_pct < min_target:
             notes.append(f"target_pct {out.target_pct:g} raised to fee floor "
                          f"{min_target:g} ({FEE_MULTIPLE:g}x round trip)")
@@ -245,6 +268,19 @@ def parse_order_block(raw: Any, *, leverage_cap: float = 10.0,
             notes.append(f"target_pct {out.target_pct:g} raised to R:R floor "
                          f"{min_target:g} ({RR_FLOOR:g}x stop {out.stop_pct:g})")
             out.target_pct = min_target
+
+    # R:R CEILING — the floor's mirror. See RR_CEILING_DEFAULT for the four
+    # experiments behind it. Clamped so it can never fight the two floors:
+    # a ceiling below the R:R floor would invert the bracket, and one below
+    # the fee floor would make the target cheaper than its own round trip.
+    if out.stop_pct is not None and out.target_pct is not None:
+        ceiling_mult = max(_rr_ceiling(), RR_FLOOR)
+        max_target = max(out.stop_pct * ceiling_mult, _fee_floor_target(fee_rate))
+        if out.target_pct > max_target:
+            notes.append(f"target_pct {out.target_pct:g} pulled to R:R ceiling "
+                         f"{max_target:g} ({ceiling_mult:g}x stop "
+                         f"{out.stop_pct:g}) — unreachable targets never fill")
+            out.target_pct = max_target
 
     # The lock must not arm before the position is worth protecting, and never
     # inside the stop — that was the 10:1 defect in miniature.
@@ -261,6 +297,23 @@ def parse_order_block(raw: Any, *, leverage_cap: float = 10.0,
                 "trail_arm_pct", "trail_give", "horizon_hours", "max_adds")):
         return None
     return out
+
+
+def _fee_floor_target(fee_rate: Optional[float] = None) -> float:
+    """The smallest target worth naming: FEE_MULTIPLE round trips."""
+    rate = fee_rate if fee_rate is not None else _fee_rate()
+    return rate * 2 * 100.0 * FEE_MULTIPLE
+
+
+def _rr_ceiling() -> float:
+    """How many multiples of the stop the target may sit at, at most.
+
+    Env-tunable so the band can be relaxed without a deploy — the evidence
+    behind the default is a 30-entry replay, not a law."""
+    try:
+        return float(os.environ.get("RR_CEILING", str(RR_CEILING_DEFAULT)))
+    except (TypeError, ValueError):
+        return RR_CEILING_DEFAULT
 
 
 def _fee_rate() -> float:

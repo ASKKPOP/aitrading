@@ -317,3 +317,72 @@ The governance concern is unchanged and must be argued on its own terms:
 `_order_discussion` fails OPEN, so a path that labels itself "not the AI"
 has authored 10 closes/reduces while §7b makes the panel the final author.
 
+## SQL TRAP (found the hard way 2026-08-17 cycle 20): close rows overwrite entry_price
+
+On a CLOSING `signals` row (`exit_price IS NOT NULL`), **`entry_price` is
+overwritten with the exit price** — e.g. FIL 1358 `ep=0.66614 xp=0.66614`,
+SUI 1356 `ep=0.67478 xp=0.67478`. Computing a realized move from a close row
+alone yields **exactly 0.0000% on every leg**, which reads like a clean null
+result and is a query bug.
+
+Entry must be taken from the run's OPENING row (`exit_price IS NULL`).
+
+Joins the standing trap list: `ts` not `created_at`; CONCAT with any NULL
+returns NULL and the row vanishes; `dec` is reserved in MySQL; the DB wrapper
+mangles a quoted `IN ('a','b')` list; an unquoted ssh heredoc eats `$.json`
+paths.
+
+## NEXT EXPERIMENT — horizon replay of target_pct (specified 2026-08-17 cycle 20)
+
+H5 measured: target median **4.800%**, realized median **0.1478%**, **0 of 36
+legs ever reached their own target**, r(target, realized) = **+0.155**
+(r² 0.024).
+
+**Confounded:** positions close in ~1h against multi-hour targets, so "bad
+forecast" and "never given a chance" are not separated.
+
+**The separating measurement** (tooling built in cycle 15 — 1-minute
+`candleSnapshot` from close to the run's ORIGINAL `at_time`): for each of the
+36 legs closed early, was `target_pct` subsequently hit inside that horizon?
+
+* hit after exit → forecasts are sound, exit policy cuts them off; re-opens
+  the arm/at_time precedence question with n=36 instead of n=4.
+* not hit even with the full horizon → `target_pct` is decoration, and R:R
+  gating, sizing and `outlook.exit.target_px` all consume a number with no
+  content.
+
+**Do not act on H5 before this runs** — the two outcomes imply opposite
+remedies.
+
+## MEASURED 2026-08-17 cycles 21-22 — target_pct is decoration, and the reachable band is now known
+
+**H6 (cycle 21):** replayed 34 crypto legs from close to the run's OWN
+original `at_time`. Target reached **4 / 34**, and all four had targets of
+**0.60%, 2.00%, 0.60%, 0.60%**. **No target above 2.00% has ever been
+reached**, median target 4.80%. Exit policy exonerated; the
+arm/at_time precedence question is CLOSED (the n=4 hint from cycle 15 does
+not survive at n=34).
+
+**H7 (cycle 22):** max favourable excursion available inside each run's own
+horizon, 29 crypto entries — **p25 0.52%, median 1.14%, p75 1.89%, max
+4.24%**. Desk target median **4.55%**; the market **offered** that target on
+**1 of 28 legs (4%)**.
+
+**Arithmetic of the remedy:** the R:R gate demands target >= 2x stop. At the
+median available excursion of 1.14%, a 2:1 ratio requires a stop **<=0.57%**.
+The crypto fee hurdle is ~0.09%, so 0.57% is ~6x the fee — structurally
+viable. Measured design band: **stop ~0.5-0.6%, target ~1.1-1.2%** against
+today's ~1.2-2.5% / ~4.55%.
+
+**The gate is not wrong; its inputs are drawn from a market that does not
+exist.** Do NOT change the R:R ratio itself.
+
+**LAST MEASUREMENT NEEDED before any change:** replay each entry against its
+horizon and count, per candidate (stop, target) pair, how often the STOP is
+hit BEFORE the target. Tighter pairs buy reachability with more stop-outs;
+expectancy of the tighter band is unmeasured and is the only remaining
+unknown.
+
+**Method note:** a percentile-index bug in the cycle-22 probe printed
+"3.47% -> 90% of legs". Inverted — 3.47% is near the TOP, offered on ~10%.
+

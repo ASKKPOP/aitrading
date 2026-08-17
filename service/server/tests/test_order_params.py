@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 SERVER_DIR = Path(__file__).resolve().parents[1]
@@ -264,6 +265,80 @@ class JournalShapeTests(unittest.TestCase):
         self.assertEqual(p.target_pct, 4.2)
         self.assertTrue(p.has_sizing())
         self.assertTrue(p.has_exits())
+
+
+class TargetCeilingTests(unittest.TestCase):
+    """Measured 2026-08-17 across four experiments — the target is set far
+    beyond anything the market offers, and nothing bounded it.
+
+    * H6: replaying every crypto leg from its close to the run's OWN original
+      horizon, **no target above 2.00% has EVER been reached** (4 hits in 34,
+      all at 0.60-2.00%). Median target: 4.80%.
+    * H7: the maximum favourable excursion available inside a run's own
+      horizon is median **1.14%** (p75 1.89%, max 4.24% over 29 entries). The
+      market OFFERED the desk's target on **1 leg in 28**.
+    * H8: replaying stop-vs-target-first over 30 entries, a 2.50% target wins
+      **6 times**; 4.55% and 5.00% win **ZERO**.
+    * The mechanism is live: `risk_engine` closes on `take_profit`, and
+      positions carry the level — 0 of 210 stopped runs ever closed on it
+      because the level is unreachable, not because the path is dead.
+
+    `op.RR_FLOOR` only ever RAISES a target. Nothing capped it, so the desk
+    overshot its own gate by ~1.8x (median 4.55% against a 2.48% requirement
+    at a 1.24% stop). This ceiling pulls the level back into the range the
+    market actually trades."""
+
+    def test_an_unreachable_target_is_pulled_back_to_the_rr_ceiling(self):
+        # Shipped default is 3.0x, not the 2.0x H8 measured as optimal — see
+        # RR_CEILING_DEFAULT for why the gap is deliberate. 1.24 x 3.0 = 3.72.
+        out = op.parse_order_block({"stop_pct": 1.24, "target_pct": 4.55})
+        self.assertAlmostEqual(out.target_pct, 3.72, places=6)
+        self.assertTrue(any("ceiling" in n for n in out.notes), out.notes)
+
+    def test_a_target_inside_the_ceiling_is_untouched(self):
+        out = op.parse_order_block({"stop_pct": 1.24, "target_pct": 2.40})
+        self.assertAlmostEqual(out.target_pct, 2.48, places=6)  # RR floor lifts it
+        out2 = op.parse_order_block({"stop_pct": 1.24, "target_pct": 3.60})
+        self.assertAlmostEqual(out2.target_pct, 3.60, places=6)
+
+    def test_the_ceiling_never_lands_below_the_fee_floor(self):
+        """On a HIGH-fee market a tight stop puts ceiling x stop under the
+        round-trip fee floor. The floor must win, or the ceiling would set a
+        target cheaper than the cost of taking it.
+
+        The crypto rate (0.00045) cannot exercise this: the smallest legal
+        stop times the ceiling already clears that floor, so a crypto-only
+        test passes whether the guard exists or not — it did, and the mutant
+        survived until this case replaced it."""
+        rate = 0.005                       # 0.5%/side, a high-fee venue
+        fee_floor = rate * 2 * 100.0 * op.FEE_MULTIPLE      # = 3.0%
+        out = op.parse_order_block({"stop_pct": 0.30, "target_pct": 9.0},
+                                   fee_rate=rate)
+        self.assertGreater(fee_floor, 0.30 * 3.0,
+                           "test is vacuous unless the fee floor binds")
+        self.assertAlmostEqual(out.target_pct, fee_floor, places=6)
+
+    def test_the_result_still_satisfies_the_rr_floor(self):
+        for stop, tgt in ((1.24, 4.55), (2.0, 9.0), (0.8, 7.0)):
+            out = op.parse_order_block({"stop_pct": stop, "target_pct": tgt},
+                                    fee_rate=0.00045)
+            self.assertGreaterEqual(out.target_pct + 1e-9, stop * op.RR_FLOOR,
+                                    f"ceiling broke the R:R floor at stop={stop}")
+
+    def test_no_stop_means_no_ceiling(self):
+        out = op.parse_order_block({"target_pct": 9.0})
+        self.assertAlmostEqual(out.target_pct, 9.0, places=6)
+
+    def test_the_ceiling_is_env_tunable(self):
+        with patch.dict(os.environ, {"RR_CEILING": "2.0"}):   # H8's optimum
+            out = op.parse_order_block({"stop_pct": 1.24, "target_pct": 4.55})
+            self.assertAlmostEqual(out.target_pct, 2.48, places=6)
+
+    def test_a_ceiling_below_the_floor_cannot_invert_the_bracket(self):
+        with patch.dict(os.environ, {"RR_CEILING": "0.5"}):
+            out = op.parse_order_block({"stop_pct": 1.24, "target_pct": 4.55})
+            self.assertGreaterEqual(out.target_pct + 1e-9, 1.24 * op.RR_FLOOR)
+
 
 
 if __name__ == "__main__":

@@ -7,6 +7,584 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 25 — 14:4xZ (anchor 14:49:47): **shipped the R:R ceiling — INERT by default, because the measured optimum contradicts nine existing tests**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.022**
+unrealized. Day 08-17 **+$4.13**. **0 no-verdicts in 23 decisions.**
+
+### The change
+
+`RR_FLOOR = 2.0` only ever **raised** a target; nothing capped it. Added its
+mirror — `RR_CEILING`, clamping `target_pct` to a multiple of `stop_pct`,
+guarded so it can never fight the two floors (below the R:R floor it would
+invert the bracket; below the fee floor it would name a target cheaper than
+the cost of taking it).
+
+Evidence, four experiments from today, all in the code comment:
+
+* **H6** — no target above **2.00%** has ever been reached, even given a
+  run's own full original horizon (4 hits in 34, all 0.60–2.00%).
+* **H7** — max favourable excursion available inside that horizon: median
+  **1.14%**, max 4.24% over 29 entries. The market **offered** the target on
+  **1 leg in 28**.
+* **H8** — stop-vs-target-first replay: **6 wins in 30** at a 2.50% target,
+  **ZERO** at 4.55% and 5.00%.
+* **Cycle 24** — `take_profit` is live in `risk_engine` and carried on every
+  position; 0 of 210 stopped runs closed on it because the level is
+  unreachable, not because the path is dead.
+
+### FAILED — and this is the part worth reading
+
+**I could not ship the measured optimum, and I did not force it through.**
+
+H8's best pair is R:R **2.0**. A 2.0 ceiling breaks **nine existing tests**;
+2.5 breaks **two**. Those tests encode brackets at R:R 2.5, 2.67 and 3.0 as
+*intended* behaviour — decisions someone made deliberately, for reasons I
+have not investigated.
+
+Rewriting nine of them to match my clamp would have been **fitting the tests
+to the code**, on the strength of a 30-entry replay. So the shipped default
+is **3.0 — inert against every existing case**, and `RR_CEILING=2.0` takes
+the optimum as a **config change, not a code change**, leaving the decision
+with whoever owns the doctrine those tests record.
+
+What the inert default still does: at a 1.24% stop it pulls a 4.55% target to
+**3.72%**, roughly doubling how often the level is offered. Modest, and I am
+not going to describe it as more than that.
+
+### Verification
+
+* Fail-before red on the two tests that require the ceiling; green after.
+* **4 mutants, 4 killed** — ceiling removed; ceiling allowed below the R:R
+  floor; ceiling allowed below the fee floor; env knob ignored.
+* **M3 initially SURVIVED.** My fee-floor test used the crypto rate, where
+  the smallest legal stop times the ceiling already clears the floor — so it
+  passed whether the guard existed or not. Replaced with a **high-fee venue
+  (0.5%/side)** where the floor genuinely binds, plus an assertion that the
+  test is not vacuous. Then it killed.
+* All 102 order-params tests pass with **no existing expectation altered**.
+
+### Recommendations
+
+1. **`RR_CEILING=2.0` is one env var away** and is the measured optimum. It
+   is the owner's call because it contradicts recorded prior intent.
+2. **Do not touch the stop or the R:R floor** — H8 showed tighter stops are
+   strictly worse (16–17 of 30 stop out).
+3. Ratchet package still held — every single-defect fix makes it worse or
+   knife-edge (cycle 23).
+
+## Cycle 24 — 14:1xZ (anchor 14:19:28): **I tried to kill my own recommendation and it survived — but only after a census nearly made me report dead code**
+
+**PROFIT-OR-LOSS FIRST.** Day 08-17 **+$4.13** (down from +$4.26 — the SOL
+1367 loss settled). AVAX run 1370 short open, **−$0.101** unrealized. No new
+closes. **0 no-verdicts in 32 decisions.**
+
+### Testing whether last cycle's recommendation is actually shippable
+
+H8 said: cut the target band 4.55% → 2.50%. Before proposing that again I
+checked what `target_pct` actually does. Three steps, and the middle one
+nearly produced a false finding.
+
+**Step 1 — the mechanism that sets it.** `order_params.py` has `RR_FLOOR =
+2.0`, which only ever **raises** a target (`target_pct >= 2 × stop_pct`), plus
+a fee floor. **There is no ceiling** beyond the 0.30–40.00 range clamp. So the
+median 4.55% is the desk's own choice, not the gate's — the gate at a 1.24%
+stop demands only 2.48%. **The desk overshoots the gate by ~1.8×.**
+
+**Step 2 — the census that nearly misled me.** Across **210 stopped runs,
+ZERO ever closed on a take-profit**:
+
+| close reason | runs |
+|---|---|
+| idle_retired | 63 |
+| desk_retired | 53 |
+| fleet_stop_all | 44 |
+| stop_event:at_time | 21 |
+| adapt_retired | 16 |
+| stop_event:trailing_lock | 11 |
+| stop_event:max_loss | 1 |
+| **take-profit** | **0** |
+
+I was one step from writing *"the take-profit is dead code; the
+recommendation is unshippable because the target has no execution path."*
+
+**Step 3 — the code refuted that.** `risk_engine.py:731/736` closes positions
+whose polled price crosses `take_profit`, in both directions. And the live
+AVAX position carries a real level:
+
+```
+AVAX 1370 short: entry 6.2950   stop 6.37998 (+1.35%)   target 6.06838 (−3.60%)
+```
+
+**The mechanism is live and the level is set.** The reason for 0-in-210 is
+not absence — it is **unreachability**, which is exactly H6 (no target above
+2.00% ever reached) and H7 (the market offered the target on 1 leg in 28).
+
+### The recommendation survives, and now with its mechanism named
+
+Clamping `target_pct` toward ~2.50% does not merely change a number in a
+plan — **it moves a live watcher level into the range the market actually
+trades.** On the current AVAX position it would put the target at **6.1376
+instead of 6.06838**, 0.069 closer to entry.
+
+**The caveat I have to attach:** H8's "6 wins in 30" counted target-before-stop
+across the full horizon. In practice rails close positions early — at_time,
+trailing_lock, idle_retire — so some of those 6 would be pre-empted. That is
+a real haircut on the upside. **It is not fatal, because 0 wins at 4.55% is 0
+regardless of what the rails do.**
+
+### What this cycle actually demonstrates
+
+The census result (0/210) was true, and the inference I nearly drew from it
+was false. **A true number and a wrong conclusion, separated only by reading
+the code.** Had I stopped at the DB, I would have struck a sound
+recommendation and recorded "take-profit is dead code" into the corpus, where
+it would have misled every later session.
+
+That is the same shape as cycle 20's `entry_price`-overwritten bug and cycle
+22's inverted percentile: **the failure mode of this loop is not bad data, it
+is a plausible reading of good data.**
+
+### Recommendations
+
+1. **Ship the target clamp** — a ceiling that pulls `target_pct` toward the
+   R:R floor (~2× stop) instead of leaving it unbounded. Mechanism confirmed
+   live; evidence is H6 (0/34 above 2% ever reached), H7 (offered on 1/28),
+   H8 (6/30 vs 0/30 wins). **This is the one change in the session with a
+   measured result, a named mechanism, and no known counter-evidence.**
+2. **Do NOT touch the R:R floor or the stop** — H8 showed tighter stops are
+   strictly worse (16–17 of 30 stop out).
+3. Ratchet package still held — every single-defect fix makes it worse or
+   knife-edge (cycle 23).
+
+## Cycle 23 — 13:4xZ (anchor 13:49:37): **H8 refutes the remedy I derived last cycle, and the ratchet's third fire is its worst**
+
+**PROFIT-OR-LOSS FIRST.** SOL run 1367 closed 13:35:19Z at **−$0.11402031**
+true net (verified against `realized_pnl_usd`). New position: AVAX run 1370
+short, −$0.132 unrealized. Day 08-17 **+$4.26** before this leg settles.
+
+### FAILED — my own briefing to the subagents was wrong, and they caught it
+
+I briefed both agents with **one** closing leg and a true net of ≈−$0.0688.
+There were **two** half-legs at 13:35:19Z:
+
+```
+1431  cover 0.34551053 @ 75.607  pnl -0.04526988  run:1367:arm:4     <- desk arm
+1432  cover 0.34551053 @ 75.607  pnl -0.04526988  run:1367:flatten   <- ratchet
+```
+
+True net **−$0.11402031**, and the peak was **+$0.160317** unrealized, not the
++$0.097 I quoted. I had seen the duplicate row in my own anchor query and
+**dismissed it as a JOIN artifact.** It was two real fills. Both agents
+independently corrected me from `realized_pnl_usd`.
+
+### H8 — "a tighter (stop, target) pair from the reachable band has higher expectancy" → **REFUTED, and it kills my own cycle-22 direction**
+
+Replayed 30 crypto entries against 1-minute candles, scoring which of the
+stop or the target is hit first from entry (same-bar ties scored as a stop —
+conservative), net of the 0.09% round trip:
+
+| stop% | tgt% | R:R | wins | stops | neither | expectancy%/trade |
+|---|---|---|---|---|---|---|
+| 0.50 | 1.00 | 2.0 | 8 | **17** | 5 | **−0.1067** |
+| 0.50 | 1.10 | 2.2 | 8 | **17** | 5 | −0.0800 |
+| 0.60 | 1.20 | 2.0 | 5 | **16** | 9 | **−0.2100** |
+| 0.80 | 1.60 | 2.0 | 7 | 9 | 14 | +0.0433 |
+| 1.00 | 2.00 | 2.0 | 6 | 5 | 19 | +0.1433 |
+| **1.24** | **2.50** | **2.0** | **6** | **5** | 19 | **+0.2033** |
+| 2.00 | 4.55 | 2.3 | **0** | 1 | 29 | −0.1567 |
+| 2.50 | 5.00 | 2.0 | **0** | 1 | 29 | −0.1733 |
+
+**The band I derived from H7 last cycle — stop 0.5–0.6%, target 1.1–1.2% — is
+the WORST in the table.** Tight stops are crossed constantly: 16–17 of 30
+legs stop out. H7 measured what the market *offers*; it could not see what
+the market *takes on the way there*, and I said as much before running this,
+which is the only reason the wrong remedy was not shipped.
+
+**The best pair keeps the CURRENT stop (~1.24%) and cuts only the target,
+4.55% → 2.50%.** Same 2:1 ratio, so the existing R:R gate is untouched.
+
+### The honest limit on H8, stated before anyone quotes the numbers
+
+**19 of 30 legs hit neither stop nor target and are scored as 0.** In reality
+they close at the horizon with some P&L, so the *absolute* expectancy figures
+are dominated by that assumption and should not be quoted as returns.
+
+What IS robust is the win column: **a 2.50% target is reached 6 times in 30;
+4.55% and 5.00% are reached ZERO times.** That comparison needs no scoring
+assumption, and it is sufficient on its own to say the current target band is
+wrong while the current stop is not.
+
+### The ratchet's third fire — and Agent B refuted the fix I had specified
+
+`stop_mechanism {"mechanism":"breakeven_ratchet","peak":0.136836,
+"arm":0.1045,"total":−0.090510,"exit_fee":0.0522}`
+
+**It armed at 13:05:06Z, watched 6 observations above its floor, and fired at
+−$0.0905 against a floor of +$0.0522 — 273% slippage.** A rail whose stated
+purpose is *"once a position has been in profit, do not let it go negative"*
+closed this one negative by its own definition.
+
+| fire | floor | fired at | slippage | true net |
+|---|---|---|---|---|
+| AVAX 1335 | +0.199 | +0.1183 | 41% | −$0.14144 |
+| FIL 1358 | +0.028 | +0.0151 | 46% | +$0.00253 |
+| **SOL 1367** | +0.0522 | **−0.0905** | **273%** | **−$0.11402** |
+| | | | **cumulative** | **−$0.25293, 0 of 3 net gains** |
+
+**Agent B refuted the fix I specified at cycle 13.** I had said: correct
+defect (b) — the inflated `BREAKEVEN_FEE_RATE` — together with the round-trip
+floor. B's replay of all four variants shows **fixing (b) makes this trade
+strictly worse**, because the inflated rate *raises* the floor (+$0.0522 vs
++$0.0235) and a higher floor is more protective. The only saving combination
+is [fix the arm] + [keep the wrong rate on the floor], and its arm cleared by
+**1.5% on a single observation** — a knife-edge, not an engineering result.
+
+**And B killed the cadence fix too:** on 1-minute data the total crossed the
+$0.0522 floor **9 times between 12:35 and 13:00 while on its way to a +$0.166
+peak.** A faster poll under a fixed arm would have scalped the winner at
++$0.027. **Fixing cadence alone converts a rail that misses every giveback
+into one that cuts every winner.**
+
+### WHY the trade lost — the desk gave itself no winning branch
+
+Agent A's finding: the full-position breakeven cover was **75.4421**, and the
+market printed at or below it for **66 of the 84 minutes** the position was
+open. The desk's only pre-committed exit was the cycle-4 arm at **75.56 —
+above the 75.51 entry and above breakeven**, i.e. arithmetically guaranteed
+to lose. It described that arm as *"preserving profit."* **It placed zero
+profit-side arms across all five cycles.**
+
+The `recall` layer at cycles 4 and 5 returned three prior runs with the
+identical failure — including **run 1358 from that same morning, "kept 4% of
+the high-water mark."** Run 1367 kept **−83%**.
+
+### Recommendation — the first one this session I would actually ship
+
+**Cut the target band from ~4.55% to ~2.50% and leave the stop and the R:R
+ratio alone.** Evidence: 0 wins in 30 at 4.55%, 6 wins in 30 at 2.50%, same
+2:1 gate, and H7's independent finding that the market offered the 4.55%
+target on 1 leg in 28.
+
+Still NOT shipping the ratchet package — B's variant replay shows every
+single-defect fix makes it worse or knife-edge. That mechanism needs a
+redesign, not a patch, and the redesign needs its own experiment.
+
+## Cycle 22 — 13:1xZ (anchor 13:19:28): **H7 — the market offers 1.14%, the gate demands 4.55%. The remedy is now specified by measurement.**
+
+**PROFIT-OR-LOSS FIRST.** No closes. SOL run 1367 short holding **+$0.095**
+unrealized. Day 08-17 **+$4.26**. 11 decisions, 0 no-verdicts.
+
+### H7 — "the market does not offer what the R:R gate demands" → **CONFIRMED**
+
+*Falsifier: available excursion routinely meets or exceeds the mandated
+targets.* Replayed 29 crypto entries against 1-minute candles across each
+run's **own original horizon**, measuring the maximum favourable excursion
+actually available from the entry price:
+
+| MFE available inside the run's own horizon | |
+|---|---|
+| p25 | **0.52%** |
+| **median** | **1.14%** |
+| p75 | **1.89%** |
+| **max, across all 29** | **4.24%** |
+
+Against the desk's own targets on the same legs (n=28):
+
+| | |
+|---|---|
+| target, median | **4.55%** |
+| MFE, median | **1.14%** |
+| **legs where the market OFFERED the target at all** | **1 / 28 (4%)** |
+
+**The desk aims at 4.55% in a market whose best excursion across 29 entries
+was 4.24%, and whose median is 1.14%.** The target is not merely unreached —
+on 96% of legs it was never on offer.
+
+### Correcting my own output before anyone reads it
+
+My probe printed a line claiming *"a target set at 3.47% would have been
+offered on 90% of legs."* **That label is inverted** — a percentile-index bug
+in my own script. 3.47% sits near the TOP of the distribution and would have
+been offered on roughly 10% of legs. The corrected mapping:
+
+* a target at **0.52%** is offered on ~75% of legs
+* a target at **1.14%** on ~50%
+* a target at **1.89%** on ~25%
+
+Recording it because an inverted percentile is exactly the kind of number
+that gets quoted downstream as a design target.
+
+### What this specifies, arithmetically
+
+The R:R gate demands **target ≥ 2× stop**. Current stops run ~1.2–2.5%, so
+the gate mandates targets of **2.4–5%** — a band the market offered on 4% of
+legs. For a 2:1 ratio to be satisfiable at the median available excursion of
+1.14%, the stop would have to be **≤0.57%**.
+
+Is 0.57% viable against costs? The crypto round-trip fee hurdle is **~0.09%**,
+so a 0.57% stop is **~6× the fee** — structurally viable, unlike the
+fee-scale scratches of cycle 18.
+
+So the measured design band is roughly **stop ~0.5–0.6%, target ~1.1–1.2%**,
+against the current ~1.2–2.5% / ~4.55%. **The gate is not wrong; the numbers
+fed into it are drawn from a market that does not exist.**
+
+### ISSUE — I am NOT shipping this, and the reason is a specific unknown
+
+H7 establishes what the market **offers**. It does not establish that trading
+that band is **profitable**: a 0.57% stop is crossed far more often than a
+2.5% stop, so tighter pairs buy reachability with more stop-outs. The
+expectancy of the tighter band is an open question, and the whole point of
+the last four cycles has been not to trade one unmeasured assumption for
+another.
+
+**The experiment that closes it:** replay each entry against its horizon and
+count, for candidate (stop, target) pairs, how often the stop is hit BEFORE
+the target. That yields realized expectancy per pair from the same candle
+data, and it is the last measurement needed before any gate change.
+
+### Recommendations
+
+1. **Run the stop-before-target replay** across candidate pairs. It is the
+   final input; everything else is now measured.
+2. **Do not change the R:R floor itself** — H7 says the inputs are wrong, not
+   the ratio.
+3. **`target_pct` remains non-predictive above ~2%** (cycle 21) and now has a
+   measured explanation: above 2% the market rarely offers it.
+
+## Cycle 21 — 12:4xZ (anchor 12:49:28): **H6 REFUTED — the targets were never cut off, they were never reachable. `target_pct` above ~2% is decoration.**
+
+**PROFIT-OR-LOSS FIRST.** No closes. SOL run 1367 short now **+$0.097**
+unrealized (was −$0.05 last cycle). Day 08-17 **+$4.26**. 10 decisions, 1
+no-verdict.
+
+### H6 — "the targets were sound but cut off by early exits" → **REFUTED**
+
+*Falsifier: targets go unhit even given the full horizon.* Replayed all 34
+replayable crypto legs against 1-minute candles from the close to the run's
+**own original `at_time`** — the full life the desk wrote the target for:
+
+| | |
+|---|---|
+| target reached inside the original horizon | **4** |
+| **NOT reached** | **30** |
+| skipped (non-crypto, no horizon, no window) | 5 |
+
+**12%.** And the four that were reached are the finding:
+
+| leg | target |
+|---|---|
+| run 1303 JTO long | **0.60%** |
+| run 1305 FIL short | **2.00%** |
+| run 1306 SUI short | **0.60%** |
+| run 1322 FIL short | **0.60%** |
+
+**Not one target above 2.00% was ever reached — not during the position's
+life, and not given the entire horizon the desk wrote it for.** The overall
+median target is **4.80%**.
+
+### What this settles, and what it exonerates
+
+Cycle 20 could not separate *"bad forecast"* from *"never given a chance"*.
+**It is the forecast.** Giving every leg its full original horizon changes the
+hit rate from 0/36 to 4/34, and every one of those four sits at or below 2%.
+
+* **The exit policy is exonerated on this measure.** Rails and desk exits were
+  not robbing targets that would otherwise have printed. This also closes the
+  arm/at_time precedence question I reopened at cycle 20 — the n=36 rerun
+  does **not** support it.
+* **`target_pct` above ~2% carries no forecast content.** r² was 0.024 in
+  cycle 20; H6 explains why — the number is not describing a move anyone
+  expects.
+
+### The structural irony worth naming
+
+**The R:R gate demands target ≥ 2× stop. Large targets are exactly the ones
+that are never reached.** So the gate meant to ensure trade quality is the
+mechanism pushing the target into the region where it means nothing — which
+is precisely what SUI 1356 did on tape at cycle 16: refused the trade for
+failing 2:1, then moved its target **2.5× to 0.640** (5.27% deep) to clear
+the floor, with `basis.discussion: null`, and entered at materially the same
+price.
+
+Every consumer treating `target_pct` as an expectation — the R:R gate,
+sizing, `outlook.exit.target_px` — is standing on a number that has been
+achieved **4 times in 34 attempts and never above 2%**.
+
+### ISSUE — the problem is established; the remedy is NOT, and I am not shipping one
+
+The experiment proves `target_pct` is not a forecast. It does **not** tell me
+what the gate should compare against. Three candidate remedies exist — lower
+the R:R floor, judge R:R against a *reachable* target, or stop consuming
+`target_pct` as an expectation — and choosing between them now would be
+preference, not evidence. Under the owner rule, implementation follows an
+experimental **result**, and I have a result about the problem only.
+
+**The next experiment specifies the remedy directly:** for each run, what was
+the maximum favourable excursion actually available inside its horizon, as a
+percentage? That yields the distribution of *achievable* targets, and the
+gate can then be tested against a number the market actually offers. The
+candle tooling already does this.
+
+### Recommendations
+
+1. **Run the reachable-excursion distribution** before touching the R:R gate.
+2. **Treat `target_pct` as non-predictive above ~2%** wherever consumed.
+3. **The arm/at_time precedence question is closed by this experiment** — the
+   n=4 hint from cycle 15 does not survive at n=34.
+
+## Cycle 20 — 12:1xZ (anchor 12:19:28): **H5 — the desk has never once reached a target in 36 legs, and I nearly reported a query bug as the proof**
+
+**PROFIT-OR-LOSS FIRST.** No closes. New position: SOL run 1367 short,
+opened 12:12:49Z, **−$0.0498 unrealized**. Day 08-17 **+$4.26**. 13
+decisions, **0 no-verdicts** — fifth consecutive clean window.
+
+### The near-miss first, because it almost became a false finding
+
+My first H5 query returned **realized move = 0.0000% on all 36 legs** — which
+would have "proved" the target has no relationship to anything. It was a bug
+in my query, not a result: **on a CLOSING `signals` row, `entry_price` is
+overwritten with the exit price.** I had seen this twice already this session
+(FIL 1358 `ep=0.66614 xp=0.66614`, SUI 1356 `ep=0.67478 xp=0.67478`) without
+drawing the inference.
+
+A null result that clean is not evidence, it is a smell. Entry must come from
+the run's OPENING row (`exit_price IS NULL`). **Recording it as a standing SQL
+trap** alongside the `ts`-not-`created_at`, CONCAT-NULL, reserved-word `dec`,
+mangled `IN (...)`, and unquoted-heredoc traps.
+
+### H5 — "`target_pct` is a gate-satisfying number, not a forecast" → **SUPPORTED, with a confound I cannot yet separate**
+
+*Falsifier: a positive correlation between the stated target and the move
+achieved.* Re-run correctly, 36 closed legs since the reset:
+
+| | |
+|---|---|
+| target_pct | mean **4.363%**, median **4.800%** |
+| realized move (in the position's own direction) | mean **+0.2746%**, median **+0.1478%** |
+| **Pearson r** | **+0.1553** |
+| **r²** | **0.0241 — the target explains 2.4% of the variance** |
+| **legs reaching their own target** | **0 / 36 (0%)** |
+| median realized as a fraction of its own target | **+5.2%** |
+
+By band, no clean monotone signal either: 0–3% targets realized +0.368%,
+3–6% realized +0.167%, 6%+ realized +0.545%.
+
+**The desk sets a median 4.8% target, achieves a median 0.15% move — 3% of
+what it aims for — and has not hit a single target in 36 attempts.**
+
+### The confound, stated plainly rather than buried
+
+**0-for-36 does not by itself prove the forecasts are bad.** Positions are
+closed in ~1 hour by rails or by the desk, against targets written for
+multi-hour horizons. The target may never have been given the time to be
+right or wrong. I cannot separate *"bad forecast"* from *"never given a
+chance"* with this measurement, and I will not report the stronger claim.
+
+What the r² does say independently of holding time: **whether a target is 1%
+or 7% tells you almost nothing (2.4%) about the move that follows.** That is
+a statement about the target's informational content, not about exit policy —
+and it is consistent with cycle 16's SUI 1356, where the target moved 2.5×
+purely to clear the R:R floor with `basis.discussion: null`.
+
+### The decisive follow-up, and I already have the tooling
+
+Cycle 15 built exactly the instrument this needs: 1-minute `candleSnapshot`
+replay from the close to the run's **own original horizon**. Applied here it
+separates the two explanations directly — **for the legs closed early, was
+the target subsequently hit inside the horizon the desk wrote it for?**
+
+* If targets get hit after the exit → the forecasts are reasonable and the
+  exit policy is cutting them off. That would raise the arm/at_time
+  precedence question again, this time with 36 observations instead of 4.
+* If they are not hit even given the full horizon → the targets are
+  decoration, and every consumer that treats `target_pct` as an expectation
+  (R:R gating, sizing, `outlook.exit.target_px`) is standing on nothing.
+
+**That is the next experiment.** I am not proposing any change until it runs —
+both explanations point at completely different remedies, and acting now would
+be choosing one by preference rather than evidence.
+
+### Recommendations
+
+1. **Run the horizon replay on all 36 legs** (tooling exists, cycle 15).
+2. **Until then, treat `target_pct` as unvalidated** wherever it is consumed
+   as an expectation. Not "wrong" — unvalidated.
+3. Unchanged and still gated: ratchet baseline + round-trip package, fleet
+   slot-ledger over-commitment, panel-fallback governance item.
+
+## Cycle 19 — 11:4xZ (anchor 11:49:31): **H4 refuted — the fee-hurdle ratio predicts nothing, which kills a remedy before it was built**
+
+**PROFIT-OR-LOSS FIRST.** No closes. Book flat. Day 08-17 **+$4.26**. 12
+decisions, **0 no-verdicts** — fourth consecutive clean window.
+
+### H4 — "the fee-hurdle ratio at entry predicts which legs land in the fee-scale scratch band" → **REFUTED**
+
+*Falsifier: scratch and non-scratch legs show the same ratio distribution.*
+Ratio = the desk's own `target_pct` ÷ the round-trip fee as a % of notional.
+36 closed legs since the reset carried a desk target:
+
+| | n | median ratio | mean ratio | total net |
+|---|---|---|---|---|
+| **SCRATCH** (\|net\| < own round-trip fee) | 14 | **34.81** | 37.99 | −$0.0828 |
+| **NON-SCRATCH** | 22 | **36.63** | 43.79 | +$8.2962 |
+
+**The medians are 34.8 versus 36.6 — indistinguishable.** By band, the
+scratch rate runs 50% / 57% / 29% / 36% across increasing ratios: no
+monotone relationship, and the 0–10 band is not worse than the 50+ band.
+
+**The falsifier is met. The ratio carries no information about the outcome.**
+
+### Why this result matters more than a confirmation would have
+
+Cycle 18 ended by proposing exactly this test before suppressing churn, and
+said plainly: *"If it does not predict, suppressing small trades would cut
+winners too and must not be attempted."* **It does not predict.** So:
+
+* **A `min_edge`-style gate raised to suppress the scratch band is not
+  supported.** It would cut across both groups — the non-scratch legs hold
+  **+$8.30** of the account's **+$9.65** and sit at the *same* ratios as the
+  scratches.
+* This is a remedy that would have looked obviously correct in a plan
+  document and would have removed profit. It is now struck before anyone
+  built it.
+
+### The finding hiding inside the negative result
+
+**Every leg's target is enormous relative to its fee hurdle — median ~35×.**
+The desk always claims a target far above the cost of trading, and 36% of
+legs still finish inside the fee band. Combined with cycle 16 (SUI 1356 moved
+its target 2.5× solely to clear the 2:1 R:R floor, `basis.discussion: null`),
+the reading is that **`target_pct` is not a forecast — it is a number that
+satisfies a gate.** A field with no predictive content cannot be used to size
+or select, and should not be trusted by anything downstream that treats it as
+an expectation.
+
+That is a hypothesis in its own right, not a conclusion: it predicts that
+`target_pct` has no correlation with realized move in ANY band, not merely
+with scratch membership. Worth testing next.
+
+### Honest limits
+
+n=36. I used the last `parsed` `order_params` target before each close, which
+is not guaranteed to be the entry cycle's target on every leg. Non-crypto fee
+rates were assumed per market rather than read from each fill. Neither
+weakness plausibly manufactures a null result — both would add noise, and
+noise cannot create the near-identical medians observed — but the numbers
+should be re-derived from per-fill fees before anything is built on them.
+
+### Recommendations
+
+1. **Do not raise the min-edge / fee-feasibility gate to suppress churn.**
+   Struck by this experiment.
+2. **Next experiment: does `target_pct` correlate with realized move at
+   all?** If it does not, every downstream consumer that treats it as an
+   expectation — R:R gating, sizing, the outlook's `exit.target_px` — is
+   built on a number that means nothing.
+3. Unchanged and still gated: ratchet baseline + round-trip package, fleet
+   slot-ledger over-commitment, panel-fallback governance item.
+
 ## Cycle 18 — 11:1xZ (anchor 11:19:32): **H3 — the account's profit is two trades, and only one of them is a defect**
 
 **PROFIT-OR-LOSS FIRST.** No closes. Book flat. Day 08-17 **+$4.26**. 11
