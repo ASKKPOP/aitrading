@@ -29,8 +29,6 @@ export const GUIDES: Record<string, GuideLoader> = {
   '/positions': () => import('./positions').then(m => m.positionsGuide),
 
   '/backtest': () => import('./backtest').then(m => m.backtestGuide),
-  '/monitor': () => import('./monitor').then(m => m.monitorGuide),
-  '/consult': () => import('./consult').then(m => m.consultGuide),
 
   '/automation': () => import('./automation').then(m => m.automationGuide),
   '/accounts': () => import('./accounts').then(m => m.accountsGuide),

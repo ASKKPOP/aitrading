@@ -31,8 +31,6 @@ const MarketPage = lazy(() => import('./pages/MarketPage'))
 const SignalsBoardPage = lazy(() => import('./pages/SignalsBoardPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const DocsPage = lazy(() => import('./pages/DocsPage'))
-const MonitorPage = lazy(() => import('./pages/MonitorPage'))
-const ConsultPage = lazy(() => import('./pages/ConsultPage'))
 const AssistantDock = lazy(() => import('./components/AssistantDock'))
 const GuidePanel = lazy(() => import('./components/GuidePanel'))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
@@ -627,10 +625,10 @@ function AppRouter({
               <Route path="/backtest" element={<BacktestPage token={token} />} />
               <Route path="/financial-events" element={<FinancialEventsPage />} />
               <Route path="/signals-board" element={<SignalsBoardPage />} />
-              <Route path="/monitor" element={<MonitorPage token={token} />} />
-              {/* live runs merged into /automation — keep old links working */}
+              {/* live runs and the monitoring board merged into /automation —
+                  keep old links working */}
               <Route path="/runs/live" element={<Navigate to="/automation" replace />} />
-              <Route path="/consult" element={<ConsultPage token={token} />} />
+              <Route path="/monitor" element={<Navigate to="/automation" replace />} />
               <Route path="/docs" element={<DocsPage token={token} userToken={userToken} />} />
               <Route path="/docs/:slug" element={<DocsPage token={token} userToken={userToken} />} />
                   <Route path="/strategies" element={<StrategiesPage />} />
