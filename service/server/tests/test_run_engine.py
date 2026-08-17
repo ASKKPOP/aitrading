@@ -3345,4 +3345,7 @@ class NoVerdictDiagnosticTests(unittest.TestCase):
     def test_it_is_WIRED_into_the_light_path(self):
         import inspect
         src = inspect.getsource(run_engine._light_analysis)
-        self.assertIn("_no_verdict_diagnostic", src)
+        # assert the CALL, not the bare name — a comment mentioning the
+        # helper made this test tautological on its first writing.
+        self.assertIn("_no_verdict_diagnostic(text)", src)
+        self.assertIn('"no_verdict"', src)
