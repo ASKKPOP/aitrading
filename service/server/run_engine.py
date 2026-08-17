@@ -25,8 +25,12 @@ Exactly-once model (the Phase 2 blocker fix):
   * A worker that crashes mid-cycle leaves last_cycle_at stamped, so the run
     simply waits for its next due window; the reclaimer then runs a FRESH
     cycle under a new seq. At-most-once per due window, exactly-once per seq.
-  * Lease TTL (RUN_LEASE_TTL, default 300s) exceeds the worst-case cycle
-    (semaphore wait is excluded — the claim happens after the slot).
+  * Lease TTL (RUN_LEASE_TTL, default 300s) covers the ordinary cycle
+    (semaphore wait is excluded — the claim happens after the slot). A cycle
+    whose LLM calls outlast the TTL renews its own still-held lease right
+    before the trade transaction (_renew_lease) — the fence then guards the
+    real hazards (reclaim by another worker, stop pressed mid-cycle) instead
+    of forfeiting the slow cycle's own order.
 
 Kill switch: AUTO_TRADING_ENABLED (default false — the feature ships dark
 and is enabled per environment).
@@ -2348,6 +2352,35 @@ def _release(run_id: int) -> None:
         conn.commit()
     except Exception:  # noqa: BLE001
         logger.debug("lease release failed for run %s", run_id, exc_info=True)
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _renew_lease(run_id: int) -> None:
+    """Extend OUR OWN lease immediately before the trade transaction. A cycle
+    whose LLM calls outlast RUN_LEASE_TTL otherwise reaches the fence with an
+    expired lease and forfeits the order it just authored (21 fenced orders —
+    8 opens, 7 reduces, 1 close — on live tape 2026-08-14..17; run 1370's
+    fenced cycle measured 437s against the 300s TTL). Renewal only touches a
+    row still stamped `claimed_by = us`, so the fence's real protections are
+    untouched: a stop pressed mid-cycle fails the status predicate here AND
+    the fence's; a lease reclaimed by another worker fails the claimed_by
+    predicate here AND the fence's. Fail-soft: on any error the fence simply
+    sees whatever expiry the claim wrote — never less safe than before."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            """UPDATE trading_runs SET claim_expires_at = ?
+               WHERE id = ? AND status = ? AND claimed_by = ?""",
+            (_iso_in(_lease_ttl()), run_id, STATUS_RUNNING, WORKER_IDENTITY))
+        conn.commit()
+    except Exception:  # noqa: BLE001
+        logger.debug("lease renew failed for run %s", run_id, exc_info=True)
     finally:
         try:
             conn.close()
@@ -6809,6 +6842,10 @@ def run_cycle(run_id: int) -> dict:
         except Exception:  # noqa: BLE001
             result["skip_reason"] = "master-hold recheck unavailable"
             return result
+
+        # A slow cycle must not forfeit its own order: renew the lease we
+        # still hold before entering the fenced trade transaction.
+        _renew_lease(run_id)
 
         client_order_id = f"run:{run_id}:cyc:{seq}"
         signal_id, skip = execute_paper_trade(
