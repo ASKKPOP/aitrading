@@ -196,3 +196,124 @@ then `idle_retired` at $0.00. Three distinct causes; none shipped.
    "spot sell with no inventory". The light prompt already withholds the verb
    via `can_sell`. **All time: 2** (08-13, 08-17), down from ~33/week before
    the prompt fix. Needs: does the discussion prompt get the same gate. n=1.
+
+## Breakeven ratchet (#449): two PROVEN arithmetic defects — fix specified 2026-08-17 cycle 13
+
+Running total over 2 live fires: **−$0.13891393** (AVAX 1335 pos-2
+−$0.14144302, FIL 1358 +$0.00252909). Ceiling is $0.00 net **by design**
+(`total ≤ exit_fee` → net = exit_fee − close_fee = 0 at a correct rate), so
+judging fires by whether they are green is the wrong test.
+
+**(a) Unit mismatch.** `_breakeven_floor_hit` takes no `baseline_pnl`;
+`peak`/`current` are run-cumulative, `arm`/`exit_fee` are position-scoped.
+`_trailing_lock_hit` already takes a baseline. Decisive on AVAX: position 2's
+own excursion 0.4228 − 0.0806 = **0.3422 < 0.398 arm → would never have
+armed**; it flattened at $0.0377 gross against an already-paid $0.0896 open
+fee, a guaranteed loss at trigger.
+
+**(b) One leg at an inflated rate.** `exit_fee` = notional × 0.001 × 1 leg
+(28.024 × 0.001 = 0.028024 ✓). True crypto rate 0.00045 → true leg
+$0.012598. Binding on FIL: `total` 0.015127 sits between the floors; at the
+true rate the fire condition is FALSE.
+
+**TRAP — do not fix (a) alone.** A position-scoped current is gross while the
+floor is one leg, so baseline-correcting alone makes the best case **−1 open
+fee**. The floor must become a full ROUND TRIP in the same change, with the
+rate from `fees.fee_rate(market)`.
+
+**Fail-before tests, both from live tape:** AVAX must not arm; FIL must not
+fire.
+
+**Residual after the fix:** even on a single-position run the comparison is
+off by one open fee (`total` is net of it, `arm` is gross).
+
+**Separate and larger:** ~4.7-minute mark staleness is the binding
+constraint. FIL's mark refreshed 16x in 75.8 min; the peak existed for one
+observation; arm and fire landed on consecutive marks with a $0.0458 giveback
+entirely between them. No threshold tuning addresses this.
+
+## Empty-why arms — watch CORRECTED 2026-08-17 (was "n=6", actually 131/132)
+
+132 `intent:arm` events all time; **131 (99.24%) carry `why: ""`**; exactly 1
+has a real why. It is the default behaviour of the arm path, not an anomaly.
+One arm (run 1358, 08:29:58Z) was authored **103s after its run stopped**,
+with `position_qty: 0.0`, and was still persisted to
+`trading_runs.armed_order_json`.
+
+## Arm-reachability rail — SPEC STRUCK 2026-08-17 cycle 14 (hypothesis refuted)
+
+I specified a rail to clamp arms set beyond the measured next-look range.
+**Measured: arm levels sit 0.1%–1.5% from entry** (one outlier, CL 4.4%) —
+inside an ordinary day for these symbols. The levels are not the problem and
+this spec should not be built.
+
+**The real finding is arm STARVATION.** 132 `intent:arm` authored, **2
+`armed_exit` ever (1.5%)**, none in 3+ days; 10 runs carry a persisted
+`armed_order_json` and all 10 are `stopped`. Of the 44 runs that ever armed,
+only **9 (20%)** ended by desk choice; **34 (77%)** were ended by a rail or
+fleet action first — `at_time` 14, `adapt_retired` 7, `fleet_stop_all` 7,
+`trailing_lock` 6. The prompt tells the desk to prefer arm over hold; the
+platform then closes the book before the arm can act 4 times in 5.
+
+**Measurement required before any remedy** (all candidates change when real
+positions close): for each armed run closed by a rail, was the arm's level
+subsequently hit inside the run's ORIGINAL horizon, and what would the
+reduce have been worth at that level? Computable from stored marks.
+
+## Arm starvation — MEASURED 2026-08-17 cycle 15, bounded at ~29% (was implied 77%)
+
+Replayed every crypto run that armed and was then closed by a rail, against
+1-minute Hyperliquid candles from the close to the run's OWN original
+`at_time` horizon. 18 such runs, 14 replayable.
+
+**4 of 14 (29%) had the arm level crossed inside the original horizon; 10
+(71%) did not.** Crossings: 1175 SOL below 75.0 (low 74.650), 1293 UNI above
+3.27 (high 3.3378), 1304 JTO above 0.586 (high 0.59043), 1305 FIL below
+0.667 (low 0.65785).
+
+**This corrects cycle 14.** The 77% rail-closure rate is how often a rail
+ended the run — NOT how often that cost the desk a trigger. Most arms would
+never have fired anyway.
+
+**Correction to the cycle-14 spec:** it said "computable from stored marks".
+There is no price-history table and `equity` payloads carry no mark. The
+source is `price_fetcher._hyperliquid_post` with `candleSnapshot` at 1m —
+finer than the ~4.7-min mark cadence the rails run on.
+
+**NEXT LAYER (one script away, decides the whole question):** for the 4
+crossings, what would the half-reduce have realized at the crossing versus
+what the rail's exit actually realized? Crossing a level is not profiting
+from it — for a short, `price_below → reduce` banks, `price_above → reduce`
+cuts a loser.
+
+## STRUCK 2026-08-17 cycle 17 — "LLM host is ~5x oversubscribed" (refuted by re-measurement)
+
+Cycle 12 concluded the local model host was ~5x oversubscribed from
+`178 calls/h x ~100s = 17,800s vs 3,600 available`. **The ~100s input was
+sampled during a 06h-08h latency anomaly.** Re-measured with call volume
+unchanged (189/h): decision calls take **3.9-7.0s**, giving **0.29x** — not
+oversubscribed.
+
+Hourly no-verdict rate for 2026-08-17: ~3% baseline (00h-05h), then 20.0% /
+17.4% / 13.0% (06h/07h/08h), then **0% (09h, 10h)**. **Episodic, not
+structural.** Cause of the episode unknown; do not invent one.
+
+Also struck: the "reduce call volume or add host capacity" recommendation
+built on that arithmetic. #468 (decision tier 300s) stays — cheap, plausibly
+protective against a repeat — but is NOT established as effective; it spanned
+the episode without moving the rate (18.5% -> 23.1%).
+
+## RE-STATED 2026-08-17 cycle 17 — panel fallback on exits is a GOVERNANCE item, not a P&L one
+
+Tested: fallback-authored closes n=16, total **-$4.206**, mean **-$0.263**,
+31% wins. All other closes n=225, total -$180.417, mean **-$0.802**, 42%
+wins. **Fallback closes realize BETTER on the mean.** The "it costs money"
+framing is refuted.
+
+Confounds not controlled: book size, regime, n=16 vs 225. So this is "no
+evidence of harm", not "the fallback is good".
+
+The governance concern is unchanged and must be argued on its own terms:
+`_order_discussion` fails OPEN, so a path that labels itself "not the AI"
+has authored 10 closes/reduces while §7b makes the panel the final author.
+
