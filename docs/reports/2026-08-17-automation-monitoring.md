@@ -7,6 +7,82 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 9 — 06:1xZ (anchor 06:13:29): quiet on trades; **#462 fired twice and worked — after I nearly recorded it as a bug of my own**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **3h49m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00). 16 decisions, all
+`hold`. 10 running runs, **9 idle-retires today**.
+
+### WORKED — the salvage caught two real verdicts
+
+`verdict_salvaged` fired for the first time, **twice**, both `truncated`:
+
+| run | ts | chars | cut at |
+|---|---|---|---|
+| 1346 (GBPUSD) | 05:33:25Z | 921 | inside `"report"`, after a complete `plan_adherence` |
+| 1351 (NZDUSD) | 05:38:19Z | **254** | inside `outlook.bias` — very early |
+
+Both cycles then journaled **real decisions with real confidence** — 1346
+cycle 11 at conf 0.48 with full component scores, 1351 cycle 8 at conf 0.57 —
+instead of the `conf 0.0 / "light cycle: no LLM verdict"` those truncations
+produced before #462. That is precisely the outcome the salvage exists to
+prevent, twice in five minutes.
+
+### The near-miss I want on the record
+
+My first read of this tape was that **#462 had broken the cycle**: the
+salvage event at 05:33:25Z had no decision, no `order_params` and no
+`gate_skip` beside it, and the next decision was 2m43s later. That is what a
+crashed cycle looks like.
+
+It was wrong. The decision sequence for run 1346 is cycle 10 at 05:02:41,
+**cycle 11 at 05:36:08**, cycle 12 at 06:03:51 — so the 05:33:25 salvage
+belongs to cycle 11, and the gap is the `order_discussion` LLM call sitting
+between light analysis and the journal. Same shape on 1351 (salvage 05:38:19
+→ cycle 8 decision 05:42:08).
+
+I could not settle it from logs — the worker was recreated at 06:12:09Z and
+`docker logs` lost the previous instance's output — so it had to be settled
+from the decision-cycle numbering. **Recording it because the failure mode is
+mine: a telemetry event that lands minutes before the decision it belongs to
+reads exactly like a crash, and I will meet this again.**
+
+### Corrected: #465 has produced NO tape yet
+
+I was about to read the 06:11:17Z `no_verdict` — `{"kind": "empty"}` with no
+`err` field — as evidence that the call did not raise, and therefore that
+infrastructure is exonerated. **The worker started at 06:12:09Z. That event
+came from the OLD image**, where no `err` field existed to begin with. It
+proves nothing. Kind mix stands at **empty x4, truncated x1**, all pre-split.
+
+### ISSUE — an open question I am not resolving by assumption
+
+Run 1346's salvaged object carried `"plan_adherence": "revised"` (complete in
+the recovered prefix), but the journaled decision reads `adh=followed`. So
+the value the salvage recovered is **not** what reached the journal —
+something downstream, most likely the discussion/full-path merge, supplied
+its own. I will not claim the salvaged fields flow through when the one
+field I can observe disagrees. One query next cycle settles it.
+
+Also logged, unresolved: run 1351's salvaged prefix carried
+`"stop_pct": 0.0046, "target_pct": 0.0210` — fraction-shaped values in a
+percent field, which is the #446 unit-slip watch. That cycle held, so nothing
+was sized from them. Unit-slip fires all time: **4**.
+
+### Recommendations
+
+1. **Check whether a salvaged verdict's fields survive to the journal**
+   (`plan_adherence`, `order_intent`, `scores`). If the merge discards them,
+   #462 prevents a conf-0.0 hold but does not deliver the desk's actual
+   decision — a materially smaller win than claimed.
+2. **9 idle-retires today against 0 positions held for 3h49m.** The fleet is
+   now retiring runs faster than it trades. Worth measuring against the
+   cycle-5 finding (budget funds 10 of 20 slots) before anyone concludes the
+   retires are the problem — they may be the correct response to a book with
+   no positive-expectancy entries.
+
+---
+
 ### #465 DEPLOYED and verified — image `20260817-noverdict-error-class` (merge `19f5d55`)
 
 All four branches replayed against the deployed function in the container:
