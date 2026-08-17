@@ -89,8 +89,6 @@ export function buildNavSections(
       label: tr(language, { ko: 'AI 데스크', en: 'AI Desk', ja: 'AIデスク', th: 'AI เดสก์', vi: 'Bàn AI', id: 'Meja AI' }),
       items: [
         { path: '/automation', icon: '⚙', label: tr(language, { ko: '자동매매', en: 'Automation', ja: '自動売買', th: 'เทรดอัตโนมัติ', vi: 'Tự động hóa', id: 'Otomatisasi' }), requiresAuth: true },
-        { path: '/monitor', icon: '📡', label: tr(language, { ko: '모니터링', en: 'Monitoring', ja: 'モニタリング', th: 'การติดตาม', vi: 'Giám sát', id: 'Pemantauan' }), requiresAuth: false },
-        { path: '/consult', icon: '💬', label: tr(language, { ko: 'AI 상담', en: 'Consultation', ja: 'AI相談', th: 'ปรึกษา AI', vi: 'Tư vấn AI', id: 'Konsultasi' }), requiresAuth: false },
       ]
     },
     {
