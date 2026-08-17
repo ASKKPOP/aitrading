@@ -7,6 +7,78 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 32 — 18:1xZ (anchor 18:19:29): **#472 merged; AVAX 1370 deteriorating — and its arm is CORRECT, which matters**
+
+**PROFIT-OR-LOSS FIRST.** No closes. **AVAX run 1370 short −$0.3502**, up
+from −$0.2107 thirty minutes ago. Day 08-17 **+$4.13** realized. 23
+decisions, **0 no-verdicts**.
+
+### The open book is now the story
+
+| | |
+|---|---|
+| entry / mark / stop | 6.2950 / **6.3417** / 6.37998 |
+| travelled toward stop | **55%** (was 26% at 15:49Z) |
+| unrealized | **−$0.3502** |
+| loss if stopped | **≈ −$0.637** |
+| take-profit | 6.06838 (−3.60%, in the never-reached band per H6) |
+
+**But its arm is on the right side**, and that is worth stating because I
+have spent two cycles criticising arms:
+
+```
+entry 6.2950   breakeven (round trip) 6.28933
+arm   price_below 6.2500 -> reduce     =>  PROTECTIVE
+```
+
+6.25 sits **below** breakeven, so firing it banks money. **The desk placed a
+correct protective arm on this position.** The market simply went the other
+way — the arm now needs a 1.45% fall from the current mark to trigger.
+
+**Not every loss is a defect.** SOL 1367 lost because its only arm was
+guaranteed to lose; AVAX 1370 is losing with a properly-sited arm and a stop
+it has not reached. Those are different failures and I am not going to blame
+the same cause twice.
+
+Two blemishes remain on it: the arm's `why` is **empty** (the 133/134
+pattern), and **2 of its 10 cycles were conf-0.0** — 20%, against the 9.25%
+held-book average from H9.
+
+### WORKED — [#472] merged and deploying
+
+All five checks green. Merged `ef2a66cd`, deploying as `arm-classify`. The
+protective/defensive classifier and the implausible-level rail are now in
+main. **Nothing consumes the label yet** — that remains a separate change
+with its own measurement, as stated when it was built.
+
+### The R:R ceiling has not fired
+
+**0 fires in the ~20 minutes since deploy.** Expected: it binds only above
+R:R 3.0, and it shipped inert against every existing case by design. **This
+is not evidence it works** — it is evidence it has not been exercised, the
+same status #460 has carried all day. It goes on the watch list under the
+same rule: no claim of validation until a live parse is actually pulled.
+
+### State
+
+| item | state |
+|---|---|
+| #471 R:R ceiling | merged, deployed, **unexercised** |
+| #472 arm classify | **merged, deploying** |
+| AVAX 1370 | **55% to stop**, protective arm, empty why |
+| dependency "red on main" | retracted (CI passes) |
+| gitleaks on #471 | proved an outage artifact |
+
+### Recommendations
+
+1. **Watch AVAX 1370 to resolution** — it is the only open book and the only
+   live test of whether a correctly-armed losing position exits better than
+   the mis-armed ones did.
+2. **Wire the arm label into the brief** — the measurement that turns 43%
+   into behaviour. Next code cycle.
+3. Neither ceiling nor loss-floor may be described as working until each has
+   a live fire.
+
 ## Cycle 31 — 17:4xZ (anchor 17:49:33): **the gitleaks failure WAS an outage artifact — proved it, merged #471, and made a process mistake worth recording**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.2107**. Day
