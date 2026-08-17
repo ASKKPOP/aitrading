@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T03:55Z",
+  "as_of": "2026-08-17T04:25Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "flat book, day +$4.24; slot ledger over-commits budget 39.9% (13999.96 vs 10009.75) - replenishing:10/20 unreachable, held on replay"
+    "note": "flat 1h55m, day +$4.24; Plan 26 SS3.7: followed=115 cycles authored 1 trade (-$0.63); 63% of 'revised' stamps were fallbacks - fixed in #463"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

@@ -7,6 +7,83 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 6 — 04:1xZ (anchor 04:19:23): quiet on trades; **the first §3.7 measurement of Plan 26, and it is not flattering**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **1h55m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00). 10 decisions, all
+`hold`. #462: still **0 salvage fires**.
+
+### WORKED — the holds are disciplined, not idle
+
+All ten reports give a specific, checkable reason to stand down, and seven of
+ten cite the standing plan by name:
+
+> *"the required stop is too tight, so we remain flat"* (1348) ·
+> *"price has not yet breached the 0.595 breakout level required by the
+> standing plan"* (1351) · *"the market has moved out of our short entry
+> window and is perilously close to the invalidation point, removing positive
+> expectancy"* (1344) · *"a low-expectancy trade with insufficient time to
+> meet its target"* (1347)
+
+That is the fee/expectancy discipline the platform has been trying to teach,
+and it is visibly the forward book doing the steering. Nothing was
+gate-blocked — the desk chose this.
+
+### The §3.7 measurement the owner asked for
+
+Since the flag went on (155 stamped decisions from 2026-08-16T21:00Z):
+
+| adherence | cycles | trades authored |
+|---|---|---|
+| **followed** | **115 (74%)** | **1** |
+| revised | 24 | 3 |
+| deviated | 16 | 4 |
+
+**Plan-following cycles have authored exactly one trade — and it lost.** That
+was run 1344's TRUMP short (23:23:20Z, `followed`, conf 0.66), realized
+**−$0.6251** true net, the trade cycle 3 dissected. Every other trade in the
+window came from a cycle that revised or deviated from its own plan.
+
+**I am not calling the flag a failure on n=1, and I am not calling deviation
+better either** — the deviated bucket's profit is ~entirely the FIL
+`order_params: absent` oversize, a defect, not skill. The honest verdict:
+**after 588 outlook events and 155 adherence stamps, the forward book has
+authored one trade. It is not yet judgeable — and that is itself the
+finding.** A plan that almost never authorises action cannot be measured on
+the P&L of the action it authorises.
+
+Also on tape: **3 of the 8 traded decisions (runs 1341, 1336, 1338) produced
+no realized leg at all** — a `sell` was authored and nothing was ever closed.
+Worth chasing next cycle.
+
+### FAILED — the adherence statistic was measuring the fallback
+
+**15 of the 24 `revised` stamps (63%) sat on conf-0.0 cycles where the desk
+produced no verdict at all.** `run_cycle` stamped `plan_adherence` on every
+decision while the flag is on, and `_parse_plan_adherence` degrades a missing
+key to `"revised"` — so a cycle where the desk never spoke was recorded as
+having *revised its plan*. Genuine revised stamps: **9, not 24.**
+
+This corrupts the exact number §3.7 judges the flag on, and it corrupts it in
+the direction that makes the plan look more contested than it is.
+
+**Shipped as [#463]**: a cycle with no verdict records no adherence. A junk or
+missing key on a REAL verdict still degrades to `"revised"` — that desk did
+speak. Salvaged verdicts (#462) keep counting, because they are authored.
+Fail-before red on 5 tests, 3 mutants killed, wiring test scoped to
+`run_cycle` so it cannot pass by matching the helper's own body.
+
+### Recommendations
+
+1. **Re-run the §3.7 table after a day of clean stamps.** Today's numbers are
+   the last ones computed on contaminated data; treat 115/24/16 as the
+   baseline to be replaced, not as a result.
+2. **Chase the 3 authored sells with no realized leg** (1341, 1336, 1338).
+   Either the fill never happened or the position closed outside the signal
+   path — both matter for attribution.
+3. Unchanged and still replay-gated: the fleet slot-ledger over-commitment
+   (cycle 5) and the ratchet/fee-rate/round-trip package (cycle 4).
+
 ## Cycle 5 — 03:5xZ (anchor 03:50:58): quiet on trades; **fleet 35's slot ledger over-commits its budget by 40%**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:59Z. Book **flat** — 0 open
