@@ -7,6 +7,74 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 33 — 18:4xZ (anchor 18:49:29): **the R:R ceiling fired — twice, on real tape, exactly as specified**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3577**. Day
+08-17 **+$4.13** realized, resid −0.00, 4 flattens. 21 decisions, 1
+no-verdict.
+
+### WORKED — first live exercise of a rail I refused to call working
+
+Last cycle I wrote that neither the ceiling nor the loss floor could be
+described as working until each had a live fire. **The ceiling has two.**
+
+| fire | run | desk asked | pulled to | rule |
+|---|---|---|---|---|
+| 17:56:00Z | 1375 cyc 8 | **target 3.02%** at stop 0.47% (R:R 6.43) | **1.41%** | 3× stop |
+| 18:27:45Z | 1375 | target > ceiling at stop 0.475% | **1.425%** | 3× stop |
+
+The journalled note, verbatim:
+
+> `target_pct 3.02 pulled to R:R ceiling 1.41 (3x stop 0.47) — unreachable
+> targets never fill`
+
+**Measured against the evidence that justified it:**
+
+* **H6** — no target above **2.00%** has ever been reached, even given a
+  run's own full horizon. **3.02% sat in the dead zone.**
+* **H7** — available excursion inside a run's horizon is median **1.14%**,
+  p75 **1.89%**. **1.41% is inside the reachable band.**
+
+So the rail moved a target from a region the market has never once delivered
+into one it delivers about half the time. **That is the mechanism doing
+precisely what it was built to do, on live tape, within an hour of deploy.**
+
+### What this is NOT evidence of, stated before it gets quoted
+
+**A reachable target is not a profitable one.** No trade has closed on either
+of these yet. n=2 fires, 0 closes.
+
+And there is a tension I am not going to bury: **run 1375's stop is 0.47%,
+which sits in exactly the band H8 measured as WORST** — at a 0.50% stop, 17
+of 30 legs stop out and expectancy was **−0.11**. The ceiling did not set
+that stop; the desk did. Pulling 3.02% → 1.41% should still help this pair
+(per H6 a 3.02% target wins ~never, so the change trades ~0 wins for some
+wins against the same stop count) — but that is **inference from H8's grid,
+not a measurement of this run.**
+
+**The stop itself is the larger problem here, and the ceiling does not touch
+it.** H8 said tighter stops are strictly worse; a desk choosing 0.47% is
+choosing the worst band in that table.
+
+### Standing rails status
+
+| rail | live fires | verdict |
+|---|---|---|
+| R:R ceiling (#471) | **2** | **exercised** — behaves as specified; P&L unmeasured |
+| corrected loss floor (#460) | **0** all day | still unexercised, still not "working" |
+| arm classify (#472) | label only, nothing consumes it | deployed, inert by design |
+| breakeven ratchet (#449) | 3 | **−$0.25293, 0 net gains** — unchanged |
+
+### Recommendations
+
+1. **Follow run 1375 to close.** It is the first trade carrying a
+   ceiling-clamped target and the cleanest available test of whether
+   reachable targets convert.
+2. **The 0.47% stop deserves its own look** — H8 puts that band at negative
+   expectancy, and the ceiling cannot correct a stop.
+3. AVAX 1370 remains the other open book at −$0.3577 with a correctly-sited
+   protective arm.
+
 ## Cycle 32 — 18:1xZ (anchor 18:19:29): **#472 merged; AVAX 1370 deteriorating — and its arm is CORRECT, which matters**
 
 **PROFIT-OR-LOSS FIRST.** No closes. **AVAX run 1370 short −$0.3502**, up
