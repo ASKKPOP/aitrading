@@ -9,6 +9,34 @@ Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 42 — 23:5xZ (anchor 23:52:40): **#473's line RENDERED for the first time** — mechanism proven, behavior still n=1-and-ambiguous
+
+No closes since 23:40 (no subagent dispatch owed); both books flat; day
+08-17 ends **+$3.84** (no closes since the cycle-39 pnl_audit run). 0
+tracebacks. **`fence: lease expired` post-deploy: 0** (35 min of tape —
+still below evidential value; the 24h sweep is the real read).
+
+### The #473 test — first data, honestly graded
+
+| | |
+|---|---|
+| ceiling fire #5 | run 1388 LINKUSDT cycle 9, 22:56:42Z — requested `target_pct` **5.0**, clamped to **4.95** (3× stop 1.65), `action=hold` |
+| line render #1 | cycle 10, 23:34:26Z — `railed_params` present in the decision brief array, note text on tape ("target_pct 5 pulled to R:R ceiling 4.95 … unreachable targets never fill") |
+| requested target after render | **cycle 10 authored NO bracket at all** (params NULL on a hold cycle) |
+
+**Graded:** the line's *mechanism* is verified end-to-end (clamp → journal →
+brief render on the next cycle). The *behavioral* question — does the desk
+change its request after being told — is still open: unlike run 1375
+(which re-requested the identical 3.02% within 31 minutes of each clamp,
+three times), 1388 did not repeat its clamped request, but it also issued
+no adjusted one. n=1, non-repetition ≠ adjustment. Keep counting; the
+FAILED verdict threshold stays "requests do not move across repeated
+clamped cycles". Caveat: this clamp was 1% deep (5.0→4.95) vs 1375's 53%
+(3.02→1.41) — a shallow clamp is weak stimulus.
+
+**R:R ceiling ledger: 5 fires, ALL on `hold` cycles, P&L effect $0.00.**
+Loss floor #460: still 0 fires. Ratchet (a)-alone fix: still queued.
+
 ## Cycle 41 — 23:4xZ (anchor 23:40:53): OWNER ASK — "usa stock lost, analyze forevery1969"; two-subagent analysis run and cross-checked
 
 **PROFIT-OR-LOSS FIRST: forevery1969@gmail.com has lost $3.41 lifetime
