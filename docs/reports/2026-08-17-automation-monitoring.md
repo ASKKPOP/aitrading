@@ -7,6 +7,73 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+### CI OUTAGE 14:5xZ — GitHub Actions in major outage, jobs replicated locally
+
+`githubstatus.com/api/v2/components.json` at the time of the PR:
+
+```
+API Requests     major_outage
+Pull Requests    major_outage
+Actions          major_outage
+Webhooks         partial_outage
+Git Operations   operational
+```
+
+The PR call returned **HTTP 503**; the push had already succeeded, and a
+retry created [#471]. Per the standing owner rule, every CI job was
+replicated locally from `.github/workflows/*.yml` using the exact commands
+and working directories.
+
+| # | job | result |
+|---|---|---|
+| 1 | Lint (ruff), `wd=service` | **PASS** — `All checks passed!` |
+| 2 | Backend pytest, `wd=service/server` | **PASS** — 4,442 passed + 1,346 subtests |
+| 3 | Frontend `npm ci` + `npm run build` | **PASS** — built in 1.29s |
+| 4 | `npm audit --audit-level=high --omit=dev` | **PASS** — 2 *moderate* (react-router), below the `high` gate |
+| 5 | Python dependency audit (pip-audit) | **NOT RUN** |
+| 6 | Secret scan (gitleaks) | **diff clean; 5 pre-existing findings in history** |
+
+**Job 5 did not run and I am not going to imply otherwise.** The project venv
+has no `pip`, and `uv tool install pip-audit` aborts in `ensurepip`
+(SIGABRT). This is the one CI check with no local evidence.
+
+**Job 6 needs care.** My diff contains no secret-shaped literals (checked
+directly). A full-history scan **with the repo's own `.gitleaks.toml`** finds
+**5 findings across 3 files, all predating this branch**:
+
+| rule | file | dated |
+|---|---|---|
+| private-key ×2 | `docs/ops/apple-signin-setup.html` | 2026-08-09 |
+| generic-api-key | `service/server/tests/test_user_api_settings.py` | 2026-07-15 |
+| generic-api-key ×2 | `skills/sooppiy/SKILL.md` | 2026-05-29 |
+
+**`.gitleaks.toml`'s own comment says the escaped-placeholder rule is "the
+only finding the scan has ever produced on this repo." That is now false**,
+and anyone reading the config would conclude the repo is clean.
+
+On the private-key hits: the matched block is **a single line**, where a real
+PEM key spans many — consistent with an inline placeholder, **but I am not
+asserting it is one**, and I have not printed any of it. The file is live on
+this branch (`docs/ops/apple-signin-setup.html`, from #354). **Owner review
+item.**
+
+Whether CI itself fails on these depends on the gitleaks action's scan
+scope, which I could not fully read from the workflow. A full-history local
+scan is stricter than a PR-range scan, so this may be a difference in method
+rather than a broken check.
+
+**What a local run does NOT give**, stated as the rule requires: a clean-room
+runner, the PR's audit trail, and any check needing provider secrets.
+
+### Merge held
+
+**[#471] is NOT merged.** One CI job has no local evidence, and the change is
+**inert by default** — there is no urgency that justifies merging on
+incomplete evidence during a provider outage. It waits for Actions to
+recover.
+
+---
+
 ## Cycle 25 — 14:4xZ (anchor 14:49:47): **shipped the R:R ceiling — INERT by default, because the measured optimum contradicts nine existing tests**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.022**
