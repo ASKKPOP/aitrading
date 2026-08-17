@@ -3425,6 +3425,58 @@ _SHORT_CLAIM = re.compile(
     r"|\bclose\s+the\s+existing\s+short\b", re.I)
 
 
+def _last_order_params_notes(run: dict) -> list:
+    """The rail notes from this run's most recent parsed bracket."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT payload FROM run_events WHERE run_id = ?
+                   AND event_type = 'order_params' ORDER BY id DESC LIMIT 1""",
+                (run["id"],))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return []
+        params = (json.loads(row["payload"] or "{}") or {}).get("params") or {}
+        notes = params.get("notes")
+        return list(notes) if isinstance(notes, list) else []
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _railed_params_line(run: dict) -> str:
+    """Tell the desk what the rails changed about its OWN last bracket.
+
+    Measured 2026-08-17: run 1375 requested `target_pct` **3.02% three times
+    in 95 minutes** (17:56, 18:27, 19:30) while its stop drifted
+    0.47 -> 0.475 -> 0.48. The R:R ceiling clamped it every time. The request
+    never moved, because `order_params` notes are journalled and **never
+    reach the prompt** — the desk was corrected and never told.
+
+    A rail that silently corrects a repeated mistake converts a LEARNABLE
+    error into a permanent one. This is the line that makes the correction
+    visible, and it names the RULE rather than only the number: a desk shown
+    "1.41" learns one value, a desk shown "3x your stop" can derive the next
+    one itself.
+
+    Fail-soft: any junk yields "".
+    """
+    try:
+        notes = _last_order_params_notes(run)
+        clean = [str(n) for n in (notes or []) if isinstance(n, str) and n.strip()]
+        if not clean:
+            return ""
+        body = "; ".join(clean)
+        return ("A rail changed your last bracket: " + body + ". Propose your "
+                "next bracket within that rule rather than re-sending the "
+                "value it cut — the rail will cut it again.\n")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _last_decision_report(run: dict) -> str:
     """The previous cycle's decision report text, for the side check."""
     try:
@@ -4228,6 +4280,7 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("ordinary_day", _ordinary_day_line(run)),
         ("run_expiry", _run_expiry_line(run)),
         ("standing_arm", _standing_arm_line(run, pos_qty)),
+        ("railed_params", _railed_params_line(run)),
     ]
     try:  # telemetry must never cost a cycle
         _BRIEF_JOURNAL[int(run.get("id") or 0)] = [n for n, t in parts if t]
