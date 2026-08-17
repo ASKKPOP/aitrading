@@ -5171,6 +5171,27 @@ def _parse_plan_adherence(raw: Any) -> str:
     return value if value in _PLAN_ADHERENCE_VALUES else "revised"
 
 
+def _adherence_stamp(decision: dict) -> dict:
+    """The Plan 26 adherence field for the decision journal — or nothing.
+
+    Measured 2026-08-17: of 24 `revised` stamps since the flag went on, **15
+    (63%) sat on conf-0.0 cycles where the desk produced no verdict at all**.
+    The journal stamped every decision and a missing key degrades to
+    "revised", so a silent cycle was recorded as having revised its plan.
+
+    §3.7 judges the flag on this statistic in realized-P&L terms. A stamp
+    with no desk behind it is not a conservative default — it is noise in the
+    number that decides whether the flag stays on. A cycle that produced no
+    verdict has no adherence to record, so it records none.
+
+    A junk or missing key on a REAL verdict still degrades to "revised": that
+    desk did speak, and its silence on this one field is a revision."""
+    if (decision.get("report") or "") == "light cycle: no LLM verdict":
+        return {}
+    return {"plan_adherence": _parse_plan_adherence(
+        decision.get("plan_adherence"))}
+
+
 def _parse_outlook_verdict(raw: Any) -> str:
     """adopted | adjusted | overridden; junk/missing degrade to 'adjusted'."""
     value = str(raw or "").strip().lower() if isinstance(raw, str) else ""
@@ -6142,8 +6163,7 @@ def run_cycle(run_id: int) -> dict:
                               # decision while the flag is on so outcome
                               # analysis is a query, not archaeology.
                               # Junk/missing degrade to "revised".
-                              **({"plan_adherence": _parse_plan_adherence(
-                                      decision.get("plan_adherence"))}
+                              **(_adherence_stamp(decision)
                                  if _outlook_enabled() else {}),
                               "report": (decision.get("report") or "")[:1000]})
 
