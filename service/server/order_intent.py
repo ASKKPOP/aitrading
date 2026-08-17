@@ -343,6 +343,62 @@ def bull_from_action(action: Optional[str]) -> Optional[bool]:
 EXECUTABLE_ARM_CONDITIONS = ("price_below", "price_above")
 
 
+def classify_arm(arm: Any, *, entry: float, is_short: bool,
+                 fee_rate: float) -> Optional[str]:
+    """Does this armed exit fire in PROFIT or in LOSS? Label, never a veto.
+
+    Measured 2026-08-17 over 134 arms holding a live position: **77 fire on
+    the banking side, 57 (43%) fire on the losing side.** SOL run 1367 is the
+    worked example and cost -$0.114: a short entered at 75.51, breakeven
+    including the round trip 75.4421, and its ONLY pre-committed exit armed
+    at `price_above 75.56` — a level it could reach only underwater. The
+    desk's report called that *"preserving profit"*, and across five cycles
+    it never placed a profit-side arm, because it believed it already had
+    one. The market sat at or below breakeven for 66 of its 84 minutes.
+
+    A `defensive` arm is a legitimate stop and is NOT rejected. The defect is
+    that the two are indistinguishable on the tape and in the brief, so the
+    desk cannot be told which it holds. Fee-inclusive on purpose: an arm
+    between breakeven and entry looks profitable on price alone and is not.
+
+    Returns "protective" | "defensive" | None (unusable input)."""
+    if not isinstance(arm, dict):
+        return None
+    try:
+        level = float(arm.get("level"))
+        e = float(entry)
+        rate = float(fee_rate)
+    except (TypeError, ValueError):
+        return None
+    if level <= 0 or e <= 0:
+        return None
+    cond = str(arm.get("if") or "").strip().lower()
+    if cond not in EXECUTABLE_ARM_CONDITIONS:
+        return None
+    breakeven = e * (1 - 2 * rate) if is_short else e * (1 + 2 * rate)
+    banks = level <= breakeven if is_short else level >= breakeven
+    return "protective" if banks else "defensive"
+
+
+def arm_level_implausible(level: Any, *, entry: float,
+                          max_ratio: float = 10.0) -> bool:
+    """Is this arm level so far from entry that it cannot be a plan?
+
+    run 1297 LTCUSDT armed at **44700.00** against an entry of **44.09** —
+    ~1000x out and unfireable for the life of the run. #446's unit-slip
+    converter rails `order_params` percentages; nothing covered arm levels,
+    so the number simply sat there. Deliberately loose (10x) — this catches
+    decimal slips, not aggressive targets."""
+    try:
+        lv, e = float(level), float(entry)
+    except (TypeError, ValueError):
+        return False
+    if lv <= 0 or e <= 0:
+        return False
+    ratio = lv / e if lv > e else e / lv
+    return ratio > max_ratio
+
+
 def arm_fires(arm: Optional[dict], *, mark: Optional[float]) -> bool:
     """Does this armed exit trigger at `mark`? Pure predicate, fail-closed.
 

@@ -642,3 +642,82 @@ class ArmPredicateTests(unittest.TestCase):
                     {"then": "reduce", "size_frac": 1.5},
                     {"then": "reduce", "size_frac": "x"}):
             self.assertEqual(OI.arm_exit_fraction(bad), 0.0, bad)
+
+
+class ArmSideClassificationTests(unittest.TestCase):
+    """Measured 2026-08-17 across 134 arms that had a live position:
+
+        fire-side BANKS money (genuinely protective) : 77
+        fire-side LOSES money (mislabelled)          : 57  -- 43%
+
+    SOL run 1367 lost -$0.114 on exactly this. Its only pre-committed exit
+    was `price_above 75.56` on a short entered at 75.51, whose breakeven
+    including the round trip is 75.4421 — the arm could only ever fire at a
+    loss. The desk's own report called it *"preserving profit"*, and it
+    placed no profit-side arm across five cycles because it believed it
+    already had one. The market traded at or below breakeven for 66 of the
+    84 minutes it held.
+
+    A defensive arm is a LEGITIMATE stop and is not rejected here. The defect
+    is that the two are indistinguishable, so the desk cannot be told which
+    one it is holding. This labels it."""
+
+    FEE = 0.00045
+
+    def test_a_short_arm_above_breakeven_is_defensive(self):
+        # SOL 1367, exactly as it happened.
+        side = OI.classify_arm({"if": "price_above", "level": 75.56,
+                                "then": "reduce", "size_frac": 0.5},
+                               entry=75.51, is_short=True, fee_rate=self.FEE)
+        self.assertEqual(side, "defensive")
+
+    def test_a_short_arm_below_breakeven_is_protective(self):
+        side = OI.classify_arm({"if": "price_below", "level": 74.90,
+                                "then": "reduce", "size_frac": 0.5},
+                               entry=75.51, is_short=True, fee_rate=self.FEE)
+        self.assertEqual(side, "protective")
+
+    def test_a_long_arm_above_breakeven_is_protective(self):
+        side = OI.classify_arm({"if": "price_above", "level": 76.50,
+                                "then": "reduce", "size_frac": 0.5},
+                               entry=75.51, is_short=False, fee_rate=self.FEE)
+        self.assertEqual(side, "protective")
+
+    def test_the_round_trip_fee_decides_the_boundary(self):
+        # A short at 75.51 breaks even at 75.51 * (1 - 2*0.00045) = 75.4421.
+        # An arm BETWEEN breakeven and entry looks profitable on price alone
+        # and is not: fees eat it. That band is the whole point.
+        side = OI.classify_arm({"if": "price_below", "level": 75.48,
+                                "then": "reduce"},
+                               entry=75.51, is_short=True, fee_rate=self.FEE)
+        self.assertEqual(side, "defensive",
+                         "an arm inside the fee band is not protection")
+
+    def test_junk_and_missing_inputs_classify_as_none(self):
+        for bad in (None, {}, {"if": "price_above"}, "nope"):
+            self.assertIsNone(OI.classify_arm(bad, entry=75.51, is_short=True,
+                                              fee_rate=self.FEE))
+        self.assertIsNone(OI.classify_arm({"if": "price_above", "level": 75.5},
+                                          entry=0, is_short=True,
+                                          fee_rate=self.FEE))
+        # A VALID level under an unexecutable condition must also be None —
+        # without this the condition guard is untested and a mutant that
+        # deletes it survives, which is exactly what happened first time.
+        for cond in ("price_sideways", "", "PRICE_ABOVE_OR_SO", None):
+            self.assertIsNone(
+                OI.classify_arm({"if": cond, "level": 75.5}, entry=75.51,
+                                is_short=True, fee_rate=self.FEE),
+                f"unexecutable condition {cond!r} must not be classified")
+
+    def test_an_absurd_level_is_flagged_not_silently_kept(self):
+        """run 1297 LTCUSDT: entry 44.09, arm level 44700.00 — ~1000x out and
+        unfireable. #446's unit-slip converter rails order_params percentages
+        and does not cover arm levels."""
+        self.assertTrue(OI.arm_level_implausible(44700.0, entry=44.09))
+        self.assertFalse(OI.arm_level_implausible(44.70, entry=44.09))
+        self.assertFalse(OI.arm_level_implausible(75.56, entry=75.51))
+
+    def test_implausibility_is_symmetric(self):
+        self.assertTrue(OI.arm_level_implausible(0.0441, entry=44.09))
+        self.assertFalse(OI.arm_level_implausible(None, entry=44.09))
+
