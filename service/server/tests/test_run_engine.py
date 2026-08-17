@@ -168,6 +168,51 @@ class RunEngineTests(unittest.TestCase):
 
     # ── fencing / zombie claimant ──────────────────────────────────────
 
+    def test_own_expired_lease_is_renewed_not_fenced(self):
+        """A slow cycle (LLM calls outlasting RUN_LEASE_TTL) must not forfeit
+        the order it just authored: as long as WE still hold the lease, it is
+        renewed before the trade transaction. 21 authored orders (8 opens,
+        7 reduces, 1 close) were fenced on live tape 2026-08-14..17 —
+        run 1370's fenced cycle measured 437s against the 300s TTL."""
+        run_id = self._running_run()
+
+        def expire_own_lease_then_decide(*args, **kwargs):
+            # the cycle's own lease expires mid-analysis; NOBODY reclaims it
+            # (claimed_by stays ours, only the clock ran out)
+            self._set(run_id, claim_expires_at=_ts(datetime.now(timezone.utc)
+                                                   - timedelta(seconds=10)))
+            return BUY_ANALYSIS
+
+        with patch("analysis_agents.run_analysis",
+                   side_effect=expire_own_lease_then_decide):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result)
+        self.assertEqual(len(self._signals(run_id)), 1)
+
+    def test_renew_lease_never_steals_a_foreign_lease(self):
+        """Renewal is scoped to `claimed_by = us`: a lease legitimately
+        reclaimed by another worker must be left untouched."""
+        run_id = self._running_run()
+        foreign_expiry = _ts(datetime.now(timezone.utc)
+                             + timedelta(seconds=120))
+        self._set(run_id, claimed_by="worker-B:999",
+                  claim_expires_at=foreign_expiry)
+        run_engine._renew_lease(run_id)
+        row = self._row(run_id)
+        self.assertEqual(row["claimed_by"], "worker-B:999")
+        self.assertEqual(row["claim_expires_at"], foreign_expiry)
+
+    def test_renew_lease_ignores_a_stopped_run(self):
+        """A stop pressed mid-cycle must not have its lease extended — the
+        fence still refuses on status, and renewal refuses to touch the row."""
+        run_id = self._running_run()
+        stale = _ts(datetime.now(timezone.utc) - timedelta(seconds=10))
+        self._set(run_id, status="stopped", active_key=None,
+                  claimed_by=run_engine.WORKER_IDENTITY,
+                  claim_expires_at=stale)
+        run_engine._renew_lease(run_id)
+        self.assertEqual(self._row(run_id)["claim_expires_at"], stale)
+
     def test_zombie_claimant_cannot_trade_after_reclaim(self):
         """SIGSTOP-equivalent: worker A's lease is reclaimed by B while A is
         'inside' its LLM call; A's trade transaction must abort at the fence."""
