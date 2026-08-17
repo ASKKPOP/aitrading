@@ -7,6 +7,32 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+### #465 DEPLOYED and verified — image `20260817-noverdict-error-class` (merge `19f5d55`)
+
+All four branches replayed against the deployed function in the container:
+
+```
+raised    -> {'kind': 'error', 'err': 'TimeoutError: read timed out', 'chars': 0, 'tail': ''}
+empty     -> empty
+text wins -> no_json          (a successful retry is never filed as an error)
+bounded   -> 200              (err note capped)
+```
+
+#463's stamp rule, #462's salvage, #460's corrected loss floor and the Plan
+26 flag all survived the from-main rebuild. 0 tracebacks.
+
+**The open question is now answerable rather than arguable.** Next cycle
+reads the kind mix with `error` in it. Two outcomes, two different
+investigations, and I will not pre-commit to either:
+
+* `error` dominates → llm_client timeouts/retries; an infrastructure fix.
+* `empty` survives the split → the prompt or the model returned nothing on
+  a healthy call; a decision-path fix.
+
+**Session ship count: 20 PRs.**
+
+---
+
 ## Cycle 8 — 05:2xZ (anchor 05:27:14): quiet on trades; **#463 proved itself live, and the no-verdict tape is now decisive enough to act on**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **3h03m**.
