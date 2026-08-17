@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-17/40",
- "captured_at_utc": "2026-08-17T23:25Z",
+ "cycle": "2026-08-17/41",
+ "captured_at_utc": "2026-08-17T23:40Z",
  "prod_image": "sooppiy-backend:20260817-20260817-leaserenew",
  "C39_NEW_SESSION_TWO_TARGETS": "Account rotated; crons re-armed (0961ff91 30min, 06e43308 sweep). Owner scope now TWO users: agent 6/fleet 35 AND forevery1969@gmail.com user 25/agent 60/FLEET 36 (us-stock, 25 slots, $99,996.69, started 08-16T10:37Z). Both books FLAT; day +3.84; fleet 35 replenished 9 runs (1387-1396) -> 12 running.",
  "C39_FLEET36_NEVER_TRADED": "151 decisions since start: 147 hold / 2 buy / 2 retire. BOTH buys (run 1324 T, cyc 56/57, conf 0.73/0.78, parsed+compiled+$257 sized) killed by gate_skip fence: lease expired. 100% entry-kill rate from infrastructure.",
@@ -851,5 +851,6 @@
    "#448 (narrative not action)"
   ]
  },
- "plan26_watch": "LIVE; no double-writing (sweeper rows only on stopped runs); sweeper spends LLM on STOPPED runs n=2 (gap #1, agent B verdict pending); adherence 7/7 x4 windows"
+ "plan26_watch": "LIVE; no double-writing (sweeper rows only on stopped runs); sweeper spends LLM on STOPPED runs n=2 (gap #1, agent B verdict pending); adherence 7/7 x4 windows",
+ "C41_FOREVERY1969_ANALYSIS": "Owner ask: usa stock lost. FACT: us-stock fleet 36 realized 0.00 on all 18 runs - never traded (147/151 holds; the ONLY 2 entries were fence-killed, #475 fixed). Lifetime -3.41 is CRYPTO fleet 34 08-15: ETH -1.87 (size_frac null -> default  = 90% budget on weakest idea, R17 n=2 accounts), SOL -1.54 (rail 0.3% floor stopped out at local top, cost ~1.04 vs hold, R18), BTC -0.35 (incl -0.10 orphan flatten missing from run realized), FIL +0.35 (with-trend winner). Fees 47% of loss. Screenshot was agent 5/fleet 32 (yoojinbe), not this account."
 }

@@ -9,6 +9,54 @@ Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 41 — 23:4xZ (anchor 23:40:53): OWNER ASK — "usa stock lost, analyze forevery1969"; two-subagent analysis run and cross-checked
+
+**PROFIT-OR-LOSS FIRST: forevery1969@gmail.com has lost $3.41 lifetime
+(cash 99,996.59 vs 100,000 seed) — ALL of it in CRYPTO fleet 34 on 08-15.
+Its US-STOCK fleet 36 has never executed a trade: realized $0.00 on all 18
+runs.** The screenshot the owner sent (runs 1148–1248, −$4.61) is a
+DIFFERENT account: agent 5 / fleet 32 (yoojinbe@gmail.com), stopped 08-14.
+
+Two subagents dispatched per the 2026-08-13 law (A: desk-authored,
+B: algorithm-authored), cross-checked by the main session:
+
+**Where the $3.41 went (both agents reconcile to the cent):**
+- ETH 1272 **−1.87 (55%)** — desk went long against its own bearish
+  cycle-3 read at conf 0.58, and `size_frac: null` fell through to default
+  sizing: **$990 notional = 90% of run budget on the day's weakest idea**
+  (vs $495/$165 on stronger ones). VERIFIED on tape by main session.
+  Same defect class as agent 6's 8.2× incident (takeover brief §3) —
+  **now n=2 accounts → backlog R17** (counterfactual ≈ $0.9–1.6/day).
+- SOL 1274 **−1.54** — desk proposed a nonsense 0.016% stop; the rail
+  FLOOR (0.3%) replaced it and the watcher stopped out within 0.01% of the
+  local top; SOL mean-reverted below entry. **Stop-out cost ≈ $1.04 vs
+  holding.** Floor is tighter than SOL's ~3%/day noise → backlog R18.
+- BTC 1271 **−0.35** (incl. the −0.10 orphan flatten at the user's
+  stop-all; that leg is in NO run's realized — the known
+  realized-misses-flattens gap, reconfirmed).
+- FIL 1283 **+0.35** — the one winner: entered WITH a multi-week trend,
+  banked in partials. Direction quality separated it, not exit management.
+- **Fees were 47% of the total loss** ($1.61 of $3.41); one ETH leg was
+  100% fees (exit at entry price, −$0.43).
+
+**Why fleet 36 (us-stock) is at $0.00 — quantified (Agent B):** 151
+decisions = 147 hold / 2 buy / 2 retire; gate_skips = 509 market-closed,
+147 hold, **2 `fence: lease expired`**, 0 risk-gate blocks (refutes the
+rails-throttled-it theory). **The only two entries the fleet ever authored
+(conf 0.73/0.78) were both infrastructure-killed by the lease fence**;
+idle-retire then retired that run 4h before #475 deployed. Honest
+counterfactual: T fell −0.7% after the kills — on this tape the fence
+AVOIDED −$2…−4. The defect was authorship, not (yet) dollars.
+
+**Cross-check corrections applied:** B's "drawdown_warning mislabel"
+finding is OVERSTATED — the marker reuse is documented as deliberate
+(fleet_supervisor.py:389); the honest reason "eval_failed" is preserved in
+the reason fields. A's SOL raw-stop claim (0.016%) was independently
+confirmed by B from the order_params rail note. A expected platform
+force-closes and refuted himself: 8 of 9 legs were desk-authored. The
+08-15 mark-outage root cause (breaker_eval_failed ×14) is UNRECOVERABLE
+(logs rotated at the 23:17Z deploy) — recorded as unknown, not explained.
+
 ## Cycle 40 — 23:2xZ (anchor 23:25:54): post-deploy liveness only — the window is 2 minutes wide
 
 The cron fired immediately after the #475 ship, so the delta window since

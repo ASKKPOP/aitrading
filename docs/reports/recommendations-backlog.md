@@ -457,3 +457,13 @@ into a permanent one.**
 run 1375, all identical. The test after shipping a brief line is simply
 whether the requested target changes.
 
+
+### R17 — `size_frac: null` on an OPEN falls through to default sizing — largest bet lands on the weakest idea · STAGED (2026-08-18 cycle 41, n=2 ACCOUNTS)
+- **Evidence (agent 60 / fleet 34, 08-15, verified on tape by main session):** ETH run 1272 cycle-4 buy parsed `size_frac: null` → filled **$990 notional (90% of the $1,100 run budget)** at the day's WEAKEST conviction (0.58 entry conf; desk's own cycle-3 report was bearish), vs $495 SOL @ conv 0.605 and $165 BTC @ conv 0.6905. The −$1.87 ETH run = **55% of the account's whole −$3.41 day**. Sizing was inversely ordered to conviction because null → default, not because the desk chose it.
+- **Prior instance (agent 6, takeover brief §3):** the top P&L contributor since the 08-15 reset traces to `order_params: absent` → default sizing at **8.2×** the desk's habitual size. Same class, opposite sign — the default is a coin-flip amplifier.
+- **Counterfactual at live marks (this tape):** ETH at the desk's habitual $165–495 sizing loses −$0.31…−0.94 instead of −$1.87 → the null-default cost **≈ $0.9–1.6 on one day, one account**.
+- **Fix direction (AI-first order):** (a) skill/prompt: the desk must always author `size_frac` on an open (teach the observable: "a null size is not 'neutral', it is the platform's default bet"); (b) platform fallback: a null `size_frac` on an OPEN defaults to the run's SMALLEST recent authored size (or a conservative floor), never a large fixed fraction. Ship only after measuring the default's fleet-wide frequency and signed P&L (both accounts, all time).
+
+### R18 — Rail stop-floor (0.3%) fires inside crypto session noise — spec-correct, economics wrong · STAGED (2026-08-18 cycle 41, n=1 measured + documented pattern)
+- **Evidence (SOL run 1274, 08-15):** desk proposed a nonsense 0.016% stop; the rail floored it to 0.3%; the watcher stop-out at 75.514 was within 0.01% of the local top; SOL mean-reverted below entry by 08:08Z. **Stop-out cost ≈ $1.04 vs holding** (leg −0.88 vs ≈ +0.16). The 0.3% floor is tighter than SOL's ~3%/day ordinary move — the floor rescues the desk from instant fee-death and hands it noise-death instead.
+- Matches standing watch (a) in HANDOFF §8: judge stops in ORDINARY DAYS. AI-first fix already specified there: state the symbol's ordinary daily move AT bracket-authoring time. The new fact is a measured $ cost of the FLOOR itself. Gate: more fires with the same shape (floored stop < ~0.3 ordinary days collected by routine range) before touching the floor.
