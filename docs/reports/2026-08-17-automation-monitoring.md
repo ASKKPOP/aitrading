@@ -7,6 +7,90 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 14 — 09:1xZ (anchor 09:19:30): quiet; **the arm is structurally starved — 132 authored, 2 ever fired**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 08:28:15Z. One new position: SUI
+run 1356 short, opened 09:14:43Z, **−$0.033 unrealized**. Day 08-17 **+$4.24**.
+No-verdict **1 of 12 decisions (8.3%)** — down from 23.1%, and I have also
+stopped probing the host, so I am not crediting the fall to anything.
+
+### Following the empty-why arm finding to the profit question nobody had asked
+
+Cycle 13 corrected my watch: 131 of 132 arms carry `why: ""`. The obvious
+next question is not *why is the field empty* — it is **does the arm earn
+anything at all.**
+
+| | |
+|---|---|
+| `intent:arm` events authored, all time | **132** |
+| `armed_exit` events, all time | **2 (1.5%)** |
+| both fired on | 2026-08-13 and 08-14 — **none in 3+ days** |
+| runs with `armed_order_json` persisted | 10, **all `stopped`** |
+
+Both fires were mechanically clean — `reduce 0.5` with slippage −0.08% and
++0.01%. The mechanism works. It just almost never runs.
+
+### Two hypotheses of mine, both refuted before I could report them
+
+1. **"The levels are unreachable."** This was the arm-reachability spec
+   already sitting in my backlog. **Refuted.** Measured every arm's level
+   against its run's entry price: distances cluster at **0.1%–1.5%** — well
+   inside an ordinary day for these symbols. Only one outlier (CL, 4.4%).
+   The desk is not setting fantasy levels.
+2. **"Arms are authored once and forgotten."** Refuted — the desk **re-arms
+   every cycle** (run 1122 armed 11 times, run 1147 11, run 1123 9), mostly
+   at the same or a walked level.
+
+### What the data actually shows: the platform closes the book first
+
+Of the **44 runs that ever armed**, the close reasons are:
+
+| close reason | runs | authored by |
+|---|---|---|
+| `stop_event:at_time` | **14 (32%)** | platform |
+| `desk_retired` | 9 (20%) | **desk** |
+| `adapt_retired` | 7 (16%) | platform |
+| `fleet_stop_all` | 7 (16%) | platform/owner |
+| `stop_event:trailing_lock` | 6 (14%) | platform |
+| `positions_held` | 1 | — |
+
+**Only 20% of armed runs ended by the desk's own choice. 77% were ended by a
+rail or a fleet action before the arm could act.** Twelve of those closes
+were `flatten`s.
+
+The light prompt explicitly instructs: *"prefer arm over hold whenever you
+can name the level that would change your mind, because your next cycle is
+far away and the market is not."* The desk complies — 132 times, at
+reachable levels, re-armed every cycle — and the platform closes the book on
+its own schedule 4 times out of 5. **The single instrument the desk is told
+to prefer is the one it is least allowed to use.**
+
+This is the same shape as cycle 13's FIL sequence: rail covers → replacement
+run spawns → replacement defers → thesis intact, position gone, move
+captured by nobody. And `at_time` at 32% means the largest single killer of
+armed runs is the run simply reaching its hard expiry with a live
+conditional exit pending.
+
+### ISSUE — not shipping, and this time the reason is scope not doubt
+
+The candidate remedies are all behaviour changes to money paths: let a live
+arm outrank `at_time`, or lengthen horizons, or make `adapt_retired` yield to
+a pending arm. Each changes when real positions close. On my own standard
+that needs the P&L of the counterfactual, which I do not have — 2 fires is
+not a distribution, and the 130 that never fired have no outcome to compare.
+
+**The measurement that would settle it:** for each armed run closed by a
+rail, whether the arm's level was subsequently hit inside the run's original
+horizon, and what the reduce would have been worth at that level. That is
+computable from stored marks and is the right next piece of work.
+
+### Standing watch corrections carried forward
+
+* **empty-why arms: 131/132, not n=6** (corrected cycle 13).
+* **arm-reachability: refuted as a defect** — levels are 0.1–1.5% away, not
+  unreachable. The spec in the backlog should be struck; the real problem is
+  arm *starvation*, not arm placement.
+
 ## Cycle 13 — 08:4xZ (anchor 08:49:25): **a scratch that hides two proven arithmetic defects, and a standing watch of mine that was wrong by 22x**
 
 **PROFIT-OR-LOSS FIRST.** FIL run 1358 closed 08:28:15Z. `signals.pnl`

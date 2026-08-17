@@ -240,3 +240,23 @@ One arm (run 1358, 08:29:58Z) was authored **103s after its run stopped**,
 with `position_qty: 0.0`, and was still persisted to
 `trading_runs.armed_order_json`.
 
+## Arm-reachability rail — SPEC STRUCK 2026-08-17 cycle 14 (hypothesis refuted)
+
+I specified a rail to clamp arms set beyond the measured next-look range.
+**Measured: arm levels sit 0.1%–1.5% from entry** (one outlier, CL 4.4%) —
+inside an ordinary day for these symbols. The levels are not the problem and
+this spec should not be built.
+
+**The real finding is arm STARVATION.** 132 `intent:arm` authored, **2
+`armed_exit` ever (1.5%)**, none in 3+ days; 10 runs carry a persisted
+`armed_order_json` and all 10 are `stopped`. Of the 44 runs that ever armed,
+only **9 (20%)** ended by desk choice; **34 (77%)** were ended by a rail or
+fleet action first — `at_time` 14, `adapt_retired` 7, `fleet_stop_all` 7,
+`trailing_lock` 6. The prompt tells the desk to prefer arm over hold; the
+platform then closes the book before the arm can act 4 times in 5.
+
+**Measurement required before any remedy** (all candidates change when real
+positions close): for each armed run closed by a rail, was the arm's level
+subsequently hit inside the run's ORIGINAL horizon, and what would the
+reduce have been worth at that level? Computable from stored marks.
+
