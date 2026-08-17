@@ -151,3 +151,30 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ### W-fence — Execute-stage lease-expired skips deferring exits · WATCH (2026-08-14 sweep)
 - 12 lease-expired skips in one day, 11 in market hours, one deferred a desk CLOSE (run 1116 JPM 15:42:44Z; retried next cycle). A fence that can defer an exit points the forbidden direction. Count daily; if closes get deferred again, investigate the claim/lease path.
+
+## Fleet slot ledger over-commits after a resize (found 2026-08-17 cycle 5)
+
+**Evidence.** Fleet 35: budget $10,009.75; 10 filled slots hold $9,999.96;
+10 empty slots stamped $400 each. Slot ledger totals **$13,999.96 — 39.9%
+over budget**. Headroom $9.79 against a $200 slot floor → `slot_dormant`
+every tick (45 events). `replenishing:10/20` for 6h14m and counting.
+
+**Mechanism.** The 25→20 resize (`slot_removed`, 21:36:36Z) drained the
+excess slots but did not renormalise the survivors' `original_allocation_usd`.
+Replacement funding is `min(slot.original_allocation_usd, headroom)`, so all
+50 rotations re-fund at the stale allocation and the over-commitment
+perpetuates. `build_fleet` has an under-fill reserve for exactly this state
+(its comment cites fleet #26, 3/10 slots holding all $10k); the replacement
+path has no equivalent.
+
+**Cost.** 10 theses at 2× their per-slot share instead of 20 at 1× — a
+permanent halving of diversification.
+
+**BLOCKED ON THE SAME REPLAY as the ratchet/fee package.** Renormalising
+halves book sizes, and small books are where the fee hurdle bites (AVAX
+2026-08-17: fees 475% of gross on a $199 book). Required measurement:
+realized expectancy of closed trades bucketed by book size against the
+per-market fee floor. Do not ship a sizing change before it.
+
+**Shippable independently once the above is decided:** the status string.
+`replenishing:k/N` on a fleet with no headroom should read budget-capped.

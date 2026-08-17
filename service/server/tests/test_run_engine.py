@@ -2331,6 +2331,61 @@ class LossVerdictBriefTests(unittest.TestCase):
                       "loss verdict not wired into the position brief")
 
 
+class AdherenceStampTests(unittest.TestCase):
+    """Measured 2026-08-17: of 24 `plan_adherence: "revised"` stamps since the
+    Plan 26 flag went on, **15 (63%) sat on conf-0.0 cycles where the desk
+    produced no verdict at all**. The journal stamps every decision and
+    `_parse_plan_adherence` degrades a missing key to "revised", so a silent
+    cycle is recorded as having revised its plan.
+
+    §3.7 judges the flag on exactly this statistic. A fabricated stamp is not
+    a conservative default; it is noise in the number that decides whether
+    the flag stays on."""
+
+    NO_VERDICT = "light cycle: no LLM verdict"
+
+    def test_a_silent_cycle_records_no_adherence(self):
+        self.assertEqual(
+            run_engine._adherence_stamp({"action": "hold", "confidence": 0.0,
+                                         "report": self.NO_VERDICT}), {})
+
+    def test_a_real_verdict_missing_the_key_still_degrades_to_revised(self):
+        self.assertEqual(
+            run_engine._adherence_stamp({"action": "hold", "confidence": 0.55,
+                                         "report": "waiting for the breakout"}),
+            {"plan_adherence": "revised"})
+
+    def test_an_authored_stamp_is_preserved(self):
+        for value in ("followed", "revised", "deviated"):
+            self.assertEqual(
+                run_engine._adherence_stamp(
+                    {"report": "a real report", "plan_adherence": value}),
+                {"plan_adherence": value})
+
+    def test_a_salvaged_verdict_still_gets_stamped(self):
+        # #462 recovers truncated verdicts; those ARE authored decisions and
+        # must keep counting toward the statistic.
+        self.assertEqual(
+            run_engine._adherence_stamp(
+                {"action": "sell", "confidence": 0.66,
+                 "report": "recovered from a truncated verdict — the desk's "
+                           "reasoning was cut off, the decision was not"}),
+            {"plan_adherence": "revised"})
+
+    def test_it_is_WIRED_into_the_decision_journal(self):
+        import inspect
+        # Scope to run_cycle, which owns the decision journal — asserting on
+        # the whole module would match the helper's own body and pass for
+        # the wrong reason.
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn("_adherence_stamp(decision)", src,
+                      "the journal is not routed through the stamp rule")
+        # The bug WAS a direct parse at the journal site, stamping every
+        # decision including silent ones. Assert that shape is gone.
+        self.assertNotIn("_parse_plan_adherence(", src,
+                         "the journal still stamps silent cycles directly")
+
+
 class TruncatedVerdictSalvageTests(unittest.TestCase):
     """Measured 2026-08-17, AVAX run 1335 cycle 16.
 

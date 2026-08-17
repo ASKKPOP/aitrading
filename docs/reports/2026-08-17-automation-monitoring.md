@@ -7,6 +7,190 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 6 — 04:1xZ (anchor 04:19:23): quiet on trades; **the first §3.7 measurement of Plan 26, and it is not flattering**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **1h55m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00). 10 decisions, all
+`hold`. #462: still **0 salvage fires**.
+
+### WORKED — the holds are disciplined, not idle
+
+All ten reports give a specific, checkable reason to stand down, and seven of
+ten cite the standing plan by name:
+
+> *"the required stop is too tight, so we remain flat"* (1348) ·
+> *"price has not yet breached the 0.595 breakout level required by the
+> standing plan"* (1351) · *"the market has moved out of our short entry
+> window and is perilously close to the invalidation point, removing positive
+> expectancy"* (1344) · *"a low-expectancy trade with insufficient time to
+> meet its target"* (1347)
+
+That is the fee/expectancy discipline the platform has been trying to teach,
+and it is visibly the forward book doing the steering. Nothing was
+gate-blocked — the desk chose this.
+
+### The §3.7 measurement the owner asked for
+
+Since the flag went on (155 stamped decisions from 2026-08-16T21:00Z):
+
+| adherence | cycles | trades authored |
+|---|---|---|
+| **followed** | **115 (74%)** | **1** |
+| revised | 24 | 3 |
+| deviated | 16 | 4 |
+
+**Plan-following cycles have authored exactly one trade — and it lost.** That
+was run 1344's TRUMP short (23:23:20Z, `followed`, conf 0.66), realized
+**−$0.6251** true net, the trade cycle 3 dissected. Every other trade in the
+window came from a cycle that revised or deviated from its own plan.
+
+**I am not calling the flag a failure on n=1, and I am not calling deviation
+better either** — the deviated bucket's profit is ~entirely the FIL
+`order_params: absent` oversize, a defect, not skill. The honest verdict:
+**after 588 outlook events and 155 adherence stamps, the forward book has
+authored one trade. It is not yet judgeable — and that is itself the
+finding.** A plan that almost never authorises action cannot be measured on
+the P&L of the action it authorises.
+
+Also on tape: **3 of the 8 traded decisions (runs 1341, 1336, 1338) produced
+no realized leg at all** — a `sell` was authored and nothing was ever closed.
+Worth chasing next cycle.
+
+### FAILED — the adherence statistic was measuring the fallback
+
+**15 of the 24 `revised` stamps (63%) sat on conf-0.0 cycles where the desk
+produced no verdict at all.** `run_cycle` stamped `plan_adherence` on every
+decision while the flag is on, and `_parse_plan_adherence` degrades a missing
+key to `"revised"` — so a cycle where the desk never spoke was recorded as
+having *revised its plan*. Genuine revised stamps: **9, not 24.**
+
+This corrupts the exact number §3.7 judges the flag on, and it corrupts it in
+the direction that makes the plan look more contested than it is.
+
+**Shipped as [#463]**: a cycle with no verdict records no adherence. A junk or
+missing key on a REAL verdict still degrades to `"revised"` — that desk did
+speak. Salvaged verdicts (#462) keep counting, because they are authored.
+Fail-before red on 5 tests, 3 mutants killed, wiring test scoped to
+`run_cycle` so it cannot pass by matching the helper's own body.
+
+### Recommendations
+
+1. **Re-run the §3.7 table after a day of clean stamps.** Today's numbers are
+   the last ones computed on contaminated data; treat 115/24/16 as the
+   baseline to be replaced, not as a result.
+2. **Chase the 3 authored sells with no realized leg** (1341, 1336, 1338).
+   Either the fill never happened or the position closed outside the signal
+   path — both matter for attribution.
+3. Unchanged and still replay-gated: the fleet slot-ledger over-commitment
+   (cycle 5) and the ratchet/fee-rate/round-trip package (cycle 4).
+
+## Cycle 5 — 03:5xZ (anchor 03:50:58): quiet on trades; **fleet 35's slot ledger over-commits its budget by 40%**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:59Z. Book **flat** — 0 open
+positions across 10 running runs. Day 08-17 unchanged at **+$4.24** (ledger,
+resid 0.00). 18 decisions, all `hold` at avg conf 0.494 — the desk chose to
+stand down, nothing was gate-blocked (`gate_skip` reason on all 18 is
+"decision is 'hold'"). #462 deployed mid-cycle: **0 `verdict_salvaged`, 0 new
+`no_verdict` in 18 decisions.** Too small to mean anything either way.
+
+### The thing worth reporting on a quiet cycle
+
+Fleet 35 has advertised **`replenishing:10/20` since 2026-08-16T21:36:36Z —
+6h14m, 15 status writes.** It is not replenishing. It cannot.
+
+| | |
+|---|---|
+| fleet budget | **$10,009.75** |
+| 10 filled slots, `original_allocation_usd` | **$9,999.96** (99.9%) |
+| 10 empty slots, stamped | **$400.00 each = $4,000** |
+| **slot ledger total** | **$13,999.96 — over-committed by $3,990 (39.9%)** |
+| live headroom | **$9.79** |
+
+`slot_floor = min(B/2N, own_alloc/2) = min($250.24, $200.00) = $200.00`.
+Headroom $9.79 < $200 → `slot_dormant`, **every tick, forever**. 45 such
+events already recorded.
+
+**I checked the obvious false alarm first and it was false.** Slots 10–14 are
+missing from the table not through a bug but because a resize drained them at
+21:36:36Z (`slot_removed`, reason `fleet_resized`) — correct behaviour, empty
+slots only.
+
+**The real defect is that the resize drained the slots and never renormalised
+the survivors' allocations.** Replacement funding is
+`min(slot.original_allocation_usd, headroom)`, so each of the 50 rotations
+re-funds at the stale, pre-resize allocation. The over-commitment is
+self-perpetuating.
+
+This is the exact state the build path's own comment says the under-fill
+reserve was added to prevent:
+
+> *"handing the WHOLE budget to the few composable theses leaves the E3
+> backfill zero headroom — the fleet advertises replenishing:k/N but can
+> never grow (fleet #26 live: 3/10 slots held all $10k, headroom −$1.25 vs a
+> $500 floor)."*
+
+The reserve exists in `build_fleet`. **The replacement path has no
+equivalent**, so a fleet can reach the forbidden state after build.
+
+**Effect in profit terms:** the fleet runs **10 theses at ~2× their per-slot
+share** ($1,000 average against a $500.49 share) instead of 20 at 1×. That is
+a permanent halving of diversification — and today is the day that mattered:
+one oversized position was 100% of the day's P&L.
+
+### ISSUE — I am NOT shipping the fix, and the reason is not caution theatre
+
+The consistency defect is unambiguous. **The remedy is not.** Renormalising
+would halve future book sizes, and today's own tape argues both ways: AVAX at
+a $199 book paid **fees worth 475% of its gross move**. Thinner slots make
+the fee hurdle worse. I have no evidence that 20 × $500 beats 10 × $1,000,
+and shipping a money-sizing change on a hunch is precisely what the owner law
+forbids.
+
+What would settle it: replay the fleet's closed trades bucketed by book size
+against the per-market fee floor, and measure realized expectancy per bucket.
+That is the same replay already gating the ratchet/fee-rate package — one
+measurement now unblocks two decisions.
+
+**Unambiguous regardless of the sizing question:** the status string. A fleet
+that cannot grow should not report `replenishing`. The owner reads that
+number; "replenishing" implies progress where the truth is "budget-capped at
+10/20". Holding it only because it should ship together with whatever the
+replay decides, rather than as two changes to the same code.
+
+### Watches
+
+`House floor` briefs since #460: **0** — the corrected floor still untested,
+as expected; the −$0.99…−$13.07 band has not been entered. All 136 fleet gate
+events ever are context `replacement`; **zero growth attempts**, so the
+replenish path is not burning research cycles — a waste claim I checked
+before making and did not make.
+
+---
+
+### #462 DEPLOYED and verified — image `20260817-salvage-verdict` (merge `1fb233a`)
+
+Replayed the real severed payload through the deployed function in the
+container:
+
+```
+recovered: sell 0.66 {'intent': 'reduce', 'size_frac': 0.5}
+no verb -> None: True
+junk    -> None: True
+```
+
+**The exact decision AVAX 1335 cycle 16 lost — a half-position reduce — now
+survives the truncation.** The corrected loss floor (#460), the no-verdict
+diagnostic (#459) and the Plan 26 flag all survived the from-main rebuild.
+0 tracebacks.
+
+Next cycle reads the `verdict_salvaged` tape: every fire is a decision the
+platform would previously have thrown away, so the count is a direct measure
+of what the truncation was costing.
+
+**Session ship count: 18 PRs.**
+
+---
+
 ## Cycle 4 — 02:5xZ (anchor 02:59:50): **the day's +$4.24 is one sizing defect, and the desk's exit was eaten by a truncation**
 
 **PROFIT-OR-LOSS FIRST.** Day 08-17 realized **+$4.24** (pnl_audit ledger,
