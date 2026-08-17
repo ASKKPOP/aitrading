@@ -7,6 +7,72 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 25 — 14:4xZ (anchor 14:49:47): **shipped the R:R ceiling — INERT by default, because the measured optimum contradicts nine existing tests**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.022**
+unrealized. Day 08-17 **+$4.13**. **0 no-verdicts in 23 decisions.**
+
+### The change
+
+`RR_FLOOR = 2.0` only ever **raised** a target; nothing capped it. Added its
+mirror — `RR_CEILING`, clamping `target_pct` to a multiple of `stop_pct`,
+guarded so it can never fight the two floors (below the R:R floor it would
+invert the bracket; below the fee floor it would name a target cheaper than
+the cost of taking it).
+
+Evidence, four experiments from today, all in the code comment:
+
+* **H6** — no target above **2.00%** has ever been reached, even given a
+  run's own full original horizon (4 hits in 34, all 0.60–2.00%).
+* **H7** — max favourable excursion available inside that horizon: median
+  **1.14%**, max 4.24% over 29 entries. The market **offered** the target on
+  **1 leg in 28**.
+* **H8** — stop-vs-target-first replay: **6 wins in 30** at a 2.50% target,
+  **ZERO** at 4.55% and 5.00%.
+* **Cycle 24** — `take_profit` is live in `risk_engine` and carried on every
+  position; 0 of 210 stopped runs closed on it because the level is
+  unreachable, not because the path is dead.
+
+### FAILED — and this is the part worth reading
+
+**I could not ship the measured optimum, and I did not force it through.**
+
+H8's best pair is R:R **2.0**. A 2.0 ceiling breaks **nine existing tests**;
+2.5 breaks **two**. Those tests encode brackets at R:R 2.5, 2.67 and 3.0 as
+*intended* behaviour — decisions someone made deliberately, for reasons I
+have not investigated.
+
+Rewriting nine of them to match my clamp would have been **fitting the tests
+to the code**, on the strength of a 30-entry replay. So the shipped default
+is **3.0 — inert against every existing case**, and `RR_CEILING=2.0` takes
+the optimum as a **config change, not a code change**, leaving the decision
+with whoever owns the doctrine those tests record.
+
+What the inert default still does: at a 1.24% stop it pulls a 4.55% target to
+**3.72%**, roughly doubling how often the level is offered. Modest, and I am
+not going to describe it as more than that.
+
+### Verification
+
+* Fail-before red on the two tests that require the ceiling; green after.
+* **4 mutants, 4 killed** — ceiling removed; ceiling allowed below the R:R
+  floor; ceiling allowed below the fee floor; env knob ignored.
+* **M3 initially SURVIVED.** My fee-floor test used the crypto rate, where
+  the smallest legal stop times the ceiling already clears the floor — so it
+  passed whether the guard existed or not. Replaced with a **high-fee venue
+  (0.5%/side)** where the floor genuinely binds, plus an assertion that the
+  test is not vacuous. Then it killed.
+* All 102 order-params tests pass with **no existing expectation altered**.
+
+### Recommendations
+
+1. **`RR_CEILING=2.0` is one env var away** and is the measured optimum. It
+   is the owner's call because it contradicts recorded prior intent.
+2. **Do not touch the stop or the R:R floor** — H8 showed tighter stops are
+   strictly worse (16–17 of 30 stop out).
+3. Ratchet package still held — every single-defect fix makes it worse or
+   knife-edge (cycle 23).
+
 ## Cycle 24 — 14:1xZ (anchor 14:19:28): **I tried to kill my own recommendation and it survived — but only after a census nearly made me report dead code**
 
 **PROFIT-OR-LOSS FIRST.** Day 08-17 **+$4.13** (down from +$4.26 — the SOL

@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T14:20Z",
+  "as_of": "2026-08-17T14:55Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.13, AVAX 1370 short -$0.10; take-profit is LIVE (risk_engine 731/736) but 0 of 210 runs ever closed on it - unreachable, not dead code; target clamp toward ~2x stop is the one shippable change (H6+H7+H8 agree)"
+    "note": "day +$4.13, AVAX 1370 -$0.02; SHIPPED R:R CEILING (mirror of RR_FLOOR) but default 3.0 = INERT - the measured optimum 2.0 breaks 9 existing tests encoding deliberate prior intent; RR_CEILING=2.0 is a config change for the owner"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,
