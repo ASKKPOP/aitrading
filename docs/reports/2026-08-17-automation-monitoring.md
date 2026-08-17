@@ -7,6 +7,82 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 30 — 17:1xZ (anchor 17:19:33): **CI came back and refuted TWO of my outage-period conclusions, in opposite directions**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.2145** — the
+deepest yet (−$0.022 → −$0.139 → −$0.167 → −$0.103 → **−$0.2145**). Day 08-17
+**+$4.13** realized. 22 decisions, 1 no-verdict.
+
+### The outage is NOT over, and the status page is wrong
+
+`githubstatus.com` reports API / Pull Requests / Actions **operational**.
+They are not. REST **reads** work (`gh api repos/...` returns), but **every
+write still 503s** — `gh pr create` on both GraphQL and REST. The status page
+is ahead of reality; **the read path recovering is not the outage ending.**
+
+`c27` still cannot be turned into a PR. Branch is pushed and safe.
+
+### FAILED — my "dependency audit is red on main" finding is refuted by CI
+
+Reads work, so I asked CI directly. On **#471** (checks ran 15:06Z) and on
+**main** (`500d003a`):
+
+| check | #471 | main |
+|---|---|---|
+| Backend pytest | success | success |
+| Frontend build | success | success |
+| npm audit | success | success |
+| **Python dependency audit** | **success** | **success** |
+| **Secret scan (gitleaks)** | **FAILURE** | **success** |
+
+**CI's pip-audit passes.** My local run reported **32 advisories across 9
+packages** using what the workflow shows is the *identical* command
+(`pip-audit -r requirements.txt`, `working-directory: service`, no ignore
+flags). I cannot reproduce CI's environment and I cannot explain the
+difference — most plausibly my local resolution pulled different transitive
+versions than a clean `pip install pip-audit` on ubuntu/3.12.
+
+**I blocked #471 for two cycles on that finding, and called it "the
+highest-priority owner call". It is not supported.** Retracted as a finding;
+it survives only as "local resolution differs from CI, unexplained".
+
+### And the failure I DID explain away is the real one — probably
+
+gitleaks **fails on #471 and passes on main**, which inverts what I wrote at
+cycle 25: I found 5 findings in full history, checked my diff, found nothing,
+and speculated CI "may scan differently".
+
+Checked again now, two ways: **no credential in my notes** (the DB password
+appears 0 times), and `gitleaks --log-opts origin/main..c25` reports **no
+leaks found**. So the diff is clean by local measurement, main passes, and
+only the PR check fails.
+
+**Most likely an outage artifact**: `gitleaks-action@v2` posts results
+through the GitHub API, and the checks ran at **15:06Z — mid-outage**. That
+is a hypothesis, not a conclusion; the test is re-running the check once
+writes recover.
+
+### The lesson, which is mine
+
+Both errors share one root: **during the outage I treated my local
+replication as the verdict, and kept treating it as the verdict after reads
+came back.** The standing rule says replicate every job locally as merge
+evidence when the provider is down. It does not say local results outrank CI
+once CI is readable again — and I let a local pip-audit result block a merge
+for two cycles while CI's own answer was sitting there, retrievable by a read
+that was working.
+
+### Recommendations
+
+1. **Re-run #471's checks the moment writes recover**, then judge gitleaks on
+   that result rather than on my speculation.
+2. **Do not act on the dependency bump.** It rested on a local finding CI
+   contradicts. If it is real it will reappear in CI; if it does not, it was
+   never there.
+3. `c27` awaits a PR. Queue unchanged otherwise.
+4. **AVAX 1370 is at its worst mark** and is the only open book — worth the
+   next cycle's first look.
+
 ## Cycle 29 — 16:4xZ (anchor 16:49:38): **H10 — the held-book excess survives controlling for host load. It is structural.**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.103**,

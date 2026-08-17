@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T16:50Z",
+  "as_of": "2026-08-17T17:20Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.13, AVAX 1370 -$0.103 flat, 0 no-verdicts in 24; H10: held-book excess SURVIVES load control (3.33x within the same hours) = structural; held prompt carries ~2300 extra chars; next = log chars+latency per call"
+    "note": "day +$4.13, AVAX 1370 -$0.2145 (worst yet); CI READS recovered and REFUTED my outage findings: pip-audit PASSES in CI (my 'red on main' retracted), gitleaks FAILS on #471 but passes on main - likely an outage artifact; writes still 503"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

@@ -386,7 +386,19 @@ unknown.
 **Method note:** a percentile-index bug in the cycle-22 probe printed
 "3.47% -> 90% of legs". Inverted — 3.47% is near the TOP, offered on ~10%.
 
-## SECURITY 2026-08-17 cycle 26 — dependency audit is RED on main (32 advisories, 9 packages)
+## RETRACTED 2026-08-17 cycle 30 — "dependency audit is RED on main" is NOT supported by CI
+
+CI's `Python dependency audit` reports **success on both main (500d003a) and
+PR #471**, using the identical command this entry was based on. The local run
+below found 32 advisories across 9 packages and cannot be reconciled with
+CI's environment. **Do not act on it.** If the vulnerabilities are real they
+will appear in CI; they have not.
+
+Kept below only as a record of what the local run said, and of the mistake:
+a local replication made during a provider outage was allowed to block a
+merge for two cycles after CI's own verdict had become readable.
+
+### (original entry, retracted) dependency audit local finding
 
 Surfaced only because GitHub Actions was in major outage and the standing
 rule required replicating every CI job locally.
