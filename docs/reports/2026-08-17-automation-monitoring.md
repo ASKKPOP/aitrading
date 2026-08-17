@@ -7,6 +7,54 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 38 — 21:4xZ (anchor 21:49:21): quiet; **the scheduled test still has not run, and I am not going to call that a result**
+
+No closes. **Book flat.** Day 08-17 **+$3.84** (ledger, resid −0.01, 4
+flattens). 5 decisions, **0 no-verdicts**. 9 running runs, fleet 35 at
+**10/14** slots.
+
+### Why the cycle was thin, checked rather than assumed
+
+Only 5 decisions in 26 minutes. `gate_skip` in the window: **`market closed`
+×10**, `decision is 'hold'` ×7, `loss cooldown` ×1. The fleet is
+4 crypto / 2 futures / 2 forex / 1 us-stock, and it is **21:49Z on a Monday**
+— equities and most futures are shut. The low count is the calendar, not a
+stall.
+
+### The test I scheduled: NOT ANSWERABLE
+
+| | |
+|---|---|
+| `_railed_params_line` deployed | 21:22:13Z |
+| decisions carrying `railed_params` | **0** |
+| ceiling fires since deploy | **0** (total still 4) |
+
+**No clamp has fired since the line went live, so the line has never
+rendered.** Not passed, not failed. The two runs that produced all four
+earlier fires are gone — 1375 was `idle_retired` at $0.00, 1370 closed.
+
+I am recording this as *unanswerable* rather than letting it drift into
+"deployed, presumably fine". The before-baseline (run 1375: 3.02% requested
+three times in 95 minutes) is on tape and does not expire; the test simply
+waits for the next clamp.
+
+### Standing rails — unchanged, and two still not working
+
+| rail | fires | honest status |
+|---|---|---|
+| R:R ceiling | 4 | **P&L effect $0.00** — every fire on `action=hold`, which compiles to `steps: []` |
+| corrected loss floor | **0** all day | present and correct by replay; **unexercised** |
+| arm classify | label only | nothing consumes it |
+| `_railed_params_line` | 0 renders | **test pending** |
+| breakeven ratchet | 3 | **−$0.252934, zero net gains** |
+
+### Recommendation
+
+Nothing to ship. The next clamp answers the open test, and the ratchet fix —
+**defect (a) alone**, per the run-1335 recomputation that reversed my earlier
+spec — is the one queued change with a proven dollar figure attached
+(+$0.1414 on the single fire that lost real money).
+
 ## Cycle 37 — 21:2xZ (anchor 21:23:31): **AVAX 1370 closed −$0.305, and Agent B refuted my own R:R ceiling report**
 
 **PROFIT-OR-LOSS FIRST.** AVAX run 1370 closed 20:24:05Z at **−$0.30509322**
