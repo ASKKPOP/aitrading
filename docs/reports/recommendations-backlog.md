@@ -196,3 +196,47 @@ then `idle_retired` at $0.00. Three distinct causes; none shipped.
    "spot sell with no inventory". The light prompt already withholds the verb
    via `can_sell`. **All time: 2** (08-13, 08-17), down from ~33/week before
    the prompt fix. Needs: does the discussion prompt get the same gate. n=1.
+
+## Breakeven ratchet (#449): two PROVEN arithmetic defects — fix specified 2026-08-17 cycle 13
+
+Running total over 2 live fires: **−$0.13891393** (AVAX 1335 pos-2
+−$0.14144302, FIL 1358 +$0.00252909). Ceiling is $0.00 net **by design**
+(`total ≤ exit_fee` → net = exit_fee − close_fee = 0 at a correct rate), so
+judging fires by whether they are green is the wrong test.
+
+**(a) Unit mismatch.** `_breakeven_floor_hit` takes no `baseline_pnl`;
+`peak`/`current` are run-cumulative, `arm`/`exit_fee` are position-scoped.
+`_trailing_lock_hit` already takes a baseline. Decisive on AVAX: position 2's
+own excursion 0.4228 − 0.0806 = **0.3422 < 0.398 arm → would never have
+armed**; it flattened at $0.0377 gross against an already-paid $0.0896 open
+fee, a guaranteed loss at trigger.
+
+**(b) One leg at an inflated rate.** `exit_fee` = notional × 0.001 × 1 leg
+(28.024 × 0.001 = 0.028024 ✓). True crypto rate 0.00045 → true leg
+$0.012598. Binding on FIL: `total` 0.015127 sits between the floors; at the
+true rate the fire condition is FALSE.
+
+**TRAP — do not fix (a) alone.** A position-scoped current is gross while the
+floor is one leg, so baseline-correcting alone makes the best case **−1 open
+fee**. The floor must become a full ROUND TRIP in the same change, with the
+rate from `fees.fee_rate(market)`.
+
+**Fail-before tests, both from live tape:** AVAX must not arm; FIL must not
+fire.
+
+**Residual after the fix:** even on a single-position run the comparison is
+off by one open fee (`total` is net of it, `arm` is gross).
+
+**Separate and larger:** ~4.7-minute mark staleness is the binding
+constraint. FIL's mark refreshed 16x in 75.8 min; the peak existed for one
+observation; arm and fire landed on consecutive marks with a $0.0458 giveback
+entirely between them. No threshold tuning addresses this.
+
+## Empty-why arms — watch CORRECTED 2026-08-17 (was "n=6", actually 131/132)
+
+132 `intent:arm` events all time; **131 (99.24%) carry `why: ""`**; exactly 1
+has a real why. It is the default behaviour of the arm path, not an anomaly.
+One arm (run 1358, 08:29:58Z) was authored **103s after its run stopped**,
+with `position_qty: 0.0`, and was still persisted to
+`trading_runs.armed_order_json`.
+

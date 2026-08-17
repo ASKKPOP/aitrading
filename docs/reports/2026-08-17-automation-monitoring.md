@@ -7,6 +7,159 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 13 — 08:4xZ (anchor 08:49:25): **a scratch that hides two proven arithmetic defects, and a standing watch of mine that was wrong by 22x**
+
+**PROFIT-OR-LOSS FIRST.** FIL run 1358 closed 08:28:15Z. `signals.pnl`
++$0.01513989, open fee $0.0126108 → **true net +$0.00252909** (matches
+`trading_runs.realized_pnl_usd` to 8dp). Day 08-17 **+$4.24**, resid 0.00.
+Book flat. **No-verdict since 08:18Z: 0 of 13 decisions** — down from 23.1%,
+n too small to credit, and I have also stopped probing the host.
+
+On $28.02 notional the round trip took **90.9% of gross**. The trade cleared
+breakeven by **$0.00006 per unit**. This is not a win to bank; it is a loss
+avoided by rounding.
+
+### FAILED — my own standing watch was wrong by a factor of 22
+
+I have carried "empty-why arms (n=6)" on the watch list for days. Verified
+myself this cycle:
+
+| arm intents, all time | **132** |
+|---|---|
+| with `why: ""` | **131 (99.24%)** |
+| with a real why | **1** |
+
+**An empty why is not an anomaly — it is the default behaviour of the arm
+path**, 131 times out of 132. The single exception proves the field can be
+populated, so this is an unreliable desk emission, not a schema that drops
+it. My watch was scoped to a handful of instances I happened to notice and
+never counted. Corrected here.
+
+### The arm this cycle was dead three ways
+
+08:29:58Z, run 1358: `intent: arm, {"if":"price_above","level":0.68,
+"then":"reduce","size_frac":0.5}`, `why: ""`.
+
+1. **The run stopped at 08:28:15Z** — the arm was authored **103 seconds
+   after the run ended** (verified directly).
+2. **`position_qty: 0.0`** — the only one of 132 arms in history with no
+   position. It armed a half-reduce of nothing.
+3. **0.68 was 2.08% away** at arm time; the run's worst adverse print all
+   session was 0.66943.
+
+It was still persisted to `trading_runs.armed_order_json`. Dead config
+written onto a stopped run, with no stated reason to audit it against.
+
+### WHY the trade was a scratch — the desk broke its own rule at the entry tick
+
+Agent A's finding, which I have checked against the tape:
+
+* **Cycle 1 (06:55:53Z)** published an entry band **0.668945–0.676471** and
+  **refused to trade at 0.6691 — inside its own band** — on an explicit
+  negative-expectancy argument: a defensible stop was >10% away, breaking
+  its 2:1 R:R. It bound itself: re-enter *only on a pullback into the zone*.
+* **Cycle 2 (07:12:27Z)**, 17 minutes later, entered at **0.6668 — 0.3207%
+  BELOW the band floor.** For a short that is not a pullback into the zone;
+  it is a worse fill in the wrong direction. Nothing resolved cycle 1's
+  objection — the swing high had not moved. The desk swapped the defensible
+  stop for an arbitrary 2% stop and re-declared ">2:1 R:R".
+
+Entering at its own band floor with the identical exit nets **+$0.09264**
+against the actual **+$0.00253**. **The desk gave away $0.0902 at entry — 36x
+the entire realized profit — by breaking a rule it had written 17 minutes
+earlier.**
+
+### Plan 26 — the adherence stamp is INVERTED on this run
+
+* Cycle 1 held flat, correctly honouring its own risk rail → stamped
+  **`deviated`**.
+* Cycle 2 entered outside its published band, contradicting cycle 1's
+  explicit re-entry condition → stamped **`followed`**.
+
+**The stamp rewarded the rule-break and penalised the rule-keep.** As a
+§3.7 control that is worse than absent — it is actively misleading. Note
+this is a *content* defect in what the desk emits, not the fabrication bug
+#463 fixed.
+
+Also: outlook published on 3 of 5 cycles, with the 40% silence concentrated
+exactly on the stress window (07:48–08:03, unrealized −$0.1105, margin
+T0→T1). The desk never once asked to exit.
+
+### #449's second fire — the rail is 0-for-2 and its ceiling is $0.00 by design
+
+| fire | position net |
+|---|---|
+| AVAX 1335 pos-2, 02:23:39Z | **−$0.14144302** |
+| FIL 1358, 08:28:14Z | **+$0.00252909** |
+| **running total** | **−$0.13891393** |
+
+Two defects, both **arithmetic and provable from code** — not statistical
+claims needing a distribution:
+
+**(a) unit mismatch, unfixed.** `_breakeven_floor_hit` takes no
+`baseline_pnl`, so `peak`/`current` are run-cumulative while `arm`/`exit_fee`
+are position-scoped. Its sibling `_trailing_lock_hit` does take a baseline.
+**Proven decisive on AVAX:** position 2's own peak excursion was
+0.4228 − 0.0806 = **$0.3422 against a $0.398 arm → it would never have
+armed.** It armed on $0.0806 banked by the desk's earlier covers, then
+flattened at $0.0377 gross against an already-paid $0.0896 open fee — **a
+guaranteed loss the instant it triggered.**
+
+**(b) one leg at an inflated rate, unfixed.** `exit_fee` 0.028 =
+notional × **0.001** × 1 leg (verified: 28.024 × 0.001 = 0.028024). The true
+crypto rate is 0.00045, so a true single leg is $0.012598 — exactly the
+close fee charged. **Proven binding on FIL:** `total` at the fire was
+0.015127, which sits *between* the two floors. At the true rate
+`0.015127 ≤ 0.012598` is **false — the rail would not have fired at all.**
+
+**FIL was a clean test and AVAX was not.** Run 1358 had $0.00 banked before
+this position (2 trade events, verified), so defect (a) had nothing to bite
+on. Same rail, same defects, same day — the only difference in outcome was
+whether there were prior closes to corrupt the baseline.
+
+**Correcting my own cycle-4 record:** I reported AVAX run 1335 as a loss.
+The run as a whole was **+$0.0287** — the desk's two partial covers made
+money; only the ratchet-flattened position 2 lost $0.1414.
+
+### ISSUE — I am NOT shipping the rail fix, and the reason is specific
+
+The diagnosis is solid and arithmetic. The *correction* carries a trap Agent
+B named explicitly: **adding `baseline_pnl` alone moves the best case from
+$0.00 to −1 open fee**, because a position-scoped current is gross while the
+floor is one leg. The floor must move to a full round trip in the same
+change, or every future fire lands one open fee under water.
+
+I have already shipped one fix today that did not work (#468). Shipping a
+money rail whose correction has a named failure mode, in the tail of a
+monitoring cycle, without a replay harness, is how that happens twice.
+
+**Specification for the focused session that should do it:**
+
+1. `_breakeven_floor_hit(peak, current, arm, baseline_pnl, exit_fee)` —
+   mirror `_trailing_lock_hit`; baseline is the banked P&L that cannot
+   round-trip.
+2. In the SAME change, the floor becomes the **round trip**, and the rate
+   comes from `fees.fee_rate(market)`, not `BREAKEVEN_FEE_RATE=0.001`.
+3. Replay both live fires as fail-before tests: **AVAX must not arm**
+   (0.3422 < 0.398 baseline-corrected) and **FIL must not fire**
+   (0.015127 > 0.012598 at the true rate).
+4. Note the residual: even on a single-position run the comparison is off by
+   one open fee, because `total` is net of it while `arm` is gross.
+
+### Also measured
+
+**~4.7-minute mark staleness is the binding constraint, not the threshold.**
+The FIL mark refreshed 16 times in 75.8 minutes; the peak existed for
+**exactly one observation**; the rail armed and fired on **consecutive
+marks**. The $0.0458 giveback happened entirely inside one refresh and was
+invisible to any rail at this resolution. No floor tuning fixes that.
+
+Counterfactuals at the live mark only (FIL 0.66388, AVAX 6.3121): holding
+FIL was worth **+$0.0976**, holding AVAX **+$0.6971** — **0-for-2 on
+realized net and 0-for-2 on opportunity cost.** Two observations is not a
+distribution and I will not present it as one; the case against the rail is
+the arithmetic, not the two outcomes.
+
 ## Cycle 12 — 08:1xZ (anchor 08:18:48): **the timeout fix did NOT work, and the measurement says why**
 
 **PROFIT-OR-LOSS FIRST.** Day 08-17 **+$4.23** (ledger, resid 0.00). One new
