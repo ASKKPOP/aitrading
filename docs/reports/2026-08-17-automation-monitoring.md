@@ -7,6 +7,119 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 23 — 13:4xZ (anchor 13:49:37): **H8 refutes the remedy I derived last cycle, and the ratchet's third fire is its worst**
+
+**PROFIT-OR-LOSS FIRST.** SOL run 1367 closed 13:35:19Z at **−$0.11402031**
+true net (verified against `realized_pnl_usd`). New position: AVAX run 1370
+short, −$0.132 unrealized. Day 08-17 **+$4.26** before this leg settles.
+
+### FAILED — my own briefing to the subagents was wrong, and they caught it
+
+I briefed both agents with **one** closing leg and a true net of ≈−$0.0688.
+There were **two** half-legs at 13:35:19Z:
+
+```
+1431  cover 0.34551053 @ 75.607  pnl -0.04526988  run:1367:arm:4     <- desk arm
+1432  cover 0.34551053 @ 75.607  pnl -0.04526988  run:1367:flatten   <- ratchet
+```
+
+True net **−$0.11402031**, and the peak was **+$0.160317** unrealized, not the
++$0.097 I quoted. I had seen the duplicate row in my own anchor query and
+**dismissed it as a JOIN artifact.** It was two real fills. Both agents
+independently corrected me from `realized_pnl_usd`.
+
+### H8 — "a tighter (stop, target) pair from the reachable band has higher expectancy" → **REFUTED, and it kills my own cycle-22 direction**
+
+Replayed 30 crypto entries against 1-minute candles, scoring which of the
+stop or the target is hit first from entry (same-bar ties scored as a stop —
+conservative), net of the 0.09% round trip:
+
+| stop% | tgt% | R:R | wins | stops | neither | expectancy%/trade |
+|---|---|---|---|---|---|---|
+| 0.50 | 1.00 | 2.0 | 8 | **17** | 5 | **−0.1067** |
+| 0.50 | 1.10 | 2.2 | 8 | **17** | 5 | −0.0800 |
+| 0.60 | 1.20 | 2.0 | 5 | **16** | 9 | **−0.2100** |
+| 0.80 | 1.60 | 2.0 | 7 | 9 | 14 | +0.0433 |
+| 1.00 | 2.00 | 2.0 | 6 | 5 | 19 | +0.1433 |
+| **1.24** | **2.50** | **2.0** | **6** | **5** | 19 | **+0.2033** |
+| 2.00 | 4.55 | 2.3 | **0** | 1 | 29 | −0.1567 |
+| 2.50 | 5.00 | 2.0 | **0** | 1 | 29 | −0.1733 |
+
+**The band I derived from H7 last cycle — stop 0.5–0.6%, target 1.1–1.2% — is
+the WORST in the table.** Tight stops are crossed constantly: 16–17 of 30
+legs stop out. H7 measured what the market *offers*; it could not see what
+the market *takes on the way there*, and I said as much before running this,
+which is the only reason the wrong remedy was not shipped.
+
+**The best pair keeps the CURRENT stop (~1.24%) and cuts only the target,
+4.55% → 2.50%.** Same 2:1 ratio, so the existing R:R gate is untouched.
+
+### The honest limit on H8, stated before anyone quotes the numbers
+
+**19 of 30 legs hit neither stop nor target and are scored as 0.** In reality
+they close at the horizon with some P&L, so the *absolute* expectancy figures
+are dominated by that assumption and should not be quoted as returns.
+
+What IS robust is the win column: **a 2.50% target is reached 6 times in 30;
+4.55% and 5.00% are reached ZERO times.** That comparison needs no scoring
+assumption, and it is sufficient on its own to say the current target band is
+wrong while the current stop is not.
+
+### The ratchet's third fire — and Agent B refuted the fix I had specified
+
+`stop_mechanism {"mechanism":"breakeven_ratchet","peak":0.136836,
+"arm":0.1045,"total":−0.090510,"exit_fee":0.0522}`
+
+**It armed at 13:05:06Z, watched 6 observations above its floor, and fired at
+−$0.0905 against a floor of +$0.0522 — 273% slippage.** A rail whose stated
+purpose is *"once a position has been in profit, do not let it go negative"*
+closed this one negative by its own definition.
+
+| fire | floor | fired at | slippage | true net |
+|---|---|---|---|---|
+| AVAX 1335 | +0.199 | +0.1183 | 41% | −$0.14144 |
+| FIL 1358 | +0.028 | +0.0151 | 46% | +$0.00253 |
+| **SOL 1367** | +0.0522 | **−0.0905** | **273%** | **−$0.11402** |
+| | | | **cumulative** | **−$0.25293, 0 of 3 net gains** |
+
+**Agent B refuted the fix I specified at cycle 13.** I had said: correct
+defect (b) — the inflated `BREAKEVEN_FEE_RATE` — together with the round-trip
+floor. B's replay of all four variants shows **fixing (b) makes this trade
+strictly worse**, because the inflated rate *raises* the floor (+$0.0522 vs
++$0.0235) and a higher floor is more protective. The only saving combination
+is [fix the arm] + [keep the wrong rate on the floor], and its arm cleared by
+**1.5% on a single observation** — a knife-edge, not an engineering result.
+
+**And B killed the cadence fix too:** on 1-minute data the total crossed the
+$0.0522 floor **9 times between 12:35 and 13:00 while on its way to a +$0.166
+peak.** A faster poll under a fixed arm would have scalped the winner at
++$0.027. **Fixing cadence alone converts a rail that misses every giveback
+into one that cuts every winner.**
+
+### WHY the trade lost — the desk gave itself no winning branch
+
+Agent A's finding: the full-position breakeven cover was **75.4421**, and the
+market printed at or below it for **66 of the 84 minutes** the position was
+open. The desk's only pre-committed exit was the cycle-4 arm at **75.56 —
+above the 75.51 entry and above breakeven**, i.e. arithmetically guaranteed
+to lose. It described that arm as *"preserving profit."* **It placed zero
+profit-side arms across all five cycles.**
+
+The `recall` layer at cycles 4 and 5 returned three prior runs with the
+identical failure — including **run 1358 from that same morning, "kept 4% of
+the high-water mark."** Run 1367 kept **−83%**.
+
+### Recommendation — the first one this session I would actually ship
+
+**Cut the target band from ~4.55% to ~2.50% and leave the stop and the R:R
+ratio alone.** Evidence: 0 wins in 30 at 4.55%, 6 wins in 30 at 2.50%, same
+2:1 gate, and H7's independent finding that the market offered the 4.55%
+target on 1 leg in 28.
+
+Still NOT shipping the ratchet package — B's variant replay shows every
+single-defect fix makes it worse or knife-edge. That mechanism needs a
+redesign, not a patch, and the redesign needs its own experiment.
+
 ## Cycle 22 — 13:1xZ (anchor 13:19:28): **H7 — the market offers 1.14%, the gate demands 4.55%. The remedy is now specified by measurement.**
 
 **PROFIT-OR-LOSS FIRST.** No closes. SOL run 1367 short holding **+$0.095**
