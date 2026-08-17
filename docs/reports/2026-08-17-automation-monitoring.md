@@ -7,6 +7,78 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 27 — 15:4xZ (anchor 15:49:23): **built the sweep's solution — arms are now labelled protective or defensive**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.167**
+unrealized — third consecutive deepening (−$0.022 → −$0.139 → −$0.167). Day
+08-17 **+$4.13**. GitHub Actions still **major_outage**.
+
+### Live risk on the open book
+
+| | |
+|---|---|
+| entry / mark / stop | 6.2950 / 6.3173 / **6.37998** |
+| stop distance from mark | **0.99%** |
+| travelled toward stop | **26.2%** |
+| take-profit | 6.06838 (−3.60%, in the never-reached band per H6) |
+
+Not urgent. But its **last decision at 15:21:20Z was `conf 0.0 / "light cycle:
+no LLM verdict"`** — a held, losing book that got no management look that
+cycle. That is the repeat watch firing on a live position, not an idle one.
+
+### The solution the sweep demanded, built
+
+The sweep found the day's three losses shared one cause: **every exit was
+priced against a number that did not describe the position's own P&L.** The
+general measurement was 134 arms with a live position — **57 (43%) fire on
+the losing side of breakeven.**
+
+Shipped into `order_intent.py` (branch `c27`, PR blocked by the outage):
+
+**1. `classify_arm(...) -> "protective" | "defensive" | None`** — fee-inclusive,
+so the band between breakeven and entry, which looks profitable on price
+alone, classifies as defensive. **It is a label, never a veto**: a defensive
+arm is a legitimate stop. The defect is that the two are indistinguishable,
+so SOL 1367 described a guaranteed-loss level as *"preserving profit"* and
+never placed the profit-side arm it believed it already held.
+
+**2. `arm_level_implausible(...)`** — run 1297 LTCUSDT armed at **44700.00**
+against an entry of **44.09**, ~1000× out and unfireable for the run's life.
+#446's unit-slip converter rails `order_params` percentages; **nothing
+covered arm levels**. Deliberately loose at 10× so it catches decimal slips,
+not aggressive targets.
+
+### Verification
+
+* Fail-before red on all 7 tests; green after.
+* **4 mutants, 4 killed** — fees dropped from the boundary; short direction
+  inverted; implausibility made one-sided; condition guard deleted.
+* **M4 initially SURVIVED.** My junk-input test used arms with a *missing
+  level*, all caught by the level parse, so nothing exercised a **bad
+  condition with a valid level**. Added `price_sideways` / `""` /
+  `"PRICE_ABOVE_OR_SO"` / `None` at a valid level. Then it killed.
+* ruff clean; full suite running.
+
+### What this does NOT do, stated before anyone assumes it
+
+It labels; it changes no exit. **Nothing consumes the label yet.** The next
+step is a brief line telling the desk which kind of arm it holds — that is
+where the 43% turns into behaviour. I am not adding it in the same change,
+because the label's correctness is arithmetic and testable now, while the
+brief line's effect on desk behaviour is neither and needs its own
+measurement.
+
+### Recommendations
+
+1. **Wire the label into the position brief** once merged, then measure
+   whether profit-side arms start appearing.
+2. Merge queue is blocked: **#471 (R:R ceiling)** and now **c27** both wait
+   on the outage and on the red dependency audit.
+3. Dependency bump (`aiohttp`, `python-multipart`, `starlette`) remains the
+   highest-priority owner call.
+
+---
+
 # 24-HOUR VERIFICATION SWEEP — 2026-08-17 15:37Z (anchor 15:37:24)
 
 Adversarial pass over this loop's own output. Running image
