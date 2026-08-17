@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T18:50Z",
+  "as_of": "2026-08-17T19:20Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.13; R:R CEILING FIRED TWICE on run 1375 - target 3.02% (dead zone per H6) pulled to 1.41% (reachable per H7); mechanism exercised, P&L unmeasured; but 1375's stop 0.47% is in H8's WORST band and the ceiling cannot fix a stop"
+    "note": "day +$4.13, AVAX 1370 recovered to -$0.183; R:R ceiling fired on the LIVE book but its take_profit is UNCHANGED - the ceiling is ENTRY-ONLY; also found risk_engine NULLs take_profit when the trail engages (2nd cause of 0-in-210)"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

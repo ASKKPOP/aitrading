@@ -7,6 +7,87 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 34 — 19:1xZ (anchor 19:19:31): **the ceiling fired on the LIVE book and changed nothing — it is an entry-only rail**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short recovered to
+**−$0.1830** (from −$0.3577). Day 08-17 **+$4.13**. 24 decisions, 1
+no-verdict.
+
+### FAILED — a scope limit on my own change, found by following it
+
+The ceiling now has **3 fires**, and the third landed on the open book:
+
+| fire | run | note |
+|---|---|---|
+| 17:56:00Z | 1375 | `target_pct 3.02 pulled to 1.41 (3x stop 0.47)` |
+| 18:27:45Z | 1375 | `target_pct 3.02 pulled to 1.425 (3x stop 0.475)` |
+| **18:58:45Z** | **1370 (live short)** | `target_pct 4.1 pulled to 2.4 (3x stop 0.8)` |
+
+**And AVAX 1370's actual take-profit is unchanged at 6.06838 (−3.60%),** the
+value written at entry six hours ago.
+
+Verified in code: `take_profit` is passed once at `open_position` and
+**there is no path that revises it on a live book**. The R:R ceiling clamps
+*parsed params*; parsed params reach a position only at entry.
+
+**So the ceiling is an ENTRY-time rail, not a management rail.** On the one
+fire against a live position — the very book that prompted the whole target
+investigation — **it changed nothing.** Its value is confined to positions
+opened after it shipped.
+
+I described this yesterday as moving "a live watcher level into the range the
+market actually trades" (cycle 24). **That is true only for new entries**,
+and I did not say so at the time.
+
+### Correcting cycle 24 as well: a second cause of the 0-in-210
+
+Cycle 24 concluded the take-profit had never fired in 210 stopped runs
+because the level was **unreachable**. There is a second mechanism I missed:
+
+```
+risk_engine.py:656
+UPDATE positions SET stop_loss = ?, take_profit = NULL WHERE id = ?
+```
+
+**When the trailing stop engages, it DELETES the take-profit.** A position
+that trails loses its profit target outright.
+
+Scope of the correction, measured: **11 of 210 stopped runs** ended
+`stop_event:trailing_lock`, so at most ~5% had their TP nulled this way.
+**Unreachability remains the dominant cause** and cycle 24's conclusion
+survives — but it was not the only one, and the second is a deliberate
+`NULL` rather than a level the market never reached.
+
+### The default is too generous against what the market offers
+
+Even the clamped value is thin. At 1370's 0.8% stop the 3× ceiling gives
+**2.4%**, and H7 measured available excursion at median **1.14%**, p75
+**1.89%**. **2.4% is still above p75.**
+
+`RR_CEILING=2.0` would give **1.6%** on that stop — inside the band. That is
+the config change already documented; today's fires are the first live
+argument for it rather than a replay argument.
+
+### Standing rails
+
+| rail | fires | verdict |
+|---|---|---|
+| R:R ceiling | 3 | behaves as specified, **entry-only**, no P&L yet |
+| corrected loss floor | **0** all day | unexercised |
+| arm classify | label only | nothing consumes it |
+| breakeven ratchet | 3 | −$0.25293, 0 net gains |
+
+Run 1375 (VZ, us-stock) carries the first two clamps and has **0 trades in 10
+cycles** — the clamped target is still untested by a fill.
+
+### Recommendations
+
+1. **Say "entry-only" wherever the ceiling is described.** It cannot help an
+   open book.
+2. **`RR_CEILING=2.0`** now has a live argument, not just a replay one.
+3. **The trailing stop nulling take-profit deserves its own look** — it is
+   deliberate, but nothing tells the desk its target has been deleted.
+
 ## Cycle 33 — 18:4xZ (anchor 18:49:29): **the R:R ceiling fired — twice, on real tape, exactly as specified**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3577**. Day
