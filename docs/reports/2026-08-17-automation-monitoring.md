@@ -7,6 +7,73 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 36 — 20:1xZ (anchor 20:19:35): **built the line that breaks the rails' silence — with the before-measurement already on tape**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3045**. Day
+08-17 **+$4.13**. 12 decisions, 1 no-verdict. Ceiling holds at 4 fires.
+
+### The deferral ends because the cost became measurable
+
+I put this off twice on the grounds it "needs its own measurement". Cycle 35
+supplied one: run 1375 requested **`target_pct` 3.02% three times in 95
+minutes** while its stop drifted 0.47 → 0.475 → 0.48. Clamped every time.
+Request never moved. The clamped values it actually received were
+**1.41, 1.425, 1.44** — and it went on asking for 3.02.
+
+`order_params` notes are journalled and never reach the prompt. **The desk
+was corrected and never told.**
+
+### `_railed_params_line` — names the rule, not just the number
+
+> *"A rail changed your last bracket: target_pct 3.02 pulled to R:R ceiling
+> 1.41 (3x stop 0.47) — unreachable targets never fill. Propose your next
+> bracket within that rule rather than re-sending the value it cut — the rail
+> will cut it again."*
+
+The design decision worth stating: **a desk shown "1.41" learns one value; a
+desk shown "3× your stop" can derive the next one itself.** One of the four
+tests exists solely to pin that — it fails if the line degrades to numbers
+alone, and the mutant that stripped the rule was killed by it.
+
+Wired into the brief parts list, so it renders on **flat books too** — which
+matters, because run 1375 has no position and is exactly the run that needed
+telling.
+
+### Verification
+
+* Fail-before red on all 5 tests; green after.
+* **3 mutants, 3 killed** — unwired from the brief; renders when nothing was
+  railed; rule stripped to bare numbers.
+* 320 tests in the two affected files pass; ruff clean; full suite running.
+
+### The after-measurement is already specified and its baseline exists
+
+**Before:** run 1375, three cycles, identical 3.02% request, no notification.
+**Test:** once this deploys, does its requested `target_pct` change?
+
+That is a clean before/after on live tape with no new instrumentation. **If
+the request stays at 3.02%, the line failed and I will report it as such** —
+the same standard that removed #468 from the fixed column.
+
+### Standing rails — one no longer silent
+
+| rail | fires | tells the desk? |
+|---|---|---|
+| R:R ceiling | 4 | **yes, once this deploys** |
+| arm classify | label only | **no — still silent** |
+| corrected loss floor | 0 | unexercised |
+| breakeven ratchet | 3 | −$0.25293, 0 net gains |
+
+`classify_arm`'s label is still unconsumed. The mechanism to surface it now
+exists and reuses this line's shape; that is the next candidate.
+
+### Recommendations
+
+1. **Deploy and watch run 1375's next requested target.** One number decides
+   whether this worked.
+2. **`RR_CEILING=2.0`** still stands — the 3× default lands above H7's p75.
+3. AVAX 1370 remains the only open book.
+
 ## Cycle 35 — 19:4xZ (anchor 19:49:31): **the ceiling corrects the desk silently, and the desk has now asked for the same impossible target three times**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3697**,
