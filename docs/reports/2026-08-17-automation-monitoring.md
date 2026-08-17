@@ -7,6 +7,80 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 29 — 16:4xZ (anchor 16:49:38): **H10 — the held-book excess survives controlling for host load. It is structural.**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.103**,
+unchanged. Day 08-17 **+$4.13**. 24 decisions, **0 no-verdicts**. GitHub
+still **major_outage**.
+
+### The circular test I caught and threw away
+
+My first H10 design split decisions by "minutes containing any no-verdict"
+and compared inside vs outside. It returned **0.00% outside** for both held
+and flat — which is a **tautology**: a minute is only "outside" if it
+contains no failures, so the outside bucket is 0% by construction. It looked
+like a clean result and measured nothing.
+
+### H10 — "the held-book excess is just shared host load" → **REFUTED**
+
+*Falsifier: with load controlled, held and flat converge.* Grouped every
+decision by HOUR, kept only the **111 hours containing BOTH held and flat
+decisions** — so both states faced the same host conditions — then compared:
+
+| within the same hours | decisions | no_verdict | rate |
+|---|---|---|---|
+| **HELD** | 573 | 53 | **9.25%** |
+| FLAT | 1,693 | 47 | **2.78%** |
+| | | **matched ratio** | **3.33×** |
+
+Controlling for load did not shrink the gap — it moved from 3.27× (H9,
+uncontrolled) to **3.33×**. **Held books are not merely cycling during busy
+periods; they fail more within the same hours.** The excess is structural to
+carrying a position.
+
+### The size delta, measured rather than assumed
+
+Rendered both prompt shapes against a real run (AVAX 1370's own numbers):
+
+| block | chars |
+|---|---|
+| position-state block, HELD | **1,593** |
+| position-state block, FLAT | **0** |
+| order-intent + arm instructions (renders only when `pos_qty`) | **~710** |
+| **held-book prompt surplus** | **≈2,300 chars** |
+
+So a held book carries roughly **2,300 extra characters** of prompt that a
+flat book never sends, on top of an already-large context. That is a real,
+measured difference in the same direction as the failure rate.
+
+**It is still not proof.** Two things I will not skip past:
+
+1. The light path already grants held books more OUTPUT budget
+   (`max_tokens = 280 if pos_qty else 200`) — partial compensation exists.
+2. **Correlation of direction is not causation of magnitude.** ~2,300 extra
+   input characters producing a 3.3× failure multiplier is a large lever for
+   a modest input change, and I have no per-call latency-vs-size data to
+   justify that slope.
+
+### What will be done
+
+**Log prompt characters and elapsed seconds on the decision event, split by
+`pos_qty`.** That is one field on an event that already exists, it is pure
+telemetry, and it converts the last hypothesis in this chain into a
+measurement. It is the same move that turned the no-verdict argument into
+the timeout answer (#459 → #466 → cycle 26).
+
+**I am not shipping it during the outage.** The branch queue is already two
+deep and unmergeable (`c27`, #471); a third would just be more code that
+cannot reach prod. It goes in the moment Actions returns.
+
+### Why this chain matters in P&L terms
+
+A held book losing its cycle is an open position going unmanaged for a full
+interval. AVAX 1370 did exactly that at 15:21:20Z while sitting at a loss.
+**9.25% of held-book cycles are lost** — roughly one management look in
+eleven, on the only books that have money at risk.
+
 ## Cycle 28 — 16:1xZ (anchor 16:19:30): **H9 — a held book is 3.3x more likely to lose its decision cycle than a flat one**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short recovered to
