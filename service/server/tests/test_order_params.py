@@ -302,12 +302,21 @@ class TargetCeilingTests(unittest.TestCase):
         self.assertAlmostEqual(out2.target_pct, 3.60, places=6)
 
     def test_the_ceiling_never_lands_below_the_fee_floor(self):
-        # A tiny stop would put 2x stop under the round-trip fee floor; the
-        # fee floor must still win, or the target is not a target.
+        """On a HIGH-fee market a tight stop puts ceiling x stop under the
+        round-trip fee floor. The floor must win, or the ceiling would set a
+        target cheaper than the cost of taking it.
+
+        The crypto rate (0.00045) cannot exercise this: the smallest legal
+        stop times the ceiling already clears that floor, so a crypto-only
+        test passes whether the guard exists or not — it did, and the mutant
+        survived until this case replaced it."""
+        rate = 0.005                       # 0.5%/side, a high-fee venue
+        fee_floor = rate * 2 * 100.0 * op.FEE_MULTIPLE      # = 3.0%
         out = op.parse_order_block({"stop_pct": 0.30, "target_pct": 9.0},
-                                fee_rate=0.00045)
-        fee_floor = 0.00045 * 2 * 100.0 * op.FEE_MULTIPLE
-        self.assertGreaterEqual(out.target_pct + 1e-9, fee_floor)
+                                   fee_rate=rate)
+        self.assertGreater(fee_floor, 0.30 * 3.0,
+                           "test is vacuous unless the fee floor binds")
+        self.assertAlmostEqual(out.target_pct, fee_floor, places=6)
 
     def test_the_result_still_satisfies_the_rr_floor(self):
         for stop, tgt in ((1.24, 4.55), (2.0, 9.0), (0.8, 7.0)):
