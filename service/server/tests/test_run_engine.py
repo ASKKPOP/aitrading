@@ -2327,7 +2327,7 @@ class LossVerdictBriefTests(unittest.TestCase):
     def test_it_is_WIRED_into_the_position_brief(self):
         import inspect
         src = inspect.getsource(run_engine._position_state_line)
-        self.assertIn("_loss_verdict_line(run, pnl)", src,
+        self.assertIn("_loss_verdict_line(run, pnl, cfg)", src,
                       "loss verdict not wired into the position brief")
 
 

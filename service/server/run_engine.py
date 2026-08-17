@@ -4320,7 +4320,8 @@ LOSS_FLOOR_USD = 0.99
 LOSS_FLOOR_FRAC = 0.006   # of run budget — what $0.99 WAS at the $1000 seed
 
 
-def _loss_floor_usd(run: "dict | None" = None) -> float:
+def _loss_floor_usd(run: "dict | None" = None,
+                    cfg: "dict | None" = None) -> float:
     """The owner's house floor for a losing run (2026-08-06): below this, the
     run is a candidate to be closed and its slot returned for a fresh thesis.
 
@@ -4331,20 +4332,29 @@ def _loss_floor_usd(run: "dict | None" = None) -> float:
     spent 2026-08-13 dutifully closing fee-scale "wounds" on big books while
     their authored 3–5% stops never got to act. floor = max(USD floor,
     FRAC × run budget): same rule, scale-aware threshold. Runs without a
-    budget (older rows, tests) keep the plain dollar floor."""
+    budget (older rows, tests) keep the plain dollar floor.
+
+    The budget is read from `cfg` FIRST: `run_budget_usd` is not a column on
+    `trading_runs` — it lives in `config_snapshot_json`. Reading it off the
+    run row returned 0 on every prod row, so this returned the flat $0.99 for
+    the four days after the scaling shipped (measured 2026-08-17: 20/20 live
+    runs, intended floors $2.40–$13.07). The `run` fallback stays for enriched
+    dicts."""
     try:
         base = abs(float(os.getenv("RUN_LOSS_FLOOR_USD", str(LOSS_FLOOR_USD))))
     except (TypeError, ValueError):
         base = LOSS_FLOOR_USD
     try:
         frac = float(os.getenv("RUN_LOSS_FLOOR_FRAC", str(LOSS_FLOOR_FRAC)))
-        budget = float((run or {}).get("run_budget_usd") or 0)
+        budget = float((cfg or {}).get("run_budget_usd")
+                       or (run or {}).get("run_budget_usd") or 0)
         return max(base, frac * budget)
     except (TypeError, ValueError):
         return base
 
 
-def _loss_verdict_line(run: dict, pnl: dict) -> str:
+def _loss_verdict_line(run: dict, pnl: dict,
+                       cfg: "dict | None" = None) -> str:
     """The owner's house rule on a losing run, handed to the desk with the
     arithmetic that decides whether it is a real loss or a tick.
 
@@ -4373,7 +4383,7 @@ def _loss_verdict_line(run: dict, pnl: dict) -> str:
     """
     try:
         total = float(pnl.get("total") or 0)
-        floor = _loss_floor_usd(run)
+        floor = _loss_floor_usd(run, cfg)
         if total >= -floor:
             return ""
         pos = pnl.get("position") or {}
@@ -4932,7 +4942,7 @@ def _position_state_line(run: dict, cfg: dict, pos_qty: float,
                             f"high-water mark.")
             bits.append(_floor_status_line(run, pnl, peak))
             bits.append(_excursion_scale_line(run, pnl, peak))
-            bits.append(_loss_verdict_line(run, pnl))
+            bits.append(_loss_verdict_line(run, pnl, cfg))
             bits.append(_recall_line(run, pnl, pos_qty))
             try:
                 want = abs(float(thesis.get("expected_move_pct")))
