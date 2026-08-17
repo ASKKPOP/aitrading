@@ -286,3 +286,34 @@ what the rail's exit actually realized? Crossing a level is not profiting
 from it — for a short, `price_below → reduce` banks, `price_above → reduce`
 cuts a loser.
 
+## STRUCK 2026-08-17 cycle 17 — "LLM host is ~5x oversubscribed" (refuted by re-measurement)
+
+Cycle 12 concluded the local model host was ~5x oversubscribed from
+`178 calls/h x ~100s = 17,800s vs 3,600 available`. **The ~100s input was
+sampled during a 06h-08h latency anomaly.** Re-measured with call volume
+unchanged (189/h): decision calls take **3.9-7.0s**, giving **0.29x** — not
+oversubscribed.
+
+Hourly no-verdict rate for 2026-08-17: ~3% baseline (00h-05h), then 20.0% /
+17.4% / 13.0% (06h/07h/08h), then **0% (09h, 10h)**. **Episodic, not
+structural.** Cause of the episode unknown; do not invent one.
+
+Also struck: the "reduce call volume or add host capacity" recommendation
+built on that arithmetic. #468 (decision tier 300s) stays — cheap, plausibly
+protective against a repeat — but is NOT established as effective; it spanned
+the episode without moving the rate (18.5% -> 23.1%).
+
+## RE-STATED 2026-08-17 cycle 17 — panel fallback on exits is a GOVERNANCE item, not a P&L one
+
+Tested: fallback-authored closes n=16, total **-$4.206**, mean **-$0.263**,
+31% wins. All other closes n=225, total -$180.417, mean **-$0.802**, 42%
+wins. **Fallback closes realize BETTER on the mean.** The "it costs money"
+framing is refuted.
+
+Confounds not controlled: book size, regime, n=16 vs 225. So this is "no
+evidence of harm", not "the fallback is good".
+
+The governance concern is unchanged and must be argued on its own terms:
+`_order_discussion` fails OPEN, so a path that labels itself "not the AI"
+has authored 10 closes/reduces while §7b makes the panel the final author.
+

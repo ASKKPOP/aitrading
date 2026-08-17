@@ -7,6 +7,103 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 17 — 10:5xZ (anchor 10:50:29): **first cycle under the experimental rule — three hypotheses stated, three refuted, including my own cycle-12 conclusion**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 10:15:05Z. Book flat. Day 08-17
+**+$4.26**. 11 decisions, **0 no-verdicts**.
+
+Per the owner rule added this session, hypotheses were written before the
+data and each carries its falsifier.
+
+### H1 — "the no-verdict rate fell because I stopped probing the host" → **REFUTED**
+
+*Falsifier: the rate stays low across a window with no probes and unchanged
+call volume.* Measured the hourly rate for the whole day:
+
+| hour | no_verdict / decisions | rate |
+|---|---|---|
+| 00h–05h | 0/21, 1/21, 2/24, 0/21, 0/20, 1/20 | **~3% baseline** |
+| **06h** | **5/25** | **20.0%** |
+| **07h** | **4/23** | **17.4%** |
+| **08h** | **3/23** | **13.0%** |
+| 09h | 0/19 | **0%** |
+| 10h | 0/18 | **0%** |
+
+**My first probe ran at ~07:0x. The 06h hour — the worst of the day at 20% —
+predates every probe I made.** My probing cannot explain the spike. It may
+have prolonged 07h/08h; it did not start it.
+
+### The bigger refutation: my own cycle-12 root cause does not survive re-measurement
+
+Cycle 12 concluded the local model host was **~5× oversubscribed**, from
+`178 calls/h × ~100s per call = 17,800 GPU-seconds demanded vs 3,600
+available`. **The ~100s input was sampled during the 06h–08h anomaly.**
+
+Re-measured now, call volume unchanged:
+
+```
+cycle-12 claim: 178 calls/h x ~100s = 17,800s vs 3,600  =>  4.9x oversubscribed
+re-measured   : 189 calls/h x  ~5.5s =  1,040s vs 3,600  =>  0.29x
+```
+
+Two decision-tier calls just now: **7.0s and 3.9s.** Call volume is if
+anything *higher* (189/h vs 178/h) and the host is **not oversubscribed at
+all**.
+
+**So the structural explanation is wrong.** What actually happened was a
+**transient latency episode spanning 06h–08h** — during which the
+timeouts-matched-to-the-second finding still holds — against a ~3% baseline
+before it and 0% after. Cause of the episode: still unknown, and I am not
+going to invent one. It is now bounded as *episodic, not structural*, which
+is a different problem from the one I reported.
+
+**What survives from cycles 10–12:** #468 did not reduce the rate (measured,
+still true); the four earlier hypotheses stay refuted; the timeouts during
+the episode were real. **What does not survive:** the oversubscription
+arithmetic and the "reduce call volume or add capacity" recommendation built
+on it. #468 remains cheap and plausibly protective against a repeat episode,
+but it is **not established as effective** and should not be described as
+such.
+
+### H2 — "panel-fallback exits realize worse than panel-authored exits" → **REFUTED**
+
+Cycle 16 found 10 closes/reduces authored by a path labelled *"panel
+fallback (not the AI)"* and I implied that was costing money. Tested across
+every closed leg on the platform:
+
+| | n | total | mean | win rate |
+|---|---|---|---|---|
+| fallback-authored closes | 16 | **−$4.206** | **−$0.263** | 31% |
+| all other closes | 225 | −$180.417 | **−$0.802** | 42% |
+
+**Fallback closes realize BETTER on the mean, not worse.** The hypothesis is
+refuted on P&L. Caveats I will not hide: n=16 against 225, the win rate is
+lower, and book size is an obvious confound I have not controlled for — so
+this is "no evidence of harm", not "the fallback is good".
+
+**The governance point stands on its own terms** — an unreviewed path
+labelling itself "not the AI" closes positions, and §7b says the panel is
+the final author. But it must be argued as governance, **not** as a P&L
+defect, because the P&L evidence does not support that.
+
+### What this cycle produced
+
+Three refutations and no new claim. Under the old habit I would have carried
+"the host is 5× oversubscribed" and "the fallback is losing money" forward
+into the next session's recommendations; both are now struck by measurement.
+**A cycle whose entire output is killed hypotheses is a good cycle** — the
+alternative was two confident wrong answers propagating into the corpus.
+
+### Recommendations
+
+1. **Do not act on the oversubscription finding.** Struck. If the episode
+   repeats, `no_response` (#466) counts it and the hourly-rate query above
+   is the instrument.
+2. **Re-state the fallback item as governance**, with the P&L refutation
+   attached, so nobody re-derives a money argument for it.
+3. Unchanged and still gated: the ratchet baseline + round-trip package
+   (arithmetic, not statistics), and the fleet slot-ledger over-commitment.
+
 ## Cycle 16 — 10:1xZ (anchor 10:19:26): **an unreviewed fallback closed the book, and the arm replay's answer is one outlier**
 
 **PROFIT-OR-LOSS FIRST.** SUI run 1356 closed 10:15:05Z: `signals.pnl`
