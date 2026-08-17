@@ -7,6 +7,30 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+### #462 DEPLOYED and verified — image `20260817-salvage-verdict` (merge `1fb233a`)
+
+Replayed the real severed payload through the deployed function in the
+container:
+
+```
+recovered: sell 0.66 {'intent': 'reduce', 'size_frac': 0.5}
+no verb -> None: True
+junk    -> None: True
+```
+
+**The exact decision AVAX 1335 cycle 16 lost — a half-position reduce — now
+survives the truncation.** The corrected loss floor (#460), the no-verdict
+diagnostic (#459) and the Plan 26 flag all survived the from-main rebuild.
+0 tracebacks.
+
+Next cycle reads the `verdict_salvaged` tape: every fire is a decision the
+platform would previously have thrown away, so the count is a direct measure
+of what the truncation was costing.
+
+**Session ship count: 18 PRs.**
+
+---
+
 ## Cycle 4 — 02:5xZ (anchor 02:59:50): **the day's +$4.24 is one sizing defect, and the desk's exit was eaten by a truncation**
 
 **PROFIT-OR-LOSS FIRST.** Day 08-17 realized **+$4.24** (pnl_audit ledger,
