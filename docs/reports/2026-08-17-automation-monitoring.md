@@ -7,6 +7,117 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 16 — 10:1xZ (anchor 10:19:26): **an unreviewed fallback closed the book, and the arm replay's answer is one outlier**
+
+**PROFIT-OR-LOSS FIRST.** SUI run 1356 closed 10:15:05Z: `signals.pnl`
++$0.04999261, open fee $0.02943504 → **true net +$0.02055757** (matches
+`realized_pnl_usd` to 8dp). Day 08-17 **+$4.26**, resid 0.05, 3 flattens.
+Book flat.
+
+On $65.41 notional the gross move was $0.0794 and the round trip took
+**$0.0588 — 74.1% of gross.** It cleared the fee hurdle by **0.031
+percentage points**. A 0.03% adverse tick at the close instant makes it a
+loss. That is a fee-hurdle graze, not an edge.
+
+### FAILED — the close was authored by a rule fallback, not the desk
+
+Both agents converged independently: **no rail fired** (`client_order_id
+run:1356:cyc:9`, zero `stop_mechanism` on the run, and only two on the whole
+platform today — 1335 and 1358). But the closing cycle's discussion event
+reads:
+
+```json
+{"proposed": {"action": "buy", "confidence": 0.55},
+ "error": "panel fallback (not the AI): decision json unparseable"}
+```
+
+`_order_discussion` **fails open**. The 4-analyst panel — the mandated final
+author of every order under §7b — crashed on unparseable JSON, and the cheap
+tier's unreviewed proposal closed the book. The OPEN (cycle 7) *was*
+panel-authored, raised 0.55 → 0.68. **The exit that ended the trade bypassed
+the final author.**
+
+I measured how often this happens: **29 panel fallbacks all time, 10 of them
+on a `close` or `reduce` intent.** Ten positions have been exited or trimmed
+by a path that explicitly labels itself "not the AI".
+
+### WHY the trade produced almost nothing
+
+Agent A's finding, checked against the tape: **the target existed to pass a
+gate, not as a forecast.** Cycle 6 refused the trade at 0.67551 because
+*"risk-reward fails the 2:1 rule"*. With `stop_pct 1.24` the floor demands a
+target ≥2.48%; every target the desk had published failed it (2.14%, 1.35%,
+2.01%, 2.31%). Cycle 7 entered at 0.6756 — **0.013% higher, materially the
+same price** — after moving the target 0.662 → **0.640**, the first value
+that clears the floor, at 5.27% depth. The `basis.verdict` for that change is
+`"adjusted"` with **`discussion: null`**.
+
+0.640 required **1.32%/hour for 4 hours**. SUI's entire realized range over
+the 60-minute hold was **0.21%**. The desk sized on a 4-hour thesis it had
+called unreachable one cycle earlier, then closed at 25% of that horizon
+citing a "stall" — while its own equity tape ran +0.011 → +0.057 → **+0.091
+(the trade's peak)**. It called an accelerating position stalled on a single
+0.018% uptick.
+
+### The two agents disagreed on the counterfactual, and the disagreement IS the finding
+
+* Agent B, live mark 0.67402 at 10:24:58Z: holding = **+$0.0942**, so the
+  close **forfeited $0.0736**.
+* Agent A, live mark 0.67615 at 10:31:13Z: holding = **−$0.1121**, so the
+  close **saved $0.133**.
+
+Both obeyed the live-mark rule. **The counterfactual flipped sign in seven
+minutes.** On a trade whose whole P&L range was $0.14 wide, the counterfactual
+carries no signal — which is itself the verdict on a 60-minute 0.12% noise
+capture. I am recording both numbers rather than picking the one that suits.
+
+### The arm replay — the follow-through I promised, and the answer is one run
+
+For the 4 crossings found in cycle 15, what a half-reduce at the arm level
+would have realized versus letting the rail's exit take the whole book:
+
+| run | side | rail net | half at arm | delta |
+|---|---|---|---|---|
+| 1175 SOL | buy | −0.28620 | −0.26924 | **−0.12614** |
+| 1293 UNI | short | −0.09489 | −0.06128 | **−0.01384** |
+| 1304 JTO | buy | −0.04620 | +0.10601 | **+0.12911** |
+| 1305 FIL | short | −0.72777 | +1.50032 | **+1.86421** |
+| | | | **TOTAL** | **+$1.85334** |
+
+**Strip FIL 1305 and the other three sum to −$0.011.** The entire case for
+arm precedence rests on one run. That is the same shape as the FIL oversize
+that was 100% of a day's P&L — and it means the honest answer to "should arms
+outrank rails" is still **not demonstrated**, on 4 observations with one
+outlier. I will not carry this forward as "arms would have made $1.85".
+
+### Also confirmed
+
+* **The 5-minute mark blindness is designed, not degraded.**
+  `POSITION_REFRESH_INTERVAL=300` is explicitly set on prod (verified). Marks
+  changed 13 times in the 60.4-minute hold — **4.69 min cadence**, matching
+  FIL 1358's 4.74. The whole favourable excursion occupied the last 3 marks.
+* **Ratchet: did not fire and was not close** — peak $0.0616 against a
+  $0.1306 arm (47%). But at the true round-trip rate the arm is $0.0588 and
+  **it would have armed**, with a floor never breached — so the position
+  would still be open. Its inertness did not save this trade.
+* **Ratchet running total unchanged at −$0.13891** over 2 fires.
+* **Today's exits by author: rails +$4.694 (1322, 1335, 1358); desk −$0.431
+  (1344, 1356).** Every dollar of the day came from rail-authored exits. n=5,
+  not a distribution — but it is the opposite of the story the arm-precedence
+  case needs.
+
+### Recommendations
+
+1. **Decide whether `_order_discussion` may fail open on EXITS.** 10 closes
+   or reduces have been authored by a path labelled "not the AI". This is a
+   governance question, not a tuning one.
+2. **Validate `plan_adherence` instead of accepting the desk's self-stamp** —
+   against `position_qty`, the prior cycle's published band, and the prior
+   cycle's target. Cycle 4 of this run asserted *"we keep the current short
+   position"* with `position_qty: 0.0` and stamped itself `followed`.
+3. **A target expansion that newly clears the R:R floor should require a
+   non-null `basis.discussion`.** Cycle 7 moved the target 2.5× with none.
+
 ## Cycle 15 — 09:4xZ (anchor 09:49:28): quiet; **the arm replay ran, and it partly refutes my own cycle-14 framing**
 
 **PROFIT-OR-LOSS FIRST.** No closes. SUI run 1356 short still open at
