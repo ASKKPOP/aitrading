@@ -2331,6 +2331,69 @@ class LossVerdictBriefTests(unittest.TestCase):
                       "loss verdict not wired into the position brief")
 
 
+class TruncatedVerdictSalvageTests(unittest.TestCase):
+    """Measured 2026-08-17, AVAX run 1335 cycle 16.
+
+    The light prompt asks for keys in this order: action, confidence, scores,
+    stop_pct/target_pct, order_intent, outlook, plan_adherence, report. A cut
+    inside the tail therefore loses only narrative — the whole traded decision
+    is already on the wire. That cycle authored a partial reduce, was cut at
+    1052 chars inside `plan_adherence`, and the platform discarded the entire
+    object and journaled `hold, confidence 0.0`. Seven and a half minutes
+    later a rail flattened the book at a worse price for a realized loss.
+    """
+
+    # The real shape from the tape: complete through `outlook`, severed
+    # exactly at `"plan_adherence":`.
+    REAL_TAIL = (
+        '{"action": "sell", "confidence": 0.66, '
+        '"scores": {"thesis_alignment": 0.7, "momentum_quality": 0.55, '
+        '"entry_quality": 0.6, "risk_context": 0.5}, '
+        '"stop_pct": 2.2, "target_pct": 7.0, '
+        '"order_intent": {"intent": "reduce", "size_frac": 0.5, "arm": null}, '
+        '"outlook": {"bias": "short", "exit": {"target_px": 5.9}, '
+        '"basis": {"verdict": "adjusted", "discussion": "partial reduction '
+        'secures gains and respects the planned invalidation trigger"}}, '
+        '"plan_adherence":')
+
+    def test_it_recovers_the_decision_from_the_real_severed_payload(self):
+        obj = run_engine._salvage_truncated_json(self.REAL_TAIL)
+        self.assertIsNotNone(obj, "the verdict was on the wire and was lost")
+        self.assertEqual(obj["action"], "sell")
+        self.assertAlmostEqual(obj["confidence"], 0.66)
+        self.assertEqual(obj["order_intent"]["intent"], "reduce")
+        self.assertAlmostEqual(obj["order_intent"]["size_frac"], 0.5)
+        self.assertEqual(obj["scores"]["thesis_alignment"], 0.7)
+
+    def test_a_verdict_without_a_verb_is_not_a_verdict(self):
+        self.assertIsNone(
+            run_engine._salvage_truncated_json('{"scores": {"a": 1}, "conf'))
+        self.assertIsNone(
+            run_engine._salvage_truncated_json('{"action": "sell", "sco'))
+
+    def test_it_never_touches_well_formed_or_junk_input(self):
+        for junk in ("", "I cannot answer", "{", "{]", None):
+            self.assertIsNone(run_engine._salvage_truncated_json(junk))
+
+    def test_a_severed_value_is_never_half_parsed(self):
+        # Cut in the MIDDLE of confidence's number: the last complete
+        # top-level pair is `action`, which alone is not a verdict.
+        self.assertIsNone(
+            run_engine._salvage_truncated_json('{"action": "buy", "confidence": 0.6'))
+        # Cut inside a string containing a brace must not be mistaken for
+        # structure.
+        obj = run_engine._salvage_truncated_json(
+            '{"action": "hold", "confidence": 0.4, "report": "a } brace", "x')
+        self.assertEqual(obj["report"], "a } brace")
+
+    def test_it_is_WIRED_into_the_light_path(self):
+        import inspect
+        src = inspect.getsource(run_engine._light_analysis)
+        self.assertIn("_salvage_truncated_json(text)", src,
+                      "a recoverable verdict is still being discarded")
+        self.assertIn("salvaged", src)
+
+
 class BriefJournalTests(unittest.TestCase):
     """Which brief lines rendered — journaled onto the decision event.
 

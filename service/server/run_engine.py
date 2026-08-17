@@ -3445,6 +3445,73 @@ def _last_decision_report(run: dict) -> str:
         return ""
 
 
+def _salvage_truncated_json(text: Any) -> "dict | None":
+    """Recover the decision from a verdict the token budget cut off mid-write.
+
+    The light prompt asks for its keys in a fixed order — action, confidence,
+    scores, stop_pct/target_pct, order_intent, outlook, plan_adherence,
+    report — so everything that DECIDES the trade is on the wire before the
+    narrative tail. A cut in that tail loses commentary, not the verdict.
+
+    Measured 2026-08-17 (AVAX run 1335 cycle 16): the desk authored a partial
+    reduce — *"partial reduction secures gains and respects the planned
+    invalidation trigger"* — and was severed at 1052 chars inside
+    `plan_adherence`. The whole object, `order_intent` included, was thrown
+    away and journaled as `hold, confidence 0.0`. Seven and a half minutes
+    later a rail flattened the book at a worse price for a realized loss.
+
+    Only ever reached where the alternative is NO verdict at all, so the
+    downside is bounded: it can convert a discarded decision into an executed
+    one, never degrade a decision the parser already accepted. Every
+    downstream rail (order-param validation, the intent compiler, the
+    confidence gates) still applies to what it returns.
+
+    Truncates at the last COMPLETE top-level pair — a half-written value is
+    never parsed — and returns None unless both `action` and `confidence`
+    survived, because a verdict missing its verb is not a verdict."""
+    if not isinstance(text, str) or not text.strip():
+        return None
+    m = re.search(r"\{.*", text, re.DOTALL)
+    if not m:
+        return None
+    body = m.group(0)
+    # Walk the text tracking string state, so a brace INSIDE a string value
+    # is never mistaken for structure. Record every comma that sits at the
+    # top level: that is a boundary between two complete pairs.
+    cuts: list[int] = []
+    depth = 0
+    in_str = False
+    escaped = False
+    for i, ch in enumerate(body):
+        if in_str:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            depth += 1
+        elif ch in "}]":
+            depth -= 1
+        elif ch == "," and depth == 1:
+            cuts.append(i)
+    for cut in reversed(cuts):
+        try:
+            obj = json.loads(body[:cut] + "}")
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(obj, dict):
+            continue
+        if obj.get("action") is None or obj.get("confidence") is None:
+            return None
+        return obj
+    return None
+
+
 def _no_verdict_diagnostic(text: Any) -> dict:
     """Why a light cycle produced no verdict — recorded, not guessed.
 
@@ -5432,11 +5499,24 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
     intent_block: Optional[dict] = None
     outlook_block: Optional[dict] = None
     plan_adherence: Optional[str] = None
+    salvaged = False
     if text:
         m = re.search(r"\{.*\}", text, re.DOTALL)
+        obj_or_none = None
         if m:
             try:
-                obj = json.loads(m.group(0))
+                obj_or_none = json.loads(m.group(0))
+            except (ValueError, TypeError):
+                obj_or_none = None
+        if not isinstance(obj_or_none, dict):
+            # The budget cut the verdict off mid-write; the decision itself
+            # precedes the narrative tail, so recover it rather than discard
+            # it. See _salvage_truncated_json.
+            obj_or_none = _salvage_truncated_json(text)
+            salvaged = obj_or_none is not None
+        if isinstance(obj_or_none, dict):
+            try:
+                obj = obj_or_none
                 a = str(obj.get("action") or "").strip().lower()
                 if a in ("buy", "sell", "hold", "retire"):
                     action = a
@@ -5487,6 +5567,18 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         # Record WHY there was no verdict; see _no_verdict_diagnostic.
         try:
             emit_telemetry_event(run["id"], "no_verdict",
+                                 _no_verdict_diagnostic(text))
+        except Exception:  # noqa: BLE001
+            pass
+    if salvaged:
+        # `report` is the narrative tail, so it is exactly what a truncation
+        # takes; say so rather than journal a blank sentence. The verdict
+        # itself is the desk's own.
+        if not report:
+            report = ("recovered from a truncated verdict — the desk's "
+                      "reasoning was cut off, the decision was not")
+        try:
+            emit_telemetry_event(run["id"], "verdict_salvaged",
                                  _no_verdict_diagnostic(text))
         except Exception:  # noqa: BLE001
             pass
