@@ -2386,6 +2386,58 @@ class AdherenceStampTests(unittest.TestCase):
                          "the journal still stamps silent cycles directly")
 
 
+class NoVerdictErrorClassTests(unittest.TestCase):
+    """Measured 2026-08-17, n=4 diagnostic fires: **empty x3, truncated x1**.
+
+    Truncation explains 25%. `empty` is the dominant class at 75% — and it
+    conflates two unrelated failures the instrument cannot currently tell
+    apart: the decision call RAISED (swallowed by a bare except, leaving
+    text=None) versus the model returned an empty string. The first is
+    infrastructure, the second is prompt or model behaviour, and they need
+    opposite fixes.
+
+    Splitting them costs nothing — this is a diagnostic, it changes no
+    decision and no order — and it unblocks the only class large enough to
+    matter."""
+
+    def test_a_raised_call_is_not_reported_as_an_empty_response(self):
+        d = run_engine._no_verdict_diagnostic(None, "TimeoutError: read timed out")
+        self.assertEqual(d["kind"], "error")
+        self.assertIn("TimeoutError", d["err"])
+
+    def test_a_genuinely_empty_response_is_still_empty(self):
+        for blank in (None, "", "   "):
+            self.assertEqual(
+                run_engine._no_verdict_diagnostic(blank)["kind"], "empty")
+
+    def test_the_error_note_is_bounded(self):
+        d = run_engine._no_verdict_diagnostic(None, "x" * 900)
+        self.assertLessEqual(len(d["err"]), 200)
+
+    def test_the_existing_classes_are_untouched(self):
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic("I cannot answer")["kind"], "no_json")
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic('{"action": "hold", "sc')["kind"],
+            "truncated")
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic('{"a": x}')["kind"], "malformed")
+
+    def test_text_wins_over_a_stale_error(self):
+        # A retry that succeeded must not be filed as an error.
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic("I cannot answer", "boom")["kind"],
+            "no_json")
+
+    def test_the_light_path_CAPTURES_the_exception(self):
+        import inspect
+        src = inspect.getsource(run_engine._light_analysis)
+        self.assertIn("llm_err", src,
+                      "the decision call still swallows its exception")
+        self.assertIn("_no_verdict_diagnostic(text, llm_err)", src,
+                      "the captured error never reaches the diagnostic")
+
+
 class TruncatedVerdictSalvageTests(unittest.TestCase):
     """Measured 2026-08-17, AVAX run 1335 cycle 16.
 
