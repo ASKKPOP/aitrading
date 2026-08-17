@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T01:55Z",
+  "as_of": "2026-08-17T03:05Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "#460 loss floor cfg fix shipped \u2014 20/20 runs were judged at $0.99 vs intended $2.40-$13.07; day realized -$0.54 on 1 trade"
+    "note": "day +$4.24 but ~all of it is one order_params-absent oversize; #462 salvages truncated verdicts; ratchet fix HELD - 3 defects cancelling"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

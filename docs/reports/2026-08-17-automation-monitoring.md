@@ -7,6 +7,178 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 4 — 02:5xZ (anchor 02:59:50): **the day's +$4.24 is one sizing defect, and the desk's exit was eaten by a truncation**
+
+**PROFIT-OR-LOSS FIRST.** Day 08-17 realized **+$4.24** (pnl_audit ledger,
+resid 0.00, 2 flattens). Three closes. Book now flat — 0 open positions.
+
+Both agents agree on the verdict and it is not a good one: **strip one
+defect and the fleet made about zero on the day.**
+
+### WHY the +$5.22 FIL win is not an edge
+
+FIL 1322 shorted $857 at 02:18:13Z and covered 6m30s later, **true net
++$4.833** (`signals.pnl` +5.219 omits the $0.386 open fee).
+
+`order_params` came back **`absent`** on that cycle. With no desk-authored
+size, sizing fell through to the engine default — `max_bet 522.27 × 0.8208
+× leverage 2 = $857.36`, matching the trade to 3dp. Every cycle where the
+desk **did** author size on this run:
+
+| cycle | size_frac | notional | confidence |
+|---|---|---|---|
+| 7 | 0.10 | $104 | 0.68 |
+| 11 | 0.05 | $52 | 0.78 |
+| 22 | 0.10 | $104 | 0.68 |
+| **39** | **absent** | **$857** | **0.66** |
+
+**The run's largest bet — 8.2× anything the desk ever chose — landed on its
+second-weakest conviction, purely because the JSON carried no size.** At the
+desk's own habitual 0.1 the identical trade nets **+$0.589**. So
+**$4.24 of the day's $4.24 is the parse-failure oversize.** Worse: the R10
+stop-coherence clamp is gated on `order_params is not None`, so an absent
+block bought maximum size **and** disabled the size clamp. Today the most
+aggressive sizing path in the engine is the one where the desk authored
+nothing.
+
+The desk also chased. Cycle 38 refused this exact trade citing the crowded-
+long ratio as *"squeeze risk that could hurt a short position"*; cycle 39,
+26 minutes and −0.43% later, cited the same ratio as *"squeeze risk for
+longs"* and shorted. Nothing changed but price.
+
+### WHY the AVAX loss happened — the desk asked to exit and was silenced
+
+AVAX 1335, true net **−$0.141**. Notional $199, gross move **+0.0189%**,
+round-trip fee $0.179 — **fees were 475% of gross.** It needed 0.090% and
+caught 0.019%; fee-dominated from the first second.
+
+**Cycle 16 (02:16:03Z) authored a partial reduce and it was thrown away.**
+The `no_verdict` diagnostic shipped as #459 last cycle caught it exactly:
+
+```
+{"kind": "truncated", "chars": 1052,
+ "tail": "…the invalidation level.\", \"basis\": {\"verdict\": \"adjusted\",
+  \"discussion\": \"partial reduction secures gains and respects the planned
+  invalidation trigger\"}}, \"plan_adherence\":"}
+```
+
+The light prompt orders its keys **action → confidence → scores →
+stop/target → order_intent → outlook → plan_adherence → report**. The cut
+landed at `plan_adherence`, so **the entire traded decision — `order_intent`
+with the reduce included — was already on the wire.** The platform discarded
+all of it and journaled `hold, confidence 0.0`. 7m36s later a rail flattened
+the book at a worse price.
+
+**Shipped as [#462] this cycle**: salvage the verdict from the last complete
+top-level pair; refuse anything missing `action` or `confidence`; journal a
+`verdict_salvaged` event. It only ever runs where the alternative is no
+verdict at all, so it can convert a discarded decision into an executed one
+and never degrade one the parser already accepted.
+
+This also settles the 5.4× no-verdict regression I measured at cycle 1 — but
+only partly, and I will not overstate it: of 3 diagnostic fires, **1 was
+`truncated` and 2 were `empty` (chars 0)**. The token budget explains a
+third of the observed cases at most. The `empty` class is still unexplained.
+
+### The two agents disagreed twice; both resolved against Agent A
+
+1. **A flagged an unreconcilable $0.45 ledger gap** and honourably refused to
+   invent a reason. B resolved it: A omitted the TRUMP 1344 close from
+   earlier today. `+4.83296 − 0.14144 − 0.45108 = 4.24044` against a ledger
+   of 4.24. I verified the arithmetic myself. **A's caution was right; its
+   conclusion was wrong.**
+2. **A called FIL's exit "the classic trailing lock", B agreed** — and both
+   noted it is a *different* rail from AVAX's breakeven ratchet despite the
+   identical `reason: "trailing_lock"` string. Any analysis treating the two
+   closes as the same rail is wrong. Worth knowing for every future cycle:
+   **the discriminator is the presence of a `stop_mechanism` event.**
+
+### #449's first live fire — the rail lost money, and should never have armed
+
+The fee-aware ratchet floor fired for the first time (standing watch, unfired
+for days): `{"peak":0.4228,"total":0.11828,"arm":0.398,"exit_fee":0.199}` →
+realized **−$0.141**.
+
+B's decomposition, which I have verified against the code: `peak_pnl` and
+`current_pnl` are `pnl["total"]` — **run-cumulative**, realized plus
+unrealized — while `arm_usd` and `exit_fee_usd` are **position-scoped**. The
+units do not match. The position's own gross peak was **$0.342**, below the
+$0.398 arm: **baseline-corrected, this rail would never have armed.** It
+armed on $0.081 banked by four earlier trades.
+
+I confirmed the asymmetry in the source: `_trailing_lock_hit(peak_pnl,
+current_pnl, trail, baseline_pnl=0.0, exit_fee_usd=0.0)` takes a baseline;
+`_breakeven_floor_hit(peak_pnl, current_pnl, arm_usd, exit_fee_usd=0.0)`
+does not. #450 fixed one and left the other.
+
+### ISSUE — three defects are currently cancelling, so I did NOT ship the rail fix
+
+B's finding, and it is the reason the ratchet fix is not in this cycle's PR.
+Priced at live marks, the 2.22×-inflated `BREAKEVEN_FEE_RATE` was worth
+**+$0.83 on AVAX and +$4.33 on FIL**. Correcting the rate alone turns a
++$4.24 day into roughly **−$0.46**. And the floor computes **one leg at the
+inflated rate** ($0.199) where it should be a **round trip at the true rate**
+($0.179) — within 11% by accident. **Setting the rate to 0.00045 without
+also doubling the floor puts every fire at −1 exit fee**, which is the
+failure the fee-awareness was written to prevent.
+
+That is not an argument the rate is right. It is an argument that these must
+move together, gated on the fleet-wide replay already in the backlog. **I am
+not shipping a rail change that arithmetic says would have cost money today.**
+
+### Also on tape
+
+- **Stale-mark resolution.** `HYPERLIQUID_SYMBOL_CACHE_TTL_SECONDS = 300`
+  under a ~64s equity poll: AVAX's unrealized moved in five discrete steps of
+  ≈$0.10 — **half the $0.199 floor** — so the rail fired $0.081 below the
+  level it was defending while `mark_age_ok` read True throughout. The
+  effective resolution of every exit rail is 5 minutes, not 64 seconds. The
+  timestamp-vs-value staleness gap is already documented at
+  `run_engine.py:3243` and still unfixed on the exit path.
+- **FIL's lock fired on the exact tick that set the peak.** Threshold
+  (lock + modelled exit fee) sat **$0.011 above** the peak, so the first tick
+  that armed it also satisfied it. General condition: fires immediately
+  whenever excursion < ~0.667% of notional.
+- **Corrected loss floor (#460) has altered no brief yet** — 13 decisions
+  since deploy, 0 containing "House floor", 0 equity reads below −$0.99. Zero
+  occurrences is not evidence it works; it is evidence it is untested. The
+  behavioural difference only shows in the −$0.99 to −$13.07 band.
+- Other rails: idle_retire ×5, at_time ×1, all on flat runs; dust clamp 0,
+  max_loss 0, adapt-retire 0. Both flattens replaced their slots within ~60s.
+
+### Plan 26
+
+- **FIL c39 opened an $857 market short while its own `outlook.entry.kind`
+  was `"none"` with `trigger: null`** — the published plan declared no entry
+  at the instant of the run's largest position. AVAX c14 shows the desk can
+  express a market entry, so this is an inconsistency, not a schema limit.
+- **`stop_ref_px` is null on both opens** while both reports quote explicit
+  stop levels. The actionable field is empty; the number lives only in prose.
+- **`plan_adherence` is fabricated when the desk is silent.** All four
+  confidence-0.0 cycles on 1335 carry `"revised"` — a stamp emitted by the
+  fallback, not by any desk. Any adherence metric over those cycles measures
+  the fallback. (#462 removes one source of this by recovering the real
+  stamp where it exists.)
+- **`decision.action` still does not report the executed verb** — five
+  AI-authored partial exits across both runs stamp `hold` while
+  `order_intent` compiled to a cover that executed.
+
+### Recommendations (ranked by profit impact)
+
+1. **`order_params: absent` must not be the most aggressive path in the
+   engine.** Clamp to the desk's own median authored size, or refuse the
+   trade. Today it buys max size and bypasses the R10 clamp. Worth $4.24 of
+   $4.24 today — in our favour by luck.
+2. **[SHIPPED #462]** salvage the truncated verdict.
+3. **`_breakeven_floor_hit` needs `baseline_pnl`**, mirroring
+   `_trailing_lock_hit`. Gated on the replay, with (4).
+4. **Floor must be a round trip (×2) BEFORE the rate is corrected to
+   0.00045.** Never the rate alone.
+5. **Cap `exit_fee` in `_trailing_lock_hit`** at a fraction of
+   `giveback × excursion`, or the lock is pre-tripped at the peak for any
+   excursion under ~0.667% of notional.
+6. **Gate exit rails on value-staleness, not timestamp-staleness.**
+
 ## Cycle 3 — 01:4xZ (anchor 01:41:43): **the budget-proportional loss floor has NEVER executed in production**
 
 **PROFIT-OR-LOSS FIRST.** Day 08-17 realized **−$0.54** (pnl_audit ledger,
