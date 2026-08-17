@@ -7,6 +7,89 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 5 — 03:5xZ (anchor 03:50:58): quiet on trades; **fleet 35's slot ledger over-commits its budget by 40%**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:59Z. Book **flat** — 0 open
+positions across 10 running runs. Day 08-17 unchanged at **+$4.24** (ledger,
+resid 0.00). 18 decisions, all `hold` at avg conf 0.494 — the desk chose to
+stand down, nothing was gate-blocked (`gate_skip` reason on all 18 is
+"decision is 'hold'"). #462 deployed mid-cycle: **0 `verdict_salvaged`, 0 new
+`no_verdict` in 18 decisions.** Too small to mean anything either way.
+
+### The thing worth reporting on a quiet cycle
+
+Fleet 35 has advertised **`replenishing:10/20` since 2026-08-16T21:36:36Z —
+6h14m, 15 status writes.** It is not replenishing. It cannot.
+
+| | |
+|---|---|
+| fleet budget | **$10,009.75** |
+| 10 filled slots, `original_allocation_usd` | **$9,999.96** (99.9%) |
+| 10 empty slots, stamped | **$400.00 each = $4,000** |
+| **slot ledger total** | **$13,999.96 — over-committed by $3,990 (39.9%)** |
+| live headroom | **$9.79** |
+
+`slot_floor = min(B/2N, own_alloc/2) = min($250.24, $200.00) = $200.00`.
+Headroom $9.79 < $200 → `slot_dormant`, **every tick, forever**. 45 such
+events already recorded.
+
+**I checked the obvious false alarm first and it was false.** Slots 10–14 are
+missing from the table not through a bug but because a resize drained them at
+21:36:36Z (`slot_removed`, reason `fleet_resized`) — correct behaviour, empty
+slots only.
+
+**The real defect is that the resize drained the slots and never renormalised
+the survivors' allocations.** Replacement funding is
+`min(slot.original_allocation_usd, headroom)`, so each of the 50 rotations
+re-funds at the stale, pre-resize allocation. The over-commitment is
+self-perpetuating.
+
+This is the exact state the build path's own comment says the under-fill
+reserve was added to prevent:
+
+> *"handing the WHOLE budget to the few composable theses leaves the E3
+> backfill zero headroom — the fleet advertises replenishing:k/N but can
+> never grow (fleet #26 live: 3/10 slots held all $10k, headroom −$1.25 vs a
+> $500 floor)."*
+
+The reserve exists in `build_fleet`. **The replacement path has no
+equivalent**, so a fleet can reach the forbidden state after build.
+
+**Effect in profit terms:** the fleet runs **10 theses at ~2× their per-slot
+share** ($1,000 average against a $500.49 share) instead of 20 at 1×. That is
+a permanent halving of diversification — and today is the day that mattered:
+one oversized position was 100% of the day's P&L.
+
+### ISSUE — I am NOT shipping the fix, and the reason is not caution theatre
+
+The consistency defect is unambiguous. **The remedy is not.** Renormalising
+would halve future book sizes, and today's own tape argues both ways: AVAX at
+a $199 book paid **fees worth 475% of its gross move**. Thinner slots make
+the fee hurdle worse. I have no evidence that 20 × $500 beats 10 × $1,000,
+and shipping a money-sizing change on a hunch is precisely what the owner law
+forbids.
+
+What would settle it: replay the fleet's closed trades bucketed by book size
+against the per-market fee floor, and measure realized expectancy per bucket.
+That is the same replay already gating the ratchet/fee-rate package — one
+measurement now unblocks two decisions.
+
+**Unambiguous regardless of the sizing question:** the status string. A fleet
+that cannot grow should not report `replenishing`. The owner reads that
+number; "replenishing" implies progress where the truth is "budget-capped at
+10/20". Holding it only because it should ship together with whatever the
+replay decides, rather than as two changes to the same code.
+
+### Watches
+
+`House floor` briefs since #460: **0** — the corrected floor still untested,
+as expected; the −$0.99…−$13.07 band has not been entered. All 136 fleet gate
+events ever are context `replacement`; **zero growth attempts**, so the
+replenish path is not burning research cycles — a waste claim I checked
+before making and did not make.
+
+---
+
 ### #462 DEPLOYED and verified — image `20260817-salvage-verdict` (merge `1fb233a`)
 
 Replayed the real severed payload through the deployed function in the
