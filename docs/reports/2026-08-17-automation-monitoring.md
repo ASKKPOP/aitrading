@@ -9,6 +9,17 @@ Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 40 — 23:2xZ (anchor 23:25:54): post-deploy liveness only — the window is 2 minutes wide
+
+The cron fired immediately after the #475 ship, so the delta window since
+the addendum is ~2 minutes: **no closes, both books flat, 0 tracebacks,
+engine cycling on the new image** (2 decisions since the 23:17Z restart,
+MAX(ts) 14s behind NOW, 20 running runs across agents 6+60). Watches:
+`fence: lease expired` **0 post-deploy (2 min of data — no evidential
+value yet; the real read is the 24h sweep)**; `railed_params` renders
+still 0 (no clamp has fired); ceiling/loss-floor/ratchet unchanged.
+Nothing to analyze, nothing to ship.
+
 ## Cycle 39 addendum — 23:2xZ (anchor 23:24:06): **#475 SHIPPED to prod, verified 3×**
 
 PR #475 merged (`71ecd1e7`) after full CI (5/5 checks); deployed as image
