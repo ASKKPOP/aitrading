@@ -399,9 +399,11 @@ def generate_text(
         max_tokens = max(max_tokens, 2000)
     try:
         if ap.spec.kind == "anthropic":
-            text, usage = _generate_anthropic(ap, prompt, system, max_tokens, temperature)
+            text, usage = _generate_anthropic(ap, prompt, system, max_tokens,
+                                              temperature, tier=tier)
         else:
-            text, usage = _generate_openai_compatible(ap, prompt, system, max_tokens, temperature)
+            text, usage = _generate_openai_compatible(ap, prompt, system, max_tokens,
+                                                      temperature, tier=tier)
     except Exception as exc:  # noqa: BLE001 - provider errors must not crash callers
         logger.warning("LLM generation failed (provider=%s): %s", ap.spec.name, exc)
         return None
@@ -440,25 +442,51 @@ def _usage_tokens(usage) -> tuple[int, int]:
         return (0, 0)
 
 
-def _llm_timeout_seconds() -> float:
+def _llm_timeout_seconds(tier: "str | None" = None) -> float:
     """Hard wall-clock cap per LLM request. Both SDKs default to 600s with
     automatic retries — one stalled connection blocks its caller for up to
     half an hour. Measured on prod 2026-08-08: the research loop went silent
     for 30+ minutes inside a single call while the provider answered a fresh
     probe in 5.7s; the hourly refresh it was carrying never happened. Every
     caller of generate_text is a loop that would rather fail this attempt
-    and run its next iteration than wait."""
+    and run its next iteration than wait.
+
+    THE DECISION TIER IS THE EXCEPTION (measured 2026-08-17). Four
+    `no_verdict` events matched, to the second, four `LLM generation failed
+    (provider=local): Request timed out.` warnings — 7 timeouts in 37
+    minutes, 4 of 15 decisions (27%) lost, each one a held book that got no
+    management look that cycle. Probing the same endpoint with a
+    light-path-shaped prompt gave 4.9-7.4s idle but **78.2s** for a single
+    call while the fleet was cycling, and 4 concurrent calls finished in
+    79.2s wall — the endpoint parallelises fine, so this is a LATENCY TAIL,
+    not queueing. A 120s cap sits about 1.5x the loaded latency and the tail
+    clears it several times an hour.
+
+    Raising the general cap is not the fix: it is what protects the research
+    loop from the 30-minute stall above. The decision tier can afford to
+    wait because it runs on its own dedicated pool, sized exactly so a slow
+    call cannot starve the SL/TP watcher. So only that tier is raised, and
+    it is never given LESS than the general cap — a decision is the one call
+    the platform least wants to lose."""
     try:
-        return max(10.0, float(os.environ.get("LLM_TIMEOUT_SECONDS", "120")))
+        base = max(10.0, float(os.environ.get("LLM_TIMEOUT_SECONDS", "120")))
     except ValueError:
-        return 120.0
+        base = 120.0
+    if tier != "decision":
+        return base
+    try:
+        return max(base, float(os.environ.get("LLM_TIMEOUT_SECONDS_DECISION",
+                                              "300")))
+    except ValueError:
+        return max(base, 300.0)
 
 
-def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature):
+def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature,
+                                tier: "str | None" = None):
     from openai import OpenAI  # lazy import
 
     client = OpenAI(api_key=ap.api_key, base_url=ap.base_url,
-                    timeout=_llm_timeout_seconds(), max_retries=1)
+                    timeout=_llm_timeout_seconds(tier), max_retries=1)
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -481,7 +509,8 @@ def _generate_openai_compatible(ap, prompt, system, max_tokens, temperature):
 _NO_TEMPERATURE_MODELS: set[str] = set()
 
 
-def _generate_anthropic(ap, prompt, system, max_tokens, temperature):
+def _generate_anthropic(ap, prompt, system, max_tokens, temperature,
+                        tier: "str | None" = None):
     import anthropic  # lazy import
 
     # Pass the resolved base_url explicitly, like the OpenAI-compatible path does.
@@ -489,7 +518,7 @@ def _generate_anthropic(ap, prompt, system, max_tokens, temperature):
     # env itself; that happens to match ap.base_url today, but relying on it means
     # a context-supplied base_url would be silently ignored. Make ap.base_url win.
     client = anthropic.Anthropic(api_key=ap.api_key, base_url=ap.base_url,
-                                 timeout=_llm_timeout_seconds(), max_retries=1)
+                                 timeout=_llm_timeout_seconds(tier), max_retries=1)
     kwargs = {
         "model": ap.model,
         "max_tokens": max_tokens,
