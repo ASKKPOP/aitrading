@@ -2386,6 +2386,104 @@ class AdherenceStampTests(unittest.TestCase):
                          "the journal still stamps silent cycles directly")
 
 
+class NoResponseVsEmptyTests(unittest.TestCase):
+    """Measured 2026-08-17, and it corrects #465 one cycle after shipping it.
+
+    All 4 no-verdicts after #465 filed as `empty`. Each matches, TO THE
+    SECOND, a worker warning `LLM generation failed (provider=local):
+    Request timed out.` — 06:18:27, 06:23:44, 06:23:49, 06:25:25.
+
+    #465 put the split in `_light_analysis`, but `generate_text` catches
+    provider errors itself and RETURNS None (its own docstring: "Returns
+    None on any failure so callers can fall back"). So the caller's `except`
+    almost never fires and the `error` class almost never appears — the
+    dominant failure still filed as a silent model.
+
+    The signal was already there: `generate_text` returns None on failure and
+    a str (possibly "") on success. None means the call did not come back;
+    "" means the model answered with nothing. Those are different faults and
+    the tape must say which — container logs are lost on every deploy, so a
+    class that can only be resolved from logs cannot be resolved at all."""
+
+    def test_a_provider_failure_is_not_a_silent_model(self):
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic(None)["kind"], "no_response")
+
+    def test_an_empty_answer_is_still_empty(self):
+        for blank in ("", "   ", "\n"):
+            self.assertEqual(
+                run_engine._no_verdict_diagnostic(blank)["kind"], "empty")
+
+    def test_a_named_exception_still_wins_over_no_response(self):
+        d = run_engine._no_verdict_diagnostic(None, "TimeoutError: read timed out")
+        self.assertEqual(d["kind"], "error")
+        self.assertIn("TimeoutError", d["err"])
+
+    def test_the_other_classes_are_untouched(self):
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic("I cannot answer")["kind"], "no_json")
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic('{"action": "hold", "sc')["kind"],
+            "truncated")
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic('{"a": x}')["kind"], "malformed")
+
+
+class NoVerdictErrorClassTests(unittest.TestCase):
+    """Measured 2026-08-17, n=4 diagnostic fires: **empty x3, truncated x1**.
+
+    Truncation explains 25%. `empty` is the dominant class at 75% — and it
+    conflates two unrelated failures the instrument cannot currently tell
+    apart: the decision call RAISED (swallowed by a bare except, leaving
+    text=None) versus the model returned an empty string. The first is
+    infrastructure, the second is prompt or model behaviour, and they need
+    opposite fixes.
+
+    Splitting them costs nothing — this is a diagnostic, it changes no
+    decision and no order — and it unblocks the only class large enough to
+    matter."""
+
+    def test_a_raised_call_is_not_reported_as_an_empty_response(self):
+        d = run_engine._no_verdict_diagnostic(None, "TimeoutError: read timed out")
+        self.assertEqual(d["kind"], "error")
+        self.assertIn("TimeoutError", d["err"])
+
+    def test_a_genuinely_empty_response_is_still_empty(self):
+        # `None` was in this list when #465 shipped, which encoded the very
+        # mistake #465 made: a provider failure returns None from
+        # generate_text and is NOT a silent model. See NoResponseVsEmptyTests.
+        for blank in ("", "   "):
+            self.assertEqual(
+                run_engine._no_verdict_diagnostic(blank)["kind"], "empty")
+
+    def test_the_error_note_is_bounded(self):
+        d = run_engine._no_verdict_diagnostic(None, "x" * 900)
+        self.assertLessEqual(len(d["err"]), 200)
+
+    def test_the_existing_classes_are_untouched(self):
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic("I cannot answer")["kind"], "no_json")
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic('{"action": "hold", "sc')["kind"],
+            "truncated")
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic('{"a": x}')["kind"], "malformed")
+
+    def test_text_wins_over_a_stale_error(self):
+        # A retry that succeeded must not be filed as an error.
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic("I cannot answer", "boom")["kind"],
+            "no_json")
+
+    def test_the_light_path_CAPTURES_the_exception(self):
+        import inspect
+        src = inspect.getsource(run_engine._light_analysis)
+        self.assertIn("llm_err", src,
+                      "the decision call still swallows its exception")
+        self.assertIn("_no_verdict_diagnostic(text, llm_err)", src,
+                      "the captured error never reaches the diagnostic")
+
+
 class TruncatedVerdictSalvageTests(unittest.TestCase):
     """Measured 2026-08-17, AVAX run 1335 cycle 16.
 
@@ -3431,9 +3529,14 @@ class NoVerdictDiagnosticTests(unittest.TestCase):
     another round of guessing."""
 
     def test_an_empty_response_is_labelled(self):
-        d = run_engine._no_verdict_diagnostic(None)
+        # `None` was asserted as "empty" when #459 shipped. It is not: a
+        # provider failure returns None from generate_text, which is a call
+        # that never came back, not a model that answered with nothing.
+        d = run_engine._no_verdict_diagnostic("")
         self.assertEqual(d["kind"], "empty")
         self.assertEqual(d["chars"], 0)
+        self.assertEqual(
+            run_engine._no_verdict_diagnostic(None)["kind"], "no_response")
 
     def test_a_response_with_no_json_object_is_labelled(self):
         d = run_engine._no_verdict_diagnostic("I cannot answer that.")

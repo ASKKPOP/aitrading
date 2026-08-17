@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T05:00Z",
+  "as_of": "2026-08-17T06:50Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "flat 2h35m, day +$4.24; 3 lost sells = 3 rare causes (retire race n=2, lease expired n=12, spot-sell n=2) - logged, none shipped"
+    "note": "flat 4h25m, day +$4.24; NO-VERDICT CAUSE SETTLED = local LLM timeouts (4/4 match worker warnings to the second, 27% of decisions); #465 corrected by #466"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,

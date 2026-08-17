@@ -7,6 +7,245 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 10 — 06:4xZ (anchor 06:49:33): **the no-verdict cause is settled — local-provider timeouts — and #465 was mine to correct**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **4h25m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00).
+
+### The question is answered, and not by inference
+
+Four `no_verdict` events since #465 deployed (06:12:09Z), all `kind:
+"empty"`. Each matches, **to the second**, a worker warning:
+
+| no_verdict | worker log |
+|---|---|
+| 06:18:27Z run 1352 | `06:18:27,285 LLM generation failed (provider=local): Request timed out.` |
+| 06:23:44Z run 1344 | `06:23:44,438 …Request timed out.` |
+| 06:23:49Z run 1355 | `06:23:49,164 …Request timed out.` |
+| 06:25:25Z run 1353 | `06:25:25,957 …Request timed out.` |
+
+**The dominant no-verdict class is the local model timing out.** Not
+truncation, not a silent model, not a prompt problem. Measured rate in the
+covered window: **7 timeouts in 37 minutes, and 4 of 15 decisions (27%)
+produced no verdict.**
+
+Config, all read from prod: `LLM_TIMEOUT_SECONDS` defaults to **120s** with
+`max_retries=1`; provider is `local` at an Ollama endpoint; and local calls
+are floored at `max_tokens = max(max_tokens, 2000)` because the reasoning
+model spends budget on hidden chain-of-thought before any visible content.
+So the shape is: **a reasoning model asked for ≥2000 tokens does not always
+finish inside 120 seconds under load.**
+
+### FAILED — my own #465, one cycle after shipping it
+
+#465 split `error` from `empty` inside `_light_analysis`. That is **one layer
+too high.** `generate_text` catches provider errors itself and returns None
+— its own docstring says so: *"Returns None on any failure so callers can
+fall back to their own deterministic summary."* The caller's `except`
+therefore almost never fires, and the class I added to catch infrastructure
+failures could not see the infrastructure failure that dominates the tape.
+
+I shipped a diagnostic that classified 4 provable timeouts as a silent model.
+
+**Corrected as [#466].** The signal was already in the return value: `None`
+means the call never came back, `""` means the model answered with nothing.
+`None` now files as **`no_response`**. Two existing tests — one from #459,
+one from #465 — asserted `None → "empty"` and so encoded the mistake; both
+are corrected in place with a comment saying why, rather than quietly
+edited.
+
+Why this is worth a PR rather than a note: **container logs are lost on every
+deploy** — I hit exactly that last cycle chasing the salvage timestamps — so
+a failure class that can only be resolved from logs cannot be resolved at
+all. The tape has to carry it.
+
+3 mutants killed (branch removed; branch swallowing `""` too; `no_response`
+beating a named error).
+
+### ISSUE — the timeout itself is NOT mine to change
+
+The obvious remedies all trade against each other, and the code says so:
+
+* **Raise `LLM_TIMEOUT_SECONDS`** — the 120s cap exists because a stalled
+  call once took the research loop offline for 30+ minutes while the
+  provider answered a fresh probe in 5.7s.
+* **Lower local `max_tokens`** — the `max(max_tokens, 2000)` floor exists
+  because starving a reasoning model produces *exactly* the empty output
+  this is about.
+* **Lower cycle concurrency** — reduces the fleet's decision throughput.
+
+This is capacity on the owner's own local model host, and every lever has a
+documented reason for its current value. **Reporting it with numbers;
+changing nothing.**
+
+### Recommendations
+
+1. **The 27% figure is the one to act on, and it is an owner decision.**
+   Roughly a quarter of decision cycles currently produce no verdict, each
+   one a held book that got no management look. The three levers above are
+   the choice; the measurement to make it with is p50/p99 local call latency
+   against the 120s cap.
+2. Still open from cycle 9: whether a salvaged verdict's fields reach the
+   journal (`plan_adherence` disagreed on run 1346). Not settled this cycle.
+
+## Cycle 9 — 06:1xZ (anchor 06:13:29): quiet on trades; **#462 fired twice and worked — after I nearly recorded it as a bug of my own**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **3h49m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00). 16 decisions, all
+`hold`. 10 running runs, **9 idle-retires today**.
+
+### WORKED — the salvage caught two real verdicts
+
+`verdict_salvaged` fired for the first time, **twice**, both `truncated`:
+
+| run | ts | chars | cut at |
+|---|---|---|---|
+| 1346 (GBPUSD) | 05:33:25Z | 921 | inside `"report"`, after a complete `plan_adherence` |
+| 1351 (NZDUSD) | 05:38:19Z | **254** | inside `outlook.bias` — very early |
+
+Both cycles then journaled **real decisions with real confidence** — 1346
+cycle 11 at conf 0.48 with full component scores, 1351 cycle 8 at conf 0.57 —
+instead of the `conf 0.0 / "light cycle: no LLM verdict"` those truncations
+produced before #462. That is precisely the outcome the salvage exists to
+prevent, twice in five minutes.
+
+### The near-miss I want on the record
+
+My first read of this tape was that **#462 had broken the cycle**: the
+salvage event at 05:33:25Z had no decision, no `order_params` and no
+`gate_skip` beside it, and the next decision was 2m43s later. That is what a
+crashed cycle looks like.
+
+It was wrong. The decision sequence for run 1346 is cycle 10 at 05:02:41,
+**cycle 11 at 05:36:08**, cycle 12 at 06:03:51 — so the 05:33:25 salvage
+belongs to cycle 11, and the gap is the `order_discussion` LLM call sitting
+between light analysis and the journal. Same shape on 1351 (salvage 05:38:19
+→ cycle 8 decision 05:42:08).
+
+I could not settle it from logs — the worker was recreated at 06:12:09Z and
+`docker logs` lost the previous instance's output — so it had to be settled
+from the decision-cycle numbering. **Recording it because the failure mode is
+mine: a telemetry event that lands minutes before the decision it belongs to
+reads exactly like a crash, and I will meet this again.**
+
+### Corrected: #465 has produced NO tape yet
+
+I was about to read the 06:11:17Z `no_verdict` — `{"kind": "empty"}` with no
+`err` field — as evidence that the call did not raise, and therefore that
+infrastructure is exonerated. **The worker started at 06:12:09Z. That event
+came from the OLD image**, where no `err` field existed to begin with. It
+proves nothing. Kind mix stands at **empty x4, truncated x1**, all pre-split.
+
+### ISSUE — an open question I am not resolving by assumption
+
+Run 1346's salvaged object carried `"plan_adherence": "revised"` (complete in
+the recovered prefix), but the journaled decision reads `adh=followed`. So
+the value the salvage recovered is **not** what reached the journal —
+something downstream, most likely the discussion/full-path merge, supplied
+its own. I will not claim the salvaged fields flow through when the one
+field I can observe disagrees. One query next cycle settles it.
+
+Also logged, unresolved: run 1351's salvaged prefix carried
+`"stop_pct": 0.0046, "target_pct": 0.0210` — fraction-shaped values in a
+percent field, which is the #446 unit-slip watch. That cycle held, so nothing
+was sized from them. Unit-slip fires all time: **4**.
+
+### Recommendations
+
+1. **Check whether a salvaged verdict's fields survive to the journal**
+   (`plan_adherence`, `order_intent`, `scores`). If the merge discards them,
+   #462 prevents a conf-0.0 hold but does not deliver the desk's actual
+   decision — a materially smaller win than claimed.
+2. **9 idle-retires today against 0 positions held for 3h49m.** The fleet is
+   now retiring runs faster than it trades. Worth measuring against the
+   cycle-5 finding (budget funds 10 of 20 slots) before anyone concludes the
+   retires are the problem — they may be the correct response to a book with
+   no positive-expectancy entries.
+
+---
+
+### #465 DEPLOYED and verified — image `20260817-noverdict-error-class` (merge `19f5d55`)
+
+All four branches replayed against the deployed function in the container:
+
+```
+raised    -> {'kind': 'error', 'err': 'TimeoutError: read timed out', 'chars': 0, 'tail': ''}
+empty     -> empty
+text wins -> no_json          (a successful retry is never filed as an error)
+bounded   -> 200              (err note capped)
+```
+
+#463's stamp rule, #462's salvage, #460's corrected loss floor and the Plan
+26 flag all survived the from-main rebuild. 0 tracebacks.
+
+**The open question is now answerable rather than arguable.** Next cycle
+reads the kind mix with `error` in it. Two outcomes, two different
+investigations, and I will not pre-commit to either:
+
+* `error` dominates → llm_client timeouts/retries; an infrastructure fix.
+* `empty` survives the split → the prompt or the model returned nothing on
+  a healthy call; a decision-path fix.
+
+**Session ship count: 20 PRs.**
+
+---
+
+## Cycle 8 — 05:2xZ (anchor 05:27:14): quiet on trades; **#463 proved itself live, and the no-verdict tape is now decisive enough to act on**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **3h03m**.
+Day 08-17 unchanged at **+$4.24** (ledger, resid 0.00). 10 decisions, all
+`hold`. 0 salvage fires.
+
+### WORKED — #463's branch fired live, exactly as designed
+
+Last cycle I refused to call #463 verified because the branch it changes had
+never executed on prod. It has now:
+
+> **run 1347, 05:11:45Z** — `"confidence": 0.0, "conviction": null,
+> "scores": null` and **no `plan_adherence` key at all**. The paired
+> `no_verdict` event fired at the same second.
+
+Before the fix that cycle would have been journaled `plan_adherence:
+"revised"` — a plan revision by a desk that said nothing. Adherence since
+#463: **followed x14, deviated x1, NONE x1** — and the NONE is the silent
+cycle, where it belongs.
+
+### The measurement that unblocks the last unexplained class
+
+Diagnostic fires since #459, n=4:
+
+| kind | count |
+|---|---|
+| **empty** | **3 (75%)** |
+| truncated | 1 (25%) |
+
+Truncation — the class #462 now salvages — explains a quarter. **`empty` is
+the dominant class, and my own instrument could not tell what it meant.** The
+light path's decision call sits in a bare `except` that sets `text = None`,
+so a call that RAISED and a model that RETURNED NOTHING file as the same
+event. Those need opposite fixes: one is infrastructure, one is prompt or
+model behaviour.
+
+**Shipped as [#465]**: a raised call files as `kind: "error"` with a bounded
+note naming the exception class; a genuinely empty response is still
+`empty`; and **text always wins** — a retry that succeeded is never filed as
+an error. 6 tests fail-before, **4 mutants killed** (err ignored → red;
+note unbounded → red; err checked before text → red; capture unwired → red).
+
+Why this clears the bar when three findings last cycle did not: this changes
+**no decision and no order**. The bar I have been holding is for behaviour —
+rails, sizing, funding — where a wrong fix costs money. An instrument that
+cannot distinguish its own dominant failure class costs nothing to sharpen
+and is the only thing standing between me and an answer. Same reasoning as
+#459 itself.
+
+### Recommendation
+
+**Read the kind mix again once `error` has fired.** If `error` dominates,
+the next question is llm_client timeouts/retries and it is an infrastructure
+fix; if `empty` survives the split, it is the prompt or the model and the
+fix is on that side. **I will not propose either until the tape says which.**
+
 ## Cycle 7 — 04:5xZ (anchor 04:59:02): quiet; **the three "lost sells" dissolved into three rare causes — no fix shipped, and that is the correct outcome**
 
 **PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **2h35m**.
