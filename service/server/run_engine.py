@@ -3512,7 +3512,8 @@ def _salvage_truncated_json(text: Any) -> "dict | None":
     return None
 
 
-def _no_verdict_diagnostic(text: Any) -> dict:
+def _no_verdict_diagnostic(text: Any,
+                           err: "str | None" = None) -> dict:
     """Why a light cycle produced no verdict — recorded, not guessed.
 
     Measured 2026-08-16/17: the `conf 0.0 / "light cycle: no LLM verdict"`
@@ -3531,9 +3532,19 @@ def _no_verdict_diagnostic(text: Any) -> dict:
     management look — the pattern preceded FIL 1305's flatten three times —
     so deciding it is worth one field.
 
+    2026-08-17 update, n=4 fires: empty x3, truncated x1. Truncation
+    explains 25%; `empty` is the dominant class and conflated TWO unrelated
+    failures — the call RAISED (swallowed by a bare except, leaving
+    text=None) versus the model returned nothing. Infrastructure and prompt
+    behaviour need opposite fixes, so the raise now files as "error" with a
+    bounded note. Text always wins: a retry that succeeded is not an error.
+
     Diagnostic only: it changes no decision and no order."""
     try:
         if not isinstance(text, str) or not text.strip():
+            if err:
+                return {"kind": "error", "err": str(err)[:200],
+                        "chars": 0, "tail": ""}
             return {"kind": "empty", "chars": 0, "tail": ""}
         chars = len(text)
         tail = text[-200:]
@@ -5501,6 +5512,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         + '"report": "<one sentence>"}'
     )
     text = None
+    llm_err: Optional[str] = None
     try:
         from llm_client import generate_text
         # 200 was the budget before the intent object joined the payload; a
@@ -5512,8 +5524,12 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
             max_tokens += 180
         text = generate_text(prompt, max_tokens=max_tokens,
                              temperature=0.2, tier="decision")
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        # Keep WHY. The bare except filed every raise as an empty response,
+        # which is 75% of no-verdict cycles and the one class still
+        # unexplained. See _no_verdict_diagnostic.
         text = None
+        llm_err = f"{type(exc).__name__}: {exc}"[:200]
     action, confidence, report = "hold", 0.0, "light cycle: no LLM verdict"
     scores: Optional[dict] = None
     order_block: Optional[dict] = None
@@ -5588,7 +5604,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         # Record WHY there was no verdict; see _no_verdict_diagnostic.
         try:
             emit_telemetry_event(run["id"], "no_verdict",
-                                 _no_verdict_diagnostic(text))
+                                 _no_verdict_diagnostic(text, llm_err))
         except Exception:  # noqa: BLE001
             pass
     if salvaged:
