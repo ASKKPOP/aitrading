@@ -700,6 +700,14 @@ class ArmSideClassificationTests(unittest.TestCase):
         self.assertIsNone(OI.classify_arm({"if": "price_above", "level": 75.5},
                                           entry=0, is_short=True,
                                           fee_rate=self.FEE))
+        # A VALID level under an unexecutable condition must also be None —
+        # without this the condition guard is untested and a mutant that
+        # deletes it survives, which is exactly what happened first time.
+        for cond in ("price_sideways", "", "PRICE_ABOVE_OR_SO", None):
+            self.assertIsNone(
+                OI.classify_arm({"if": cond, "level": 75.5}, entry=75.51,
+                                is_short=True, fee_rate=self.FEE),
+                f"unexecutable condition {cond!r} must not be classified")
 
     def test_an_absurd_level_is_flagged_not_silently_kept(self):
         """run 1297 LTCUSDT: entry 44.09, arm level 44700.00 — ~1000x out and
