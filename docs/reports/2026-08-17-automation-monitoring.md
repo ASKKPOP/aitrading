@@ -7,6 +7,88 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 7 — 04:5xZ (anchor 04:59:02): quiet; **the three "lost sells" dissolved into three rare causes — no fix shipped, and that is the correct outcome**
+
+**PROFIT-OR-LOSS FIRST.** No closes since 02:24:43Z — book flat **2h35m**.
+Day 08-17 unchanged at **+$4.24**. 13 decisions, all `hold`. 0 salvage fires,
+0 new no-verdicts.
+
+### I chased what I said I would chase, and it did not become a defect
+
+Last cycle I flagged three authored sells that produced no realized leg. All
+three runs have **zero `signals` rows** — no order was ever created — and all
+three were then stopped `idle_retired` with realized $0.00. They have **three
+different causes, none systemic**:
+
+**1. run 1336 (BNBUSDT) — the retire/in-flight race.** The clearest of the
+three:
+
+| time | event |
+|---|---|
+| 00:27:55Z | `idle_retired` → running → stopping → **stopped** |
+| **00:29:24Z** | cycle 12 completes: `order_params outcome: parsed`, `action: sell`, size_frac 0.05, stop 2.0%, target 5.0%; `order_intent: open`, *"Open a modest short position now; stop at $612 protects against a breakout, target $570 captures expect…"* |
+| 00:29:24Z | `gate_skip {"stage":"execute","reason":"fence: run is stopped"}` |
+
+**The run was retired for not trading, and 89 seconds later the cycle it had
+already dispatched produced a fully-formed order that was discarded because
+of that retirement.** The fence itself is correct — a stopped run must not
+trade. The wrong-ordered part is upstream: the idleness verdict is reached
+without regard to a cycle already in flight.
+
+Frequency fleet-wide, **all time: 2**.
+
+**2. run 1341 (AUDUSD) — `fence: lease expired`** on its cycle 1. All time: 12.
+
+**3. run 1338 (WLDUSDT) — `spot sell with no inventory — treated as hold`.**
+The run is `market_type: spot`; the desk authored a short (outlook bias
+`short`, trigger entry, target 0.33, stop 2.5%) and the risk gate correctly
+refused it. Notably the verb came from the **discussion** path —
+`order_discussion {proposed: buy 0.65, final: sell 0.58}` — while the light
+prompt already withholds `sell` from a flat spot book.
+
+**But the frequency refutes the alarming reading.** Spot-sell refusals all
+time: **2** — one 08-13, one 08-17. The prompt-side fix (whose own comment
+cites *33 refusals across 16 runs between 2026-07-27 and 2026-08-03*) cut
+this from ~33/week to 2 in a fortnight. It is working; this is a leak, not a
+hole.
+
+### ISSUE — nothing shipped, deliberately
+
+Every one of the three is a real ordering or gating flaw, and **not one of
+them clears the bar I have held all session.** n=2, n=12, n=2, and in no case
+do I have evidence the blocked trade would have made money. Shipping the
+idle-retire reordering on "it is plainly wrong-ordered" is exactly the
+reasoning I refused for the ratchet baseline (cycle 4) and the slot-ledger
+renormalisation (cycle 5). Consistency is not optional when the argument
+happens to favour acting.
+
+Logged, with the specific measurement each would need:
+
+1. **Idle-retire vs in-flight cycle** — needs the count of retires where a
+   cycle was already dispatched, and the realized outcome of the orders those
+   cycles produced. n=2 today.
+2. **`fence: lease expired`** (12) — is the lease TTL short relative to
+   p99 cycle time? One query against cycle durations settles it.
+3. **Spot `sell` via the discussion path** — whether the discussion prompt
+   receives the same `can_sell` gate the light prompt has. n=1.
+
+### WORKED — #463 on live tape, with the limit stated
+
+6 decisions since deploy, **6 carry an adherence key, 0 were conf-0.0**. That
+is consistent with the fix but **does not prove it**: the branch it changes
+(a silent cycle recording nothing) has not been exercised live yet, because
+no silent cycle has occurred. The functional proof remains the in-container
+replay from last cycle. I am not counting an unexercised branch as verified.
+
+### Also on tape
+
+`gate_skip` census, all time — the second-largest category is **`market
+closed — flatten queued to the next open` at 1,477**, against 769 plain
+`market closed`. Worth understanding what fraction of the fleet's cycles are
+spent deciding for markets that cannot trade, but not this cycle.
+
+---
+
 ### #463 DEPLOYED and verified — image `20260817-adherence-stamp` (merge `a26b685`)
 
 All four branches confirmed against the deployed function in the container:
