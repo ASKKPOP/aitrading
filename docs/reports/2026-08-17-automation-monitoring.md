@@ -7,6 +7,135 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+# 24-HOUR VERIFICATION SWEEP — 2026-08-17 15:37Z (anchor 15:37:24)
+
+Adversarial pass over this loop's own output. Running image
+`20260817-notes-0817-c18`, RestartCount 0.
+
+## 1. P&L, both calendars, flatten-reconciled
+
+| window | closes | opens | sum(signals.pnl) | open fees | **TRUE NET** |
+|---|---|---|---|---|---|
+| **UTC day 08-17** | 7 | 6 | +4.6904 | −0.5621 | **+$4.1283** |
+| **KST day 08-17** (16th 15:00Z → 17th 15:00Z) | 19 | 11 | +8.3650 | −0.9325 | **+$7.4325** |
+| UTC 08-16 (prior) | 24 | 13 | +6.2217 | −0.6002 | +$5.6215 |
+
+`pnl_audit` by UTC day: 08-15 **−3.42**, 08-16 **+5.65**, 08-17 **+4.13**;
+resid 0.00 on all three, 10 flattens, `check ok`. **Since the reset: +$6.36.**
+
+**Regression vs the prior day: DOWN.** 08-16 closed +$5.62 on 24 legs;
+08-17 closed +$4.13 on 7. Fewer trades, smaller total.
+
+## 2. SHAPE of the 24h (KST window, n=19, 79% wins, median +$0.130)
+
+| | |
+|---|---|
+| top 1 — FIL 1322 02:24:43Z | **+$5.2188** |
+| top 2 — TRUMP 1329 | +$1.0637 |
+| top 3 — FIL 1322 | +$0.6449 |
+| **ex-top-1** | **+$3.1462** |
+| **ex-top-3** | **+$1.4376 across 16 legs** |
+| bottom 3 | TRUMP 1344 −$0.451 · AVAX 1335 −$0.052 · SOL 1367 −$0.045 |
+
+**One trade is 62% of the day.** And that trade is the `order_params: absent`
+oversize — 87.8% of it a sizing defect (cycle 16). A 79% win rate on a median
+of thirteen cents is not an edge; it is a lot of scratches with one accident.
+
+## 3. Every fix re-proved in the running container
+
+| PR | state | did it MOVE anything in 24h? |
+|---|---|---|
+| #459 no_verdict diagnostic | PRESENT | **YES** — 18 fires; produced the timeout answer |
+| #460 loss floor from cfg | PRESENT | **NO — 0 House-floor briefs in 13h** |
+| #462 truncation salvage | PRESENT | **YES — 10 fires**, up from 2 at cycle 9 |
+| #463 silent cycle → no stamp | PRESENT | **YES** — 15 decisions correctly unstamped |
+| #465 error class | PRESENT | superseded by #466 within a cycle |
+| #466 no_response class | PRESENT | **YES** — 4 fires, all timeouts |
+| #468 decision tier 300s | PRESENT | **NO — cannot be credited** |
+| #471 R:R ceiling | **correctly ABSENT** | held, not merged |
+
+### The two that did not move anything — stated plainly
+
+**#460 has never fired.** Zero `House floor` briefs in the 13 hours since
+deploy. The replay proof was real and the arithmetic is right, but **in
+production this fix is unexercised**. It is not "working"; it is untested.
+*What will be done instead:* nothing further — the fix is correct and the
+band simply has not been entered. It stays on the watch list until a run
+enters −$0.99…−$13.07, and I will not report it as validated before then.
+
+**#468 cannot be credited.** Post-deploy 9/243 (3.7%); post-episode 2/199
+(1.0%). But cycle 17 established the hourly rate was ~3% baseline, spiked to
+20/17/13% at 06h/07h/08h, and fell to 0% at 09h — **the fall is the episode
+ending, not the cap.** During the episode the cap made no difference at all
+(18.5% → 23.1%). *What will be done instead:* the timeout stays because it
+is cheap and plausibly protective against a repeat, but it is **removed from
+the "fixed" column**. `no_response` is the counter that would show a repeat.
+
+## 4. Watch triggers
+
+| watch | state |
+|---|---|
+| #449 ratchet | **3 fires, cumulative −$0.25293, 0 net gains**, slippage 41% / 46% / **273%** |
+| #446 unit-slip | 8 fires (was 4) |
+| AUDCHF 1147 / fleet 33 | both **stopped** — closed, drop from list |
+| empty-why arms | **133 / 134 (99.3%)** — worse than the 131/132 I corrected to at cycle 13 |
+| conf-0.0 no-verdict | 2/199 since 09:00Z |
+| #439 BYPASSED | still unexercised |
+
+## 5. THE SOLUTION for today's losses
+
+The three closed losses were TRUMP 1344 (−$0.625 true), AVAX 1335 (−$0.141),
+SOL 1367 (−$0.114). They look unrelated. They are not:
+
+* **1344** was closed on a house floor computed from a budget the function
+  never read — a number with no relation to the position.
+* **1335** was flattened on a peak that included **$0.081 banked by earlier
+  trades** — a number belonging to other positions.
+* **1367** was armed at 75.56 when its breakeven was **75.4421** — a
+  "protection" level on the losing side of its own economics.
+
+**Common cause: every one of these exits was priced against a number that did
+not describe the position's own P&L.**
+
+I measured how general that is. Across **134 arms with a live position**:
+
+| | |
+|---|---|
+| fire-side **banks** money (genuinely protective) | 77 |
+| fire-side **loses** money (mislabelled protection) | **57 — 43%** |
+
+SOL 1367's report called its losing-side arm *"preserving profit."* **43% of
+all arms have that shape.**
+
+**And one is a unit error visible to the naked eye:** run 1297 LTCUSDT, entry
+**44.09**, arm level **44700.00** — ~1000× out, unfireable. #446's converter
+rails `order_params` percentages; **it does not cover arm levels.**
+
+### What will be done
+
+1. **Classify every arm at compile time as `protective` (fires in profit) or
+   `defensive` (fires in loss), computed from entry + round-trip fees, and
+   journal it.** Not a rejection — a defensive arm is a legitimate stop; the
+   defect is that it is indistinguishable from profit-taking, so the desk
+   describes a stop as *"preserving profit"* and never places the profit-side
+   arm it thinks it already has. Making the class explicit lets the brief
+   tell the desk which one it actually holds.
+2. **Sanity-rail arm levels against the mark** — an arm 1000× away is not a
+   plan. Extend #446's unit-slip reasoning to the arm path.
+3. Both are arithmetic, both are checkable at compile time, and both trace
+   directly to a loss that happened today.
+
+## 6. Held, with reasons unchanged
+
+* **Ratchet package** — every single-defect fix makes it worse or
+  knife-edge (cycle 23). Needs redesign, not a patch.
+* **#471 R:R ceiling** — merge blocked while the dependency audit is red.
+* **Dependency audit RED on main** — 32 advisories / 9 packages including
+  `aiohttp`, `python-multipart`, `starlette`. Owner call; not caused by any
+  PR of mine.
+
+---
+
 ## Cycle 26 — 15:1xZ (anchor 15:19:23): **closed the CI evidence gap — and the dependency audit FAILS, on 9 packages, unrelated to my PR**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.139**

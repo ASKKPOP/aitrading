@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T15:25Z",
+  "as_of": "2026-08-17T15:37Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.13, AVAX 1370 -$0.139; pip-audit finally RAN (system interpreter) and FAILS: 32 advisories / 9 packages incl aiohttp, python-multipart, starlette - PRE-EXISTING on main, not PR #471; #471 still held"
+    "note": "24H SWEEP: UTC 08-17 +$4.13, KST 24h +$7.43, prior day +$5.62 (DOWN); one trade = 62% of the day; #460 and #468 moved NOTHING and are removed from the fixed column; SOLUTION = 57/134 arms (43%) fire on the LOSING side of breakeven"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,
