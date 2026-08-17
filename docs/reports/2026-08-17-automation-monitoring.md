@@ -3,9 +3,81 @@
 Continued from [2026-08-16](2026-08-16-automation-monitoring.md) (day
 closed **+$5.65 realized, resid 0.00**; 15 code/skill PRs + 4 docs
 merges shipped). Target: **info@askkpop.com — user 5 / agent 6 /
-FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
+FLEET 35**; from cycle 39 (owner directive) also
+**forevery1969@gmail.com — user 25 / agent 60 / FLEET 36 (us-stock)**.
+Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
+
+## Cycle 39 — 22:2xZ (anchor 22:27:10, NEW SESSION/ACCOUNT): scope now TWO users; **21 authored orders have been dying at the fence — fix built, in pipeline**
+
+New session (account rotation). Crons re-armed (30-min `0961ff91`, 24h sweep
+`06e43308`). Owner directive this session: monitor **two** users —
+info@askkpop.com (user 5 / agent 6 / fleet 35) **and forevery1969@gmail.com
+(user 25 / agent 60 / FLEET 36 — new: us-stock, 25 slots, $99,996.69,
+started 2026-08-16T10:37:41Z; predecessor fleet 34 stopped 08-15)**.
+
+State: prod image `20260817-handoff-takeover` (deployed ~22:17Z by the
+prior session, matches origin/main e5d46994). No closes since cycle 38;
+both books FLAT. Day 08-17 **+$3.84** (pnl_audit, resid −0.01, 4 flattens;
+total since reset +$6.07). 0 tracebacks, 0 no-verdicts in the last 30 min.
+Fleet 35 replenished 9 new runs (1387–1396) → 12 running. `_railed_params_line`
+test: still 0 clamps since deploy — **still unanswerable**.
+
+### Fleet 36 has NEVER executed a trade — and the reason is only half the desk's caution
+
+151 decisions, 36 order intents since the fleet started. **147 hold, 2 buy,
+2 retire.** Every hold intent compiles to `steps: []` — genuine desk
+caution through a Monday NYSE session. But **both of the fleet's only two
+entry attempts** (run 1324 "T", cycles 56/57, conf 0.73/0.78, parsed
+params, compiled steps, $257 sized) were killed at the execute stage by
+`gate_skip: "fence: lease expired"`. The fleet the owner just asked to
+watch has a 100% entry-kill rate from infrastructure.
+
+### The fence defect — measured, not inferred
+
+**Hypothesis:** cycles whose LLM calls outlast the 300s lease TTL reach the
+fenced trade transaction with their own expired lease and forfeit the order.
+**Falsifier:** fenced cycles with wall time under 300s, or fences firing on
+cycles that authored nothing.
+
+**Result — confirmed:**
+
+- **21 `fence: lease expired` kills, 2026-08-14..17 (8/1/3/9 by day). All 21
+  carried real orders: 8 opens, 7 reduces, 1 close, 5 buy/sell cycles with
+  no intent journal. ZERO were holds** — the fence only runs when there are
+  steps to execute, so every fire is a discarded authored order.
+- Run 1370's fenced cycle (18:51:28 → 18:58:45) measured **437s against the
+  300s TTL** — mechanism proven on tape. 23 of 664 cycles today (3.5%) had
+  event spans ≥300s.
+- The module's own header states the invariant: *"Lease TTL exceeds the
+  worst-case cycle."* **#468 (LLM timeout 120→300s) broke that arithmetic**
+  — a single decision call may now legally consume the entire TTL — but the
+  fires predate #468 (8 on 08-14), so slow multi-call cycles alone already
+  breached it.
+- **Counterfactual P&L, measured on the two reconstructable fenced exits:
+  the fence accidentally HELPED both times** — 1370's fenced reduce would
+  have covered ~$0.04 worse; 1322's fenced profit-bank ~$0.32 worse (both
+  shorts, price kept falling during the delay). That is luck, not design.
+  The 8 discarded opens are unknowable. **The fix's direct P&L effect is
+  ≈$0 measured; the justification is §7b — the AI is the final author of
+  every order, and here the plumbing un-authors ~9 orders/day** — plus
+  fleet 36's total entry blackout.
+
+### Fix built (in pipeline): renew our own lease before the trade txn
+
+`_renew_lease(run_id)` — extends `claim_expires_at` only where
+`status=running AND claimed_by=us`, called immediately before
+`execute_paper_trade`. The fence's real protections are untouched (stop
+pressed mid-cycle → status predicate blocks renewal AND the fence; reclaim
+by another worker → claimed_by blocks renewal AND the fence). Fail-soft.
+Verification so far: fail-before 1/1 (test reproduces the fence kill on an
+expired-own-lease cycle), pass-after 267/267 in test_run_engine (incl. the
+zombie-reclaim and stop-mid-cycle fences), **mutation 3/3** (no-op renewal,
+ownership predicate dropped, status predicate dropped — each kills exactly
+its test). Full suite + PR + deploy next; **post-ship metric: daily
+`fence: lease expired` count must go to ~0 (baseline 9 on 08-17) — if it
+does not, the fix is reported FAILED.**
 
 ## Cycle 38 — 21:4xZ (anchor 21:49:21): quiet; **the scheduled test still has not run, and I am not going to call that a result**
 
