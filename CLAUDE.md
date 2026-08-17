@@ -134,6 +134,18 @@ Durable strategic thinking lives under [docs/](docs/README.md) — read the inde
 
 When a finding turns out wrong, **edit the relevant section with a dated note** rather than starting a new document. The "Suggested first sprint" in [docs/README.md](docs/README.md) is the current execution focus.
 
+### Automation monitoring sessions (operating model)
+
+For recurring "monitor sooppiy.com/automation" work (owner-set, 2026-07-31):
+
+1. **Purpose is analysis, not trading.** The session monitors the live auto-trading fleet to *improve, extend, and find solutions* for sooppiy.com — it never places trades itself (trading is always the daemon's job).
+2. **Default mode is monitoring.** Observe every ~30 min via prod MySQL (`run_events` — query by the `ts` column, NOT `created_at`; there is no `created_at` and filtering on it errors silently — plus `trading_runs`, `positions`) and `sooppiy-worker` logs over SSH. Make no premature changes.
+3. **Change only when monitoring proves it required** — reproduced evidence, not a single data point.
+4. **When required, the fix is applied to sooppiy.com itself (prod):** code → test (fail-before/pass-after) → local ruff+pytest+tsc green → build → deploy to prod. Never a local/session-only edit that stops short of prod.
+5. **Then keep monitoring** to confirm the deployed change works on prod (or roll it back).
+
+Cycle notes live in `docs/reports/` (`*-automation-monitoring.md`, `automation-snapshot.json`, `recommendations-backlog.md`) — these are monitoring artifacts, never the deliverable. See also memory `automation-monitoring-operating-model`.
+
 ### Claude Code frameworks installed
 
 This project uses three Claude Code frameworks. Use them in sequence (not parallel) — they cover different phases.
@@ -284,3 +296,73 @@ These guidelines are working if you see:
 - Fewer unnecessary changes in diffs
 - Fewer rewrites caused by overcomplication
 - Clarifying questions appearing before implementation instead of after mistakes
+
+
+## Monitoring Rules (OWNER, 2026-08-13 — non-negotiable)
+
+For every sooppiy monitoring session (verbatim owner law):
+
+> "Do not make excuses, do not delude yourself into thinking your analysis
+> is always correct, and do not justify losses with flawed logic; instead,
+> always analyze the reasons behind the outcome of every trade.
+> The ultimate goal of all analysis is profit or loss; conduct your
+> analysis with that in mind."
+
+Binding procedure — TWO-SUBAGENT MONITORING:
+
+1. Every monitoring cycle/sweep with tape to analyze dispatches **two
+   subagents in parallel**: Agent A analyzes every **AI-authored** trade
+   outcome (desk cycles, panel finals, armed exits); Agent B analyzes
+   every **algorithm-authored** outcome (SL/TP watcher, trailing locks,
+   max_loss, at_time, adapt-retire, flattens, sizing/selection). Each
+   must state the REASON behind every trade's outcome — a description
+   without a reason is not analysis; an excuse is not a reason.
+2. The main session then **fully cross-checks** both reports against the
+   law above: reject any finding that excuses a loss, assumes its own
+   correctness, or lacks a per-trade reason. Where the two agents
+   disagree, the disagreement is the finding — chase it.
+3. Verdicts are stated in **profit-or-loss terms first**; process health
+   second. A small favorable delta on a large loss is NOT improvement
+   and must never be reported as one.
+
+Authority chain: docs/reports/HANDOFF-n-slot-monitoring.md §7e (this rule),
+§7b (the AI is the final author of every order), §7c (two-axis attribution).
+
+## Rule of Analysis & Monitoring — EXPERIMENTAL MINDSET (OWNER, 2026-08-17 — non-negotiable)
+
+Owner rule, verbatim:
+
+> "all Analysis thinking about experiment ( Must be thinking Experimental
+> mindset ) — also Implement by Experimental result"
+
+**Every analysis is an experiment. Every implementation follows an
+experimental result.** This binds monitoring, investigation, and shipping.
+
+1. **State the hypothesis before the data.** Write down what you believe and
+   what would falsify it. An observation with no prior hypothesis is a
+   description, not an experiment.
+2. **Design the measurement so it CAN refute you.** If no possible result
+   would change your mind, you are not running an experiment. Prefer a
+   probe, an A/B, or a replay over reasoning from the code.
+3. **Run it, and report the refutations.** Hypotheses killed by measurement
+   are the primary output, not an embarrassment. Record them by name so no
+   future session re-runs a dead theory.
+4. **Implement ONLY on an experimental result.** A fix justified by "the code
+   plainly says so" or "it is obviously wrong-ordered" is a guess. If the
+   change alters money paths, the experiment must include the counterfactual
+   P&L at the live mark.
+5. **After shipping, measure the same quantity again.** A fix that does not
+   move its own metric FAILED, and must be reported as failed in the same
+   terms it was justified in — no re-framing.
+6. **Name the n, and never let one outlier stand as a result.** Report the
+   figure with and without the largest contributor; if stripping it flips
+   the sign, the experiment is inconclusive and must be stated as such.
+
+**Worked precedent, 2026-08-17 (why this rule exists):** the no-verdict
+regression produced four hypotheses — model too slow, concurrency queueing,
+Plan 26 outlook schema, cap set too tight. Probes refuted all four
+(4.9-7.4s idle; 4 concurrent = same wall as 1; without-outlook was SLOWER;
+raising the cap moved the rate 18.5% -> 23.1%). Only `llm_usage` arithmetic
+(~178 calls/h x ~100s vs 3600s available = ~5x oversubscribed) survived
+measurement. A fix (#468) shipped on sound REASONING rather than an
+experiment did not work.
