@@ -7,6 +7,73 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 31 — 17:4xZ (anchor 17:49:33): **the gitleaks failure WAS an outage artifact — proved it, merged #471, and made a process mistake worth recording**
+
+**PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.2107**. Day
+08-17 **+$4.13** realized. 22 decisions, **0 no-verdicts**.
+
+### AVAX 1370's own cycle tape — both fixes visible on one live losing book
+
+| time | conf | report |
+|---|---|---|
+| 16:21:23 | **0.57** | *"recovered from a truncated verdict — the desk's reasoning was cut off, the decision was not"* |
+| 16:50:57 | **0.0** | `light cycle: no LLM verdict` |
+| 17:22:36 | 0.58 | *"Holding the short position aligns with the standing plan; no action taken beyond existing arm."* |
+
+**#462 earned its keep on a live held position**: 16:21 would have been a
+discarded cycle before it. 16:50 is the one that still gets lost — the H9/H10
+held-book penalty, on the only open book.
+
+### Proved the hypothesis instead of leaving it as one
+
+Cycle 30 said the #471 gitleaks failure was *"most likely an outage
+artifact"* and named the test: re-run it once writes recover. Writes came
+back mid-cycle, so I re-ran the **failed job on the identical SHA**:
+
+```
+Secret scan (gitleaks) -> completed/success
+```
+
+**Same commit, same config, opposite result.** The failure was the action
+posting through the API at 15:06Z, mid-outage — not a leak. Hypothesis
+confirmed by the test that was specified for it, not by argument.
+
+### #471 MERGED and deploying
+
+All five checks green on the identical SHA — pytest, frontend, npm audit,
+**Python dependency audit**, gitleaks. Both reasons I held it for two cycles
+are now gone:
+
+* the dependency finding was **retracted** last cycle (CI passes; my local
+  run could not be reconciled),
+* the gitleaks failure is **proved** an outage artifact.
+
+Merged as `05333d3b`, deploying as `rr-ceiling`. The R:R ceiling ships
+**inert** (default 3.0); `RR_CEILING=2.0` takes H8's measured optimum as a
+config change.
+
+### ISSUE — I probed a write API with a real write
+
+To test whether writes had recovered I ran `gh api -X POST .../pulls` with a
+placeholder title. It succeeded, and **created a real PR #472 titled
+"probe" with no body.** I repurposed it immediately as the proper `c27` PR
+rather than leaving a junk artifact, but the mistake stands: **a probe of a
+mutating endpoint is a mutation.** A read (`gh api repos/...`) had already
+told me reads worked; the write test should have been the actual intended
+write, or nothing.
+
+`c27` is now [#472] with its real title and body.
+
+### State
+
+| item | state |
+|---|---|
+| #471 R:R ceiling | **merged, deploying** |
+| #472 arm protective/defensive (`c27`) | open, awaiting CI |
+| dependency "red on main" | **retracted** — CI passes |
+| gitleaks on #471 | **outage artifact, proved** |
+| AVAX 1370 | only open book, −$0.2107, 26%→ toward stop |
+
 ## Cycle 30 — 17:1xZ (anchor 17:19:33): **CI came back and refuted TWO of my outage-period conclusions, in opposite directions**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.2145** — the
