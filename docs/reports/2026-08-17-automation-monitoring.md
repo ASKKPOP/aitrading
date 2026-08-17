@@ -7,6 +7,119 @@ FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
 
+## Cycle 37 — 21:2xZ (anchor 21:23:31): **AVAX 1370 closed −$0.305, and Agent B refuted my own R:R ceiling report**
+
+**PROFIT-OR-LOSS FIRST.** AVAX run 1370 closed 20:24:05Z at **−$0.30509322**
+true net (reconciles to `realized_pnl_usd` exactly). Day 08-17 now **+$3.84**
+(ledger, resid −0.01, 4 flattens). Book flat.
+
+Gross adverse price move is **86.03% of the loss**; fees are 13.97%. **This
+was a directional loss, not a friction loss** — the fee-hurdle story that fits
+so many trades today does not fit this one, and I am not going to force it.
+
+### FAILED — my cycle-33 "the ceiling WORKED" was wrong
+
+I reported the R:R ceiling's first fires as *"the mechanism doing precisely
+what it was built to do, on live tape"* (cycle 33), then narrowed it to
+*"entry-only"* (cycle 34). **Agent B went further and is correct.**
+
+All four ceiling fires landed on **`action = hold`**, and I verified the
+consequence in source:
+
+```
+order_intent.compile_intent:  if kind in ("hold", "arm"): return {"steps": [], "note": kind}
+```
+
+**A hold compiles to no order. The re-priced target is parsed, journalled,
+and discarded.** Not one fire has shaped an entry, an exit, or a live
+bracket.
+
+| run | ts | clamp | action | effect |
+|---|---|---|---|---|
+| 1375 | 17:56:00 | 3.02 → 1.41 | hold | none |
+| 1375 | 18:27:45 | 3.02 → 1.425 | hold | none |
+| 1370 | 18:58:45 | 4.1 → 2.4 | hold | none |
+| 1375 | 19:30:06 | 3.02 → 1.44 | hold | none |
+
+**P&L effect of the R:R ceiling to date: exactly $0.00.** It is telemetry,
+not a rail. "Entry-only" was still too generous — it has not reached an entry
+either, because no fire has yet landed on a buy or sell cycle.
+
+### And my cycle-13 fix specification is inverted by the numbers
+
+I specified: *"do not fix defect (a) alone — the floor must move to a full
+round trip in the same change."* Agent B recomputed run 1335 from `signals`
+and I verified it independently:
+
+```
+pos-2 own peak = run-cum peak 0.422800 − banked 0.170175 = 0.252625
+(a) fixed alone : 0.2526 < arm 0.3980  ->  NO ARM   (saves −$0.141443)
+(a)+(b) fixed   : 0.2526 > arm 0.1791  ->  ARMS     (the loss stands)
+```
+
+**On the one fire where the ratchet lost real money, fixing (a) ALONE
+prevents it and fixing (a)+(b) does not.**
+
+Both statements can hold because they concern different halves: **(a) governs
+whether it ARMS**, and the floor governs **what happens once armed**. Fixing
+(a) alone gives fewer bad arms and a worse floor. My spec collapsed the two.
+**Revised: fix (a) first, independently, and measure — the arming defect is
+the one with a proven −$0.141 attached.**
+
+### The trade itself — the desk's target was never reachable
+
+Agent A's finding, which I accept: the planner said `expected_move_pct 2.5`
+and the algo candidate proposed 6.1354; **the desk overrode both and set
+3.6% → 6.06838, 44% beyond its own planner.** It never moved that target
+across 15 cycles while the horizon decayed 8h → 1h. At cycle 13 it stamped
+its **highest conviction of the run (0.78, `plan_adherence: followed`)** on a
+plan needing **4% in under 2 hours** in an asset whose entire 7-hour range
+was **0.94%**.
+
+**The book was adverse on 356 of 369 samples (96.5%) and was never net-
+profitable at a single sample.**
+
+The arm at 6.25 was **correctly sided** (below breakeven 6.28934) and
+**structurally unreachable** — 0.653% below the run's own best mark, in a
+tape with a 0.94% total range, and never re-priced in 12 cycles where it
+appeared in the brief. **A different failure from SOL 1367's losing-side arm:
+right side, wrong place.**
+
+### Where the agents agreed, and B's correction to me
+
+Both: **the close was desk-authored** (`run:1370:cyc:15`), and
+`stop_event:at_time` stamped a run that had been flat for **57 minutes**.
+Zero rail contribution to the loss.
+
+**B corrected my brief:** worst mark was **6.35020 (65.0% to stop)**, not the
+6.3443/58% I supplied. The tick high was 6.35590 (66.9%).
+
+**B also refused an easy defect:** the ratchet's non-arming was **correct
+under every parameterisation**, including both defects fixed — the corrected
+arm sits at 6.28934 and the true tick low was 6.28950, missing by 0.0026% of
+price. B tested against real ticks rather than 5-minute marks before saying
+so. Ratchet record unchanged: **3 fires, −$0.252934, zero net gains.**
+
+### The scheduled test did not run
+
+Cycle 36's brief line deployed at **21:22:13Z**. Run 1375's last parameter
+cycle was **19:30**, and it has since been `idle_retired` at $0.00. **No
+post-deploy cycle has rendered the line.** `railed_params` appears in **0**
+brief arrays. The test is not answerable yet — not passed, not failed.
+
+### Recommendations
+
+1. **Stop describing the ceiling as working.** Until a fire lands on a
+   buy/sell cycle its P&L effect is $0.00. Reported as such.
+2. **Fix ratchet defect (a) alone, first** — reversing my cycle-13 spec, on
+   the strength of the 1335 recomputation.
+3. **`plan_adherence` measures obedience, not viability** (Agent A). A
+   "followed" stamp certified a 4%-in-2h plan. It needs a reachability test
+   or it will keep rubber-stamping dead plans.
+4. The `fence: lease expired` that killed cycle 12's `reduce` was **+$0.020
+   favourable here** — a real process defect that cost nothing on this tape,
+   and I will not inflate it.
+
 ## Cycle 36 — 20:1xZ (anchor 20:19:35): **built the line that breaks the rails' silence — with the before-measurement already on tape**
 
 **PROFIT-OR-LOSS FIRST.** No closes. AVAX run 1370 short **−$0.3045**. Day

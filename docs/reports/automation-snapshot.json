@@ -421,7 +421,7 @@
     "orphan reclaim blocking on 4-day SOL short; qty=0 BTC zombie unscanned",
     "/docs/how-it-works not a registered slug -> authed falls back to Guide doc; Plan-18 HTML unwired"
   ],
-  "as_of": "2026-08-17T20:20Z",
+  "as_of": "2026-08-17T21:30Z",
   "cron": "3e0160dc (re-armed 10:26Z after compaction killed 5c662b65; expires ~2026-08-11)",
   "active_runs": [
     960,
@@ -827,7 +827,7 @@
     "decisions": 26,
     "open_positions": 1,
     "watch": "dust-floor entry stall: FIL sell margin $8.62 < $10 floor (n=1)",
-    "note": "day +$4.13, AVAX 1370 -$0.3045; built _railed_params_line so the desk is TOLD what a rail changed (run 1375 asked 3.02% x3 and never learned); before-baseline on tape, test = does 1375's next requested target change"
+    "note": "AVAX 1370 CLOSED -$0.305 (86% directional, desk-authored); day +$3.84; R:R CEILING P&L EFFECT IS $0.00 - all 4 fires on action=hold which compiles to steps:[]; cycle-13 spec INVERTED: fix ratchet defect (a) ALONE saves 1335"
   },
   "sweep_24h": {
     "utc_pnl": 2.19,
