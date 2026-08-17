@@ -25,6 +25,15 @@
 > 4. **Re-arm both crons at the start of every session** (§1) — they never
 >    persist.
 >
+> ### 📄 TAKEOVER BRIEF — 2026-08-17
+>
+> `HANDOFF-TAKEOVER-2026-08-17.md` is the point-in-time handover written at
+> the end of the 2026-08-17 session: current fleet state, the eleven PRs that
+> shipped that day **with honest status** (two of them moved nothing), the
+> ten hypotheses tested and their verdicts, the evidence-gated backlog, and
+> the SQL/method traps that cost that session hours. **Read it after this
+> file and before the first cycle.**
+
 > ### ▶️ LOOP RESUMED — 2026-08-06 23:30Z (owner), NEW GROUND STATE
 >
 > The owner reset the balance to **1000** and cleared all history. Fleet 28
