@@ -76,7 +76,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
         self.probe.stop()
         for key in ("AUTO_TRADING_ENABLED", "RUN_CONF_PERCENTILE",
                     "RUN_AI_ORDER_PARAMS", "RISK_ENGINE_ENABLED",
-                    "FEE_PER_MARKET"):
+                    "FEE_PER_MARKET", "RUN_NULL_SIZE_CAP_FRAC"):
             os.environ.pop(key, None)
         self.tmp.cleanup()
 
@@ -197,6 +197,55 @@ class RunCycleOrderParamTests(unittest.TestCase):
             result = run_engine.run_cycle(run_id)
         self.assertTrue(result["executed"], result.get("skip_reason"))
         self.assertTrue(self._events(run_id, "order_params")[0]["deferred"])
+
+    # ── R17: null-size opens are capped, never the full-bet default ────
+
+    def test_null_size_open_is_capped_at_quarter_bet(self):
+        """Owner order 2026-08-18 ("make solution for protect profit"):
+        default-sized opens realized −$178.69 over 47 runs vs +$5.55 over
+        17 desk-sized (runs ≥ 1020). A null size_frac on an OPEN must fall
+        to a quarter bet, not the full conviction-scaled default."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": None})):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertEqual(len(fills), 1)
+        # 0.25 × the $500 configured bet, not $500.
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 125.0,
+                               places=2)
+        clamps = self._events(run_id, "size_clamp")
+        self.assertTrue(any(c.get("stage") == "null_size_cap" and
+                            c.get("size_after") == 125.0 for c in clamps),
+                        clamps)
+
+    def test_authored_size_is_never_capped_by_null_size_rail(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": 0.6})):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        # 0.6 × $500 — well above the 0.25 cap, untouched.
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 300.0,
+                               places=2)
+        self.assertFalse(any(c.get("stage") == "null_size_cap"
+                             for c in self._events(run_id, "size_clamp")))
+
+    def test_null_size_cap_env_one_disables(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        os.environ["RUN_NULL_SIZE_CAP_FRAC"] = "1.0"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": None})):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 500.0,
+                               places=2)
 
     # ── apply mode: the desk's numbers reach the book ──────────────────
 

@@ -4028,6 +4028,20 @@ def _stop_coherence_enabled() -> bool:
             ).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _null_size_cap_frac() -> float:
+    """R17: the fraction of max_bet a default-sized OPEN may take when the
+    desk authored no size_frac. 1.0 disables the cap. Default 0.25 — above
+    the desk's habitual authored band (0.05–0.20 across 255 recent orders)
+    and a quarter of the old full-bet fallthrough that the measured tape
+    charges with the whole platform loss (−$178.69 default-sized vs +$5.55
+    desk-sized, runs ≥ 1020)."""
+    try:
+        v = float(os.getenv("RUN_NULL_SIZE_CAP_FRAC", "0.25"))
+    except ValueError:
+        return 0.25
+    return min(max(v, 0.01), 1.0)
+
+
 def _brake_room_usd(run: dict) -> Optional[float]:
     """USD of further equity loss this run can take before the platform's
     loss rail acts: the binding rail's cap minus the drawdown already
@@ -5607,7 +5621,10 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         # size_frac's BASIS SWITCHES WITH THE INTENT, and the prompt says so
         # in the desk's own terms because that asymmetry is the entire point.
         + ('Also state your order as an intent: open|add grow exposure '
-           '(size_frac = fraction of your max bet); reduce|close bank it '
+           '(size_frac = fraction of your max bet — AUTHOR IT EVERY TIME: '
+           'an omitted size is not neutral, it falls to a platform default '
+           'capped at a quarter bet, so the size traded is no longer your '
+           'decision); reduce|close bank it '
            '(size_frac = fraction of WHAT YOU HOLD — 0.5 means half your '
            'position; banking is a first-class action, not the absence of an '
            'add); flip = you were wrong, reverse; hold = nothing. Or arm: act '
@@ -6733,6 +6750,33 @@ def run_cycle(run_id: int) -> dict:
                     action, order_params.size_frac,
                     max_bet_usd=float(cfg.get("max_bet_usd") or 0),
                     held_qty=held_now, entry=float(entry or 0), leverage=lev)
+            elif (order_params.size_frac is None and intent_exit is None
+                    and action in ("buy", "short")
+                    and float(size_usd or 0) > 0):
+                # R17 (owner order 2026-08-18, "make solution for protect
+                # profit"): a null size_frac on an OPEN is not neutral — it
+                # falls through to the conviction-scaled full-bet default,
+                # and the tape splits exactly on that line: default-sized
+                # opens realized −$178.69 over 47 runs (66% losers) while
+                # desk-sized opens realized +$5.55 over 17 (runs ≥ 1020;
+                # worst instances SPCX −$35.98 at $3,317 notional, ETH 1272
+                # −$1.87 at 90% of budget on the day's weakest conviction).
+                # Cap the default at a fraction of the configured max bet —
+                # above the desk's habitual authored band (0.05–0.20), a
+                # quarter of the old full-bet default. Opens/extends only:
+                # exits are position-sized (intent_exit) and a "sell" here
+                # is always a reduce (see the stop-coherence note below) —
+                # a rail shrinking a risk-shedding order points the
+                # forbidden direction. An authored size is never touched.
+                cap = _null_size_cap_frac() * float(cfg.get("max_bet_usd") or 0)
+                if 0 < cap < float(size_usd):
+                    emit_telemetry_event(run_id, "size_clamp",
+                                         {"cycle": seq,
+                                          "stage": "null_size_cap",
+                                          "cap_frac": _null_size_cap_frac(),
+                                          "size_before": round(float(size_usd), 2),
+                                          "size_after": round(cap, 2)})
+                    size_usd = cap
         # Plan 17 apply: an intent exit is sized from the POSITION, full stop.
         # exit_size_usd never sees max_bet_usd — that derivation is the §2
         # defect and carries a permanent test tripwire. Takes precedence over
