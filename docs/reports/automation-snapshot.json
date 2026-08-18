@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-18/57",
- "captured_at_utc": "2026-08-18T06:14Z",
+ "cycle": "2026-08-18/58",
+ "captured_at_utc": "2026-08-18T06:44Z",
  "prod_image": "sooppiy-backend:20260818-r17-nullsizecap",
  "C39_NEW_SESSION_TWO_TARGETS": "Account rotated; crons re-armed (0961ff91 30min, 06e43308 sweep). Owner scope now TWO users: agent 6/fleet 35 AND forevery1969@gmail.com user 25/agent 60/FLEET 36 (us-stock, 25 slots, $99,996.69, started 08-16T10:37Z). Both books FLAT; day +3.84; fleet 35 replenished 9 runs (1387-1396) -> 12 running.",
  "C39_FLEET36_NEVER_TRADED": "151 decisions since start: 147 hold / 2 buy / 2 retire. BOTH buys (run 1324 T, cyc 56/57, conf 0.73/0.78, parsed+compiled+$257 sized) killed by gate_skip fence: lease expired. 100% entry-kill rate from infrastructure.",
