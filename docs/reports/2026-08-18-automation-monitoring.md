@@ -6,6 +6,22 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 62 — 08:3xZ: #481 SHIPPED — the cap now guards the absent class too (owner-ordered extension), verified 3×
+
+Owner reaffirmed the fix over the evidence-gated deferral ("fixing") —
+that is the owner's decision and it shipped as such. PR #481, image
+`20260818-r17-absentcap`, verified 3× live: unified clamp wired
+(params_state parsed_null|absent), cap 0.25, in-image tests 3/3 OK
+(incl. both new absent-class tests), 0 tracebacks.
+
+The clamp is now a single post-sizing block: every apply-mode OPEN the
+desk did not size — parsed-null OR absent/deferred (1392/1419 class) —
+is capped at 0.25 × max_bet. Honest record preserved in the code
+comment: the measured loss sits on parsed-null (−$178.71/46); absent is
+n=3/+$0.61, included on the owner's order for protective symmetry.
+Boundaries: apply-only, opens-only, exits/authored sizes untouched.
+fail-before 2/2, 4483+1346 tests, CI 5/5.
+
 ## Cycle 61 — 07:5xZ (anchor 07:53:19): fleet 37 ACTIVE (user-scaled to 25 slots), first trade open; **#480 coverage gap found by its own watch — measured, no extension licensed**
 
 **Fleet 37:** active, **user-scaled 10 → 25 slots** ($10k budget), 9 runs
