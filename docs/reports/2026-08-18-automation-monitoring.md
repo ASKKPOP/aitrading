@@ -6,6 +6,35 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 86 close-out — 20:1xZ: XOM 1426 COMPLETE **+$0.119** — profitable, and the churn's cost is now a measured $0.58
+
+**PROFIT-OR-LOSS FIRST.** Run 1426 is FLAT: the desk banked the last
+quarter at 19:55:18Z (cycle 27, its own reason: hard-end proximity +
+poor R:R at resistance). Net **+$0.119** on 4 legs (arithmetic
+reconciled exactly by both agents independently). Fleet 37's first
+completed us-stock run is a WIN — with zero overnight exposure, the
+write-once stop honored, close-awareness functioning, and RAG recall
+used at the banking decision.
+
+**The measured lesson: sequencing destroyed 83% of the run's profit.**
+Hold-the-book-to-own-exit counterfactual: **+$0.701**. Actual: +$0.119.
+**The cycle-22 noise-dump (sold the dip at 164.68, ~$0.24 underwater,
+19% of its own stop) cost −$0.582** — verified two independent ways.
+Fees exonerated ($0.014 total). The cycle-26/27 banking legs were fine
+(+$0.026 vs final exit). **The noise-churn class now has its strongest
+number: it can take 83% out of a WINNING run.** AI-first skill-lesson
+evidence accruing (1417 cyc6, 1426 cyc22 measured; the class is
+reduce-inside-own-stop, early-in-own-horizon, deviated-stamped).
+
+**Also tallied:** desk self-accounting overstated its net gain ~60%
+(forgot its own loss leg — new minor class); trail activation $15.29
+unreachable at this profit scale (dimension (b) again, from the profit
+side); panel-crash-at-entry signature re-confirmed; no session-close
+flatten rail exists by design (48h at_time only) — untested today.
+
+Books: only KAITO remainder open (+$0.7x). Fence 0; clamps 2; 0
+tracebacks.
+
 ## Cycle 85/86 — 19:5xZ (anchor 19:53:20): XOM banked a winning quarter **+$0.2049** (seam-caught); pair dispatched
 
 XOM 1426 sold a quarter at 165.43 (19:23:29 — ten seconds after cycle
