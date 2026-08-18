@@ -6,6 +6,41 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 92 — 23:2xZ (anchor 23:23:15): KAITO 1462 COMPLETE **+$0.696** — harvest template VALIDATED; ratchet dimension (b) gets its third measured instance
+
+**PROFIT-OR-LOSS FIRST.** Run 1462 closed: **+$0.69612 net, exact
+reconciliation** (gross $0.7405, fees 6.0%). Both books flat. Two
+subagents cross-checked; full agreement. Day ≈ agent 6 −$1.08 /
+agent 60 +$0.25 (pnl_audit settles at next sweep).
+
+1. **The harvest template is VALIDATED on this tape:** with-trend
+   desk-sized entry, staged banks into strength, zero churn, 4 fills —
+   and staging **ADDED +7.3% vs holding** (+$0.048), the opposite sign
+   of XOM 1426's −83%. The difference in one line: KAITO banked INTO
+   the move's strength; XOM dumped AWAY from it. Both cases now
+   documented for the skill-lesson track.
+2. **Final cover: desk half-reduce railed to full by the Plan-24 dust
+   rail** (`dust_remainder_closed`, the only rail to touch an order —
+   net-positive). Blemish: the desk's outlook claimed "the remaining
+   half stays" while the book went flat — narrative-vs-order mismatch
+   (new minor class instance).
+3. **R21's first live fire is still pending — and WHY it stayed silent
+   is the finding:** the position gave back ~48% of its $1.34 peak
+   un-defended because the trail's $1.99 activate_usd, sized at open
+   for the full book, **never rescales after partial covers** — the
+   half-banked remainder's own excursion ($1.04) could never arm.
+   **Dimension (b) third measured instance** (XOM $15.29 unreachable;
+   1462 trail 40× book; now no-rescale-after-covers). "A ratchet that
+   cannot arm on a half-banked winner is a dead rail for exactly the
+   desks that trim well." → backlog R22.
+4. **Cost center:** cycle-10 override of the panel's sell proposal
+   (~$0.41 forgone, contradiction-override class); 4 consecutive
+   no_verdicts mid-run (oversubscription signature) survived only
+   because hold happened to be right.
+
+Fence 0; clamps 2; ceiling actionable-fires +2 on this run (11, 13);
+0 tracebacks.
+
 ## Cycle 91 — 22:5xZ (anchor 22:53:15): quiet
 
 No closes. KAITO remainder short +$0.53 unrealized. Fence 0; clamps 2;
