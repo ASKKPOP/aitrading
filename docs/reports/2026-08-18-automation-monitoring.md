@@ -6,6 +6,48 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 70 — 12:2xZ (anchor 12:23:18): SUI 1417 COMPLETE at **−$0.7306** — and both agents independently caught a spec inversion in #485 (shipped 11:49Z by a parallel session)
+
+**PROFIT-OR-LOSS FIRST.** Run 1417 closed: **−$0.7306 net** (reconciled
+to realized_pnl_usd to 8 decimals; 84% price / 16% fees). Day agent 6:
+−$1.48. Two subagents cross-checked; every number agrees.
+
+**Run verdict:** the ENTRY authored the loss — a counter-trend short at
+0.6468 into RSI-33, overriding its own standing flat plan
+(`deviated`/`overridden`), 0.572 target its own later panel called
+unreachable; price ground +0.95% against it. Exits crystallized it: the
+full-plan counterfactual is −$1.25 marked vs −$0.73 booked (exits +$0.52
+ahead, interim). **The cap saved $2.19 exactly** (uncapped −$2.92,
+3.99984× linear) — its clearest print yet, though it substituted for a
+desk failure (params absent), not moderated a choice.
+
+**⚠️ CONFIRMED DEFECT — #485 ratchet fix (parallel session, 11:49Z,
+image `20260818-ai-first-batch`) inverts its own spec.** The 12:23:00
+flatten (`run:1417:flatten`, ratchet fire #5, #485's FIRST live fire)
+was SPEC-INVALID by both agents' independent derivations: position's
+true own peak **+$0.1015 never reached the $0.2549 arm**, but the new
+baseline (`peak − CURRENT realized`) subtracted fire-time realized
+(−0.4167) and manufactured a phantom peak of 0.4614 out of losses
+realized AFTER the peak. **Every partial cover at a loss now inflates
+the phantom peak by the loss it books** — the desk's own cyc-11 reduce
+armed the rail that killed the remainder 9 seconds later (the run-976
+escalation shape, resurrected through a different variable; cycle 37's
+"spec inverted" flag demonstrated live). P&L effect of THIS fire
+≈ $0.00 (flatten at mark) — but the class fires on every losing partial
+cover. **Fix spec (both agents converge): baseline must be
+realized-at-peak-epoch — or track the position-scoped peak directly —
+never realized-at-fire.** `_breakeven_floor_hit`, run_engine ~1004.
+→ backlog R21, licensed by this cross-checked measurement.
+
+**Also:** both loss covers (cyc 6 AND cyc 11) shipped on panel-fallback
+cycles ("decision json unparseable") — the run's only reviewed-and-
+passed actions were holds; every loss shipped review-blind
+(`_order_discussion` fails-open +2). And the desk's report CLAIMED an
+armed close below 0.635 that never existed in the machine
+(order_intent.arm null) — a fabricated-arm instance. Loss-cooldown
+correctly held the desk out cycles 7–9. Fence 0. 1445 cyc2: no
+re-request (neutral #473). AVAX −$0.09 open.
+
 ## Cycle 69 — 11:5xZ (anchor 11:53:23): ceiling fire #8 (new run 1445, cycle 1); positions easing
 
 No closes. Positions: AVAX −$0.14; SUI remainder −$0.41 (eased from

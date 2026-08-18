@@ -487,3 +487,9 @@ whether the requested target changes.
   3. Selection: after `_mover_rank_us_stock(eligible)` (~line 1436), new `_ensure_hot_tech_lead(eligible, k=5)`: reorder us-stock slots so the top-min(5,N) tech-membership theses by the SAME mover key (|mom_2d|×vol confirmation — the owner algorithm) lead the us-stock ordering. Universe/ordering guarantee only — expectancy/maturity/R15 gates still veto at build (documented safety kept), desk still authors every order (§7b).
   4. Prompt: research planner clause — always author theses for the current top-5 hot US tech names (locate the stage-2 planner prompt; "add prompt for sooppiy" is the owner's wording).
   5. Tests: tech roster present in universe when us-stock scoped; top-5 tech lead the us-stock ordering post-rank; non-us-stock markets' ordering untouched; kill switch off restores old behavior; gates still veto a seeded name.
+
+
+### R21 — #485 ratchet baseline inverts on same-position losing covers · **LICENSED (2026-08-18 cycle 70, two-agent cross-checked)**
+- **Defect:** #485 computes position-scoped peak as `peak_pnl_usd − CURRENT realized`. A losing partial cover drops realized and inflates the phantom peak by the loss booked — run 1417: true position peak +$0.1015 < arm $0.2549, yet fire-time subtraction manufactured 0.4614 → armed → flattened the remainder 9s after the desk's own reduce. The desk's reduce arms the rail that kills its book (976-shape).
+- **Fix spec (both agents converge):** baseline = realized **at peak epoch** (freeze when peak is recorded), or track the position-scoped peak directly. Never realized-at-fire. `_breakeven_floor_hit` run_engine ~1004.
+- **Evidence bar met:** measured + replayable + independently derived twice. P&L of the first fire ≈ $0.00 (mark-level flatten) — ship as correctness fix with the ratchet ledger (5 fires ≈ −$1.00 lifetime, zero net gains) as context. Coordinate with the parallel session that shipped #485.
