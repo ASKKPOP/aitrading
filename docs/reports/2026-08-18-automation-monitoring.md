@@ -6,6 +6,24 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 48 — 02:4xZ: R20 SHIPPED — PR #478 live on prod, verified 3×
+
+Owner order R20 implemented and deployed: image
+`sooppiy-backend:20260818-r20-techseed` (from cd1aee7d; rollback:
+`20260818-rag-phase3-a4` — note a parallel session shipped #476/RAG a4
+between our deploys). Verified in the running worker: 23-name tech
+roster + k=5 present, seed enabled, `_ensure_hot_tech_lead` wired into
+`select_targets` (inspect), in-image tests 8/8 OK
+(ENTITLEMENTS_ENFORCED=false), 0 tracebacks. Full pipeline: fail-before,
+4473+1346 local, CI 5/5.
+
+**Standing watch (the live verification):** the next research batch must
+carry the tech roster names as us-stock candidates with `hot_tech` flags
+in the stage-2 prompt, and the us-stock thesis ordering must lead with
+the hottest tech. Check `research_theses` newest batch + `[SymbolResearch]`
+logs next cycle. Gates unchanged — a seeded name being VETOED by
+expectancy/maturity/R15 is correct behavior, not a regression.
+
 ## Cycle 47 — 01:5xZ (anchor 01:51:19): 6-minute delta window — quiet
 
 The cron fired queued, ~6 min after cycle 46. No closes (no dispatch owed);
