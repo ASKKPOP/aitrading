@@ -6,6 +6,21 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 44 — 00:2xZ (anchor 00:25:04): first executed entry on the #475 image; otherwise quiet
+
+No closes on 08-18 yet (no subagent dispatch owed). **Run 1392 ZECUSDT
+opened long 0.9207 @ 514.71 at 23:57:19Z (cyc 7, desk-authored, clean
+`run:1392:cyc:7` execution) — the first executed order since the
+lease-renewal deploy: positive control that #475 did not break the execute
+path.** Currently +$1.22 unrealized (mark 516.04). 13 running runs,
+0 tracebacks.
+
+Watches: fence post-deploy **0**; no new clamps (railed_params behavior
+still n=1-ambiguous); ceiling 5 fires / $0.00; loss floor #460 unexercised;
+ratchet (a) queued. Scope note: the cron prompt still names fleet 36 —
+**stale**; agent 60 was wiped clean at the owner's order (cycle 43) and has
+no fleet until the user rebuilds one.
+
 ## Cycle 43 — 00:2xZ (anchor 00:22): FULL US-STOCK ANALYSIS (owner ask) + owner-ordered clean-all of forevery1969
 
 ### Owner-ordered account wipe — EXECUTED 00:2xZ
