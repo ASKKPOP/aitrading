@@ -6,6 +6,37 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 93 — 23:4xZ (anchor 23:46:14): both fleets replenished; #481 absent-class cap gets its FIRST live fire (SUIUSDT 1479); no closes
+
+**PROFIT-OR-LOSS FIRST.** No closes in the window (23:21:15→now, 2-min
+overlap) — nothing to attribute, no subagent dispatch. Day 08-18 pnl_audit
+ledger **−$0.94** (check ok, resid 0.00); one open position: SUIUSDT short
+344.93 @ 0.652 (run 1479, agent 6), ~flat at the mark.
+
+1. **#481's absent class fired live for the first time** — the exact
+   coverage gap its own watch found on 08-18 morning. Run 1479 cyc 7
+   (light route) decided `sell` conf 0.58 / conviction 0.6925 with
+   `order_params outcome: absent` — no size authored despite the
+   "AUTHOR IT EVERY TIME" prompt line — and the cap cut margin
+   **$326.91 → $112.45** (0.25×max_bet). Cap fires total: **3**
+   (2 parsed_null + 1 absent). Save/cost lands on the ledger at close.
+   Bracket is machine-sane: stop +5% / TP −10% / R:R 2 / lev 2×.
+2. **Both fleets replenished between cycles.** Fleet 35 (agent 6) built
+   M2K 1470, NZDUSD 1473, and five crypto/futures 1479–1483 (SUI HYPE
+   FIL GC ETH). Fleet 37 (agent 60) is cycling 8 us-stock runs (ADBE
+   PFE ACN DIS MA SLV WMT COST) + USDJPY 1474; us-stock runs correctly
+   `gate_skip: market closed` outside NYSE — no rule violated.
+3. **Minor watch opened (n=1, observe only):** stopped runs 1441/1442
+   (agent 60 forex) still receive sweeper-authored outlooks — LLM calls
+   spent on runs that can never trade again. In the context of the
+   no_verdict oversubscription signature this is not free; flag only if
+   it recurs next cycle.
+4. **Watches:** fence **0** (WORKING); 0 tracebacks; churn/exit-discipline
+   tally unchanged (no closed legs); R21 first live fire still pending
+   (SUIUSDT ratchet unarmed, position young); R22 no new instances;
+   loss floor unexercised; SPCX tripwire idle. #473: next 1479 cycle
+   gets checked for a clamp→bigger-request pair.
+
 ## Cycle 92 — 23:2xZ (anchor 23:23:15): KAITO 1462 COMPLETE **+$0.696** — harvest template VALIDATED; ratchet dimension (b) gets its third measured instance
 
 **PROFIT-OR-LOSS FIRST.** Run 1462 closed: **+$0.69612 net, exact
