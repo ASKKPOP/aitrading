@@ -477,3 +477,8 @@ whether the requested target changes.
 
 ### R17 addendum (2026-08-18) — third account confirmed
 - Fleet 32 (agent 5): every us-stock entry had `size_frac: null` + `leverage: null` → extreme-appetite defaults filled $1,106 max-bet × 3× leverage; SPCX $3,317 notional → −$35.81 (65% of the us-stock loss) on a −1.07% move. **n=3 accounts (agents 6, 60, 5).** The default is the single largest loss author on the platform's us-stock tape.
+
+### R20 — OWNER ORDER (2026-08-18, verbatim: "for make fleet N automatically by SOOPPIY then must be include USA tech hot to 5 issued stock 5 always") · HARD-READY, implement next session
+- **Spec (as understood):** whenever SOOPPIY auto-builds/replenishes an N-slot fleet whose market scope allows us-stock, the research/candidate universe must ALWAYS include the **top-5 hot-issue USA TECH stocks** (ranked by the existing hot-issue/2-day-mover machinery restricted to a tech roster), so 5 tech names are always among the candidates.
+- **Boundaries kept:** existing build gates (expectancy, maturity, R15) still apply to the seeded names — "include" means guaranteed universe presence, not gate bypass; the desk remains the final author of every order (§7b). Also add the matching prompt line so the research planner authors theses for these 5 names every batch ("add prompt for sooppiy" — the owner's words).
+- **Implementation sketch:** tech roster constant (or S&P tech subset of the R14 roster) → hot-rank top-5 (reuse scanner/mover ranking) → force-include in `screen_universe`/`select_targets` output for us-stock-scoped fleets + prompt clause in the research planner. Tests: seeded-names-present in batch; gates still veto; non-us-stock fleets unaffected.
