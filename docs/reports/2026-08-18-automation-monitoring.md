@@ -6,6 +6,38 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 60 — 07:3xZ (anchor 07:33:31): **FLEET 37 CREATED (forevery1969) — in scope; R20 part-2 VERIFIED on its build; extreme-config warning stated**
+
+Owner built the new fleet: **37 — agent 60, 10 slots, $10,000,
+scope ["us-stock","forex"], archetype short, `risk_appetite = EXTREME`**,
+created 07:32:49Z, building. First selection: 9 kept (ORCL/VZ/V us-stock
++ 6 forex pairs); LLY correctly dropped on measured negative expectancy.
+
+**R20 part-2 — VERIFIED.** Batch 496399 carries 10 tech-roster theses
+(universe guarantee again). Only ONE is selectable — ORCL long (the
+desk's tech reads skew short today: CSCO −9.85%/2d, AAPL, ACN, NOW,
+SNOW all shorts → inexpressible on the spot book; CRM/INTU/NFLX/PYPL
+longs fail other gates). **The selected us-stock ordering leads with
+ORCL despite the LOWEST final_score of the three us-stock picks (0.266
+vs V 1.371, VZ 0.598) — that inversion is `_ensure_hot_tech_lead`'s
+fingerprint on live tape.** Both halves of R20 now verified live.
+Noted for the owner: on a spot-only book, bearish tech reads cannot be
+expressed — today that throttled the hot-tech slate to 1 of 10.
+
+**⚠️ WARNING, stated firmly (report-only; risk config is never mine to
+edit):** `extreme` is the exact configuration that produced fleet 32's
+−$55.33 at an 11% win rate (3× leverage, high max-bet, conf 0.55) while
+`balanced` turned the same day +$7.52. What is different now: the R17
+null-size cap (default-sized opens ≤ 0.25 × max_bet — the SPCX $3,317
+vector is structurally closed), R10 stop-coherence, and the #475 fence
+fix. What is NOT different: extreme still sets the aggressive max-bet /
+leverage / confidence floor. The measured history of this config is on
+the live report page (sooppiy.com/reports/…). Monitoring covers fleet
+37 from this cycle; us-stock runs will park until 13:30Z.
+
+Other watches: fence 0 · null_size_cap 0 · #473 n=1 positive · #460
+unexercised · ratchet queued. No closes; agent-6 book flat.
+
 ## Cycle 59 — 07:1xZ (anchor 07:14:46): quiet
 
 No closes; book flat; agent 60 fleetless; 0 tracebacks. Watches
