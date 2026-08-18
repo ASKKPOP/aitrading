@@ -6,6 +6,35 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 81 — 17:5xZ (anchor 17:53:24): XOM half-reduce −$0.2505 analyzed — 1417-shape churn confirmed; a NEW pierced-stop flag
+
+**PROFIT-OR-LOSS FIRST.** XOM 1426 half-sell (17:23:58, desk intent
+path) booked **−$0.2505**; cost ≈ $0.17 vs holding to the current mark.
+Both agents cross-checked; they interlock.
+
+1. **Churn, the 1417 shape, all three markers:** reduce at 19% of its
+   own stop distance, 8% into its horizon, `plan_adherence: deviated` —
+   and it sold the RECOVERY (held at the session low, sold after a
+   +1.2% bounce). Noise-churn reduce tally: n=2 today (1417 cyc6, 1426
+   cyc22). Entry was a chase 2.2% above its own entry zone with the
+   target inflated to manufacture 2:1 (entry_quality 0.4, deviated),
+   unit-slip bracket rescued by rails, cap-trimmed.
+2. **Rails clean; R21 behaved on exactly its trigger class:** the
+   loss-realizing reduce produced NO phantom arm; `peak_realized_usd`
+   stamped sanely (−0.0143 = entry fee). Cap saved +$0.05 on the leg
+   (1.2× counterfactual). Loss cooldown fired correctly AFTER.
+3. **⚠️ NEW FLAG (n=1): pierced stop, no execution.** Cycle-17 mark
+   163.29 printed BELOW the written stop 163.475 and the SL watcher did
+   not fire. Possibly poll-timing on the ~5-min mark cadence — but a
+   stop that prints through without executing needs its own
+   verification. WATCH: on the next stop-adjacent mark, check watcher
+   poll timestamps vs the pierce window.
+4. Panel-outage signature +1: the entry's discussion stage crashed
+   ("cannot schedule new futures after interpreter shutdown") — neither
+   entry nor exit was ever challenged by a second stage.
+
+KAITO short +$0.51 in profit. Fence 0; clamps 2; 0 tracebacks.
+
 ## Cycle 80 — 17:2xZ (anchor 17:23:29): quiet; new KAITO short
 
 No closes. Positions: NEW KAITO short (run 1462, agent 6) 144.35 @
