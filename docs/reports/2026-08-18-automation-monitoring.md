@@ -6,6 +6,37 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 66 — 10:2xZ (anchor 10:23:13): SUI half-cover −$0.109 analyzed — noise-churn at half size, panel unadjudicated; **the cap's first save measured: +$0.328**
+
+**PROFIT-OR-LOSS FIRST.** Run 1417 SUI half-cover booked **−$0.109**
+(74% price / 26% close fee; all-in with pro-rata open fee −$0.138, 41%
+fees). Remainder still short (stop 0.67914) — final verdict at close.
+Two subagents cross-checked; agreements and the one framing difference
+resolved (churn reading stands, better-evidenced).
+
+**Reasons:**
+1. **The reduce was noise-churn, desk-authored, unadjudicated.** The
+   desk halved on a 0.128% adverse move — **1/39 of its own 5% stop, 30
+   minutes into its self-declared 20-hour plan** (`plan_adherence:
+   deviated`; `young_dump_flag` fired, log-only). The panel never
+   reviewed it: `"panel fallback (not the AI): decision json
+   unparseable"` — **instance +1 of the standing `_order_discussion`
+   fails-open governance item** (takeover §8.7). The stated reason
+   ("loss is growing") was technically true and materially empty.
+2. **Entry: data-consistent, R:R honest (2.25:1 checks out), but
+   entry_quality self-score jumped 0.3 with no stated basis — that jump
+   let it through the gate** — and it shipped bracket-less (params
+   absent → the cap's first fire); the machine stop landed only at
+   cycle 6. First 30 minutes ran stopless.
+3. **The cap's first save, measured exactly:** leg loss −$0.109 at
+   capped size vs **−$0.438 at the full default (4.000× linear) —
+   +$0.328 avoided on this leg alone.** Clamp integrity verified
+   (252.47 × 0.25 = 63.12, params_state absent, cycle-5 outcome defer).
+
+Rail census on 1417: only the size_clamp + log-only young_dump_flag —
+no fence/stop/trailing/ratchet events. Fence total post-#475 still 0.
+AVAX 1411 short −$0.09 adverse. 0 tracebacks.
+
 ## Cycle 65 — 09:5xZ (anchor 09:53:20): **the null-size cap FIRED — first live fire, absent class, working exactly as shipped**
 
 No closes (day: −0.75 agent 6 / +0.13 agent 60). Positions: AVAX 1411
