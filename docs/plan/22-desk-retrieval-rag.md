@@ -695,6 +695,31 @@ Every increment lands here as a dated line, in the same PR that ships it.
       desk weighs a recalled past finding when deciding to cut, hold or bank
       a position that has given back its peak. It cannot make the recall
       better; it stops an arbitrary one from being read as authoritative.
+    - **VERIFIED ON PROD, image `20260818-recall-contest`.** The rendered
+      block is header + exactly 2 finding bullets + the note as a non-bullet
+      line, so `_RECALL_MAX` is untouched. Five of sixteen cells stay silent,
+      which verifies the negative case on live data as well as the positive.
+    - **Post-ship re-measurement, per the experimental-mindset rule — and it
+      moved the headline number, so it is recorded rather than buried.** The
+      note fires in **11 of 16 live cells (69%)**, against the **7 of 16
+      (44%)** EXACT ties that justified building it. These are two different
+      quantities, not a discrepancy: 44% is `score == score`, 69% adds the
+      1% band. A later reader must not treat 11 vs 7 as a regression.
+    - **What the 69% actually says is bigger than this increment: retrieval
+      at the MARGIN is nearly flat.** It is not that the ranking occasionally
+      ties — it is that in roughly two thirds of live situations the second
+      slot carries almost no information over the chunks below it. BM25 over
+      single-claim `lesson` chunks of similar length produces a flat tail by
+      construction. That is direct evidence FOR (c)/(d): weights are the only
+      thing that can make the marginal slot mean something, and it is also
+      why (a2) exploration is cheap here — the arms really are near-equal.
+    - **Watch item, stated before anyone argues it later:** a note that fires
+      69% of the time is close to unconditional, which is the failure mode
+      this line was explicitly designed against. It is honest today — the
+      retrieval really is that contested — but if the desk visibly discounts
+      recall across the board, the 1% band (`_RECALL_TIE_BAND`) is the knob,
+      NOT the wording. Do not tune it without a measured behaviour change;
+      the fix of record is (c).
 
   - **2026-08-17 — owner asked whether us-stock also gets RAG. It already
     does; measured, not assumed.** The recall path has never been
