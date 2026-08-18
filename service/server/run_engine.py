@@ -4723,6 +4723,14 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
             if len(body) > _RECALL_CHARS:
                 body = body[:_RECALL_CHARS].rsplit(" ", 1)[0] + "…"
             out.append(f"- {body}")
+        # Guarded like the journal above: a disclosure that raises must cost
+        # the desk the NOTE, never the recall it annotates.
+        try:
+            note = _recall_contest_line(hits, meta.get("cands"))
+        except Exception:  # noqa: BLE001
+            note = ""
+        if note:
+            out.append(note)
         return "\n".join(out) + "\n"
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
@@ -4838,6 +4846,54 @@ def _recall_cands(hits: list, chosen: list) -> list:
     seen = {h.get("sha") for h in (chosen or [])}
     return [{"sha": h.get("sha"), "score": h.get("score")}
             for h in (hits or []) if h.get("sha") not in seen]
+
+
+# ── Phase 3(a5): tell the DESK how contested its recall was ───────────────
+# Measured on the live prod corpus 2026-08-18, all 16 (market x situation)
+# cells: in SEVEN of them the second chunk the desk is handed is exactly tied
+# on score with a chunk it was never shown. Slot 2 is decided by the sort's
+# tiebreak, not by relevance — and the block is headed "What this desk has
+# already learned about cycles like this", which reads as precedent.
+#
+# This is the first rung of the ladder that changes what the desk READS
+# rather than what we record, and it is deliberately a DISCLOSURE, not a
+# weighting: we do not yet know which of the tied chunks is better (that is
+# (c)/(d)), but we do know the choice between them was arbitrary, and the
+# desk deciding cut/hold/bank is entitled to that. Weighing a coin-flip
+# anecdote as a precedent is the shape behind the measured full-book dumps.
+_RECALL_TIE_BAND = 0.01
+
+
+def _recall_contest_line(hits: list, cands: list) -> str:
+    """How many chunks the desk was NOT shown were just as relevant.
+
+    Silent unless contested: an unconditional caveat would teach the desk to
+    discount every recollection, including the uncontested ones that are
+    genuine precedent."""
+    try:
+        emitted = [float(h.get("score")) for h in (hits or [])]
+        if not emitted:
+            return ""
+        # The MARGINAL chunk, not the head: slot 2 is the one a tie decides,
+        # and it is the one an unshown equal would have replaced.
+        margin = min(emitted)
+        if not margin > 0:            # also swallows a NaN score
+            return ""
+        tied = sum(1 for c in (cands or [])
+                   if float(c.get("score")) >= margin * (1 - _RECALL_TIE_BAND))
+        if not tied:
+            return ""
+        # NOT rendered as a bullet: `test_recall_is_bounded` counts "\n- "
+        # to cap how many past FINDINGS reach the prompt, and this note is
+        # not a finding. Widening that guard to fit an annotation would have
+        # quietly raised the recall budget too.
+        return (f"Retrieval note: {tied} other past finding"
+                f"{'s' if tied > 1 else ''} scored within 1% of the last "
+                f"item above, so which of them you were shown is close to "
+                f"arbitrary. Weigh these as general doctrine for this "
+                f"situation, NOT as a specific precedent for this position.")
+    except (TypeError, ValueError):
+        return ""
 
 
 def _recall_select(hits: list, explore: bool) -> "tuple[list, dict]":
