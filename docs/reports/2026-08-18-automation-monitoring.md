@@ -6,6 +6,36 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 75 — 14:2xZ (anchor 14:23:15): AVAX 1411 closed **−$0.2996** — an entry-location loss with exemplary exit discipline; the armed-exit path proven end-to-end
+
+**PROFIT-OR-LOSS FIRST.** Run 1411 complete: **−$0.2996 true net**
+(exact; 92% price, 8% fees). Two subagents cross-checked; full
+agreement.
+
+**Reasons:**
+1. **The loss was fixed at entry — red 361 of 361 equity ticks, never
+   one cent green in 6h10m.** The desk re-entered a short thesis it had
+   ITSELF declared dead 93 minutes earlier ("price already above 6.35…
+   no edge remains"), at 6.294 — 0.9% below its own invalidation, risk
+   to range-top vs reward requiring a range break. **Re-entry-against-
+   own-invalidation is now n=4 across 3 fleets (QNT, INTC, 1417, 1411)
+   — all losers. Tallied as a candidate skill lesson; evidence
+   accruing.**
+2. **Everything after entry was the desired behavior:** desk-sized open
+   (0.05 authored), full bracket authored at entry, **cycle-8 arm at
+   the invalidation level (6.35) executed by the arm watcher at
+   14:20:10 — the armed-exit path working end-to-end** (`run:1411:arm:8`,
+   slippage 0.088%), saving ~$0.47 vs the 6.46 stop rail. Zero churn,
+   zero adds, 12 consecutive holds. Panel functional at both decision
+   points (no fallback authored anything).
+3. **Rail census clean** (0 fences/clamps/ratchet on the run). The R21
+   first-fire verification remains pending — the ratchet did not fire.
+   Counterfactual: holding to now ≈ −$0.302 — the exit was P&L-neutral;
+   the entry was the whole loss.
+
+XOM 1426 still open (−$1.50 adverse, eased). Fence 0; clamps 2; 0
+tracebacks. Day: agent 6 ≈ −$1.78, agent 60 +$0.13 (+XOM unrealized).
+
 ## Cycle 74 — 13:5xZ (anchor 13:53:16): quiet; XOM drifting against
 
 No closes. Positions: AVAX 1411 short −$0.11; XOM 1426 long **−$1.99
