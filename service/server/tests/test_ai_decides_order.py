@@ -260,6 +260,54 @@ class PrimaryRuleAiOnlyOrdersTests(unittest.TestCase):
         self.assertEqual(d["rule_action_suppressed"], "buy")
         self.assertEqual(d["decided_by"], "rule")
 
+    def test_the_trader_prompt_carries_the_measured_reachability_band(self):
+        """The desk is told to pick "a level the move can realistically
+        reach" and was never given a number for what its own book reaches.
+        Measured 2026-08-18: authored target median 4.80%, all-time best
+        moment 0.97% of notional, 42% of runs never positive at all."""
+        from unittest.mock import patch
+        import desk_record
+        seen = {}
+
+        def cap(prompt, **kw):
+            seen["p"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        with patch.object(aa, "llm_configured", return_value=True), \
+             patch.object(aa, "generate_text", side_effect=cap), \
+             patch.object(desk_record, "record_line",
+                          return_value="REACHABILITY-SENTINEL"):
+            aa._trader_risk_decision(
+                "BTC", "crypto", {"news": "", "sentiment": "",
+                                  "fundamentals_macro": "", "technical": ""},
+                {"signal": "buy", "signal_score": 8.0, "current_price": 100.0},
+                {"sentiment_breakdown": {}}, "en")
+        self.assertIn("REACHABILITY-SENTINEL", seen.get("p", ""),
+                      "the desk sizes a target with no record of what this "
+                      "book has ever reached")
+
+    def test_a_missing_reachability_record_never_blocks_the_prompt(self):
+        from unittest.mock import patch
+        import desk_record
+        seen = {}
+
+        def cap(prompt, **kw):
+            seen["p"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        with patch.object(aa, "llm_configured", return_value=True), \
+             patch.object(aa, "generate_text", side_effect=cap), \
+             patch.object(desk_record, "record_line",
+                          side_effect=RuntimeError("db down")):
+            d = aa._trader_risk_decision(
+                "BTC", "crypto", {"news": "", "sentiment": "",
+                                  "fundamentals_macro": "", "technical": ""},
+                {"signal": "buy", "signal_score": 8.0, "current_price": 100.0},
+                {"sentiment_breakdown": {}}, "en")
+        self.assertIn("Trader + Risk Management", seen.get("p", ""),
+                      "a failing record cost the desk its whole prompt")
+        self.assertIsNotNone(d)
+
     def test_unparseable_ai_answer_never_originates_a_trade(self):
         """The exact prod path: LLM answered, JSON unreadable, rule decided."""
         from unittest.mock import patch
