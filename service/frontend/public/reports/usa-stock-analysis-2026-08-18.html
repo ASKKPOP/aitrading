@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sooppiy US-Stock Desk Report — 2026-08-18</title>
+<style>
+:root{
+  --paper:#FAFAF7; --ink:#1A1D23; --muted:#5A6472; --line:#E3E2DA;
+  --accent:#0E7C6B; --accent-soft:#E4F0ED; --loss:#C0392B; --gain:#1E8449;
+  --card:#FFFFFF; --code:#F1F0EA; --warn:#9A6B00; --warn-soft:#F7EFDD;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#15181D; --ink:#E8E8E2; --muted:#9AA3AE; --line:#2C313A;
+    --accent:#3AB09A; --accent-soft:#1C2E2A; --loss:#E06B5D; --gain:#5DBB7E;
+    --card:#1C2026; --code:#22262E; --warn:#D9A93F; --warn-soft:#2C2618;
+  }
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:"Avenir Next","Helvetica Neue",Helvetica,Arial,sans-serif;line-height:1.55;margin:0;padding:0 20px 80px}
+main{max-width:920px;margin:0 auto}
+h1{font-size:2rem;letter-spacing:-.02em;margin:48px 0 4px}
+h2{font-size:1.35rem;letter-spacing:-.01em;margin:56px 0 12px;padding-top:18px;border-top:2px solid var(--ink)}
+h3{font-size:1.05rem;margin:28px 0 8px}
+.sub{color:var(--muted);margin:0 0 8px}
+.kicker{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.ko{color:var(--muted);font-size:.92rem;border-left:3px solid var(--accent);padding:6px 12px;margin:14px 0;background:var(--accent-soft);border-radius:0 6px 6px 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+.twrap{overflow-x:auto;margin:14px 0}
+th{text-align:left;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--ink);padding:6px 10px}
+td{border-bottom:1px solid var(--line);padding:7px 10px;vertical-align:top}
+.num{text-align:right;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.85rem;white-space:nowrap}
+.loss{color:var(--loss);font-weight:600}.gain{color:var(--gain);font-weight:600}
+.pill{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.bad{background:var(--loss);color:var(--paper)}.pill.good{background:var(--gain);color:var(--paper)}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.pill.fix{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+.bars{margin:18px 0}
+.bar-row{display:grid;grid-template-columns:170px 1fr 90px;align-items:center;gap:10px;margin:6px 0;font-size:.85rem}
+.bar-track{background:var(--code);border-radius:4px;height:20px}
+.bar-fill{height:100%;border-radius:4px}
+.bar-val{font-family:"SF Mono",Menlo,monospace;font-size:.8rem;text-align:right}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:16px 0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:16px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+.stat .v{font-size:1.7rem;font-weight:700;font-family:"SF Mono",Menlo,monospace;letter-spacing:-.02em}
+.stat .l{font-size:.78rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+code{background:var(--code);border-radius:4px;padding:1px 6px;font-family:"SF Mono",Menlo,monospace;font-size:.82em}
+.note{background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:10px 16px;font-size:.9rem;margin:14px 0}
+footer{margin-top:64px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);padding-top:14px}
+/* dependency-free flow diagrams */
+.flow{display:flex;flex-direction:column;gap:0;margin:18px 0}
+.fstage{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px}
+.fstage.algo{border-left-color:var(--warn)}
+.fstage.gate{border-left-color:var(--loss)}
+.fstage h4{margin:0 0 4px;font-size:.92rem}
+.fstage p{margin:0;font-size:.83rem;color:var(--muted)}
+.farrow{align-self:center;color:var(--muted);font-size:1.1rem;line-height:1.4;padding:2px 0}
+.fbranch{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.tag{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.fstage.algo .tag{color:var(--warn)}
+.fstage.gate .tag{color:var(--loss)}
+</style>
+</head>
+<body>
+<main>
+<p class="kicker">Sooppiy &middot; monitoring session report &middot; 2026-08-18</p>
+<h1>US-Stock Desk Report</h1>
+<p class="sub">The complete US-stock trading record, where every dollar went and why, and how the Sooppiy AI + algorithm pipeline authors each decision. Evidence: prod ledger, two-subagent cross-checked analysis, all figures reconciled to the cent.</p>
+<p class="ko">미국주식 트레이딩 전체 기록 — 손익의 행방과 이유, 그리고 Sooppiy AI + 알고리즘이 각 결정을 만드는 과정. 근거: 프로드 원장, 2-서브에이전트 교차검증, 센트 단위 대사 완료.</p>
+
+<h2>1 &middot; Executive summary</h2>
+<div class="grid2">
+  <div class="stat"><div class="v loss">&minus;$55.33</div><div class="l">Fleet 32 (extreme config) &middot; 11% win rate</div></div>
+  <div class="stat"><div class="v gain">+$7.52</div><div class="l">Fleet 33 (balanced config) &middot; 59% win rate</div></div>
+  <div class="stat"><div class="v loss">&minus;$35.81</div><div class="l">One SPCX leg = 65% of all loss</div></div>
+  <div class="stat"><div class="v">1.3%</div><div class="l">Fee share of loss &mdash; churn refuted</div></div>
+</div>
+<p><strong>Verdict, profit-or-loss first:</strong> US-stock lost <span class="loss">&minus;$55.33</span> lifetime, and <strong>~90% of the gap between the losing and winning fleet is sizing configuration</strong> &mdash; not direction, not exit rails, not fees. Both fleets went all-long on the same symbols from the same research; the balanced fleet won on quarter-size with fast-banked partials.</p>
+<p class="ko"><strong>판정(손익 우선):</strong> 미국주식 평생 손실 −$55.33이며, 승패 플릿 격차의 약 90%는 방향·레일·수수료가 아닌 <strong>사이징 설정</strong>. 같은 리서치·같은 종목·전부 롱 — 균형 플릿은 4분의 1 사이즈와 빠른 분할 익절로 승리.</p>
+
+<h2>2 &middot; Where the &minus;$55.33 went</h2>
+<div class="bars">
+  <div class="bar-row"><span>SPCX (sizing defect)</span><div class="bar-track"><div class="bar-fill" style="width:65%;background:var(--loss)"></div></div><span class="bar-val loss">&minus;$35.81</span></div>
+  <div class="bar-row"><span>Self-contradicting entries</span><div class="bar-track"><div class="bar-fill" style="width:21%;background:var(--loss);opacity:.75"></div></div><span class="bar-val loss">&minus;$11.42</span></div>
+  <div class="bar-row"><span>Watcher slippage</span><div class="bar-track"><div class="bar-fill" style="width:9%;background:var(--loss);opacity:.55"></div></div><span class="bar-val loss">&minus;$5.10</span></div>
+  <div class="bar-row"><span>Other legs, net</span><div class="bar-track"><div class="bar-fill" style="width:5%;background:var(--loss);opacity:.4"></div></div><span class="bar-val loss">&minus;$2.28</span></div>
+  <div class="bar-row"><span>Fees (all legs)</span><div class="bar-track"><div class="bar-fill" style="width:1.3%;background:var(--muted)"></div></div><span class="bar-val">&minus;$0.72</span></div>
+</div>
+<h3>The SPCX anatomy &mdash; one trade, 65% of everything</h3>
+<div class="card">
+<p>The desk left <code>size_frac: null</code> and <code>leverage: null</code>. The fleet's user-selected <strong>extreme</strong> risk appetite filled in the blanks: <strong>$3,317 notional at 3&times; leverage on a spot book</strong>. The AI's own 6.4% stop was unreachable &mdash; at that size the run's loss rail tolerated only ~1.3% adverse. SPCX wiggled <strong>&minus;1.07%</strong> (an ordinary move) and the drawdown brake flattened everything in 26 minutes. The same SPCX thesis in fleet 33: $121 notional &rarr; &minus;$0.33. <strong>27&times; the notional on the identical signal.</strong></p>
+<p class="ko">데스크가 사이즈/레버리지를 null로 두자 익스트림 설정이 $3,317·3배를 채움. −1.07% 일반 변동에 26분 만에 강제 청산. 같은 논지를 플릿 33은 $121로 실행해 −$0.33 — <strong>동일 시그널에 27배 노셔널.</strong></p>
+</div>
+<div class="twrap"><table>
+<tr><th>Fleet 32 leg</th><th>Entry</th><th>Exit</th><th class="num">True net</th><th>Exit author</th><th>Reason</th></tr>
+<tr><td>SPCX</td><td>14:18 @142.39 &middot; $3,317</td><td>14:44 (26 min)</td><td class="num loss">&minus;35.98</td><td>Drawdown brake</td><td>Size made the bracket infeasible; born dead</td></tr>
+<tr><td>ADBE</td><td>14:46 @260.54 &middot; 0.65% stop</td><td>15:11</td><td class="num loss">&minus;8.20</td><td>Desk</td><td>Stop below daily noise; bought into the dump</td></tr>
+<tr><td>QNT</td><td>14:59 &mdash; after declaring its own thesis invalidated</td><td>15:07 (7 min)</td><td class="num loss">&minus;7.52</td><td>SL watcher</td><td>Entry against own invalidation; &minus;1.68% fill on a 1% stop</td></tr>
+<tr><td>INTC</td><td>16:23 &mdash; the setup it refused twice</td><td>17:24 / 19:23</td><td class="num loss">&minus;3.90</td><td>Desk</td><td>Late-day chase; contradicted two prior refusals</td></tr>
+<tr><td>CBRS</td><td>14:10 @229.75</td><td>3 partials</td><td class="num gain">+0.32</td><td>Mixed</td><td>Banked half at +1.78%, rest bled &mdash; good call, bad harvest</td></tr>
+<tr><td>ORCL <span class="pill warn">blocked</span></td><td>15:00 buy decision, conf 0.66</td><td>never traded</td><td class="num">0.00</td><td>Position cap 8/8</td><td>The one winner blocked &mdash; losers were funded first (fleet 33 made +6.62 on it)</td></tr>
+</table></div>
+
+<h2>3 &middot; The controlled experiment: fleet 32 vs fleet 33</h2>
+<p>Same day, same symbols, same research, same rails. Only the configuration differed.</p>
+<div class="twrap"><table>
+<tr><th></th><th>Fleet 32 &mdash; extreme</th><th>Fleet 33 &mdash; balanced</th></tr>
+<tr><td>Config</td><td>3&times; leverage on spot &middot; $1,106 max-bet &middot; conf &ge; 0.55</td><td>1&times; &middot; $150 max-bet &middot; conf &ge; 0.60</td></tr>
+<tr><td>US-stock net</td><td class="loss">&minus;$55.33</td><td class="gain">+$7.52</td></tr>
+<tr><td>Win rate (legs)</td><td>11% (1 / 9)</td><td>59% (10 / 17)</td></tr>
+<tr><td>Median win / loss</td><td class="num">+9.80 / &minus;4.71</td><td class="num">+0.37 / &minus;0.15</td></tr>
+<tr><td>Median notional</td><td class="num">$871 (max $3,317)</td><td class="num">$266 (max $393)</td></tr>
+<tr><td>Same SPCX trade</td><td class="loss">conf 0.72 &middot; $3,317 &rarr; &minus;35.98</td><td class="num">conf 0.60 &middot; $121 &rarr; &minus;0.34</td></tr>
+<tr><td>Loss discipline</td><td>Full-size losers rode to rails</td><td>Every loss &le; $0.34, winners banked in halves</td></tr>
+</table></div>
+<p><strong>Confidence did not predict outcome</strong> &mdash; the highest-conviction entry was the worst trade. Sizing off conviction multiplied the damage.</p>
+<p class="ko">같은 날·같은 종목·같은 레일의 통제 실험. 차이는 설정뿐 — 승률 11% 대 59%, 확신도는 결과를 예측하지 못했고 확신 기반 사이징이 피해를 증폭.</p>
+
+<h2>4 &middot; How Sooppiy decides &mdash; the full pipeline</h2>
+<p>Two authors act on every trade: the <strong>AI desk</strong> (LLM decisions &mdash; direction, size, brackets, exits) and the <strong>algorithm</strong> (deterministic rails that gate, clamp, and protect). The AI is the final author of every order; rails may shrink or refuse, never invent.</p>
+
+<h3>Phase A &mdash; Research (every batch)</h3>
+<div class="flow">
+  <div class="fstage"><span class="tag">Universe</span><h4>Universe assembly</h4><p>Dropdown symbols + hot movers + swing seed roster + <strong>R20: the US tech roster, always</strong> (23 S&amp;P-100 tech names whenever us-stock is in scope)</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage algo"><span class="tag">Algorithm</span><h4>Stage-1 screen</h4><p>~129 candidates scored on persisted factors: 2-day momentum, volatility, volume ratio, moving-average distances</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage"><span class="tag">AI</span><h4>Stage-2 LLM theses</h4><p>Per symbol: direction &middot; expected move &middot; horizon &middot; confidence &middot; invalidation level. R20 adds the <code>hot_tech</code> clause: a genuine thesis per tech name, direction from its own tape</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage gate"><span class="tag">Gates</span><h4>Build gates (veto power)</h4><p>Expressible on the book? (no shorts on spot) &middot; fee-feasible? &middot; per-bucket expectancy record &middot; listing maturity &middot; R15 bracket feasibility. A vetoed thesis is journaled with its reason</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage algo"><span class="tag">Algorithm</span><h4>Fleet compose</h4><p>Volatility-parity slot funding &middot; the fleet's risk-appetite config fills unset defaults (max-bet, leverage, stop rails) &middot; config snapshot stamped onto the run</p></div>
+</div>
+
+<h3>Phase B &mdash; The run cycle (every ~30 minutes)</h3>
+<div class="flow">
+  <div class="fstage gate"><span class="tag">Gates</span><h4>Pre-gates (zero cost)</h4><p>Market open? &middot; master hold? &middot; cash? &middot; loss cooldown? A closed market skips before any LLM call</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage"><span class="tag">AI desk</span><h4>Decision (LLM)</h4><p>buy / sell / hold / reduce / close + confidence, conviction, written report. The desk reads: brief lines (position state, rails, ordinary-day scale), 36-skill catalog, outcome recall, slot outlook, and what a rail changed last cycle (#473)</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage"><span class="tag">AI desk</span><h4>Order parameters (LLM)</h4><p>size fraction &middot; stop % &middot; target % &middot; trailing arm/give &middot; horizon</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage algo"><span class="tag">Algorithm</span><h4>Parameter rails (clamp only)</h4><p>R:R floor (target &ge; 2&times; stop) and ceiling (&le; 3&times;) &middot; monotone stops (never widened) &middot; unit-slip guard &middot; dust clamp. Clamps are journaled and told back to the desk next cycle</p></div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage algo"><span class="tag">Algorithm</span><h4>Intent compile &rarr; fenced execution</h4><p>hold compiles to no order. Before money moves: lease renewed (#475), then the fence re-checks &mdash; run still running? still our lease? Unique order id makes each cycle at-most-once</p></div>
+</div>
+
+<h3>Phase C &mdash; Position management (between desk cycles, marks ~5 min)</h3>
+<div class="flow">
+  <div class="fbranch">
+    <div class="fstage algo"><span class="tag">Watcher</span><h4>SL/TP watcher</h4><p>Executes the desk's own stop/target between cycles</p></div>
+    <div class="fstage algo"><span class="tag">Watcher</span><h4>Trailing lock</h4><p>Banks the peak before it round-trips</p></div>
+    <div class="fstage algo"><span class="tag">Watcher</span><h4>Breakeven ratchet</h4><p>Arms at 2&times; fee &mdash; 4 fires &asymp; &minus;$1.00; redesign queued (3 defect dimensions)</p></div>
+    <div class="fstage algo"><span class="tag">Watcher</span><h4>Drawdown brake</h4><p>Run-equity room vs max-loss &mdash; the rail that capped SPCX</p></div>
+    <div class="fstage algo"><span class="tag">Watcher</span><h4>Arm executor</h4><p>Fires the desk's pre-armed exits between cycles</p></div>
+    <div class="fstage algo"><span class="tag">Watcher</span><h4>Session &amp; time</h4><p>Idle retire &middot; at-time &middot; queued NYSE flattens</p></div>
+  </div>
+  <div class="farrow">&darr;</div>
+  <div class="fstage"><span class="tag">Ledger</span><h4>Close &rarr; realized P&amp;L &rarr; learning loop</h4><p>Every close lands in the signals ledger, feeds adapt tightening, desk memory, outcome recall, and the monitoring corpus &mdash; the next decision reads what this one learned</p></div>
+</div>
+<p class="ko">모든 거래에 두 저자가 작동: <strong>AI 데스크</strong>(LLM — 방향·사이즈·브래킷·청산)와 <strong>알고리즘</strong>(게이트·클램프·보호 레일). 주문의 최종 저자는 항상 AI, 레일은 줄이거나 거부할 뿐. 흐름: A 리서치(유니버스→스크린→LLM 논지→게이트→플릿 구성) → B 런 사이클(프리게이트→데스크 결정→파라미터 레일→펜스 체결) → C 포지션 관리(워처들, ~5분 마크) → 청산·학습 루프.</p>
+
+<h2>5 &middot; The rails &mdash; record on the recent tape</h2>
+<div class="twrap"><table>
+<tr><th>Rail</th><th>Job</th><th>Measured record</th><th>Status</th></tr>
+<tr><td>Drawdown brake</td><td>Cap run equity loss</td><td>SPCX &minus;35.81: spec-correct, merciful (the AI's stop would have allowed ~&minus;$212)</td><td><span class="pill good">working</span></td></tr>
+<tr><td>SL/TP watcher</td><td>Execute desk stops between cycles</td><td>Fills &asymp; $5.1 beyond spec across 3 legs (poll granularity)</td><td><span class="pill warn">slippage</span></td></tr>
+<tr><td>Breakeven ratchet</td><td>Never let a gain become a loss</td><td>4 fires &asymp; &minus;$1.00, zero net gains; stale-mark + hair-trigger dimensions found</td><td><span class="pill bad">redesign queued</span></td></tr>
+<tr><td>Lease fence</td><td>No zombie/duplicate trades</td><td>Ate 21 authored orders in 4 days (8 opens, 7 reduces, 1 close)</td><td><span class="pill fix">FIXED #475 &middot; 0 since</span></td></tr>
+<tr><td>R:R ceiling</td><td>Clamp unreachable targets</td><td>5 fires, all on hold cycles &mdash; P&amp;L effect $0.00</td><td><span class="pill warn">inert so far</span></td></tr>
+<tr><td>R15 bracket gate</td><td>Refuse unbuildable brackets</td><td>Replay proved it worked as calibrated (R19 refuted)</td><td><span class="pill good">working</span></td></tr>
+<tr><td>Venue rule</td><td>No shorts on a spot book</td><td>0 us-stock shorts ever proposed; 3 R20 tech shorts correctly refused</td><td><span class="pill good">working</span></td></tr>
+<tr><td>Session logic</td><td>NYSE hours only</td><td>All 41 signals inside 13:30&ndash;20:00Z; queued flatten filled 23s after open</td><td><span class="pill good">working</span></td></tr>
+</table></div>
+
+<h2>6 &middot; Defects found &amp; what shipped</h2>
+<div class="twrap"><table>
+<tr><th>Finding</th><th>Evidence</th><th>Action</th></tr>
+<tr><td><strong>R17 &mdash; null-size default sizing</strong></td><td>3 accounts; SPCX &minus;$35.81 is its worst single cost; largest bets land on weakest ideas by fallback</td><td><span class="pill warn">staged</span> fleet-wide measurement, then conservative default</td></tr>
+<tr><td><strong>#475 &mdash; lease fence ate authored orders</strong></td><td>21 kills / 4 days incl. both of a fleet's only entries; 437s cycle vs 300s TTL measured</td><td><span class="pill fix">shipped + verified</span> &middot; 0 fires since</td></tr>
+<tr><td><strong>R19 &mdash; &ldquo;untradeable slots&rdquo;</strong></td><td>Full replay: the build gate passed run 1380 by design; identical geometry traded elsewhere</td><td><span class="pill good">refuted</span> &mdash; no placebo gate shipped</td></tr>
+<tr><td><strong>Ratchet redesign</strong></td><td>(a) retro-arm after reduces (+$0.1414 proven) &middot; (b) fee-scale hair-trigger arm &middot; (c) 5-min stale marks</td><td><span class="pill warn">queued</span> &mdash; all three dimensions together, with counterfactual replay</td></tr>
+<tr><td><strong>R20 &mdash; owner order: hot US tech always</strong></td><td>First live batch: 7 roster theses incl. AVGO (hottest mover); gates kept their veto</td><td><span class="pill fix">shipped #478</span> universe + hot-5 ordering + prompt clause</td></tr>
+</table></div>
+<div class="note"><strong>Fees were never the story on us-stock:</strong> $0.72 of $55.33 (1.3%). The loss is direction &times; size. On crypto the reverse holds &mdash; fees ran 44&ndash;47% of recent losses. The two markets fail differently; fixes must not be cross-applied blindly.</div>
+<p class="ko"><strong>수정 내역:</strong> R17(3계정 재현, 측정 후 보수적 기본값 예정) · #475(리스 펜스 — 배포·검증, 이후 0건) · R19(반증 — 플라시보 게이트 미배포) · 래칫 재설계(3개 차원 함께) · R20(핫테크 5종 — 배포, 첫 배치 검증). 미국주식 손실에서 수수료는 1.3%뿐 — 원인은 방향×사이즈. 크립토는 반대(수수료 44–47%) — 두 시장의 실패 방식이 다름.</p>
+
+<h2>7 &middot; Standing verdicts &amp; watches</h2>
+<ul>
+<li><strong>The desk's judgment is not the main leak &mdash; the configuration between desk and market is.</strong> Extreme appetite converted a mediocre day into &minus;$55; balanced converted the same day into +$7.52.</li>
+<li><strong>Confidence &ne; edge.</strong> Highest-conviction entries were the worst; sizing must stop amplifying conviction until conviction earns it on tape.</li>
+<li><strong>Watches:</strong> fence count must stay 0 &middot; R20 hot-tech lead ordering at next fleet selection &middot; #473 railed-params behavior &middot; loss floor #460 still unexercised &middot; ratchet redesign evidence accruing.</li>
+</ul>
+<p class="ko"><strong>결론:</strong> 주된 누수는 데스크의 판단이 아니라 데스크와 시장 사이의 <strong>설정</strong>. 확신도≠엣지 — 확신 기반 사이징은 테이프에서 입증되기 전까지 증폭을 멈춰야 함. 감시: 펜스 0 유지 · R20 선두 배치 · #473 행동 · #460 · 래칫 재설계.</p>
+
+<footer>Sooppiy automation monitoring &middot; generated 2026-08-18 &middot; sources: prod ledger (signals &middot; trading_runs &middot; run_events), pnl_audit replay, two-subagent cross-checked analyses (cycles 43&ndash;50), HANDOFF authority files. All dollar figures reconciled to stored realized P&amp;L.</footer>
+</main>
+</body>
+</html>
