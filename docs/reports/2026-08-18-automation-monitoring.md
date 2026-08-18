@@ -6,6 +6,24 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 52 — 03:4xZ (anchor 03:45:35): ceiling fire #6 — two rails composed, and the cleanest #473 test yet is armed
+
+No closes; book flat; agent 60 fleetless; fence post-#475 **0**; 0
+tracebacks.
+
+**Ceiling fire #6 (run 1398 SOLUSDT — a fresh replenish build — cycle 8,
+03:37:04Z):** the desk authored `stop_pct 0.0061, target_pct 0.0299` — a
+UNIT SLIP (fractions-as-percents). Two rails composed correctly in
+sequence: the #446 unit-slip rail rescued (0.0061→0.61, 0.0299→2.99),
+then the R:R ceiling clamped 2.99→1.83 (3× stop). Action = `hold` again:
+**ceiling ledger now 6 fires, 6/6 on hold cycles, P&L effect $0.00.**
+
+**#473 test armed — the cleanest stimulus yet:** this clamp is 39% deep
+(2.99→1.83) on a fresh run, unlike cycle 42's 1% nudge. Next cycle of
+1398 (~04:07Z) answers: does the desk's requested target move after the
+railed_params line renders? Check cycle 9's order_params first thing
+next cycle.
+
 ## Cycle 51 — 03:5xZ: US-Stock Desk Report LIVE on sooppiy.com (owner ask)
 
 Owner asked for a full HTML report (visualization + flows + tables) of the
