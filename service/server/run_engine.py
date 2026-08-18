@@ -4674,20 +4674,25 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
         explore = (_recall_explore_enabled()
                    and _recall_explore_allowed(pnl, pos_qty))
         market = str(run.get("market") or "") or None
-        limit = _RECALL_EXPLORE_POOL if explore else _RECALL_MAX
+        # (a4): the shortlist is ALWAYS widened, including when exploration is
+        # off. `desk_memory.search` slices after scoring, so the top-2 of a
+        # 5-hit search is byte-identical to a 2-hit search — the desk reads
+        # exactly what it read before, and the runners-up become journalable.
         hits = desk_memory.search(query, kind=_RECALL_KINDS,
-                                  market=market, limit=limit)
+                                  market=market, limit=_RECALL_EXPLORE_POOL)
         if not hits:
             hits = desk_memory.search(query, kind=_RECALL_KINDS_FALLBACK,
-                                      market=market, limit=limit)
+                                      market=market,
+                                      limit=_RECALL_EXPLORE_POOL)
         # Same reasoning as the capture guard below: a selector that raises
         # must fall back to the incumbent ranking, never to no recall at all.
         try:
             hits, meta = _recall_select(hits, explore)
         except Exception:  # noqa: BLE001
-            hits = list(hits or [])[:_RECALL_MAX]
+            head = list(hits or [])[:_RECALL_MAX]
             meta = {"scheme": _RECALL_SCHEME_FIXED, "explore": False,
-                    "propensity": 1.0}
+                    "propensity": 1.0, "cands": _recall_cands(hits, head)}
+            hits = head
         # Guarded HERE as well as inside the capture: a journal that raises
         # would otherwise fall to the outer handler and silently strip the
         # desk's recall — a degradation, not the no-op fail-soft demands.
@@ -4800,6 +4805,27 @@ def _recall_explore_allowed(pnl: dict, pos_qty: float) -> bool:
         return False
 
 
+# ── Phase 3(a4): journal the candidates that were PASSED OVER ─────────────
+# Measured on prod 2026-08-17 across the 203 `recall` rows written since the
+# #432 kind cutover: the row records `pool` as a COUNT, never the identities,
+# and 59% of rows are deterministic (the losing classes) where not even the
+# count is written. So a chunk missing from a row is ambiguous between "ranked
+# and not drawn" and "not in the pool at all" — and every off-policy estimator
+# (c) needs the action SET, not its cardinality. The same measurement found
+# the deterministic classes' pairs moving in time-disjoint blocks as the
+# corpus grew, drift that cannot be attributed without a record of what else
+# was on offer. Cheap now, impossible to retrofit.
+def _recall_cands(hits: list, chosen: list) -> list:
+    """Every hit the selector saw and did NOT emit.
+
+    Defined by exclusion rather than by a rank slice on purpose: when the draw
+    displaces rank 2, rank 2 is itself a passed-over arm, and a fixed
+    `hits[2:]` would drop the one candidate the counterfactual most needs."""
+    seen = {h.get("sha") for h in (chosen or [])}
+    return [{"sha": h.get("sha"), "score": h.get("score")}
+            for h in (hits or []) if h.get("sha") not in seen]
+
+
 def _recall_select(hits: list, explore: bool) -> "tuple[list, dict]":
     """Choose what the brief carries, and record the probability of the choice.
 
@@ -4809,13 +4835,21 @@ def _recall_select(hits: list, explore: bool) -> "tuple[list, dict]":
     every off-policy estimate increment (c) computes."""
     head = list(hits or [])[:_RECALL_MAX]
     if not explore:
+        # No `pool` and no `floor` key here, deliberately: their ABSENCE is
+        # what proves this early return fired, and that is how the
+        # losing-class exclusion is audited in the journal (plan 22 §7).
         return head, {"scheme": _RECALL_SCHEME_FIXED, "explore": False,
-                      "propensity": 1.0}
+                      "propensity": 1.0, "cands": _recall_cands(hits, head)}
     meta = {"scheme": _RECALL_SCHEME_EPS, "explore": False,
-            "eps": _RECALL_EXPLORE_EPS, "pool": 0, "propensity": 1.0}
+            "eps": _RECALL_EXPLORE_EPS, "pool": 0, "propensity": 1.0,
+            "cands": _recall_cands(hits, head)}
     if not head:
         return head, meta
     floor = float(head[0].get("score") or 0) * _RECALL_EXPLORE_FLOOR
+    # Journaled because `_RECALL_EXPLORE_FLOOR` is a constant TODAY: a row
+    # that does not carry the floor it was drawn under becomes unreadable the
+    # day the constant moves.
+    meta["floor"] = round(floor, 4)
     alts = [h for h in list(hits)[_RECALL_MAX:]
             if float(h.get("score") or 0) >= floor]
     meta["pool"] = len(alts)
@@ -4824,7 +4858,9 @@ def _recall_select(hits: list, explore: bool) -> "tuple[list, dict]":
     if random.random() < _RECALL_EXPLORE_EPS:
         meta["explore"] = True
         meta["propensity"] = round(_RECALL_EXPLORE_EPS / len(alts), 6)
-        return [head[0], random.choice(alts)], meta
+        drawn = [head[0], random.choice(alts)]
+        meta["cands"] = _recall_cands(hits, drawn)
+        return drawn, meta
     meta["propensity"] = round(1.0 - _RECALL_EXPLORE_EPS, 6)
     return head, meta
 
@@ -6353,9 +6389,15 @@ def run_cycle(run_id: int) -> dict:
                                   # VERSION beside the choice, none of the
                                   # off-policy estimators can be computed
                                   # offline, and it cannot be retrofitted.
+                                  # (a4): `cands` is the action SET — which
+                                  # chunks were ranked and passed over. Without
+                                  # it a chunk absent from a row is ambiguous
+                                  # between not-drawn and not-in-the-pool, and
+                                  # no counterfactual can be computed.
                                   **{k: recalled[k] for k in
                                      ("scheme", "explore", "propensity",
-                                      "eps", "pool") if k in recalled}})
+                                      "eps", "pool", "floor", "cands")
+                                     if k in recalled}})
 
         # AI-authored order parameters (2026-07-27). Parsed and railed here,
         # journaled either way; whether they change the order is
