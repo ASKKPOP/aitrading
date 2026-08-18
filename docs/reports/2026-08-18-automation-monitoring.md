@@ -6,6 +6,13 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 91 — 22:5xZ (anchor 22:53:15): quiet
+
+No closes. KAITO remainder short +$0.53 unrealized. Fence 0; clamps 2;
+0 tracebacks. Prod image now `20260818-tie-explore` (parallel session
+deployed atop; main-based, fixes ride along). Nothing to analyze,
+nothing to ship.
+
 ## Cycle 90 — 22:2xZ (anchor 22:28:46): quiet; Plan 27 arc completed and REJECTED between cycles
 
 No closes (overlapped window). Sole position: KAITO remainder short
