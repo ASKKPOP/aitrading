@@ -6750,33 +6750,36 @@ def run_cycle(run_id: int) -> dict:
                     action, order_params.size_frac,
                     max_bet_usd=float(cfg.get("max_bet_usd") or 0),
                     held_qty=held_now, entry=float(entry or 0), leverage=lev)
-            elif (order_params.size_frac is None and intent_exit is None
-                    and action in ("buy", "short")
-                    and float(size_usd or 0) > 0):
-                # R17 (owner order 2026-08-18, "make solution for protect
-                # profit"): a null size_frac on an OPEN is not neutral — it
-                # falls through to the conviction-scaled full-bet default,
-                # and the tape splits exactly on that line: default-sized
-                # opens realized −$178.69 over 47 runs (66% losers) while
-                # desk-sized opens realized +$5.55 over 17 (runs ≥ 1020;
-                # worst instances SPCX −$35.98 at $3,317 notional, ETH 1272
-                # −$1.87 at 90% of budget on the day's weakest conviction).
-                # Cap the default at a fraction of the configured max bet —
-                # above the desk's habitual authored band (0.05–0.20), a
-                # quarter of the old full-bet default. Opens/extends only:
-                # exits are position-sized (intent_exit) and a "sell" here
-                # is always a reduce (see the stop-coherence note below) —
-                # a rail shrinking a risk-shedding order points the
-                # forbidden direction. An authored size is never touched.
-                cap = _null_size_cap_frac() * float(cfg.get("max_bet_usd") or 0)
-                if 0 < cap < float(size_usd):
-                    emit_telemetry_event(run_id, "size_clamp",
-                                         {"cycle": seq,
-                                          "stage": "null_size_cap",
-                                          "cap_frac": _null_size_cap_frac(),
-                                          "size_before": round(float(size_usd), 2),
-                                          "size_after": round(cap, 2)})
-                    size_usd = cap
+        # R17 (owner orders 2026-08-18 "make solution for protect profit" +
+        # "fixing" the absent-class gap): the cap guards EVERY open the desk
+        # did not size — parsed params with size_frac null AND
+        # absent/deferred params (no block emitted at all; runs 1392/1419
+        # class). Measured: parsed-null opens realized −$178.71 over 46 runs
+        # (66% losers) vs +$5.57 over 18 desk-sized; the absent class is
+        # n=3 / +$0.61 and is included on the OWNER'S ORDER for protective
+        # symmetry — the defect is the unauthored size, not the parse path.
+        # Cap = NULL_SIZE_CAP_FRAC × max_bet (default 0.25, above the
+        # desk's habitual 0.05–0.20 authored band). Opens/extends only:
+        # exits are position-sized (intent_exit) and a "sell" here is
+        # always a reduce — shrinking a risk-shedding order points the
+        # forbidden direction. An authored size is never touched. Apply
+        # mode only, so shadow/off keep the deterministic path unchanged.
+        if (op_mode == "apply" and intent_exit is None
+                and action in ("buy", "short")
+                and (order_params is None or order_params.size_frac is None)
+                and float(size_usd or 0) > 0):
+            cap = _null_size_cap_frac() * float(cfg.get("max_bet_usd") or 0)
+            if 0 < cap < float(size_usd):
+                emit_telemetry_event(run_id, "size_clamp",
+                                     {"cycle": seq,
+                                      "stage": "null_size_cap",
+                                      "cap_frac": _null_size_cap_frac(),
+                                      "params_state": ("parsed_null"
+                                                       if order_params is not None
+                                                       else "absent"),
+                                      "size_before": round(float(size_usd), 2),
+                                      "size_after": round(cap, 2)})
+                size_usd = cap
         # Plan 17 apply: an intent exit is sized from the POSITION, full stop.
         # exit_size_usd never sees max_bet_usd — that derivation is the §2
         # defect and carries a permanent test tripwire. Takes precedence over
