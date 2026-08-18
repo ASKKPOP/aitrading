@@ -6,6 +6,42 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 45 — 01:0xZ: OWNER ASK "fully analysis and fixing" R19 — **the full analysis REFUTED R19; no gate shipped, and that is the correct outcome**
+
+The owner ordered analysis+fix of R19 ("$715 slot → $3 rail < any stock
+stop; platform builds untradeable slots; R15 didn't block"). The full
+replay, step by step, with each intermediate belief corrected:
+
+1. First belief: "R15 fails open on max_loss NULL" — WRONG for 1380: the
+   composed `stop_conditions` (live column) carries max_loss 4.46; only
+   the SNAPSHOT's copy is NULL.
+2. Second belief: "R15 never evaluated (no sigma)" — WRONG: thesis 16609
+   carried `vol_daily_pct` 3.893 at compose. ⚠️ **NEW TRAP: config
+   snapshots STRIP `thesis.factor_scores_json`** (all 222 retained runs
+   show NULL) — any post-hoc R15 replay from snapshots is blind.
+3. The truth: **R15 evaluated 1380 and passed it by design.** Room
+   $3.12 (0.7 × 4.46) carries a 1σ stop on **0.54 ORCL shares** — inside
+   the 0.53–0.7 band R15's own calibration explicitly leaves to the desk
+   ("ORCL 1164 traded at 0.675 while FDX 1216 refused at 0.68 — no
+   build-time constant can honestly split that"). The desk refused at
+   ~0.72 shares: the FDX-class judgment call.
+4. Cross-run replay: loss-rail/max-bet fractions are UNIFORM (2–4%)
+   platform-wide; runs with identical-or-worse fractional geometry
+   traded (1134: same 0.72-of-bet cap, 4 legs); zero-trade runs occur at
+   every budget size. **"Pre-made untradeable" does not survive.**
+5. The $120 profit target vs ~$18 reachable: inert — a stop-event level
+   that never fires; the trailing lock banks profits. Not a distortion.
+
+**Verdict: R19 REFUTED and marked so in the backlog.** No gate shipped —
+shipping one would have been a placebo tuned to one desk narrative (the
+#468 mistake). What survives: 7 wasted open-cycle re-analyses on a slot
+the desk called infeasible at cycle 1 (bounded by the 12-cycle idle fuse;
+not worth a gate at n=1). **The real, thrice-reproduced money defect on
+this thread remains R17 (null-size default sizing — agents 5, 6, 60;
+−$35.81 single-leg cost on fleet 32). That is the next fix, and it needs
+its own fleet-wide default-frequency + signed-P&L measurement before the
+conservative-default change ships.**
+
 ## Cycle 44 — 00:2xZ (anchor 00:25:04): first executed entry on the #475 image; otherwise quiet
 
 No closes on 08-18 yet (no subagent dispatch owed). **Run 1392 ZECUSDT
