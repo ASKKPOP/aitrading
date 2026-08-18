@@ -457,120 +457,39 @@ into a permanent one.**
 run 1375, all identical. The test after shipping a brief line is simply
 whether the requested target changes.
 
-## SHIPPED 2026-08-18 — the desk now knows what its own book has ever reached (H6/H7 implemented)
 
-**Owner directive:** *"all implement for sooppiy AI everything we monitoring
-and analysises"*. H6/H7 measured that `target_pct` is decoration; nothing had
-been built from it. This implements it — AI-FIRST, as a disclosure the desk
-reads, not a rail that clamps it.
+### R17 — `size_frac: null` on an OPEN falls through to default sizing — largest bet lands on the weakest idea · STAGED (2026-08-18 cycle 41, n=2 ACCOUNTS)
+- **Evidence (agent 60 / fleet 34, 08-15, verified on tape by main session):** ETH run 1272 cycle-4 buy parsed `size_frac: null` → filled **$990 notional (90% of the $1,100 run budget)** at the day's WEAKEST conviction (0.58 entry conf; desk's own cycle-3 report was bearish), vs $495 SOL @ conv 0.605 and $165 BTC @ conv 0.6905. The −$1.87 ETH run = **55% of the account's whole −$3.41 day**. Sizing was inversely ordered to conviction because null → default, not because the desk chose it.
+- **Prior instance (agent 6, takeover brief §3):** the top P&L contributor since the 08-15 reset traces to `order_params: absent` → default sizing at **8.2×** the desk's habitual size. Same class, opposite sign — the default is a coin-flip amplifier.
+- **Counterfactual at live marks (this tape):** ETH at the desk's habitual $165–495 sizing loses −$0.31…−0.94 instead of −$1.87 → the null-default cost **≈ $0.9–1.6 on one day, one account**.
+- **Fix direction (AI-first order):** (a) skill/prompt: the desk must always author `size_frac` on an open (teach the observable: "a null size is not 'neutral', it is the platform's default bet"); (b) platform fallback: a null `size_frac` on an OPEN defaults to the run's SMALLEST recent authored size (or a conservative floor), never a large fixed fraction. Ship only after measuring the default's fleet-wide frequency and signed P&L (both accounts, all time).
 
-**Third independent measurement, from the ledger this time (n=66 closed runs
-that opened a position, 2026-08-18).** H6/H7 replayed candles; this replays
-the book's own recorded peaks, `peak_pnl_usd / opening notional`, which IS
-the % price move (pnl = move x qty, notional = price x qty):
+### R18 — Rail stop-floor (0.3%) fires inside crypto session noise — spec-correct, economics wrong · STAGED (2026-08-18 cycle 41, n=1 measured + documented pattern)
+- **Evidence (SOL run 1274, 08-15):** desk proposed a nonsense 0.016% stop; the rail floored it to 0.3%; the watcher stop-out at 75.514 was within 0.01% of the local top; SOL mean-reverted below entry by 08:08Z. **Stop-out cost ≈ $1.04 vs holding** (leg −0.88 vs ≈ +0.16). The 0.3% floor is tighter than SOL's ~3%/day ordinary move — the floor rescues the desk from instant fee-death and hands it noise-death instead.
+- Matches standing watch (a) in HANDOFF §8: judge stops in ORDINARY DAYS. AI-first fix already specified there: state the symbol's ordinary daily move AT bracket-authoring time. The new fact is a measured $ cost of the FLOOR itself. Gate: more fires with the same shape (floored stop < ~0.3 ordinary days collected by routine range) before touching the floor.
 
-| market | n | never positive | median best | p75 | best ever |
-|---|---|---|---|---|---|
-| crypto | 26 | 42% | 0.169% | 0.334% | **0.969%** |
-| futures | 14 | 50% | 0.034% | 0.103% | 0.199% |
-| forex | 13 | 46% | 0.014% | 0.020% | 0.047% |
-| us-stock | 13 | 30% | 0.090% | 0.340% | 0.894% |
-| **ALL** | **66** | **42%** | 0.031% | 0.199% | 0.969% |
+### R19 — Budget geometry builds pre-untradeable us-stock slots · **REFUTED (2026-08-18 cycle 45 — full replay; do not re-open without new evidence)**
+- **The replay killed this.** (1) R15 DID evaluate run 1380 (thesis 16609 carried vol_daily_pct 3.893 at compose; the config SNAPSHOT strips factor_scores_json — post-hoc snapshot replays are blind, see trap below). (2) 1380 passed by design: room $3.12 supports 0.54 ORCL shares at a 1-sigma stop — inside the 0.53–0.7 judgment band R15's calibration EXPLICITLY leaves to the desk ("ORCL 1164 traded at 0.675 while FDX 1216 refused at 0.68"). The desk refused at ~0.72 shares — the FDX-class judgment call, not a structural impossibility. (3) Cross-run replay: loss-rail/max-bet fractions are uniform (2–4%) platform-wide; runs with identical-or-worse fractional geometry (e.g. 1134: 0.72-of-bet cap at authored stop) traded fine; zero-trade runs occur at every budget size. (4) The absurd profit_target_usd ($120 vs ~$18 reachable) is inert — it is only a stop-event level that never fires; the trailing lock does the banking.
+- **What survives:** the desk burned 7 open cycles re-analyzing a slot it had declared infeasible at cycle 1 (LLM waste, bounded by the 12-cycle idle fuse). Not worth a gate on n=1.
+- **Evidence:** fleet 35 ($10,009 / 14 slots ≈ $715) → per-run loss rail ≈ $3, below the dollar cost of any realistic stock stop (~2.9% needed on ORCL). Run 1380's own cycle-1 outlook states it: "the required stop (~2.9%) would exceed the $3.12 loss rail, making a new position infeasible." The run then held 7 open-market cycles and parked — a slot that can never trade, burning research/LLM.
+- **R15 (bracket feasibility, deployed 08-14 23:11Z) did not block this build** — either the check doesn't run on this compose path or its threshold passes configs the desk itself immediately declares infeasible. Verify which before designing.
+- **Fix direction:** extend the exposure-feasibility build gate: at compose time, require (slot_budget × max_loss_frac) ≥ (typical stop distance in $ at minimum viable notional) for the market class; refuse/resize the slot otherwise. Evidence gate: a second fleet/slot with the same self-declared infeasibility, or a replay count of how many current slots fail the test.
 
-- **42% of closed runs never had a positive moment at all.** Their best
-  cumulative P&L was still underwater.
-- **No closed run has ever peaked above 1% of notional**, against an authored
-  `target_pct` median of **4.80%**.
-- This is a *lower* bound and deliberately reported as one: marks are sampled
-  ~every 4.7 min, multi-leg runs inflate the denominator, and cumulative P&L
-  nets some fees. The candle replay (H7) put the *available* excursion at
-  median 1.14%. Both numbers are far below 4.80%; the true value sits between
-  them and the conclusion is unchanged either way.
+### R17 addendum (2026-08-18) — third account confirmed
+- Fleet 32 (agent 5): every us-stock entry had `size_frac: null` + `leverage: null` → extreme-appetite defaults filled $1,106 max-bet × 3× leverage; SPCX $3,317 notional → −$35.81 (65% of the us-stock loss) on a −1.07% move. **n=3 accounts (agents 6, 60, 5).** The default is the single largest loss author on the platform's us-stock tape.
 
-**What shipped:** `service/server/desk_record.py` — `excursion_record(market)`
-and `record_line(market)`, cached 1h, silent below 10 runs, fail-soft to "".
-Wired into BOTH prompts that ask for a bracket: `run_engine._light_analysis`
-and `analysis_agents._trader_risk_decision`. Both previously said *"a level
-the move can realistically reach"* and gave the desk no number for what its
-own book reaches.
+### R20 — OWNER ORDER (2026-08-18, verbatim: "for make fleet N automatically by SOOPPIY then must be include USA tech hot to 5 issued stock 5 always") · HARD-READY, implement next session
+- **Spec (as understood):** whenever SOOPPIY auto-builds/replenishes an N-slot fleet whose market scope allows us-stock, the research/candidate universe must ALWAYS include the **top-5 hot-issue USA TECH stocks** (ranked by the existing hot-issue/2-day-mover machinery restricted to a tech roster), so 5 tech names are always among the candidates.
+- **Boundaries kept:** existing build gates (expectancy, maturity, R15) still apply to the seeded names — "include" means guaranteed universe presence, not gate bypass; the desk remains the final author of every order (§7b). Also add the matching prompt line so the research planner authors theses for these 5 names every batch ("add prompt for sooppiy" — the owner's words).
+- **Implementation design (pinned to code anchors, 2026-08-18 cycle 48):**
+  1. `US_TECH_HOT_UNIVERSE` constant in symbol_research.py — the S&P-100 TECH subset (AAPL ACN ADBE AMD AVGO CRM CSCO GOOG GOOGL IBM INTC INTU META MSFT NFLX NOW NVDA ORCL PLTR PYPL QCOM TXN TSLA), env kill switch `US_TECH_HOT_SEED` default on. Mechanical membership list, same justification prose as SWING_SEED_UNIVERSE (symbol_research.py ~245).
+  2. Universe assembly (~line 356, the `if "us-stock" in autom:` block): ALWAYS extend with the tech roster (unconditional, unlike the swing seed which gates on swing demand) — guarantees the names are researched and carry mom_2d factors.
+  3. Selection: after `_mover_rank_us_stock(eligible)` (~line 1436), new `_ensure_hot_tech_lead(eligible, k=5)`: reorder us-stock slots so the top-min(5,N) tech-membership theses by the SAME mover key (|mom_2d|×vol confirmation — the owner algorithm) lead the us-stock ordering. Universe/ordering guarantee only — expectancy/maturity/R15 gates still veto at build (documented safety kept), desk still authors every order (§7b).
+  4. Prompt: research planner clause — always author theses for the current top-5 hot US tech names (locate the stage-2 planner prompt; "add prompt for sooppiy" is the owner's wording).
+  5. Tests: tech roster present in universe when us-stock scoped; top-5 tech lead the us-stock ordering post-rank; non-us-stock markets' ordering untouched; kill switch off restores old behavior; gates still veto a seeded name.
 
-**Deliberately NOT a clamp.** `order_params` already bounds `stop_pct` to
-(0.30, 8.00) and enforces `target >= 2x stop`; nothing here changes those.
-Which target to write stays the desk's call — the platform's job was to stop
-hiding the measurement (`trading-decisions-belong-to-sooppiy-ai`).
 
-**Risk stated plainly, not tuned away.** Truthful disclosure may push the desk
-toward tighter stops (the band the arithmetic implies is stop ~0.5-0.6%,
-target ~1.1-1.2%), and the expectancy of that tighter band is UNMEASURED —
-tighter stops buy reachability with more stop-outs. The backlog's own next
-measurement stands and is now the gating experiment: **replay each entry
-against its horizon and count, per candidate (stop, target) pair, how often
-the STOP is hit BEFORE the target.** Until that runs, no rail should adopt
-the band; a disclosure the desk can weigh is the honest interim.
-
-**Verification:** 8 module tests + 4 wiring tests, fail-before red on both
-prompts; mutation-checked x11 (peak unscaled, thin-book floor removed,
-never-positive dropped, live runs counted, unfilled runs scaled, cache
-bypassed, fail-soft narrowed, and both prompts' call sites and fail-softs) —
-all killed.
-## SHIPPED 2026-08-18 — breakeven ratchet: both arithmetic defects fixed, re-derived from 4 fires (spec was written from 2)
-
-The cycle-13 spec was written when 2 fires existed. There are now **4**
-(AVAX 1335, FIL 1358, SOL 1367, ZEC 1392), so every number was re-derived
-from the raw legs rather than taken on trust — and the spec turned out to
-contain an internal contradiction: its FIL test assumed a ONE-LEG floor while
-its own trap note required a ROUND TRIP. Reconstruction dissolved it: the
-spec had compared run-cumulative `total` against the floor instead of the
-baseline-corrected unrealized.
-
-**Reconstruction (each fire from its own `trade` legs):**
-
-| run | position excursion vs arm | corrected verdict | fire P&L |
-|---|---|---|---|
-| AVAX 1335 pos-2 | 0.342192 < 0.398 | **does not arm** | **-0.141443** |
-| FIL 1358 | unrealized 0.027738 > round trip 0.025196 | **does not fire** | +0.002529 |
-| SOL 1367 | +0.160316 -> -0.067030 | still fires (correct) | — |
-| ZEC 1392 | +1.224468 -> -0.533981 | still fires (correct) | — |
-
-**Net +$0.138914** — the exact running total those fires had accumulated. The
-independently reconstructed AVAX baseline (0.080608) and position-2 net
-(-0.141443) match the cycle-13 figures to the cent, which is what validates
-the method. **Fourteen cents.** The defect is that a protection rail fired at
-a GUARANTEED loss, not the amount; at this book size the dollars are noise.
-
-**The fix, both halves together:** `_breakeven_floor_hit` gains `baseline_pnl`
-(what `_trailing_lock_hit` has always taken) so peak and current become
-position-scoped, AND the floor becomes a full round trip priced at
-`fees.fee_rate(market)`. Alone, the baseline fix leaves a gross
-position-scoped current against a one-leg floor whose best case is -1 open fee.
-
-**Three things the spec did not have:**
-
-1. **`fee_rate()` is FLAG-DEPENDENT.** It returns the legacy 0.001 for every
-   market unless `FEE_PER_MARKET` is on — `true` on prod (verified in the
-   running worker: crypto 0.00045), default false off-prod. A test that
-   simply called `fee_rate` would have asserted the OPPOSITE of production
-   and passed. Both sides are now pinned.
-2. **`BREAKEVEN_FEE_RATE` is unset on prod**, so the market rate binds. Had it
-   been set, the whole (b) half would have been a silent no-op.
-3. **Two mutants survived the first pass, and both were the TESTS' fault.**
-   The grep for `baseline_pnl` in `_evaluate_stop` was satisfied by the
-   TRAILING LOCK's call three lines above, so deleting it from the ratchet's
-   call left the suite green — the standing wiring trap in its purest form.
-   The greps are now scoped to the call expression itself. The round trip is
-   computed at the call site, so unit tests passing `exit_fee_usd` by hand
-   could never see it revert to one leg either.
-
-**Direction of the change is conservative:** both halves make the rail fire
-LESS often (a real arm threshold, and a floor 0.0009 of notional instead of
-0.001). A protection rail that force-closes should only ever be loosened on
-evidence, and the evidence here is that its two negative fires were negative
-by construction.
-
-**Deliberately NOT changed:** `_breakeven_arm_usd` still prices its arm at
-`BREAKEVEN_FEE_RATE` (0.001), not the market rate. Lowering it would arm MORE
-often — loosening a protection rail without evidence. Being strict on the arm
-is the safe direction; the floor is where accuracy matters.
-
-**Verification:** 10 tests, all four live fires as fail-before cases;
-mutation-checked x7 with 2 survivors fixed in the tests.
+### R21 — #485 ratchet baseline inverts on same-position losing covers · **LICENSED (2026-08-18 cycle 70, two-agent cross-checked)**
+- **Defect:** #485 computes position-scoped peak as `peak_pnl_usd − CURRENT realized`. A losing partial cover drops realized and inflates the phantom peak by the loss booked — run 1417: true position peak +$0.1015 < arm $0.2549, yet fire-time subtraction manufactured 0.4614 → armed → flattened the remainder 9s after the desk's own reduce. The desk's reduce arms the rail that kills its book (976-shape).
+- **Fix spec (both agents converge):** baseline = realized **at peak epoch** (freeze when peak is recorded), or track the position-scoped peak directly. Never realized-at-fire. `_breakeven_floor_hit` run_engine ~1004.
+- **Evidence bar met:** measured + replayable + independently derived twice. P&L of the first fire ≈ $0.00 (mark-level flatten) — ship as correctness fix with the ratchet ledger (5 fires ≈ −$1.00 lifetime, zero net gains) as context. Coordinate with the parallel session that shipped #485.
