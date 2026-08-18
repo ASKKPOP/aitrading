@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-18/49",
- "captured_at_utc": "2026-08-18T02:50Z",
+ "cycle": "2026-08-18/50",
+ "captured_at_utc": "2026-08-18T03:14Z",
  "prod_image": "sooppiy-backend:20260817-20260817-leaserenew",
  "C39_NEW_SESSION_TWO_TARGETS": "Account rotated; crons re-armed (0961ff91 30min, 06e43308 sweep). Owner scope now TWO users: agent 6/fleet 35 AND forevery1969@gmail.com user 25/agent 60/FLEET 36 (us-stock, 25 slots, $99,996.69, started 08-16T10:37Z). Both books FLAT; day +3.84; fleet 35 replenished 9 runs (1387-1396) -> 12 running.",
  "C39_FLEET36_NEVER_TRADED": "151 decisions since start: 147 hold / 2 buy / 2 retire. BOTH buys (run 1324 T, cyc 56/57, conf 0.73/0.78, parsed+compiled+$257 sized) killed by gate_skip fence: lease expired. 100% entry-kill rate from infrastructure.",
@@ -859,5 +859,6 @@
  "C44_FIRST_ENTRY_ON_475_IMAGE": "ZEC 1392 opened long 0.9207@514.71 23:57:19Z, clean cyc-7 execution \u2014 positive control: #475 renewal did not break the execute path. +1.22 unrealized. Fence 0. Fleet 36 no longer exists (wiped cycle 43) \u2014 refresh cron prompt scope.",
  "C45_R19_REFUTED": "Owner-ordered full analysis of R19: REFUTED by replay. R15 evaluated 1380 (sigma 3.893 present at compose; snapshots STRIP factor_scores_json \u2014 new trap) and passed it by design at 0.54 shares, inside the documented 0.53-0.7 desk-judgment band. Rail/bet fractions uniform 2-4% platform-wide; identical geometry traded elsewhere (1134). profit_target incoherence inert. No gate shipped. Next fix: R17 (n=3) with fleet-wide default-frequency + signed P&L measurement first.",
  "C46_ZEC_RATCHET_4TH_FIRE": "1392 ZEC closed -0.96 true net by breakeven_ratchet (arm 0.9467=2xfee, peak +1.011, desk no-verdict-blind at peak). Two NEW dimensions: stale 4m16s mark (~0.73 of loss; fresh marks -> -0.23) and fee-scale hair-trigger arm (0.20% notional on 46h thesis). NOT defect (a). Ratchet ledger: 4 fires ~-1.00, zero net gains. Counterfactual two-sided (-1.86 vs next cycle, +0.72 vs now). #475 first round trip clean, fence 0. Day 08-18 -0.75; 08-17 revised +3.63.",
- "C48_R20_SHIPPED": "PR #478 live: US_TECH_HOT_UNIVERSE (23 S&P-100 tech names) always researched when us-stock scoped; hottest min(5,N) lead us-stock ordering via owner mover algorithm; hot_tech prompt clause. Gates+desk authorship unchanged. Image 20260818-r20-techseed, verified 3x (wired in worker, 8/8 in-image, 0 tracebacks). WATCH: next research batch must carry roster names."
+ "C48_R20_SHIPPED": "PR #478 live: US_TECH_HOT_UNIVERSE (23 S&P-100 tech names) always researched when us-stock scoped; hottest min(5,N) lead us-stock ordering via owner mover algorithm; hot_tech prompt clause. Gates+desk authorship unchanged. Image 20260818-r20-techseed, verified 3x (wired in worker, 8/8 in-image, 0 tracebacks). WATCH: next research batch must carry roster names.",
+ "C50_R20_BATCH1_VERIFIED": "First post-deploy batch research:496394: 22 us-stock theses, 7 tech roster names (AVGO mom_2d -6.08 hottest; 3 shorts correctly selectable=0 via spot venue rule; CSCO/INTC/PYPL selectable). Universe+prompt proven live. Part 2 pending: hot-tech lead ordering at next fleet selection."
 }

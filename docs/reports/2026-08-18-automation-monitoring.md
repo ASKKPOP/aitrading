@@ -6,6 +6,23 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 50 — 03:1xZ (anchor 03:14:49): **R20's first live batch landed — universe guarantee VERIFIED on prod**
+
+No closes; book flat; agent 60 fleetless; fence 0; no clamps; 0
+tracebacks.
+
+**R20 live verification, part 1 of 2 — PASSED.** First post-deploy
+research batch (`research:496394`, 22 us-stock theses) carries **7 tech
+roster names**: AAPL short (mom_2d +0.11), AVGO short (−6.08, the
+hottest mover), GOOGL short, NVDA long, CSCO long, INTC long, PYPL long.
+The three shorts are selectable=0 — the spot-book venue rule refusing
+inexpressible shorts, BY DESIGN (gates keep their veto, exactly the R20
+boundary). CSCO/INTC/PYPL selectable=1. Universe + prompt paths proven:
+research authored genuine per-symbol theses for the seeded slate on its
+first batch. **Part 2 (pending): the hot-tech LEAD ordering shows at the
+next fleet candidate selection** — check `_ensure_hot_tech_lead`'s
+effect when fleet 35 next replenishes or an agent-60 fleet is built.
+
 ## Cycle 49 — 02:5xZ (anchor 02:50:43): quiet; R20 first-batch watch pending
 
 No closes since 01:52 (no dispatch owed); book flat (ZEC 1392 closed
