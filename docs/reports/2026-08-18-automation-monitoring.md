@@ -6,6 +6,16 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 69 — 11:5xZ (anchor 11:53:23): ceiling fire #8 (new run 1445, cycle 1); positions easing
+
+No closes. Positions: AVAX −$0.14; SUI remainder −$0.41 (eased from
+−0.54). Fence 0; null_size_cap steady at 1; 0 tracebacks.
+
+**Ceiling fire #8:** run 1445 (a fresh build), cycle 1, 11:45:02Z —
+requested 1.5% target on a 0.43% stop, clamped to 1.29 (3×), action
+`hold`. **8 fires, 8/8 on hold cycles, P&L $0.00.** The 1445 cycle-2
+request joins the #473 clamp→next-request count.
+
 ## Cycle 68 — 11:2xZ (anchor 11:23:19): quiet; SUI remainder drifting against
 
 No closes. Positions: AVAX 1411 short −$0.14 adverse; SUI 1417
