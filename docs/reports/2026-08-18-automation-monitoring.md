@@ -6,6 +6,26 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 65 — 09:5xZ (anchor 09:53:20): **the null-size cap FIRED — first live fire, absent class, working exactly as shipped**
+
+No closes (day: −0.75 agent 6 / +0.13 agent 60). Positions: AVAX 1411
+short (−$0.10 adverse) + NEW SUI 1417 short (−$0.11 adverse). Fence 0;
+ceiling 0 new; 0 tracebacks.
+
+**`null_size_cap` fire #1 (run 1417 SUIUSDT, agent 6, cycle 5,
+09:23:56Z):** the desk emitted NO order block (`params_state: absent` —
+the exact 1392/1419 class #481 was ordered to close), and the default
+wanted **$252.47 margin → capped to $63.12** (0.25 × max_bet). The open
+executed at the capped size (~$126 notional at 2×). **4× size reduction
+on an unsized open, on live tape, labeled with its class** — both
+halves of the R17 ship (the #480 parsed-null cap and the #481 absent
+extension) are now proven live end-to-end. At the current adverse tick
+the cap is already carrying −$0.11 instead of the −$0.44 the full
+default would hold on the same path.
+
+Binding sweep metric unchanged: default-sized cohort P&L + clamp
+counts; this is fire 1 of the evidence.
+
 ## Cycle 64 — 09:2xZ (anchor 09:23:22): fleet 37's first round trip closed **+$0.128** — desk-authored end to end, cross-checked
 
 **PROFIT-OR-LOSS FIRST.** Run 1419 AUDUSD closed 09:06:12Z at **+$0.128
