@@ -6,6 +6,31 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 61 — 07:5xZ (anchor 07:53:19): fleet 37 ACTIVE (user-scaled to 25 slots), first trade open; **#480 coverage gap found by its own watch — measured, no extension licensed**
+
+**Fleet 37:** active, **user-scaled 10 → 25 slots** ($10k budget), 9 runs
+running (ORCL/VZ/V/CVX/PFE/XOM us-stock parked till 13:30Z +
+AUDUSD/AUDCHF/AUDNZD forex live). **First trade executed: 1419 AUDUSD
+long 677.5 @ 0.71028** (+$0.24 unrealized), margin $160.5 = 0.71 ×
+max_bet $226.44 — the conviction-scaled default, modest size. No
+closes; agent-6 book flat; fence 0; ceiling 0 new; 0 tracebacks.
+
+**#480's own watch caught a coverage gap within 3 hours of deploy:**
+1419's open had `outcome: absent, deferred: true` — the desk emitted NO
+order block, so `order_params` was None and the R17 cap never
+evaluated. The cap covers parsed-params-with-null-size; the
+**absent/deferred class bypasses it** (ZEC 1392 was also this class).
+
+**Measured before acting (cycle-accurate open classification via
+client_order_id):** parsed_null_size **−$178.71 / 46 runs** (the cap's
+cohort — measurement refined from 47), parsed_authored **+$5.57 / 18**,
+**absent_or_deferred +$0.61 / 3 runs**. The absent class is n=3 and net
+POSITIVE — **no experimental license to extend the cap; extension is
+recorded as a WATCH** (trigger: absent-class opens accumulate ≥2 more
+instances with meaningful loss). The fleet-37 SPCX-class tripwire
+(single-leg loss > $10 → immediate two-subagent analysis) covers the
+tail meanwhile.
+
 ## Cycle 60 — 07:3xZ (anchor 07:33:31): **FLEET 37 CREATED (forevery1969) — in scope; R20 part-2 VERIFIED on its build; extreme-config warning stated**
 
 Owner built the new fleet: **37 — agent 60, 10 slots, $10,000,

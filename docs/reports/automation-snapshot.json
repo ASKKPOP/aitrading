@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-18/60",
- "captured_at_utc": "2026-08-18T07:33Z",
+ "cycle": "2026-08-18/61",
+ "captured_at_utc": "2026-08-18T07:53Z",
  "prod_image": "sooppiy-backend:20260818-r17-nullsizecap",
  "C39_NEW_SESSION_TWO_TARGETS": "Account rotated; crons re-armed (0961ff91 30min, 06e43308 sweep). Owner scope now TWO users: agent 6/fleet 35 AND forevery1969@gmail.com user 25/agent 60/FLEET 36 (us-stock, 25 slots, $99,996.69, started 08-16T10:37Z). Both books FLAT; day +3.84; fleet 35 replenished 9 runs (1387-1396) -> 12 running.",
  "C39_FLEET36_NEVER_TRADED": "151 decisions since start: 147 hold / 2 buy / 2 retire. BOTH buys (run 1324 T, cyc 56/57, conf 0.73/0.78, parsed+compiled+$257 sized) killed by gate_skip fence: lease expired. 100% entry-kill rate from infrastructure.",
@@ -866,5 +866,6 @@
  "C53_R17_SHIPPED": "PR #480 live: null-size opens capped at 0.25 x max_bet (RUN_NULL_SIZE_CAP_FRAC) + prompt requires authored size. License: default-sized opens -178.69/47 runs vs desk-sized +5.55/17 (ex-SPCX -142.71). Verified 3x live. BINDING: cohort P&L + null_size_cap counts at daily sweep, else FAILED.",
  "C54_473_FIRST_POSITIVE": "1398 cyc8 clamp 2.99->1.83 (39% deep); cyc9 desk authored NEW compliant bracket 0.93/2.65 (R:R 2.85, no clamp) \u2014 ADJUSTMENT not repetition, opposite of 1375 baseline. n=1 positive, keep counting. Cyc9 sell parked by venue rule (spot, no inventory). Fence 0; null_size_cap 0 (no null-size open yet).",
  "C56_REPLENISH_NO_USSTOCK": "11 runs built (1400-1412, futures/forex/crypto). Gate candidates had no us-stock (market shut 05:44Z) \u2014 R20 part-2 test moves to today NYSE session 13:30-20:00Z. Expectancy gate correctly dropped MGC/BNB/AAVE.",
- "C60_FLEET37_CREATED_R20_P2_VERIFIED": "Fleet 37 (agent 60): 10 slots \\$10k us-stock+forex EXTREME, building 07:32Z. R20 part-2 VERIFIED: ORCL (sole selectable tech) LEADS us-stock ordering despite lowest final_score (0.266 vs V 1.371) \u2014 _ensure_hot_tech_lead fingerprint. 9/10 tech theses unselectable (shorts on spot / gates). WARNING stated: extreme = fleet-32 config (-55.33 @ 11%); mitigations now live: R17 cap, R10, #475. Fleet 37 in scope; us-stock parks until 13:30Z."
+ "C60_FLEET37_CREATED_R20_P2_VERIFIED": "Fleet 37 (agent 60): 10 slots \\$10k us-stock+forex EXTREME, building 07:32Z. R20 part-2 VERIFIED: ORCL (sole selectable tech) LEADS us-stock ordering despite lowest final_score (0.266 vs V 1.371) \u2014 _ensure_hot_tech_lead fingerprint. 9/10 tech theses unselectable (shorts on spot / gates). WARNING stated: extreme = fleet-32 config (-55.33 @ 11%); mitigations now live: R17 cap, R10, #475. Fleet 37 in scope; us-stock parks until 13:30Z.",
+ "C61_FLEET37_LIVE_AND_480_GAP": "Fleet 37 active, user-scaled 10->25 slots; first trade AUDUSD 1419 (conviction-scaled default $160 margin). #480 gap: absent/deferred params bypass the cap (1419, ZEC-class). Measured: parsed_null -178.71/46 (covered), authored +5.57/18, ABSENT +0.61/3 \u2014 n=3 net positive, NO extension licensed; WATCH with trigger (>=2 more absent-class losses). SPCX tripwire covers tail."
 }
