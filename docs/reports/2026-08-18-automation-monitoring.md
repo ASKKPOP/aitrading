@@ -6,6 +6,37 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 53 — 04:4xZ: R17 SHIPPED — the profit-protection cap is live, on a decisive measurement
+
+Owner order: "make solution for protect profit." The binding experiment
+ran first and was decisive: splitting every closed run (>=1020) by
+whether its opening order carried a desk-authored size —
+**default-sized opens −$178.69 over 47 runs (66% losers) vs desk-sized
++$5.55 over 17** (sign holds ex-SPCX at −$142.71). Every dollar of net
+platform loss sits on the full-bet default fallthrough.
+(Measurement trap caught mid-experiment: MySQL JSON_EXTRACT returns a
+JSON-null literal, not SQL NULL — the first split was wrong and was
+re-run with JSON_TYPE.)
+
+**Shipped — PR #480 (20c9735), image `20260818-r17-nullsizecap`:**
+1. Prompt: author `size_frac` on every open — an omitted size falls to a
+   platform default capped at a quarter bet.
+2. `_null_size_cap_frac` (RUN_NULL_SIZE_CAP_FRAC, default 0.25, 1.0
+   disables): null-size OPENS capped at 0.25 × max_bet, journaled as
+   `size_clamp: null_size_cap`. Opens/extends only; exits and authored
+   sizes untouched; R10 unchanged downstream.
+
+Pipeline: fail-before 2/2 (full+light routes), mutation killed, 4479 +
+1346 subtests, CI 5/5, deployed, verified 3× live (cap=0.25 in running
+worker, clamp+prompt wired by source inspection, in-image tests 3/3 OK,
+0 tracebacks). Proportional counterfactual: losing cohort −$178.69 →
+≈ −$45 (≈ +$134 protected); SPCX-class ($3,317 on a null) structurally
+impossible.
+
+**BINDING POST-SHIP METRIC (daily sweep):** the default-sized cohort's
+realized P&L must shrink and `null_size_cap` events must appear on
+null-size opens; if the cohort's losses do not move, report FAILED.
+
 ## Cycle 52 — 03:4xZ (anchor 03:45:35): ceiling fire #6 — two rails composed, and the cleanest #473 test yet is armed
 
 No closes; book flat; agent 60 fleetless; fence post-#475 **0**; 0
