@@ -272,6 +272,31 @@ def _swing_seed_enabled() -> bool:
         "1", "true", "yes", "on"}
 
 
+# R20 — OWNER ORDER (2026-08-18, verbatim): "for make fleet N automatically
+# by SOOPPIY then must be include USA tech hot to 5 issued stock 5 always."
+# The S&P-100 TECHNOLOGY membership — a mechanical sector list, not a
+# stock-picking opinion. Whenever research covers us-stock, these names are
+# ALWAYS in the researched universe, and at selection the hottest
+# min(5, slots) of them — ranked by the SAME owner algorithm as
+# _mover_rank_us_stock (|mom_2d| x volume confirmation) — lead the us-stock
+# ordering. Universe/ordering guarantee ONLY: swing_symbol_check, the
+# expectancy gate and R15 still decide what BUILDS, and the desk still
+# authors every order. US_TECH_HOT_SEED=0 disables.
+US_TECH_HOT_UNIVERSE: tuple[str, ...] = (
+    'AAPL', 'ACN', 'ADBE', 'AMD', 'AVGO', 'CRM', 'CSCO', 'GOOG', 'GOOGL',
+    'IBM', 'INTC', 'INTU', 'META', 'MSFT', 'NFLX', 'NOW', 'NVDA', 'ORCL',
+    'PLTR', 'PYPL', 'QCOM', 'TSLA', 'TXN',
+)
+
+US_TECH_HOT_K = 5
+
+
+def _tech_hot_seed_enabled() -> bool:
+    """Default-on kill switch for the R20 hot-tech guarantee."""
+    return os.getenv("US_TECH_HOT_SEED", "true").strip().lower() in {
+        "1", "true", "yes", "on"}
+
+
 def _swing_fleet_demand() -> int:
     """Σ n_runs of non-terminal swing-archetype fleets. Fail-soft: any error
     means 0 and the seed stays out — organic research is untouched."""
@@ -368,6 +393,14 @@ def build_universe() -> list[dict[str, str]]:
         # SWING_SEED_UNIVERSE.
         if _swing_seed_enabled() and _swing_fleet_demand() > 0:
             for s in SWING_SEED_UNIVERSE:
+                if s not in stocks:
+                    stocks.append(s)
+        # R20 owner order: the US tech roster is ALWAYS researched whenever
+        # us-stock is in scope — unconditional, unlike the swing seed
+        # (cached daily-candle reads; the hot-5 guarantee lives at
+        # selection, see _ensure_hot_tech_lead).
+        if _tech_hot_seed_enabled():
+            for s in US_TECH_HOT_UNIVERSE:
                 if s not in stocks:
                     stocks.append(s)
         out.extend({"symbol": s, "market": "us-stock"} for s in stocks)
@@ -1005,6 +1038,12 @@ def generate_theses(survivors: list[dict[str, Any]],
                             x.split(":", 1)[1] for x in sigs]
                 except Exception:  # noqa: BLE001
                     pass
+            # R20 owner order: flag US tech roster names so the analyst
+            # always authors a considered thesis for the hot-tech slate.
+            if (_tech_hot_seed_enabled()
+                    and row.get("market") == "us-stock"
+                    and row.get("symbol") in US_TECH_HOT_UNIVERSE):
+                row["hot_tech"] = True
             rows.append(row)
         prompt = (
             _research_mandate() +
@@ -1029,6 +1068,12 @@ def generate_theses(survivors: list[dict[str, Any]],
                "candidate's next earnings print — weigh holding-through-print "
                "risk in the horizon and confidence you assign. "
                if any("days_to_earnings" in r for r in rows) else "")
+            + ("`hot_tech` marks a US technology large-cap on the always-"
+               "researched slate: author a genuine, considered thesis for "
+               "it — direction from ITS OWN tape, never enthusiasm for the "
+               "sector — and weigh its 2-day move and volume confirmation "
+               "explicitly. "
+               if any("hot_tech" in r for r in rows) else "")
             + ("`manipulation_shape` flags an engineered-move fingerprint on "
                "that candidate's hourly tape right now: pump_ignition is a "
                "vertical spike on anomalous volume — never write a "
@@ -1434,7 +1479,49 @@ def select_targets(cursor, agent_id: int, n: int,
                 if (t["market"], t["symbol"]) not in busy
                 and (not markets_scope or t["market"] in markets_scope)]
     _mover_rank_us_stock(eligible)
+    _ensure_hot_tech_lead(eligible)
     return _select_from_eligible(eligible, n, _dir_balance_enabled())
+
+
+def _ensure_hot_tech_lead(eligible: list[dict[str, Any]], k: int | None = None) -> None:
+    """R20 owner order: the top-k hottest US TECH theses always LEAD the
+    us-stock ordering, so an auto-built fleet's us-stock slots see them
+    first. Hotness is the SAME owner algorithm _mover_rank_us_stock uses
+    (|mom_2d| x volume confirmation), applied within the tech roster.
+    In-place and WITHIN-market like the mover rank: only which us-stock
+    thesis occupies which us-stock slot changes; cross-market ordering and
+    every other market are untouched. Build gates still veto downstream."""
+    if not _tech_hot_seed_enabled():
+        return
+    k = US_TECH_HOT_K if k is None else k
+    idxs = [i for i, t in enumerate(eligible) if t.get("market") == "us-stock"]
+    if len(idxs) < 2:
+        return
+    roster = set(US_TECH_HOT_UNIVERSE)
+    rows = [eligible[i] for i in idxs]
+    tech = [t for t in rows if (t.get("symbol") or "") in roster]
+    if not tech:
+        return
+
+    def _hot(t: dict[str, Any]) -> float:
+        try:
+            fs = json.loads(t.get("factor_scores_json") or "{}")
+            f = fs.get("factors") or {}
+            m2 = f.get("mom_2d")
+            if m2 is None:
+                return 0.0
+            vr = f.get("vol_ratio")
+            conf = max(0.5, min(float(vr), 3.0)) if vr else 0.5
+            return abs(float(m2)) * conf
+        except (ValueError, TypeError):
+            return 0.0
+
+    lead = sorted(tech, key=_hot, reverse=True)[:k]
+    lead_ids = {id(t) for t in lead}
+    rest = [t for t in rows if id(t) not in lead_ids]
+    reordered = lead + rest
+    for i, t in zip(idxs, reordered):
+        eligible[i] = t
 
 
 def _mover_rank_us_stock(eligible: list[dict[str, Any]]) -> None:
