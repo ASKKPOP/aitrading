@@ -6,6 +6,18 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 63 — 08:4xZ (anchor 08:46:41): two live positions; ceiling fire #7; a desk-SIZED open
+
+No closes (day still −$0.75). Positions: agent 6 **AVAX short 4.45 @
+6.294** (run 1411, −$0.16 adverse) — opened 08:10 with **desk-authored
+size_frac 0.05** (the desired behavior; no cap needed); agent 60 AUDUSD
+long unchanged (+$0.24). Fence 0; `null_size_cap` 0 fires (no unsized
+open since #481); 0 tracebacks.
+
+**Ceiling fire #7:** 1411 cycle 8 (08:39:26), clamped to 0.71/2.13
+(exactly 3×), action `hold` — **7/7 fires on hold, P&L $0.00.** The
+#473 pair for 1411 cycle 9 joins the count next cycle.
+
 ## Cycle 62 — 08:3xZ: #481 SHIPPED — the cap now guards the absent class too (owner-ordered extension), verified 3×
 
 Owner reaffirmed the fix over the evidence-gated deferral ("fixing") —
