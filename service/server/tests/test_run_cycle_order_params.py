@@ -247,6 +247,36 @@ class RunCycleOrderParamTests(unittest.TestCase):
         self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 500.0,
                                places=2)
 
+    def test_absent_params_open_is_capped_too(self):
+        """Owner order 2026-08-18 ("fixing"): the cap guards every open the
+        desk did not size — including outcome:absent (no order block at
+        all, the 1392/1419 class), not just parsed-with-null."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=None)):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertEqual(len(fills), 1)
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 125.0,
+                               places=2)
+        clamps = self._events(run_id, "size_clamp")
+        self.assertTrue(any(c.get("stage") == "null_size_cap" and
+                            c.get("params_state") == "absent"
+                            for c in clamps), clamps)
+
+    def test_absent_params_shadow_mode_is_not_capped(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=None)):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertAlmostEqual(float(fills[0]["quantity"]) * 100.0, 500.0,
+                               places=2)
+
     # ── apply mode: the desk's numbers reach the book ──────────────────
 
     def test_apply_resizes_the_order(self):
