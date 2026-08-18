@@ -2747,6 +2747,7 @@ def init_database():
             claim_expires_at        TEXT,
             realized_pnl_usd        REAL    NOT NULL DEFAULT 0,
             peak_pnl_usd            REAL,
+            peak_realized_usd       REAL,
             armed_order_json        TEXT,
             created_at              TEXT    NOT NULL,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
@@ -3160,6 +3161,7 @@ def init_database():
         # ratcheted each scan, read by the trailing profit lock. NULL until
         # first in profit (manual runs stay NULL — inert without a trail cfg).
         "ALTER TABLE trading_runs ADD COLUMN peak_pnl_usd REAL",
+        "ALTER TABLE trading_runs ADD COLUMN peak_realized_usd REAL",
         # Arm executor (2026-08-05): the desk's pre-committed exit level, so
         # a bank/protect fires BETWEEN decision cycles. 54 arm intents were
         # emitted and discarded before this column existed because nothing
