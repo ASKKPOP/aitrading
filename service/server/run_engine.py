@@ -1223,9 +1223,20 @@ def _evaluate_stop(run: dict) -> Optional[str]:
                 * float(_pos.get("current_price") or 0) * _rate * 2.0
         except Exception:  # noqa: BLE001 — a fee lookup must never block a stop
             _be_fee = 0.0
+        # R21: the baseline is realized AT THE PEAK EPOCH (frozen when the
+        # peak was stamped), never realized-at-fire. Run 1417 (2026-08-18,
+        # two-agent cross-checked): current-realized as baseline let the
+        # desk's own losing half-cover manufacture a phantom peak (true
+        # position excursion +0.1015 < arm 0.2549, armed on 0.4614 anyway)
+        # and flatten the remainder 9 seconds later. Legacy rows whose peak
+        # predates the peak_realized_usd column fall back to current
+        # realized — the old behaviour — until their next peak stamp.
+        _be_base = run.get("peak_realized_usd")
+        if _be_base is None:
+            _be_base = float(pnl.get("realized") or 0)
         if _breakeven_floor_hit(run.get("peak_pnl_usd"), pnl["total"], _be_arm,
                                 exit_fee_usd=_be_fee,
-                                baseline_pnl=float(pnl.get("realized") or 0)):
+                                baseline_pnl=float(_be_base)):
             logger.info("breakeven ratchet fired (run %s): peak=%s now=%s arm=%s",
                         run["id"], run.get("peak_pnl_usd"), pnl["total"],
                         round(_be_arm, 4))
@@ -1359,8 +1370,13 @@ def _ratchet_peak_pnl(run: dict, pnl: dict) -> None:
     try:
         cursor = conn.cursor()
         begin_write_transaction(cursor)
-        cursor.execute("UPDATE trading_runs SET peak_pnl_usd = ? WHERE id = ?",
-                       (cur, run["id"]))
+        # R21 (2026-08-18, run 1417): store realized AT the peak epoch beside
+        # the peak. The ratchet's baseline must be this frozen value — using
+        # CURRENT realized let every losing partial cover inflate the
+        # phantom position-peak by the loss it booked.
+        cursor.execute("UPDATE trading_runs SET peak_pnl_usd = ?, "
+                       "peak_realized_usd = ? WHERE id = ?",
+                       (cur, float(pnl.get("realized") or 0), run["id"]))
         conn.commit()
     except Exception:  # noqa: BLE001
         logger.debug("peak_pnl ratchet failed for run %s", run["id"], exc_info=True)

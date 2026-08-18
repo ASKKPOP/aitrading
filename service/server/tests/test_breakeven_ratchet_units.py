@@ -147,13 +147,18 @@ class BreakevenFeeRateTests(unittest.TestCase):
         return src[i:j + 1]
 
     def test_the_call_site_passes_this_positions_baseline(self):
+        """R21 revision (run 1417): the baseline is realized AT THE PEAK
+        EPOCH (peak_realized_usd, frozen when the peak was stamped) — a
+        current-realized baseline let the desk's own losing covers
+        manufacture phantom peaks. Legacy NULL rows fall back to current
+        realized until their next peak stamp."""
         call = self._breakeven_call()
         self.assertIn("baseline_pnl", call,
                       "the rail compares a run-cumulative peak against a "
                       "position-scoped arm — AVAX 1335 all over again")
-        self.assertIn("realized", call,
-                      "the baseline must be the run's realized P&L, the same "
-                      "quantity the trailing lock uses")
+        self.assertIn("_be_base", call,
+                      "the baseline must be the peak-epoch realized value, "
+                      "not realized-at-fire (run 1417 phantom peak)")
 
     def test_the_call_site_prices_a_full_round_trip_at_the_market_rate(self):
         """B3 survived a first pass: the round trip is computed at the CALL
@@ -169,3 +174,51 @@ class BreakevenFeeRateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PeakEpochBaselineTests(unittest.TestCase):
+    """R21 (2026-08-18, run 1417, two-agent cross-checked): the call-site
+    baseline must be realized AT THE PEAK EPOCH, never realized-at-fire.
+    1417's numbers, from the live tape: run peak +0.044682 stamped at
+    09:27Z when realized was -0.056806; by the 12:23:00 fire, realized had
+    fallen to -0.416734 through the desk's own losing covers. True position
+    excursion 0.1015 < arm 0.2549 — yet current-realized as baseline
+    manufactured a phantom peak of 0.4614 and flattened the remainder."""
+
+    ARM = 0.2549
+    FEE = 0.0287
+
+    def test_1417_does_not_arm_with_peak_epoch_baseline(self):
+        self.assertFalse(
+            run_engine._breakeven_floor_hit(
+                0.044682, -0.747221, self.ARM,
+                exit_fee_usd=self.FEE,
+                baseline_pnl=-0.056806),   # realized AT the peak epoch
+            "armed on a position whose true excursion never reached the arm")
+
+    def test_1417_would_fire_with_the_defective_fire_time_baseline(self):
+        """Documents the defect: the same inputs with realized-at-fire as
+        baseline DO fire — this is the phantom-peak mechanism, kept as the
+        disproof that the epoch baseline is load-bearing."""
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(
+                0.044682, -0.747221, self.ARM,
+                exit_fee_usd=self.FEE,
+                baseline_pnl=-0.416734))   # realized at FIRE time (defect)
+
+    def test_call_site_uses_peak_epoch_baseline_with_legacy_fallback(self):
+        """Wiring (the brief-line lesson): the stop evaluator must read
+        peak_realized_usd and fall back to current realized only when the
+        column is NULL (legacy rows)."""
+        import inspect
+        src = inspect.getsource(run_engine._evaluate_stop)
+        self.assertIn('run.get("peak_realized_usd")', src)
+        i = src.find('peak_realized_usd')
+        j = src.find('_breakeven_floor_hit', i)
+        self.assertGreater(j, i, "epoch baseline must be read before the ratchet call")
+
+    def test_peak_stamp_writes_realized_beside_the_peak(self):
+        import inspect
+        src = inspect.getsource(run_engine._ratchet_peak_pnl)
+        self.assertIn("peak_realized_usd", src)
+        self.assertIn('pnl.get("realized")', src)
