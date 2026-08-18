@@ -4643,6 +4643,16 @@ _RECALL_KINDS = ("outcome", "lesson")
 _RECALL_KINDS_FALLBACK = ("monitoring",)
 
 
+def _reachability_line(market) -> str:
+    """What this book has ACTUALLY reached, for the prompt that asks for a
+    target. Fail-soft: a missing record costs one sentence, never a cycle."""
+    try:
+        import desk_record
+        return desk_record.record_line(str(market or ""))
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _recall_enabled() -> bool:
     return os.environ.get("DESK_RECALL_ENABLED", "1").strip().lower() not in (
         "0", "false", "no", "off")
@@ -5612,6 +5622,9 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                 f"time exit {_cand.get('time_exit')}. "
                 "Discuss: adopt, adjust, or override — justify your final "
                 "targets.\n")
+    reach = _reachability_line(run.get("market"))
+    if reach:
+        reach += "\n"
     prompt = (
         "You are the trading desk for one symbol. Decide THIS cycle's action.\n"
         f"Symbol: {run['symbol']} ({run['market']}, {market_type}), price now {entry}.\n"
@@ -5638,6 +5651,13 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         # (size, leverage, trail, horizon, adds); asking for all of that here
         # would defeat the point of the cheap path. Two numbers cost ~20
         # output tokens against the 200-token budget.
+        # (2026-08-18) The measured reachability of this book. Both prompts
+        # ask for "a level the move can realistically reach" and neither ever
+        # said what this desk has actually reached: authored target median
+        # 4.80% against an all-time best moment of 0.97% of notional, with
+        # 42% of closed runs never positive at all. Stating the fact, not
+        # clamping the number — which target to write stays the desk's call.
+        f"{reach}"
         "Then place THIS instrument's bracket. A 5% stop is a hair-trigger on "
         "a currency pair and unreachable on a volatile crypto name, so size "
         "both to the symbol's own recent range shown above: stop_pct = %% from "

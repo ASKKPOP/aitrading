@@ -570,6 +570,43 @@ class LightPathOrderBlockTests(RunCycleOrderParamTests):
             run_engine.run_cycle(run_id)
         return run_id
 
+    def test_light_prompt_carries_the_measured_reachability_band(self):
+        """Same gap as the panel path: "a level the move can realistically
+        reach", with no record of what this book has ever reached."""
+        import desk_record
+        seen = {}
+
+        def cap(prompt, **kw):
+            seen["p"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        run_id = self._fleet_light_run()
+        with patch("llm_client.generate_text", side_effect=cap), \
+             patch.object(desk_record, "record_line",
+                          return_value="REACHABILITY-SENTINEL"), \
+             patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]):
+            run_engine.run_cycle(run_id)
+        self.assertIn("REACHABILITY-SENTINEL", seen.get("p", ""))
+
+    def test_light_prompt_survives_a_missing_record(self):
+        import desk_record
+        seen = {}
+
+        def cap(prompt, **kw):
+            seen["p"] = prompt
+            return '{"action":"hold","confidence":0.5}'
+
+        run_id = self._fleet_light_run()
+        with patch("llm_client.generate_text", side_effect=cap), \
+             patch.object(desk_record, "record_line",
+                          side_effect=RuntimeError("db down")), \
+             patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]):
+            run_engine.run_cycle(run_id)
+        self.assertIn('"target_pct": number|null', seen.get("p", ""),
+                      "a failing record cost the desk its bracket ask")
+
     def test_light_prompt_requests_a_bracket(self):
         seen = {}
         def cap(prompt, **kw):

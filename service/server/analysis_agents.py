@@ -594,8 +594,20 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         out["decided_by"] = "rule"
         out["fallback_reason"] = "no llm provider configured"
         return _hold_only(out, "no llm provider configured")
+    # (2026-08-18) What this book has ACTUALLY reached. The order block below
+    # asks for a target "at least 2x stop_pct" and the desk had no record of
+    # what its own closed runs ever achieved: authored target median 4.80%
+    # against an all-time best moment of 0.97% of notional. Fail-soft — a
+    # missing record costs one sentence, never the decision.
+    try:
+        import desk_record
+        reach = desk_record.record_line(str(market or ""))
+    except Exception:  # noqa: BLE001
+        reach = ""
     lang_line = f"Write the rationale and report in {LANG_NAMES[normalize_lang(lang)]}."
     prompt = (
+        f"{reach}\n" if reach else ""
+    ) + (
         "You are the Trader + Risk Management team. Debate the four analyst briefs below and "
         f"decide whether to BUY, SELL, or HOLD {symbol} ({market}).\n"
         f"{lang_line}\n"
