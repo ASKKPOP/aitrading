@@ -6,6 +6,33 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 64 — 09:2xZ (anchor 09:23:22): fleet 37's first round trip closed **+$0.128** — desk-authored end to end, cross-checked
+
+**PROFIT-OR-LOSS FIRST.** Run 1419 AUDUSD closed 09:06:12Z at **+$0.128
+true net** (gross +$0.205, fees 37% of gross). Two subagents dispatched
+and cross-checked; they agree on every number.
+
+- **Both entry and exit were the AI desk's.** Exit = cycle-4
+  order_intent `close 1.0` ("target 0.7275 unreachable in 46h; bank the
+  gain before the risk-rail erodes it") executed over the panel's
+  literal `hold 0.62` — the Plan-17 exit-gate confidence bypass working
+  as designed. **Zero rail involvement across the run's whole life**
+  (no fence, no clamps, no stops, no ratchet — and at a 5.7bp peak
+  excursion, rail silence is spec-correct).
+- **The win decomposes honestly:** direction was luck inside noise
+  (+0.043% move, thesis never tested; any exit in the window lands
+  −$0.08…+$0.20), the EXIT was skill (fee/horizon arithmetic; beat
+  holding-to-now by +$0.034). n=1 at +0.08% of margin proves nothing
+  about the fleet's edge.
+- **Entry defect noted (pre-#481):** params `absent` at open — the
+  ">2:1 with swing-low stop" existed only as prose, sizing fell to the
+  default ($160.5). Under the now-live #481 cap the same trade sizes
+  ≈ a third. Cycle 2 was a no_verdict (fallback hold, harmless here).
+
+Rest of cycle: AVAX 1411 open (−$0.13 adverse); 1411 cyc9 authored no
+bracket (neutral for #473); fence 0; null_size_cap 0; 0 tracebacks.
+Day 08-18: −0.75 (agent 6) / +0.13 (agent 60).
+
 ## Cycle 63 — 08:4xZ (anchor 08:46:41): two live positions; ceiling fire #7; a desk-SIZED open
 
 No closes (day still −$0.75). Positions: agent 6 **AVAX short 4.45 @
