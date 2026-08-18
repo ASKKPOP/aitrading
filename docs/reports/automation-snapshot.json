@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-18/86b",
- "captured_at_utc": "2026-08-18T20:15Z",
+ "cycle": "2026-08-18/87",
+ "captured_at_utc": "2026-08-18T20:53Z",
  "prod_image": "sooppiy-backend:20260818-r21-peakepoch",
  "C39_NEW_SESSION_TWO_TARGETS": "Account rotated; crons re-armed (0961ff91 30min, 06e43308 sweep). Owner scope now TWO users: agent 6/fleet 35 AND forevery1969@gmail.com user 25/agent 60/FLEET 36 (us-stock, 25 slots, $99,996.69, started 08-16T10:37Z). Both books FLAT; day +3.84; fleet 35 replenished 9 runs (1387-1396) -> 12 running.",
  "C39_FLEET36_NEVER_TRADED": "151 decisions since start: 147 hold / 2 buy / 2 retire. BOTH buys (run 1324 T, cyc 56/57, conf 0.73/0.78, parsed+compiled+$257 sized) killed by gate_skip fence: lease expired. 100% entry-kill rate from infrastructure.",
@@ -882,5 +882,6 @@
  "C81_XOM_CHURN_AND_PIERCED_STOP": "XOM reduce -0.2505: 1417-shape churn (19% of stop, 8% of horizon, deviated, sold the recovery; cost ~0.17 vs hold). Entry: chase +2.2% above own zone, target inflated for 2:1. R21 CLEAN on trigger class (peak_realized -0.0143 sane, no phantom arm). Cap +0.05. NEW WATCH n=1: cyc-17 mark 163.29 pierced stop 163.475, watcher did NOT fire \u2014 verify poll timing. Panel crash signature +1 (interpreter shutdown).",
  "C82_KAITO_BANK_R21_BOTH_CLASSES": "1462 banked +0.3036 (desk, panel OK, RAG recall used). R21 verified BOTH classes: losing reduce no phantom (XOM) + profit bank correct arm on earned excursion (peak 0.8887/peak_realized 0.3036 same-epoch, arm 0.098). CEILING SUPERSEDED: fires on actionable cycles (1462 cyc2 entry 8.5->6.81 = live bracket; cyc4 8.89->5.46). Cross-check: A protection-missing refuted by B (ratchet floor guards remainder).",
  "C86_XOM_WINNING_QUARTER": "1426 banked +0.2049 (cyc-26 desk order, seam-caught). Pair dispatched. METHOD: adopt 1-min window overlap \u2014 two seam misses today.",
- "C86B_XOM_COMPLETE": "1426 COMPLETE +0.119 (fleet 37 first us-stock run, a WIN, flat before close, stop honored, RAG used). MEASURED: cyc-22 churn cost -0.582 = 83% of the +0.701 hold counterfactual (verified 2 ways; fees exonerated). Churn class strongest number yet. New minor class: desk self-accounting overstated gain 60%. Trail $15.29 unreachable (dim b). No EOD flatten rail by design."
+ "C86B_XOM_COMPLETE": "1426 COMPLETE +0.119 (fleet 37 first us-stock run, a WIN, flat before close, stop honored, RAG used). MEASURED: cyc-22 churn cost -0.582 = 83% of the +0.701 hold counterfactual (verified 2 ways; fees exonerated). Churn class strongest number yet. New minor class: desk self-accounting overstated gain 60%. Trail $15.29 unreachable (dim b). No EOD flatten rail by design.",
+ "C87_ANCHOR_ECHO_AND_CORRECTION": "1462 trim +0.042: NEW anchor-echo sizing class (same rationale -> 45% then 5%; fraction echoes canonical 0.05). R21 stamps sane. CORRECTION: B repeated the protection-missing error \u2014 ratchet floor DOES guard remainder (excursion 1.0368 >= arm ~0.05); real residual = dim (b) quantified: trail threshold sized off machine_size ~40x actual book."
 }

@@ -6,6 +6,32 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 87 — 20:5xZ (anchor 20:53:07): KAITO micro-trim +$0.042 analyzed — a new "anchor-echo sizing" class; cross-check correction applied
+
+**PROFIT-OR-LOSS FIRST.** 1462 cycle-9 trim banked **+$0.042** (desk
+intent, `railed: {}`, executed to 10 decimals as asked; atomic cycle
+block, no rails). Remainder 75.42 short, ~+$0.85 unrealized. R21
+stamps verified sane again (peak 1.3404 / peak_realized 0.3036 pair;
+no decay, no inversion).
+
+1. **New minor class — anchor-echo sizing:** the same "bank profit,
+   thesis intact" rationale produced 45% at cycle 4 and **5% at cycle
+   9** — a $0.66-notional gesture whose fraction echoes the run's
+   canonical 0.05 from its open (different basis). Procedurally clean,
+   economically noise. Watch for recurrence.
+2. **Cross-check correction (the law):** B's "remainder fully
+   unprotected" repeats A's cycle-82 error — it counts only the stop
+   (0.352013, above entry) and the unreachable USD trail, missing the
+   breakeven ratchet: remainder excursion 1.0368 ≥ its ~$0.05 arm →
+   **the ratchet floor guards the remainder near net-$0 of its own
+   excursion.** The real residual is dimension (b), now quantified
+   twice: trail activation $1.99 is sized off machine_size (~$497)
+   while the actual book is ~$50 — the threshold is ~40× the book.
+3. Attribution note re-confirmed: `decision.action` stays "hold" while
+   order_intent carries the reduce — attribution must read the intent.
+
+Fence 0; clamps 2; 0 tracebacks. Sole position: KAITO remainder.
+
 ## Cycle 86 close-out — 20:1xZ: XOM 1426 COMPLETE **+$0.119** — profitable, and the churn's cost is now a measured $0.58
 
 **PROFIT-OR-LOSS FIRST.** Run 1426 is FLAT: the desk banked the last
