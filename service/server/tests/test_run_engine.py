@@ -3207,6 +3207,168 @@ class RecallExploreWiringTests(unittest.TestCase):
         self.assertEqual(rec["propensity"], 1.0)
 
 
+class RecallCandidateTests(unittest.TestCase):
+    """Plan 22 Phase 3(a4) — journal the candidates that were PASSED OVER.
+
+    Measured on prod 2026-08-17 over the 203 `recall` rows written since the
+    #432 kind cutover: the journal records `pool` as a COUNT and never the
+    identities, so a chunk absent from a row is ambiguous between "ranked and
+    not drawn" and "not in the pool at all". Every off-policy estimator (c)
+    needs the action SET, not its cardinality, and 59% of those rows are
+    deterministic (the losing classes) where not even the count is written.
+
+    The same measurement showed the deterministic classes' pairs moving in
+    time-disjoint blocks as the corpus grew — drift that is unattributable
+    without a record of what else was on offer. Cheap now, impossible to
+    retrofit onto rows already written."""
+
+    def _hits(self, *scores):
+        return [{"sha": f"{i:064d}", "kind": "lesson",
+                 "source": f"skill:s#{i}", "score": s, "body": f"body {i}",
+                 "title": f"t{i}"} for i, s in enumerate(scores)]
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_EXPLORE", None)
+
+    def test_the_deterministic_row_names_what_it_beat(self):
+        hits = self._hits(30.0, 22.0, 21.0, 20.0, 19.0)
+        chosen, meta = run_engine._recall_select(hits, False)
+        self.assertEqual([c["sha"] for c in meta["cands"]],
+                         [h["sha"] for h in hits[2:]],
+                         "a deterministic row that names no runner-up cannot "
+                         "tell a passed-over chunk from an absent one")
+        self.assertEqual([c["score"] for c in meta["cands"]],
+                         [21.0, 20.0, 19.0])
+        self.assertEqual([c["sha"] for c in chosen],
+                         [hits[0]["sha"], hits[1]["sha"]],
+                         "journaling more must not change what the desk reads")
+
+    def test_pool_stays_absent_on_a_deterministic_row(self):
+        """The load-bearing tell recorded in plan 22 §7: a row with no `pool`
+        key proves `_recall_select`'s early return fired, which is how the
+        losing-class exclusion is audited. Adding candidates must not blur
+        it."""
+        _c, meta = run_engine._recall_select(self._hits(30.0, 22.0, 21.0),
+                                             False)
+        self.assertNotIn("pool", meta)
+        self.assertNotIn("floor", meta)
+
+    def test_an_explored_row_names_the_arm_it_did_not_draw(self):
+        """When the draw displaces rank 2, rank 2 is itself a passed-over
+        candidate — so the set is 'every hit not emitted', never a fixed
+        slice."""
+        hits = self._hits(30.0, 22.0, 21.0, 20.0, 19.0)
+        seen = 0
+        for _ in range(400):
+            chosen, meta = run_engine._recall_select(hits, True)
+            emitted = {c["sha"] for c in chosen}
+            named = {c["sha"] for c in meta["cands"]}
+            self.assertEqual(emitted & named, set(),
+                             "an emitted chunk was journaled as passed over")
+            self.assertEqual(emitted | named, {h["sha"] for h in hits},
+                             "the action set is incomplete — SNIPS cannot be "
+                             "computed against arms that were never recorded")
+            if meta["explore"]:
+                seen += 1
+                self.assertIn(hits[1]["sha"], named,
+                              "the displaced incumbent is a passed-over arm")
+        self.assertGreater(seen, 0)
+
+    def test_the_floor_is_journaled_so_the_arms_are_reconstructable(self):
+        """`_RECALL_EXPLORE_FLOOR` is a constant today; a row that does not
+        carry the floor it was drawn under becomes unreadable the day the
+        constant moves."""
+        _c, meta = run_engine._recall_select(self._hits(30.0, 22.0, 21.0,
+                                                        3.0), True)
+        self.assertAlmostEqual(meta["floor"], 18.0, places=4)
+        below = [c for c in meta["cands"] if c["score"] < meta["floor"]]
+        self.assertEqual([c["score"] for c in below], [3.0],
+                         "a below-floor candidate must still be named — it is "
+                         "what proves the pool was not larger")
+
+    def test_candidates_never_cost_the_desk_its_brief(self):
+        chosen, meta = run_engine._recall_select([], True)
+        self.assertEqual(chosen, [])
+        self.assertEqual(meta["cands"], [])
+
+
+class RecallCandidateWiringTests(unittest.TestCase):
+    """(a4) through the real corpus: the widened shortlist must reach the
+    journal without reaching the prompt."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "x.db")
+        database.init_database()
+        import desk_memory
+        self.mem = desk_memory
+        for i in range(6):
+            self.mem.remember(
+                "lesson", f"skill:give#{i}", f"Give-back {i}",
+                "A position that gave back its peak should bank the gain or "
+                f"arm the level rather than hold for a full round trip {i}. "
+                + "trailing partial profit winning " * (6 - i))
+        run_engine._RECALL_JOURNAL.clear()
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_EXPLORE", None)
+        run_engine._RECALL_JOURNAL.clear()
+        self.tmp.cleanup()
+
+    def _run(self):
+        return {"id": 12, "market": "crypto", "peak_pnl_usd": 5.0}
+
+    def test_a_losing_cycle_journals_its_runners_up(self):
+        """The losing classes are 59% of the live journal and are never
+        explored, so this is the row shape (c) will mostly be reading."""
+        line = run_engine._recall_line(self._run(), {"unrealized": -1.0}, 3.0)
+        rec = run_engine._take_recall_journal(12)
+        self.assertEqual(rec["scheme"], "deterministic-top2")
+        self.assertEqual(len(rec["chunks"]), 2,
+                         "the desk must still read exactly two chunks")
+        self.assertGreaterEqual(len(rec["cands"]), 1,
+                                "a losing row named nothing it passed over")
+        for cand in rec["cands"]:
+            self.assertNotIn(cand["sha"], line,
+                             "a passed-over chunk reached the PROMPT — this "
+                             "is a journal change, not a retrieval change")
+
+    def test_widening_the_shortlist_changes_nothing_the_desk_reads(self):
+        """H2, pinned: `desk_memory.search` slices AFTER scoring, so the top-2
+        of a 5-hit search is byte-identical to a 2-hit search. If that ever
+        stops being true the desk's brief silently changes."""
+        import desk_memory
+        run_engine._recall_reset(12)
+        wide = run_engine._recall_line(self._run(), {"unrealized": -1.0}, 3.0)
+        wide_rec = run_engine._take_recall_journal(12)
+        narrow_hits = None
+        real = desk_memory.search
+
+        def narrow(query, **kw):
+            kw["limit"] = 2
+            return real(query, **kw)
+
+        with patch.object(desk_memory, "search", side_effect=narrow):
+            run_engine._recall_reset(12)
+            narrow_line = run_engine._recall_line(self._run(),
+                                                  {"unrealized": -1.0}, 3.0)
+            narrow_hits = run_engine._take_recall_journal(12)
+        self.assertEqual(wide, narrow_line)
+        self.assertEqual([c["sha"] for c in wide_rec["chunks"]],
+                         [c["sha"] for c in narrow_hits["chunks"]])
+
+    def test_the_candidates_reach_run_events(self):
+        import inspect
+        cyc = "\n".join(ln.split("#")[0]
+                        for ln in inspect.getsource(run_engine.run_cycle)
+                        .splitlines())
+        self.assertIn("cands", cyc,
+                      "the candidate set never reaches run_events, so the "
+                      "action space cannot be reconstructed offline — and it "
+                      "cannot be retrofitted onto rows already written")
+
+
 class ExcursionScaleBriefTests(unittest.TestCase):
     """Peak reaches the desk in DOLLARS; an arm is a PRICE. Without the
     conversion the desk armed levels 12-13x beyond anything its tape had done

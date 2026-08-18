@@ -513,6 +513,133 @@ Every increment lands here as a dated line, in the same PR that ships it.
       requires: which doctrine the desk is holding in mind at the moment it
       decides to bank, hold or add on a position that has given back its
       peak — the single behaviour that carried 74% of measured loss.
+  - **2026-08-15 — (a3)(ii) SHIPPED OUT-OF-BAND as PR #432**, from a
+    monitoring session rather than this cadence, which is why the five days
+    between it and this line carry no ladder entry. Recorded here because
+    §7 is the ledger and an unrecorded rung reads as an undone one.
+    - `_RECALL_KINDS = ("outcome", "lesson")` with
+      `_RECALL_KINDS_FALLBACK = ("monitoring",)` — two **tiers**, not one
+      merged pool, exactly the shape the 08-11 finding above said it had to
+      take. `desk_memory.search` now accepts several kinds as one pool (IDF
+      and the length norm are computed over the candidate pool, so scores
+      from two separate calls are not the same unit and must never be merged
+      by the caller).
+    - The defect it fixed is worth keeping: the desk was being handed our
+      **engineering commentary** as its trading memory. Prod run 1274 asking
+      *cut or hold* on a losing SOL short was given, as rank 1, a monitoring
+      note concluding *"…and that is why nothing ships"* — 16 of the 636
+      monitoring chunks carry deliberately-inconclusive markers and no other
+      kind carries any.
+    - **The cutover splits the attribution population in two, and the split
+      is the first thing (b) must respect.** Measured 2026-08-17 over all 662
+      journalled `recall` rows: **459 rows before 08-15T02:48Z, every chunk
+      `monitoring`; 203 rows after, every chunk `lesson` (244 slots) or
+      `outcome` (162 slots), zero monitoring.** Pooling them would attribute
+      outcomes across two different corpora.
+    - **PR #432's own stated limitation is now refuted by the journal.** It
+      reported *"no `outcome` chunk surfaced in any of the 12 cells"* from a
+      one-shot probe; live, outcome chunks take **162 of 406** chunk slots
+      and hold the **head** in every one of the 83 give-back/winning rows
+      (`run:1013:outcome` in 80 of them, `run:1358:outcome` in 3). The probe
+      measured one moment of a corpus that grows with every close.
+  - **2026-08-17 — increment (a4) SHIPPED: journal the candidates that were
+    PASSED OVER.** The row now carries `cands` — every chunk the selector
+    ranked and did not emit, with its score — plus the `floor` the ε draw was
+    made under. `run_engine._recall_cands(hits, chosen)`; the shortlist is
+    always widened to `_RECALL_EXPLORE_POOL`.
+    - **The measurement that forced it, on the 203 post-cutover rows:**
+
+      | measure | value |
+      |---|---|
+      | rows carrying any candidate IDENTITY | **0 of 203** |
+      | rows carrying `pool` (a COUNT only) | 83 |
+      | deterministic rows (losing classes, no count at all) | **120 (59%)** |
+      | rows that were actual explored draws | **15 (7.4%)** |
+
+      So for 100% of the journal a chunk's absence from a row is ambiguous
+      between *ranked and not drawn* and *not in the pool at all*. Every
+      off-policy estimator (c) needs the action **set**; the cardinality of
+      it is not enough, and for the losing classes — 59% of rows, and the
+      side that carries the loss — not even the cardinality was written.
+    - **Second reason, measured the same day: the deterministic classes
+      DRIFT.** `crypto/losing` produced 3 distinct chunk-pairs across 53
+      deterministic rows — not policy variance but the corpus moving under a
+      fixed ranking, and the pairs are **time-disjoint blocks** (08-15 →
+      `exit-discipline#4|horizon-discipline#2`, 08-16 →
+      `exit-discipline#3|#2`, 08-16/17 → `#3|#4`). The head itself changed.
+      Without a record of what else was on offer, that drift is
+      unattributable — and it is the exact confound §2 forbids learning
+      from. `cands` makes an entering or departing chunk visible in the row.
+    - **`cands` is defined by EXCLUSION, never by a rank slice.** When the ε
+      draw displaces rank 2, rank 2 is itself a passed-over arm; a fixed
+      `hits[2:]` would drop the one candidate the counterfactual most needs.
+      Mutation-checked (M2, M7).
+    - **The widened shortlist is provably not a retrieval change.**
+      `desk_memory.search` slices **after** scoring over a 2,000-row
+      candidate pool, so the top-2 of a 5-hit search is byte-identical to the
+      top-2 of a 2-hit search — same head, same brief, no extra DB work.
+      Pinned by `test_widening_the_shortlist_changes_nothing_the_desk_reads`,
+      which runs the real corpus twice and byte-compares the rendered line —
+      and verified in-container against the **live prod corpus** before
+      deploy, in all 16 (market × class) cells: `limit=2` and `limit=5`
+      returned identical shas AND identical scores in every one.
+    - That probe also surfaced why `cands` is worth more than it looks: the
+      runners-up are frequently **tied**. crypto/give-back scores
+      15.77 / 15.62 / 15.62 / 15.62 / 15.62 — four chunks at the same score,
+      so which one holds slot 2 is decided by the sort's tiebreak, not by
+      relevance. A chunk that occupies a slot by tiebreak is the textbook
+      passenger (c) is meant to find, and without `cands` the journal cannot
+      even show that the tie existed.
+    - **`pool` and `floor` stay ABSENT on deterministic rows.** Their absence
+      is the load-bearing tell recorded on 08-11 that proves
+      `_recall_select`'s early return fired, which is how the losing-class
+      exclusion is audited in the journal. Enriching the row must not blur
+      it; pinned by `test_pool_stays_absent_on_a_deterministic_row`
+      (mutation M6).
+    - No new flag — the row rides `DESK_RECALL_ENABLED`, same reasoning as
+      (a): journaling what recall passed over is meaningless when recall is
+      off. Journal-only: no prompt, gate, size or order reads `cands`.
+      Fail-soft path also journals its runners-up.
+    - Tests: `RecallCandidateTests` (5) + `RecallCandidateWiringTests` (3) in
+      `tests/test_run_engine.py`. **Mutation-checked ×7** — cands dropped
+      from the deterministic branch, cands as a fixed slice, floor dropped,
+      shortlist narrowed again, cands dropped from the `run_events`
+      whitelist, `pool` leaked onto a deterministic row, cands not recomputed
+      after the draw. All seven killed.
+    - **The trading judgment it will change**, as the owner directive below
+      requires: none today, and that is the honest answer — (a4) is the last
+      piece of evidence-plumbing before (c) can say *"this lesson is a
+      passenger"* and (d) can stop showing it at the moment the desk decides
+      to bank, hold or add on a position that has given back its peak.
+  - **2026-08-17 — the (b) variance gate, re-measured on the post-cutover
+    population. One class clears it honestly; the letter of the gate is met
+    and the letter is not enough.** 203 rows, 20 runs (**all closed** —
+    that leg is met exactly), window 08-15T02:48Z → 08-17T20:24Z, all crypto:
+
+    | class | events | pairs | scheme | variance is… |
+    |---|---|---|---|---|
+    | crypto/giveback | 62 | **6** | ε | **policy** — head fixed, 5 distinct alternates |
+    | crypto/losing | 53 | 3 | deterministic | **time** — three disjoint blocks |
+    | crypto/giveback+losing | 67 | 1 | deterministic | none |
+    | crypto/winning | 21 | 4 | ε | policy, but 21 < 30 events |
+
+    - The corrected gate (*≥3 pairs for each of ≥2 classes, ≥30 events per
+      class, ≥20 closed runs*) reads MET if `crypto/losing` counts. **It must
+      not count**: its three pairs are consecutive time blocks under a fixed
+      ranking, which is corpus drift confounded with calendar time — the
+      thing §2 exists to refuse. Counting it would repeat the 08-09 mistake
+      in a new costume: a number that opens on a dataset that cannot answer
+      the question.
+    - **Amended gate for (b), stated so it cannot be argued from vibes: the
+      ≥2 classes must each be ε-SCHEME classes with ≥30 events and ≥3
+      distinct pairs.** Today that is 1 of 2 (`crypto/giveback` 62/6;
+      `crypto/winning` 21/4 is 9 events short). This is a VOLUME shortfall,
+      not a structural one — and the fleet rebuilt on 08-17 into 13 runs
+      across crypto, futures, forex and us-stock, where the previous window
+      was crypto-only, so the class count widens on its own.
+    - Also recorded: **0 of 203 rows have empty `chunks`** — the control
+      group (recalled, corpus returned nothing) still does not exist, nine
+      days of journalling in. (b) must not assume it ever will.
   - **2026-08-11 — owner directive, binding on this ladder:** *"everything
     for sooppiy AI"* / *"if we find that we must be implement trading logic
     and sooppiy AI"*. Journal-only and default-off increments are a STAGING
