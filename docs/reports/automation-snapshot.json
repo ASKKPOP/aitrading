@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-18/55",
- "captured_at_utc": "2026-08-18T05:14Z",
+ "cycle": "2026-08-18/56",
+ "captured_at_utc": "2026-08-18T05:44Z",
  "prod_image": "sooppiy-backend:20260818-r17-nullsizecap",
  "C39_NEW_SESSION_TWO_TARGETS": "Account rotated; crons re-armed (0961ff91 30min, 06e43308 sweep). Owner scope now TWO users: agent 6/fleet 35 AND forevery1969@gmail.com user 25/agent 60/FLEET 36 (us-stock, 25 slots, $99,996.69, started 08-16T10:37Z). Both books FLAT; day +3.84; fleet 35 replenished 9 runs (1387-1396) -> 12 running.",
  "C39_FLEET36_NEVER_TRADED": "151 decisions since start: 147 hold / 2 buy / 2 retire. BOTH buys (run 1324 T, cyc 56/57, conf 0.73/0.78, parsed+compiled+$257 sized) killed by gate_skip fence: lease expired. 100% entry-kill rate from infrastructure.",
@@ -864,5 +864,6 @@
  "C51_USSTOCK_REPORT_LIVE": "sooppiy.com/reports/usa-stock-analysis-2026-08-18.html live (PR #479, image 20260818-usstock-report), 3x200 + SHA match. Full analysis + decision-pipeline report, EN+KO, self-contained.",
  "C52_CEILING_6_AND_473_ARMED": "Fire #6: 1398 SOL cyc8 unit-slip (0.0061/0.0299) rescued by #446 then ceiling 2.99->1.83 (39% deep), action hold \u2014 6/6 fires on hold, P&L $0.00. #473 test armed: 1398 cyc9 (~04:07Z) shows whether the request moves after the line renders. Fence 0.",
  "C53_R17_SHIPPED": "PR #480 live: null-size opens capped at 0.25 x max_bet (RUN_NULL_SIZE_CAP_FRAC) + prompt requires authored size. License: default-sized opens -178.69/47 runs vs desk-sized +5.55/17 (ex-SPCX -142.71). Verified 3x live. BINDING: cohort P&L + null_size_cap counts at daily sweep, else FAILED.",
- "C54_473_FIRST_POSITIVE": "1398 cyc8 clamp 2.99->1.83 (39% deep); cyc9 desk authored NEW compliant bracket 0.93/2.65 (R:R 2.85, no clamp) \u2014 ADJUSTMENT not repetition, opposite of 1375 baseline. n=1 positive, keep counting. Cyc9 sell parked by venue rule (spot, no inventory). Fence 0; null_size_cap 0 (no null-size open yet)."
+ "C54_473_FIRST_POSITIVE": "1398 cyc8 clamp 2.99->1.83 (39% deep); cyc9 desk authored NEW compliant bracket 0.93/2.65 (R:R 2.85, no clamp) \u2014 ADJUSTMENT not repetition, opposite of 1375 baseline. n=1 positive, keep counting. Cyc9 sell parked by venue rule (spot, no inventory). Fence 0; null_size_cap 0 (no null-size open yet).",
+ "C56_REPLENISH_NO_USSTOCK": "11 runs built (1400-1412, futures/forex/crypto). Gate candidates had no us-stock (market shut 05:44Z) \u2014 R20 part-2 test moves to today NYSE session 13:30-20:00Z. Expectancy gate correctly dropped MGC/BNB/AAVE."
 }
