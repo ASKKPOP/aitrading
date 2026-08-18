@@ -757,6 +757,74 @@ Every increment lands here as a dated line, in the same PR that ships it.
       put run 1380 (ORCL) live alongside futures and forex, so this closes
       on its own — and it is the same volume shortfall the amended (b) gate
       above is waiting on.
+  - **2026-08-18 — increment (a6) SHIPPED: tie-scoped exploration on the
+    LOSING side. This is the change that opens the (b) gate.** Owner
+    direction: *"(b) 게이트를 여는 것이 최우선"* — opening the gate is the
+    priority.
+    - **The measurement that inverts the exclusion's premise.** (a2) refused
+      to explore any losing position, on the mandate's asymmetry: never
+      loosen an unproven thing on the losing side. That was right **while the
+      incumbent was a CHOICE.** It is not. Measured on prod 2026-08-18:
+      **every journalled crypto losing-class row has slot 2 EXACTLY TIED**
+      with chunks the desk was never shown — margin ~9.52 with three
+      candidates at the same score, decided by the sort's tiebreak. Across
+      all 16 live cells, 7 have a tied slot 2; on the live journal the (a5)
+      disclosure fires on **6 of 9** rows.
+    - **So the losing side — the cut/hold/bank decision carrying 74% of
+      measured loss — has been reading an ARBITRARY pick, and contributes
+      zero variance by design.** That is precisely what kept the (b) gate
+      shut at one qualifying class.
+    - **Drawing among exact ties cannot loosen anything**, because the drawn
+      chunk scored within 1% of the one it replaces. The asymmetry is
+      honoured by construction, not by exception.
+    - **`eps-tie-only-v1`** — a DIFFERENT scheme string, because it is a
+      different policy and pooling it with `eps-head-fixed-v1` unlabelled
+      would corrupt every estimate (c) computes. Same reason (a2) versioned
+      its scheme at all. The floor is `slot-2 score x (1 - 1%)`, not the
+      0.60-of-head floor; the head is still never displaced.
+    - **Verified on the live corpus BEFORE shipping — and it refuses where it
+      should:**
+
+      | cell | tied arms | pairs (was 1) |
+      |---|---|---|
+      | **crypto/losing** | 3 | **4** |
+      | futures/losing | 3 | **4** |
+      | futures/gave-back+losing | 2 | **3** |
+      | forex/gave-back+losing | 1 | 2 |
+      | crypto/gb+losing, forex/losing, us-stock x2 | 0 | **1 — unchanged** |
+
+      Four cells gain nothing because their incumbent is a genuine choice
+      rather than a tiebreak. That is the safety property holding on real
+      data, not an argument about it.
+    - **Projected effect on the (b) gate:** `crypto/losing` (53 events in the
+      last measured window, now 4 reachable pairs) joins `crypto/giveback`
+      (62 events, 6 pairs) as the **second qualifying class** as soon as it
+      accumulates 30 events under the new policy. futures adds two more
+      cells. The gate was 1 of 2; it becomes 2 of 2 on volume alone.
+    - **Kill switch `DESK_RECALL_EXPLORE_TIES`, default ON** — unlike (a2)'s
+      own flag, and the reason is stated so it is not read as carelessness: a
+      default-off flag here would leave the gate shut, which is the thing
+      this increment exists to fix. It remains disableable without a deploy
+      because it is still the losing side, and the kill switch reproduces the
+      pre-2026-08-18 behaviour exactly, `deterministic-top2` label included
+      (pinned by a test).
+    - **A losing row with NO tie is now journaled `eps-tie-only-v1` with
+      `pool: 0`, not `deterministic-top2`.** That is deliberate and the
+      existing test was UPDATED rather than weakened: the policy ran and
+      found no arm, which is a different fact from the policy never having
+      run. Its original intent — a losing run's ranking must not change — is
+      now asserted on the emitted CHUNKS, which is what it was really
+      protecting.
+    - Tests: `TieScopedExplorationTests` (9) + 2 updated/added in
+      `RecallExploreWiringTests`. **Mutation-checked x6** — tie band replaced
+      by the 0.60 floor (i.e. the losing side actually loosened), losing side
+      never reaching the tie path, tie rows mislabelled as the v1 scheme,
+      kill switch disabled, and the band anchored to the head instead of
+      slot 2. A length guard written first was DELETED after mutation showed
+      it changed nothing (`hits[2:]` is already empty when the head is short).
+    - **The trading judgment it changes:** which doctrine the desk holds in
+      mind while deciding to cut, hold or reduce a LOSING position — and,
+      more importantly, it makes that choice measurable for the first time.
   - **2026-08-11 — owner directive, binding on this ladder:** *"everything
     for sooppiy AI"* / *"if we find that we must be implement trading logic
     and sooppiy AI"*. Journal-only and default-off increments are a STAGING

@@ -4735,8 +4735,11 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
     try:
         import desk_memory
         query = _recall_query(run, pnl, pos_qty)
-        explore = (_recall_explore_enabled()
-                   and _recall_explore_allowed(pnl, pos_qty))
+        # A losing position is still refused ORDINARY exploration; it is
+        # offered TIE-SCOPED exploration instead (see `_recall_select`).
+        _open = _recall_explore_allowed(pnl, pos_qty)
+        tie_only = (not _open) and _recall_tie_explore_enabled()
+        explore = _recall_explore_enabled() and (_open or tie_only)
         market = str(run.get("market") or "") or None
         # (a4): the shortlist is ALWAYS widened, including when exploration is
         # off. `desk_memory.search` slices after scoring, so the top-2 of a
@@ -4751,7 +4754,7 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
         # Same reasoning as the capture guard below: a selector that raises
         # must fall back to the incumbent ranking, never to no recall at all.
         try:
-            hits, meta = _recall_select(hits, explore)
+            hits, meta = _recall_select(hits, explore, tie_only=tie_only)
         except Exception:  # noqa: BLE001
             head = list(hits or [])[:_RECALL_MAX]
             meta = {"scheme": _RECALL_SCHEME_FIXED, "explore": False,
@@ -4854,6 +4857,11 @@ def _recall_capture(run_id, query: str, hits: list,
 #     things in two situations.
 _RECALL_SCHEME_FIXED = "deterministic-top2"
 _RECALL_SCHEME_EPS = "eps-head-fixed-v1"
+# A tie-scoped draw is a DIFFERENT policy, so its rows are a different
+# dataset. Pooling them with `eps-head-fixed-v1` unlabelled would corrupt
+# every estimate (c) computes, and cannot be retrofitted onto rows already
+# written — the same reason (a2) journaled its scheme version at all.
+_RECALL_SCHEME_TIE = "eps-tie-only-v1"
 _RECALL_EXPLORE_POOL = 5
 _RECALL_EXPLORE_FLOOR = 0.60
 _RECALL_EXPLORE_EPS = 0.25
@@ -4862,6 +4870,17 @@ _RECALL_EXPLORE_EPS = 0.25
 def _recall_explore_enabled() -> bool:
     return os.environ.get("DESK_RECALL_EXPLORE", "0").strip().lower() in (
         "1", "true", "yes", "on")
+
+
+def _recall_tie_explore_enabled() -> bool:
+    """Kill switch for tie-scoped exploration on the LOSING side.
+
+    Default ON, unlike (a2)'s own flag, and the measurement is why: a
+    default-off flag here would leave plan 22's (b) gate shut at one
+    qualifying class, which is the thing this change exists to fix. It stays
+    disableable without a deploy because it is still the losing side."""
+    return (os.getenv("DESK_RECALL_EXPLORE_TIES", "1") or "1").strip().lower() \
+        not in ("0", "false", "off", "no")
 
 
 def _recall_explore_allowed(pnl: dict, pos_qty: float) -> bool:
@@ -4946,7 +4965,8 @@ def _recall_contest_line(hits: list, cands: list) -> str:
         return ""
 
 
-def _recall_select(hits: list, explore: bool) -> "tuple[list, dict]":
+def _recall_select(hits: list, explore: bool,
+                   tie_only: bool = False) -> "tuple[list, dict]":
     """Choose what the brief carries, and record the probability of the choice.
 
     The propensity is journaled ALWAYS, including when exploration is off: a
@@ -4960,12 +4980,28 @@ def _recall_select(hits: list, explore: bool) -> "tuple[list, dict]":
         # losing-class exclusion is audited in the journal (plan 22 §7).
         return head, {"scheme": _RECALL_SCHEME_FIXED, "explore": False,
                       "propensity": 1.0, "cands": _recall_cands(hits, head)}
-    meta = {"scheme": _RECALL_SCHEME_EPS, "explore": False,
+    meta = {"scheme": _RECALL_SCHEME_TIE if tie_only else _RECALL_SCHEME_EPS,
+            "explore": False,
             "eps": _RECALL_EXPLORE_EPS, "pool": 0, "propensity": 1.0,
             "cands": _recall_cands(hits, head)}
     if not head:
         return head, meta
-    floor = float(head[0].get("score") or 0) * _RECALL_EXPLORE_FLOOR
+    if tie_only:
+        # LOSING SIDE (2026-08-18). Draw only among chunks STATISTICALLY TIED
+        # with the incumbent slot 2 — measured on prod, every journalled
+        # crypto losing row has slot 2 tied with three chunks the desk never
+        # saw, so the incumbent is a tiebreak artifact rather than a choice.
+        # A drawn chunk scores within 1% of the one it replaces, so the
+        # mandate's "never loosen on the losing side" is satisfied by
+        # construction, while the class that carries 74% of measured loss
+        # finally produces the variance (b) needs.
+        # No length guard needed: `alts` is drawn from `hits[_RECALL_MAX:]`,
+        # which is already empty whenever the head is short, so a one-hit
+        # pool cannot be tie-explored either way. (A guard here was written
+        # first and deleted — mutation showed it changed nothing.)
+        floor = float(head[-1].get("score") or 0) * (1 - _RECALL_TIE_BAND)
+    else:
+        floor = float(head[0].get("score") or 0) * _RECALL_EXPLORE_FLOOR
     # Journaled because `_RECALL_EXPLORE_FLOOR` is a constant TODAY: a row
     # that does not carry the floor it was drawn under becomes unreadable the
     # day the constant moves.

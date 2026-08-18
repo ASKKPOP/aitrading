@@ -3185,11 +3185,36 @@ class RecallExploreWiringTests(unittest.TestCase):
                            "exploration produced no within-class variance — "
                            "the whole point of (a2)")
 
-    def test_a_losing_run_keeps_the_deterministic_ranking(self):
+    def test_a_losing_run_without_a_tie_keeps_the_incumbent_ranking(self):
+        """UPDATED 2026-08-18, and the INTENT is unchanged: a losing run must
+        not have its ranking altered. What changed is the LABEL — the
+        tie-scoped policy is now in force on the losing side, so the row is
+        journaled `eps-tie-only-v1` with an empty pool rather than
+        `deterministic-top2`. That is the honest record: the policy ran and
+        found no arm, which is a different fact from the policy never having
+        run. Asserted on the emitted CHUNKS, which is what the original test
+        was really protecting."""
         os.environ["DESK_RECALL_EXPLORE"] = "1"
         run_engine._recall_line(self._run(), {"unrealized": -1.0}, 3.0)
         rec = run_engine._take_recall_journal(11)
-        self.assertEqual(rec["scheme"], "deterministic-top2")
+        self.assertEqual(rec["scheme"], "eps-tie-only-v1")
+        self.assertFalse(rec["explore"], "a losing run drew without a tie")
+        self.assertEqual(rec["propensity"], 1.0)
+        self.assertEqual(rec["pool"], 0,
+                         "no tied candidate existed, so no arm was offered")
+
+    def test_the_kill_switch_restores_the_old_losing_exclusion(self):
+        """`DESK_RECALL_EXPLORE_TIES=0` must reproduce the pre-2026-08-18
+        behaviour exactly, deterministic label included."""
+        os.environ["DESK_RECALL_EXPLORE"] = "1"
+        os.environ["DESK_RECALL_EXPLORE_TIES"] = "0"
+        try:
+            run_engine._recall_line(self._run(), {"unrealized": -1.0}, 3.0)
+            rec = run_engine._take_recall_journal(11)
+            self.assertEqual(rec["scheme"], "deterministic-top2")
+            self.assertNotIn("pool", rec)
+        finally:
+            os.environ.pop("DESK_RECALL_EXPLORE_TIES", None)
 
     def test_a_broken_draw_never_costs_the_desk_its_brief(self):
         """A selector that raises must fall back to the INCUMBENT ranking.
