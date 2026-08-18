@@ -6,6 +6,26 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 90 — 22:2xZ (anchor 22:28:46): quiet; Plan 27 arc completed and REJECTED between cycles
+
+No closes (overlapped window). Sole position: KAITO remainder short
++$0.50 unrealized (eased from +$0.99 peak; ratchet floor stands).
+Fence 0; clamps 2; 0 tracebacks.
+
+**Between-cycle record (owner-ordered work):** Plan 27 (intraday range
+discipline) ran its full arc — plan → 5-agent verification (5×
+approve-with-changes, all folded into v2 amendments) → paced off-hours
+data fetch (30 symbols × 3 granularities) → amended backtest →
+**VERDICT: REJECTED, nothing ships.** Absolute expectancy negative in
+both variants (limit −27.7bp/trade; cycle-sampled −0.6bp, negative
+under ×2 costs); the passing "excess over baseline" was an
+inverse-selection artifact (fills select weak days). Bonus refutation:
+BOTH daily extremes cluster in the session's FIRST quartile (66%/62%
+vs arcsine 33%) — "the high prints late" is dead on this tape. Dead
+theories recorded by name in docs/plan/27 v3; artifacts cleaned. The
+churn/exit-discipline lesson track continues separately on its own
+evidence.
+
 ## Cycle 89 — 21:2xZ (anchor 21:23:13): quiet
 
 No closes (overlapped window per the seam fix). KAITO remainder short
