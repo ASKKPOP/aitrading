@@ -640,6 +640,62 @@ Every increment lands here as a dated line, in the same PR that ships it.
     - Also recorded: **0 of 203 rows have empty `chunks`** — the control
       group (recalled, corpus returned nothing) still does not exist, nine
       days of journalling in. (b) must not assume it ever will.
+  - **2026-08-18 — increment (a5) SHIPPED: the desk is told when its recall
+    was a COIN FLIP. The first rung that changes what the desk READS.**
+    Owner directive, verbatim: *"must be sooppiy AI know you finding that"* —
+    a finding that lives only in this ledger is engineering trivia, not
+    trading logic (memory `decisions-become-skills`).
+    - **The finding, measured on the live prod corpus across all 16
+      (market × situation) cells:** in **7 of them (44%)** the SECOND chunk
+      the desk is handed is **exactly tied on score** with a chunk it was
+      never shown; in 2 more the head itself is tied. Slot 2 is decided by
+      the sort's tiebreak, not by relevance — and the block is headed *"What
+      this desk has already learned about cycles like this"*, which reads as
+      precedent. The desk has been weighing a coin flip as a precedent, in
+      the cut/hold/bank decision that carries 74% of measured loss.
+    - Live confirmation from the first organic (a4) row, run 1419 forex
+      AUDUSD 08:03:58Z: heads tied at **18.4282 / 18.4282**, candidates tied
+      at **17.9115 / 17.9115**. Before (a4) the journal could not have shown
+      the tie existed; it showed up on the very first row.
+    - **`_recall_contest_line(hits, cands)`** appends one line when a
+      passed-over candidate scored within **1%** of the WEAKEST emitted
+      chunk: *"Retrieval note: N other past findings scored within 1% of the
+      last item above, so which of them you were shown is close to
+      arbitrary. Weigh these as general doctrine for this situation, NOT as
+      a specific precedent for this position."*
+    - **It is a DISCLOSURE, not a weighting.** We do not yet know which of
+      the tied chunks is better — that is (c)/(d). We do know the choice
+      between them was arbitrary, and the desk is entitled to that. This is
+      also why it ships now rather than waiting on the (b) gate: the fact is
+      already established and needs no attribution to be true.
+    - **Silent when uncontested**, deliberately. An unconditional caveat
+      would teach the desk to discount every recollection including the
+      uncontested ones that ARE precedent — the opposite of the intent.
+    - **The margin is the MARGINAL chunk, not the head.** Slot 2 is what a
+      tie decides and what an unshown equal would have replaced; measuring
+      against the head would call a strong recall contested whenever its
+      runner-up was weak. Mutation-checked (N4, N8).
+    - **NOT rendered as a bullet.** `test_recall_is_bounded` counts `"\n- "`
+      to cap how many past FINDINGS reach the prompt; the pre-existing guard
+      caught the first draft. Widening that guard to fit an annotation would
+      have quietly raised the recall budget — the guard was right and the
+      line shape was wrong.
+    - Fail-soft at the render site as well as inside: a disclosure that
+      raises costs the desk the NOTE, never the recall it annotates.
+    - Tests: `RecallContestDisclosureTests` (6) + `RecallContestWiringTests`
+      (3). **Mutation-checked ×10, and two mutants initially SURVIVED — both
+      of which changed the code, not the tests.** A NaN guard turned out to
+      be dead (NaN comparisons are always False, so a NaN score already
+      falls through to silence) and was **deleted** rather than propped up by
+      a test written to justify it. A zero-score guard was unpinned because
+      it depends on `desk_memory.search` filtering `score > 0` — another
+      module's invariant — and was **pinned with a test**, since depending on
+      a foreign invariant untested is the standing brief-line trap.
+    - **The trading judgment it changes, stated plainly:** how heavily the
+      desk weighs a recalled past finding when deciding to cut, hold or bank
+      a position that has given back its peak. It cannot make the recall
+      better; it stops an arbitrary one from being read as authoritative.
+
   - **2026-08-17 — owner asked whether us-stock also gets RAG. It already
     does; measured, not assumed.** The recall path has never been
     crypto-only — `_recall_query` opens with the run's `market` and

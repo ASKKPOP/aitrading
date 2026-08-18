@@ -3369,6 +3369,123 @@ class RecallCandidateWiringTests(unittest.TestCase):
                       "cannot be retrofitted onto rows already written")
 
 
+class RecallContestDisclosureTests(unittest.TestCase):
+    """Plan 22 Phase 3(a5) — tell the desk HOW CONTESTED its recall was.
+
+    Measured on the live prod corpus 2026-08-18, all 16 (market x situation)
+    cells: in **7 of them (44%)** the SECOND chunk the desk is handed is
+    exactly tied on score with a chunk it was not shown, and the desk is
+    never told. It reads two arbitrary picks from a bag of equals under
+    "What this desk has already learned about cycles like this" as though
+    they were the two most relevant precedents.
+
+    That is a trading-judgment input, not telemetry: recall is what the desk
+    consults when it decides cut / hold / bank, the decision that carries 74%
+    of measured loss (memory `losses-are-full-book-dumps-not-bad-timing`).
+    A coin-flip anecdote must not be weighed like a precedent."""
+
+    def _hits(self, *scores):
+        return [{"sha": f"{i:064d}", "score": s} for i, s in enumerate(scores)]
+
+    def _cands(self, *scores):
+        return [{"sha": f"c{i:063d}", "score": s} for i, s in enumerate(scores)]
+
+    def test_a_tie_is_disclosed_with_its_count(self):
+        line = run_engine._recall_contest_line(self._hits(20.0, 18.43),
+                                               self._cands(18.43, 18.43, 14.0))
+        self.assertIn("2 other past findings", line)
+        self.assertIn("doctrine", line)
+        self.assertIn("NOT", line,
+                      "the desk is told what the tie MEANS, not just that "
+                      "one happened")
+
+    def test_a_clear_margin_says_nothing(self):
+        """Silence when the recall is genuinely the best material: an
+        unconditional caveat would teach the desk to discount every
+        recollection, including the uncontested ones."""
+        self.assertEqual(
+            run_engine._recall_contest_line(self._hits(20.0, 18.43),
+                                            self._cands(14.0, 9.0)), "")
+
+    def test_a_near_tie_counts_as_contested(self):
+        """An exact tie is the visible case; 1% apart is the same coin flip
+        with a rounding difference. Measured: crypto/winning heads at 7.518
+        against a 7.444 second — 1.0% — and four chunks sit on that 7.444."""
+        line = run_engine._recall_contest_line(self._hits(7.518, 7.444),
+                                               self._cands(7.444, 7.40))
+        self.assertIn("2 other past findings", line)
+
+    def test_it_never_raises_on_a_malformed_score(self):
+        for bad in (None, "", "abc", float("nan")):
+            self.assertEqual(
+                run_engine._recall_contest_line(self._hits(20.0, bad),
+                                                self._cands(18.0)), "",
+                f"a {bad!r} score produced a note instead of silence")
+        self.assertEqual(run_engine._recall_contest_line([], []), "")
+
+    def test_a_zero_score_is_never_a_tie(self):
+        """`desk_memory.search` only returns chunks scoring > 0, so this is
+        another module's invariant — and depending on one untested is how
+        brief lines break here. Without the guard every zero-scoring
+        candidate reads as "tied" and the desk is told its recall was
+        arbitrary when in truth nothing matched at all."""
+        self.assertEqual(
+            run_engine._recall_contest_line(self._hits(0.0), self._cands(0.0)),
+            "")
+        self.assertEqual(
+            run_engine._recall_contest_line(self._hits(20.0), []), "")
+
+
+class RecallContestWiringTests(unittest.TestCase):
+    """(a5) through the real corpus — the note must reach the PROMPT."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "x.db")
+        database.init_database()
+        import desk_memory
+        self.mem = desk_memory
+        # Four bodies identical but for a trailing id: identical term counts,
+        # so they score identically and slot 2 IS a tiebreak — the shape
+        # measured in 7 of 16 live cells.
+        for i in range(4):
+            self.mem.remember(
+                "lesson", f"skill:tie#{i}", f"Tie {i}",
+                "A position that gave back its peak should bank the gain or "
+                "arm the level rather than hold for a full round trip.")
+        run_engine._RECALL_JOURNAL.clear()
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_EXPLORE", None)
+        run_engine._RECALL_JOURNAL.clear()
+        self.tmp.cleanup()
+
+    def test_the_desk_is_told_when_its_recall_was_a_coin_flip(self):
+        line = run_engine._recall_line(
+            {"id": 21, "market": "crypto", "peak_pnl_usd": 5.0},
+            {"unrealized": 1.0}, 3.0)
+        self.assertIn("past findings", line)
+        self.assertIn("scored within 1%", line,
+                      "the desk read a tiebreak pick as if it were the most "
+                      "relevant precedent")
+
+    def test_the_note_never_appears_without_recall(self):
+        run_engine._RECALL_JOURNAL.clear()
+        with patch.object(self.mem, "search", return_value=[]):
+            self.assertEqual(run_engine._recall_line(
+                {"id": 21, "market": "crypto"}, {"unrealized": 1.0}, 3.0), "")
+
+    def test_a_broken_note_never_costs_the_desk_its_recall(self):
+        with patch.object(run_engine, "_recall_contest_line",
+                          side_effect=RuntimeError("boom")):
+            line = run_engine._recall_line(
+                {"id": 21, "market": "crypto", "peak_pnl_usd": 5.0},
+                {"unrealized": 1.0}, 3.0)
+        self.assertIn("past findings", line,
+                      "a failing disclosure stripped the recall itself")
+
+
 class ExcursionScaleBriefTests(unittest.TestCase):
     """Peak reaches the desk in DOLLARS; an arm is a PRICE. Without the
     conversion the desk armed levels 12-13x beyond anything its tape had done
