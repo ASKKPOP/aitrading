@@ -3,9 +3,240 @@
 Continued from [2026-08-16](2026-08-16-automation-monitoring.md) (day
 closed **+$5.65 realized, resid 0.00**; 15 code/skill PRs + 4 docs
 merges shipped). Target: **info@askkpop.com — user 5 / agent 6 /
-FLEET 35**. Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
+FLEET 35**; from cycle 39 (owner directive) also
+**forevery1969@gmail.com — user 25 / agent 60 / FLEET 36 (us-stock)**.
+Open items: `BREAKEVEN_FEE_RATE` (needs fleet-wide replay),
 prospective #443 warning, outlook intent-vs-execution defect,
 arm-reachability rail.
+
+## Cycle 42 — 23:5xZ (anchor 23:52:40): **#473's line RENDERED for the first time** — mechanism proven, behavior still n=1-and-ambiguous
+
+No closes since 23:40 (no subagent dispatch owed); both books flat; day
+08-17 ends **+$3.84** (no closes since the cycle-39 pnl_audit run). 0
+tracebacks. **`fence: lease expired` post-deploy: 0** (35 min of tape —
+still below evidential value; the 24h sweep is the real read).
+
+### The #473 test — first data, honestly graded
+
+| | |
+|---|---|
+| ceiling fire #5 | run 1388 LINKUSDT cycle 9, 22:56:42Z — requested `target_pct` **5.0**, clamped to **4.95** (3× stop 1.65), `action=hold` |
+| line render #1 | cycle 10, 23:34:26Z — `railed_params` present in the decision brief array, note text on tape ("target_pct 5 pulled to R:R ceiling 4.95 … unreachable targets never fill") |
+| requested target after render | **cycle 10 authored NO bracket at all** (params NULL on a hold cycle) |
+
+**Graded:** the line's *mechanism* is verified end-to-end (clamp → journal →
+brief render on the next cycle). The *behavioral* question — does the desk
+change its request after being told — is still open: unlike run 1375
+(which re-requested the identical 3.02% within 31 minutes of each clamp,
+three times), 1388 did not repeat its clamped request, but it also issued
+no adjusted one. n=1, non-repetition ≠ adjustment. Keep counting; the
+FAILED verdict threshold stays "requests do not move across repeated
+clamped cycles". Caveat: this clamp was 1% deep (5.0→4.95) vs 1375's 53%
+(3.02→1.41) — a shallow clamp is weak stimulus.
+
+**R:R ceiling ledger: 5 fires, ALL on `hold` cycles, P&L effect $0.00.**
+Loss floor #460: still 0 fires. Ratchet (a)-alone fix: still queued.
+
+## Cycle 41 — 23:4xZ (anchor 23:40:53): OWNER ASK — "usa stock lost, analyze forevery1969"; two-subagent analysis run and cross-checked
+
+**PROFIT-OR-LOSS FIRST: forevery1969@gmail.com has lost $3.41 lifetime
+(cash 99,996.59 vs 100,000 seed) — ALL of it in CRYPTO fleet 34 on 08-15.
+Its US-STOCK fleet 36 has never executed a trade: realized $0.00 on all 18
+runs.** The screenshot the owner sent (runs 1148–1248, −$4.61) is a
+DIFFERENT account: agent 5 / fleet 32 (yoojinbe@gmail.com), stopped 08-14.
+
+Two subagents dispatched per the 2026-08-13 law (A: desk-authored,
+B: algorithm-authored), cross-checked by the main session:
+
+**Where the $3.41 went (both agents reconcile to the cent):**
+- ETH 1272 **−1.87 (55%)** — desk went long against its own bearish
+  cycle-3 read at conf 0.58, and `size_frac: null` fell through to default
+  sizing: **$990 notional = 90% of run budget on the day's weakest idea**
+  (vs $495/$165 on stronger ones). VERIFIED on tape by main session.
+  Same defect class as agent 6's 8.2× incident (takeover brief §3) —
+  **now n=2 accounts → backlog R17** (counterfactual ≈ $0.9–1.6/day).
+- SOL 1274 **−1.54** — desk proposed a nonsense 0.016% stop; the rail
+  FLOOR (0.3%) replaced it and the watcher stopped out within 0.01% of the
+  local top; SOL mean-reverted below entry. **Stop-out cost ≈ $1.04 vs
+  holding.** Floor is tighter than SOL's ~3%/day noise → backlog R18.
+- BTC 1271 **−0.35** (incl. the −0.10 orphan flatten at the user's
+  stop-all; that leg is in NO run's realized — the known
+  realized-misses-flattens gap, reconfirmed).
+- FIL 1283 **+0.35** — the one winner: entered WITH a multi-week trend,
+  banked in partials. Direction quality separated it, not exit management.
+- **Fees were 47% of the total loss** ($1.61 of $3.41); one ETH leg was
+  100% fees (exit at entry price, −$0.43).
+
+**Why fleet 36 (us-stock) is at $0.00 — quantified (Agent B):** 151
+decisions = 147 hold / 2 buy / 2 retire; gate_skips = 509 market-closed,
+147 hold, **2 `fence: lease expired`**, 0 risk-gate blocks (refutes the
+rails-throttled-it theory). **The only two entries the fleet ever authored
+(conf 0.73/0.78) were both infrastructure-killed by the lease fence**;
+idle-retire then retired that run 4h before #475 deployed. Honest
+counterfactual: T fell −0.7% after the kills — on this tape the fence
+AVOIDED −$2…−4. The defect was authorship, not (yet) dollars.
+
+**Cross-check corrections applied:** B's "drawdown_warning mislabel"
+finding is OVERSTATED — the marker reuse is documented as deliberate
+(fleet_supervisor.py:389); the honest reason "eval_failed" is preserved in
+the reason fields. A's SOL raw-stop claim (0.016%) was independently
+confirmed by B from the order_params rail note. A expected platform
+force-closes and refuted himself: 8 of 9 legs were desk-authored. The
+08-15 mark-outage root cause (breaker_eval_failed ×14) is UNRECOVERABLE
+(logs rotated at the 23:17Z deploy) — recorded as unknown, not explained.
+
+## Cycle 40 — 23:2xZ (anchor 23:25:54): post-deploy liveness only — the window is 2 minutes wide
+
+The cron fired immediately after the #475 ship, so the delta window since
+the addendum is ~2 minutes: **no closes, both books flat, 0 tracebacks,
+engine cycling on the new image** (2 decisions since the 23:17Z restart,
+MAX(ts) 14s behind NOW, 20 running runs across agents 6+60). Watches:
+`fence: lease expired` **0 post-deploy (2 min of data — no evidential
+value yet; the real read is the 24h sweep)**; `railed_params` renders
+still 0 (no clamp has fired); ceiling/loss-floor/ratchet unchanged.
+Nothing to analyze, nothing to ship.
+
+## Cycle 39 addendum — 23:2xZ (anchor 23:24:06): **#475 SHIPPED to prod, verified 3×**
+
+PR #475 merged (`71ecd1e7`) after full CI (5/5 checks); deployed as image
+`sooppiy-backend:20260817-20260817-leaserenew` (deploy.sh prefixes the
+date — the tag is double-dated but correct). Rollback:
+`20260817-handoff-takeover`. Verified:
+
+1. **Wired in the running worker** — `inspect.getsource` confirms
+   `_renew_lease(run_id)` sits before `execute_paper_trade` in the live
+   container.
+2. **In-image tests 5/5 OK** — the 3 new renewal tests + the two existing
+   fence-protection tests (zombie reclaim, stop-mid-cycle). ⚠️ NEW TRAP for
+   the runbook: the first in-image run showed 5 setup failures because
+   **prod sets `ENTITLEMENTS_ENFORCED=true`** and the fixtures use an
+   unlinked agent — run in-image tests with
+   `docker exec -e ENTITLEMENTS_ENFORCED=false …`. The failures were the
+   fixture, not the fix.
+3. **Live health** — events flowing (MAX(ts) 22s behind NOW), 0 tracebacks.
+
+**The binding post-ship metric:** daily `fence: lease expired` count.
+Baseline 8/1/3/9 (08-14..17). Expected ~0 from 08-18. If a fenced order
+appears WITH the renewal live, the fix is FAILED and the residual mechanism
+(a >TTL stall between renewal and the fence's own read) must be chased.
+
+## Cycle 39 — 22:2xZ (anchor 22:27:10, NEW SESSION/ACCOUNT): scope now TWO users; **21 authored orders have been dying at the fence — fix built, in pipeline**
+
+New session (account rotation). Crons re-armed (30-min `0961ff91`, 24h sweep
+`06e43308`). Owner directive this session: monitor **two** users —
+info@askkpop.com (user 5 / agent 6 / fleet 35) **and forevery1969@gmail.com
+(user 25 / agent 60 / FLEET 36 — new: us-stock, 25 slots, $99,996.69,
+started 2026-08-16T10:37:41Z; predecessor fleet 34 stopped 08-15)**.
+
+State: prod image `20260817-handoff-takeover` (deployed ~22:17Z by the
+prior session, matches origin/main e5d46994). No closes since cycle 38;
+both books FLAT. Day 08-17 **+$3.84** (pnl_audit, resid −0.01, 4 flattens;
+total since reset +$6.07). 0 tracebacks, 0 no-verdicts in the last 30 min.
+Fleet 35 replenished 9 new runs (1387–1396) → 12 running. `_railed_params_line`
+test: still 0 clamps since deploy — **still unanswerable**.
+
+### Fleet 36 has NEVER executed a trade — and the reason is only half the desk's caution
+
+151 decisions, 36 order intents since the fleet started. **147 hold, 2 buy,
+2 retire.** Every hold intent compiles to `steps: []` — genuine desk
+caution through a Monday NYSE session. But **both of the fleet's only two
+entry attempts** (run 1324 "T", cycles 56/57, conf 0.73/0.78, parsed
+params, compiled steps, $257 sized) were killed at the execute stage by
+`gate_skip: "fence: lease expired"`. The fleet the owner just asked to
+watch has a 100% entry-kill rate from infrastructure.
+
+### The fence defect — measured, not inferred
+
+**Hypothesis:** cycles whose LLM calls outlast the 300s lease TTL reach the
+fenced trade transaction with their own expired lease and forfeit the order.
+**Falsifier:** fenced cycles with wall time under 300s, or fences firing on
+cycles that authored nothing.
+
+**Result — confirmed:**
+
+- **21 `fence: lease expired` kills, 2026-08-14..17 (8/1/3/9 by day). All 21
+  carried real orders: 8 opens, 7 reduces, 1 close, 5 buy/sell cycles with
+  no intent journal. ZERO were holds** — the fence only runs when there are
+  steps to execute, so every fire is a discarded authored order.
+- Run 1370's fenced cycle (18:51:28 → 18:58:45) measured **437s against the
+  300s TTL** — mechanism proven on tape. 23 of 664 cycles today (3.5%) had
+  event spans ≥300s.
+- The module's own header states the invariant: *"Lease TTL exceeds the
+  worst-case cycle."* **#468 (LLM timeout 120→300s) broke that arithmetic**
+  — a single decision call may now legally consume the entire TTL — but the
+  fires predate #468 (8 on 08-14), so slow multi-call cycles alone already
+  breached it.
+- **Counterfactual P&L, measured on the two reconstructable fenced exits:
+  the fence accidentally HELPED both times** — 1370's fenced reduce would
+  have covered ~$0.04 worse; 1322's fenced profit-bank ~$0.32 worse (both
+  shorts, price kept falling during the delay). That is luck, not design.
+  The 8 discarded opens are unknowable. **The fix's direct P&L effect is
+  ≈$0 measured; the justification is §7b — the AI is the final author of
+  every order, and here the plumbing un-authors ~9 orders/day** — plus
+  fleet 36's total entry blackout.
+
+### Fix built (in pipeline): renew our own lease before the trade txn
+
+`_renew_lease(run_id)` — extends `claim_expires_at` only where
+`status=running AND claimed_by=us`, called immediately before
+`execute_paper_trade`. The fence's real protections are untouched (stop
+pressed mid-cycle → status predicate blocks renewal AND the fence; reclaim
+by another worker → claimed_by blocks renewal AND the fence). Fail-soft.
+Verification so far: fail-before 1/1 (test reproduces the fence kill on an
+expired-own-lease cycle), pass-after 267/267 in test_run_engine (incl. the
+zombie-reclaim and stop-mid-cycle fences), **mutation 3/3** (no-op renewal,
+ownership predicate dropped, status predicate dropped — each kills exactly
+its test). Full suite + PR + deploy next; **post-ship metric: daily
+`fence: lease expired` count must go to ~0 (baseline 9 on 08-17) — if it
+does not, the fix is reported FAILED.**
+
+## Cycle 38 — 21:4xZ (anchor 21:49:21): quiet; **the scheduled test still has not run, and I am not going to call that a result**
+
+No closes. **Book flat.** Day 08-17 **+$3.84** (ledger, resid −0.01, 4
+flattens). 5 decisions, **0 no-verdicts**. 9 running runs, fleet 35 at
+**10/14** slots.
+
+### Why the cycle was thin, checked rather than assumed
+
+Only 5 decisions in 26 minutes. `gate_skip` in the window: **`market closed`
+×10**, `decision is 'hold'` ×7, `loss cooldown` ×1. The fleet is
+4 crypto / 2 futures / 2 forex / 1 us-stock, and it is **21:49Z on a Monday**
+— equities and most futures are shut. The low count is the calendar, not a
+stall.
+
+### The test I scheduled: NOT ANSWERABLE
+
+| | |
+|---|---|
+| `_railed_params_line` deployed | 21:22:13Z |
+| decisions carrying `railed_params` | **0** |
+| ceiling fires since deploy | **0** (total still 4) |
+
+**No clamp has fired since the line went live, so the line has never
+rendered.** Not passed, not failed. The two runs that produced all four
+earlier fires are gone — 1375 was `idle_retired` at $0.00, 1370 closed.
+
+I am recording this as *unanswerable* rather than letting it drift into
+"deployed, presumably fine". The before-baseline (run 1375: 3.02% requested
+three times in 95 minutes) is on tape and does not expire; the test simply
+waits for the next clamp.
+
+### Standing rails — unchanged, and two still not working
+
+| rail | fires | honest status |
+|---|---|---|
+| R:R ceiling | 4 | **P&L effect $0.00** — every fire on `action=hold`, which compiles to `steps: []` |
+| corrected loss floor | **0** all day | present and correct by replay; **unexercised** |
+| arm classify | label only | nothing consumes it |
+| `_railed_params_line` | 0 renders | **test pending** |
+| breakeven ratchet | 3 | **−$0.252934, zero net gains** |
+
+### Recommendation
+
+Nothing to ship. The next clamp answers the open test, and the ratchet fix —
+**defect (a) alone**, per the run-1335 recomputation that reversed my earlier
+spec — is the one queued change with a proven dollar figure attached
+(+$0.1414 on the single fire that lost real money).
 
 ## Cycle 37 — 21:2xZ (anchor 21:23:31): **AVAX 1370 closed −$0.305, and Agent B refuted my own R:R ceiling report**
 
