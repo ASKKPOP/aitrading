@@ -6,6 +6,50 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 46 — 01:4xZ (anchor 01:45:36): ZEC 1392 closed −$0.96 — the breakeven ratchet's 4th fire, and two NEW defect dimensions
+
+**PROFIT-OR-LOSS FIRST.** Run 1392 ZECUSDT closed 00:27:37Z at **−$0.9602
+true net** (reconciles to realized_pnl_usd exactly). Day 08-18: **−$0.75
+ledger**; 08-17 final revised to **+$3.63** (the 22:27Z +3.84 reading
+predated the ZEC open fee; tool says ok/resid 0.00 — decomposition of the
+remaining −0.21 flagged for the sweep). Book flat. Agent-60: still no
+fleet. Two subagents dispatched and cross-checked per the law.
+
+**The close was ALGORITHM-authored: breakeven ratchet (`run:1392:flatten`,
+mechanism breakeven_ratchet, arm $0.9467 = 2× fee, peak +$1.011).** The
+desk was BLIND at the peak — cycle 8 (00:25:22) was a no-verdict empty-LLM
+cycle → rule-fallback hold. Direction was never refuted (max adverse
+excursion −0.14%); fees are 44.4% of the loss.
+
+**Cross-checked findings:**
+1. **Stale marks turned the floor into slippage:** equity mark frozen
+   4m16s at 516.04 while live ZEC fell; the ratchet saw the dip as one
+   inter-poll gap and filled at the local low (fresh marks → fire ≈
+   −$0.23; ~$0.73 of the loss is mark staleness). Matches the known
+   5-min mark cadence (POSITION_REFRESH_INTERVAL=300).
+2. **Hair-trigger arm:** 2× round-trip fee = 0.20% of notional on a 46h
+   +2.87%-target thesis — ordinary minute-wiggles guarantee a whipsaw.
+   Armed by $0.065 at the exact (stale) equity top.
+3. **The desk's bracket was prose only:** `order_params outcome: absent`
+   — the stated $508 stop / $529 target were never installed; the only
+   live geometry was fee-calibrated platform rails (order_params-absent
+   class again).
+4. **Counterfactual two-sided:** vs next desk cycle (00:53, 516.15) the
+   fire cost $1.86; vs now (513.35) it saved $0.72. On the tape, it sold
+   the local bottom minutes before a +0.9% bounce.
+5. **#475 PASS:** first full open→flatten round trip on the new image —
+   **0 fence events**. Fence total post-deploy remains 0.
+
+**Ratchet ledger: 4 fires, ≈ −$1.00 cumulative, zero net gains.** This
+fire is NOT defect (a) (no reduces; the arm was legitimately computed) —
+the ratchet now has three distinct defect dimensions: (a) retro-arm after
+reduces [queued fix, +$0.1414 proven], (b) fee-scale arm vs thesis
+horizon [this fire], (c) 5-min mark resolution [this fire, ~$0.73].
+Redesign needs all three stated; nothing ships tonight on n=1 for (b)/(c).
+
+Other watches: no new clamps (#473 behavior open); ceiling 5 fires $0.00;
+loss floor #460 unexercised. 0 tracebacks.
+
 ## Cycle 45 — 01:0xZ: OWNER ASK "fully analysis and fixing" R19 — **the full analysis REFUTED R19; no gate shipped, and that is the correct outcome**
 
 The owner ordered analysis+fix of R19 ("$715 slot → $3 rail < any stock
