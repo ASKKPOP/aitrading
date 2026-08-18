@@ -6,6 +6,18 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 51 — 03:5xZ: US-Stock Desk Report LIVE on sooppiy.com (owner ask)
+
+Owner asked for a full HTML report (visualization + flows + tables) of the
+US-stock analysis and the AI+algorithm decision pipeline, ON the real
+service. Shipped: PR #479 (79d5455), image `20260818-usstock-report`,
+served at **sooppiy.com/reports/usa-stock-analysis-2026-08-18.html**
+(SPA public/ root, like guide.html). Verified 3×200 + served SHA ==
+source SHA (75aafb6430e6). Self-contained static page: loss-attribution
+bars, per-leg tables, fleet 32 vs 33 comparison, 3-phase decision-flow
+diagrams (CSS-only), rails scoreboard, defect/fix ledger, EN+KO, noindex.
+Repo copy: docs/reports/2026-08-18-usa-stock-analysis-report.html.
+
 ## Cycle 50 — 03:1xZ (anchor 03:14:49): **R20's first live batch landed — universe guarantee VERIFIED on prod**
 
 No closes; book flat; agent 60 fleetless; fence 0; no clamps; 0
