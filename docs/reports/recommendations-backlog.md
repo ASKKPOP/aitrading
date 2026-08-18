@@ -457,3 +457,59 @@ into a permanent one.**
 run 1375, all identical. The test after shipping a brief line is simply
 whether the requested target changes.
 
+## SHIPPED 2026-08-18 — the desk now knows what its own book has ever reached (H6/H7 implemented)
+
+**Owner directive:** *"all implement for sooppiy AI everything we monitoring
+and analysises"*. H6/H7 measured that `target_pct` is decoration; nothing had
+been built from it. This implements it — AI-FIRST, as a disclosure the desk
+reads, not a rail that clamps it.
+
+**Third independent measurement, from the ledger this time (n=66 closed runs
+that opened a position, 2026-08-18).** H6/H7 replayed candles; this replays
+the book's own recorded peaks, `peak_pnl_usd / opening notional`, which IS
+the % price move (pnl = move x qty, notional = price x qty):
+
+| market | n | never positive | median best | p75 | best ever |
+|---|---|---|---|---|---|
+| crypto | 26 | 42% | 0.169% | 0.334% | **0.969%** |
+| futures | 14 | 50% | 0.034% | 0.103% | 0.199% |
+| forex | 13 | 46% | 0.014% | 0.020% | 0.047% |
+| us-stock | 13 | 30% | 0.090% | 0.340% | 0.894% |
+| **ALL** | **66** | **42%** | 0.031% | 0.199% | 0.969% |
+
+- **42% of closed runs never had a positive moment at all.** Their best
+  cumulative P&L was still underwater.
+- **No closed run has ever peaked above 1% of notional**, against an authored
+  `target_pct` median of **4.80%**.
+- This is a *lower* bound and deliberately reported as one: marks are sampled
+  ~every 4.7 min, multi-leg runs inflate the denominator, and cumulative P&L
+  nets some fees. The candle replay (H7) put the *available* excursion at
+  median 1.14%. Both numbers are far below 4.80%; the true value sits between
+  them and the conclusion is unchanged either way.
+
+**What shipped:** `service/server/desk_record.py` — `excursion_record(market)`
+and `record_line(market)`, cached 1h, silent below 10 runs, fail-soft to "".
+Wired into BOTH prompts that ask for a bracket: `run_engine._light_analysis`
+and `analysis_agents._trader_risk_decision`. Both previously said *"a level
+the move can realistically reach"* and gave the desk no number for what its
+own book reaches.
+
+**Deliberately NOT a clamp.** `order_params` already bounds `stop_pct` to
+(0.30, 8.00) and enforces `target >= 2x stop`; nothing here changes those.
+Which target to write stays the desk's call — the platform's job was to stop
+hiding the measurement (`trading-decisions-belong-to-sooppiy-ai`).
+
+**Risk stated plainly, not tuned away.** Truthful disclosure may push the desk
+toward tighter stops (the band the arithmetic implies is stop ~0.5-0.6%,
+target ~1.1-1.2%), and the expectancy of that tighter band is UNMEASURED —
+tighter stops buy reachability with more stop-outs. The backlog's own next
+measurement stands and is now the gating experiment: **replay each entry
+against its horizon and count, per candidate (stop, target) pair, how often
+the STOP is hit BEFORE the target.** Until that runs, no rail should adopt
+the band; a disclosure the desk can weigh is the honest interim.
+
+**Verification:** 8 module tests + 4 wiring tests, fail-before red on both
+prompts; mutation-checked x11 (peak unscaled, thin-book floor removed,
+never-positive dropped, live runs counted, unfilled runs scaled, cache
+bypassed, fail-soft narrowed, and both prompts' call sites and fail-softs) —
+all killed.
