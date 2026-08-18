@@ -6,6 +6,18 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 85/86 — 19:5xZ (anchor 19:53:20): XOM banked a winning quarter **+$0.2049** (seam-caught); pair dispatched
+
+XOM 1426 sold a quarter at 165.43 (19:23:29 — ten seconds after cycle
+84's query window closed; caught via the adapt event and confirmed by
+signal 1448, `run:1426:cyc:26`, desk order). Leg **+$0.2049**. Remainder
+0.4344 long into the NYSE close; KAITO remainder +$0.78. Fence 0;
+clamps 2; 0 tracebacks. Two-subagent pair dispatched (A: sequencing
+verdict + overnight posture; B: R21 stamping + session-close
+machinery); findings land next note. ⚠️ Method note: two legs today
+fell in inter-cycle query seams — the close-detection window should
+overlap by a minute; adopting overlap from next cycle.
+
 ## Cycle 84 — 19:2xZ (anchor 19:23:19): quiet; both remainders extending gains
 
 No closes. KAITO remainder +$0.57; XOM remainder **+$0.43** (165.45 —
