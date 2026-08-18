@@ -640,6 +640,42 @@ Every increment lands here as a dated line, in the same PR that ships it.
     - Also recorded: **0 of 203 rows have empty `chunks`** — the control
       group (recalled, corpus returned nothing) still does not exist, nine
       days of journalling in. (b) must not assume it ever will.
+  - **2026-08-17 — owner asked whether us-stock also gets RAG. It already
+    does; measured, not assumed.** The recall path has never been
+    crypto-only — `_recall_query` opens with the run's `market` and
+    `desk_memory._candidates` filters `(market IS NULL OR market = ?)`, so
+    every market reaches both its own chunks and the market-agnostic ones.
+    Corpus on prod at 02:0xZ:
+
+    | market | outcome | lesson | tier-1 pool incl. the 116 market-agnostic lessons |
+    |---|---|---|---|
+    | crypto | 135 | 17 | 268 |
+    | **us-stock** | **124** | **29** | **269** |
+    | futures | 56 | 8 | 180 |
+    | forex | 52 | 4 | 172 |
+
+    - us-stock is the **best-stocked market in the corpus**, marginally ahead
+      of crypto and ~50% larger than futures or forex. Live retrieval
+      in-container returns 5 above-zero **tier-1** hits for us-stock in every
+      situation class — lessons for `losing`, outcome chunks for
+      `give-back` — and never falls through to the monitoring tier.
+    - **The ranking is market-sensitive, not market-blind.** All four markets
+      head the losing class on the same market-agnostic chunk
+      (`skill:exit-discipline#3`, sha `b14d72c1`, `market=NULL`), but slot 2
+      splits by market: us-stock and forex take `#2`, crypto and futures take
+      `#4`. The market token in the query is doing real work.
+    - Worth keeping for (c): a market-agnostic lesson is **one sha shared by
+      all four markets**, so its evidence pools rather than splitting four
+      ways — the opposite of the market-scoped skills, which are stored once
+      per market (08-11 entry) and will each be estimated on a quarter of the
+      data. Any per-chunk estimator must not treat those two storage shapes
+      as the same population.
+    - **What us-stock actually lacks is journal representation, not
+      retrieval:** 0 of the 203 post-cutover `recall` rows are us-stock,
+      purely because that window's fleet was crypto-only. The 08-17 rebuild
+      put run 1380 (ORCL) live alongside futures and forex, so this closes
+      on its own — and it is the same volume shortfall the amended (b) gate
+      above is waiting on.
   - **2026-08-11 — owner directive, binding on this ladder:** *"everything
     for sooppiy AI"* / *"if we find that we must be implement trading logic
     and sooppiy AI"*. Journal-only and default-off increments are a STAGING
