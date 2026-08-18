@@ -513,3 +513,64 @@ prompts; mutation-checked x11 (peak unscaled, thin-book floor removed,
 never-positive dropped, live runs counted, unfilled runs scaled, cache
 bypassed, fail-soft narrowed, and both prompts' call sites and fail-softs) —
 all killed.
+## SHIPPED 2026-08-18 — breakeven ratchet: both arithmetic defects fixed, re-derived from 4 fires (spec was written from 2)
+
+The cycle-13 spec was written when 2 fires existed. There are now **4**
+(AVAX 1335, FIL 1358, SOL 1367, ZEC 1392), so every number was re-derived
+from the raw legs rather than taken on trust — and the spec turned out to
+contain an internal contradiction: its FIL test assumed a ONE-LEG floor while
+its own trap note required a ROUND TRIP. Reconstruction dissolved it: the
+spec had compared run-cumulative `total` against the floor instead of the
+baseline-corrected unrealized.
+
+**Reconstruction (each fire from its own `trade` legs):**
+
+| run | position excursion vs arm | corrected verdict | fire P&L |
+|---|---|---|---|
+| AVAX 1335 pos-2 | 0.342192 < 0.398 | **does not arm** | **-0.141443** |
+| FIL 1358 | unrealized 0.027738 > round trip 0.025196 | **does not fire** | +0.002529 |
+| SOL 1367 | +0.160316 -> -0.067030 | still fires (correct) | — |
+| ZEC 1392 | +1.224468 -> -0.533981 | still fires (correct) | — |
+
+**Net +$0.138914** — the exact running total those fires had accumulated. The
+independently reconstructed AVAX baseline (0.080608) and position-2 net
+(-0.141443) match the cycle-13 figures to the cent, which is what validates
+the method. **Fourteen cents.** The defect is that a protection rail fired at
+a GUARANTEED loss, not the amount; at this book size the dollars are noise.
+
+**The fix, both halves together:** `_breakeven_floor_hit` gains `baseline_pnl`
+(what `_trailing_lock_hit` has always taken) so peak and current become
+position-scoped, AND the floor becomes a full round trip priced at
+`fees.fee_rate(market)`. Alone, the baseline fix leaves a gross
+position-scoped current against a one-leg floor whose best case is -1 open fee.
+
+**Three things the spec did not have:**
+
+1. **`fee_rate()` is FLAG-DEPENDENT.** It returns the legacy 0.001 for every
+   market unless `FEE_PER_MARKET` is on — `true` on prod (verified in the
+   running worker: crypto 0.00045), default false off-prod. A test that
+   simply called `fee_rate` would have asserted the OPPOSITE of production
+   and passed. Both sides are now pinned.
+2. **`BREAKEVEN_FEE_RATE` is unset on prod**, so the market rate binds. Had it
+   been set, the whole (b) half would have been a silent no-op.
+3. **Two mutants survived the first pass, and both were the TESTS' fault.**
+   The grep for `baseline_pnl` in `_evaluate_stop` was satisfied by the
+   TRAILING LOCK's call three lines above, so deleting it from the ratchet's
+   call left the suite green — the standing wiring trap in its purest form.
+   The greps are now scoped to the call expression itself. The round trip is
+   computed at the call site, so unit tests passing `exit_fee_usd` by hand
+   could never see it revert to one leg either.
+
+**Direction of the change is conservative:** both halves make the rail fire
+LESS often (a real arm threshold, and a floor 0.0009 of notional instead of
+0.001). A protection rail that force-closes should only ever be loosened on
+evidence, and the evidence here is that its two negative fires were negative
+by construction.
+
+**Deliberately NOT changed:** `_breakeven_arm_usd` still prices its arm at
+`BREAKEVEN_FEE_RATE` (0.001), not the market rate. Lowering it would arm MORE
+often — loosening a protection rail without evidence. Being strict on the arm
+is the safe direction; the floor is where accuracy matters.
+
+**Verification:** 10 tests, all four live fires as fail-before cases;
+mutation-checked x7 with 2 survivors fixed in the tests.
