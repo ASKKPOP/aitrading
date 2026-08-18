@@ -6,6 +6,14 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 71 — 12:5xZ (anchor 12:53:23): quiet; R21 fix work begins
+
+No closes. AVAX 1411 only position (−$0.14). Fence 0; clamps 1; no new
+ratchet fires; 0 tracebacks. NYSE opens 13:30Z (fleet 37 us-stock wakes
+— SPCX-class tripwire armed). Quiet window → beginning the licensed R21
+fix (#485 baseline → realized-at-peak-epoch), per "implement every
+time"; full pipeline applies.
+
 ## Cycle 70 — 12:2xZ (anchor 12:23:18): SUI 1417 COMPLETE at **−$0.7306** — and both agents independently caught a spec inversion in #485 (shipped 11:49Z by a parallel session)
 
 **PROFIT-OR-LOSS FIRST.** Run 1417 closed: **−$0.7306 net** (reconciled
