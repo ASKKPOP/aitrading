@@ -6,6 +6,24 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 72 — 13:3xZ: R21 SHIPPED — ratchet baseline now frozen at the peak epoch, verified 3×
+
+PR #487 (876109f7) merged and live: image `20260818-r21-peakepoch`.
+**Deploy order honored: alembic 0052 ran on prod MySQL FIRST**
+(`peak_realized_usd` column verified present), then the swap. Verified
+3×: epoch baseline wired in `_evaluate_stop`, stamp wired in
+`_ratchet_peak_pnl`, all 14 ratchet unit tests OK in-image (including
+1417 pinned both directions and #485's four live-fire replays
+unchanged), 0 tracebacks.
+
+The phantom-peak class (a losing partial cover inflating `peak −
+current_realized`) is structurally closed: the baseline is now the
+realized value frozen when the peak was stamped; legacy NULL rows fall
+back to old behaviour until their next peak. **Post-ship watch: every
+ratchet fire now gets its baseline provenance checked (epoch vs legacy
+fallback); a fire on a phantom peak post-0052-stamp = fix FAILED.**
+Ratchet lifetime ledger stands at 5 fires ≈ −$1.00.
+
 ## Cycle 71 — 12:5xZ (anchor 12:53:23): quiet; R21 fix work begins
 
 No closes. AVAX 1411 only position (−$0.14). Fence 0; clamps 1; no new
