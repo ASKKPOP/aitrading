@@ -6,6 +6,22 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 73 — 13:3xZ (anchor 13:36:13): fleet 37's NYSE session live; **cap fire #2 — the parsed-null class, on the extreme fleet**
+
+No closes. Positions: AVAX 1411 short −$0.10; **NEW: XOM long (run
+1426, fleet 37) 1.738 @ 164.96, −$0.87 adverse** — 5 us-stock decisions
+since the 13:30Z open; the extreme fleet is trading equities, inside
+the SPCX tripwire threshold. Fence 0; no ratchet fires post-R21; 0
+tracebacks.
+
+**`null_size_cap` fire #2 (13:34:42Z, run 1426 XOM, cycle 14):**
+`params_state: parsed_null` — the #480 class this time — margin
+$114.67 → $95.56 (0.25 × max_bet). The XOM open executed at exactly the
+capped margin. **Both cap classes (absent #481, parsed-null #480) now
+have live fires, on both fleets.** The extreme fleet's first us-stock
+position opened size-capped — precisely the SPCX-vector protection
+working where it matters most.
+
 ## Cycle 72 — 13:3xZ: R21 SHIPPED — ratchet baseline now frozen at the peak epoch, verified 3×
 
 PR #487 (876109f7) merged and live: image `20260818-r21-peakepoch`.
