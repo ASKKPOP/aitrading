@@ -6,6 +6,55 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## 24-HOUR VERIFICATION SWEEP — 15:07Z slot (anchored 15:23–15:40Z)
+
+### True P&L (pnl_audit, authoritative)
+
+| day | ledger | resid | flat |
+|---|---|---|---|
+| UTC 08-17 (final) | **+$3.63** | −0.00 | 4 |
+| UTC 08-18 (to 15:23Z) | **−$1.66** | 0.00 | 2 |
+| KST 08-18 (15:00Z→15:00Z) | ≈ **−$1.82** close-netted (7 legs) | | |
+
+### The day's SHAPE (7 closing legs, all two-agent-analyzed at close — 100% tape coverage, 8 subagent reports)
+
+Win rate **14% (1/7)** · median loss −$0.287 · sole win +$0.167 ·
+per-leg expectancy ≈ **−$0.26** · worst leg (ZEC −$0.747) = 41% of
+gross loss — top-heavy but mild. The recurring loss author is the
+ENTRY, not exits or fees: re-entry-against-own-invalidation (n=4
+cross-fleet tally), counter-trend shorts into noise, both documented
+per-close. Fees mattered in 2 of 7 legs (37–44%); price in the rest.
+
+### Fix-by-fix adversarial re-verification
+
+| fix | binding metric | verdict |
+|---|---|---|
+| **#475 lease renewal** | fence fires/day (pre-fix 8/1/3/9) | **WORKING — 0 fires in ~16h post-deploy** incl. a full NYSE session + replenish waves. ⚠️ Baselines on surviving tape now read 8/0/3/7 — the wipe deleted agent-60 rows (1324×2, 1271×1); the pre-wipe measured truth stays 8/1/3/9 |
+| **#480/#481 null-size cap** | clamp events + cohort P&L | **WORKING — 2 live fires, both classes** (absent: SUI 252→63; parsed_null: XOM 115→96). Measured saves: **+$0.328 leg / $2.19 run** (SUI, 4.000× linear). Cohort re-measure premature at n=2 capped opens |
+| **#487 R21 epoch baseline** | ratchet fires post-13:35Z | **deployed + wired (verified 3×), UNEXERCISED — 0 post-R21 fires.** Correct by replay of 1417; first live fire still pending — the #460-class honest status |
+| **#473 railed line** | request movement after clamps | 8 renders; **1 adjustment** (1398: 39% clamp → new compliant bracket), several no-re-request neutrals, **0 post-render repetitions**. Trending positive, n small |
+| **R:R ceiling** | fires by action | 8 lifetime (5 surviving post-wipe), **8/8 on hold, P&L $0.00** — telemetry only, unchanged verdict |
+| **loss floor #460** | fires | **0 — second day unexercised** |
+| **R20 hot-tech** | batches + ordering | both halves live-verified (roster theses ×2 batches; ORCL-leads inversion on fleet 37's build) |
+| **R19** | — | refuted verdict stands; nothing re-opened |
+
+### Ratchet ledger
+
+2 fires in the window (ZEC 1392, SUI 1417 — both pre-R21, both
+analyzed; the second exposed the #485 inversion, fixed same-day by
+#487). Lifetime: 5 fires ≈ −$1.00, zero net gains. Post-R21: 0.
+
+### Sweep verdict, profit-or-loss first
+
+The KST day lost ≈ $1.82 across 7 small legs — no single leg above
+$0.75, no rail-authored damage post-fixes, both books ended nearly
+flat (XOM −$0.61 open). The measured loss authors are entry-selection
+classes the per-close analyses have now named and tallied; the shipped
+mitigations (cap, fence, epoch baseline) each held or saved money on
+their binding metrics today. The candidate AI-first lesson
+(re-entry-vs-own-invalidation) accrues at n=4 — not shipped, evidence
+rules bind.
+
 ## Cycle 77 — 15:2xZ (anchor 15:23:16): quiet; XOM recovering
 
 No closes. Sole position: XOM 1426 long −$0.61 adverse (recovered from
