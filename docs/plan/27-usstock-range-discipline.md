@@ -191,3 +191,66 @@ these amendments WIN.
     The script runs `docker exec -w /app/service/server`, read-only to
     the DB; cache writes by `get_daily_candles` are accepted as the one
     shared side effect (they are ordinary warm entries).
+
+---
+
+# v3 — EXPERIMENT RESULT (2026-08-18 ~23:30Z) · **VERDICT: REJECTED — NOTHING SHIPS**
+
+Data: 30 symbols (R20 tech roster + 7 fleet-traded non-tech), 1y daily +
+60d 30-minute + 5d 1-minute bars, fetched once, paced, off-hours.
+Pre-registered primary cell k=0.5%, m=1.0%. Pessimistic fills, prior-close
+gap skip, fees 0.5bp + 2bp slippage per side.
+
+## The numbers (primary cell)
+
+| variant | n fills | rule net /trade | excess over open→close baseline | LB90 (day-block) | ×2-cost net |
+|---|---|---|---|---|---|
+| limit (1y daily) | 3,989 | **−27.7bp (−$0.69)** | +30.1bp | +27.9bp | −32.7bp |
+| cycle-sampled (60d 30m) | 662 | **−0.6bp (−$0.01)** | +127.1bp | +119.1bp | −5.6bp |
+
+## Why REJECTED despite the "excess" gate passing
+
+**The garbage rule outranks the gate arithmetic: the rule's ABSOLUTE
+expectancy is negative in both variants** (−$0.69/trade limit; ≈$0 to
+negative cycle-sampled, and negative under the ×2 cost stress). The
+pre-registered gated quantity (excess over the drift baseline) passes —
+but only because conditioning on a fill (price −0.5% below open)
+SELECTS weak days, on which the open→close baseline loses even more
+(~−58bp). "Loses less than buying the open on down days" is not an
+edge; shipping it would ship negative-expectancy logic. The drift
+control did its anti-bull-year job and simultaneously exposed this
+inverse selection effect — exactly the class of false positive V5
+warned the gate could manufacture. The grid's rising "excess" with
+deeper k is the same artifact (deeper fills select weaker days).
+
+MOC-leg diagnostics confirm: 86–88% of fills exit at close, and the MOC
+leg carries the entire loss (limit leg +822bp total vs MOC −1,926bp) —
+the rule is structurally "catch a falling open, ride it to a losing
+close" on a momentum-selected roster, as V5 predicted.
+
+## H1 (descriptive, non-gating) — and it REFUTES the folk premise
+
+Against the arcsine null [.33/.17/.17/.33], observed quartile-of-day
+distributions (n=1,800 symbol-days @30m; 150 @1m):
+LOW [.66/.09/.07/.19], HIGH [.62/.09/.09/.20]. **BOTH extremes cluster
+in the FIRST quartile far beyond random-walk expectation.** The "high
+comes late" half of the buy-low-early/sell-high-late story is refuted
+on this tape — the open sets both extremes most days. The only
+defensible descriptive lesson is: the open hour is where the day's
+extremes print; market-chasing entries there is maximum-adverse-
+selection territory. That aligns with the already-licensed
+exit-discipline/churn track, which continues under its own evidence
+rules (XOM −$0.582 etc.) — NOT licensed by this experiment.
+
+## Disposition
+
+- No skill ships from Plan 27 (per D10, the exit half required a
+  passing H2; H2 failed).
+- The churn/exit-discipline lesson track continues separately on its
+  own accruing evidence.
+- Dead theories recorded by name so no future session re-runs them:
+  **"intraday limit-fade on momentum-selected US large-caps"
+  (negative absolute expectancy, inverse-selection excess artifact)**
+  and **"daily high prints late"** (refuted vs arcsine).
+- Data and fetch scripts cleaned from the box and scratchpad
+  (temp-artifact rule); this section is the durable record.
