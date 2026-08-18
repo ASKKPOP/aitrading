@@ -966,7 +966,8 @@ def _run_max_abs_qty(run: dict) -> float:
 
 
 def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
-                         arm_usd: float, exit_fee_usd: float = 0.0) -> bool:
+                         arm_usd: float, exit_fee_usd: float = 0.0,
+                         baseline_pnl: float = 0.0) -> bool:
     """Once a position has genuinely been in profit, do not let it go
     negative. Deterministic, needs NOTHING from the desk.
 
@@ -1003,14 +1004,30 @@ def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
     if not _breakeven_ratchet_enabled() or peak_pnl is None or arm_usd <= 0:
         return False
     try:
-        peak = float(peak_pnl)
+        # UNIT FIX (2026-08-18). `peak_pnl` and `current_pnl` arrive
+        # RUN-CUMULATIVE while `arm_usd` and the fee floor are POSITION-scoped,
+        # so a fresh position inherited the peak an earlier, already-closed
+        # position had earned. `_trailing_lock_hit` in the same block has
+        # always taken a baseline; this rail never did.
+        #
+        # Measured on all four live fires: AVAX 1335's second position armed
+        # on a run peak of 0.4228 while its OWN excursion was 0.342192 —
+        # under the 0.398 arm — and flattened at 0.037672 gross against
+        # 0.179115 of fees, a guaranteed -0.141443 at the moment it fired.
+        base = float(baseline_pnl or 0)
+        peak = float(peak_pnl) - base
         if peak < arm_usd:
             return False        # never was a winner — nothing to protect
         # Fee-aware floor (JTO 1304, 2026-08-15): at `total <= 0` gross,
         # EVERY fire nets a loss — best case exactly -1 exit fee — while
-        # the label reports a banked winner. Firing at total <= exit fee
-        # makes the best case $0 net; the poll gap is unchanged.
-        return float(current_pnl) <= max(0.0, float(exit_fee_usd or 0))
+        # the label reports a banked winner.
+        #
+        # The floor is a full ROUND TRIP, and it has to be fixed in the SAME
+        # change as the baseline: once `current` is position-scoped it is
+        # GROSS (the open fee is already inside `realized`, i.e. inside the
+        # baseline), so a one-leg floor would leave the best case at -1 open
+        # fee. Round trip in, best case exactly $0 net.
+        return float(current_pnl) - base <= max(0.0, float(exit_fee_usd or 0))
     except (TypeError, ValueError):
         return False
 
@@ -1192,16 +1209,23 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # must not lower the bar under an already-earned peak (run 976).
     if has_position and pnl["mark_age_ok"]:
         _be_arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run))
-        # One-leg exit fee on the CURRENT book — closing costs this much.
+        # ROUND-TRIP cost on the CURRENT book, priced at the MARKET's own rate.
+        # It was one leg at the legacy flat 0.001; `fees.fee_rate("crypto")`
+        # is 0.00045, so the floor was mispriced on both the leg count and the
+        # rate. See `_breakeven_floor_hit` for why the round trip and the
+        # baseline must change together.
         try:
+            import fees as _fees
             _pos = pnl.get("position") or {}
+            _rate = float(os.getenv("BREAKEVEN_FEE_RATE", "")
+                          or _fees.fee_rate(run.get("market")))
             _be_fee = abs(float(_pos.get("quantity") or 0)) \
-                * float(_pos.get("current_price") or 0) \
-                * float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
-        except (TypeError, ValueError):
+                * float(_pos.get("current_price") or 0) * _rate * 2.0
+        except Exception:  # noqa: BLE001 — a fee lookup must never block a stop
             _be_fee = 0.0
         if _breakeven_floor_hit(run.get("peak_pnl_usd"), pnl["total"], _be_arm,
-                                exit_fee_usd=_be_fee):
+                                exit_fee_usd=_be_fee,
+                                baseline_pnl=float(pnl.get("realized") or 0)):
             logger.info("breakeven ratchet fired (run %s): peak=%s now=%s arm=%s",
                         run["id"], run.get("peak_pnl_usd"), pnl["total"],
                         round(_be_arm, 4))
