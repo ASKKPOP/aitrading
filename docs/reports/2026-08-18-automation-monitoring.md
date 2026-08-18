@@ -6,6 +6,34 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 82 — 18:2xZ (anchor 18:23:18): KAITO banked **+$0.3036** — the good harvest shape, and R21 verified on BOTH partial-cover classes
+
+**PROFIT-OR-LOSS FIRST.** Run 1462 partial cover (45%) at 18:06:22
+banked **+$0.3036 net** (cover 0.33903 — my brief's ~0.3259 was wrong,
+corrected by the tape). Remainder 79.39 short in profit. XOM remainder
+recovered past entry (+$0.12).
+
+1. **Desk-authored, panel functional, RAG visibly used** — the desk
+   queried recall ("winning position … take partial profit") before
+   banking; cycle-1/3 panel vetoes added value (the cyc-3 sell would
+   have banked less than cyc-4 did). Entry: with-trend, authored size,
+   leverage railed 3→2 — blemishes: deviation from own flat plan,
+   chased 0.4% below own band.
+2. **R21 now verified on BOTH trigger classes:** losing reduce (XOM —
+   no phantom arm) AND profit bank (KAITO — peak 0.8887 stamped WITH
+   peak_realized 0.3036 same-epoch; remainder's own excursion $0.585;
+   ratchet correctly armed at ~$0.098 on earned excursion only; banked
+   profit excluded from the peak side). Fire semantics still pending a
+   live fire. **Cross-check resolution: A's "protection missing" was
+   refuted by B — the ratchet floor guards the remainder near net-$0;
+   A had counted only the stop + USD trail.**
+3. **Ceiling ledger correction: fires on ACTIONABLE cycles exist** —
+   1462 cyc-2 ENTRY target clamped 8.5→6.81 (became the run's real
+   bracket) and cyc-4 8.89→5.46. The "8/8 on hold, $0.00" verdict is
+   superseded: the ceiling has now shaped a live entry bracket.
+
+Fence 0; clamps 2; 0 tracebacks.
+
 ## Cycle 81 — 17:5xZ (anchor 17:53:24): XOM half-reduce −$0.2505 analyzed — 1417-shape churn confirmed; a NEW pierced-stop flag
 
 **PROFIT-OR-LOSS FIRST.** XOM 1426 half-sell (17:23:58, desk intent
