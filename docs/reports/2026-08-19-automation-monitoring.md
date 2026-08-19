@@ -7,6 +7,36 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## SHIP — 08:4xZ: R23 sweeper stopped-run fence LIVE as `20260819-r23-sweeperfence` (PR #492)
+
+Pipeline complete, per implement-every-time: fail-before (new test
+`test_stopped_run_is_never_swept` failed 3/3 cells on unfixed code — the
+unfixed code IS the mutant, so this doubles as the mutation proof) →
+pass-after (file 28 ✓, **full suite 4529 + 1349 subtests** in a clean
+worktree off origin/main) → ruff clean → CI 5/5 → squash-merged `8d6a62ac`
+→ deployed via `scripts/deploy.sh`, all surfaces 200, rollback
+`20260819-band-caveat` recorded.
+
+The fix: one terminal-status fence in `_sweep_slot`
+([outlook_refresher.py:374](../../service/server/outlook_refresher.py) in
+the shipped image) — `STATUS_STOPPED` returns before any work; paused runs
+(the legitimate `run_idle` cold path) sweep unchanged, pinned by the
+existing test.
+
+**Live verification (3 angles):** (1) fence present in the RUNNING
+worker (grep in-container, line 374); (2) 0 tracebacks post-restart;
+(3) the single post-deploy dead-run outlook (1492 EURAUD, 08:45:09Z)
+**predates the new worker's 08:46:35Z start by 86s** — it was the old
+image's final sweep; zero since. In-image pytest run not possible: this
+image variant ships without pytest (new runbook note; the local+CI
+suites and in-container grep stand in).
+
+**BINDING POST-SHIP METRIC:** outlook writes to stopped runs per hour.
+Baseline ≈13.8/h (~7 per half-hour window). Expected ~0 (only the benign
+in-flight cycle race remains possible, `source:"cycle"`). Measure from
+anchor **2026-08-19T08:46:35Z** at the next cycle and the daily sweep;
+if the stream persists, the fix FAILED and must be reported as failed.
+
 ## Cycle 94 — 07:4xZ (anchor 07:49:52): catch-up window 23:44→07:49 (loop slept overnight); day +$3.75; R21 FIRST LIVE FIRE = VALID; sweeper waste measured → R23 ships
 
 **PROFIT-OR-LOSS FIRST.** Day 08-19 ledger **+$3.75** (pnl_audit ok, resid
