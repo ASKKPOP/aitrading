@@ -7,6 +7,34 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 96 — 09:1xZ (anchor 09:19:58): R23 metric DECISIVE PASS (32 writes, 0 to dead runs); owner rebuilt as FLEET 38 (agent 6, crypto); no closes
+
+**PROFIT-OR-LOSS FIRST.** No closes in the window; day 08-19 holds at
+**+$4.30 ledger**. No open positions yet — fleet 38's fresh runs are in
+their first cycles.
+
+1. **R23 binding metric: PASS, now decisive.** 33 min post-fence:
+   **32 outlook writes total, 0 to dead runs** — the sweeper is
+   demonstrably ticking and the old-code expectation for this window was
+   ~6 dead-run writes (baseline ~11/h against a GROWN population of 52+
+   stopped runs on slots). The fix moved its own metric. Confirm once
+   more at the daily sweep, then the watch retires to the standing list.
+2. **The fleet-35 stop was a stop-and-rebuild:** FLEET 38 created
+   (agent 6, 25 slots, $10,012). Nine crypto runs built by anchor
+   (WLD SUI BTC KAITO LINK ZEC SOL BNB UNI 1512–1521); fleet 37
+   (agent 60) replenished CHFJPY 1520 + INTU 1511. All-crypto so far —
+   R20 hot-tech seed binds only if a us-stock slot appears; watching.
+3. **1519 BNB insta-retire, $0:** desk retired at cycle 1 (conviction
+   0.47, momentum 0.3) and the replacement chain stopped at one — the
+   post-#220-era churn guard shape working; no cost, no repeat.
+4. **Watches:** fence **0** ✓; 0 tracebacks; no cap fires; no ratchet
+   fires (R21 closed VALIDATED last cycle); R22 no instances; loss
+   floor unexercised; SPCX tripwire idle; churn tally unchanged (a=2
+   −$0.98, b=5 all green, c=4 all losers, d=2 net ≈−$0.33); empty-why
+   authorship watch armed (baseline: 7/17 on 1462, count per-day at
+   the sweep); NYSE opens 13:30Z — fleet 37's us-stock runs enter
+   active monitoring then.
+
 ## Cycle 95 — 08:4xZ (anchor 08:49:11): OWNER STOPPED FLEET 35 — book fully flat; run 1462 ends **+$4.32 lifetime**, harvest template validated; day +$4.30
 
 **PROFIT-OR-LOSS FIRST.** One closed leg: the owner issued `fleet_stop_all`
