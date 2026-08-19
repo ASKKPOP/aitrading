@@ -7,6 +7,55 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 95 — 08:4xZ (anchor 08:49:11): OWNER STOPPED FLEET 35 — book fully flat; run 1462 ends **+$4.32 lifetime**, harvest template validated; day +$4.30
+
+**PROFIT-OR-LOSS FIRST.** One closed leg: the owner issued `fleet_stop_all`
+on fleet 35 at 08:16:57Z (11 runs; the "12" in my first count was events —
+1462 emitted two transitions — cross-check resolved arithmetically). The
+KAITO 1462 runner flattened 20s later @ 0.33736 — **exactly the prevailing
+mark, zero slippage** — for **+$0.5346 true net**; ledger reconciles to
+the 5th decimal (adapt 0.5504 = exit-fee-only convention). Run 1462
+lifetime: **+$4.3231** (≈+$4.17 fully-net of entry fees). Day 08-19:
+**+$4.30 ledger** (pnl_audit ok). Agent 6 now has NO fleet; fleet 37
+(agent 60) stays active. Two subagents dispatched, cross-checked, full
+agreement after the 11-vs-12 resolution.
+
+1. **The user stop was well-timed at today's mark:** KAITO now trades
+   0.3443 — ABOVE the 0.3429 entry — so the runner would be −$0.15
+   unrealized vs +$0.55 banked: the stop is **+$0.70 ahead** at this
+   instant (mark-now statement, not proof the desk plan — stop 0.3549,
+   target 0.295, 32h left — would have lost).
+2. **Harvest template: validated end-to-end on a full run life.** Second
+   short banked in four covers (0.33904/0.3369/0.33792/0.33736), every
+   fill below entry, zero give-backs, forced end still caught the runner
+   green. Class (d) gets its SECOND instance and its first WIN: cyc31's
+   panel proposed sell at 0.3381 (the worst of the three late marks),
+   the desk overrode to hold → +$0.076 ex post. **d-tally: n=2, −$0.41 /
+   +$0.08 — the override class is not one-sided.** Final leg class:
+   user-forced/none. Running tally: a=2 (−$0.98), b=5 (all green), c=4
+   (all losers), d=2 (net ≈−$0.33), e/f minor.
+3. **NEW AUTHORSHIP FINDING — empty-why intents:** 7 of 17 order_intents
+   in 1462's life carried `why: ""`, and cyc30 emitted NO intent/outlook
+   at all. Three cases proven truncation-linked (`verdict_salvaged
+   {kind: truncated}` same-second: cyc11/26/30 — cyc30's reply died
+   before the intent section); cyc29 **executed a real trade (reduce
+   0.5) with no stated reason**. The truncation/oversubscription
+   signature is now touching order authorship, not just verdicts.
+   Watch opened: count empty-why intents per day; if the rate holds,
+   this becomes an R-item (the salvage rail may need to re-request the
+   intent block, not just salvage the verdict).
+4. **R23 binding metric — INCONCLUSIVE at 5.5 min, honestly stated:**
+   0 dead-run outlook writes since the new worker (08:46:35Z), but also
+   0 outlook writes TOTAL — the sweeper likely hasn't ticked yet.
+   Exposure went UP (52 stopped runs now bound to slots; fleet 35's
+   fresh stops joined the population; old-code baseline ~11/h means
+   ~10 expected writes by the 1h mark). Decisive read next cycle.
+5. **Watches:** fence **0** (all-time ✓); 0 tracebacks; stop-down hygiene
+   clean (0 wedged, 0 orphan positions); no other trades in window;
+   loss floor unexercised; R22 no new instances; SPCX tripwire idle;
+   watch for an agent-6 fleet REBUILD (stop may precede one — R20
+   hot-tech seed applies if us-stock-scoped).
+
 ## SHIP — 08:4xZ: R23 sweeper stopped-run fence LIVE as `20260819-r23-sweeperfence` (PR #492)
 
 Pipeline complete, per implement-every-time: fail-before (new test

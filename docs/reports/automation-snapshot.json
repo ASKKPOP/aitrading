@@ -1,7 +1,10 @@
 {
- "cycle": "2026-08-19/94",
- "captured_at_utc": "2026-08-19T07:49Z",
+ "cycle": "2026-08-19/95",
+ "captured_at_utc": "2026-08-19T08:49Z",
  "prod_image": "sooppiy-backend:20260819-20260819-r23-sweeperfence",
+ "C95_OWNER_STOPPED_FLEET35": "fleet_stop_all 08:16:57Z, 11 runs (12 events - 1462 double transition, cross-check resolved). 1462 runner flattened at mark 0.33736 zero slippage +0.5346 true net; run lifetime +4.3231 - harvest template validated end-to-end (4 covers all below entry, zero give-backs). User stop +0.70 ahead at mark now (KAITO 0.3443 > entry). Agent 6 has NO fleet; watch rebuild (R20 seed applies). Day +4.30 ledger. d-tally n=2 (-0.41/+0.08).",
+ "C95_EMPTY_WHY_AUTHORSHIP": "7/17 of 1462 order_intents why:'' + cyc30 emitted no intent at all; 3 proven same-second verdict_salvaged truncation (cyc11/26/30); cyc29 EXECUTED reduce 0.5 with no stated reason. Truncation signature now touches order authorship. Watch: empty-why intents/day; candidate R-item = salvage should re-request the intent block.",
+ "C95_R23_METRIC_INCONCLUSIVE": "0 dead-run writes since 08:46:35Z but 0 TOTAL outlook writes in 5.5min - sweeper had not ticked. Population now 52 stopped runs on slots (~11/h old-code baseline). Decisive read next cycle.",
  "C94_R23_SHIPPED_VERIFIED": "PR #492 squash-merged 8d6a62ac, deployed 08:46:35Z. Fence verified in running worker (line 374); lone post-deploy dead-run outlook (1492, 08:45:09Z) predates new worker start by 86s = old image final sweep; 0 since. BINDING METRIC: dead-run outlook writes/h from anchor 08:46:35Z, baseline 13.8/h, expect ~0 else FAILED. NOTE: this image variant ships WITHOUT pytest (in-image test runs impossible; new runbook fact).",
  "C94_R21_FIRST_FIRE_VALID": "1489 UNIUSDT breakeven_ratchet fire 03:16:31Z (stop_mechanism discriminator, new instrumentation): base=peak_realized_usd -0.0045, own excursion 0.0355 >= arm 0.02 -> genuine peak, no phantom; saved ~$0.075 vs live mark. R21/#487 VALIDATED, closes. Degenerate-scale watch opened: arm fee-anchored 0.1%/side vs actual 0.045%/side (2.2x), $10 probe book -> arm ~ 0.2% noise, fire stops WHOLE run.",
  "C94_R23_SWEEPER_WASTE": "112 outlooks to stopped runs in 8h = 19.8% of all outlook writes, ~13.8 LLM calls/h, zero algo fallbacks, worst 23h post-stop. Root cause outlook_refresher.py:143 (status!=running sweepable, no stopped-run fence); tasks.py:864 'no LLM calls' docstring stale/wrong. Feeds the 5x-oversubscribed no_verdict signature. SHIP NOW per implement-every-time.",
