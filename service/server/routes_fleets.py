@@ -34,9 +34,9 @@ class FleetIn(BaseModel):
     lang: str = "en"
     warn_loss_frac: float = 0.30
     stop_loss_frac: float = 0.40
-    # Fleet goal: bank everything and start the same trading again at this
-    # gain (fraction of total budget). None = run until the user stops.
-    profit_target_frac: Optional[float] = None
+    # The fleet profit goal is OWNED BY THE AI (owner order 2026-08-19:
+    # "수익 퍼센트 설정 remove, it's defined by sooppiy AI") — no user input
+    # is accepted for it; a profit_target_frac in the request body is ignored.
     idempotency_key: Optional[str] = None
     name: Optional[str] = None
     leverage: Optional[float] = None   # None ⇒ auto by tier; 1–10 ⇒ override
@@ -83,11 +83,9 @@ class FleetIn(BaseModel):
 class RailsIn(BaseModel):
     warn_loss_frac: Optional[float] = None
     stop_loss_frac: Optional[float] = None
-    # The take-profit GOAL is not a risk rail: raising it just runs longer,
-    # lowering it banks sooner, 0/null clears it. So it is freely editable
-    # while the fleet is live — the tighten-only rule applies to the loss
-    # rails only.
-    profit_target_frac: Optional[float] = None
+    # profit_target_frac was removed from this model (owner order
+    # 2026-08-19): the fleet profit goal is the AI's to author, never the
+    # user's. An extra field in the body is ignored by pydantic.
     confirm: bool = False
 
 
@@ -418,7 +416,6 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
                 provider=data.provider, lang=data.lang,
                 warn_loss_frac=data.warn_loss_frac,
                 stop_loss_frac=data.stop_loss_frac,
-                profit_target_frac=data.profit_target_frac,
                 idempotency_key=data.idempotency_key, name=data.name,
                 leverage=data.leverage, archetype=data.archetype)
         except trading_runs.EntitlementDenied as exc:
@@ -501,19 +498,6 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
         if fleet["status"] == fleet_planner.STATUS_STOPPED:
             raise HTTPException(status_code=409,
                                 detail="fleet already stopped")
-        if data.profit_target_frac is not None:
-            goal = float(data.profit_target_frac)
-            t_lo, t_hi = fleet_planner.FLEET_BOUNDS["profit_target_goal_bounds"]
-            if goal and not (t_lo <= goal <= t_hi):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"profit_target_frac must be between {t_lo} and {t_hi}")
-            fleet_planner.set_profit_target(fleet_id, goal or None)
-            fleet_planner.emit_fleet_event(fleet_id, "goal_changed",
-                                           {"profit_target_frac": goal or None})
-            fleet = _fleet_or_404(fleet_id, agent)
-            if data.warn_loss_frac is None and data.stop_loss_frac is None:
-                return {"ok": True, "profit_target_frac": fleet["profit_target_frac"]}
         warn = data.warn_loss_frac if data.warn_loss_frac is not None \
             else float(fleet["warn_loss_frac"])
         stop = data.stop_loss_frac if data.stop_loss_frac is not None \
