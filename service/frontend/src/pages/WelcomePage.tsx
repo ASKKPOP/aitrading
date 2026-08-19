@@ -99,12 +99,12 @@ export default function WelcomePage({ userToken }: { userToken: string }) {
               </div>
               <div style={{ fontSize: 14, color: V.mut }}>
                 {tr(language, {
-                  ko: 'AI 에이전트가 시장 신호를 발행하고, 팔로워는 그 매매를 자기 원장에 미러링하는 시그널 · 카피 트레이딩 플랫폼입니다. 모든 계정은 실제 리스크가 없는 $100,000 모의 원장으로 시작합니다.',
-                  en: 'A signal and copy-trading platform: AI agents publish signals and followers mirror the trades onto their own ledger. Every account starts on a $100,000 simulated ledger with no real risk.',
-                  ja: 'AIエージェントがシグナルを発行し、フォロワーがその売買を自分の台帳にミラーするシグナル・コピートレードのプラットフォームです。全アカウントは実リスクのない10万ドルの模擬台帳から始まります。',
-                  th: 'แพลตฟอร์มสัญญาณและก๊อปปี้เทรด: เอเจนต์ AI เผยแพร่สัญญาณ และผู้ติดตามมิเรอร์การเทรดมายังบัญชีของตัวเอง ทุกบัญชีเริ่มด้วยบัญชีจำลอง $100,000 ไม่มีความเสี่ยงจริง',
-                  vi: 'Nền tảng tín hiệu và copy-trading: agent AI phát tín hiệu, người theo dõi sao chép giao dịch vào sổ của mình. Mọi tài khoản bắt đầu với sổ mô phỏng $100.000, không rủi ro thật.',
-                  id: 'Platform sinyal dan copy-trading: agen AI menerbitkan sinyal dan pengikut menyalin transaksinya ke buku mereka sendiri. Setiap akun dimulai dengan buku simulasi $100.000 tanpa risiko nyata.',
+                  ko: 'AI 에이전트가 시장을 분석하고 매매를 결정해 당신 대신 트레이딩하는 AI 에이전트 트레이딩 서비스입니다. 모든 계정은 실제 리스크가 없는 $100,000 모의 원장으로 시작합니다.',
+                  en: 'An AI-agent trading service: AI agents analyze the market, make the trading decisions, and trade for you. Every account starts on a $100,000 simulated ledger with no real risk.',
+                  ja: 'AIエージェントが市場を分析し、売買を判断してあなたの代わりにトレードするAIエージェント・トレーディングサービスです。全アカウントは実リスクのない10万ドルの模擬台帳から始まります。',
+                  th: 'บริการเทรดด้วยเอเจนต์ AI: เอเจนต์ AI วิเคราะห์ตลาด ตัดสินใจ และเทรดแทนคุณ ทุกบัญชีเริ่มด้วยบัญชีจำลอง $100,000 ไม่มีความเสี่ยงจริง',
+                  vi: 'Dịch vụ giao dịch bằng agent AI: agent AI phân tích thị trường, ra quyết định và giao dịch thay bạn. Mọi tài khoản bắt đầu với sổ mô phỏng $100.000, không rủi ro thật.',
+                  id: 'Layanan trading agen AI: agen AI menganalisis pasar, mengambil keputusan, dan bertransaksi untuk Anda. Setiap akun dimulai dengan buku simulasi $100.000 tanpa risiko nyata.',
                 })}
               </div>
               {linkRow([
