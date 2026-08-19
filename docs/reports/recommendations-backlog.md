@@ -493,3 +493,55 @@ whether the requested target changes.
 - **Defect:** #485 computes position-scoped peak as `peak_pnl_usd − CURRENT realized`. A losing partial cover drops realized and inflates the phantom peak by the loss booked — run 1417: true position peak +$0.1015 < arm $0.2549, yet fire-time subtraction manufactured 0.4614 → armed → flattened the remainder 9s after the desk's own reduce. The desk's reduce arms the rail that kills its book (976-shape).
 - **Fix spec (both agents converge):** baseline = realized **at peak epoch** (freeze when peak is recorded), or track the position-scoped peak directly. Never realized-at-fire. `_breakeven_floor_hit` run_engine ~1004.
 - **Evidence bar met:** measured + replayable + independently derived twice. P&L of the first fire ≈ $0.00 (mark-level flatten) — ship as correctness fix with the ratchet ledger (5 fires ≈ −$1.00 lifetime, zero net gains) as context. Coordinate with the parallel session that shipped #485.
+
+## MEASURED 2026-08-18/19 — the stop-before-target replay REFUTES the tighter band (and it gates a change already shipped)
+
+The gate the 08-17 cycles named ("replay each entry against its horizon and
+count, per candidate (stop, target) pair, how often the STOP is hit BEFORE the
+target") has now been run. **It refutes the band, and the band was implied by
+#484, which is already live.**
+
+**Method.** 22 closed crypto entries (29 candidates, 7 lacking candle
+coverage), replayed on 1-minute Hyperliquid `candleSnapshot` from the fill to
+each run's OWN original `at_time`. Target fixed at 2x stop, the shipped R:R
+floor. Same-candle ambiguity scored STOP-first — the conservative rule, which
+penalises tight bands specifically and is stated rather than hidden.
+
+| stop% | target% | target-first | stop-first | neither | expectancy%/trade |
+|---|---|---|---|---|---|
+| 0.40 | 0.80 | 7 | **14** | 1 | -0.0900 |
+| 0.50 | 1.00 | 6 | **15** | 1 | -0.1582 |
+| **0.60** | **1.20** | 3 | **15** | 4 | **-0.3355** |
+| 0.80 | 1.60 | 4 | 12 | 6 | -0.2355 |
+| 1.00 | 2.00 | 4 | 10 | 8 | -0.1809 |
+| 1.50 | 3.00 | 4 | 6 | 12 | +0.0464 |
+| 2.00 | 4.00 | 3 | 4 | 15 | +0.0918 |
+| 2.50 | 5.00 | 2 | 2 | 18 | +0.1373 |
+
+- **Expectancy improves MONOTONICALLY as stops WIDEN.** The ~0.5-0.6% band
+  the 08-17 arithmetic called "structurally viable" is the WORST row measured.
+- **The harm path is real and it runs through a shipped change.** #484 tells
+  the desk its book has never reached 1%. The obvious response — shrink the
+  target to ~1%, which the 2x floor turns into a ~0.5% stop — lands on
+  -0.16 to -0.34%/trade.
+- **Honest limits, stated because they cut against the tidy reading.** n=22.
+  At wide stops most entries resolve as NEITHER (18 of 22 at 2.5%), so the
+  wide-band advantage rests on ~4 resolved trades and is **NOT established**.
+  The conservative same-candle rule also disfavours tight bands. What IS
+  established is that the tighter band is **not supported**.
+- **The real reading:** the tape barely moves inside these horizons (#484
+  measured median best excursion 0.17%). Unreachable targets and tight stops
+  are the SAME market fact. Tightening does not convert losses into wins; it
+  converts no-resolution into stopped-out.
+
+**Shipped in response:** `desk_record.record_line` now carries BOTH halves —
+the reachability figure and the refutation — so the disclosure cannot be read
+as an argument for the band the tape rejects. No rail adopts any band; the
+judgement stays the desk's, and the line now ends by asking whether the trade
+is worth taking at all.
+
+**Still NOT answered, and it is the next question:** if neither tighter nor
+(established) wider brackets carry the edge, the lever is entry SELECTION, not
+bracket geometry — which is where R7/R8 landed and were closed as
+"statistically ordinary at entry". That tension is unresolved and should not
+be papered over.

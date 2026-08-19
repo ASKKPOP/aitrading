@@ -96,6 +96,26 @@ class ExcursionRecordTests(unittest.TestCase):
             "a LIVE run's peak is not a record — it has not finished "
             "giving it back")
 
+    def test_the_line_refuses_to_imply_a_tighter_bracket(self):
+        """MEASURED REFUTATION 2026-08-18. The reachability figure alone
+        invites exactly one wrong inference — "my target is unreachable, so
+        shrink it" — and the 2x R:R floor then drags the stop to ~0.5%.
+        Replayed on 22 crypto entries against their own at_time horizons, that
+        is the WORST band on the board: stop 0.6/target 1.2 loses 0.34%/trade
+        with the stop hit first in 15 of 22, while expectancy improves
+        monotonically as stops WIDEN.
+
+        Unreachable targets and tight stops are the same market fact. The line
+        must carry both halves or it argues for a band the tape refutes."""
+        for i in range(12):
+            self._run(1200 + i, "crypto", 1.0, 100.0)
+        line = desk_record.record_line("crypto")
+        self.assertIn("tighter", line.lower(),
+                      "the desk can still infer 'shrink the bracket'")
+        self.assertIn("stop", line.lower(),
+                      "the line never mentions what tightening does to the "
+                      "stop, which is where the loss actually lands")
+
     def test_the_line_states_n_and_the_ceiling(self):
         for i in range(12):
             self._run(900 + i, "crypto", 1.0, 100.0)

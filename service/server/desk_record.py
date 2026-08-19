@@ -24,6 +24,23 @@ This module states the fact; it does NOT clamp anything. Which target to
 write stays the desk's call (`trading-decisions-belong-to-sooppiy-ai`) —
 the platform's job is to stop hiding the measurement from it.
 
+MEASURED REFUTATION (2026-08-18), and it is why this line has two halves.
+The reachability figure alone invites exactly one wrong inference — "my
+target is unreachable, so shrink it" — and the shipped 2x R:R floor then
+drags the stop to ~0.5%. Replayed on 22 crypto entries against their own
+at_time horizons, that is the WORST band measured:
+
+    stop 0.40 / target 0.80   stop-first 14/22   -0.090%/trade
+    stop 0.60 / target 1.20   stop-first 15/22   -0.336%/trade
+    stop 1.50 / target 3.00   stop-first  6/22   +0.046%/trade
+    stop 2.50 / target 5.00   stop-first  2/22   +0.137%/trade
+
+Expectancy improves monotonically as stops WIDEN. Honest limits: n=22, and at
+wide stops most entries resolve as NEITHER (18 of 22 at 2.5%), so the wide-band
+advantage rests on ~4 resolved trades and is NOT established. What IS
+established is that the tighter band is not supported, so the line must never
+be read as an argument for it.
+
 UNIT NOTE, load-bearing: pnl / notional IS the % price move, because
 pnl = move x qty and notional = price x qty. Any other denominator produces
 a number that cannot be compared to `target_pct`, which is what makes this
@@ -122,7 +139,10 @@ def excursion_record(market: str) -> Optional[dict[str, Any]]:
 
 
 def record_line(market: str) -> str:
-    """One sentence of measured fact for a prompt that asks for a target.
+    """Two halves of measured fact for a prompt that asks for a target:
+    what this book has reached, AND what happened when the bracket was
+    tightened in response. The second half is not optional — see the
+    refutation in this module's header.
 
     Silent below `_MIN_RUNS` — telling the desk a ceiling derived from three
     runs would be worse than telling it nothing."""
@@ -137,5 +157,11 @@ def record_line(market: str) -> str:
         f"{rec['never_positive'] * 100:.0f}% of runs never had a positive "
         f"moment at all. These are measured lower bounds (marks are sampled, "
         f"not continuous). A target beyond that band has not been reached "
-        f"here — size the bracket to what this book actually gets."
+        f"here. BUT DO NOT ANSWER THIS WITH A TIGHTER BRACKET: replayed on "
+        f"22 entries against their own horizons, a 0.6% stop with a 1.2% "
+        f"target was hit on the STOP first in 15 of 22 and lost 0.34% per "
+        f"trade, and expectancy improved monotonically as stops WIDENED. The "
+        f"same quiet tape that withholds your target also fails to spare "
+        f"your stop — tightening converts no-resolution into stopped-out. "
+        f"Judge whether this trade is worth taking at all."
     )
