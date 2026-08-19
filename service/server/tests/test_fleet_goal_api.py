@@ -1,5 +1,8 @@
-"""The fleet profit goal must be settable BY THE USER from the web service —
-at creation and on a live fleet — not only by a back-office edit."""
+"""The fleet profit goal is OWNED BY THE AI (owner order 2026-08-19:
+"수익 퍼센트 설정 remove, it's defined by sooppiy AI"). The user-facing
+paths — fleet creation and the live rails edit — must IGNORE any
+profit_target_frac in the request; only the internal
+fleet_planner.set_profit_target path (the AI's) may write it."""
 
 from __future__ import annotations
 
@@ -49,50 +52,45 @@ class GoalApiTests(unittest.TestCase):
     def tearDown(self):
         self.plan.stop(); self.auth.stop(); self.tmp.cleanup()
 
-    def test_create_accepts_goal(self):
+    def test_create_ignores_user_goal(self):
+        """A profit_target_frac in the create body is silently ignored —
+        the fleet is born with NO goal (the AI authors one if it wants)."""
         r = self.client.post("/api/fleets", headers=self.h, json={
             "n_runs": 2, "total_budget_usd": 2000.0,
             "profit_target_frac": 0.03})
         self.assertEqual(r.status_code, 200, r.text)
-        fleet = fp.get_fleet(r.json()["id"])
-        self.assertAlmostEqual(float(fleet["profit_target_frac"]), 0.03, places=4)
+        self.assertIsNone(fp.get_fleet(r.json()["id"])["profit_target_frac"])
 
-    def test_create_rejects_out_of_bounds_goal(self):
-        r = self.client.post("/api/fleets", headers=self.h, json={
-            "n_runs": 2, "total_budget_usd": 2000.0,
-            "profit_target_frac": 9.0})
-        self.assertEqual(r.status_code, 400, r.text)
+    def _fleet(self):
+        return self.client.post(
+            "/api/fleets", headers=self.h,
+            json={"n_runs": 2, "total_budget_usd": 2000.0}).json()["id"]
 
-    def _fleet(self, goal=None):
-        body = {"n_runs": 2, "total_budget_usd": 2000.0}
-        if goal is not None:
-            body["profit_target_frac"] = goal
-        return self.client.post("/api/fleets", headers=self.h,
-                                json=body).json()["id"]
-
-    def test_goal_can_be_changed_on_a_live_fleet(self):
-        fid = self._fleet(0.02)
+    def test_rails_put_ignores_user_goal(self):
+        """PUT /rails with profit_target_frac neither writes the goal nor
+        emits a goal_changed event; the loss rails still work."""
+        fid = self._fleet()
         r = self.client.put(f"/api/fleets/{fid}/rails", headers=self.h,
-                            json={"profit_target_frac": 0.05})
+                            json={"profit_target_frac": 0.05,
+                                  "warn_loss_frac": 0.25})
         self.assertEqual(r.status_code, 200, r.text)
+        fleet = fp.get_fleet(fid)
+        self.assertIsNone(fleet["profit_target_frac"])
+        self.assertAlmostEqual(float(fleet["warn_loss_frac"]), 0.25, places=4)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) AS n FROM fleet_events WHERE fleet_id = ?"
+                    " AND event_type = 'goal_changed'", (fid,))
+        n = cur.fetchone()["n"]
+        conn.close()
+        self.assertEqual(n, 0)
+
+    def test_ai_path_still_writes_the_goal(self):
+        """The internal setter (the AI's path) keeps working."""
+        fid = self._fleet()
+        fp.set_profit_target(fid, 0.04)
         self.assertAlmostEqual(
-            float(fp.get_fleet(fid)["profit_target_frac"]), 0.05, places=4)
-
-    def test_goal_can_be_cleared(self):
-        fid = self._fleet(0.02)
-        r = self.client.put(f"/api/fleets/{fid}/rails", headers=self.h,
-                            json={"profit_target_frac": 0})
-        self.assertEqual(r.status_code, 200, r.text)
-        self.assertIsNone(fp.get_fleet(fid)["profit_target_frac"])
-
-    def test_goal_change_is_validated(self):
-        fid = self._fleet(0.02)
-        r = self.client.put(f"/api/fleets/{fid}/rails", headers=self.h,
-                            json={"profit_target_frac": 7.5})
-        self.assertEqual(r.status_code, 400, r.text)
-
-    def test_goal_is_visible_on_the_fleet_read(self):
-        fid = self._fleet(0.04)
+            float(fp.get_fleet(fid)["profit_target_frac"]), 0.04, places=4)
         r = self.client.get(f"/api/fleets/{fid}", headers=self.h)
         self.assertEqual(r.status_code, 200, r.text)
         self.assertAlmostEqual(

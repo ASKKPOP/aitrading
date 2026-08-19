@@ -101,9 +101,6 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     desc: tr(language, { ko: 'TRADING 개수만 정하세요 — AI가 전 시장을 리서치해 종목을 고르고, TRADING을 만들어 등록하고, 결과를 다음 판단에 반영하며, 멈출 때까지 개수를 유지합니다. 정지 버튼은 항상 당신에게 있습니다.', en: 'Set only how many TRADINGs — the AI researches the markets, picks the symbols, registers the TRADINGs, feeds every result into the next step, and keeps the count until you stop. You always keep the stop button.', ja: 'TRADING の数だけ設定 — AIが全市場をリサーチして銘柄を選び、TRADING を登録し、結果を次の判断に反映し、停止するまで数を維持します。', th: 'ตั้งแค่จำนวน TRADING — AI รีเสิร์ชตลาด เลือกเหรียญ สร้าง TRADING และรักษาจำนวนจนกว่าคุณจะหยุด', vi: 'Chỉ đặt số lượng TRADING — AI nghiên cứu thị trường, chọn mã, đăng ký TRADING và giữ số lượng cho đến khi bạn dừng.', id: 'Cukup tentukan berapa banyak TRADING — AI meriset pasar, memilih simbol, mendaftarkan TRADING, mengalirkan setiap hasil ke langkah berikutnya, dan menjaga jumlahnya sampai Anda menghentikannya. Tombol stop selalu ada di tangan Anda.' }),
     nRuns: tr(language, { ko: 'TRADING 개수', en: 'Number of TRADINGs', ja: 'TRADING 数', th: 'จำนวน TRADING', vi: 'Số TRADING', id: 'Jumlah TRADING' }),
     budget: tr(language, { ko: '총 예산 ($) — 자동 제안됨', en: 'Total budget ($) — pre-filled', ja: '総予算 ($) — 自動提案', th: 'งบรวม ($) — เติมให้อัตโนมัติ', vi: 'Tổng ngân sách ($) — điền sẵn', id: 'Total anggaran ($) — sudah terisi' }),
-    goal: tr(language, { ko: '목표 수익 (%) — 도달 시 전량 실현 후 같은 매매 재시작', en: 'Profit goal (%) — bank everything at this gain, then restart the same fleet', ja: '目標利益 (%) — 到達で全決済し同じ運用を再開', th: 'เป้ากำไร (%) — ถึงเป้าแล้วปิดทั้งหมดและเริ่มใหม่', vi: 'Mục tiêu lợi nhuận (%) — đạt thì chốt hết rồi chạy lại', id: 'Target profit (%) — bukukan semuanya pada keuntungan ini, lalu jalankan ulang fleet yang sama' }),
-    goalOff: tr(language, { ko: '0 = 목표 없음 (중지할 때까지 계속)', en: '0 = no goal (runs until you stop it)', ja: '0 = 目標なし（停止するまで継続）', th: '0 = ไม่มีเป้า (ทำงานจนกว่าจะหยุด)', vi: '0 = không mục tiêu (chạy đến khi bạn dừng)', id: '0 = tanpa target (berjalan sampai Anda menghentikannya)' }),
-    goalSave: tr(language, { ko: '목표 저장', en: 'Save goal', ja: '目標を保存', th: 'บันทึกเป้า', vi: 'Lưu mục tiêu', id: 'Simpan target' }),
     profitLevel: tr(language, { ko: '수익 단계 (위험 성향)', en: 'Profit level (risk appetite)', ja: '収益レベル（リスク）', th: 'ระดับกำไร (ความเสี่ยง)', vi: 'Mức lợi nhuận (khẩu vị rủi ro)', id: 'Tingkat profit (selera risiko)' }),
     launch: tr(language, { ko: '🚀 플릿 시작', en: '🚀 Launch fleet', ja: '🚀 フリート開始', th: '🚀 เริ่มฟลีต', vi: '🚀 Khởi chạy', id: '🚀 Luncurkan fleet' }),
     stopAll: tr(language, { ko: '⏹ 전체 정지 (청산)', en: '⏹ Stop all (flatten)', ja: '⏹ 全停止（清算）', th: '⏹ หยุดทั้งหมด (ปิดสถานะ)', vi: '⏹ Dừng tất cả (đóng lệnh)', id: '⏹ Hentikan semua (tutup posisi)' }),
@@ -210,10 +207,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [risk, setRisk] = useState('balanced')
   const [archetype, setArchetype] = useState<'short' | 'swing'>('short')
   const [levKey, setLevKey] = useState('auto')
-  const [goalPct, setGoalPct] = useState<number>(0)   // 0 = run until I stop
   // Empty = every market, which is what the API means by a null market_scope.
   const [mkts, setMkts] = useState<string[]>([])
-  const [goalDirty, setGoalDirty] = useState(false)   // typed vs saved value
   const [sizeN, setSizeN] = useState<number>(0)       // 0 = untouched; use fleet.n_runs
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -318,7 +313,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     try {
       const r = await fetch(`${API_BASE}/fleets`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, archetype, markets: archetype === 'swing' ? null : (mkts.length ? mkts : null), leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, profit_target_frac: goalPct > 0 ? goalPct / 100 : null, idempotency_key: `ui-${Date.now()}` }),
+        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, archetype, markets: archetype === 'swing' ? null : (mkts.length ? mkts : null), leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, idempotency_key: `ui-${Date.now()}` }),
       })
       const body = await r.json()
       if (!r.ok) { setError(body.detail || 'error'); return }
@@ -328,18 +323,6 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     } finally { setBusy(false) }
   }
 
-  const saveGoal = async (pct: number) => {
-    if (!fleet) return
-    setBusy(true); setError(null)
-    try {
-      const r = await fetch(`${API_BASE}/fleets/${fleet.id}/rails`, {
-        method: 'PUT', headers: authHeaders,
-        body: JSON.stringify({ profit_target_frac: pct > 0 ? pct / 100 : 0 }),
-      })
-      if (!r.ok) { setError((await r.json()).detail || 'error'); return }
-      await load()
-    } finally { setBusy(false) }
-  }
 
   const saveSize = async (n: number) => {
     if (!fleet || !n || n === fleet.n_runs) return
@@ -433,12 +416,6 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               <input type="number" min={50} value={budget}
                 onChange={e => setBudget(Number(e.target.value))}
                 style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 160, background: 'transparent', color: 'inherit' }} />
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
-              {T.goal}
-              <input type="number" min={0} max={500} step={0.5} value={goalPct}
-                onChange={e => setGoalPct(Number(e.target.value))}
-                style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 150, background: 'transparent', color: 'inherit' }} />
             </label>
             <button onClick={launch} disabled={busy || n < 1}
               style={{ padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
@@ -795,44 +772,6 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                   {T.close}
                 </button>
               </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
-            <span style={{ fontWeight: 600 }}>{T.goal}</span>
-            <HelpTip text={tr(language, {
-              ko: '플릿 전체 수익률이 이 %에 도달하면 모든 포지션을 청산해 이익을 확정하고, 같은 설정의 플릿이 자동으로 다시 시작됩니다. 0이면 목표 없이 중지할 때까지 계속 운용합니다. 옆의 $ 금액은 현재 예산 기준으로 환산한 목표액입니다.',
-              en: "When the fleet's total gain reaches this %, every position is closed to bank the profit, then a fleet with the same settings restarts automatically. 0 means no goal — it runs until you stop it. The $ figure next to it is that target converted for the current budget.",
-              ja: 'フリート全体の利益率がこの%に達すると全ポジションを決済して利益を確定し、同じ設定のフリートが自動的に再開します。0 なら目標なしで、停止するまで運用を続けます。隣の$金額は現在の予算で換算した目標額です。',
-              th: 'เมื่อกำไรรวมของฟลีตถึง % นี้ ทุกสถานะจะถูกปิดเพื่อเก็บกำไร แล้วฟลีตที่ตั้งค่าเหมือนเดิมจะเริ่มใหม่อัตโนมัติ ถ้าเป็น 0 คือไม่มีเป้า — ทำงานจนกว่าคุณจะหยุด ตัวเลข $ ข้างๆ คือเป้าที่แปลงตามงบปัจจุบัน',
-              vi: 'Khi tổng lợi nhuận của fleet đạt % này, mọi vị thế được đóng để chốt lời, rồi một fleet cùng thiết lập tự khởi động lại. 0 nghĩa là không có mục tiêu — chạy đến khi bạn dừng. Số $ bên cạnh là mục tiêu quy đổi theo ngân sách hiện tại.',
-              id: 'Ketika total keuntungan fleet mencapai % ini, semua posisi ditutup untuk membukukan profit, lalu fleet dengan pengaturan yang sama otomatis dimulai ulang. 0 berarti tanpa target — berjalan sampai Anda menghentikannya. Angka $ di sebelahnya adalah target itu dihitung dari anggaran saat ini.',
-            })} />
-            <input type="number" min={0} max={500} step={0.5}
-              defaultValue={fleet.profit_target_frac ? +(fleet.profit_target_frac * 100).toFixed(2) : 0}
-              onChange={e => { setGoalPct(Number(e.target.value)); setGoalDirty(true) }}
-              style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 110, background: 'transparent', color: 'inherit' }} />
-            <button style={chip(false)} disabled={busy} onClick={() => saveGoal(goalPct)}>{T.goalSave}</button>
-            <span style={{ color: 'var(--text-muted,#a89f92)' }}>
-              {(() => {
-                // Live calc (owner ask 2026-08-08): as the % is typed, show
-                // the $ target on this balance and what it demands per slot —
-                // at the current slot count AND at the AI-recommended count.
-                const livePct = goalDirty ? goalPct
-                  : (fleet.profit_target_frac ? fleet.profit_target_frac * 100 : 0)
-                if (!livePct) return T.goalOff
-                const usd = fleet.total_budget_usd * livePct / 100
-                const perNow = usd / Math.max(fleet.n_runs, 1)
-                const rec = fleet.recommended_max_n_runs
-                const perRec = rec ? usd / rec : null
-                return tr(language, {
-                  ko: `→ $${usd.toFixed(0)} · 슬롯당 순익 필요 ≈ $${perNow.toFixed(1)} (현재 ${fleet.n_runs}개)${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 권장 ${rec}개)` : ''}`,
-                  en: `→ $${usd.toFixed(0)} · needs ≈ $${perNow.toFixed(1)} net per slot (${fleet.n_runs} now)${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 rec. ${rec})` : ''}`,
-                  ja: `→ $${usd.toFixed(0)} · スロットあたり純益 ≈ $${perNow.toFixed(1)}（現在${fleet.n_runs}）${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)}（🤖推奨${rec}）` : ''}`,
-                  th: `→ $${usd.toFixed(0)} · ต้องได้กำไรสุทธิ ≈ $${perNow.toFixed(1)} ต่อสล็อต (ปัจจุบัน ${fleet.n_runs})${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 แนะนำ ${rec})` : ''}`,
-                  vi: `→ $${usd.toFixed(0)} · cần ≈ $${perNow.toFixed(1)} lãi ròng mỗi slot (hiện ${fleet.n_runs})${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 khuyến nghị ${rec})` : ''}`,
-                  id: `→ $${usd.toFixed(0)} · butuh ≈ $${perNow.toFixed(1)} laba bersih per slot (${fleet.n_runs} sekarang)${perRec !== null && rec !== fleet.n_runs ? ` / $${perRec.toFixed(1)} (🤖 rek. ${rec})` : ''}`,
-                })
-              })()}
-            </span>
-          </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 10, fontSize: 12 }}>
             <span style={{ fontWeight: 600 }}>{tr(language, { ko: '슬롯 수 (목표 TRADING 수)', en: 'Slots (target TRADINGs)', ja: 'スロット数（目標TRADING数）', th: 'จำนวนสล็อต (เป้า TRADING)', vi: 'Số slot (TRADING mục tiêu)', id: 'Slot (target TRADING)' })}</span>
             <HelpTip text={tr(language, {
