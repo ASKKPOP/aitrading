@@ -81,6 +81,29 @@ class GateCandidatesTests(unittest.TestCase):
         self.assertEqual(len(kept), 3)
         self.assertEqual(dropped, {})
 
+    def test_short_thesis_is_never_vetoed_by_the_long_only_replay(self):
+        """The replay engine is LONG-ONLY: on a falling symbol it scores
+        negative exactly when a short thesis is most plausible (measured
+        2026-08-19: LLY/MRK/AAVE/NVDA... blocked 600+ times on inverted
+        evidence). Alien evidence must not veto — short theses fail OPEN
+        with a journaled reason, and the replay is not even run for them."""
+        theses = [{"symbol": "DOWN", "market": "crypto",
+                   "direction": "short"},
+                  {"symbol": "DOWN2", "market": "us-stock",
+                   "direction": "long"}]
+        calls: list[str] = []
+
+        def fake_exp(symbol, market, days=120):
+            calls.append(symbol)
+            return _stats(mean_pnl=-4.0)   # long replay says: falling
+
+        with patch.object(bg, "symbol_expectancy", side_effect=fake_exp):
+            kept, dropped = bg.gate_candidates(theses)
+        self.assertEqual([t["symbol"] for t in kept], ["DOWN"])
+        self.assertIn("long-only replay", kept[0]["backtest_gate"])
+        self.assertEqual(list(dropped.keys()), ["DOWN2"])
+        self.assertEqual(calls, ["DOWN2"])  # no replay spent on the short
+
 
 class BarsAdapterTests(unittest.TestCase):
     def test_candles_adapt_to_simulate_bars(self):

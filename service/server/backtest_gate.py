@@ -205,6 +205,21 @@ def gate_candidates(theses: list[dict[str, Any]]
     for thesis in theses:
         symbol = thesis.get("symbol") or ""
         market = thesis.get("market") or ""
+        direction = (thesis.get("direction") or "long").strip().lower()
+        if direction == "short":
+            # The replay engine is LONG-ONLY: its verdict on a falling
+            # symbol is negative exactly when a short thesis is most
+            # plausible (measured 2026-08-19: the most liquid names were
+            # blocked 600+ times in one window on this inverted evidence).
+            # Alien evidence must not veto — fail open, journal why, and
+            # spend no replay on it. The live-record bucket gate
+            # (fleet_planner._bucket_expectancy_block) remains the
+            # direction-matched expectancy check for shorts.
+            thesis = dict(thesis)
+            thesis["backtest_gate"] = ("short thesis — long-only replay "
+                                       "not applicable (fail-open)")
+            kept.append(thesis)
+            continue
         try:
             verdict = _verdict(symbol_expectancy(symbol, market))
         except Exception as exc:  # noqa: BLE001 — fail-open, never block composition
