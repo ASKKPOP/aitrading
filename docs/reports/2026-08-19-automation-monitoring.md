@@ -7,6 +7,47 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## 24H SWEEP — 15:3xZ (anchor 15:37:34): fence PASS day 2; R23 confirmed & retired; no_verdict collapsed to 0.63%; fleet 38 gen-2 TRADED
+
+**PROFIT-OR-LOSS FIRST.** 08-18 final **−$0.94**; 08-19 running **+$4.19**
+(the −$0.11 move from +4.30 is exactly FIL 1531's entry fee; pnl_audit
+check ok both days, resid 0). 17 trades in the 24h tape — every CLOSE
+already two-agent-analyzed in cycles 92–95 (KAITO 1462 arc +$4.32, XOM
+1426, SUI 1479 +$0.59, UNI 1489 −$0.02); no unanalyzed closes found.
+
+**Adversarial re-proofs (not by absence):**
+- **#475 fence: 0 fires in 24h — PASS, day 2** (baseline was 8/1/3/9/day).
+- **#480/#481 cap: 2 fires**, both absent-class. Honest ledger: 1479
+  closed +$0.591 with the cap COSTING $1.13 forgone; 1481 fenced, $0.
+  **R17 re-measure: zero uncapped default-sized entries remain in the
+  24h tape** — the default-bet class that authored the SPCX −$35.81 era
+  is extinct on this tape; the cap now prices as insurance (both signs
+  recorded).
+- **R:R rails: 0 floor refusals, 8 ceiling annotations** (no actionable
+  ceiling fire in-window).
+- **R21 ratchet: 1 fire (1489), epoch baseline VALID** (re-confirmed).
+- **R23: 0 dead-run outlook writes across 6h50m** (baseline 13.8/h,
+  population 52+). CONFIRMED — retired from active watch to standing.
+
+**Shape stats (24h):** 958 decisions, 98.6% hold; 47 distinct confidence
+values, top-3 cluster {0.55/0.58/0.48} = 38.3%; **no_verdict 6/958 =
+0.63%** — collapsed from the ~18–23% oversubscription era, with 11
+`verdict_salvaged` recoveries doing the absorbing (the parallel
+session's salvage rail is working; its residue is the empty-why
+authorship gap: **14/65 intents = 21.5%/day baseline** for watch 11).
+
+**Fleet 38 gen-2 traded:** FIL 1531 shorted 375.65 @ 0.6498 on cycle 1
+with fully-authored params (no cap fire) — the empty-fleet loop did
+NOT repeat; the 14:01Z research wave carried tradeable setups. Loop
+watch stands down unless the pattern re-emerges.
+
+**Churn/exit-discipline tally (running):** a=2 (−$0.98) · b=5 (all
+green; template validated on 1462's full life) · c=4 (all losers) ·
+d=2 (−$0.41/+$0.08) · e/f minor · user-forced=1. No decisive-weight
+threshold crossed; the lesson keeps accumulating.
+
+Docs→main batch: PR #493 (cycles 93–108 + this sweep + backlog + Plan 27).
+
 ## Cycle 108 — 15:2xZ (anchor 15:26:54): quiet; fleet 38 rebuild wave begins (FIL 1531) — loop watch live
 
 No closes, no trades, no rail fires. Day **+$4.30**; fence 0;
