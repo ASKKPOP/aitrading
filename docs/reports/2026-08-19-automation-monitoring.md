@@ -7,6 +7,19 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 115 — 21:5xZ (anchor 21:56:49): quiet; owner resized fleet 38 to 7 slots (the recommended band); AAVE flip still pending
+
+No trades, no closes, no rail fires. Fence 0; 0 tracebacks; both books
+flat. **Owner adopted the sizing recommendation:** fleet 38 resized
+15→7 at 19:51:28Z (`user_set`, cap pinned 7) — per-slot budget rises to
+≈$1,430, the concentration experiment from the diagnosis is now live.
+Post-ship gate passes (21:46/21:54) keep behaving correctly on the
+long side: MRK/LLY/ABBV/KO (all LONG theses) still vetoed, AUDUSD kept
+→ built 1549 (fleet 37). **The R26 positive proof (AAVE-short kept) is
+still pending** — no crypto candidate reached a fleet-38 gate pass in
+this window (replenishing:5/7, no new selectable un-held crypto).
+NZDJPY 1533 idle-retired $0. Churn tally unchanged.
+
 ## Cycle 114 — 21:3xZ (anchor 21:33:06): first post-ship cycle — R26 metric check in progress, no false negative
 
 No trades, no closes, no rail fires in the window (19:24→21:33, spanned
