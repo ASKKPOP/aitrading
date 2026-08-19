@@ -825,6 +825,115 @@ Every increment lands here as a dated line, in the same PR that ships it.
     - **The trading judgment it changes:** which doctrine the desk holds in
       mind while deciding to cut, hold or reduce a LOSING position — and,
       more importantly, it makes that choice measurable for the first time.
+  - **2026-08-19 — the (b) gate re-measured, and (a6)'s volume projection is
+    REFUTED. The shortfall is COVERAGE, not fleet activity.** Hypothesis
+    going in (from (a6)): `crypto/losing` joins `crypto/giveback` "on volume
+    alone" within days. Measured on prod over the 234 post-cutover rows:
+
+    | market/class | events | pairs | scheme | post-(a6) events |
+    |---|---|---|---|---|
+    | crypto/giveback+winning | 76 | 10 | ε-head-fixed | 11 |
+    | crypto/giveback+losing | 66 | 1 | deterministic → tie | **1** |
+    | crypto/losing | 56 | 3 | deterministic → tie | **1** |
+    | crypto/winning | 23 | 5 | ε-head-fixed | 2 |
+    | us-stock/losing, us-stock/gb+losing | 4, 4 | 1, 1 | deterministic | 0 |
+    | forex/gb+winning, us-stock/gb+winning | 3, 2 | 2, 2 | ε | 0 |
+
+    - The amended gate (≥2 ε-scheme classes, each ≥30 events and ≥3 distinct
+      pairs) is **still 1 of 2**. `crypto/losing` has **1** event under
+      `eps-tie-only-v1`, not 30 — 15 recall rows total in the ~18h since the
+      (a6) deploy, across 4 runs.
+    - **Why, measured rather than assumed.** Recall fires only from the
+      position brief, so the journal accrues at the rate of HELD positions.
+      Per day, `decision` events vs the subset carrying the `position_state`
+      brief token:
+
+      | day | decisions | HOLDING | FLAT | recall rows |
+      |---|---|---|---|---|
+      | 08-19 | 785 | 11 | **774** | 11 |
+      | 08-18 | 972 | 40 | **932** | 40 |
+      | 08-17 | 525 | 25 | 500 | 25 |
+      | 08-16 | 413 | 124 | 289 | 124 |
+      | 08-15 | 240 | 34 | 206 | 34 |
+
+      Recall rows equal the holding count **exactly, every day** — coverage of
+      the holding cycle is 100% and nothing is broken. Coverage of the ENTRY
+      cycle is **0%**, and the entry cycle is **98.6% of the desk's decisions**
+      (774 of 785 on 08-19). Waiting on volume is waiting on the 1.4%.
+    - **`_recall_query`'s flat branch has never executed.** The
+      `"flat considering entry fee hurdle expected move"` text has been in the
+      code since Phase 2 and is unreachable: its only caller sits behind
+      `_position_state_line`'s `if not pos_qty: return ""`. Confirmed in the
+      data — **0 of 234** post-cutover rows are the flat class.
+    - **Hypothesis KILLED before it cost a day: journal-only flat recall.**
+      The obvious fix is to run the flat selection and journal it without
+      showing the desk anything — obeying "journal-only" to the letter and
+      multiplying journal volume ~50×. It is wrong, and the ladder must not
+      re-run it: **a chunk the desk never read cannot be attributed to an
+      outcome.** Those rows would carry variance with zero treatment effect
+      and, pooled with the holding rows, would dilute the only real signal —
+      the 08-09 mistake in a new costume. Flat recall is worth building only
+      if the desk actually reads it.
+    - **The corpus is NOT the shortfall.** Probed in-container against the
+      live prod corpus before any code was written: the flat query returns
+      **5 tier-1 hits in all four markets**, never falling through to the
+      monitoring tier — crypto 7.81 / us-stock 7.83 / futures 7.39 / forex
+      7.25 at the head, on `skill:reentry-discipline#5`,
+      `skill:reachable-exits#1/#0`, `skill:mean-reversion-guard#0`. That is
+      entry doctrine, correctly ranked, that the desk has never been shown.
+      Recorded for (c): **every flat hit is a `lesson`; zero `outcome` chunks
+      surface for the entry query**, unlike the give-back class where outcome
+      chunks hold the head.
+  - **2026-08-19 — increment (a7) SHIPPED: the entry decision can reach the
+    corpus, behind `DESK_RECALL_FLAT` (default OFF).**
+    `_recall_flat_line(run, pos_qty)` wired into `_compose_position_state`
+    under its own brief token `recall_entry`, so entry-recall coverage is
+    measurable from the decision event without reading prompts.
+    - **Guarded on `pos_qty` as well as on the flag.** A holding cycle
+      already recalls inside `_position_state_line`; reaching this path too
+      would double-inject the block AND overwrite the journal row with a
+      query that does not describe the decision made (mutation M2).
+    - **No new scheme string, deliberately.** The POLICY is unchanged — the
+      same head-fixed draw the giveback class has run since 08-10 — and only
+      the population differs, which the row's `query` already names. Inventing
+      a scheme label would falsely tell (c) that a different logging policy
+      produced these rows, the mirror of the mistake (a6) versioned to avoid.
+    - **Default OFF, and the reasoning is stated so it is not read as
+      timidity or as carelessness.** (a6) defaulted ON because drawing among
+      exact ties cannot loosen anything — safety by construction. **There is
+      no such argument here:** this adds doctrine to a prompt that carried
+      none, on the largest decision population the desk has. A prompt change
+      of that blast radius is not for an unattended daily increment. The flag
+      is an env var, so promotion needs a container restart, **not a deploy**.
+    - **Promotion criterion, so the next session need not re-argue it:** set
+      `DESK_RECALL_FLAT=1`, then after ≥200 flat rows confirm (i) entry
+      action mix (`buy`/`short` vs `hold`) has not shifted by more than a few
+      points against the 08-15..08-19 baseline, and (ii) the flat rows show
+      ≥3 distinct pairs. On that evidence the (b) gate clears on the FLAT
+      class alone within a day or two, at ~800 rows/day against the holding
+      path's ~30.
+    - Tests: `FlatRecallTests` (8) in `tests/test_run_engine.py`.
+      **Mutation-checked ×7** — flag defaulted ON, holding guard removed,
+      unwired from the composer, holding P&L passed so the query became the
+      losing-class one, brief token renamed, function always silent, journal
+      row not written. All seven killed.
+    - **A defect the promotion must fix first, recorded rather than left to
+      be discovered on prod.** (a5)'s contest note ends *"…NOT as a specific
+      precedent for this position"*, and on a FLAT cycle there is no
+      position. The wording is a holding-path artefact; it is harmless while
+      the flag is off and must be made situation-aware before it is turned
+      on. Deliberately NOT fixed here — the string is shared with the live
+      holding path, and rewording it is a change to what the desk reads
+      TODAY, which is not this increment.
+    - **Confirmed on prod before shipping:** `DESK_RECALL_EXPLORE=1`, so flat
+      rows will be journaled `eps-head-fixed-v1` with genuine ε variance the
+      moment the flag is turned on — not a deterministic block that would
+      repeat `crypto/losing`'s time-confounded shape.
+    - **The trading judgment it will change:** whether to OPEN a position at
+      all, and at what size — the decision the desk makes 774 times a day
+      with no access to its own corpus. Today it changes nothing on prod,
+      which is the honest statement: (a7) makes the entry decision
+      *reachable*, and the promotion above is what makes it *reached*.
   - **2026-08-11 — owner directive, binding on this ladder:** *"everything
     for sooppiy AI"* / *"if we find that we must be implement trading logic
     and sooppiy AI"*. Journal-only and default-off increments are a STAGING

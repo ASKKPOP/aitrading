@@ -3511,6 +3511,102 @@ class RecallContestWiringTests(unittest.TestCase):
                       "a failing disclosure stripped the recall itself")
 
 
+class FlatRecallTests(unittest.TestCase):
+    """(a7) — the ENTRY decision reaches the corpus for the first time.
+
+    Measured on prod 2026-08-19: recall covered 100% of HOLDING cycles and
+    0% of the 774 flat/entry cycles that same day (11 of 785 decisions were
+    holding). `_recall_query`'s "flat considering entry" branch has existed
+    since Phase 2 and has NEVER executed — `_position_state_line` returns ""
+    before reaching `_recall_line` whenever `pos_qty` is falsy, so the branch
+    is unreachable from the only call site. The corpus is not the shortfall:
+    an in-container probe of the live prod corpus returned 5 tier-1 `lesson`
+    hits for the flat query in every one of the four markets."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "x.db")
+        database.init_database()
+        import desk_memory
+        self.mem = desk_memory
+        for i in range(4):
+            self.mem.remember(
+                "lesson", f"skill:entry#{i}", f"Entry {i}",
+                "Do not re-enter a symbol at a worse price than the exit that "
+                f"just proved the thesis wrong; the fee hurdle needs an "
+                f"expected move that clears it {i}.")
+        run_engine._RECALL_JOURNAL.clear()
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_FLAT", None)
+        os.environ.pop("DESK_RECALL_EXPLORE", None)
+        run_engine._RECALL_JOURNAL.clear()
+        run_engine._BRIEF_JOURNAL.clear()
+        self.tmp.cleanup()
+
+    _RUN = {"id": 31, "agent_id": 1, "symbol": "ETHUSDT", "market": "crypto"}
+
+    def test_it_is_silent_by_default(self):
+        """Default OFF. A flag that shipped default-on would change what the
+        desk reads on 98.6% of its decisions in one unattended increment."""
+        self.assertEqual(run_engine._recall_flat_line(self._RUN, 0.0), "")
+        self.assertIsNone(run_engine._take_recall_journal(31))
+
+    def test_the_entry_decision_reaches_the_corpus_when_enabled(self):
+        os.environ["DESK_RECALL_FLAT"] = "1"
+        line = run_engine._recall_flat_line(self._RUN, 0.0)
+        self.assertIn("past findings", line)
+        self.assertIn("fee hurdle", line)
+
+    def test_the_journalled_query_is_the_ENTRY_query(self):
+        """The row must be separable from the holding rows by its query, or
+        (c) pools two populations that answer different questions."""
+        os.environ["DESK_RECALL_FLAT"] = "1"
+        run_engine._recall_flat_line(self._RUN, 0.0)
+        rec = run_engine._take_recall_journal(31)
+        self.assertIn("flat considering entry", rec["query"])
+        self.assertNotIn("holding position", rec["query"])
+        self.assertTrue(rec["chunks"])
+
+    def test_a_HOLDING_cycle_never_reaches_this_path(self):
+        """The holding brief already recalls, inside `_position_state_line`.
+        A second call would double-inject the block AND overwrite the journal
+        row with a query that does not describe the decision made."""
+        os.environ["DESK_RECALL_FLAT"] = "1"
+        self.assertEqual(run_engine._recall_flat_line(self._RUN, 3.0), "")
+        self.assertIsNone(run_engine._take_recall_journal(31))
+
+    def test_a_broken_corpus_never_costs_the_cycle(self):
+        os.environ["DESK_RECALL_FLAT"] = "1"
+        with patch.object(self.mem, "search",
+                          side_effect=RuntimeError("corpus down")):
+            self.assertEqual(run_engine._recall_flat_line(self._RUN, 0.0), "")
+
+    def test_it_is_WIRED_into_the_composed_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn("_recall_flat_line", src,
+                      "missing from the composed brief — the flat recall "
+                      "would be dead code exactly like the query branch it "
+                      "exists to reach")
+
+    def test_the_composed_brief_carries_it_under_its_own_token(self):
+        """Journaled by name, so prod can measure entry-recall coverage from
+        the decision event without reading prompts."""
+        os.environ["DESK_RECALL_FLAT"] = "1"
+        out = run_engine._compose_position_state(self._RUN, {}, 0, {})
+        names = run_engine._take_brief_journal(31) or []
+        self.assertIn("recall_entry", names)
+        self.assertIn("past findings", out)
+
+    def test_the_composed_brief_is_unchanged_while_the_flag_is_off(self):
+        out = run_engine._compose_position_state(self._RUN, {}, 0, {})
+        names = run_engine._take_brief_journal(31) or []
+        self.assertNotIn("recall_entry", names)
+        self.assertNotIn("past findings", out)
+
+
 class ExcursionScaleBriefTests(unittest.TestCase):
     """Peak reaches the desk in DOLLARS; an arm is a PRICE. Without the
     conversion the desk armed levels 12-13x beyond anything its tape had done
