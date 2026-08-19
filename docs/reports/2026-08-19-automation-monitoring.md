@@ -7,6 +7,20 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 112 — 18:5xZ (anchor 18:50:25): quiet; heavy $0 slot churn (12 idle-retires, 0 trades); loop gap 17:07→18:50 noted
+
+No trades (verified: 0 trade events), no closes, no rail fires. Day
+**−$1.14**; fence 0; 0 tracebacks. Window spans 1h45m (two cron fires
+displaced by busy turns — stated plainly). Twelve idle-retires, all
+**$0.00 combined** (verified by SUM) — mostly fleet 37's 14:03Z
+us-stock cohort hitting the 12-cycle fuse DURING market hours: the
+EXTREME us-stock fleet has still never traded since the rebuild; same
+weak-setup discipline as fleet 38's arc. Fleet 37 at 15, fleet 38 at 5
+(gen-3 AVAX/TRUMP/HYPE/ETH cycling). Minor ledger oddity logged, not
+chased: 1538–1541 run_status "created" events stamped 18:00–18:02
+though the rows existed at the 17:07 anchor — journal lag on the
+lifecycle events, no P&L effect. Churn tally unchanged.
+
 ## Cycle 111 — 17:0xZ (anchor 17:07:41): quiet; fleet 38 gen-3 built (AVAX TRUMP HYPE ETH)
 
 No closes with P&L, no trades, no rail fires. Day **−$1.14**; fence 0;
