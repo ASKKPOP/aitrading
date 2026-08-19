@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-19/107",
- "captured_at_utc": "2026-08-19T14:56Z",
+ "cycle": "2026-08-19/108",
+ "captured_at_utc": "2026-08-19T15:26Z",
  "prod_image": "sooppiy-backend:20260819-20260819-r23-sweeperfence",
  "C107_FLEET38_EMPTY_0_25": "UNI 1521 idle-retired 14:28Z -> fleet 38 fully EMPTY (0/25, status replenishing:0/25, lifetime trades ZERO, lifetime P&L $0.00). The whole $10k fleet self-retired in 5.5h: weak-setup refusal x 12-cycle fuse x gated replacements. 14:01Z batch has 5 selectable crypto -> rebuild wave possible; if it repeats the fuse-gate loop, that IS the churn evidence (LLM cost, $0 P&L). Fleet 37 us-stock desks cycling (2-3 decisions each), no entries yet.",
  "C105_FLEET38_COLLAPSED_TO_2_25": "EMERGENT SHAPE, owner-visible: fleet 38 (built 09:00, $10k crypto EXTREME short) is at 2/25 by 13:56Z with ZERO trades ever. Chain: desks scored every setup weak (BTC final: conviction 0.355, momentum 0.3, entry_quality 0.2, bias flat, price above short entry reference) and held 12 cycles -> idle fuse retired 7 runs $0 -> replacements blocked (expectancy gate drops AAVE every pass; ETH/FIL/HYPE/VVV filtered pre-gate). Every component correct in isolation; emergent = capital preserved but fleet dead. NOT shipping anything (AI refusing weak setups IS right trading); recorded for the owner. If fill becomes the goal, lever = pre-gate candidate breadth.",
