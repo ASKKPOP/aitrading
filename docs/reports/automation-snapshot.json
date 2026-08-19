@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-19/102",
- "captured_at_utc": "2026-08-19T12:26Z",
+ "cycle": "2026-08-19/103",
+ "captured_at_utc": "2026-08-19T12:56Z",
  "prod_image": "sooppiy-backend:20260819-20260819-r23-sweeperfence",
  "C101_FLEET38_FILL_EXPLAINED": "8/25 fill is DESIGN not stall: research healthy (batch 496427 11:21Z, 14 crypto/13 selectable), but replacement passes reach the backtest gate with pool={AAVE} which drops every pass (non-positive expectancy -367.51/trade, 7 identical gate events 09:33-11:53); ETH/FIL/HYPE/VVV filtered pre-gate. 17 slots waiting > forcing negative-expectancy builds (C9 two-candidate-pool shape). Watch closed explained; residual question (pre-gate filter on the other 4 names) only if owner wants fuller slots.",
  "C96_R23_METRIC_PASS_FLEET38_REBUILT": "R23 DECISIVE PASS at 33min: 32 outlook writes, 0 to dead runs (old code expected ~6 vs 52+ stopped-run population). Owner rebuilt agent 6 as FLEET 38 (25 slots, $10,012, all-crypto so far: WLD SUI BTC KAITO LINK ZEC SOL BNB UNI); fleet 37 replenished CHFJPY+INTU. 1519 BNB insta-retire $0, chain stopped at one. MONITORING TARGET UPDATE: agent 6 = fleet 38 now (35 stopped). No closes; day +4.30.",
