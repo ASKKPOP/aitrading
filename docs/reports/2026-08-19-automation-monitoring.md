@@ -7,6 +7,24 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 114 — 21:3xZ (anchor 21:33:06): first post-ship cycle — R26 metric check in progress, no false negative
+
+No trades, no closes, no rail fires in the window (19:24→21:33, spanned
+by the diagnosis + ship turns). Day **−$1.14** (final barring late
+crypto); fence **0 all-time**; 0 tracebacks; both books flat; fleet 38
+at 5 (gen-3), fleet 37 cycling.
+
+**R26 post-ship metric, first read:** the 21:31:07Z gate pass (20s
+after the new worker started) still dropped MRK/LLY/ABBV/KO — and that
+is CORRECT: all four are **LONG** theses, whose direction matches the
+long-only replay; R26 only exempts shorts. The positive proof — a short
+thesis KEPT with reason "short thesis — long-only replay not
+applicable" — awaits the next crypto replacement pass: **AAVEUSDT's
+current thesis is direction=short**, so the AAVE drop-loop (7+ passes
+yesterday) must now flip to kept. NVDA-short remains selectable=0 —
+that is the research-level pre-gate filter, a separate (unmeasured)
+stage, not the backtest gate. Next cycles carry the watch.
+
 ## SHIP — 21:4xZ: #494 (profit-goal is the AI's) + #495 (R26 direction-matched gate) LIVE as `20260819-goalai-r26gate`
 
 Owner orders executed end-to-end. (a) **#494**: the fleet profit-goal is
