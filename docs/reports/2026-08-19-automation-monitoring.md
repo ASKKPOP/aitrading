@@ -7,6 +7,51 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## OWNER DIAGNOSIS — 20:0x–21:0xZ: "find what is wrong with us" — two-agent measurement, both hypotheses of mine REFUTED, real defects named
+
+**PROFIT-OR-LOSS FIRST.** 8-day ledger −$173.84, of which **−$168.63
+(93.2%) came from >$800-notional default-size trips** (n=26, worst: SOL
+run1099 −$71.31 at $9,127 notional) — that class is FIXED (#480/#481;
+zero uncapped default-sized entries remain on the post-fix tape). The
+post-fix engine (08-15→) is **+$7.05 over 4.65 days**: win rate 53.7%,
+expectancy **+$0.17/trip = 12.8bp of notional** — positive but
+STATISTICALLY UNPROVEN (t=0.77, n=41; stripping the largest winner ≈ 0).
+
+**What is actually wrong (measured, cross-checked):**
+1. **NOT the confidence gates** (my hypothesis — refuted): gates in
+   force are 0.50–0.57, they killed exactly **2 proposals in 4.8 days**;
+   55% of holds sit AT/ABOVE their own gate — the model itself chooses
+   hold, and the falsification sample says those holds were ≈ right
+   (declined entries ≈ −0.24%/trade gross, below the fee hurdle).
+2. **THE GATE DEFECT (R26, new):** the backtest expectancy gate runs a
+   LONG-ONLY $100k daily-bar replay to veto candidates for fleets whose
+   entries are 87.5% SHORT — direction-blind, alien-in-kind. It blocked
+   LLY 315× / MRK 233× / AAVE 207× / KO 145× / NVDA 124× / AAPL / TSLA…
+   — the liquid names — leaving residue candidates. The contamination
+   hypothesis (R17-era live losses) was also refuted: the stats are
+   simulated, not live.
+3. **The $0 loop it causes:** 202/227 stopped runs never traded; 177
+   zero-trade idle-retires consumed **72.7% of all desk LLM cycles**
+   (~870 decision-tier calls/day ≈ one full lane of the 5×-oversubscribed
+   local model) producing nothing.
+4. **SIZE (P&L agent):** median trip **$52** on a $110k book, 0.18%
+   utilization, fees 37% of gross, 46% of trips are sub-$50 probes;
+   agent 60's $100k made 2 trades in 5 days. At measured edge, $50/day
+   needs ~350× today's trades×size. Whether 12.8bp survives 100×+
+   sizing is the NEXT EXPERIMENT, not an assumption.
+5. Harvest template confirmed as the profit engine (43% of win-side
+   from staged trips). R25 (stale fills) stands as the infra leak.
+
+**Owner orders executed alongside:** (a) fleet profit-goal (%) UI/API
+REMOVED — profit realization is the Sooppiy AI's decision (PR in
+flight; user paths ignore profit_target_frac, AI setter kept, guides
+updated ×6 langs; fleets 37/38 user-set values to be cleared at
+deploy); (b) "권장 최대 25개" answered: it is the Professional-tier
+entitlement cap (max_fleet_size 25) that the budget auto-recommendation
+clamps to — a plan limit, not a market-based recommendation (candidate
+supply measures ~13 max); (c) fleet 38 resized to 15 by owner —
+6–8 recommended vs supply.
+
 ## Cycle 113 — 19:2xZ (anchor 19:26:47): quiet; the hot-tech cohort fused untraded — R20 got names IN, desks still declined
 
 No trades (0 trade events), no closes, no rail fires. Day **−$1.14**;
