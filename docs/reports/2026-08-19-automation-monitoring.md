@@ -7,6 +7,17 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 104 — 13:2xZ (anchor 13:26:51): quiet; fleet 38 thinning by its own fuse (6/25)
+
+No closes with P&L, no trades, no rail fires. Two more never-traded
+fleet-38 idle-retires (WLD 1512, LINK 1516, $0 each — the 12-cycle fuse
+reaching the 08:59-built cohort). Fleet 38 now 6/25 running: the
+expectancy gate refuses the only replacement candidate (AAVE), so the
+fleet shrinks rather than churns — capital preserved, exposure thin.
+Fleet 37 at 20. Both books flat; day **+$4.30**. Fence 0; 0 tracebacks;
+R23 **0 dead-run writes at 4h40m**. NYSE opened 13:30Z — us-stock
+entries possible from next cycle.
+
 ## Cycle 103 — 12:5xZ (anchor 12:56:51): quiet
 
 No closes, no trades, no rail fires. One replacement build (EURCHF 1524,
