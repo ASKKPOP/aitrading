@@ -25,7 +25,7 @@ yesterday) must now flip to kept. NVDA-short remains selectable=0 —
 that is the research-level pre-gate filter, a separate (unmeasured)
 stage, not the backtest gate. Next cycles carry the watch.
 
-## SHIP — 21:4xZ: #494 (profit-goal is the AI's) + #495 (R26 direction-matched gate) LIVE as `20260819-goalai-r26gate`
+## SHIP — 21:3xZ (worker up 21:30:47): #494 (profit-goal is the AI's) + #495 (R26 direction-matched gate) LIVE as `20260819-goalai-r26gate`
 
 Owner orders executed end-to-end. (a) **#494**: the fleet profit-goal is
 no longer a user setting — create/rails API ignore `profit_target_frac`
