@@ -6,6 +6,268 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 — WIPED CLEAN 00:2xZ (below),
 no fleet exists until the user rebuilds one**.
 
+## Cycle 93 — 23:4xZ (anchor 23:46:14): both fleets replenished; #481 absent-class cap gets its FIRST live fire (SUIUSDT 1479); no closes
+
+**PROFIT-OR-LOSS FIRST.** No closes in the window (23:21:15→now, 2-min
+overlap) — nothing to attribute, no subagent dispatch. Day 08-18 pnl_audit
+ledger **−$0.94** (check ok, resid 0.00); one open position: SUIUSDT short
+344.93 @ 0.652 (run 1479, agent 6), ~flat at the mark.
+
+1. **#481's absent class fired live for the first time** — the exact
+   coverage gap its own watch found on 08-18 morning. Run 1479 cyc 7
+   (light route) decided `sell` conf 0.58 / conviction 0.6925 with
+   `order_params outcome: absent` — no size authored despite the
+   "AUTHOR IT EVERY TIME" prompt line — and the cap cut margin
+   **$326.91 → $112.45** (0.25×max_bet). Cap fires total: **3**
+   (2 parsed_null + 1 absent). Save/cost lands on the ledger at close.
+   Bracket is machine-sane: stop +5% / TP −10% / R:R 2 / lev 2×.
+2. **Both fleets replenished between cycles.** Fleet 35 (agent 6) built
+   M2K 1470, NZDUSD 1473, and five crypto/futures 1479–1483 (SUI HYPE
+   FIL GC ETH). Fleet 37 (agent 60) is cycling 8 us-stock runs (ADBE
+   PFE ACN DIS MA SLV WMT COST) + USDJPY 1474; us-stock runs correctly
+   `gate_skip: market closed` outside NYSE — no rule violated.
+3. **Minor watch opened (n=1, observe only):** stopped runs 1441/1442
+   (agent 60 forex) still receive sweeper-authored outlooks — LLM calls
+   spent on runs that can never trade again. In the context of the
+   no_verdict oversubscription signature this is not free; flag only if
+   it recurs next cycle.
+4. **Watches:** fence **0** (WORKING); 0 tracebacks; churn/exit-discipline
+   tally unchanged (no closed legs); R21 first live fire still pending
+   (SUIUSDT ratchet unarmed, position young); R22 no new instances;
+   loss floor unexercised; SPCX tripwire idle. #473: next 1479 cycle
+   gets checked for a clamp→bigger-request pair.
+
+## Cycle 92 — 23:2xZ (anchor 23:23:15): KAITO 1462 COMPLETE **+$0.696** — harvest template VALIDATED; ratchet dimension (b) gets its third measured instance
+
+**PROFIT-OR-LOSS FIRST.** Run 1462 closed: **+$0.69612 net, exact
+reconciliation** (gross $0.7405, fees 6.0%). Both books flat. Two
+subagents cross-checked; full agreement. Day ≈ agent 6 −$1.08 /
+agent 60 +$0.25 (pnl_audit settles at next sweep).
+
+1. **The harvest template is VALIDATED on this tape:** with-trend
+   desk-sized entry, staged banks into strength, zero churn, 4 fills —
+   and staging **ADDED +7.3% vs holding** (+$0.048), the opposite sign
+   of XOM 1426's −83%. The difference in one line: KAITO banked INTO
+   the move's strength; XOM dumped AWAY from it. Both cases now
+   documented for the skill-lesson track.
+2. **Final cover: desk half-reduce railed to full by the Plan-24 dust
+   rail** (`dust_remainder_closed`, the only rail to touch an order —
+   net-positive). Blemish: the desk's outlook claimed "the remaining
+   half stays" while the book went flat — narrative-vs-order mismatch
+   (new minor class instance).
+3. **R21's first live fire is still pending — and WHY it stayed silent
+   is the finding:** the position gave back ~48% of its $1.34 peak
+   un-defended because the trail's $1.99 activate_usd, sized at open
+   for the full book, **never rescales after partial covers** — the
+   half-banked remainder's own excursion ($1.04) could never arm.
+   **Dimension (b) third measured instance** (XOM $15.29 unreachable;
+   1462 trail 40× book; now no-rescale-after-covers). "A ratchet that
+   cannot arm on a half-banked winner is a dead rail for exactly the
+   desks that trim well." → backlog R22.
+4. **Cost center:** cycle-10 override of the panel's sell proposal
+   (~$0.41 forgone, contradiction-override class); 4 consecutive
+   no_verdicts mid-run (oversubscription signature) survived only
+   because hold happened to be right.
+
+Fence 0; clamps 2; ceiling actionable-fires +2 on this run (11, 13);
+0 tracebacks.
+
+## Cycle 91 — 22:5xZ (anchor 22:53:15): quiet
+
+No closes. KAITO remainder short +$0.53 unrealized. Fence 0; clamps 2;
+0 tracebacks. Prod image now `20260818-tie-explore` (parallel session
+deployed atop; main-based, fixes ride along). Nothing to analyze,
+nothing to ship.
+
+## Cycle 90 — 22:2xZ (anchor 22:28:46): quiet; Plan 27 arc completed and REJECTED between cycles
+
+No closes (overlapped window). Sole position: KAITO remainder short
++$0.50 unrealized (eased from +$0.99 peak; ratchet floor stands).
+Fence 0; clamps 2; 0 tracebacks.
+
+**Between-cycle record (owner-ordered work):** Plan 27 (intraday range
+discipline) ran its full arc — plan → 5-agent verification (5×
+approve-with-changes, all folded into v2 amendments) → paced off-hours
+data fetch (30 symbols × 3 granularities) → amended backtest →
+**VERDICT: REJECTED, nothing ships.** Absolute expectancy negative in
+both variants (limit −27.7bp/trade; cycle-sampled −0.6bp, negative
+under ×2 costs); the passing "excess over baseline" was an
+inverse-selection artifact (fills select weak days). Bonus refutation:
+BOTH daily extremes cluster in the session's FIRST quartile (66%/62%
+vs arcsine 33%) — "the high prints late" is dead on this tape. Dead
+theories recorded by name in docs/plan/27 v3; artifacts cleaned. The
+churn/exit-discipline lesson track continues separately on its own
+evidence.
+
+## Cycle 89 — 21:2xZ (anchor 21:23:13): quiet
+
+No closes (overlapped window per the seam fix). KAITO remainder short
+**+$0.99** unrealized — best mark of its life. Fence 0; clamps 2; 0
+tracebacks. Nothing to analyze, nothing to ship.
+
+## Cycle 88 — 21:0xZ (anchor 21:09:41): quiet
+
+No closes. Sole position: KAITO remainder short **+$0.79** unrealized
+(ratchet floor guarding earned excursion). Fence 0; clamps 2; 0
+tracebacks. Nothing to analyze, nothing to ship.
+
+## Cycle 87 — 20:5xZ (anchor 20:53:07): KAITO micro-trim +$0.042 analyzed — a new "anchor-echo sizing" class; cross-check correction applied
+
+**PROFIT-OR-LOSS FIRST.** 1462 cycle-9 trim banked **+$0.042** (desk
+intent, `railed: {}`, executed to 10 decimals as asked; atomic cycle
+block, no rails). Remainder 75.42 short, ~+$0.85 unrealized. R21
+stamps verified sane again (peak 1.3404 / peak_realized 0.3036 pair;
+no decay, no inversion).
+
+1. **New minor class — anchor-echo sizing:** the same "bank profit,
+   thesis intact" rationale produced 45% at cycle 4 and **5% at cycle
+   9** — a $0.66-notional gesture whose fraction echoes the run's
+   canonical 0.05 from its open (different basis). Procedurally clean,
+   economically noise. Watch for recurrence.
+2. **Cross-check correction (the law):** B's "remainder fully
+   unprotected" repeats A's cycle-82 error — it counts only the stop
+   (0.352013, above entry) and the unreachable USD trail, missing the
+   breakeven ratchet: remainder excursion 1.0368 ≥ its ~$0.05 arm →
+   **the ratchet floor guards the remainder near net-$0 of its own
+   excursion.** The real residual is dimension (b), now quantified
+   twice: trail activation $1.99 is sized off machine_size (~$497)
+   while the actual book is ~$50 — the threshold is ~40× the book.
+3. Attribution note re-confirmed: `decision.action` stays "hold" while
+   order_intent carries the reduce — attribution must read the intent.
+
+Fence 0; clamps 2; 0 tracebacks. Sole position: KAITO remainder.
+
+## Cycle 86 close-out — 20:1xZ: XOM 1426 COMPLETE **+$0.119** — profitable, and the churn's cost is now a measured $0.58
+
+**PROFIT-OR-LOSS FIRST.** Run 1426 is FLAT: the desk banked the last
+quarter at 19:55:18Z (cycle 27, its own reason: hard-end proximity +
+poor R:R at resistance). Net **+$0.119** on 4 legs (arithmetic
+reconciled exactly by both agents independently). Fleet 37's first
+completed us-stock run is a WIN — with zero overnight exposure, the
+write-once stop honored, close-awareness functioning, and RAG recall
+used at the banking decision.
+
+**The measured lesson: sequencing destroyed 83% of the run's profit.**
+Hold-the-book-to-own-exit counterfactual: **+$0.701**. Actual: +$0.119.
+**The cycle-22 noise-dump (sold the dip at 164.68, ~$0.24 underwater,
+19% of its own stop) cost −$0.582** — verified two independent ways.
+Fees exonerated ($0.014 total). The cycle-26/27 banking legs were fine
+(+$0.026 vs final exit). **The noise-churn class now has its strongest
+number: it can take 83% out of a WINNING run.** AI-first skill-lesson
+evidence accruing (1417 cyc6, 1426 cyc22 measured; the class is
+reduce-inside-own-stop, early-in-own-horizon, deviated-stamped).
+
+**Also tallied:** desk self-accounting overstated its net gain ~60%
+(forgot its own loss leg — new minor class); trail activation $15.29
+unreachable at this profit scale (dimension (b) again, from the profit
+side); panel-crash-at-entry signature re-confirmed; no session-close
+flatten rail exists by design (48h at_time only) — untested today.
+
+Books: only KAITO remainder open (+$0.7x). Fence 0; clamps 2; 0
+tracebacks.
+
+## Cycle 85/86 — 19:5xZ (anchor 19:53:20): XOM banked a winning quarter **+$0.2049** (seam-caught); pair dispatched
+
+XOM 1426 sold a quarter at 165.43 (19:23:29 — ten seconds after cycle
+84's query window closed; caught via the adapt event and confirmed by
+signal 1448, `run:1426:cyc:26`, desk order). Leg **+$0.2049**. Remainder
+0.4344 long into the NYSE close; KAITO remainder +$0.78. Fence 0;
+clamps 2; 0 tracebacks. Two-subagent pair dispatched (A: sequencing
+verdict + overnight posture; B: R21 stamping + session-close
+machinery); findings land next note. ⚠️ Method note: two legs today
+fell in inter-cycle query seams — the close-detection window should
+overlap by a minute; adopting overlap from next cycle.
+
+## Cycle 84 — 19:2xZ (anchor 19:23:19): quiet; both remainders extending gains
+
+No closes. KAITO remainder +$0.57; XOM remainder **+$0.43** (165.45 —
+its best mark since entry). Fence 0; clamps 2; 0 tracebacks. NYSE
+close 20:00Z next — watch for session-close behavior on XOM. Nothing
+to analyze, nothing to ship.
+
+## Cycle 83 — 18:5xZ (anchor 18:53:25): quiet; both remainders in profit
+
+No closes. KAITO remainder short **+$0.63** unrealized; XOM remainder
+long +$0.07. Fence 0; clamps 2; 0 tracebacks. Nothing to analyze,
+nothing to ship.
+
+## Cycle 82 — 18:2xZ (anchor 18:23:18): KAITO banked **+$0.3036** — the good harvest shape, and R21 verified on BOTH partial-cover classes
+
+**PROFIT-OR-LOSS FIRST.** Run 1462 partial cover (45%) at 18:06:22
+banked **+$0.3036 net** (cover 0.33903 — my brief's ~0.3259 was wrong,
+corrected by the tape). Remainder 79.39 short in profit. XOM remainder
+recovered past entry (+$0.12).
+
+1. **Desk-authored, panel functional, RAG visibly used** — the desk
+   queried recall ("winning position … take partial profit") before
+   banking; cycle-1/3 panel vetoes added value (the cyc-3 sell would
+   have banked less than cyc-4 did). Entry: with-trend, authored size,
+   leverage railed 3→2 — blemishes: deviation from own flat plan,
+   chased 0.4% below own band.
+2. **R21 now verified on BOTH trigger classes:** losing reduce (XOM —
+   no phantom arm) AND profit bank (KAITO — peak 0.8887 stamped WITH
+   peak_realized 0.3036 same-epoch; remainder's own excursion $0.585;
+   ratchet correctly armed at ~$0.098 on earned excursion only; banked
+   profit excluded from the peak side). Fire semantics still pending a
+   live fire. **Cross-check resolution: A's "protection missing" was
+   refuted by B — the ratchet floor guards the remainder near net-$0;
+   A had counted only the stop + USD trail.**
+3. **Ceiling ledger correction: fires on ACTIONABLE cycles exist** —
+   1462 cyc-2 ENTRY target clamped 8.5→6.81 (became the run's real
+   bracket) and cyc-4 8.89→5.46. The "8/8 on hold, $0.00" verdict is
+   superseded: the ceiling has now shaped a live entry bracket.
+
+Fence 0; clamps 2; 0 tracebacks.
+
+## Cycle 81 — 17:5xZ (anchor 17:53:24): XOM half-reduce −$0.2505 analyzed — 1417-shape churn confirmed; a NEW pierced-stop flag
+
+**PROFIT-OR-LOSS FIRST.** XOM 1426 half-sell (17:23:58, desk intent
+path) booked **−$0.2505**; cost ≈ $0.17 vs holding to the current mark.
+Both agents cross-checked; they interlock.
+
+1. **Churn, the 1417 shape, all three markers:** reduce at 19% of its
+   own stop distance, 8% into its horizon, `plan_adherence: deviated` —
+   and it sold the RECOVERY (held at the session low, sold after a
+   +1.2% bounce). Noise-churn reduce tally: n=2 today (1417 cyc6, 1426
+   cyc22). Entry was a chase 2.2% above its own entry zone with the
+   target inflated to manufacture 2:1 (entry_quality 0.4, deviated),
+   unit-slip bracket rescued by rails, cap-trimmed.
+2. **Rails clean; R21 behaved on exactly its trigger class:** the
+   loss-realizing reduce produced NO phantom arm; `peak_realized_usd`
+   stamped sanely (−0.0143 = entry fee). Cap saved +$0.05 on the leg
+   (1.2× counterfactual). Loss cooldown fired correctly AFTER.
+3. **⚠️ NEW FLAG (n=1): pierced stop, no execution.** Cycle-17 mark
+   163.29 printed BELOW the written stop 163.475 and the SL watcher did
+   not fire. Possibly poll-timing on the ~5-min mark cadence — but a
+   stop that prints through without executing needs its own
+   verification. WATCH: on the next stop-adjacent mark, check watcher
+   poll timestamps vs the pierce window.
+4. Panel-outage signature +1: the entry's discussion stage crashed
+   ("cannot schedule new futures after interpreter shutdown") — neither
+   entry nor exit was ever challenged by a second stage.
+
+KAITO short +$0.51 in profit. Fence 0; clamps 2; 0 tracebacks.
+
+## Cycle 80 — 17:2xZ (anchor 17:23:29): quiet; new KAITO short
+
+No closes. Positions: NEW KAITO short (run 1462, agent 6) 144.35 @
+0.3442, −$0.04 adverse, ~$50 notional — no cap fire (clamps steady at
+2), so desk-sized or default-under-cap; XOM recovered to −$0.23.
+Fence 0; 0 tracebacks. Nothing to analyze, nothing to ship.
+
+## Cycle 79 — 16:5xZ (anchor 16:53:29): quiet
+
+No closes. XOM 1426 long −$0.85 adverse (oscillating). Fence 0;
+clamps 2; 0 tracebacks. Nothing to analyze, nothing to ship.
+
+## Cycle 78 — 16:3xZ (anchor 16:32:44): quiet
+
+No closes since the sweep. Sole position: XOM 1426 long −$0.42 adverse
+(recovering). Fence 0; clamps 2; ratchet post-R21 0; 0 tracebacks.
+Docs batch #488 merged + deployed (`20260818-docs-0818-batch`) — the
+session record is in the RAG corpus. Nothing to analyze, nothing to
+ship.
+
 ## 24-HOUR VERIFICATION SWEEP — 15:07Z slot (anchored 15:23–15:40Z)
 
 ### True P&L (pnl_audit, authoritative)

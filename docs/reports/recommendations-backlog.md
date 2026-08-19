@@ -494,54 +494,21 @@ whether the requested target changes.
 - **Fix spec (both agents converge):** baseline = realized **at peak epoch** (freeze when peak is recorded), or track the position-scoped peak directly. Never realized-at-fire. `_breakeven_floor_hit` run_engine ~1004.
 - **Evidence bar met:** measured + replayable + independently derived twice. P&L of the first fire ≈ $0.00 (mark-level flatten) — ship as correctness fix with the ratchet ledger (5 fires ≈ −$1.00 lifetime, zero net gains) as context. Coordinate with the parallel session that shipped #485.
 
-## MEASURED 2026-08-18/19 — the stop-before-target replay REFUTES the tighter band (and it gates a change already shipped)
 
-The gate the 08-17 cycles named ("replay each entry against its horizon and
-count, per candidate (stop, target) pair, how often the STOP is hit BEFORE the
-target") has now been run. **It refutes the band, and the band was implied by
-#484, which is already live.**
+### R22 — Ratchet/trail arm never rescales after partial covers · STAGED (2026-08-18 cycle 92, THREE measured instances of dimension (b))
+- **Evidence:** (i) 1462: activate_usd $1.99 sized at open for the full book; after 50% banked, the remainder's own excursion peaked $1.04 — could never arm; gave back ~48% of peak un-defended. (ii) 1426 XOM: activate $15.29 vs $0.16 peak — unreachable at profit scale. (iii) 1417-era: threshold sized off machine_size ~40× the actual book. The rail is dead precisely for desks that trim well (the validated harvest template).
+- **Fix direction:** rescale the trail/ratchet arm on every position-size change (activate_usd × |qty_now|/|qty_at_open|, floor at fee-scale), or arm off the position's own excursion (peak − peak_realized, the R21 quantity) rather than a fixed dollar set at open. Money-path change: requires counterfactual replay across historical fires/non-fires before shipping.
 
-**Method.** 22 closed crypto entries (29 candidates, 7 lacking candle
-coverage), replayed on 1-minute Hyperliquid `candleSnapshot` from the fill to
-each run's OWN original `at_time`. Target fixed at 2x stop, the shipped R:R
-floor. Same-candle ambiguity scored STOP-first — the conservative rule, which
-penalises tight bands specifically and is stated rather than hidden.
+### R21 addendum (2026-08-19 cycle 94) — FIRST LIVE FIRE: VALID. Fix #487 confirmed working
+- Run 1489 UNIUSDT, 03:16:31Z, `stop_mechanism: breakeven_ratchet` (the new discriminator event made attribution possible): base = `peak_realized_usd` −0.0045 (open fee), position's OWN excursion 0.0355 ≥ arm 0.02 → armed on a genuine peak, no phantom. Fire saved ≈ $0.075 vs the live mark (n=1 — no mechanism generalization). **Epoch baseline holds under live fire; R21 closes.**
+- New dimension logged (not a defect, n=1): arm is fee-anchored at 0.1%/side while actual venue fees are 0.045%/side → arm sits at 2.2× the true round trip; on a $10 probe book the arm ($0.02) ≈ 0.2% price noise, and the fire stops the WHOLE run. Watch for degenerate-scale fires on probe-sized books.
 
-| stop% | target% | target-first | stop-first | neither | expectancy%/trade |
-|---|---|---|---|---|---|
-| 0.40 | 0.80 | 7 | **14** | 1 | -0.0900 |
-| 0.50 | 1.00 | 6 | **15** | 1 | -0.1582 |
-| **0.60** | **1.20** | 3 | **15** | 4 | **-0.3355** |
-| 0.80 | 1.60 | 4 | 12 | 6 | -0.2355 |
-| 1.00 | 2.00 | 4 | 10 | 8 | -0.1809 |
-| 1.50 | 3.00 | 4 | 6 | 12 | +0.0464 |
-| 2.00 | 4.00 | 3 | 4 | 15 | +0.0918 |
-| 2.50 | 5.00 | 2 | 2 | 18 | +0.1373 |
+### R23 — Outlook sweeper has no stopped-run fence: ~14 wasted LLM calls/hour on dead runs · MEASURED, SHIP NOW (2026-08-19 cycle 94)
+- **Evidence (8h window, two-agent + main-session verified):** 112 outlook events written to runs already past their stopped_at — 111 `source:"sweeper"` across 15 stopped runs = **19.8% of ALL outlook writes**, ≈13.8/h. Every one consumed a live LLM call (basis.verdict adjusted 106 / adopted 5, zero algo fallbacks); the `tasks.py:864` docstring "Rule-based, no LLM calls" is stale and wrong (`_standing_payload` → `_llm_payload` first). Worst case: run 1407 swept 23h post-stop.
+- **Root cause:** sweeper iterates fleet slots' `current_run_id`; `outlook_refresher.py:143` classifies `status != "running"` as sweepable "run_idle" — no stopped-run fence. A slot bound to a stopped run is swept every cadence until rebound.
+- **Why it matters:** the shared local LLM is measured ~5× oversubscribed (the no_verdict signature); this is a pure waste stream feeding it. Non-money-path fix (outlook telemetry only): skip runs not in status "running". Per implement-every-time: ships this session, pipeline binds.
 
-- **Expectancy improves MONOTONICALLY as stops WIDEN.** The ~0.5-0.6% band
-  the 08-17 arithmetic called "structurally viable" is the WORST row measured.
-- **The harm path is real and it runs through a shipped change.** #484 tells
-  the desk its book has never reached 1%. The obvious response — shrink the
-  target to ~1%, which the 2x floor turns into a ~0.5% stop — lands on
-  -0.16 to -0.34%/trade.
-- **Honest limits, stated because they cut against the tidy reading.** n=22.
-  At wide stops most entries resolve as NEITHER (18 of 22 at 2.5%), so the
-  wide-band advantage rests on ~4 resolved trades and is **NOT established**.
-  The conservative same-candle rule also disfavours tight bands. What IS
-  established is that the tighter band is **not supported**.
-- **The real reading:** the tape barely moves inside these horizons (#484
-  measured median best excursion 0.17%). Unreachable targets and tight stops
-  are the SAME market fact. Tightening does not convert losses into wins; it
-  converts no-resolution into stopped-out.
-
-**Shipped in response:** `desk_record.record_line` now carries BOTH halves —
-the reachability figure and the refutation — so the disclosure cannot be read
-as an argument for the band the tape rejects. No rail adopts any band; the
-judgement stays the desk's, and the line now ends by asking whether the trade
-is worth taking at all.
-
-**Still NOT answered, and it is the next question:** if neither tighter nor
-(established) wider brackets carry the edge, the lever is entry SELECTION, not
-bracket geometry — which is where R7/R8 landed and were closed as
-"statistically ordinary at entry". That tension is unresolved and should not
-be papered over.
+### R24 — Deferred-params branch structurally defeats "AUTHOR IT EVERY TIME" · STAGED (2026-08-19 cycle 94, n=2/2)
+- **Evidence:** every in-window actionable decision with `order_params deferred:true` had `outcome: absent` (1479 cyc7, 1481 cyc12 → both null_size_cap fires); all 3 non-deferred authored params. The prompt line cannot bind on the defer path because params are simply never produced there — mechanism, not desk mood. (No light-vs-full claim possible: zero full-route entries in window.)
+- **Honest cap ledger:** the cap is the designed backstop and it prices both ways — cost $1.13 forgone on the 1479 winner (uncapped net +$1.72 vs +$0.59), saved on earlier unsized losers (+$0.328 leg / $2.19 run / +$0.05). Insurance, working as designed.
+- **Fix direction (needs design, money-path):** an actionable decision entering the defer branch should trigger a follow-up params request (the #473 render machinery exists) instead of falling through to absent→cap. Gate: more instances + measured cap cost/save balance turning negative.

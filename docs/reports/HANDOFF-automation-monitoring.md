@@ -480,6 +480,30 @@ statement of the problem:
 
 ## 8. Standing watches
 
+### ⭐ OWNER-ORDERED 2026-08-18 ("add monitoring that also") — CHURN / EXIT-DISCIPLINE EVIDENCE TRACK
+
+Every closed leg is classified into the behavior classes below, with the
+running tally + measured counterfactual sum reported each cycle that has
+tape. This is the evidence file for the exit-discipline skill lesson —
+it ships when the tally reaches decisive weight under the standard
+evidence rules (never on n=1).
+
+| class | ledger so far (2026-08-18) |
+|---|---|
+| (a) noise-churn reduce (inside own stop, early in own horizon, `deviated`) | 1417 cyc6; **XOM 1426 cyc22 −$0.582 = 83% of run potential (measured 2 ways)** |
+| (b) bank-into-strength (the VALIDATED harvest template) | 1462: staging **+7.3% vs hold** (+$0.048); fleet-33 shape |
+| (c) re-entry against own invalidation | n=4 (QNT, INTC, 1417, 1411) — all losers |
+| (d) contradiction-override (panel sell rejected) | 1462 cyc10 ≈ **$0.41 forgone** |
+| (e) anchor-echo sizing (rationale↛size) | 1462 cyc9 ($0.66 gesture trim) |
+| (f) narrative-vs-order mismatch | 1462 final ("half stays" while flat); 1417 fabricated arm |
+
+The one-line lesson the tally is building toward: **bank strength,
+never dump dips inside your own stop; honor your own invalidations both
+directions.** Related rails watch: R22 (arm never rescales after
+partial covers — dim (b), n=3) accrues in the backlog.
+
+
+
 - **(NEW RESULT 2026-08-06 cycle 71) Exit-verb (#245) PASSED its first real
   test.** Run 969 HG, adverse (unrealized −6.42), Exit scale line showing
   "0.50% ... 59% of one ordinary day", chose **`reduce 0.5`** not
