@@ -222,6 +222,20 @@ class DueLogicTests(OutlookRefresherBase):
         orf.outlook_refresher_tick(now=OPEN_NOW)
         self.assertEqual(len(self._outlook_events(run_id)), 1)
 
+    def test_stopped_run_is_never_swept(self):
+        """A stopped run is terminal — no desk cycle will ever read a
+        standing outlook for it, so the sweeper must not spend an LLM
+        call on one (measured on prod: 19.8% of outlook writes went to
+        stopped runs, ~13.8 wasted calls/hour)."""
+        for market, now in (("crypto", OPEN_NOW), ("crypto", CLOSED_NOW),
+                            ("us-stock", CLOSED_NOW)):
+            with self.subTest(market=market, now=now):
+                run_id = self._bound_slot(market=market,
+                                          run_status="stopped")
+                result = orf.outlook_refresher_tick(now=now)
+                self.assertEqual(result["emitted"], 0)
+                self.assertEqual(self._outlook_events(run_id), [])
+
     def test_open_market_idle_slot_states_emit(self):
         """waiting/dormant slots do not cycle even with a running run."""
         for state in ("waiting", "dormant"):
