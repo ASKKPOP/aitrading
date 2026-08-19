@@ -7,6 +7,49 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 109 — 16:0xZ (anchor 16:05:00): FIL 1531 −$5.44 flips the day to −$1.14 — but the loss's true author is a STALE FILL; R25 staged
+
+**PROFIT-OR-LOSS FIRST.** One close: FIL 1531 short (375.65 @ 0.6498,
+15:28:29Z) desk-closed in full @ 0.6637 at 15:42:57Z — **−$5.44 net**,
+flipping day 08-19 from +$4.19 to **−$1.14** (pnl_audit ok). One
+14-minute trade erased more than the day's gains. Two subagents
+dispatched; they CONVERGED independently on the root cause and the
+cross-check refined one claim (below).
+
+1. **Root cause — the stale fill, found by both agents independently:**
+   the short filled at 0.6498, the 15:24–25 cached quote (3.5–4 min
+   old), while the live tape printed 0.66–0.67 in a +5.1%/minute
+   cascade. The position was **−$5.26 the instant it was marked
+   honestly**. At the real 15:28 price (~0.667) the identical round
+   trip is a small WIN. The recorded loss is substantially feed latency
+   converted into phantom adverse P&L. The staleness also blinded the
+   ENTRY decision: the desk's own invalidation (0.652) had already been
+   breached on the live tape 3 minutes before the fill.
+2. **The phantom cascaded through the house brief:** −$5.18 breached
+   the loss-floor advisory ($4.18; run_engine.py:4557 — sole consumer
+   is the brief renderer, ZERO forced fires ever, #460 still
+   unexercised) → the brief told the desk "past the floor … the house
+   rule is to CLOSE" → the desk sold the local bottom. Cross-check
+   resolution: Agent A called the floor claim invented; Agent B showed
+   the breach was REAL and platform-stated — the desk overstated the
+   verb ("forces"), not the fact. The cut itself cost a further
+   **~$2.4–2.6** vs holding to its own next cycle (the 0.68008 stop
+   would NEVER have filled — session high 0.67124 printed in the entry
+   minute and price mean-reverted after the exit).
+3. **Churn tally: class (a) n=3** (counterfactual sum ≈ −$3.4), with
+   the honest caveat that this instance's compulsion came from the
+   platform's own advisory line reacting to a phantom number — the
+   lesson here is as much R25's as the desk's.
+4. **Detector timing is physics, not lateness:** cascade_shock needs
+   the move already printed on an hourly bar; even a 60s daemon could
+   not have beaten the 15:28:29 fill. The saving control is a
+   quote-age check at fill time — **R25 staged** with a binding
+   measurement plan (sweep fills for quote-age distribution and
+   phantom-P&L population BEFORE any money-path change).
+5. **Hygiene:** 1467 (SBUX) + 1523 (EURCAD), both fleet 37, idle-retired
+   $0; open positions platform-wide 0; fence 0 all-time; only one trade
+   in window. Fleet 38 back to 0/25.
+
 ## 24H SWEEP — 15:3xZ (anchor 15:37:34): fence PASS day 2; R23 confirmed & retired; no_verdict collapsed to 0.63%; fleet 38 gen-2 TRADED
 
 **PROFIT-OR-LOSS FIRST.** 08-18 final **−$0.94**; 08-19 running **+$4.19**
