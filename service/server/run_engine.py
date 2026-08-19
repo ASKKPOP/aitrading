@@ -4343,6 +4343,11 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
                             thesis: dict) -> str:
     parts = [
         ("position_state", _position_state_line(run, cfg, pos_qty, thesis)),
+        # (a7) The holding brief recalls inside `position_state`; a FLAT
+        # cycle never reaches that call, so entry doctrine gets its own slot
+        # here. Same relative position in the prompt, own brief token so
+        # coverage is measurable from the decision event.
+        ("recall_entry", _recall_flat_line(run, pos_qty)),
         ("stop_hit", _stop_hit_line(run)),
         ("opening_window", _opening_window_line(run)),
         ("young_exit", _young_exit_brief(run, cfg, pos_qty)),
@@ -4787,6 +4792,51 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
         return "\n".join(out) + "\n"
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
+
+
+
+# ── Phase 3(a7): the ENTRY decision reaches the corpus ────────────────────
+# Measured on prod 2026-08-19 over the `decision` journal: 11 of 785 cycles
+# that day were HOLDING and 774 were FLAT, and the per-day recall count
+# matches the holding count EXACTLY (11/11, 40/40, 25/25, 124/124, 34/34
+# across 08-15..08-19). So recall covers 100% of the holding cycles and 0% of
+# the entry cycles — `_recall_query`'s "flat considering entry" branch has
+# existed since Phase 2 and has never once executed, because its only caller
+# sits behind `_position_state_line`'s `if not pos_qty: return ""`.
+#
+# That is also why plan 22's (b) gate is starving: the journal accrues at the
+# rate of HELD positions, not of desk activity. A journal-only flat path was
+# considered and REFUTED — a chunk the desk never read cannot be attributed
+# to an outcome, so it would manufacture variance with no treatment effect,
+# which is precisely the dataset §2 forbids learning from.
+#
+# Default OFF. Unlike (a6)'s kill switch there is no by-construction safety
+# argument here: this adds doctrine to a prompt that carried none, on the
+# largest decision population the desk has. Promotion to ON is its own
+# increment, on measured evidence.
+def _recall_flat_enabled() -> bool:
+    return os.environ.get("DESK_RECALL_FLAT", "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _recall_flat_line(run: dict, pos_qty: float) -> str:
+    """What this desk has already learned about ENTERING, when it is flat.
+
+    Guarded on `pos_qty` as well as on the flag: a holding cycle already
+    recalls inside `_position_state_line`, and reaching this path too would
+    both double-inject the block and overwrite the journal row with a query
+    that does not describe the decision that was made.
+
+    No scheme label of its own, deliberately — the POLICY is unchanged (the
+    same head-fixed draw the giveback class has run since 08-10); only the
+    population differs, and the row already carries the `query` that names
+    it. A new scheme string would falsely tell (c) that a different logging
+    policy produced these rows."""
+    if pos_qty:
+        return ""
+    if not _recall_flat_enabled():
+        return ""
+    return _recall_line(run, {}, 0.0)
 
 
 # ── Phase 3(a): journal WHAT recall injected (plan 22 §5, §7) ─────────────
@@ -6543,8 +6593,9 @@ def run_cycle(run_id: int) -> dict:
         _warm_report_i18n(run["agent_id"], (decision.get("report") or "")[:1000])
 
         # Phase 3(a): what the desk was shown from its own corpus when it made
-        # that call. Absent when this cycle never recalled (a flat run has no
-        # position brief); present with an empty `chunks` when it recalled and
+        # that call. Absent when this cycle never recalled (a flat run only
+        # recalls under `DESK_RECALL_FLAT`, (a7)); present with an empty
+        # `chunks` when it recalled and
         # the corpus had nothing — those are different rows, and the second is
         # the control group the attribution needs.
         recalled = _take_recall_journal(run_id)
