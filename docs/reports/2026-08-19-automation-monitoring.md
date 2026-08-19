@@ -7,6 +7,27 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## SHIP — 21:4xZ: #494 (profit-goal is the AI's) + #495 (R26 direction-matched gate) LIVE as `20260819-goalai-r26gate`
+
+Owner orders executed end-to-end. (a) **#494**: the fleet profit-goal is
+no longer a user setting — create/rails API ignore `profit_target_frac`
+(fail-before 2/2 proven), the AI's internal setter and the supervisor
+harvest stay, FleetPanel goal UI removed, guides updated ×6 langs,
+fleets 37/38 user-set values cleared to NULL on prod. (b) **#495 (R26)**:
+the long-only replay may only veto LONG theses; shorts fail open with a
+journaled reason and spend no replay compute (fail-before proven; the
+direction-matched live-record bucket gate still covers shorts). Both:
+full local suites green (4526/4530 + 1349 subtests), CI 5/5 each,
+single deploy from `8486192d`, all surfaces 200, rollback
+`r23-sweeperfence`, 0 tracebacks.
+
+**BINDING POST-SHIP METRICS:** (1) next replacement pass keeps
+MRK/LLY-class short theses with the new reason (last pre-deploy pass
+21:31Z still dropped them); (2) fleet fill + trades/day vs the 8.2/day
+baseline over the coming sessions — R26 is the throughput lever from
+the owner diagnosis; if trades/day does not move, say the fix failed
+its own metric. (3) The size lever remains the owner's slot choice.
+
 ## OWNER DIAGNOSIS — 20:0x–21:0xZ: "find what is wrong with us" — two-agent measurement, both hypotheses of mine REFUTED, real defects named
 
 **PROFIT-OR-LOSS FIRST.** 8-day ledger −$173.84, of which **−$168.63
