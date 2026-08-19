@@ -7,6 +7,23 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 106 — 14:2xZ (anchor 14:26:56): fleet 37 built 5 us-stock runs at the open (3 hot-tech); fleet 38 down to 1/25; no trades
+
+No closes with P&L, no trades, no rail fires. Day **+$4.30**; fence 0;
+0 tracebacks; R23 **0 dead at 5h40m**.
+
+1. **NYSE-open build burst (fleet 37):** CRM, ORCL, PYPL, JNJ, V
+   (1525–1529) at 14:03Z — CRM/ORCL/PYPL are US_TECH_HOT_UNIVERSE
+   names leading the batch, consistent with the R20 seed's ordering
+   guarantee. Fleet 37 at 23 running. First us-stock entries under
+   EXTREME appetite now possible — watch closely.
+2. **Fleet 38 collapse nearly complete: 1/25** (UNI 1521 alone; SOL
+   1518 idle-retired this window, $0). Same explained chain as cycle
+   105; the 12:30Z research batch had ZERO selectable crypto, 14:01Z
+   has 5 — if a rebuild wave follows, the fuse-vs-gate cycle repeats.
+   Still nothing to ship: refusal of weak setups is the law working.
+3. Fleet 37 also shed 1459 + CHFJPY 1520 (idle, $0).
+
 ## Cycle 105 — 13:5xZ (anchor 13:56:53): fleet 38 has collapsed to 2/25 with zero trades ever — emergent, owner-visible
 
 No closes with P&L (all retires $0, no positions ever held), no rail
