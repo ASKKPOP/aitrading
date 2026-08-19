@@ -370,13 +370,15 @@ def _sweep_slot(slot: dict, run_id: int, now: datetime) -> bool:
     run = _run_row(run_id)
     if not run:
         return False
+    import trading_runs
+    if (run.get("status") or "") == trading_runs.STATUS_STOPPED:
+        return False  # terminal: no desk cycle will ever read this outlook
     age = _newest_outlook_age_min(run_id, now)
     if age is not None and age <= cadence_floor_min(run.get("market")):
         return False  # still fresh
     reason = _cold_reason(run, str(slot.get("state") or ""), now)
     if reason is None:
         return False  # open market, cycling run: the cycle owns it
-    import trading_runs
     payload = _standing_payload(run, reason, now)
     return trading_runs.emit_telemetry_event(run_id, "outlook",
                                              payload) is not None
