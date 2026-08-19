@@ -7,6 +7,29 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 105 — 13:5xZ (anchor 13:56:53): fleet 38 has collapsed to 2/25 with zero trades ever — emergent, owner-visible
+
+No closes with P&L (all retires $0, no positions ever held), no rail
+fires. Day **+$4.30**; fence 0; 0 tracebacks; R23 **0 dead at 5h10m**.
+
+**The headline: the owner's new $10k crypto fleet is nearly empty.**
+Built 09:00Z, 25 slots; by 13:56Z only SOL 1518 + UNI 1521 run. Five
+more never-traded idle-retires this window (SUI BTC KAITO ZEC + WLD
+overlap), all $0. The full causal chain, each link working as designed:
+(1) the desks scored every setup weak and declined entry for 12 straight
+cycles — BTC's final read: conviction 0.355, momentum 0.3, entry_quality
+0.2, bias flat, "price above entry reference" on a SHORT-archetype
+fleet; (2) the 12-cycle idle fuse retired them; (3) replacements are
+blocked — the expectancy gate drops AAVE every pass and ETH/FIL/HYPE/VVV
+filter pre-gate. **Emergent result: capital fully preserved, fleet
+functionally dead.** Not shipping anything — an AI that refuses weak
+setups is exercising exactly the discipline the profit law demands, and
+forcing entries would be the garbage the owner's rule names. Recorded
+prominently because the owner will see an empty fleet: if FILL is the
+goal, the lever is pre-gate candidate breadth (universe/direction
+filters), not the gates. NYSE open; fleet 37 us-stock in active watch —
+no entries yet this window.
+
 ## Cycle 104 — 13:2xZ (anchor 13:26:51): quiet; fleet 38 thinning by its own fuse (6/25)
 
 No closes with P&L, no trades, no rail fires. Two more never-traded
