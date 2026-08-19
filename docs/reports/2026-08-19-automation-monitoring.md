@@ -7,6 +7,22 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 101 — 11:5xZ (anchor 11:56:47): quiet; fleet-38 fill watch CLOSED — explained by the expectancy gate, working as designed
+
+No closes, no trades, no rail fires. Day **+$4.30**; both books flat.
+Fence 0; 0 tracebacks; R23 **0 dead-run writes at 3h10m**.
+
+The cycle-100 fill watch resolves: research is healthy (batch 496427 at
+11:21Z, 14 crypto theses / 13 selectable), but every replacement pass
+reaches the backtest gate with a candidate pool of exactly **{AAVEUSDT}**
+and drops it — `non-positive expectancy −367.51 USD/trade` — seven
+identical gate events 09:33→11:53. ETH/FIL/HYPE/VVV never reach the gate
+(pre-gate filtering: direction/maturity/ranking). The fleet holds 17
+slots WAITING rather than forcing a negative-expectancy build — the
+documented two-candidate-pool design (C9), protecting expectancy over
+fill. Not a stall; watch closed. Residual question (why the other 4
+names filter pre-gate) matters only if the owner wants fuller slots.
+
 ## Cycle 100 — 11:2xZ (anchor 11:26:47): quiet
 
 No closes, no trades, no rail fires. One never-traded idle-retire
