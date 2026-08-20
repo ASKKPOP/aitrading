@@ -8,6 +8,27 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 132 — 06:5xZ (anchor 06:57:00): run 1531 re-entered FIL short — R25's first live fill, behaved exactly as designed
+
+One OPEN (no closes → no dispatch): run 1531 re-shorted FILUSDT 816.43
+@ 0.67253 ($549 notional, margin $109.82) at cyc32. Three verifications
+on this single fill:
+1. **R25 first live fill: correct** — decision mark 0.6727, fill
+   0.67253 = 0.025% drift; refetched fresh mark used, below the 0.05%
+   journal threshold (no event — by design), no false mark_drift
+   refusal on calm tape.
+2. **No cap fire despite `outcome: absent` params — verified correct:**
+   margin $109.82 ≤ cap $122.05 (0.25 × max_bet 488.19); the post-loss
+   adapt tightening already sized under the cap. Watch 11 note: this is
+   another absent-params actionable decision (the deferred-branch
+   pattern, R24).
+3. **Re-entry hygiene:** entry 0.6725 sits BELOW the run's standing
+   0.68-invalidation — a with-thesis re-entry, NOT class (c). Stop
+   0.7063 / TP 0.6054 machine-registered. Outcome measured at close;
+   this is also the stale-fill run's first trade under R25 protection.
+Rotation: 1559/1560 fused $0; 1571 built. Day −$0.30; fence 0;
+0 tracebacks.
+
 ## Cycle 131 — 06:2xZ (anchor 06:26:58): quiet
 
 No money events, no positions. BTC 1566 desk-retired (cyc ~2, $0) and
