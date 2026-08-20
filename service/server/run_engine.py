@@ -4364,6 +4364,38 @@ def _standing_plan_line(run: dict) -> str:
         return ""
 
 
+def _floor_carry_line(run: dict, cfg: "dict | None",
+                      pos_qty: float) -> str:
+    """R27 (floor-carry churn, 2026-08-20): the house loss floor rendered
+    only while a position was OPEN, so a run already past the floor entered
+    fresh positions blind and was floor-mandated out one cycle later — run
+    1531 ran the loop twice (a −$5.44 carried loss, then a −$1.16 churn leg
+    covered at 1/41 of its own stop while directionally right; class (a)
+    n=4). Same floor, shown at the only moment it can still change the
+    verb: BEFORE the next entry. The owner's rule names the RUN ("clean
+    that RUN"), so the flat-side rule is retire, not re-enter.
+
+    Fact + rule; the verb stays the desk's (§7b). Fail-soft."""
+    if pos_qty:
+        return ""
+    try:
+        pnl = compute_run_pnl(run) or {}
+        total = float(pnl.get("realized") or 0)
+        floor = _loss_floor_usd(run, cfg)
+        if total >= -floor:
+            return ""
+        return (f"House floor, before you enter: this RUN has already "
+                f"realized ${total:,.2f}, past its ${-floor:,.2f} floor. "
+                f"The house rule is about the RUN — clean it: retire and "
+                f"hand the slot back for a fresh thesis. A new position "
+                f"opened here inherits this carried total and will read as "
+                f"past the floor on its very first held cycle. Enter only "
+                f"if you can name what reverses the run's standing; "
+                f"otherwise retire.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
                             thesis: dict) -> str:
     parts = [
@@ -4373,6 +4405,10 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         # here. Same relative position in the prompt, own brief token so
         # coverage is measurable from the decision event.
         ("recall_entry", _recall_flat_line(run, pos_qty)),
+        # R27: a run past the house floor must see that BEFORE it opens the
+        # next position — flat cycles only (holding cycles get the full
+        # _loss_verdict_line inside position_state).
+        ("floor_carry", _floor_carry_line(run, cfg, pos_qty)),
         ("stop_hit", _stop_hit_line(run)),
         ("opening_window", _opening_window_line(run)),
         ("young_exit", _young_exit_brief(run, cfg, pos_qty)),
