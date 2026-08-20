@@ -8,6 +8,16 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 129 — 05:2xZ (anchor 05:27:03): quiet; AAVE 1554 fused untraded ($0)
+
+No money events, no positions. Fleet 38 rotation, all $0: **AAVE 1554
+idle-retired untraded** — the R26-unblocked build reached a desk and the
+desk declined for 12 cycles (gate fixed ≠ trade forced; the funnel's
+next stage is desk conviction) — plus BNB 1555 fused, TAO 1565
+desk-retired at cycle 1, BTC 1566 + SOL 1567 rebuilt (7/7 held). Fleet
+37: EURUSD 1553 fused, ADBE 1564 built. Day −$0.30. Fence 0;
+0 tracebacks; R25 metrics 0/0.
+
 ## Cycle 128 — 04:5xZ (anchor 04:56:58): quiet
 
 No money events, no positions. CADJPY 1551 + NZDUSD 1552 idle-retired
