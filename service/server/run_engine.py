@@ -4845,7 +4845,8 @@ def _recall_line(run: dict, pnl: dict, pos_qty: float) -> str:
         # Guarded like the journal above: a disclosure that raises must cost
         # the desk the NOTE, never the recall it annotates.
         try:
-            note = _recall_contest_line(hits, meta.get("cands"))
+            note = _recall_contest_line(hits, meta.get("cands"),
+                                        holding=bool(pos_qty))
         except Exception:  # noqa: BLE001
             note = ""
         if note:
@@ -5044,12 +5045,21 @@ def _recall_cands(hits: list, chosen: list) -> list:
 _RECALL_TIE_BAND = 0.01
 
 
-def _recall_contest_line(hits: list, cands: list) -> str:
+def _recall_contest_line(hits: list, cands: list,
+                         holding: bool = True) -> str:
     """How many chunks the desk was NOT shown were just as relevant.
 
     Silent unless contested: an unconditional caveat would teach the desk to
     discount every recollection, including the uncontested ones that are
-    genuine precedent."""
+    genuine precedent.
+
+    (a8) `holding` picks the closing clause. The note was written when recall
+    could only fire from the HOLDING brief; (a7) made it reachable from the
+    FLAT/entry brief, where "a specific precedent for this position" names a
+    position the desk does not have. Defaulting to True keeps the live
+    holding wording byte-identical — this ships while `DESK_RECALL_FLAT` is
+    off on prod, so moving that string would change what the desk reads
+    today on evidence of nothing."""
     try:
         emitted = [float(h.get("score")) for h in (hits or [])]
         if not emitted:
@@ -5067,11 +5077,13 @@ def _recall_contest_line(hits: list, cands: list) -> str:
         # to cap how many past FINDINGS reach the prompt, and this note is
         # not a finding. Widening that guard to fit an annotation would have
         # quietly raised the recall budget too.
+        tail = ("a specific precedent for this position" if holding
+                else "a specific precedent for the entry you are weighing")
         return (f"Retrieval note: {tied} other past finding"
                 f"{'s' if tied > 1 else ''} scored within 1% of the last "
                 f"item above, so which of them you were shown is close to "
                 f"arbitrary. Weigh these as general doctrine for this "
-                f"situation, NOT as a specific precedent for this position.")
+                f"situation, NOT as {tail}.")
     except (TypeError, ValueError):
         return ""
 

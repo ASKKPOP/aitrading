@@ -934,6 +934,75 @@ Every increment lands here as a dated line, in the same PR that ships it.
       with no access to its own corpus. Today it changes nothing on prod,
       which is the honest statement: (a7) makes the entry decision
       *reachable*, and the promotion above is what makes it *reached*.
+  - **2026-08-20 — increment (a8) SHIPPED: the contest note now describes
+    the decision it is qualifying. The last code blocker on promoting
+    `DESK_RECALL_FLAT` is cleared.**
+    (a7) recorded this defect rather than fixing it: (a5)'s note closes
+    *"…NOT as a specific precedent for this position"*, and on a FLAT cycle
+    there is no position. Telling the desk to discount a tie against a thing
+    it does not hold, in the one decision the note exists to inform, is not a
+    cosmetic flaw — it is the note contradicting itself at the exact moment
+    it is read.
+    - **`_recall_contest_line(hits, cands, holding=True)`.** The flat clause
+      reads *"…NOT as a specific precedent for the entry you are weighing"*;
+      the disclosure half (count + the 1% band) is identical in both. The
+      call site passes `holding=bool(pos_qty)`, which `_recall_flat_line`
+      already supplies as `0.0`.
+    - **The holding string is byte-identical, and the default is what makes
+      it so.** That is the whole reason this could ship unattended while
+      (a7) could not: `DESK_RECALL_FLAT` is confirmed unset on the prod
+      worker today, so the changed branch is unreachable on prod and this
+      deploy changes nothing the desk reads. A `holding=False` default would
+      have silently switched the live wording — mutation M1, killed.
+    - Tests: `RecallContestSituationTests` (4) +
+      `RecallContestSituationWiringTests` (2, through the real corpus, one
+      per branch) in `tests/test_run_engine.py`. **Mutation-checked ×7** —
+      default flipped, call site pinned True, call site inverted, kwarg
+      dropped, tails swapped, flat tail left claiming a position, band text
+      dropped. All seven killed.
+    - **The trading judgment it changes:** none today, stated plainly. It
+      makes (a7)'s entry-recall block *correct* so that promoting it is a
+      one-line env change rather than a change that ships a self-contradicting
+      sentence into 99.7% of the desk's decisions.
+  - **2026-08-20 — the (b) gate re-measured: it has STOPPED MOVING, and that
+    is the finding.** Hypothesis going in: the gate creeps toward 2-of-2 as
+    the fleet trades. Refuted. 236 rows, window 08-15T12:22Z → 08-20T07:10Z:
+
+    | market/class | events | pairs | scheme | Δ vs 08-19 |
+    |---|---|---|---|---|
+    | crypto/giveback+winning | 77 | 10 | ε-head-fixed | **+1 / +0** |
+    | crypto/giveback+losing | 66 | 1 | det → tie (1 ε) | +0 / +0 |
+    | crypto/losing | 57 | 3 | det → tie (2 ε) | **+1 / +0** |
+    | crypto/winning | 23 | 5 | ε-head-fixed | **+0 / +0** |
+    | us-stock/losing, us-stock/gb+losing | 4, 4 | 1, 1 | det | +0 |
+    | forex/gb+winning, us-stock/gb+winning | 3, 2 | 2, 2 | ε | +0 |
+
+    - The amended gate (≥2 ε-scheme classes, each ≥30 events and ≥3 distinct
+      pairs) is **still 1 of 2**, unchanged for a fourth day.
+      `crypto/winning` is 7 events short and gained **zero** in 24h, so the
+      honest ETA on the current supply is not "days" — it is **never**.
+    - **The supply is collapsing, not merely slow.** Recall rows per day:
+      124 (08-16), 25, 40, 11, **2** (08-20, against **622** decisions —
+      0.3% coverage). Recall still fires on 100% of holding cycles; there are
+      almost no holding cycles left to fire on.
+    - **0 of 236 rows are the FLAT class**, and `DESK_RECALL_FLAT` is
+      confirmed absent from the prod worker's environment. (a7) is live code
+      on a dormant path, exactly as shipped.
+    - Also still true, nine days on: **0 rows with empty `chunks`**. The
+      control group (recalled, corpus returned nothing) does not exist and
+      (b) must not be written assuming it will.
+    - **Consequence for the ladder, so tomorrow does not re-derive it:** no
+      further (a)-rung code can move the (b) gate. Everything reachable from
+      the holding brief is instrumented, and the holding brief has run out of
+      cycles. The gate opens on the FLAT population or it does not open.
+      With (a8) the flat path is correct, tested and dormant; the remaining
+      step is **`DESK_RECALL_FLAT=1` + worker restart — an environment
+      change, not a deploy, and an OWNER decision**, because it adds doctrine
+      to the prompt on 99.7% of the desk's decisions. The promotion criterion
+      from (a7) stands unchanged: after ≥200 flat rows, confirm (i) the entry
+      action mix (`buy`/`short` vs `hold`) has not shifted more than a few
+      points against the 08-15..08-20 baseline and (ii) ≥3 distinct pairs
+      appear. At ~620 flat cycles/day that is met in under a day.
   - **2026-08-11 — owner directive, binding on this ladder:** *"everything
     for sooppiy AI"* / *"if we find that we must be implement trading logic
     and sooppiy AI"*. Journal-only and default-off increments are a STAGING
