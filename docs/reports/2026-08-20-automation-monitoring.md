@@ -8,6 +8,51 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## 24H SWEEP — 15:3xZ (anchor 15:37:22): fence PASS day 3; all closes pre-analyzed; 4-day book ≈ breakeven; every forward metric behaving
+
+**PROFIT-OR-LOSS FIRST.** Ledger: 08-17 +$3.63 / 08-18 −$0.94 / 08-19
+−$1.14 / 08-20 −$1.46 so far — **4-day net +$0.09**. The honest
+sentence: the platform is breakeven at micro-scale while the fix stack
+beds in; the size experiment (7-slot fleet 38) has produced 3 closed
+legs so far (LTC −$0.30, FIL −$1.16, both mechanism-analyzed;
+1531 lifetime −$6.60 dominated by the pre-R25 phantom).
+
+**Adversarial re-proofs:**
+- **#475 fence: 0 in 24h — PASS, day 3** (baseline 8/1/3/9).
+- **Cap: 1 fire in 24h** (1556, #5, parsed_null) — measured SAVE
+  +$0.354 at close. Ledger: 5 fires, ≈+$2.15 saved on losers vs −$1.13
+  cost on the one winner — net-positive insurance, R17 cohort still
+  extinct (no uncapped default-size entries).
+- **R21 ratchet: 1 fire (1556) — epoch baseline VALID** (cycle 121
+  five-decimal recompute). R22's unprotected-band dimension gained its
+  sharpest numbers (peak $2.06 vs trail arm $11.21; floor protects $0).
+- **R23: zero sweeper writes to dead runs.** The 2 post-stop outlooks
+  in-window are the benign in-flight cycle race (31–39s, source:cycle)
+  — verified row-by-row, not a regression. RETIRED to standing.
+- **R25: 3 fills exercised the boundary refetch** (1531 open/cover,
+  drift 0.025/0.036% — silent-correct), 0 false refusals. **R27:**
+  0 renders yet — no past-floor flat run has existed since ship (1531
+  retired pre-ship); metric armed.
+- R:R floor/ceiling: no actionable fires in-window. Loss floor #460:
+  still zero enforcement fires ever (the BRIEF fired twice on 1531 —
+  that is R27's subject, not #460's).
+
+**Shape (24h):** 640 decisions, 98.4% hold; **no_verdict 1/640 = 0.16%**
+(the collapse holds; salvaged 1); **empty-why intents 0/15** — watch
+11's daily rate did NOT hold (yesterday 21.5%, today 0%) → the salvage
+re-request R-item stays unfired; keep counting.
+
+**Churn/exit-discipline tally (owner track):** a=4 (cf ≈ −$5.2…−5.6) ·
+b=5 (all green) · c=4 (all losers) · d=2 (−$0.41/+$0.08) · e/f minor ·
+algorithm-authored fires: ratchet ×2 (both valid) · floor-brief
+obedience ×2 (→ R27 shipped). No decisive-weight threshold crossed;
+the strongest lesson candidate remains: **exits leak profit through
+authorship gaps (no-verdict at the moment of decision) and the
+R22 dead zone — not through entry quality.**
+
+Docs→main batch: PR follows this note (cycles 109–149 + diagnosis +
+ships R25/#494/#495/R27 + backlog).
+
 ## Cycle 149 — 15:2xZ (anchor 15:26:51): quiet
 
 No money events, no positions. TMO 1537 fused ($0). Day −$1.46.
