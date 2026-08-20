@@ -8,7 +8,43 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
-## SHIP — 02:0xZ: R25 fill-mark refresh LIVE as `20260820-r25-markrefresh` (PR #497) — owner-ordered "do fix"
+## Cycle 121 — 01:3xZ (anchor 01:39:18): LTC 1556 two-agent analysis — fire VALID, the money story is the mute desk; day −$0.30
+
+**PROFIT-OR-LOSS FIRST.** One close: LTC 1556, **−$0.30 all-in** (gross
++$0.015 — 95% of the loss is fees). Day 08-20 = −$0.30. Both agents
+cross-checked; one counterfactual disagreement resolved as mark-timing
+noise (fire vs hold ≈ wash); everything else converged.
+
+1. **Ratchet fire #2: VALID to five decimals** (arm 0.70088 = fee-anchor
+   exact; base = −entry-fee exact per R21; excursion 2.94× arm; fired
+   the same second as the first observed breach). At $350 notional the
+   arm is 0.20% — above tick noise, no degenerate-scale flag.
+2. **The money story (Agent A, no excuses):** the desk chased the setup
+   its own cycle-1 had rejected ("no viable bracket"), rail-fitted a
+   0.8% stop against its own 6.3%-away invalidation, authored a NULL
+   size, and then went silent — its ONLY in-position look (cyc3, +$0.47)
+   returned an EMPTY no_verdict while the recall layer had staged the
+   exact harvest-template lessons ("bank the gain, take partial
+   profit"). The available bank (+$0.31 net) was forfeited by silence;
+   the $1.74 peak bank had no desk look available (mark-cadence fact).
+   The entry cycle's confirm-panel was a FALLBACK ("decision json
+   unparseable"), conf exactly 0.62. **Watch 11 escalated: the
+   no-verdict/truncation gap now has a measured opportunity cost.**
+3. **R22 dimension quantified (Agent B, n+1):** ratchet floor protects
+   $0.00 of any peak by design; trail activation sat at $11.21 while
+   the realistic peak was $2.06 (18.4% of activation). The unprotected
+   band between the two rails spans the ENTIRE excursion range this
+   book could produce — both post-R21 live fires landed inside it.
+4. **Cap ledger update:** fire #5 SAVED **+$0.354** on this loser
+   (uncapped = 2.18× the loss). Running: −$1.13 on the 1479 winner vs
+   ≈+$1.80 saved on losers — the insurance is net positive.
+5. **R25 forward read: clean** — 0 mark_refresh / 0 mark_drift since
+   the new worker (01:36:48), no spurious fires on holds, no fills yet.
+6. Size experiment n=1: $350 notional multiplies both sides — fees
+   ($0.32 vs $0.05 at old median) AND the unbanked peak ($1.74). The
+   exit layer, not the entry size, decides which one lands.
+
+## SHIP — 01:3xZ (worker up 01:36:48): R25 fill-mark refresh LIVE as `20260820-r25-markrefresh` (PR #497) — owner-ordered "do fix"
 
 At the execution boundary of run_cycle: cycles older than 45s (every
 real cycle — the LLM sits between mark fetch and order) re-fetch the
