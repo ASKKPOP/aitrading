@@ -8,6 +8,19 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 134 — 08:1xZ (anchor 08:12:11): quiet; 1531 retired by consecutive-losses (the run-level cleaner); resid resolved
+
+No trades, no closes, no positions. Two resolutions: (1) **run 1531
+retired** at 07:37:29 (`retire_consecutive_losses`, 3 — the off_track
+synthetic plus the losing close; FIL symbol cooldown 24h) — the
+floor-carry loop on this run is ended by the designed run-level path;
+R27's metric now waits on any future past-floor flat run. (2) The
+cycle-133 pnl_audit residual (−0.92) resolved to **−0.01 ok** — it was
+adapt-lag, as hypothesized; day 08-20 stands −$1.46. Fence 0;
+0 tracebacks. Hypothesis for the record: with adapt size_mult now
+[0.5, 0.25] and cooldown, a fresh FIL run tomorrow starts small — the
+death-spiral watch applies to the successor, not this corpse.
+
 ## SHIP — 09:0xZ: R27 floor-carry line LIVE as `20260820-r27-floorcarry` (PR #498)
 
 A FLAT run past the house floor now sees its carried total BEFORE the
