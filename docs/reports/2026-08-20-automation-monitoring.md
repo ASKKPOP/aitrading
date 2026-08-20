@@ -8,6 +8,16 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 146 — 13:5xZ (anchor 13:56:55): quiet; XOM 1426 expired at_time (flat, +$0.119 lifetime stands)
+
+No trades, no positions. Run 1426 (the churn-ledger XOM run) retired
+by its at_time at the NYSE open with a flat book — lifetime stays
+**+$0.119**, already fully analyzed (cyc22 −$0.582 noise-churn is in
+the (a) ledger). Successor XOM 1583 built immediately (same-symbol
+replacement — predecessor_run line should render for its desk; R16
+behavior worth a glance if it trades). UBER 1532 fused $0. Day −$1.46.
+Fence 0; 0 tracebacks.
+
 ## Cycle 145 — 13:2xZ (anchor 13:26:54): quiet
 
 No money events, no positions. EURAUD 1582 built (fleet 37). Day
