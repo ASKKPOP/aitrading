@@ -21,7 +21,7 @@ adapt-lag, as hypothesized; day 08-20 stands −$1.46. Fence 0;
 [0.5, 0.25] and cooldown, a fresh FIL run tomorrow starts small — the
 death-spiral watch applies to the successor, not this corpse.
 
-## SHIP — 09:0xZ: R27 floor-carry line LIVE as `20260820-r27-floorcarry` (PR #498)
+## SHIP — 08:1xZ (worker up 08:10:37): R27 floor-carry line LIVE as `20260820-r27-floorcarry` (PR #498)
 
 A FLAT run past the house floor now sees its carried total BEFORE the
 next entry — the owner's rule in its own terms ("clean that RUN":
