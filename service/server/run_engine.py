@@ -46,6 +46,7 @@ import os
 import random
 import re
 import socket
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
@@ -4068,6 +4069,30 @@ def _stop_coherence_enabled() -> bool:
             ).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _mark_refresh_min_age_s() -> float:
+    """R25: only refresh the fill mark when the cycle has been running longer
+    than this (the LLM call makes every real cycle exceed it; a sub-second
+    cycle's mark is already fresh). Default 45s."""
+    try:
+        v = float(os.getenv("RUN_MARK_REFRESH_MIN_AGE_S", "45"))
+    except ValueError:
+        return 45.0
+    return max(v, 0.0)
+
+
+def _mark_drift_cap_pct() -> float:
+    """R25: max % the market may move between the decision mark (fetched at
+    cycle start, pre-LLM) and the execution boundary before an OPEN is
+    refused. Exits are never blocked. Default 0.75% — an order of magnitude
+    above ordinary 2-3-minute crypto noise, a third of the +2.6% gap that
+    made the FIL 1531 phantom loss."""
+    try:
+        v = float(os.getenv("RUN_ENTRY_MARK_DRIFT_CAP_PCT", "0.75"))
+    except ValueError:
+        return 0.75
+    return min(max(v, 0.05), 10.0)
+
+
 def _null_size_cap_frac() -> float:
     """R17: the fraction of max_bet a default-sized OPEN may take when the
     desk authored no size_frac. 1.0 disables the cap. Default 0.25 — above
@@ -6273,6 +6298,10 @@ def run_cycle(run_id: int) -> dict:
     result: dict[str, Any] = {"run_id": run_id, "executed": False, "skip_reason": None}
     run = None
     ctx_token = None
+    # R25: marks are fetched near cycle start; the LLM call sits between the
+    # fetch and any order. This clock decides at the execution boundary
+    # whether the decision mark is old enough to need a refresh.
+    cycle_t0 = time.monotonic()
     try:
         run = _claim(run_id)
         if run is None:
@@ -7139,10 +7168,48 @@ def run_cycle(run_id: int) -> dict:
         # still hold before entering the fenced trade transaction.
         _renew_lease(run_id)
 
+        # R25 (2026-08-20): `entry` was fetched at cycle START, before the
+        # LLM call — minutes old by now. Run 1531 FIL shorted at a 3.5-min
+        # stale mark while the live tape printed +5.1%/min: the position was
+        # -$5.26 the instant it was marked honestly, and the phantom loss
+        # then drove a bottom-tick close through the loss-floor brief.
+        # Re-fetch AT THE EXECUTION BOUNDARY: exits always fill at the fresh
+        # mark (better out at truth than at a cached quote); OPENS are
+        # refused when the market has moved more than the drift cap since
+        # the decision mark — the bracket was derived from that mark, and a
+        # fill through a moved market inherits a mispriced stop. Refetch
+        # failure falls back to the decision mark (fail-open, journaled).
+        fill_price = float(entry)
+        fresh_mark = None
+        if time.monotonic() - cycle_t0 > _mark_refresh_min_age_s():
+            try:
+                import price_fetcher as _pf
+                fresh_mark = _pf.get_price_from_market(
+                    run["symbol"], _now_iso(), run["market"])
+            except Exception:  # noqa: BLE001 — a feed hiccup must not block
+                fresh_mark = None
+        if fresh_mark:
+            drift_pct = abs(float(fresh_mark) - fill_price) / fill_price * 100.0
+            if action in ("buy", "short") and drift_pct > _mark_drift_cap_pct():
+                reason = (f"stale mark: moved {drift_pct:.2f}% since the "
+                          f"decision mark ({fill_price} -> {fresh_mark}); "
+                          "entry refused — re-decide on fresh data")
+                result["skip_reason"] = reason
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq, "stage": "mark_drift",
+                                      "reason": reason})
+                return result
+            if drift_pct >= 0.05:
+                emit_telemetry_event(run_id, "mark_refresh",
+                                     {"cycle": seq, "decision_mark": fill_price,
+                                      "fill_mark": float(fresh_mark),
+                                      "drift_pct": round(drift_pct, 4)})
+            fill_price = float(fresh_mark)
+
         client_order_id = f"run:{run_id}:cyc:{seq}"
         signal_id, skip = execute_paper_trade(
             run["agent_id"], run["symbol"], run["market"], action,
-            gate.quantity, float(entry),
+            gate.quantity, fill_price,
             content=f"Trading run #{run_id} cycle {seq}",
             stop_loss=stop_loss, take_profit=take_profit,
             run_id=run_id, client_order_id=client_order_id,

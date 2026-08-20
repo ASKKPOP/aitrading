@@ -669,3 +669,103 @@ class LightPathOrderBlockTests(RunCycleOrderParamTests):
                              '"stop_pct":null,"target_pct":null,"report":"r"}')
         self.assertEqual(self._events(run_id, "order_params")[0]["outcome"],
                          "absent")
+
+
+class FillMarkRefreshTests(unittest.TestCase):
+    """R25 (2026-08-20): the decision mark is fetched at cycle start, before
+    the LLM call — minutes old on a real cycle. At the execution boundary an
+    old cycle re-fetches the mark: opens are REFUSED past the drift cap
+    (run 1531 FIL: a fill through a +2.6%-moved market was born −$5.26),
+    small drift fills at the fresh mark, exits are never blocked, and a
+    refetch failure falls back to the decision mark.
+
+    Standalone (borrows the harness helpers, NOT the parent's tests — those
+    must keep running with the age gate CLOSED, the fast-cycle default)."""
+
+    _h = RunCycleOrderParamTests._h
+    _run = RunCycleOrderParamTests._run
+    _events = RunCycleOrderParamTests._events
+    _fill = RunCycleOrderParamTests._fill
+
+    def setUp(self):
+        RunCycleOrderParamTests.setUp(self)
+        # Force the age gate open — a unit-test cycle is sub-second, but the
+        # behavior under test is the old-cycle branch.
+        os.environ["RUN_MARK_REFRESH_MIN_AGE_S"] = "0"
+
+    def tearDown(self):
+        os.environ.pop("RUN_MARK_REFRESH_MIN_AGE_S", None)
+        os.environ.pop("RUN_ENTRY_MARK_DRIFT_CAP_PCT", None)
+        RunCycleOrderParamTests.tearDown(self)
+
+    def test_open_is_refused_when_the_market_moved_past_the_cap(self):
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch("price_fetcher.get_price_from_market",
+                   return_value=102.6):   # +2.6% — the FIL 1531 gap
+            result = run_engine.run_cycle(run_id)
+        self.assertFalse(result["executed"])
+        self.assertIn("stale mark", result["skip_reason"] or "")
+        skips = [e for e in self._events(run_id, "gate_skip")
+                 if e.get("stage") == "mark_drift"]
+        self.assertEqual(len(skips), 1)
+        self.assertEqual(self._fill(run_id), [])
+
+    def test_small_drift_fills_at_the_fresh_mark(self):
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch("price_fetcher.get_price_from_market",
+                   return_value=100.3):   # +0.3%, inside the 0.75% cap
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertEqual(len(fills), 1)
+        self.assertAlmostEqual(float(fills[0]["entry_price"]), 100.3, places=4)
+        refreshes = self._events(run_id, "mark_refresh")
+        self.assertEqual(len(refreshes), 1)
+        self.assertAlmostEqual(refreshes[0]["fill_mark"], 100.3, places=4)
+
+    def test_exit_is_never_blocked_and_takes_the_fresh_mark(self):
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch("price_fetcher.get_price_from_market",
+                   return_value=100.0):
+            assert run_engine.run_cycle(run_id)["executed"]
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER, action="sell")), \
+             patch("price_fetcher.get_price_from_market",
+                   return_value=103.0):   # +3.0% — far past the open cap
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        exits = [f for f in self._fill(run_id)
+                 if float(f["entry_price"]) > 100.5]
+        self.assertEqual(len(exits), 1)
+        self.assertAlmostEqual(float(exits[0]["entry_price"]), 103.0, places=4)
+
+    def test_refetch_failure_falls_back_to_the_decision_mark(self):
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch("price_fetcher.get_price_from_market",
+                   side_effect=RuntimeError("feed down")):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fills = self._fill(run_id)
+        self.assertEqual(len(fills), 1)
+        self.assertAlmostEqual(float(fills[0]["entry_price"]), 100.0, places=4)
+
+    def test_a_fast_cycle_never_refetches(self):
+        os.environ["RUN_MARK_REFRESH_MIN_AGE_S"] = "45"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch("price_fetcher.get_price_from_market",
+                   return_value=999.0) as refetch:
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        refetch.assert_not_called()
+        self.assertAlmostEqual(float(self._fill(run_id)[0]["entry_price"]),
+                               100.0, places=4)
