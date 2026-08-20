@@ -8,6 +8,20 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## SHIP — 09:0xZ: R27 floor-carry line LIVE as `20260820-r27-floorcarry` (PR #498)
+
+A FLAT run past the house floor now sees its carried total BEFORE the
+next entry — the owner's rule in its own terms ("clean that RUN":
+retire, hand the slot back) plus the warning that a new position reads
+as past the floor on its first held cycle. The verb stays the desk's
+(§7b); the holding-side mandate line is untouched; R25 fixed the
+phantom's source, R27 fixes its persistence. Pipeline: fail-before 5/5
+→ pass-after 5/5 incl. wiring + brief-journal test → full suite 4545 +
+1349 → CI 5/5 → squash `571fe329` → deployed, surfaces 200, rollback
+`r25-markrefresh`. Verified in the running worker (line present, 0
+tracebacks). POST-SHIP METRIC: the next past-floor flat cycle journals
+`floor_carry`, and no condemned run re-enters blind.
+
 ## Cycle 133 — 07:2xZ (anchor 07:27:04): FIL 1531 churned again (−$1.16) — mechanism NAMED: floor-carry churn → R27 staged ship-ready
 
 **PROFIT-OR-LOSS FIRST.** Round trip cyc32/33: short 0.67253 → cover
