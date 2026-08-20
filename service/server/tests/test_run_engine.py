@@ -3511,6 +3511,116 @@ class RecallContestWiringTests(unittest.TestCase):
                       "a failing disclosure stripped the recall itself")
 
 
+class RecallContestSituationTests(unittest.TestCase):
+    """(a8) — the contest note must describe the decision being made.
+
+    (a5)'s note closes *"NOT as a specific precedent for this position"*,
+    written when recall could only fire from the HOLDING brief. (a7) made the
+    same note reachable from the FLAT/entry brief, where there is no position
+    for anything to be a precedent for: the desk would be told to discount a
+    tie against a thing it does not hold, in the one decision the note exists
+    to inform. Recorded on 2026-08-19 as the defect that must be fixed BEFORE
+    `DESK_RECALL_FLAT` is promoted, and deliberately left then because the
+    string is shared with the holding path the desk reads TODAY."""
+
+    def _hits(self, *scores):
+        return [{"sha": f"{i:064d}", "score": s} for i, s in enumerate(scores)]
+
+    def _cands(self, *scores):
+        return [{"sha": f"c{i:063d}", "score": s} for i, s in enumerate(scores)]
+
+    def test_the_holding_note_is_unchanged(self):
+        """The live path must not move. This ships while the flat flag is OFF
+        on prod, so any change here would alter what the desk reads today —
+        justified by nothing measured."""
+        note = run_engine._recall_contest_line(self._hits(20.0, 18.43),
+                                               self._cands(18.43))
+        self.assertTrue(
+            note.endswith("NOT as a specific precedent for this position."),
+            f"the holding wording moved: {note!r}")
+        self.assertEqual(
+            note,
+            run_engine._recall_contest_line(self._hits(20.0, 18.43),
+                                            self._cands(18.43), holding=True),
+            "the default must BE the holding case, or every existing caller "
+            "silently switches wording")
+
+    def test_the_flat_note_never_claims_a_position(self):
+        note = run_engine._recall_contest_line(self._hits(20.0, 18.43),
+                                               self._cands(18.43),
+                                               holding=False)
+        self.assertNotIn("this position", note)
+        self.assertIn("entry", note,
+                      "the note must name the decision it is qualifying")
+        self.assertIn("doctrine", note)
+
+    def test_both_situations_still_disclose_the_count_and_the_band(self):
+        """The DISCLOSURE is the point; only the closing clause is
+        situational. A rewrite that dropped either half would quietly undo
+        (a5)."""
+        for holding in (True, False):
+            note = run_engine._recall_contest_line(
+                self._hits(20.0, 18.43), self._cands(18.43, 18.43),
+                holding=holding)
+            self.assertIn("2 other past findings", note)
+            self.assertIn("scored within 1%", note)
+
+    def test_silence_and_fail_soft_survive_the_flat_branch(self):
+        self.assertEqual(run_engine._recall_contest_line(
+            self._hits(20.0, 18.43), self._cands(14.0), holding=False), "")
+        self.assertEqual(run_engine._recall_contest_line(
+            self._hits(20.0, None), self._cands(18.0), holding=False), "")
+        self.assertEqual(run_engine._recall_contest_line(
+            [], [], holding=False), "")
+
+
+class RecallContestSituationWiringTests(unittest.TestCase):
+    """(a8) through the real corpus — the right clause must reach the PROMPT.
+
+    Per the standing trap in this file: a brief helper that renders correctly
+    and is never called with the right argument is a silent no-op."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "x.db")
+        database.init_database()
+        import desk_memory
+        self.mem = desk_memory
+        # One body, four rows: identical term counts, so slot 2 IS a tiebreak
+        # and the note fires. Written to match BOTH the holding query and the
+        # flat/entry query so one corpus exercises both branches.
+        for i in range(4):
+            self.mem.remember(
+                "lesson", f"skill:sit#{i}", f"Sit {i}",
+                "A position that gave back its peak should bank the gain or "
+                "arm the level rather than hold for a full round trip, and "
+                "on entry the fee hurdle needs an expected move to clear it.")
+        run_engine._RECALL_JOURNAL.clear()
+
+    def tearDown(self):
+        os.environ.pop("DESK_RECALL_FLAT", None)
+        os.environ.pop("DESK_RECALL_EXPLORE", None)
+        run_engine._RECALL_JOURNAL.clear()
+        self.tmp.cleanup()
+
+    _RUN = {"id": 41, "agent_id": 1, "symbol": "ETHUSDT", "market": "crypto"}
+
+    def test_the_holding_brief_still_says_this_position(self):
+        line = run_engine._recall_line(
+            dict(self._RUN, peak_pnl_usd=5.0), {"unrealized": 1.0}, 3.0)
+        self.assertIn("scored within 1%", line)
+        self.assertIn("precedent for this position", line)
+
+    def test_the_entry_brief_does_not_say_this_position(self):
+        os.environ["DESK_RECALL_FLAT"] = "1"
+        line = run_engine._recall_flat_line(self._RUN, 0.0)
+        self.assertIn("scored within 1%", line,
+                      "no tie fired, so this test proves nothing")
+        self.assertNotIn("this position", line)
+        self.assertIn("entry", line)
+
+
 class FlatRecallTests(unittest.TestCase):
     """(a7) — the ENTRY decision reaches the corpus for the first time.
 
