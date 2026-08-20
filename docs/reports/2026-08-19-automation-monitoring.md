@@ -7,6 +7,227 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 35**;
 **forevery1969@gmail.com — user 25 / agent 60 / fleet 37** (us-stock+forex,
 EXTREME; us-stock actively monitored only inside NYSE 13:30–20:00Z).
 
+## Cycle 118 — 23:2xZ (anchor 23:26:52): quiet; R26 false-negative check on TSLA — clean
+
+No trades, no closes, no rail fires. Day **−$1.14**; fence 0;
+0 tracebacks; books flat. TSLA joined the gate's dropped list — checked
+as a potential R26 false negative and it is CLEAN: the current TSLA
+thesis (23:04Z) is LONG (the 21:41Z short thesis was superseded), so
+the veto is direction-matched and correct. Fleet 38 gen-3 fused out
+(TRUMP/HYPE/ETH idle-retired, $0 each; 2/7 running); fleet 37 built
+CADJPY 1551 + NZDUSD 1552 (NZDUSD kept through the gate). AAVE-short
+gate flip STILL pending — crypto candidates keep failing to reach a
+fleet-38 gate pass; if no crypto pass occurs by the daily sweep, probe
+WHY (pre-gate assembly) rather than keep waiting. Churn tally unchanged.
+
+## Cycle 117 — 22:5xZ (anchor 22:56:54): quiet
+
+No trades, closes, rail fires, or run churn. Day **−$1.14**; fence 0;
+0 tracebacks; books flat. Gate passes (22:34, 22:50, fleet 37) keep
+vetoing only LONG theses — correct under R26; no crypto gate pass yet,
+AAVE-short flip still pending. Churn tally unchanged.
+
+## Cycle 116 — 22:2xZ (anchor 22:26:56): quiet
+
+No trades, no closes, no rail fires. Day **−$1.14**; fence 0;
+0 tracebacks; both books flat. GBPUSD 1550 built (fleet 37); EURJPY
+1535 idle-retired $0 — closing the EURJPY same-symbol churn chain at
+TWO $0 deaths (1534 desk-retired cyc1 → 1535 rebuilt → fused untraded);
+cost $0 but two build slots + ~13 LLM cycles for nothing — logged under
+the R26-era funnel ledger, not actioned at n=1 chain. AAVE-short gate
+flip still pending (no crypto gate pass this window). Churn tally
+unchanged.
+
+## Cycle 115 — 21:5xZ (anchor 21:56:49): quiet; owner resized fleet 38 to 7 slots (the recommended band); AAVE flip still pending
+
+No trades, no closes, no rail fires. Fence 0; 0 tracebacks; both books
+flat. **Owner adopted the sizing recommendation:** fleet 38 resized
+15→7 at 19:51:28Z (`user_set`, cap pinned 7) — per-slot budget rises to
+≈$1,430, the concentration experiment from the diagnosis is now live.
+Post-ship gate passes (21:46/21:54) keep behaving correctly on the
+long side: MRK/LLY/ABBV/KO (all LONG theses) still vetoed, AUDUSD kept
+→ built 1549 (fleet 37). **The R26 positive proof (AAVE-short kept) is
+still pending** — no crypto candidate reached a fleet-38 gate pass in
+this window (replenishing:5/7, no new selectable un-held crypto).
+NZDJPY 1533 idle-retired $0. Churn tally unchanged.
+
+## Cycle 114 — 21:3xZ (anchor 21:33:06): first post-ship cycle — R26 metric check in progress, no false negative
+
+No trades, no closes, no rail fires in the window (19:24→21:33, spanned
+by the diagnosis + ship turns). Day **−$1.14** (final barring late
+crypto); fence **0 all-time**; 0 tracebacks; both books flat; fleet 38
+at 5 (gen-3), fleet 37 cycling.
+
+**R26 post-ship metric, first read:** the 21:31:07Z gate pass (20s
+after the new worker started) still dropped MRK/LLY/ABBV/KO — and that
+is CORRECT: all four are **LONG** theses, whose direction matches the
+long-only replay; R26 only exempts shorts. The positive proof — a short
+thesis KEPT with reason "short thesis — long-only replay not
+applicable" — awaits the next crypto replacement pass: **AAVEUSDT's
+current thesis is direction=short**, so the AAVE drop-loop (7+ passes
+yesterday) must now flip to kept. NVDA-short remains selectable=0 —
+that is the research-level pre-gate filter, a separate (unmeasured)
+stage, not the backtest gate. Next cycles carry the watch.
+
+## SHIP — 21:3xZ (worker up 21:30:47): #494 (profit-goal is the AI's) + #495 (R26 direction-matched gate) LIVE as `20260819-goalai-r26gate`
+
+Owner orders executed end-to-end. (a) **#494**: the fleet profit-goal is
+no longer a user setting — create/rails API ignore `profit_target_frac`
+(fail-before 2/2 proven), the AI's internal setter and the supervisor
+harvest stay, FleetPanel goal UI removed, guides updated ×6 langs,
+fleets 37/38 user-set values cleared to NULL on prod. (b) **#495 (R26)**:
+the long-only replay may only veto LONG theses; shorts fail open with a
+journaled reason and spend no replay compute (fail-before proven; the
+direction-matched live-record bucket gate still covers shorts). Both:
+full local suites green (4526/4530 + 1349 subtests), CI 5/5 each,
+single deploy from `8486192d`, all surfaces 200, rollback
+`r23-sweeperfence`, 0 tracebacks.
+
+**BINDING POST-SHIP METRICS:** (1) next replacement pass keeps
+MRK/LLY-class short theses with the new reason (last pre-deploy pass
+21:31Z still dropped them); (2) fleet fill + trades/day vs the 8.2/day
+baseline over the coming sessions — R26 is the throughput lever from
+the owner diagnosis; if trades/day does not move, say the fix failed
+its own metric. (3) The size lever remains the owner's slot choice.
+
+## OWNER DIAGNOSIS — 20:0x–21:0xZ: "find what is wrong with us" — two-agent measurement, both hypotheses of mine REFUTED, real defects named
+
+**PROFIT-OR-LOSS FIRST.** 8-day ledger −$173.84, of which **−$168.63
+(93.2%) came from >$800-notional default-size trips** (n=26, worst: SOL
+run1099 −$71.31 at $9,127 notional) — that class is FIXED (#480/#481;
+zero uncapped default-sized entries remain on the post-fix tape). The
+post-fix engine (08-15→) is **+$7.05 over 4.65 days**: win rate 53.7%,
+expectancy **+$0.17/trip = 12.8bp of notional** — positive but
+STATISTICALLY UNPROVEN (t=0.77, n=41; stripping the largest winner ≈ 0).
+
+**What is actually wrong (measured, cross-checked):**
+1. **NOT the confidence gates** (my hypothesis — refuted): gates in
+   force are 0.50–0.57, they killed exactly **2 proposals in 4.8 days**;
+   55% of holds sit AT/ABOVE their own gate — the model itself chooses
+   hold, and the falsification sample says those holds were ≈ right
+   (declined entries ≈ −0.24%/trade gross, below the fee hurdle).
+2. **THE GATE DEFECT (R26, new):** the backtest expectancy gate runs a
+   LONG-ONLY $100k daily-bar replay to veto candidates for fleets whose
+   entries are 87.5% SHORT — direction-blind, alien-in-kind. It blocked
+   LLY 315× / MRK 233× / AAVE 207× / KO 145× / NVDA 124× / AAPL / TSLA…
+   — the liquid names — leaving residue candidates. The contamination
+   hypothesis (R17-era live losses) was also refuted: the stats are
+   simulated, not live.
+3. **The $0 loop it causes:** 202/227 stopped runs never traded; 177
+   zero-trade idle-retires consumed **72.7% of all desk LLM cycles**
+   (~870 decision-tier calls/day ≈ one full lane of the 5×-oversubscribed
+   local model) producing nothing.
+4. **SIZE (P&L agent):** median trip **$52** on a $110k book, 0.18%
+   utilization, fees 37% of gross, 46% of trips are sub-$50 probes;
+   agent 60's $100k made 2 trades in 5 days. At measured edge, $50/day
+   needs ~350× today's trades×size. Whether 12.8bp survives 100×+
+   sizing is the NEXT EXPERIMENT, not an assumption.
+5. Harvest template confirmed as the profit engine (43% of win-side
+   from staged trips). R25 (stale fills) stands as the infra leak.
+
+**Owner orders executed alongside:** (a) fleet profit-goal (%) UI/API
+REMOVED — profit realization is the Sooppiy AI's decision (PR in
+flight; user paths ignore profit_target_frac, AI setter kept, guides
+updated ×6 langs; fleets 37/38 user-set values to be cleared at
+deploy); (b) "권장 최대 25개" answered: it is the Professional-tier
+entitlement cap (max_fleet_size 25) that the budget auto-recommendation
+clamps to — a plan limit, not a market-based recommendation (candidate
+supply measures ~13 max); (c) fleet 38 resized to 15 by owner —
+6–8 recommended vs supply.
+
+## Cycle 113 — 19:2xZ (anchor 19:26:47): quiet; the hot-tech cohort fused untraded — R20 got names IN, desks still declined
+
+No trades (0 trade events), no closes, no rail fires. Day **−$1.14**;
+fence 0; 0 tracebacks. Eight more retires, **$0.00 combined** — incl.
+the 14:03Z hot-tech cohort (CRM PYPL JNJ V) hitting the fuse in market
+hours, plus V 1545 rebuilt and desk-retired again in 1 min (V is now a
+2-cycle same-symbol churn watch alongside EURJPY). Fleet 37 at 12,
+fleet 38 steady at 5 (gen-3 still deciding). R20 observation worth
+recording: the seed guarantees hot-tech PRESENCE in candidates and it
+is working (CRM/ORCL/PYPL/NOW all built), but presence does not compel
+entries — the desks scored every one weak and declined; the owner's
+"include 5 tech always" is satisfied at the universe/build layer while
+the trade layer stays discretionary by design (§7b). Churn tally
+unchanged.
+
+## Cycle 112 — 18:5xZ (anchor 18:50:25): quiet; heavy $0 slot churn (12 idle-retires, 0 trades); loop gap 17:07→18:50 noted
+
+No trades (verified: 0 trade events), no closes, no rail fires. Day
+**−$1.14**; fence 0; 0 tracebacks. Window spans 1h45m (two cron fires
+displaced by busy turns — stated plainly). Twelve idle-retires, all
+**$0.00 combined** (verified by SUM) — mostly fleet 37's 14:03Z
+us-stock cohort hitting the 12-cycle fuse DURING market hours: the
+EXTREME us-stock fleet has still never traded since the rebuild; same
+weak-setup discipline as fleet 38's arc. Fleet 37 at 15, fleet 38 at 5
+(gen-3 AVAX/TRUMP/HYPE/ETH cycling). Minor ledger oddity logged, not
+chased: 1538–1541 run_status "created" events stamped 18:00–18:02
+though the rows existed at the 17:07 anchor — journal lag on the
+lifecycle events, no P&L effect. Churn tally unchanged.
+
+## Cycle 111 — 17:0xZ (anchor 17:07:41): quiet; fleet 38 gen-3 built (AVAX TRUMP HYPE ETH)
+
+No closes with P&L, no trades, no rail fires. Day **−$1.14**; fence 0;
+0 tracebacks; 37 decisions in window. Fleet 38 gen-3: AVAX 1538,
+TRUMP 1539, HYPE 1540, ETH 1541 (5/25 running) — fresh research wave
+carried tradeable names; first trades watched under the FIL-loss adapt
+tightening. Fleet 37 rotated: NZDJPY/EURJPY/T/TMO/CVX built, ACN 1475
+idle-retired $0, EURJPY 1534 desk-retired at cycle 1 and rebuilt as
+1535 one minute later (same-symbol replacement — watch for a repeat,
+which would be churn); 16 running. Churn tally unchanged.
+
+## Cycle 110 — 16:2xZ (anchor 16:26:50): quiet
+
+No new closes or trades. The only event: adapt scored the FIL 1531 loss
+(losing_close −5.3337 → size_mult 0.75, conf_bump 0.05) — the feedback
+loop reacting to what cycle 109 showed is substantially a phantom
+(stale-fill) loss; noted as a secondary R25 consequence: adapt tightens
+the NEXT desk on a loss the desk did not really take. Day **−$1.14**;
+both books flat; fleet 38 at 0/25. Fence 0; 0 tracebacks. Churn tally
+unchanged (a=3 ≈−$3.4, b=5, c=4, d=2).
+
+## Cycle 109 — 16:0xZ (anchor 16:05:00): FIL 1531 −$5.44 flips the day to −$1.14 — but the loss's true author is a STALE FILL; R25 staged
+
+**PROFIT-OR-LOSS FIRST.** One close: FIL 1531 short (375.65 @ 0.6498,
+15:28:29Z) desk-closed in full @ 0.6637 at 15:42:57Z — **−$5.44 net**,
+flipping day 08-19 from +$4.19 to **−$1.14** (pnl_audit ok). One
+14-minute trade erased more than the day's gains. Two subagents
+dispatched; they CONVERGED independently on the root cause and the
+cross-check refined one claim (below).
+
+1. **Root cause — the stale fill, found by both agents independently:**
+   the short filled at 0.6498, the 15:24–25 cached quote (3.5–4 min
+   old), while the live tape printed 0.66–0.67 in a +5.1%/minute
+   cascade. The position was **−$5.26 the instant it was marked
+   honestly**. At the real 15:28 price (~0.667) the identical round
+   trip is a small WIN. The recorded loss is substantially feed latency
+   converted into phantom adverse P&L. The staleness also blinded the
+   ENTRY decision: the desk's own invalidation (0.652) had already been
+   breached on the live tape 3 minutes before the fill.
+2. **The phantom cascaded through the house brief:** −$5.18 breached
+   the loss-floor advisory ($4.18; run_engine.py:4557 — sole consumer
+   is the brief renderer, ZERO forced fires ever, #460 still
+   unexercised) → the brief told the desk "past the floor … the house
+   rule is to CLOSE" → the desk sold the local bottom. Cross-check
+   resolution: Agent A called the floor claim invented; Agent B showed
+   the breach was REAL and platform-stated — the desk overstated the
+   verb ("forces"), not the fact. The cut itself cost a further
+   **~$2.4–2.6** vs holding to its own next cycle (the 0.68008 stop
+   would NEVER have filled — session high 0.67124 printed in the entry
+   minute and price mean-reverted after the exit).
+3. **Churn tally: class (a) n=3** (counterfactual sum ≈ −$3.4), with
+   the honest caveat that this instance's compulsion came from the
+   platform's own advisory line reacting to a phantom number — the
+   lesson here is as much R25's as the desk's.
+4. **Detector timing is physics, not lateness:** cascade_shock needs
+   the move already printed on an hourly bar; even a 60s daemon could
+   not have beaten the 15:28:29 fill. The saving control is a
+   quote-age check at fill time — **R25 staged** with a binding
+   measurement plan (sweep fills for quote-age distribution and
+   phantom-P&L population BEFORE any money-path change).
+5. **Hygiene:** 1467 (SBUX) + 1523 (EURCAD), both fleet 37, idle-retired
+   $0; open positions platform-wide 0; fence 0 all-time; only one trade
+   in window. Fleet 38 back to 0/25.
+
 ## 24H SWEEP — 15:3xZ (anchor 15:37:34): fence PASS day 2; R23 confirmed & retired; no_verdict collapsed to 0.63%; fleet 38 gen-2 TRADED
 
 **PROFIT-OR-LOSS FIRST.** 08-18 final **−$0.94**; 08-19 running **+$4.19**
