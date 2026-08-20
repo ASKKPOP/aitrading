@@ -8,6 +8,38 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 133 — 07:2xZ (anchor 07:27:04): FIL 1531 churned again (−$1.16) — mechanism NAMED: floor-carry churn → R27 staged ship-ready
+
+**PROFIT-OR-LOSS FIRST.** Round trip cyc32/33: short 0.67253 → cover
+0.67334, **−$1.156 net (43% fees)**, covered at +0.12% against — 1/41
+of its stop, 30 min into a 30h horizon. Day 08-20 **−$1.46** (resid
+−0.92 = adapt-lag transient, recheck next cycle). 1531 lifetime
+**−$6.5993** (verified exact). Two agents, full convergence.
+
+1. **The exit's only driver was the loss-floor BRIEF, second fire on
+   this run:** no rail was near (stop 4.90% away, max_loss $13.24 of
+   headroom, trail never armed), `off_track` injected zero same-cycle
+   text (code-proven), and the desk's own words obey the brief: "past
+   the floor, the house rule mandates exit." The $6.74 it obeyed is
+   97% yesterday's PHANTOM stale-fill loss carried at run level.
+2. **Mechanism named — floor-carry churn (R27, ship-ready):** the floor
+   is run-cumulative, invisible at entry (renders only with an open
+   position), mandatory at the first held cycle. After one carried
+   loss, every fresh entry is pre-condemned: enter → condemned → exit
+   on any wobble → re-enter. 2-for-2 on this run; the desk was
+   directionally RIGHT both times (counterfactual −$2.20 at live mark
+   this leg). Fix directions staged: position-epoch floor (R21
+   pattern) / entry-visible floor line / entry block past floor.
+3. **Class (a) noise-churn: n=4**, counterfactual sum ≈ −$5.2…−5.6,
+   sign robust to stripping the largest instance. `young_dump_flag`
+   also fired on cyc33 (telemetry agrees).
+4. **R25 exercised twice, both correct:** fill ≠ decision mark proves
+   the boundary refetch ran (open drift 0.025%, exit 0.036% — under
+   the 0.05% journal threshold, hence silent). No mark_drift refusals.
+5. Watch state: fence 0; 0 tracebacks; cap fires 5 (no new); 1531 at
+   consecutive_losses 2 (retires on the next losing close; at_time
+   15:24Z today regardless).
+
 ## Cycle 132 — 06:5xZ (anchor 06:57:00): run 1531 re-entered FIL short — R25's first live fill, behaved exactly as designed
 
 One OPEN (no closes → no dispatch): run 1531 re-shorted FILUSDT 816.43
