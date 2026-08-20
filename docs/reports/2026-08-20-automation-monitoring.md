@@ -8,6 +8,12 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 125 — 03:2xZ (anchor 03:27:00): quiet; routine fleet-37 forex rotation
+
+No trades, no closes, no rail fires. AUDUSD 1549 + GBPUSD 1550
+idle-retired ($0 combined — the fuse), AUDUSD 1561 rebuilt. Fleet 38
+steady 7/7. Day −$0.30. Fence 0; 0 tracebacks; R25 metrics 0/0.
+
 ## Cycle 124 — 02:5xZ (anchor 02:56:58): quiet
 
 No money events, no positions, 0 tracebacks. Day −$0.30. Fleet 38
