@@ -8,6 +8,29 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## SHIP — 02:0xZ: R25 fill-mark refresh LIVE as `20260820-r25-markrefresh` (PR #497) — owner-ordered "do fix"
+
+At the execution boundary of run_cycle: cycles older than 45s (every
+real cycle — the LLM sits between mark fetch and order) re-fetch the
+mark; **opens are refused past 0.75% drift** since the decision mark
+(`gate_skip stage=mark_drift` — the FIL 1531 case, +2.6%, would have
+been refused instead of filled −$5.26 underwater); **exits always fill
+at the fresh mark**; drift ≥0.05% journals `mark_refresh` (fill-time
+mark age becomes measurable forward — the data R25's measurement plan
+lacked); refetch failure falls back fail-open. Design note recorded
+honestly: draft 1 (unconditional refetch) broke 36 tests against the
+mocked-entry estate and was replaced by the cycle-age gate, which is
+also more correct. Pipeline: fail-before 3/5 on the unfixed engine →
+file 63/63 → full suite 4540 + 1349 → CI 5/5 → squash `b50eb1c2` →
+deployed, all surfaces 200, rollback `20260819-rag-a7-flat`. Verified
+in the running worker, 0 tracebacks.
+
+**Between-ship tape (next cycle dispatches the two-agent law):**
+LTC 1556 closed 01:09:57Z by the breakeven ratchet's SECOND live fire —
+numbers verified sane at first read (peak +$1.9013, fee-anchored arm
+$0.7009, genuinely armed on its own excursion, fired at ~breakeven on
+the round-trip; leg −$0.1428, run −$0.30).
+
 ## Cycle 120 — 00:4xZ (anchor 00:45:13): micro-window (2 min — displaced cron release), nothing new
 
 No events. LTC 1556 long +$0.95 unrealized. Fence 0; 0 tracebacks.
