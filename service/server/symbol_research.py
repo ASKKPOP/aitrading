@@ -772,7 +772,33 @@ def _read_overlays() -> dict[str, Any]:
     try:
         import regime
         snap = regime.evaluate_market_regime(persist=False) or {}
-        overlays["regime_blocks_longs"] = snap.get("allow_new_buys") is False
+        # R33 (2026-08-21): honour `enforced`, exactly as the order path does
+        # (automation._regime_blocks: "advisory-only until the Phase-4 flip").
+        # regime.py stamps enforced = REGIME_FILTER_ENABLED (default FALSE)
+        # and its own note calls the bands "unvalidated placeholders". This
+        # was the ONLY consumer that enforced the advisory verdict, and it
+        # enforced it as a HARD screen gate on crypto longs.
+        #
+        # Live at the 12:21:42Z anchor: regime 'panic' / allow_new_buys False
+        # / enforced FALSE on one reason ("unresolved volatility/liquidation
+        # shock") while F&G read 72 (Greed) and the crypto composite 72.7.
+        # The crypto universe screened 39 -> 17 dropped on liquidity -> 22
+        # reached the gate -> ALL 22 scored "long" (crypto in a broad
+        # uptrend) -> ALL 22 gated to zero -> survivors 0. Three of the last
+        # eight batches carried NO crypto thesis at all, live_crypto_theses
+        # hit 0, and fleet 38 sat at 2 of 7 slots unable to build.
+        #
+        # The blackout is invisible upstream: the other three markets fill
+        # their quotas, so the batch reports `survivors: 36` and looks
+        # healthy, and _release_unproductive_claim (which needs survivors
+        # == 0) never retries the burned window.
+        #
+        # Restores CANDIDATES, not trades — the desk still decides, and the
+        # fee gate, backtest gate and cooldowns are untouched. Re-enable the
+        # hard gate the intended way with REGIME_FILTER_ENABLED=true.
+        overlays["regime_blocks_longs"] = (
+            bool(snap.get("enforced"))
+            and snap.get("allow_new_buys") is False)
         overlays["regime"] = snap.get("regime")
         overlays["crypto_composite"] = snap.get("crypto_composite")
     except Exception:  # noqa: BLE001
