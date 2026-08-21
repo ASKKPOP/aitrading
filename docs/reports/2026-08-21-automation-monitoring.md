@@ -8,6 +8,54 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 196-198 — 21:2xZ / 21:5xZ / 22:2xZ (anchors 21:21:37, 21:51:53, 22:21:48): quiet; post-revert truncation counter opened (n=16, NOT yet evidence)
+
+**PROFIT-OR-LOSS FIRST.** Zero trades across all three windows, **zero all day
+— 39.2h since the last fill (08-20T07:10:41Z)**, no open positions, ledger
+unchanged. Rails essentially silent: fence 0, caps 0, **zero
+`verdict_salvaged` since the revert**, one `alert` (a retire notice) and one
+`no_verdict`. 22 holds + 23 benign `pre: market closed` (NYSE shut 20:00Z),
+**zero mechanical refusals**. Fleets recovered and held: 37 at 8/10, 38 at
+**6/7** after the cooldown wave.
+
+Running image re-read each cycle (trap 7): `20260821-revert-entry-window`
+throughout — no parallel deploy over the revert.
+
+### Post-revert falsification counter — OPEN, and deliberately NOT called
+
+| arm | decisions | `verdict_salvaged` | rate |
+|---|---|---|---|
+| 1 PRE-R28 (00:00–09:24:39Z) | 166 | 0 | 0.00% |
+| 2 R28-LIVE (09:24:39–21:11:53Z) | 251 | 13 | **5.18%** |
+| 3 POST-REVERT (21:11:53Z→) | **16** | **0** | 0.00% |
+
+**n=16 is NOT evidence.** At the R28-era 5.18% rate, P(0 salvaged in 16) ≈
+0.43 — a coin-flip. Zero salvages here is exactly what would be seen if the
+revert changed nothing. **The counter is open; no verdict until the sample is
+real.** Recorded because the temptation to read 0/16 as vindication of my own
+revert is precisely the self-delusion the owner law forbids.
+
+### `no_verdict` — a SEPARATE failure mode, and it is NOT truncation
+
+Three fired today (runs 1649, 1657 ×2). **All three are
+`{"kind": "empty", "chars": 0, "tail": ""}`** — the model returned NOTHING,
+not a cut-off reply. That points at an LLM timeout or refusal, not prompt
+length, and must not be folded into the R28 truncation argument (I made that
+mistake once and corrected it in cycle 195).
+
+**New observation: they concentrate.** Run 1657 alone accounts for 2 of the 3,
+at 19:23:59Z and 22:21:14Z. Worth a per-run/per-symbol look if the count
+grows — logged as a watch, not a finding, at n=3.
+
+### Standing
+
+**R33** INERT for a ninth consecutive hour — regime `trend`/`enforced False`
+since 13:08Z, so the fix is still untested in production; its falsification
+waits on the next `panic` window. **R34** holding (fleet 38 stable at 6/7
+after cooldown expiry refilled it). **R32**, **R30**, **R29** unchanged and
+unshipped. The 08-13 cliff keeps the sweep's component-score discriminator and
+gained no new evidence.
+
 ## Cycles 193-195 — 17:5xZ / 18:2xZ / 20:4xZ (anchors 17:51:47, 18:21:47, 20:45:29): **R28 REVERTED AND LIVE** — my own fix was destroying 5.3% of published plans
 
 **PROFIT-OR-LOSS FIRST.** Zero trades across all three windows, **zero all day
