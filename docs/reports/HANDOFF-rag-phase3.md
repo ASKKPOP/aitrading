@@ -129,9 +129,19 @@ flat rows contain `flat considering entry`, holding rows contain
 
 - Image: `sooppiy-backend:20260821-rag-flat-on`, from `761f9855`.
 - `DESK_RECALL_ENABLED` default on · `DESK_RECALL_EXPLORE=1` · **`DESK_RECALL_FLAT=1`** (set 2026-08-21T00:22Z).
-- **`DESK_REACHABILITY_AB` — default OFF, shipped 2026-08-21.** OFF is prod's
-  current behaviour exactly (every run in the treatment arm). Turning it on
-  starts the entry experiment in §4b; turning it off ends it with no deploy.
+- **`DESK_REACHABILITY_AB=1` — LIVE since `2026-08-21T09:42:01Z`.**
+  **THAT TIMESTAMP IS THE READOUT WINDOW START (`<flip-ts>` in §4b). Do not
+  count a single decision before it.** Backup `.env.bak-reachab-20260821-094150`.
+  Prod image `sooppiy-backend:20260821-reachability-ab` from `44ce164`.
+
+  Rollback, no deploy and no image change:
+
+  ```
+  ssh -i ~/shell/sierrabiolab/sierrabiolab-aws.pem ec2-user@52.9.147.202
+  cd /home/ec2-user/sooppiy
+  sed -i 's|^DESK_REACHABILITY_AB=.*|DESK_REACHABILITY_AB=0|' .env
+  docker compose --profile prod up -d --no-build worker
+  ```
 - Both flags live in `/home/ec2-user/sooppiy/.env`, so they survive a deploy.
 - Backups: `.env.bak-recallflat-20260821-002238`, `.env.bak-20260821-013137`.
 
@@ -222,6 +232,10 @@ re-check this before trusting a readout** — a `full`-routed cycle would show
 the disclosure to a control-arm run.
 
 ### Pre-registered readout — write it down BEFORE looking
+
+**Window start: `2026-08-21T09:42:01Z`.** Anything earlier is journalled
+`treat` because the flag was off, and pooling it with the live treatment arm
+would silently inflate `treat`'s n with pre-experiment cycles.
 
 **Primary metric:** flat-cycle entry-intent rate per arm =
 `(action IN ('buy','sell')) / flat decisions`, crypto only, where a flat
