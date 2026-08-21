@@ -210,10 +210,16 @@ arm mid-life would contaminate its own history. An unusable id fails **toward
 treatment**, because losing the line is the change under test and keeping it
 is the status quo. Every `decision` event journals `reach_ab`.
 
-**Scope, and why it is enough.** Only the LIGHT path is gated
-(`run_engine._light_analysis`). 100% of flat decisions are `route: light`, so
-the light path IS the entry population; `analysis_agents._trader_risk_decision`
-(the escalated path, overwhelmingly holding-cycles) is deliberately untouched.
+**Scope, and why it is enough — measured, not assumed.** Only the LIGHT path
+is gated (`run_engine._light_analysis`). Counted on prod 2026-08-21 over
+08-15 → now: **3,595 flat decisions and 236 holding decisions, and every
+single one is `route: light`** — the escalated `full` path has taken **zero**
+cycles in that window. So the light path is not merely the entry population,
+it is the whole decision population, and leaving
+`analysis_agents._trader_risk_decision` ungated contaminates nothing. Its
+signature is unchanged as a result. **If the router starts escalating again,
+re-check this before trusting a readout** — a `full`-routed cycle would show
+the disclosure to a control-arm run.
 
 ### Pre-registered readout — write it down BEFORE looking
 
