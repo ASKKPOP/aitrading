@@ -8,6 +8,87 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 193-195 — 17:5xZ / 18:2xZ / 20:4xZ (anchors 17:51:47, 18:21:47, 20:45:29): **R28 REVERTED AND LIVE** — my own fix was destroying 5.3% of published plans
+
+**PROFIT-OR-LOSS FIRST.** Zero trades across all three windows, **zero all day
+— 37.6h since the last fill**, no open positions, ledger unchanged. Fence 0,
+caps 0. Two more `spot sell with no inventory` skips — the day's only
+actionable decisions were both in a direction the run could not express.
+
+Fleet 38 refilled **3/7 → 6/7** as cooldowns expired (R34's clock again, now
+at scale); fleet 37 fell to 6/10 after the 20:00Z close.
+
+### R28 REVERTED — I shipped harm and removed it
+
+Chasing an uptick in `verdict_salvaged`, I split the day at my own deploy:
+
+| arm (same UTC day) | decisions | salvaged | rate |
+|---|---|---|---|
+| PRE-R28 (00:00–09:24:39Z) | 166 | **0** | **0.00%** |
+| POST-R28 (09:24:39Z→) | 245 | **13** | **5.31%** |
+
+5.31% is the highest truncation rate of any window measured (prior daily
+rates: 08-18 2.37%, 08-19 0.83%, 08-20 0.59%).
+
+**And every truncation destroys the outlook. All 9 truncated cycles checked
+wrote ZERO `outlook` rows** — the JSON tail carries the outlook block, so the
+run publishes no plan at all that cycle: no `horizon_hours`, no bias, no entry
+zone, no invalidation. `no_verdict` stayed 0 for those, so the ACTION still
+executed; what is lost is the Plan-26 standing plan.
+
+**R28 was therefore corrupting its own falsification metric**, deleting
+observations of the exact field it is judged on — and preferentially deleting
+the LONGEST replies, biasing the surviving horizon sample in an unknown
+direction.
+
+**Attribution, stated honestly and NOT airtight:** #508's image deployed ~13
+minutes after this one, and the daily base rate varies 0.59–2.37%. But #508
+shipped default-OFF (every run `treat`, line present, prompt unchanged), so
+**R28 is the only change that LENGTHENED the prompt.** The within-POST test —
+runs that render the line vs runs that do not — has **no discriminating
+power**, because nearly every live run is never-traded and renders it. That
+limitation is recorded rather than argued around.
+
+**Two corrections to my own reporting inside this batch:**
+1. `no_verdict` fired twice (runs 1649, 1657) — but both are
+   `{"kind": "empty", "chars": 0, "tail": ""}`, i.e. **EMPTY replies, not
+   truncated ones.** An empty reply points at an LLM timeout, not prompt
+   length. I must NOT attribute them to R28.
+2. I briefly reported a combined "6.12% truncation" folding those two in.
+   **That overstated my own case.** The honest figure is truncation-only:
+   **13/245 = 5.31%.**
+
+**REVERTED — PR #520, live on `sooppiy-backend:20260821-revert-entry-window`
+(worker up 21:11:53Z).** ruff clean, **4603 passed + 1349 subtests**,
+`_run_expiry_line` byte-restored. **Verified 3× live:** image + R28 text and
+helpers absent (0/0); the brief now renders exactly ONE line with
+`has_entry_window: False` on runs 1661/1659/1658; 0 tracebacks.
+
+**Rollback of the rollback:** `SOOPPIY_IMAGE=sooppiy-backend:20260821-regime-advisory`
+and re-run compose.
+
+**Falsification for the next pass:** the truncation rate must fall back toward
+the 0.59–2.37% band after 21:11:53Z. **If it stays near 5%, R28 was NOT the
+cause and this revert bought nothing — report that plainly and look at #508
+and prompt growth elsewhere.**
+
+**What R28 got right survives in the record, not the code:** the platform does
+tell the desk a deadline 4.6× too generous, and the entry-window arithmetic
+was verified EXACT — run 1597 PFE was told *"1 more no-trade cycle (~0.5h)"*
+and idle-retired 28 minutes later. But the desk demonstrably ignores it (1639
+NOW told *"~2.6h"*, authored 48.0h), so the fix bought a true statement nobody
+acts on at the price of 5.3% of plans. **Unproven benefit against a measured
+cost is a bad trade.** Re-land only SHORTER — one sentence, not ~350 chars —
+and only if the truncation is later attributed elsewhere.
+
+### Standing
+
+**R33** INERT all day — regime `trend`/`enforced False` since 13:08Z; still
+untested in production. **R34** reconfirmed at scale (fleet 38 3/7 → 6/7 on
+cooldown expiry). **R32**, **R30**, **R29** unchanged and unshipped. The 08-13
+cliff keeps the sweep's discriminator. Truncation-salvage watch: 13 today,
+`no_verdict` 2 (both empty-reply, separate failure mode).
+
 ## Cycles 191-192 — 16:5xZ / 17:2xZ (anchors 16:51:44, 17:21:48): **R34 confirmed 3x BY THE CLOCK**; and cycle 190's own correction partly flips at n=3
 
 **PROFIT-OR-LOSS FIRST.** Zero trades in both windows, **zero all day — 34.2h
