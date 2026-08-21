@@ -8,6 +8,40 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## 24H SWEEP — 03:5xZ (anchor 03:59:32, displaced cron): risk hygiene perfect, throughput ZERO — R26's trades/day metric has not moved
+
+**PROFIT-OR-LOSS FIRST.** 24h realized: **$0.00 — zero trades** since
+the FIL cyc33 cover (08-20 07:10Z). Ledger 08-18/19/20: −0.94 / −1.14 /
+−1.46; 08-21 has no realized row yet. The platform's risk stack is
+faultless and its engine is idle.
+
+**Adversarial re-proofs (all by direct count, window 08-20 15:37 → now):**
+- **#475 fence: 0 — PASS, day 4.** Caps 0 (ledger unchanged: 5 fires,
+  net-positive insurance). Ratchet 0 (R21 stays validated at n=2).
+  R:R floor/ceiling actionable fires 0. Loss floor #460: still zero
+  enforcement fires ever.
+- **R23: 0 sweeper writes to dead runs — holds.** **R25: 0 events, but
+  also 0 fills — unexercised this window** (metric valid only on tape).
+  **R27: 0 `floor_carry` renders — correct: no run currently carries a
+  past-floor total while flat** (1531 retired; successors start clean).
+- **Shape:** 420 decisions, 99.3% hold, **no_verdict 0/420** (the
+  collapse is complete this window; salvaged 4 — the rail absorbing
+  every truncation), empty-why 0/8 (watch-11 rate stays zero).
+- **Churn tally: unchanged** (a=4 ≈−$5.4 · b=5 · c=4 · d=2) — no legs.
+
+**The honest verdict:** R26's binding metric — trades/day against the
+8.2/day baseline — has NOT moved; it fell (5 on 08-20, 0 since). The
+gate no longer strips candidates (proven), the slots fill (proven), the
+desks see the candidates and decline ~100% on conviction. The binding
+constraint is now fully DESK CONVICTION on the current candidate
+quality, exactly where the funnel diagnosis said the falsification
+sample pointed (declined entries were ≈ fee-negative). Nothing to fix
+by rail; the lever, if the owner wants throughput, is candidate quality
+(research depth/coverage), not gates. Recording, not acting (n is
+tape-thin and the discipline is not wrong at these setups).
+
+Docs→main batch: PR follows (cycles 150–174 + this sweep).
+
 ## Cycle 174 — 03:5xZ (anchor 03:56:52): quiet
 
 No money events, no positions. NFLX 1591 expired at_time, never traded
