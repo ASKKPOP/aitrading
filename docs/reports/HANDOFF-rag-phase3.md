@@ -53,6 +53,49 @@ distinct chunk pairs.** It sat at 1-of-2 for four days. Measured 2026-08-21
 
 Three ε classes clear the bar. **Build (b).**
 
+> **RE-MEASURED 2026-08-21 08:0xZ on all 833 `recall` rows — the gate is
+> MET more widely than the table above, but the pair count is PARTLY
+> CONFOUNDED and (b) must not treat it as exogenous.**
+>
+> **Six** ε classes clear ≥30 events and ≥3 distinct pairs, not three:
+> crypto/giveback+winning 104/14, crypto/FLAT 101/5,
+> futures/giveback+winning 90/4, forex/giveback+winning 82/6,
+> forex/winning 49/3, forex/FLAT 42/4.
+>
+> **The confound.** The deterministic (greedy) arm's distinct pairs occupy
+> **perfectly non-overlapping time blocks** — crypto/giveback+winning is
+> `9d8b125b+c8559767` 08-12→08-14, `0e7a7833+9b9cd916` 08-15→08-17,
+> `9b9cd916+c72e011b` 08-17→08-18, `818d9f91+c72e011b` 08-19; zero overlap,
+> and the same pattern in every class. That variation is **corpus drift,
+> perfectly confounded with calendar time and market regime.** A per-chunk
+> score computed over it measures the week, not the chunk. **Only
+> ε-exploration-induced sets are attributable.**
+>
+> | class | events | explore rows | ε-induced novel sets |
+> |---|---|---|---|
+> | crypto / giveback+winning | 104 | 22 | 10 |
+> | crypto / FLAT-entry | 101 | 28 | 4 |
+> | futures / giveback+winning | 90 | 29 | 3 |
+> | forex / giveback+winning | 82 | 20 | 4 |
+> | forex / FLAT-entry | 42 | 11 | 3 |
+>
+> Five classes clear on exogenous variance alone, so **(b) stays
+> unblocked.** Two binding constraints on how it is built:
+> 1. The effective sample is the **explore arm** — 11–29 rows per class,
+>    ~2–3 observations per novel set. Size every claim off that n, not off
+>    the events column.
+> 2. (b) must record the **deterministic block in force at each row's
+>    timestamp**, and never compare an explore row in block 3 against a
+>    deterministic row in block 1.
+>
+> **Also corrected:** the "measured ~01:30Z … ~70 minutes after the flat
+> promotion" stamp above is wrong. The first flat `recall` row is
+> 08-21T00:24:21Z and the flat decision rate is ~18/h, so at 01:30Z at most
+> ~19 flat rows existed — 95+40=135 is arithmetically impossible then. The
+> counts match a measurement taken ~07:4xZ (≈ the commit time of #503).
+> **The gate verdict is unaffected; the timestamp is not evidence of
+> anything and must not be cited as "the gate opened within the hour".**
+
 **Do NOT pool the FLAT rows with the HOLDING rows.** They answer different
 questions (whether to OPEN vs whether to cut/hold/bank) and the ledger has
 twice been burned by pooling populations. Separate them by the `query` string:
@@ -115,6 +158,29 @@ At ~01:30Z on 08-21 the count was **135 flat cycles, 133 `hold` + 2 `retire`,
 exactly what "no effect" looks like.** Any session reading this before the
 window fills must report INCONCLUSIVE, never reassurance.
 
+> **⚠️ CORRECTED 2026-08-21 08:0xZ — THIS TEST CANNOT ANSWER ITS OWN
+> QUESTION, for two reasons, and both are worse than the one above.**
+>
+> **(i) The baseline population is wrong** — it counts only `buy` and so
+> omits every short. See the §6 correction below: the true flat-cycle
+> entry-intent baseline is **62/3,445 = 1.80%**, not 7/3,444 = 0.20%. On
+> the corrected rate, 0 intents in 144 post-flip flat cycles is
+> P(0) = 0.982^144 ≈ **0.073** — inconclusive, but ~8× more suggestive
+> than "~0.27 expected" implies.
+>
+> **(ii) The baseline is NOT STATIONARY.** The entry rate was already
+> collapsing before the flip — 08-15 7.77%, 08-18 0.86%, 08-20 0.44% —
+> because of a separate cause (see §6). Against 08-20's own rate the same
+> zero gives P(0) ≈ **0.53**, i.e. nothing at all. **A one-sided test
+> against a pooled six-day rate cannot separate `DESK_RECALL_FLAT`'s
+> effect from the pre-existing collapse.** Any session that reports this
+> test as passing or failing is reporting an artifact.
+>
+> What IS measured and clean: the flag is mechanically healthy —
+> **143/143** flat decisions carry a `recall` row (crypto 101 + forex 42,
+> matching decisions per market exactly), **0** rows with empty `chunks`,
+> **0** tracebacks in 8h. The traceback abort condition is not triggered.
+
 **Abort rule, pre-committed:** revert `DESK_RECALL_FLAT=0` if buys reach 0
 across a full 3,444-flat-cycle window, or on any recall-path traceback.
 
@@ -144,7 +210,22 @@ never be evaluated. Writing a criterion that cannot be evaluated is the
 **The desk has nearly stopped trading, and the ladder was starving because of
 that, not because of instrumentation.**
 
-- On flat cycles the desk says `buy` **7 times in 3,444 (0.20%)**, `short` zero.
+- ~~On flat cycles the desk says `buy` **7 times in 3,444 (0.20%)**, `short`
+  zero.~~ **WRONG — CORRECTED 2026-08-21. The `short` zero is a STRUCTURAL
+  ARTIFACT and the 0.20% understates entry intent by 8.7×.**
+  - The decision prompt fixes the schema at `{"action": "buy"|"sell"|"hold"}`
+    (`run_engine.py:2083`), and the `decision` event is emitted at **line
+    2343** while the futures `sell`→`short` remap runs at **line 2399**.
+    The event is written BEFORE the remap. **`short` can never appear in a
+    `decision` payload** — all-time, 5,103 rows: `hold` 4668 / `sell` 239 /
+    `buy` 128 / `retire` 68 / **`short` 0**. Meanwhile `signals` carries
+    **48 `short` opens all-time.** Counting a token the schema forbids and
+    reporting the zero as behaviour is the error.
+  - **Corrected, 08-15 → 08-21 08:0xZ, n = 3,588 flat decisions:** `sell`
+    (→ short on a futures book) **55 → 36 executed**, `buy` **7 → 6
+    executed**; entry intent **62 = 1.73%**, executed **42 = 1.17%**;
+    `hold` 3,498, `retire` 28. **86% of executed entries are SHORTS.**
+    Read `signals.side`, never the decision action, to count entries.
 - Cross-checked exactly: FLAT 3,444 + HOLDING 236 = **3,680** total decisions,
   and HOLDING 236 = the 236 recall rows. Holding-cycle recall coverage was
   100%; entry-cycle coverage was 0% until 08-21, now 100%.
@@ -153,11 +234,52 @@ that, not because of instrumentation.**
   which **+$5.65 is 08-16 alone**. Strip the largest contributor: **−$0.03**.
   Last three days: −0.94, −1.14, −1.46.
 
-Per the owner's profit law, this outranks retrieval ranking. A future session
-should treat **"why does the desk decline 97.4% of entries, and is that
-judgment correct?"** as the profit question, with the outcomes of the 7 taken
-entries as the first evidence. Ranking a prompt better optimises a desk that
-is barely trading.
+Per the owner's profit law, this outranks retrieval ranking.
+
+### ✅ 2026-08-21 — that profit question is ANSWERED to the limit of observation
+
+**The entry engine did not slow down. It was switched off at a deploy
+boundary.** Full working in the 2026-08-21 cycle note, §§3-7.
+
+- **Level shift, not a trend.** Crypto flat entry-intent rate, 6h buckets,
+  split at the `20260818-ai-first-batch` image build (**08-18T11:49:34Z**):
+  PRE 33/566 = **5.83%**, POST 8/649 = **1.23%**. Two-proportion
+  **z = 4.427, two-sided p = 9.5e-6**; exact binomial P(≤8 in 649 at the
+  PRE rate) = **2.3e-9**. The ten PRE buckets oscillate around 5.8% with
+  **no downward trend**; POST decays to zero.
+- **Confirmed from a second table and a second definition** — executed
+  opens from `signals`: PRE **0.368/h** (22 in 59.8h) → POST **0.102/h**
+  (7 in 68.5h). Last executed open **08-20T06:40:29Z**.
+- **The batch delta is four commits.** #483/#486 docs; **#485 is an EXIT
+  rail**; **#484 is the only entry-side behavioural change** —
+  `desk_record.record_line()` wired into both bracket prompts.
+- **The desk quotes it.** All 15 crypto flat cycles scoring confidence
+  ≥0.65 on 08-21 said `hold`; **11 of 12** give one reason, in
+  `record_line()`'s own vocabulary — *"the required stop is too wide
+  relative to the expected move, yielding negative expectancy"*,
+  *"historical reachability limits"*, *"the expected 4% move exceeds
+  observed historic upside"*. The line ends: *"Judge whether this trade
+  is worth taking at all."*
+- **Confidence and action DECOUPLED.** Avg confidence rose 0.499 → 0.563
+  and the ≥0.65 share rose 5.8% → 14.4% while entries fell 16 → 0.
+
+**Rivals refuted, do not re-run:**
+
+| hypothesis | verdict |
+|---|---|
+| the tape went quiet — declining is correct | **REFUTED AND INVERTED.** Same 17 symbols in both arms, deploy day excluded: per-cycle absolute move PRE median **0.140%** → POST **0.291%**, mean 0.210% → **0.499%**, p90 0.444% → **1.044%**. Volatility roughly **DOUBLED** as entries went to zero. The POST median move now EXCEEDS the p75 (0.33%) ceiling the desk is shown — **the disclosure is stale against its own live tape** |
+| the record ratcheted more pessimistic | **REFUTED** — it improved: n 26→33, best 0.969%→**1.438%**, never-positive 42%→**39%** |
+| population mix diluted the rate | **REFUTED for crypto**, the entire entry engine — its own rate fell 7.77% → 0.86% → **0.00%** on stable run and cycle counts |
+
+**What this does NOT establish.** It is **observational, not an
+experiment** — per the owner's experimental-mindset rule the next
+increment is the EXPERIMENT (a per-run randomised A/B on the reachability
+line, default-off), never a naive revert. #484 was itself shipped on a
+real measurement (authored `target_pct` median 4.80% against a book that
+had never peaked above ~1%); reverting reinstates that defect. And the
+profitable tape is thin: +9.16 over the three high-activity days is **2
+days**, and stripping each day's largest contributor leaves ≈ **+0.10**
+on n = 42 opens. **"Trading more makes money" is NOT established.**
 
 ---
 

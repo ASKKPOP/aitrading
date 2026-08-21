@@ -147,6 +147,47 @@ Every increment lands here as a dated line, in the same PR that ships it.
     open measurement obligations, the hypotheses already killed, and the
     traps this cadence has hit. Account memory does not survive rotation;
     that file and this section do.
+  - **2026-08-21 (pass 2, 08:0xZ) — the ladder is not the constraint; the
+    desk stopped trading, and the cause is now traced.** No code shipped;
+    the measurement IS the increment. Full working in
+    [docs/reports/2026-08-21-automation-monitoring.md](../reports/2026-08-21-automation-monitoring.md).
+    - **The entry engine was switched off at a deploy boundary, not slowly
+      starved.** Crypto flat entry-intent rate, 6h buckets, split at the
+      `20260818-ai-first-batch` build (08-18T11:49:34Z): PRE 33/566 =
+      **5.83%**, POST 8/649 = **1.23%**, two-proportion **z = 4.427,
+      p = 9.5e-6** (exact binomial P(≤8 in 649 at the PRE rate) = 2.3e-9),
+      with **no downward trend in the ten PRE buckets**.
+      Confirmed from `signals` independently: executed opens **0.368/h →
+      0.102/h**. The only entry-side behavioural change in that batch is
+      **#484** (`desk_record.record_line()` in both bracket prompts); the
+      desk's own free-text gives that line's reasoning in **11 of 12**
+      high-confidence holds. Rival hypotheses refuted: the tape did NOT go
+      quiet — matched-symbol per-cycle volatility roughly **DOUBLED**
+      (median 0.140% → 0.291%) as entries went to zero; the record did not
+      ratchet worse (best 0.969% → 1.438%); the population did not shift.
+      **Observational, not an experiment — the next increment is a
+      per-run randomised A/B on the reachability line, default-off, never
+      a naive revert.**
+    - **Two numbers in the authority docs are artifacts, now corrected in
+      place.** (i) "`short` zero" is structural: the decision schema is
+      `buy|sell|hold` and the `sell`→`short` remap runs AFTER the
+      `decision` event is emitted (`run_engine.py` 2343 vs 2399), so
+      `short` is 0 in all 5,103 decision rows and can never be anything
+      else — while `signals` holds 48 short opens. The real flat entry
+      rate is **62/3,588 = 1.73% intent / 42 = 1.17% executed**, and
+      **86% of executed entries are SHORTS**, not zero. (ii) §4a's harm
+      test therefore uses a wrong baseline AND a non-stationary one, and
+      **cannot separate `DESK_RECALL_FLAT`'s effect from the collapse**.
+      The flag itself is mechanically clean: 143/143 flat decisions carry
+      a `recall` row, 0 empty-`chunks` rows, 0 tracebacks.
+    - **(b) re-measured: MET more widely (six ε classes, not three) but
+      the pair count is partly confounded.** The deterministic arm's
+      distinct pairs sit in **perfectly non-overlapping time blocks** —
+      corpus drift, collinear with calendar time. Only ε-induced sets are
+      attributable; five classes still clear on those alone (10/4/3/4/3
+      novel sets). **(b) must key on the deterministic block in force at
+      each row's `ts`, and size its claims off the explore arm (11-29
+      rows/class), not off the events column.**
   - **2026-08-21 — the (b) gate is MET, ~70 minutes after the flat
     promotion.** Measured ~01:30Z on flat rows alone: crypto/FLAT **95 events
     / 5 pairs** and forex/FLAT **40 / 4**, both `eps-head-fixed-v1`, joining
