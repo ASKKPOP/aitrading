@@ -129,6 +129,9 @@ flat rows contain `flat considering entry`, holding rows contain
 
 - Image: `sooppiy-backend:20260821-rag-flat-on`, from `761f9855`.
 - `DESK_RECALL_ENABLED` default on · `DESK_RECALL_EXPLORE=1` · **`DESK_RECALL_FLAT=1`** (set 2026-08-21T00:22Z).
+- **`DESK_REACHABILITY_AB` — default OFF, shipped 2026-08-21.** OFF is prod's
+  current behaviour exactly (every run in the treatment arm). Turning it on
+  starts the entry experiment in §4b; turning it off ends it with no deploy.
 - Both flags live in `/home/ec2-user/sooppiy/.env`, so they survive a deploy.
 - Backups: `.env.bak-recallflat-20260821-002238`, `.env.bak-20260821-013137`.
 
@@ -190,6 +193,86 @@ It required the entry action mix to stay "within a few points" of baseline. At
 a **0.20%** base rate a few points is 10–50× the entire signal, so it can
 never be evaluated. Writing a criterion that cannot be evaluated is the
 08-09 and 08-17 mistake; it was retired on 08-21, not quietly passed.
+
+---
+
+## 4b. THE LIVE EXPERIMENT — `DESK_REACHABILITY_AB` (pre-registered 2026-08-21)
+
+The entry collapse (§6) is traced to #484's reachability disclosure on
+**observational** evidence. The owner's experimental-mindset rule forbids
+shipping a fix on that, so what shipped is the **experiment**.
+
+**Mechanism.** `run_engine._reachability_ab_arm(run_id)` returns `treat` or
+`control`. Default **OFF** ⇒ every run is `treat`, prod behaviour unchanged.
+When `DESK_REACHABILITY_AB=1`, odd `run_id` → `control` (no disclosure), even
+→ `treat`. Deterministic in the id, never in the clock — a run that flipped
+arm mid-life would contaminate its own history. An unusable id fails **toward
+treatment**, because losing the line is the change under test and keeping it
+is the status quo. Every `decision` event journals `reach_ab`.
+
+**Scope, and why it is enough.** Only the LIGHT path is gated
+(`run_engine._light_analysis`). 100% of flat decisions are `route: light`, so
+the light path IS the entry population; `analysis_agents._trader_risk_decision`
+(the escalated path, overwhelmingly holding-cycles) is deliberately untouched.
+
+### Pre-registered readout — write it down BEFORE looking
+
+**Primary metric:** flat-cycle entry-intent rate per arm =
+`(action IN ('buy','sell')) / flat decisions`, crypto only, where a flat
+decision is `payload LIKE '%"entry_rail"%'`. **Count `sell` — it is the short
+verb; see §6.** Split on the `reach_ab` field, never on run-id parity
+recomputed later (the flag may be toggled).
+
+```sql
+SELECT JSON_UNQUOTE(JSON_EXTRACT(re.payload,'$.reach_ab')) arm,
+       COUNT(*) cycles,
+       SUM(JSON_UNQUOTE(JSON_EXTRACT(re.payload,'$.action')) IN ('buy','sell')) intents
+FROM run_events re JOIN trading_runs tr ON tr.id = re.run_id
+WHERE re.event_type='decision' AND re.ts >= '<flip-ts>'
+  AND re.payload LIKE '%"entry_rail"%' AND tr.market='crypto'
+GROUP BY arm;
+```
+
+**Power, computed not guessed** (two-proportion, α=0.05, 80%), against the
+treat arm's measured 1.23%:
+
+| if control returns to | n per arm | days at ~120 crypto flat cycles/arm/day |
+|---|---|---|
+| 5.83% (the full PRE rate) | **252** | ~2 |
+| 3.50% (half recovery) | 703 | ~6 |
+| 2.50% (weak) | 1,781 | ~15 |
+
+**Decision rule, pre-committed:**
+1. First readout at **n ≥ 252 per arm**. Significant ⇒ #484's disclosure is
+   causally suppressing entries, and the fix is designed from there.
+2. Not significant ⇒ continue to **n ≥ 703 per arm**. Still not significant
+   ⇒ report **the effect is ABSENT**, not "unproven", and #484 is exonerated
+   — the entry collapse then has another cause and §6 must be reopened.
+3. **Do not peek-and-stop.** Reading out at every cycle and stopping on the
+   first favourable p-value is how this ledger would manufacture its own
+   result. Two readout points, both listed above, and no others.
+
+**Safety, also pre-committed.** The control arm REMOVES a truthful
+measurement, so it can reinstate exactly the defect #484 fixed (authored
+`target_pct` median 4.80% against a book that had never peaked above ~1%).
+Secondary metrics, reported with the primary and never instead of it:
+authored `target_pct` median per arm, and realized P&L per closed run per
+arm via `pnl_audit.py` (never a hand-written sum — `adapt realized` omits
+`run:N:flatten` closes).
+
+**Abort — revert `DESK_REACHABILITY_AB=0` immediately if either fires:**
+- any traceback on the recall/reachability path, or
+- control-arm cumulative realized P&L trails the treat arm by more than
+  **$5** once the control arm has **≥10 closes**.
+
+No deploy is needed to abort — the flag lives in
+`/home/ec2-user/sooppiy/.env`; `sed` it to 0 and
+`docker compose --profile prod up -d --no-build worker`.
+
+**What a null result would mean.** It would refute the strongest observational
+finding this cadence has produced (z=4.43, p=9.5e-6, rival refuted and
+inverted). That is the point — a measurement that cannot embarrass its author
+is not an experiment.
 
 ---
 

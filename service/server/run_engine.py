@@ -4749,9 +4749,47 @@ _RECALL_KINDS = ("outcome", "lesson")
 _RECALL_KINDS_FALLBACK = ("monitoring",)
 
 
-def _reachability_line(market) -> str:
+def _reachability_ab_arm(run_id) -> str:
+    """Which arm of the reachability A/B this run sits in: "treat" (sees the
+    disclosure, today's behaviour) or "control" (does not).
+
+    WHY (measured 2026-08-21). The disclosure shipped in #484 is the traced
+    cause of the entry collapse: crypto flat-cycle entry-intent rate fell
+    5.83% -> 1.23% at the exact `20260818-ai-first-batch` deploy instant
+    (z=4.43, p=9.5e-6; exact binomial 2.3e-9), with no downward trend in the
+    ten preceding buckets, and 11 of 12 high-confidence holds hand this
+    line's own reasoning back. The rival "the tape went quiet" is refuted and
+    inverted — matched-symbol volatility roughly DOUBLED over the same window.
+
+    But that is OBSERVATIONAL. The owner's experimental-mindset rule forbids
+    implementing a fix on it, so this ships the EXPERIMENT instead of the fix.
+
+    Three properties are load-bearing:
+      * **Default OFF.** With `DESK_REACHABILITY_AB` unset every run is
+        "treat", i.e. prod behaviour unchanged byte for byte.
+      * **Deterministic in run_id.** A run that flipped arm mid-life would
+        contaminate its own history, so the arm is a pure function of the id
+        and never of the clock, the market, or a random draw.
+      * **Fail-safe toward treatment.** An unusable run id returns "treat".
+        Losing the disclosure is the behaviour change under test; keeping it
+        is the status quo, so ambiguity must never silently strip it.
+    """
+    if os.environ.get("DESK_REACHABILITY_AB", "0").strip().lower() in (
+            "0", "false", "no", "off", ""):
+        return "treat"
+    try:
+        return "control" if int(run_id) % 2 else "treat"
+    except (TypeError, ValueError):
+        return "treat"
+
+
+def _reachability_line(market, run_id=None) -> str:
     """What this book has ACTUALLY reached, for the prompt that asks for a
-    target. Fail-soft: a missing record costs one sentence, never a cycle."""
+    target. Fail-soft: a missing record costs one sentence, never a cycle.
+
+    Returns "" for a control-arm run — see `_reachability_ab_arm`."""
+    if _reachability_ab_arm(run_id) == "control":
+        return ""
     try:
         import desk_record
         return desk_record.record_line(str(market or ""))
@@ -5821,7 +5859,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                 f"time exit {_cand.get('time_exit')}. "
                 "Discuss: adopt, adjust, or override — justify your final "
                 "targets.\n")
-    reach = _reachability_line(run.get("market"))
+    reach = _reachability_line(run.get("market"), run.get("id"))
     if reach:
         reach += "\n"
     prompt = (
@@ -6577,6 +6615,13 @@ def run_cycle(run_id: int) -> dict:
                               "size_scale": size_scale,
                               "entry": entry,
                               "route": route,
+                              # Reachability A/B arm (2026-08-21). Recomputed
+                              # here rather than threaded down: it is a pure
+                              # function of run_id + env, so the emit site
+                              # cannot disagree with the prompt site. Without
+                              # this field the experiment cannot be read out
+                              # of `run_events` at all.
+                              "reach_ab": _reachability_ab_arm(run_id),
                               # The gate reads ONE of these two numbers and
                               # they disagree materially: prod run 822 showed
                               # 0.68/0.345, 0.62/0.35 and 0.70/0.3325 on three
