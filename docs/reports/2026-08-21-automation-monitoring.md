@@ -8,6 +8,168 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## 24H SWEEP #2 — 15:3xZ (anchor 15:37:18): **ZERO TRADES IN 24H — a FAILURE, not a quiet day.** 7-day result INCONCLUSIVE. R28 confirmed FAILED. The 08-13 cliff finally has a discriminator.
+
+*(Prior sweep this UTC day ran at 03:59:32Z, 11.6h earlier, under the previous
+session. This is my cron's first firing over a materially different window —
+not a displaced duplicate.)*
+
+### 1. PROFIT OR LOSS — FIRST
+
+**Trailing 24h realized: $0.00. `pnl_audit --since 2026-08-20T15:37Z`
+returns NO ROWS AT ALL — zero closes, zero opens.** Last fill was
+2026-08-20T07:10:41Z, now **32.4 hours** ago. No open positions.
+
+Running ledger (`pnl_audit`, validated **71/71** against the platform's own
+stored `realized_pnl_usd`):
+
+| day | ledger |
+|---|---|
+| 08-15 | −0.12 |
+| 08-16 | **+5.65** |
+| 08-17 | +3.63 |
+| 08-18 | −0.94 |
+| 08-19 | −1.14 |
+| 08-20 | −1.46 |
+| 08-21 | **no row — zero trades** |
+| **TOTAL** | **+5.62** |
+
+**Strip the largest contributor (08-16, +5.65) and the total is −0.03. The
+sign FLIPS. Per the owner's law this six-day result is INCONCLUSIVE** — it is
+not a profitable week, it is one good day carrying five flat-to-negative ones.
+
+**VERDICT: FAILURE.** On a ~$110k book the engine produced nothing for a full
+day while every rail behaved perfectly. Perfect hygiene on a dead engine is
+not success.
+
+### 2. CLOSED LEGS — none. No two-subagent dispatch (correct).
+
+**Zero closed legs in 24h**, so there is no tape to split between AI-authored
+and rail-authored outcomes. Per the law, the non-trades are analysed instead,
+with a stated reason each — §4.
+
+### 3. RAILS — adversarially re-proved by DIRECT COUNT, all clean
+
+| rail | 24h count | verdict |
+|---|---|---|
+| #475 lease fence | **0** | **PASS, day 5** |
+| #480/#481 null-size cap (`size_clamp`) | **0** | no fires; ledger unchanged at 5 all-time, net-positive |
+| `no_verdict` | **0** | — |
+| trailing / ratchet (`stop_mechanism`) | **0** | — |
+| `young_dump_flag`, `horizon_shadow`, `adapt` | **0** | — |
+| loss floor #460 | **0 enforcement fires, all time** | still advisory-only |
+| tracebacks (worker + backend) | **0** | — |
+| `verdict_salvaged` | 7 | the rail absorbing truncations — standing behaviour |
+| `alert` | 59 | all `idle_retired` notices, not rail fires |
+
+### 4. THROUGHPUT + FUNNEL — one actionable decision in 24 hours, and it was unactionable
+
+| metric | 24h |
+|---|---|
+| decisions | **626** |
+| actionable (`buy`/`sell`) | **1 — 0.16%** |
+| holds | 614 (98.1%) |
+| retires | 11 |
+| **executed entries** (from `trade` events) | **0** |
+
+`gate_skip`: 614 `risk: decision is 'hold'` · 211 benign `pre: market closed` ·
+11 `desk_retire` · 1 `risk: spot sell with no inventory`. **Zero mechanical
+refusals** — no confidence-rank, no mark_drift, no expectancy, no budget, no
+add-limit skip fired all day.
+
+**The single actionable decision was structurally unactionable.** Run 1595
+NZDUSD, 2026-08-20T17:12:01Z, cycle 2, `action: sell`, conf 0.52 — and the
+one `spot sell with no inventory — treated as hold` skip is its counterpart.
+626 decisions produced one intent, in a direction the run could not express.
+
+**Stopped-run mix:** `idle_retired` **57**, `desk_retired` 11,
+`stop_event:at_time` 2 → **81.4% of stopped runs died never having traded.**
+
+**Outlook bias (source `cycle`):** flat **496 (79.5%)** · long 122 (19.6%) ·
+**short 6 (1.0%)**. Both fleets carry `archetype: short`; the desk has
+effectively stopped seeing short setups.
+
+### 5. R28 BINDING METRIC — **FAILED**, reported in the terms it was justified in
+
+**Justification:** the desk authors plans it cannot execute because it is told
+24h when the idle rail gives ~5.2h; give it the true window and it will author
+plans that FIT.
+
+| arm | runs | mean first horizon | ≤6h |
+|---|---|---|---|
+| PRE (born in the prior 24h) | 48 | **31.85h** | **0 of 48** |
+| POST (born after 09:24:39Z) | **8** | **30.5h** | 1 of 8 |
+
+Mean flat; **three POST runs authored 48.0h, double the PRE modal**. The lone
+hit is 1637 TAO at 4.0h; P(≥1 of 8) under the PRE upper bound ≈ 39% — not
+significant.
+
+**Not a rendering fault — verified live:** 1639 NOW cyc 2 → *"10 more
+no-trade cycles (~2.6h at this run's own pace)"*; 1597 PFE cyc 46 → *"1 more
+(~0.5h)"* **and it idle-retired 28 minutes later, exactly as predicted**;
+1590 ACN, budget spent, correctly renders nothing. **Run 1639 was told ~2.6h
+and authored 48.0h — an 18× mismatch with the correct number in front of it.**
+
+**Premise REFUTED: missing information was not the binding constraint on
+authored horizons.**
+
+**Roll back? NO.** The pre-registered rule mandates rollback only if entries
+rise with negative expectancy. Entries are ZERO, so there is no harm to undo,
+and the anti-rush clause held throughout (run 1627 declined four times against
+a 1.9h deadline). R28 is KEPT because it replaces a factually false statement
+with a true one, and is re-billed as doing **nothing** for horizons or
+throughput.
+
+### 6. #508 reachability A/B — per-arm rates only (their readout, their call)
+
+The flag is now ON; both arms are populated:
+
+| arm | decisions | entry intents |
+|---|---|---|
+| `treat` | 50 | **0** |
+| `control` | 59 | **0** |
+| unassigned | 6 | 0 |
+
+Reported as raw counts only. Interpretation belongs to #508's pre-registered
+readout and its no-peeking clause — not to this sweep.
+
+### 7. The 08-13 → 08-14 cliff — a DISCRIMINATOR, at last
+
+The two collapses have **different signatures**, so they are not one
+phenomenon:
+
+| day | conf | thesis | momo | **entry_q** | risk | actionable |
+|---|---|---|---|---|---|---|
+| 08-13 | 0.570 | 0.659 | 0.518 | **0.604** | 0.555 | **40.9%** |
+| 08-14 | 0.505 | 0.558 | 0.439 | **0.448** | 0.471 | **3.7%** |
+| 08-17 | 0.515 | 0.599 | 0.483 | 0.468 | 0.488 | 3.4% |
+| 08-18 | 0.527 | 0.554 | 0.466 | 0.458 | 0.464 | 1.1% |
+
+**At the 08-13 cliff EVERY component score dropped** — thesis −15%, momentum
+−15%, risk −15%, and **entry_quality −26%, the hardest fall**. **At the 08-18
+shift the scores were FLAT** while actions collapsed; that is #505's
+disclosure effect.
+
+So the cliff is an **assessment** change, not an action-mapping change: the
+desk genuinely scored setups worse from 08-14 onward. `entry_quality` falling
+hardest points at what changed on the entry side that day — candidates
+merged 08-13/14 include **#426 (build-time bracket-feasibility gate)**,
+**#416 (budget-proportional loss floor + first-admission probation sizing)**
+and **#424/#422 (new psychology/risk-sentiment brief lines)**.
+
+**This is a hypothesis with a discriminator, NOT a conclusion.** The next
+experiment is to attribute the entry_quality drop to one of those three by
+replay or by an arm, exactly as #508 did for the disclosure.
+
+### Standing items
+
+**R34** (cooldown budget exceeds the symbol universe) reproduces on a third
+consecutive batch — `research:496478`: 14 crypto, **12 cooled, 1 running, 1
+free**. Fleet 38 stuck at **2/7** all day; fleet 37 reached **10/10**.
+**R33** remains INERT — the regime has stayed `trend`/unenforced since the
+deploy, so the fix is untested in production. **R32**, **R30**, **R29**
+unchanged and unshipped.
+
 ## Cycles 186-187 — 14:2xZ / 14:5xZ (anchors 14:22:08, 14:51:44): **R28 FAILED on its binding metric** — the desk gets the truth and ignores it. R34 quantified.
 
 **PROFIT-OR-LOSS FIRST.** Zero trades in both windows, **zero all day — 31.7h
