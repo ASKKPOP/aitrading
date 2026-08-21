@@ -8,6 +8,113 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 186-187 — 14:2xZ / 14:5xZ (anchors 14:22:08, 14:51:44): **R28 FAILED on its binding metric** — the desk gets the truth and ignores it. R34 quantified.
+
+**PROFIT-OR-LOSS FIRST.** Zero trades in both windows, **zero all day — 31.7h
+since the last fill**, no open positions, ledger unchanged. Rails clean:
+fence 0, caps 0, no_verdict 0; one `verdict_salvaged` and one `idle_retired`
+alert, both standing behaviour. Non-trades: 17 `risk: decision is 'hold'` +
+2 `desk_retire`, zero mechanical refusals. `order_intent` rows are ALL
+`intent: hold` again (7 across the two windows), every one with a stated
+`why` — **empty-why rate 0/7, watch unfired.**
+
+**Fleet 37 reached 10/10 — full for the first time today** (builds 1639 NOW,
+1640 NFLX, 1643 T, 1644 XOM; 1641 SLV and 1642 T desk-retired at cycle 1).
+**Fleet 38 stayed at 2/7** — see R34.
+
+### R28 — REPORTED FAILED, in the same terms it was justified in
+
+**The justification was:** the desk is told it has 24h when the idle rail
+gives it ~5.2h, so it authors plans it cannot execute; give it the true
+window and it will author plans that FIT.
+
+**The result, measured:**
+
+| arm | runs | mean first horizon | ≤6h |
+|---|---|---|---|
+| PRE (born in the prior 24h) | 48 | **31.85h** | **0 of 48** |
+| POST (born after 09:24:39Z) | **8** | **30.5h** | **1 of 8** |
+
+Per-run POST: 1632 NZDUSD 24.0 · 1633 GBPUSD 24.0 · 1635 BNB 24.0 ·
+**1637 TAO 4.0** · 1639 NOW **48.0** · 1640 NFLX **48.0** · 1643 T **48.0** ·
+1644 XOM 24.0.
+
+**The mean is flat (30.5 vs 31.85 — 4%, noise at n=8) and three runs authored
+48.0h, DOUBLE the PRE modal value.** The single hit (1637 at 4.0h) is 1 in 8;
+with PRE at 0/48 the baseline upper bound is ~6%, so P(≥1 of 8) ≈ 39% — not
+significant.
+
+**And the information reaching the desk is CORRECT — verified live, so this
+is not a rendering fault:**
+
+```
+1639 NOW   cyc 2  -> "10 more no-trade cycles (~2.6h at this run's own pace)"
+1640 NFLX  cyc 2  -> "10 more no-trade cycles (~3.3h ...)"
+1644 XOM   cyc 2  -> "10 more no-trade cycles (~2.6h ...)"
+1597 PFE   cyc 46 -> "1 more no-trade cycle (~0.5h ...)"
+1590 ACN   cyc 47 -> (nothing — budget spent, correct)
+```
+
+**Run 1639 was told it had ~2.6h and authored a 48.0h plan — an 18× mismatch
+with the correct number in front of it.**
+
+**Verdict: R28's premise is REFUTED.** Missing information was NOT the binding
+constraint on authored horizons. The desk receives the true window and does
+not let it govern the plan. R28 is re-billed a second time: it corrects a
+factually false statement to the desk (still worth keeping on those grounds),
+and it does **nothing** for horizons or throughput.
+
+**No rollback.** The watch list mandates rollback only if entries rise with
+negative expectancy; entries are zero, so there is no harm to undo, and the
+anti-rush clause has held throughout (run 1627 declined four times against a
+1.9h deadline, cycle 180). Keeping a true statement costs nothing.
+
+### R34 — the cooldown budget EXCEEDS the symbol universe (quantified, not shipped)
+
+Fleet 38's starvation is now proven by direct count on the newest batch
+(`research:496477`, 14 crypto symbols):
+
+| status | count |
+|---|---|
+| running | 1 (TAO) |
+| **cooled** | **12** |
+| **free** | **1 (AAVEUSDT)** |
+
+So exactly one candidate reaches the gate, the backtest gate drops it
+(`non-positive expectancy -367.51 USD/trade over 5 closed trades`), and
+`kept: []` leaves five slots dead — the same event repeating at 13:49, 14:04,
+14:20.
+
+**The arithmetic:** 83.8% of runs die `idle_retired` never having traded;
+each benches its symbol **12h** (`IDLE_SYMBOL_COOLDOWN_HOURS = 12`); the idle
+timer consumes a symbol every **~5.2h**, so 7 slots burn ~1.35 symbols/hour →
+steady-state locked ≈ **16**, against a batch crypto width of **14**. **At
+full 7-slot operation this fleet mathematically cannot sustain itself.**
+
+`vary-on-idle` was designed when idle-retire was rare (its own note cites runs
+holding ~43 cycles). It now fires on 83.8% of runs and benches the universe.
+
+**CORRECTION to cycle 181.** I refuted "cooldowns exhausted the universe"
+there on a count of 13 free symbols — **that count was taken across all 2,010
+theses back to 08-11, not the newest batch.** Measured correctly on the batch
+it is 12 of 14 cooled. Second time this population error has bitten me after
+I had already flagged it; the rule is now explicit: **candidate-supply
+questions must be measured on the batch `select_targets` actually reads.**
+
+**Not shipped.** The candidate fix — do not bench a symbol whose run never
+traded, since it ran out of CLOCK, not of THESIS — is a money-path policy
+change and interacts directly with R29 (the idle cap that sets the burn
+rate). Which moves first needs measurement, not a same-cycle patch.
+
+### Standing
+
+**R33:** still inert — the regime remains `trend`/unenforced, so the fix is
+untested in production. **R32:** open. **R30:** held. **R29:** untouched.
+The 08-13 cliff: unexplained.
+
+**After 187 cycles: rails perfect, us-stock fleet full, crypto fleet starved,
+and the desk has not traded in 31.7 hours.**
+
 ## Cycles 184-185 — 13:2xZ / 13:5xZ (anchors 13:21:43, 13:51:45): R33 gets NO CREDIT for the recovery; **R28's metric moves for the first time (1 of 4)**
 
 **PROFIT-OR-LOSS FIRST.** Zero trades in both windows, **zero all day — 30.7h
