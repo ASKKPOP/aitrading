@@ -8,6 +8,126 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 177 — 08:0x–08:4xZ (anchors 08:06:02 / 08:34:05 / 08:45:45): a SECOND misinformation defect (R28 shipped) — and my own causal claim CORRECTED by the RAG-cadence pass below
+
+**PROFIT-OR-LOSS FIRST.** Zero trades, zero opens, zero positions all
+day. Fence 0, caps 0, no_verdict 0, 0 tracebacks in 6h. Risk hygiene
+perfect, engine off — a FAILURE, not a quiet day.
+
+### 0. CORRECTION TO MY OWN FINDING — read this first
+
+This cycle ran in parallel with the RAG-cadence pass below and reached a
+DIFFERENT conclusion about the SAME collapse. **The pass below is better
+evidenced and I defer to it on causation.** I claimed the idle-retire
+deadline mismatch was "the root cause of the throughput collapse". It is
+not established as such:
+
+- The pass has a level shift at the #484 deploy boundary, **z = 4.427,
+  p = 9.5e-6**, exact binomial 2.3e-9, a refuted rival, and the desk
+  quoting `record_line()`'s own vocabulary. I had no comparable test.
+- **The phrases I read as evidence for a horizon problem** — run 1620's
+  *"lacks sufficient reachability"*, 1622's *"lacks a reachable target"*,
+  1613's *"no positive-expectancy entry exists"* — **are `record_line()`'s
+  vocabulary, not a deadline complaint.** I mis-attributed them.
+
+What survives is a real but SEPARATE defect, stated at its true weight
+below. **The 08-13→08-14 cliff (40.9% → 3.7% actionable) sits BEFORE the
+#484 window and is still unexplained by either pass — carry it.**
+
+### 1. CONFIRMED — the desk is briefed a deadline 4.6x too generous (R28, PR #506)
+
+`_run_expiry_line` renders `stop_conditions.at_time` and tells the desk to
+"author horizons and targets against the REMAINING life". A never-traded
+run is collected by idle-retire at 12 worked cycles, and **no line carried
+that.** Every idle-retired crypto run:
+
+| run | cycles | `at_time` budget | actual life |
+|---|---|---|---|
+| 1620 KAITO | 12 | 23.98h | **5.37h** |
+| 1619 ETH | 12 | 24.00h | **5.52h** |
+| 1612 LTC | 12 | 47.98h | **5.38h** |
+| 1569 KAITO | 12 | 72.00h | **5.05h** |
+
+Reading "23h 58m remaining" the desk published horizons of 24h (x362),
+48h (x126), 12h (x121), 72h (x52) since 08-17. **196 of 234 runs stopped
+since 08-18 (83.8%) died `idle_retired` never having traded.** Same class
+as #244. Shipped: render the binding deadline, name which clock binds.
+Loosens no gate, changes no rail, forces no entry; fail-CLOSED.
+
+**A forfeited entry is NOT a forfeited profit — and the brief says so.**
+The one priceable counterfactual: run 1577 published a SHORT zone
+1.6796–1.713192 and was idle_retired at 16:30Z; price DID re-enter that
+zone (4 of 8 observations) — then ran to 1.7226, **through the plan's own
+1.72 stop**. The forfeited entry would have **LOST ~0.6% after fees.**
+So the line states the deadline as a fact and explicitly blesses the
+decline ("the deadline is NOT a reason to trade… if nothing in this
+window is worth taking, say so and let the slot go early — that is the
+correct answer, not a failure"). Without that clause the fix converts a
+corrected fact into rushed, negative-expectancy fills.
+
+### 2. NEW, VERIFIED — the reachability record's denominator is wrong (R30, NOT shipped)
+
+The statistic that the pass below identifies as shutting the desk down is
+itself mis-computed. `desk_record._compute` divides `peak_pnl_usd` by the
+**SUM of every opening leg**, not by the run's **maximum concurrent
+exposure**. **39% of closed crypto runs re-entered** (1306 SUI opened at
+cycles 7/16/28/38; 1322 FIL at 7/11/22/39), so their peak is divided by
+2–4x the money actually at risk.
+
+Replication is exact — recomputing the shipped formula off prod
+reproduces the live line to every digit (`n=33, never_positive 39%,
+median 0.169%, p75 0.334%, best 1.438%`), which validates the method:
+
+| | median | p75 | best |
+|---|---|---|---|
+| as shipped | 0.169% | 0.334% | 1.438% |
+| **corrected** | **0.213%** | **0.396%** | **1.693%** |
+
+Worst single case: run 1306 SUI, 4 entries, **0.169% shipped vs 0.423%
+corrected — 2.5x understated.** The desk compares this number against a
+PRICE move, and a price move acts on the exposure held, not on lifetime
+capital deployed — so the corrected denominator is the one that answers
+the question the prompt actually poses.
+
+**Stated at its true weight: this does NOT reverse the shutdown.** p75
+0.33% → 0.40% still makes a 4% target look unreachable. It is a real
+19–26% pessimistic bias in the most consequential number the desk reads,
+not an explanation of the collapse.
+
+**Deliberately NOT shipped.** The pass below is running a pre-registered
+experiment on this exact line; changing its numbers mid-flight would
+confound that measurement. One variable per experiment — the #484 thread
+should sequence it.
+
+### 3. Refuted this cycle — do not re-run
+
+| hypothesis | verdict |
+|---|---|
+| a mechanical gate is strangling entries | **REFUTED.** 816/830 gate_skips are the desk's own `decision is 'hold'`; 487 benign `market closed`; **zero** confidence-rank / mark_drift / expectancy refusals |
+| the desk's confidence is falling | **REFUTED.** avg_conf 0.570 @08-13 (40.9% actionable) vs 0.546 @08-20 (0.4%). Flat. Same scores, opposite action |
+| the `standing_plan` replay locks runs flat | **REFUTED by its own control.** Cycle-1 outlooks have no plan to replay: flat **70.6%** vs **67.2%** plan-replayed |
+| size is a platform defect | **REFUTED.** Entries land at exactly 5.0%/10.0% of the leveraged ceiling — the AI's own `size_frac` (0.05→0.82). And fees are proportional to notional, so the fee/target ratio is size-invariant: a "minimum viable size" argument would have been wrong |
+| the reachability record is contaminated by never-traded runs | **REFUTED.** `_compute` requires an opening leg; never-traded runs carry no notional and are excluded |
+
+### 4. Supporting measurement — the idle cap truncates a non-decaying hazard (R29, STAGED)
+
+Entry hazard does NOT decay across a run's life: recent crypto
+**2.26%/cycle over cycles 1–4 vs 2.01%/cycle over 5–12** (n=141 runs). A
+run at cycle 12 is about as likely to enter as one at cycle 2 — which is
+exactly when it is killed. Late entries (cyc ≥5) also out-earn early ones
+directionally in every market and both eras (recent +$0.570 vs −$0.438
+mean; +$0.191 vs +$0.076 after stripping each side's largest) — **but
+n=13 vs 16, p=0.106 means / 0.237 medians. NOT significant, NOT claimed.**
+Do not touch the cap until R28's effect on horizons is measured.
+
+### 5. Falsification for R28's post-ship pass
+
+Plan `horizon_hours` must fall toward the ~5h window. **If horizons do not
+move, R28 FAILED and must be reported as failed in these same terms.** If
+entries rise but per-trade expectancy turns negative, the desk is rushing
+the deadline → roll back (`RUN_IDLE_RETIRE_CYCLES=0`, or revert; no
+schema, no migration).
+
 ## RAG-CADENCE PASS — 08:0x–08:5xZ (anchor `SELECT NOW()` = 2026-08-21 08:05:31Z): the entry engine did not slow down, it was SWITCHED OFF at a deploy boundary — and two numbers in the authority docs are artifacts
 
 **PROFIT-OR-LOSS FIRST.** 08-21 has **no realized row at all** — zero
@@ -197,6 +317,17 @@ The two-subagent trade-outcome split (CLAUDE.md, 2026-08-13) was not run
 this pass: there is **no tape to split** — zero AI-authored and zero
 algorithm-authored closes in the window. The analysis is of the
 non-trades instead, with a stated reason per non-trade (§4).
+
+## Cycle 176 — 05:2xZ (anchor 05:28:05): quiet (sweep cron re-fired displaced — duplicate skipped, 03:59 sweep stands)
+
+No money events, no positions, all rotation $0: LTC 1612, SOL 1613,
+LINK 1615 fused; HYPE 1623 desk-retired at cycle 1; TRUMP 1622 built.
+Fence 0; 0 tracebacks.
+
+## Cycle 175 — 04:2xZ (anchor 04:26:42): quiet
+
+No events, no positions, 0 tracebacks. Docs batch PR #502 merged
+(cycles 150–174 + sweep → main → RAG).
 
 ## 24H SWEEP — 03:5xZ (anchor 03:59:32, displaced cron): risk hygiene perfect, throughput ZERO — R26's trades/day metric has not moved
 
