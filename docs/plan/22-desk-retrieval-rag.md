@@ -1003,6 +1003,84 @@ Every increment lands here as a dated line, in the same PR that ships it.
       action mix (`buy`/`short` vs `hold`) has not shifted more than a few
       points against the 08-15..08-20 baseline and (ii) ≥3 distinct pairs
       appear. At ~620 flat cycles/day that is met in under a day.
+  - **2026-08-21 — `DESK_RECALL_FLAT` PROMOTED TO ON on prod, by this session
+    under explicit owner delegation ("you can make decision not owner" /
+    "YOU = SOOPPIY AI", 2026-08-20). The entry decision now reads the corpus.**
+    Env change on the worker only (`.env` + `compose up -d worker`), image
+    unchanged at `20260820-rag-phase3-a8`; backup `.env.bak-recallflat-
+    20260821-002238`. Reverts in seconds.
+    - **Three hypotheses were tested and REFUTED before the flip. Recorded so
+      no future session re-runs them:**
+      - **H1 "a confidence gate is blocking entries."** REFUTED. `gate_source`
+        is `confidence` on all 3,444 flat decisions — it is a CONSTANT and
+        discriminates nothing. 243 flat decisions scored ≥0.65 and stayed
+        `hold`; **4 of the 7 buys scored BELOW 0.65** (0.55, 0.56, 0.58,
+        0.62). Confidence is not the discriminator.
+      - **H2 "flat cycles are routed to a path that cannot enter."** REFUTED.
+        All 3,444 flat cycles are `route: light` — **including all 7 buys**.
+        The light route can and does open positions.
+      - **H3 "the injected doctrine is bar-raising and will shut an
+        already-shut door."** REFUTED as stated. The two chunks the flat query
+        returns in all four markets are `skill:reachable-exits#1` (how to set
+        a reachable stop/target IF you enter — execution guidance, not a
+        veto) and `skill:reentry-discipline#5`, whose higher bar is
+        CONDITIONAL on a same-symbol re-entry right after a locked win. At 4
+        trades/day that condition is rare. This was the hypothesis that made
+        this session first announce it would NOT flip; reading the actual
+        payload refuted it.
+    - **What the measurement DID establish — the finding that outranks the
+      ladder.** On flat cycles the desk says `buy` **7 times in 3,444
+      (0.20%)** and `short` **zero** times, over 08-15..08-20. Cross-checked
+      exactly: FLAT 3,444 + HOLDING 236 = 3,680 total decisions, and HOLDING
+      236 = the 236 recall rows, so recall coverage of the holding cycle is
+      100% and of the entry cycle was 0%. Trades placed per day: 21, 38, 15,
+      18, 10, **4**. The (b) gate is not starving because instrumentation is
+      missing — **it is starving because the FLEET is**.
+    - **Profit, stated first and with the outlier stripped** (`pnl_audit.py`
+      ledger replay, the authoritative number): since 08-15 the book is
+      **+$5.62**. Of that, **+$5.65 is 08-16 alone** — strip the largest
+      contributor and it is **−$0.03**, and the last three days are −0.94,
+      −1.14, −1.46. The desk's 97.4% selectivity is not banking anything; it
+      is idling with a slow bleed.
+    - **Why that inverted the decision.** The risk of injecting doctrine here
+      was framed as "the desk enters even less". But the entries it is
+      currently taking produced **−$3.54 over three days**. Fewer entries is
+      not a measurable cost at this base rate; the asymmetry runs the other
+      way, the (b) payoff is ~700 rows/day, and the flag reverts in seconds.
+    - **The (a7) promotion criterion is WITHDRAWN as unmeasurable, and this
+      is a correction to this ledger's own entry from hours earlier.** It
+      required the entry action mix to stay "within a few points" of
+      baseline. At a **0.20%** base rate, "a few points" is 10–50× the entire
+      signal — a shift from 0.20% to 0.00% is ~1.4 events/day and cannot be
+      distinguished from noise inside a day. Writing a criterion that cannot
+      be evaluated is the 08-09 and 08-17 mistake a third time; it is retired
+      here rather than quietly passed.
+    - **Replacement criteria, both computable at the measured base rate:**
+      1. **(b) gate (fast, ~1 day):** ≥2 ε-scheme classes with ≥30 events and
+         ≥3 distinct pairs. Flat rows accrue at ~700/day under
+         `eps-head-fixed-v1` (`DESK_RECALL_EXPLORE=1` confirmed on), so this
+         is decidable on 08-21 data alone.
+      2. **Harm (slow, ~5 days, one-sided):** baseline is **7 buys / 3,444
+         flat cycles**. Over the NEXT 3,444 flat cycles count buys; 0/3,444
+         against 7/3,444 is a one-sided binomial at p≈0.008. Any session
+         reading this before 5 days have passed must report the count as
+         INCONCLUSIVE rather than as reassurance.
+      **Abort rule, fixed in advance:** revert `DESK_RECALL_FLAT=0` + restart
+      the worker if buys reach 0 across a full 3,444-flat-cycle window, or on
+      any recall-path traceback in the worker log.
+    - Verified on prod after the flip: `_recall_flat_enabled()` True, flat
+      line renders 807 chars, does NOT claim a position (the (a8) clause is
+      doing its job on the live path), worker tracebacks 0.
+    - **The trading judgment this changes, plainly:** whether to OPEN, and at
+      what size — 3,444 decisions in six days that until today had no access
+      to the desk's own entry doctrine.
+  - **2026-08-21 — the entry decision is where the desk is stuck, and that is
+    the next real work.** Not a RAG increment: `buy` 7/3,444 with `short` at
+    zero, no mechanical block found (H1/H2 both refuted), and P&L flat-to-
+    negative. Ranking the prompt better is optimising a desk that is barely
+    trading. A future session should treat "why does the desk decline 97.4%
+    of entries, and is that judgment correct?" as the profit question, with
+    the 7 taken entries' outcomes as the first evidence.
   - **2026-08-11 — owner directive, binding on this ladder:** *"everything
     for sooppiy AI"* / *"if we find that we must be implement trading logic
     and sooppiy AI"*. Journal-only and default-off increments are a STAGING
