@@ -8,6 +8,80 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 178 — 10:2xZ (anchor 10:21:44): quiet on money; R28's binding metric NOT moved, and I CORRECTED MY OWN BASELINE (it was an artifact)
+
+**PROFIT-OR-LOSS FIRST.** Zero trades in the window, **zero trades all day
+(27h since the last fill)**, no open positions. Ledger unchanged. Rails: fence
+0, caps 0, no_verdict 0, 0 tracebacks. The single `alert` is run 1622's own
+`idle_retired` notice, not a rail fire. **Perfect hygiene, dead engine — a
+FAILURE, not a quiet day.**
+
+**Non-trades, with reasons:** 8 `risk: decision is 'hold'` (the desk's own
+choice) + 5 benign `pre: market closed` (forex/us-stock outside session). Zero
+mechanical refusals. No closed leg → no two-subagent dispatch (correct).
+
+**Rotation:** run 1622 TRUMPUSDT `idle_retired` at 10:15:31Z — 12 cycles, never
+traded. Replaced by 1632 (NZDUSD) and 1633 (GBPUSD). The treadmill from cycle
+177 continues unchanged.
+
+### CORRECTION — my own cycle-177 baseline figure was an artifact
+
+I reported "37.5% of PRE desk-path outlooks were already ≤6h" and used it to
+walk back the "24h plans on a 5h vehicle" framing. **That number was wrong.**
+`horizon_hours` is often JSON `null`, and `JSON_EXTRACT(...)` of a JSON null
+**coerces to 0 in `AVG`/comparisons** — those zeros counted as "≤6h". Excluding
+them properly (`JSON_TYPE(...) <> 'NULL'`):
+
+| arm | rows | runs | mean | **≤6h** |
+|---|---|---|---|---|
+| PRE (24h) | 417 | 63 | **33.19h** | **0 rows — 0.0%** |
+| POST (~1h) | 13 | 7 | 18.06h | 2 (15.4%) |
+
+**Not one desk-path outlook in 417 rows across 63 runs ever authored a horizon
+≤6h.** The original cycle-177 framing was right and my walk-back was the error.
+The PRE mean is 33.19h, not 20.75h. Standing trap for every future cycle:
+**a JSON null is not a SQL NULL — filter `JSON_TYPE(...) <> 'NULL'` or every
+null silently becomes a zero.**
+
+### R28 FALSIFICATION — the metric was MIS-SPECIFIED, and on the corrected one it has NOT moved
+
+**Structural finding that forces the correction: 46 of 48 runs author exactly
+ONE distinct horizon for their entire life** — set once, then repeated verbatim
+every cycle. So (a) repeated outlook rows are NOT independent — the effective n
+is always *runs*, never rows; and (b) a run alive across the deploy has already
+locked its horizon, so R28 cannot be measured on it.
+
+**The correct metric is the FIRST authored horizon of runs BORN after the
+deploy.** On that metric:
+
+| arm | runs | mean first horizon | ≤6h |
+|---|---|---|---|
+| PRE (born in prior 24h) | 48 | 31.85h | **0 of 48** |
+| POST (born after 09:24:39Z) | **1 usable** (1633 = 24.0h; 1632 null) | 24.0h | 0 |
+
+**n=1, and it did not move. Reported as NOT MOVED.** Not yet a failure verdict —
+the pre-registered readout needs runs, and one hour produced one.
+
+**The one encouraging signal, stated at its true weight:** run 1627 BCHUSDT held
+24.0h for six straight cycles, then authored **1.4h at 09:51 and 1.4h at 10:20**
+— its first change, landing immediately after the 09:24:39Z deploy, against the
+~1.9h entry window the new brief hands it. That is R28's exact mechanism. But it
+is a **mid-life revision, which 46/48 runs never perform**, so it is not the
+pre-registered metric and it is n=1. It is a signal, not a result.
+
+Within-run sequences (raw, not means — the means were the same null artifact):
+1622 `24×11 → 24`, 1624 `24×8 → 24`, 1626 `24×9 → 24`, 1631 `24×5 → 24`,
+1630 `8×7 → 8`, **1627 `24×6 → 1.4, 1.4`**. Five unchanged, one changed.
+
+### Watches
+
+- **#475 fence 0 — PASS, day 4 holds.** Caps 0, ratchet 0, R:R 0, loss floor 0.
+- **#508** `DESK_REACHABILITY_AB`: prod now runs `20260821-reachability-ab`; the
+  flag is default-OFF so every run is `treat`. Untouched, as required.
+- **R30** unchanged, still NOT shipped (evidence handed to #508).
+- **R29** untouched — R28's horizon effect is not yet measured.
+- **OPEN:** the 08-13 → 08-14 actionable cliff still unexplained.
+
 ## Cycle 177 — 08:0x–08:4xZ (anchors 08:06:02 / 08:34:05 / 08:45:45): a SECOND misinformation defect (R28 shipped) — and my own causal claim CORRECTED by the RAG-cadence pass below
 
 **PROFIT-OR-LOSS FIRST.** Zero trades, zero opens, zero positions all
