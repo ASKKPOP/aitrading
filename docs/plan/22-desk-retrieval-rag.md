@@ -141,6 +141,26 @@ Every increment lands here as a dated line, in the same PR that ships it.
   retrieval behind a default-off flag, promoted only on measured evidence.
   The sequencing rule in §2 stays binding: never build ahead of the
   variance data.
+  - **HANDOFF FILE (read first after an account rotation):**
+    [docs/reports/HANDOFF-rag-phase3.md](../reports/HANDOFF-rag-phase3.md) —
+    where the ladder stands, the live prod flag state and its rollback, the
+    open measurement obligations, the hypotheses already killed, and the
+    traps this cadence has hit. Account memory does not survive rotation;
+    that file and this section do.
+  - **2026-08-21 — the (b) gate is MET, ~70 minutes after the flat
+    promotion.** Measured ~01:30Z on flat rows alone: crypto/FLAT **95 events
+    / 5 pairs** and forex/FLAT **40 / 4**, both `eps-head-fixed-v1`, joining
+    crypto/giveback+winning (77 / 10). That is **three** ε-scheme classes
+    clearing ≥30 events and ≥3 distinct pairs, against a gate that had been
+    frozen at 1-of-2 for four days. **(b) is the next increment.** Two
+    standing cautions carry into it: do NOT pool the FLAT rows with the
+    HOLDING rows (they answer different questions, and pooling populations is
+    the mistake this ledger has made twice), and do NOT assume the empty-
+    `chunks` control group will ever exist — it still has zero rows.
+    Safety, stated as inconclusive rather than as reassurance: 135 flat
+    cycles post-flip, 133 `hold` + 2 `retire`, **0 buys** — the 0.20%
+    baseline predicts ~0.27 buys in 135 cycles, so this is exactly what "no
+    effect" looks like and is NOT evidence of harm or of safety.
   - **Standing schedule (re-arm after account rotation):** a local Claude
     Code scheduled task `rag-phase3-daily-increment` fires daily at 14:00
     America/Los_Angeles (21:00 UTC) on the dev machine. The Claude side is
