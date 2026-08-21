@@ -8,6 +8,66 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 191-192 — 16:5xZ / 17:2xZ (anchors 16:51:44, 17:21:48): **R34 confirmed 3x BY THE CLOCK**; and cycle 190's own correction partly flips at n=3
+
+**PROFIT-OR-LOSS FIRST.** Zero trades in both windows, **zero all day — 34.2h
+since the last fill**, no open positions, ledger unchanged. Rails clean:
+fence 0, caps 0, no_verdict 0; 1 alert (a retire notice) and 1
+`verdict_salvaged`, both standing. 28 holds + 3 desk-retires across the two
+windows, **zero mechanical refusals**. Fleet 37 9/10; **fleet 38 2/7 → 3/7**.
+
+### R34 — confirmed by the CLOCK, three times, not by inference
+
+Every crypto build in these windows landed within a minute of that symbol's
+12-hour cooldown expiring:
+
+| symbol | cooldown expired | built | gap |
+|---|---|---|---|
+| LTCUSDT | 16:35:08Z | 16:36:33Z | **85 s** |
+| SOLUSDT | 16:43:15Z | 16:43:43Z | **28 s** |
+| HYPEUSDT | 16:57:31Z | 16:57:59Z | **28 s** |
+
+Nothing else changed — same batch, same gate, the same
+`non-positive expectancy` verdict still standing on AAVE. **Cooldown expiry,
+not candidate quality, is the clock governing fleet 38's refill.** That is
+R34 observed rather than derived, and it is the strongest evidence in the
+item.
+
+The desk then **desk-retired 3 of the 4 new crypto builds at cycle 1**
+(1648 LTC, 1650 SOL, 1652 HYPE); only 1649 LTC survives. So the cooldown
+gates *supply*, and the desk still declines most of what supply delivers.
+
+### R28 — cycle 190's supporting claim has FLIPPED at n=3
+
+Cycle 190 corrected the sweep's FAILED verdict by showing **"every market's
+POST mean is LOWER."** One more forex run has broken that:
+
+| market | PRE mean | POST mean (n) | direction |
+|---|---|---|---|
+| crypto | 26.55h | **13.33h** (3) | better |
+| forex | 30.0h | **40.0h** (3) | **WORSE** |
+| us-stock | 47.7h | 44.0h (6) | slightly better |
+
+At forex n=2 the claim was true; **at n=3 it is false.** A single additional
+run (1651 AUDJPY) moved that arm from −20% to +33%.
+
+**This does NOT restore the FAILED verdict** — it demonstrates that at these
+sample sizes the metric swings on one observation in either direction. It
+reinforces **INCONCLUSIVE** and nothing else. Recorded because the correction
+in cycle 190 leaned on a claim that has since inverted, and that must not sit
+in the record unqualified.
+
+**Standing rule reinforced:** no verdict on R28 — in EITHER direction — until
+the pre-registered per-market sample exists. Two verdicts have now been
+called early and both had to be walked back.
+
+### Standing
+
+**R33** INERT throughout — regime `trend` / `enforced False` since the 13:08Z
+deploy; untested in production 4h after shipping. **R32**, **R30**, **R29**
+unchanged and unshipped. The 08-13 cliff keeps the sweep's discriminator and
+gained no new evidence.
+
 ## Cycles 188-190 — 15:2xZ / 15:5xZ / 16:2xZ (anchors 15:21:37, 15:51:36, 16:21:38): **CORRECTION — the sweep's R28 "FAILED" verdict rested on a Simpson's-paradox artifact. Downgraded to INCONCLUSIVE.**
 
 **PROFIT-OR-LOSS FIRST.** Zero trades across all three windows, **zero all day
