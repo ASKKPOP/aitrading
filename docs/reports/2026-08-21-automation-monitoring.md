@@ -8,6 +8,78 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 184-185 — 13:2xZ / 13:5xZ (anchors 13:21:43, 13:51:45): R33 gets NO CREDIT for the recovery; **R28's metric moves for the first time (1 of 4)**
+
+**PROFIT-OR-LOSS FIRST.** Zero trades in both windows, **zero all day — 30.7h
+since the last fill**, no open positions, ledger unchanged. Rails clean:
+fence 0, caps 0, no_verdict 0. Alerts are `idle_retired` notices only; one
+`verdict_salvaged` (the rail absorbing a truncation, standing behaviour).
+NYSE opened 13:30Z, so us-stock is live-watched from cycle 185.
+
+Slots drifted DOWN again: fleet 37 8/10 → 7/10, fleet 38 3/7 → 2/7.
+Rotation: 1631 ETH `idle_retired` 13:19:50Z, 1638 ZEC `desk_retired`
+13:22:27Z, 1592 DIS `idle_retired` 13:46:26Z.
+
+### R33 — the recovery was NOT mine, and it is recorded as not mine
+
+Fleet 38 went 1/7 → 3/7 and crypto theses 0 → 29, with four crypto runs
+built (BNB 1635, LIT 1636, TAO 1637, ZEC 1638). On the surface that reads
+as R33 working. **It is not.**
+
+- R33 worker container started **13:08:52Z**.
+- The four builds landed **13:03:16 – 13:05:20Z** — three to five minutes
+  BEFORE the fix was live.
+
+The recovery came entirely from the regime flipping to `trend` on its own,
+which turned the gate off on the OLD code. **R33 gets zero credit.**
+
+And right now `regime: trend` / `allow_new_buys: True` / `enforced: False`,
+so `regime_blocks_longs` is False under both the old and new code:
+**R33 is currently INERT and completely untested in production.** Its
+falsification can only be evaluated at the NEXT `panic` window — does crypto
+supply survive it? Until then: unproven, and it must not be reported
+otherwise.
+
+### R28 — the pre-registered metric MOVES for the first time (n=4, 1 hit)
+
+| arm | runs | mean first horizon | ≤6h |
+|---|---|---|---|
+| PRE (born in the prior 24h) | 48 | 31.85h | **0 of 48** |
+| POST (born after 09:24:39Z) | **4** | **19.0h** | **1 of 4** |
+
+The hit is **run 1637 TAOUSDT, first horizon 4.0h** — the first post-deploy
+birth to author INSIDE the ~5h window. The other three (1632 NZDUSD, 1633
+GBPUSD, 1635 BNBUSDT) all chose 24.0h.
+
+**Stated at its true weight: NOT significant.** With PRE at 0/48 the upper
+95% bound on the baseline rate is ~6%, and P(≥1 of 4 at 6%) ≈ 22%. n=4.
+What can be said: across 417 desk-path rows and 48 runs in the 24h BEFORE
+the fix, **not one** first horizon was ≤6h; since the fix there are two runs
+authoring inside the window — 1637 (4.0h, a first horizon) and 1627 (1.4h, a
+mid-life revision, cycle 180). Directional, early, unproven.
+
+### Non-trades, with reasons — and the empty-why watch
+
+15 `risk: decision is 'hold'` + 1 `desk_retire` + 1 `pre: market closed`.
+Zero mechanical refusals. No closed leg → no two-subagent dispatch.
+
+**First `order_intent` rows since 08-20T20:39Z** — 4 of them, and all four
+are `intent: "hold"`, not blocked entries, each carrying a stated `why`:
+1635 BNB *"awaiting a valid entry signal"*; 1621 TMO *"No trade meets the
+required risk/reward and volatility constraints"*; 1629 PYPL *"we choose not
+to open a position given the negative edge"*; 1597 PFE *"unfavorable
+risk-reward"*. **Empty-why rate 0/4 — the watch stays unfired.**
+
+The vocabulary is again `record_line()`'s ("negative edge",
+"risk/reward"), consistent with the RAG pass's cause.
+
+### The standing fact after 185 cycles
+
+**Rails are perfect, candidate supply is restored, and the desk still will
+not trade.** Neither R28 nor R33 has changed that, and neither was ever
+claimed to. The binding constraint remains what the reachability disclosure
+tells the desk about its own book.
+
 ## Cycles 182-183 — 12:2xZ / 12:5xZ (anchors 12:21:42, 12:51:36, 13:02:37): **R33 ROOT-CAUSED, SHIPPED AND LIVE** — the screen was ENFORCING an advisory regime
 
 **PROFIT-OR-LOSS FIRST.** Zero trades, **zero all day — 29.9h since the last
