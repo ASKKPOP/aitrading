@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-21/SWEEP",
- "captured_at_utc": "2026-08-21T03:59Z",
+ "cycle": "2026-08-21/175",
+ "captured_at_utc": "2026-08-21T04:26Z",
  "prod_image": "sooppiy-backend:20260820-20260820-r27-floorcarry",
  "SWEEP_0821": "ZERO trades in 24h (last fill 08-20 07:10). Fence PASS day 4; caps/ratchet/floor 0; R23 holds; R25 unexercised (no fills); R27 0 renders (correct - no past-floor flat run exists); no_verdict 0/420, salvaged 4; empty-why 0/8. HONEST VERDICT: R26 trades/day metric has NOT moved (fell 8.2 -> ~5 -> 0) - gate fixed+slots fill proven, but desks decline ~100% on conviction; binding constraint = candidate quality, not rails. Recorded, not actioned (discipline is right at these setups per falsification sample).",
  "SWEEP_0820": "4-day net +$0.09 (breakeven at micro-scale while fix stack beds in). Fence PASS day 3. Cap ledger 5 fires: +$2.15 saved / -$1.13 cost = net-positive. R21 fire #2 valid; R23 retired to standing (2 post-stop outlooks = benign cycle race, verified rows); R25 3 fills silent-correct; R27 armed 0 renders. no_verdict 0.16%; empty-why 0/15 (rate NOT holding - keep counting). All 24h closes pre-analyzed. Tally a=4/b=5/c=4/d=2; lesson candidate: profit leaks through exit authorship gaps + R22 dead zone, not entry quality.",
