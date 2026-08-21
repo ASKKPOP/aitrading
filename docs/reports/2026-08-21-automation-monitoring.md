@@ -191,7 +191,29 @@ explore row in block 3 against a deterministic row in block 1.
 
 `chunks: []` control rows: still **0 of 833, all time.**
 
-### 9. Owner-rule compliance note
+### 9. Shipped this pass — `DESK_REACHABILITY_AB`, the experiment not the fix
+
+Per §7 the finding is observational, so what ships is the randomised A/B.
+`_reachability_ab_arm(run_id)` → `treat` | `control`; **default OFF = prod
+behaviour byte for byte**; deterministic in `run_id` (a run that flipped arm
+mid-life would contaminate its own history); fail-safe **toward** treatment
+(losing the line is the change under test). Every `decision` event journals
+`reach_ab`, or the experiment cannot be read out.
+
+Scope measured, not assumed: over 08-15 → now, **3,595 flat + 236 holding
+decisions are ALL `route: light`** — the escalated `full` path has taken zero
+cycles — so gating the light path alone covers the whole decision population
+and `analysis_agents._trader_risk_decision` needs no change.
+
+Readout **pre-registered before any data exists** in
+[HANDOFF-rag-phase3.md §4b](HANDOFF-rag-phase3.md): metric, SQL, computed
+power (n=252/arm for the full effect ≈ 2 days; 703 for a half recovery), a
+**two-point** decision rule with an explicit no-peeking clause, secondary
+safety metrics, and an abort ($5 P&L divergence at ≥10 control closes, or any
+traceback) that needs no deploy. A null result would refute this pass's own
+headline — which is the point.
+
+### 10. Owner-rule compliance note
 
 The two-subagent trade-outcome split (CLAUDE.md, 2026-08-13) was not run
 this pass: there is **no tape to split** — zero AI-authored and zero
