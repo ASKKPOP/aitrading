@@ -8,6 +8,74 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 180 — 11:2xZ (anchor 11:21:43): R28's ONE responder shortened its plan, still never traded, and died on the same rail
+
+**PROFIT-OR-LOSS FIRST.** Zero trades in the window, **zero all day — 28h
+since the last fill (08-20T07:10:41Z)**, no open positions, ledger unchanged.
+Rails: fence 0, caps 0, no_verdict 0. Two `alert` rows are the two
+`idle_retired` notices below, not rail fires. One `verdict_salvaged`
+(truncation on 1633, 362 chars) — the rail absorbing it, standing behaviour.
+
+**Non-trades, with reasons:** 8 `risk: decision is 'hold'` (desk's own choice)
++ 6 benign `pre: market closed`. Zero mechanical refusals. No closed leg → no
+two-subagent dispatch (correct).
+
+**Rotation:** 1626 NZDJPY `idle_retired` 11:13:14Z; **1627 BCHUSDT
+`idle_retired` 11:20:10Z**.
+
+### THE DECISIVE R28 OBSERVATION — the mechanism worked and the outcome did not change
+
+Run 1627 was the **one** run that responded to R28: it held 24.0h for six
+straight cycles, then authored **1.4h** at cycle 9 (09:51Z, 27 minutes after
+the deploy) against the ~1.9h entry window the new brief hands it. Exactly the
+designed behaviour.
+
+What it then did with that corrected plan:
+
+| cycle | action | conf | its own stated reason |
+|---|---|---|---|
+| 9 | hold | 0.78 | overbought RSI, weakening momentum, medium-term downtrend |
+| 10 | hold | 0.48 | weak entry, tight risk rail, standing flat bias |
+| 11 | hold | 0.55 | *"no actionable short entry is present"* |
+| 12 | hold | 0.44 | *"no actionable short entry exists"* |
+
+`trades: 0`, `realized_pnl_usd: 0.00`, `idle_retired` at cycle 12, life 5.28h.
+
+**The desk fit its plan to the true window and still found nothing worth
+taking.** So the deadline misinformation was NOT what suppressed entries —
+which is consistent with the RAG-cadence pass's conclusion that the
+reachability disclosure is the binding cause. R28 is a real fix to a real
+defect that **does not produce profit**. Re-billed accordingly: correctness,
+not throughput.
+
+**No rollback indicated.** The anti-rush clause held — 1627 saw a 1.9h
+deadline and still declined four times running at confidence 0.44–0.78 rather
+than forcing a fill. That is the behaviour the clause was written for, and it
+is the one thing that would have made R28 harmful.
+
+### R28 falsification — n=2 on the pre-registered metric, NOT MOVED
+
+| arm | runs | mean first horizon | ≤6h |
+|---|---|---|---|
+| PRE (born prior 24h) | 48 | 31.85h | **0 of 48** |
+| POST (born after 09:24:39Z) | **2** — 1632 NZDUSD 24.0h, 1633 GBPUSD 24.0h | 24.0h | **0 of 2** |
+
+**Two for two in the wrong direction. Reported as NOT MOVED.**
+
+**Carried hypothesis (not a claim):** R28 may only bite when the window is
+visibly tight. Its one responder was at **cycle 9 with ~1.9h left**; both
+non-responders were at **cycle 1, where the brief reads "12 cycles (~5.6h)"**.
+If so the fix arrives after the plan governing the run is already written —
+structurally too late. Testable at the sweep: does authored horizon track
+cycles-REMAINING rather than the fix being present?
+
+## Cycle 179 — 10:5xZ (anchor 10:51:42): quiet
+
+Zero trades, zero positions, ledger unchanged. Rails all clean — fence 0,
+caps 0, no_verdict 0, salvaged 0, no alerts, no rotation. 9 `hold` + 6
+`market closed`. R28 readout at that anchor: n=2 (1632, 1633), both 24.0h,
+not moved.
+
 ## Cycle 178 — 10:2xZ (anchor 10:21:44): quiet on money; R28's binding metric NOT moved, and I CORRECTED MY OWN BASELINE (it was an artifact)
 
 **PROFIT-OR-LOSS FIRST.** Zero trades in the window, **zero trades all day
