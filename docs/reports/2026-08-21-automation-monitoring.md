@@ -8,6 +8,104 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 182-183 — 12:2xZ / 12:5xZ (anchors 12:21:42, 12:51:36, 13:02:37): **R33 ROOT-CAUSED, SHIPPED AND LIVE** — the screen was ENFORCING an advisory regime
+
+**PROFIT-OR-LOSS FIRST.** Zero trades, **zero all day — 29.9h since the last
+fill**, no open positions, ledger unchanged. Rails clean (fence 0, caps 0,
+no_verdict 0, 0 tracebacks). Fleet 38 fell **2/7 → 1/7** during the window
+(1630 CRV idle_retired 12:41:25Z, leaving only 1631 ETH). Fleet 37 held 8/10;
+its run 1634 EURUSD was built 12:44:54Z and **desk-retired 52 seconds later**
+at cycle 1, conf 0.77.
+
+### R33 — root cause of the crypto drought, MEASURED and REPRODUCED
+
+Cycle 181 left R31 with "root cause NOT established — must be measured, not
+guessed." Measured. **My leading hypothesis was refuted first:** the crypto
+feed is HEALTHY — BTC/ETH/SOL/AAVE each return 60 candles with dollar volumes
+40–100,000× the $5M floor. Not a dead feed.
+
+The actual cause, reproduced live on prod:
+
+```
+regime 'panic'   allow_new_buys False   ENFORCED False
+reasons: ["unresolved volatility/liquidation shock"]
+fng_value 72 (Greed) · vol_percentile 56.7 · crypto_composite 72.7
+
+crypto universe 39 -> 17 dropped on liquidity -> 22 reached the gate
+-> ALL 22 scored direction "long" -> ALL 22 gated to zero -> survivors 0
+```
+
+`regime.evaluate_market_regime()` stamps `enforced = REGIME_FILTER_ENABLED`
+(**default FALSE**) and carries its own note: *"bands are unvalidated
+placeholders pending Phase-4 walk-forward; advisory-only until
+REGIME_FILTER_ENABLED"*. Every consumer honours it —
+`automation._regime_blocks` returns None on `not enforced` with the comment
+*"advisory-only until the Phase-4 flip"*. **`symbol_research._read_overlays`
+was the SOLE consumer that enforced it**, as a hard gate on crypto longs.
+
+**The gate and the direction classifier are anti-correlated by construction:**
+`direction = "long" if mom_5d >= 0`, so in any crypto uptrend every candidate
+is long and every one is gated. The crypto fleet could only build while crypto
+was FALLING.
+
+**Invisible upstream:** the other three markets fill their quotas
+(18 us-stock + 14 forex + 4 futures), so the batch reports
+`survivors: 36, persisted: 36, llm: 36` and looks healthy.
+`_release_unproductive_claim` needs `survivors == 0`, so the 2026-08-07
+burned-window guard — which covers a TOTAL blackout — never fires on this
+PER-MARKET one.
+
+**Counterfactual, measured on prod:** crypto survivors **0 → 15** with the
+fix's overlay value (ASTER, BCH, AAVE, ZEC, LTC, HYPE, BTC, LIT).
+
+### The natural experiment that CONFIRMED it
+
+At **13:02:55Z** batch `research:496476` landed **with 15 crypto theses** — the
+drought broke on its own. The regime had flipped `panic` → **`trend`**,
+`allow_new_buys: True`, so `regime_blocks_longs` went False. With the gate off,
+**14 of the 15 survivors are LONG** (BNB, LINK, LTC, SUI, LIT, SOL…).
+
+That is exactly what the diagnosis predicted: the gate kills longs, longs are
+what crypto produces in an uptrend, so supply went to zero. The mechanism is
+proven by a clean before/after on the live system.
+
+### Stated at its TRUE weight — do not overclaim this
+
+**The drought self-resolved after ~99 minutes** (11:23:38Z → 13:02:55Z). R33
+does NOT unblock a permanent freeze; it removes **intermittent,
+advisory-driven blackouts of an entire market** (3 of the last 8 batches).
+Whether that converts to P&L is **UNPROVEN** — the desk has declined every
+setup all day regardless of supply. R33 is a correctness fix with a measured
+effect on candidate SUPPLY, not a demonstrated profit gain.
+
+The regime label's own volatility is the argument for the fix: it read `panic`
+on one advisory flag while F&G was 72 (Greed), then flipped to `trend` with no
+market event.
+
+### SHIPPED — PR #513, live on `sooppiy-backend:20260821-regime-advisory`
+
+Pipeline: fail-before (3 red of 7, incl. a test that the screen and
+`automation._regime_blocks` must never disagree — that divergence IS the bug)
+→ **4/4 mutants killed** (enforced check removed, enforced polarity inverted,
+allow_new_buys polarity inverted, `enforced` defaulting True) → ruff clean →
+**4613 passed + 1349 subtests** → CI 5/5 → merge → deploy (clean full deploy,
+marketing included, endpoints 200) → **verified 3× live**:
+
+1. image + fix code present in the running worker
+2. live regime `trend`/`enforced False` → overlay `False`
+3. forced advisory panic → `enforced=False → False` (the fix) and
+   `enforced=True → True` (enforcement still works when intended); 0 tracebacks
+
+**Rollback:** `REGIME_FILTER_ENABLED=true` restores the hard gate the intended
+way, or set `SOOPPIY_IMAGE=sooppiy-backend:20260821-reachability-ab` and
+re-run compose. No schema, no migration.
+
+**Falsification for the next pass:** crypto-bearing batches must stop showing
+zero-crypto gaps. If a batch again carries 0 crypto while the regime is
+unenforced, R33 FAILED and must be reported as failed in these terms.
+
+### R28 — unchanged, still NOT MOVED
+
 ## Cycle 181 — 11:5xZ (anchor 11:51:43): **CRYPTO CANDIDATE DROUGHT — fleet 38 is 2/7 and CANNOT BUILD. Zero live crypto theses exist.** (R31, R32)
 
 **PROFIT-OR-LOSS FIRST.** Zero trades, **zero all day — 28.7h since the last
