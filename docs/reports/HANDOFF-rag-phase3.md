@@ -214,8 +214,8 @@ that, not because of instrumentation.**
   zero.~~ **WRONG — CORRECTED 2026-08-21. The `short` zero is a STRUCTURAL
   ARTIFACT and the 0.20% understates entry intent by 8.7×.**
   - The decision prompt fixes the schema at `{"action": "buy"|"sell"|"hold"}`
-    (`run_engine.py:2083`), and the `decision` event is emitted at **line
-    2343** while the futures `sell`→`short` remap runs at **line 2399**.
+    (`run_engine.py:5919`), and the `decision` event is emitted at **line
+    6572** while the futures `sell`→`short` remap runs at **line 6775**.
     The event is written BEFORE the remap. **`short` can never appear in a
     `decision` payload** — all-time, 5,103 rows: `hold` 4668 / `sell` 239 /
     `buy` 128 / `retire` 68 / **`short` 0**. Meanwhile `signals` carries

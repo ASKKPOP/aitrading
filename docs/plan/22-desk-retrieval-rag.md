@@ -171,7 +171,7 @@ Every increment lands here as a dated line, in the same PR that ships it.
     - **Two numbers in the authority docs are artifacts, now corrected in
       place.** (i) "`short` zero" is structural: the decision schema is
       `buy|sell|hold` and the `sell`→`short` remap runs AFTER the
-      `decision` event is emitted (`run_engine.py` 2343 vs 2399), so
+      `decision` event is emitted (`run_engine.py` 6572 vs 6775), so
       `short` is 0 in all 5,103 decision rows and can never be anything
       else — while `signals` holds 48 short opens. The real flat entry
       rate is **62/3,588 = 1.73% intent / 42 = 1.17% executed**, and

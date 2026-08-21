@@ -24,9 +24,9 @@ desk says `buy` 7 times in 3,444 (0.20%), `short` zero."* The `short` zero
 is not a finding. It cannot be anything else:
 
 - The decision prompt fixes the schema at
-  `{"action": "buy"|"sell"|"hold"}` (`run_engine.py:2083`).
-- The `decision` telemetry event is emitted at **line 2343**; the futures
-  `sell`→`short` remap runs at **line 2399**. The event is written BEFORE
+  `{"action": "buy"|"sell"|"hold"}` (`run_engine.py:5919`).
+- The `decision` telemetry event is emitted at **line 6572**; the futures
+  `sell`→`short` remap runs at **line 6775**. The event is written BEFORE
   the remap, always.
 - All-time `decision` actions, 5,103 rows: `hold` 4668, `sell` 239,
   `buy` 128, `retire` 68. **`short`: 0 — and 0 is the only value it can
