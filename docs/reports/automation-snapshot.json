@@ -1,6 +1,6 @@
 {
- "cycle": "2026-08-21/167",
- "captured_at_utc": "2026-08-21T00:26Z",
+ "cycle": "2026-08-21/168",
+ "captured_at_utc": "2026-08-21T01:31Z",
  "prod_image": "sooppiy-backend:20260820-20260820-r27-floorcarry",
  "SWEEP_0820": "4-day net +$0.09 (breakeven at micro-scale while fix stack beds in). Fence PASS day 3. Cap ledger 5 fires: +$2.15 saved / -$1.13 cost = net-positive. R21 fire #2 valid; R23 retired to standing (2 post-stop outlooks = benign cycle race, verified rows); R25 3 fills silent-correct; R27 armed 0 renders. no_verdict 0.16%; empty-why 0/15 (rate NOT holding - keep counting). All 24h closes pre-analyzed. Tally a=4/b=5/c=4/d=2; lesson candidate: profit leaks through exit authorship gaps + R22 dead zone, not entry quality.",
  "C_SHIP_R27": "DEPLOYED ~09:0xZ from 571fe329 (PR #498): floor_carry brief line - a FLAT run past the house floor sees its carried total BEFORE the next entry, with the owner rule in its own terms (clean the RUN: retire, hand the slot back) and the first-held-cycle warning. Verb stays the desk's; holding-side _loss_verdict_line untouched. Fail-before 5/5, wiring+journal test, suite 4545+1349, CI 5/5. Rollback r25-markrefresh. VERIFIED: line in running worker, 0 TB. POST-SHIP METRIC: next past-floor flat cycle must journal brief token floor_carry, and the condemned-run re-entry loop (1531-class) must not repeat blind.",
