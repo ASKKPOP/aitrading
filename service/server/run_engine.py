@@ -3747,6 +3747,73 @@ def _side_contradiction_line(text: Any, pos_qty: float) -> str:
             "position instead of closing it.\n")
 
 
+def _entry_window_left(run: dict) -> "tuple[int, float | None] | None":
+    """Cycles the idle-retire rail still allows this never-traded run, and
+    the hours that represents at the run's own observed cadence.
+
+    None whenever the rail cannot collect this run: it is disabled, the run
+    has already traded (the rail is flat-and-never-traded only — see
+    _evaluate_stop), the budget is already spent, or the run has not cycled
+    yet. Fail-CLOSED: an unreadable journal renders nothing rather than
+    inventing a deadline the desk would then author against.
+    """
+    limit = _idle_retire_cycles()
+    if not limit:
+        return None
+    try:
+        seq = int(run.get("cycle_seq") or 0)
+    except (TypeError, ValueError):
+        return None
+    run_id = run.get("id")
+    if seq < 1 or not run_id:
+        return None
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM run_events
+               WHERE run_id = ? AND event_type = 'trade'""", (run_id,))
+        row = cursor.fetchone()
+        if int((row["n"] if row else 0) or 0) > 0:
+            return None                 # traded once — the rail is off for good
+    except Exception:  # noqa: BLE001 — including the connect itself
+        return None                     # fail-closed
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    left = limit - (seq - _closed_market_cycles(run_id))
+    if left <= 0:
+        return None
+    return left, _cycle_pace_hours(run, seq, left)
+
+
+def _cycle_pace_hours(run: dict, seq: int, left: int) -> "float | None":
+    """`left` cycles expressed in hours, measured from THIS run's own pace.
+
+    Derived rather than assumed: fleets phase-offset their runs and markets
+    differ, so a hard-coded cadence would be wrong for most runs. None when
+    the pace is unreadable or implausible — the cycle count alone is still
+    an exact fact, and a wrong hour figure is worse than none.
+    """
+    try:
+        started, last = run.get("started_at"), run.get("last_cycle_at")
+        if not started or not last or seq < 2:
+            return None
+        elapsed = _age_seconds(str(started)) - _age_seconds(str(last))
+        if not (elapsed > 0) or elapsed == float("inf"):
+            return None
+        per = elapsed / 60.0 / (seq - 1)
+        if not (1.0 <= per <= 240.0):   # implausible pace -> state cycles only
+            return None
+        return round(left * per / 60.0, 1)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _run_expiry_line(run: dict) -> str:
     """The run's hard end-of-life, so the desk stops authoring theses the
     vehicle cannot finish.
@@ -3759,23 +3826,65 @@ def _run_expiry_line(run: dict) -> str:
     not know. Fee burn was near-certain at entry: a 6% target with
     under 2 h of life is a fee donation. Renders flat or held (entry
     sizing needs it most). Fail-soft."""
+    hard = ""
+    hard_hours = None
     try:
         stops = json.loads(run.get("stop_conditions_json") or "{}")
         at_time = str(stops.get("at_time") or "")
-        if not at_time:
-            return ""
-        secs = -_age_seconds(at_time)      # positive while in the future
-        if secs <= 0:
-            return ""
-        hours, mins = int(secs // 3600), int((secs % 3600) // 60)
-        return (f"Run life: this run HARD-ENDS at {at_time} "
-                f"({hours}h {mins}m remaining) — any open position is "
-                "flattened then, whatever your horizon says. Author "
-                "horizons and targets against the REMAINING life; an "
-                "entry whose target cannot plausibly be reached in time "
-                "is a fee donation, not a trade.\n")
+        secs = -_age_seconds(at_time) if at_time else 0.0
+        if at_time and secs > 0:
+            hours, mins = int(secs // 3600), int((secs % 3600) // 60)
+            hard_hours = secs / 3600.0
+            hard = (f"Run life: this run HARD-ENDS at {at_time} "
+                    f"({hours}h {mins}m remaining) — any open position is "
+                    "flattened then, whatever your horizon says. Author "
+                    "horizons and targets against the REMAINING life; an "
+                    "entry whose target cannot plausibly be reached in time "
+                    "is a fee donation, not a trade.\n")
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
-        return ""
+        hard = ""
+
+    # The BINDING deadline (2026-08-21). The hard end above is the loosest
+    # of this run's two clocks, and for a run that has never traded it is
+    # almost never the operative one: the idle-retire rail collects a flat
+    # never-traded run after RUN_IDLE_RETIRE_CYCLES worked cycles. Prod at
+    # the 08-21T08:06Z anchor — every idle-retired crypto run had an at_time
+    # budget of 24-72h and an actual life of 5.0-5.5h, and the desk, reading
+    # "23h 58m remaining", published plans with horizon_hours of 24/48/72 on
+    # a ~5.2h vehicle, then held every cycle waiting for a zone the run would
+    # not live to see. 196 of 234 runs stopped since 08-18 (83.8%) died
+    # idle_retired having never traded. Same defect class as #244: the desk
+    # could not see the rail that retires it.
+    #
+    # Fact + rule; the verb stays the desk's (§7b). This neither loosens a
+    # gate nor forces an entry — it replaces a misleading budget with the
+    # true one, so the desk can author a plan that FITS the vehicle or
+    # decline early and hand the slot back.
+    try:
+        window = _entry_window_left(run)
+        if not window:
+            return hard
+        left, win_hours = window
+        span = f"{left} more no-trade cycle{'' if left == 1 else 's'}"
+        if win_hours is not None:
+            span += f" (~{win_hours:g}h at this run's own pace)"
+        binds = ""
+        if hard_hours is not None:
+            binds = (" — sooner than the hard end above, so THIS is the "
+                     "deadline your plan must fit"
+                     if win_hours is None or win_hours < hard_hours
+                     else " — the hard end above binds first")
+        return hard + (
+            f"Entry window: this run has never traded, so it is handed back "
+            f"to the fleet after {span}{binds}. A zone or trigger that needs "
+            "longer than this window is not a plan, it is a forfeited slot — "
+            "so author one that can actually TRIGGER inside it. But the "
+            "deadline is NOT a reason to trade: an entry taken to beat the "
+            "clock is a fee donation. If nothing in this window is worth "
+            "taking, say so and let the slot go early — that is the correct "
+            "answer, not a failure.\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return hard
 
 
 def _standing_arm_line(run: dict, pos_qty: float) -> str:
