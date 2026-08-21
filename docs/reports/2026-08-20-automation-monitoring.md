@@ -8,6 +8,102 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 166 — 23:5xZ (anchor 23:56:57): quiet
+
+No money events, no positions. Three $0 fuses (SOL 1603, TAO 1604,
+WLD 1605); SOL 1613 rebuilt. Day closes ≈ **−$1.46** (final at next
+pnl_audit). Fence 0; 0 tracebacks.
+
+## Cycle 165 — 23:2xZ (anchor 23:26:51): quiet
+
+No money events, no positions. Four $0 fuses (BNB 1598, ZEC 1599, LIT
+1600, EURCAD 1601); LTC 1612 rebuilt (fleet 38 at 4/7). Day −$1.46.
+Fence 0; 0 tracebacks.
+
+## Cycle 164 — 22:5xZ (anchor 22:56:51): quiet
+
+No events, no positions, 0 tracebacks. Day −$1.46.
+
+## Cycle 163 — 22:2xZ (anchor 22:26:53): quiet
+
+No money events, no positions. Three $0 fuses (CADJPY 1594, NZDUSD
+1595, GBPUSD 1596). Day −$1.46. Fence 0; 0 tracebacks.
+
+## Cycle 162 — 21:5xZ (anchor 21:56:54): quiet
+
+No events, no positions, 0 tracebacks. Day −$1.46.
+
+## Cycle 161 — 21:2xZ (anchor 21:26:55): quiet
+
+No money events, no positions. CHFJPY 1611 built (fleet 37). Day
+−$1.46. Fence 0; 0 tracebacks.
+
+## Cycle 160 — 20:5xZ (anchor 20:56:52): quiet
+
+No money events, no positions. AUDJPY 1593 fused ($0). Day −$1.46.
+Fence 0; 0 tracebacks.
+
+## Cycle 159 — 20:2xZ (anchor 20:26:42): micro-window (4 min — displaced cron), nothing new
+
+No events, no positions, 0 tracebacks. Day −$1.46.
+
+## Cycle 158 — 20:2xZ (anchor 20:22:26): quiet (window stretched by a classifier timeout retry)
+
+No money events, no positions. Four $0 idle-retires (COIN 1585, GBPAUD
+1586, ORDI 1587, GBPJPY 1588 — ORDI's fuse leaves fleet 38 with the
+18:xx builds only); EURCHF/EURUSD/GBPAUD rebuilt (fleet 37). NYSE now
+closed. Day −$1.46. Fence 0; 0 tracebacks.
+
+## Cycle 157 — 19:2xZ (anchor 19:26:51): quiet
+
+No money events, no positions. Four more $0 idle-retires (ADBE 1564,
+1573, USDJPY-class 1574, COST 1589); SLV 1607 built. Day −$1.46.
+Fence 0; 0 tracebacks.
+
+## Cycle 156 — 18:5xZ (anchor 18:56:52): quiet; heavy $0 fuse wave
+
+No money events, no positions. Six idle-retires, **$0.00 combined**
+(incl. XOM successor 1583 and SBUX 1562 — the us-stock cohort fusing
+in-hours again); builds WLD 1605 (fleet 38) + INTU 1606. Day −$1.46.
+Fence 0; 0 tracebacks.
+
+## Cycle 155 — 18:2xZ (anchor 18:26:54): quiet
+
+No money events, no positions, all rotation $0: EURAUD 1582 fused,
+MSTR 1548 desk-retired, BTC 1602 desk-retired at cycle 1; builds
+EURCAD 1601, SOL 1603, TAO 1604 (fleet 38 climbing back toward 7).
+Day −$1.46. Fence 0; 0 tracebacks.
+
+## Cycle 154 — 17:5xZ (anchor 17:56:57): quiet
+
+No money events, no positions. Fleet 38 refilled: BNB 1598 + ZEC 1599 +
+LIT 1600 (4/7 with ORDI). GBPAUD 1546 fused ($0). Day −$1.46. Fence 0;
+0 tracebacks.
+
+## Cycle 153 — 17:2xZ (anchor 17:26:51): quiet
+
+No money events, no positions. EURJPY 1581 fused ($0 — second EURJPY
+death after the earlier chain; still all $0). Day −$1.46. Fence 0;
+0 tracebacks.
+
+## Cycle 152 — 16:5xZ (anchor 16:56:55): quiet; fleet 38 down to 1/7
+
+No money events, no positions, all rotation $0: TRUMP 1577 + HYPE 1578
+(fleet 38) fused; CVX 1542 + NZDJPY 1580 (fleet 37) fused; builds
+CADJPY/NZDUSD/GBPUSD/PFE (all fleet 37). Fleet 38 at 1/7 (ORDI 1587
+only) — the crypto desks keep declining; same discipline shape, no new
+mechanism. Day −$1.46. Fence 0; 0 tracebacks.
+
+## Cycle 151 — 16:2xZ (anchor 16:26:52): quiet
+
+No events, no positions, 0 tracebacks. Day −$1.46.
+
+## Cycle 150 — 16:0xZ (anchor 16:02:04): quiet
+
+No money events, no positions. Builds: ACN/NFLX/DIS (us-stock, NFLX a
+hot-tech name) + AUDJPY (fleet 37); SUI 1576 fused $0. Day −$1.46.
+Fence 0; 0 tracebacks.
+
 ## 24H SWEEP — 15:3xZ (anchor 15:37:22): fence PASS day 3; all closes pre-analyzed; 4-day book ≈ breakeven; every forward metric behaving
 
 **PROFIT-OR-LOSS FIRST.** Ledger: 08-17 +$3.63 / 08-18 −$0.94 / 08-19
