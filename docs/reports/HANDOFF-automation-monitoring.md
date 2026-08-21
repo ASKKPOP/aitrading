@@ -12,6 +12,7 @@
 > | file | role |
 > |---|---|
 > | **this file** | operating rules, cadence, access, ship pipeline, open decisions, traps |
+> | **`HANDOFF-SESSION-2026-08-21.md`** | **newest session handoff — read SECOND: current fleet/rail state, the owner profit diagnosis and its refuted hypotheses, everything shipped 08-18→21, the open watches with live counts, and the honest not-yet-working verdict** |
 > | `YYYY-MM-DD-automation-monitoring.md` | per-UTC-day cycle notes, newest-first |
 > | `automation-snapshot.json` | machine-readable state carried between cycles |
 >
