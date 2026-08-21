@@ -8,6 +8,107 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycle 181 — 11:5xZ (anchor 11:51:43): **CRYPTO CANDIDATE DROUGHT — fleet 38 is 2/7 and CANNOT BUILD. Zero live crypto theses exist.** (R31, R32)
+
+**PROFIT-OR-LOSS FIRST.** Zero trades, **zero all day — 28.7h since the last
+fill**, no open positions. But this cycle is NOT quiet: **fleet 38 (crypto,
+$10k) is down to 2 of 7 slots and is structurally unable to fill the other
+five.** A book with 5/7 slots idle cannot make money whatever the desk does.
+
+Rails clean: fence 0, caps 0, no_verdict 0. Two `alert` rows are the
+`idle_retired` notices for 1627 (11:20:10Z) and 1624 (11:29:01Z). Non-trades:
+6 `risk: decision is 'hold'` + 6 benign `pre: market closed`. No closed leg →
+no two-subagent dispatch.
+
+### R31 (PRIMARY) — crypto intermittently yields ZERO survivors from the research screen
+
+`[SymbolResearch] {'batch_id': 'research:496475', 'universe': 167,
+'survivors': 36, 'persisted': 36, 'llm': 36}` — and those 36 are exactly
+**18 us-stock + 14 forex + 4 futures. Zero crypto.**
+
+us-stock (18), forex (14) and futures (4) are **constant in every one of the
+last 8 batches**. Crypto alone oscillates between 15 and 0:
+
+| batch | created | crypto |
+|---|---|---|
+| 496475 | 11:53 | **0** |
+| 496474 | 10:47 | **0** |
+| 496473 | 09:23 | 15 |
+| 496472 | 08:15 | **0** |
+| 496471 | 07:08 | 15 |
+| 496469 | 06:00 | 15 |
+| 496468 | 04:52 | 15 |
+| 496467 | 03:43 | 4 |
+
+**3 of the last 8 batches carried no crypto at all.** Root cause of the
+zero-survivor screen is NOT yet established — that is the next investigation,
+and it must be measured, not guessed. The constancy of the other three markets
+is the strongest clue: whatever fails is crypto-specific, not a global screen
+fault.
+
+**Live consequence, measured:** `live_crypto_theses = 0` at the anchor. The
+last crypto-bearing batch (496473) expired **11:23:38Z**; both batches since
+carry none. Fleet 38 has been in a HARD drought since 11:23:38Z and cannot
+build a single crypto run until a crypto-bearing batch lands.
+
+### R32 (AMPLIFIER) — the "empty batch" guard is MARKET-BLIND
+
+`symbol_research.select_targets` takes *"the newest batch that actually HAS
+live theses"* — its comment cites the 2026-07-26 incident where an empty
+refresh blanked every fleet for an hour. **But the guard only checks the batch
+is non-empty overall, not that it holds theses for the caller's market scope.**
+A batch of 36 us-stock/forex/futures theses passes the non-empty test and
+blanks crypto completely, even while the PREVIOUS batch's crypto theses are
+still unexpired.
+
+Measured cost of the blindness — windows where live crypto theses existed in
+the prior batch but were unreachable because the newest batch had none:
+- 496472 born 08:15, 496471 crypto live to 09:08 → **~53 min** forfeited
+- 496474 born 10:47, 496473 crypto live to 11:23 → **~36 min** forfeited
+
+Same class as the standing lesson that unblocking a market exposes latent
+gaps: the fix is to select the newest batch **with live theses for the
+requested market scope**, falling back per-market rather than globally.
+
+**Neither shipped this cycle.** R31's root cause is unmeasured and R32 alone
+treats the amplifier, not the source. Fixing the amplifier is defensible on
+its own evidence, but it goes through the full pipeline next cycle — not a
+same-cycle patch on a money path.
+
+### Chain, end to end (all measured this cycle)
+
+1. 83.8% of runs die `idle_retired` never having traded (cycle 177).
+2. Each `idle_retired` benches its symbol for **12h**
+   (`IDLE_SYMBOL_COOLDOWN_HOURS = 12`) — 12 crypto majors are cooled right
+   now (LTC, SOL, HYPE, LINK, ASTER, BTC, AVAX, ETH, KAITO, SUI, TRUMP, BCH).
+3. The newest batch carries no crypto (R31), and the market-blind guard
+   refuses to fall back (R32).
+4. `select_targets` → empty → `backtest_gate` `kept: []` → `slot_waiting
+   no_candidates` → `_REGATE_MEMO` then **silently suppresses** re-gating, so
+   the journal goes quiet while five slots sit dead.
+5. Fleet 38: **2/7 running.**
+
+**Refuted en route, recorded:**
+- *"the `researched: 0, built: 0` planner ticks are the #393 replenish stall"*
+  — **REFUTED.** Those counters only increment for fleets in RESEARCHING or
+  BUILDING state; both fleets are ACTIVE, so `supervised: 2, researched: 0` is
+  the NORMAL shape. I pattern-matched a memory too fast.
+- *"symbol cooldowns exhausted the universe"* — **REFUTED as the binding
+  cause.** 13 symbols were free of cooldown and of running runs. The binding
+  constraint is the batch, not the cooldown. (My free-symbol count was also
+  measured on the wrong population — all 2,010 theses back to 08-11, not the
+  newest batch.)
+- *"the expectancy gate's −$367.51/trade is a $100k-replay artifact applied to
+  a $50 book"* — **REFUTED as a defect.** `simulate()` does use
+  `initial_cash=100_000`, but `_verdict` tests only the SIGN (`exp <= 0`), and
+  a sign is scale-invariant. The magnitude is meaningless; the verdict is not.
+
+### R28 falsification — unchanged, n=2, NOT MOVED
+
+Both post-deploy births still 24.0h (1632, 1633) against PRE 48 runs / mean
+31.85h / 0 of 48 ≤6h. Run 1627, R28's one responder, was `idle_retired` at
+11:20:10Z having never traded — see cycle 180.
+
 ## Cycle 180 — 11:2xZ (anchor 11:21:43): R28's ONE responder shortened its plan, still never traded, and died on the same rail
 
 **PROFIT-OR-LOSS FIRST.** Zero trades in the window, **zero all day — 28h
