@@ -8,6 +8,68 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 188-190 — 15:2xZ / 15:5xZ / 16:2xZ (anchors 15:21:37, 15:51:36, 16:21:38): **CORRECTION — the sweep's R28 "FAILED" verdict rested on a Simpson's-paradox artifact. Downgraded to INCONCLUSIVE.**
+
+**PROFIT-OR-LOSS FIRST.** Zero trades across all three windows, **zero all day
+— 33.2h since the last fill**, no open positions, ledger unchanged. Cycle 190
+was the quietest of the day: **zero rail events of ANY kind**, 12 holds, no
+rotation, no mechanical refusals. Fleet 37 held 9-10/10; **fleet 38 stuck at
+2/7 all day** (R34).
+
+### CORRECTION to the 15:37Z sweep — R28's verdict was wrong
+
+The sweep called R28 **FAILED**, resting partly on "POST mean 30.5h vs PRE
+31.85h — flat", and cycle 190's aggregate looked worse still (34.0h). **Both
+readings were a composition artifact.** Splitting by market:
+
+| market | PRE runs | PRE mean | POST runs | POST mean | POST ≤6h |
+|---|---|---|---|---|---|
+| crypto | 22 | 26.55h | 2 | **14.0h** (−47%) | **1 of 2** |
+| forex | 18 | 30.0h | 2 | **24.0h** (−20%) | 0 |
+| us-stock | 10 | 47.7h | 6 | **44.0h** (−8%) | 0 |
+
+**Every market's POST mean is LOWER than its PRE mean.** The aggregate POST
+mean only exceeded PRE because the POST sample is **60% us-stock (6/10) versus
+20% in PRE (10/50)** — and us-stock natively authors ~48h horizons. A
+Simpson's paradox, and I walked straight into it in a sweep that was supposed
+to be the careful pass.
+
+**Revised verdict: INCONCLUSIVE at n=10, NOT failed.**
+
+What survives, stated at true weight:
+- Horizons fell directionally in **all three** markets — but land nowhere near
+  the ~5h target, and only **1 of 10** is ≤6h.
+- Per-market n is **2 / 2 / 6**. Far below the pre-registered sample.
+- The sharpest negative anecdote stands: **1639 NOW was told "~2.6h" and
+  authored 48.0h** — though it sits in the us-stock arm that natively writes
+  48h, which weakens it as evidence.
+- The information itself is **verified correct**: 1597 PFE was told "1 more
+  no-trade cycle (~0.5h)" and idle-retired **28 minutes later, exactly as
+  predicted**.
+
+**No re-call in either direction until the pre-registered sample exists.** The
+lesson recorded: **an aggregate mean across markets is not a valid PRE/POST
+comparison here — us-stock authors ~48h natively and forex/crypto do not, so
+market mix must be held fixed.**
+
+### Standing
+
+**R33** INERT throughout — the regime has been `trend` / `allow_new_buys True`
+/ `enforced False` since the 13:08Z deploy, so `regime_blocks_longs` is False
+under both old and new code. **Untested in production 3+ hours after
+shipping.** Its falsification still waits on the next `panic` window.
+
+**R34** unchanged and reproducing: fleet 38 at 2/7 for the whole day, the
+newest batch's crypto set still ~12 of 14 cooled.
+
+**R32**, **R30**, **R29** unchanged and unshipped. The 08-13 cliff keeps the
+new discriminator from the sweep (component scores dropped there; flat at the
+08-18 shift) and no further evidence this window.
+
+**Rotation across the three cycles:** 1645 UBER + 1647 CRM built (fleet 37),
+1646 CVX desk-retired at cycle 1, 1597 PFE idle_retired 15:20:01Z — the run
+whose "~0.5h" prediction proved exact.
+
 ## 24H SWEEP #2 — 15:3xZ (anchor 15:37:18): **ZERO TRADES IN 24H — a FAILURE, not a quiet day.** 7-day result INCONCLUSIVE. R28 confirmed FAILED. The 08-13 cliff finally has a discriminator.
 
 *(Prior sweep this UTC day ran at 03:59:32Z, 11.6h earlier, under the previous
