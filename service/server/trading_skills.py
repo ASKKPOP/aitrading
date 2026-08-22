@@ -2000,6 +2000,69 @@ BASE_SKILLS: list[dict[str, Any]] = [
                 "2026-08-13)")},
         ],
     },
+    {
+        # 2026-08-22, docs/research/06 — the replayed record of this
+        # platform's own entries AND its declines. Owner rule
+        # `decisions-become-skills`: a finding needing implementation becomes
+        # trading logic the AI runs. Three measured facts, one lesson each.
+        "slug": "measured-entry-record",
+        "name": "Measured Entry Record",
+        "description": ("The replayed record of this platform's own targets "
+                        "and declined entries — size targets to measured "
+                        "movement, and price the cost of declining."),
+        "prompts": ["light", "trader"],
+        "priority": 47,
+        "lessons": [
+            {"applies_when": ["flat", "holding"], "text": (
+                "Targets on this platform have been decoration, not "
+                "forecasts: of 104 closed positions replayed to their own "
+                "stated horizon (2026-08-22), only 7 ever reached their "
+                "authored target, while the stop was reached four times as "
+                "often and about six times sooner. A target is a claim "
+                "about movement over YOUR intended hold — derive it from "
+                "what this symbol has actually moved in windows of that "
+                "length, not from the move the thesis wishes for. If the "
+                "honest per-hold movement cannot pay the round-trip fee "
+                "plus a 2:1 target, the trade has no expressible edge; "
+                "retire the idea rather than authoring levels the tape "
+                "has never delivered."),
+             "evidence": (
+                "of 104 closed positions replayed to their own stated "
+                "horizon (2026-08-22), only 7 ever reached their authored "
+                "target")},
+            {"applies_when": ["flat"], "text": (
+                "In crypto, declining is not automatically the safe "
+                "choice: 74 declined crypto entry ideas replayed over "
+                "eight days (2026-08-22) would have netted +$145 at "
+                "machine size — still positive with the single best "
+                "winner removed. When the structure is clean and the "
+                "move you forecast is one this symbol actually makes "
+                "within your hold, an entry at honest size IS the "
+                "risk-managed action; a flat book in crypto has a "
+                "measured opportunity cost, and 'hold' must be argued "
+                "against it, not assumed free."),
+             "evidence": (
+                "74 declined crypto entry ideas replayed over "
+                "eight days (2026-08-22) would have netted +$145 at "
+                "machine size — still positive with the single best "
+                "winner removed")},
+            {"applies_when": ["flat"], "text": (
+                "In futures and forex the same replay points the other "
+                "way: not one declined or executed idea ever reached its "
+                "authored target inside its horizon (0 of 73 replayed, "
+                "2026-08-22) — realized movement over actual holds ran "
+                "0.1-0.3% against authored targets of 2-4%. In those "
+                "markets a plan whose target exceeds the symbol's "
+                "measured per-hold movement is unexpressible: do not "
+                "open on it, and never shrink the stop to manufacture "
+                "the ratio — that converts no-resolution into "
+                "stopped-out."),
+             "evidence": (
+                "not one declined or executed idea ever reached its "
+                "authored target inside its horizon (0 of 73 replayed, "
+                "2026-08-22)")},
+        ],
+    },
 ]
 
 # Plan 22 Phase 1 — a skill's body is DERIVED from its atomic lessons: the
