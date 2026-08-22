@@ -45,6 +45,25 @@ UNIT NOTE, load-bearing: pnl / notional IS the % price move, because
 pnl = move x qty and notional = price x qty. Any other denominator produces
 a number that cannot be compared to `target_pct`, which is what makes this
 line meaningful rather than decorative.
+
+DENOMINATOR FIX (R30, 2026-08-22). The original denominator summed EVERY
+opening leg over the run's whole life, so a run that entered, closed and
+re-entered counted each re-entry's notional and the record shrank with
+churn. Measured on prod against a signed replay of the same trade events:
+us-stock best 0.894% by the old sum vs 1.684% true (~47% understated),
+forex ~57% understated, 36% of futures runs inflated >1.5x. The
+denominator is now the PEAK CONCURRENT notional. The header figures above
+(0.17%/0.97%) were computed with the old denominator and are kept as the
+historical record of what the desk was being told at the time.
+
+CRYPTO EXCLUSION (measured, 2026-08-22 — docs/research/06). After this
+line shipped into both prompts (#484), the order-discussion panel demoted
+crypto buy proposals whose counterfactual replay netted +$145 over 8 days
+(+$85 with the single largest winner stripped, n=74 episodes) — in crypto
+the disclosure suppressed entries that would have paid, so `record_line`
+is silent there. Futures (0/32 targets ever reached) and forex (0/41)
+measured the opposite, so every other market keeps the line, now with the
+corrected denominator.
 """
 from __future__ import annotations
 
@@ -89,18 +108,27 @@ def _compute(market: str) -> Optional[dict]:
         # closed leg yields exactly 0.00% every time — a query bug that reads
         # like a clean null result (standing trap, backlog 2026-08-17).
         ids = ",".join("?" for _ in runs)
+        # R30: the scale is the PEAK CONCURRENT notional, from a signed
+        # replay of the legs in order — never the sum of every opening leg,
+        # which shrinks the record on every re-entry (see module header).
         cur.execute(
             f"SELECT run_id, payload FROM run_events WHERE event_type = 'trade' "
-            f"AND run_id IN ({ids})", tuple(runs))
+            f"AND run_id IN ({ids}) ORDER BY run_id, id", tuple(runs))
         notional: dict[int, float] = {}
+        qty_net: dict[int, float] = {}
         for row in cur.fetchall():
             try:
                 p = json.loads(row["payload"] or "{}")
-                if p.get("side") not in ("buy", "short"):
+                side = p.get("side")
+                if side not in ("buy", "short", "sell", "cover"):
                     continue
                 rid = int(row["run_id"])
-                notional[rid] = notional.get(rid, 0.0) + abs(
-                    float(p["quantity"]) * float(p["price"]))
+                qty = abs(float(p["quantity"]))
+                price = float(p["price"])
+                qty_net[rid] = qty_net.get(rid, 0.0) + (
+                    qty if side in ("buy", "cover") else -qty)
+                notional[rid] = max(notional.get(rid, 0.0),
+                                    abs(qty_net[rid]) * price)
             except (TypeError, ValueError, KeyError):
                 continue
     finally:
@@ -145,7 +173,13 @@ def record_line(market: str) -> str:
     refutation in this module's header.
 
     Silent below `_MIN_RUNS` — telling the desk a ceiling derived from three
-    runs would be worse than telling it nothing."""
+    runs would be worse than telling it nothing.
+
+    Silent for CRYPTO by measurement (2026-08-22, docs/research/06): the
+    crypto entries this line suppressed replayed to +$145 net over 8 days,
+    positive even with the largest winner stripped — see module header."""
+    if (market or "").strip().lower() == "crypto":
+        return ""
     rec = excursion_record(market)
     if not rec:
         return ""

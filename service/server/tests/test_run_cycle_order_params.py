@@ -771,176 +771,53 @@ class FillMarkRefreshTests(unittest.TestCase):
                                100.0, places=4)
 
 
-class ReachabilityABTests(unittest.TestCase):
-    """The reachability disclosure (#484) is the traced cause of the entry
-    collapse measured 2026-08-21 (crypto flat entry-intent 5.83% -> 1.23% at
-    the deploy boundary, z=4.43). That evidence is OBSERVATIONAL. These tests
-    pin the randomised A/B that can actually refute it.
+class ReachabilityPolicyTests(unittest.TestCase):
+    """The 2026-08-21 reachability A/B is RETIRED: it was proven unreadable
+    (the panel prompt carried the line in both arms, and the same doctrine
+    reached control-arm runs through the skills/brief channels — 0 entries
+    in both arms refuted nothing). Its question was answered by
+    counterfactual replay instead (docs/research/06): crypto demotions were
+    WRONG (+$145 net over 8 days, positive with the largest winner
+    stripped), futures/forex demotions were RIGHT (0/73 targets reached).
+    These tests pin the post-experiment behaviour."""
 
-    Default OFF is load-bearing: with the flag unset every run must stay in
-    the treatment arm, i.e. today's behaviour, byte for byte."""
+    def test_the_ab_scaffolding_is_gone(self):
+        """A dead experiment left in code is a live foot-gun: an env var
+        that silently strips a prompt line must not outlive its readout."""
+        self.assertFalse(hasattr(run_engine, "_reachability_ab_arm"),
+                         "the retired A/B arm function is still present")
 
-    def setUp(self):
-        os.environ.pop("DESK_REACHABILITY_AB", None)
-
-    def tearDown(self):
-        os.environ.pop("DESK_REACHABILITY_AB", None)
-
-    # ── arm assignment ────────────────────────────────────────────────────
-    def test_default_off_puts_every_run_in_the_treatment_arm(self):
-        for rid in (1, 2, 1613, 1614):
-            self.assertEqual(run_engine._reachability_ab_arm(rid), "treat",
-                             f"run {rid} left the treatment arm with the flag OFF")
-
-    def test_flag_on_splits_by_run_id_parity(self):
-        os.environ["DESK_REACHABILITY_AB"] = "1"
-        self.assertEqual(run_engine._reachability_ab_arm(1613), "control")
-        self.assertEqual(run_engine._reachability_ab_arm(1614), "treat")
-        self.assertEqual(run_engine._reachability_ab_arm(3), "control")
-        self.assertEqual(run_engine._reachability_ab_arm(4), "treat")
-
-    def test_the_arm_is_stable_for_a_given_run(self):
-        """A run that flipped arm mid-life would contaminate its own history
-        — every cycle of run N must land in the same arm forever."""
-        os.environ["DESK_REACHABILITY_AB"] = "1"
-        arms = {run_engine._reachability_ab_arm(1613) for _ in range(50)}
-        self.assertEqual(arms, {"control"})
-
-    def test_an_unknown_run_id_stays_in_treatment(self):
-        """Fail-safe direction: never silently STRIP the disclosure because a
-        run id was missing. Losing the line is a behaviour change; keeping it
-        is the status quo."""
-        os.environ["DESK_REACHABILITY_AB"] = "1"
-        for rid in (None, "", "not-a-number"):
-            self.assertEqual(run_engine._reachability_ab_arm(rid), "treat",
-                             f"{rid!r} silently entered the control arm")
-
-    # ── the line itself ───────────────────────────────────────────────────
-    def test_control_arm_gets_no_reachability_line(self):
+    def test_the_retired_env_var_no_longer_changes_the_line(self):
         import desk_record
         os.environ["DESK_REACHABILITY_AB"] = "1"
-        with patch.object(desk_record, "record_line", return_value="SENTINEL"):
-            self.assertEqual(run_engine._reachability_line("crypto", 1613), "")
-
-    def test_treatment_arm_still_gets_the_line(self):
-        import desk_record
-        os.environ["DESK_REACHABILITY_AB"] = "1"
-        with patch.object(desk_record, "record_line", return_value="SENTINEL"):
-            self.assertEqual(run_engine._reachability_line("crypto", 1614), "SENTINEL")
-
-    def test_flag_off_keeps_the_line_for_an_odd_run(self):
-        """The regression this whole flag must not cause."""
-        import desk_record
-        with patch.object(desk_record, "record_line", return_value="SENTINEL"):
-            self.assertEqual(run_engine._reachability_line("crypto", 1613), "SENTINEL")
+        try:
+            with patch.object(desk_record, "record_line",
+                              return_value="SENTINEL"):
+                self.assertEqual(
+                    run_engine._reachability_line("us-stock"), "SENTINEL",
+                    "the dead flag still strips the disclosure")
+        finally:
+            os.environ.pop("DESK_REACHABILITY_AB", None)
 
     def test_a_failing_record_still_fails_soft(self):
         import desk_record
-        os.environ["DESK_REACHABILITY_AB"] = "1"
         with patch.object(desk_record, "record_line",
                           side_effect=RuntimeError("db down")):
-            self.assertEqual(run_engine._reachability_line("crypto", 1614), "")
+            self.assertEqual(run_engine._reachability_line("us-stock"), "")
 
-
-class ReachabilityABWiringTests(LightPathOrderBlockTests):
-    """Per the standing trap: a brief line tested for RENDERING and never for
-    being CALLED can be unwired and every test still passes. These drive the
-    real `run_cycle`."""
-
-    def setUp(self):
-        super().setUp()
-        os.environ.pop("DESK_REACHABILITY_AB", None)
-
-    def tearDown(self):
-        os.environ.pop("DESK_REACHABILITY_AB", None)
-        try:
-            super().tearDown()
-        except AttributeError:
-            pass
-
-    def _capture_prompt(self, run_id):
+    def test_crypto_gets_no_line_and_other_markets_keep_it(self):
+        """The measured policy itself, end to end through the real
+        desk_record gate (no record_line patch): crypto is silent BY
+        MEASUREMENT; other markets keep the disclosure."""
         import desk_record
-        seen = {}
-
-        def cap(prompt, **kw):
-            seen["p"] = prompt
-            return '{"action":"hold","confidence":0.5}'
-
-        with patch("llm_client.generate_text", side_effect=cap), \
-             patch.object(desk_record, "record_line",
-                          return_value="REACHABILITY-SENTINEL"), \
-             patch("price_fetcher.get_price_from_market", return_value=100.0), \
-             patch("price_fetcher.get_daily_candles", return_value=[]):
-            run_engine.run_cycle(run_id)
-        return seen.get("p", "")
-
-    def test_run_cycle_honours_the_control_arm(self):
-        os.environ["DESK_REACHABILITY_AB"] = "1"
-        run_id = self._fleet_light_run()
-        prompt = self._capture_prompt(run_id)
-        if run_engine._reachability_ab_arm(run_id) == "control":
-            self.assertNotIn("REACHABILITY-SENTINEL", prompt,
-                             "a control-arm run was still shown the disclosure")
-        else:
-            self.assertIn("REACHABILITY-SENTINEL", prompt,
-                          "a treatment-arm run lost the disclosure")
-
-    def test_the_decision_event_journals_the_arm(self):
-        """Without this the experiment cannot be read out at all."""
-        os.environ["DESK_REACHABILITY_AB"] = "1"
-        run_id = self._fleet_light_run()
-        self._capture_prompt(run_id)
-        conn = database.get_db_connection()
-        try:
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT payload FROM run_events WHERE run_id = ? "
-                "AND event_type = 'decision' ORDER BY id DESC LIMIT 1",
-                (run_id,))
-            row = cur.fetchone()
-        finally:
-            conn.close()
-        self.assertIsNotNone(row, "no decision event was emitted")
-        payload = json.loads(row[0] if not isinstance(row, dict) else row["payload"])
-        self.assertEqual(payload.get("reach_ab"),
-                         run_engine._reachability_ab_arm(run_id),
-                         "the decision event did not journal the A/B arm")
-
-    def test_the_arm_is_journalled_as_treat_when_the_flag_is_off(self):
-        run_id = self._fleet_light_run()
-        self._capture_prompt(run_id)
-        conn = database.get_db_connection()
-        try:
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT payload FROM run_events WHERE run_id = ? "
-                "AND event_type = 'decision' ORDER BY id DESC LIMIT 1",
-                (run_id,))
-            row = cur.fetchone()
-        finally:
-            conn.close()
-        payload = json.loads(row[0] if not isinstance(row, dict) else row["payload"])
-        self.assertEqual(payload.get("reach_ab"), "treat")
-
-    def test_run_cycle_passes_the_run_id_to_the_reachability_line(self):
-        """Deterministic wiring pin. The arm test above only bites when the
-        fixture happens to mint an ODD run id, so dropping the run_id at the
-        call site could survive on an even one. This spies the call itself."""
-        seen = {}
-        real = run_engine._reachability_line
-
-        def spy(market, run_id=None):
-            seen["args"] = (market, run_id)
-            return real(market, run_id)
-
-        run_id = self._fleet_light_run()
-        with patch("llm_client.generate_text",
-                   return_value='{"action":"hold","confidence":0.5}'), \
-             patch.object(run_engine, "_reachability_line", side_effect=spy), \
-             patch("price_fetcher.get_price_from_market", return_value=100.0), \
-             patch("price_fetcher.get_daily_candles", return_value=[]):
-            run_engine.run_cycle(run_id)
-        self.assertIn("args", seen, "_reachability_line was never called")
-        self.assertEqual(seen["args"][1], run_id,
-                         "the run id never reached _reachability_line — the "
-                         "A/B cannot split by run")
+        with patch.object(desk_record, "excursion_record",
+                          return_value={"market": "us-stock", "n": 12,
+                                        "never_positive": 0.4,
+                                        "median": 0.5, "p75": 0.8,
+                                        "best": 1.68}):
+            self.assertEqual(run_engine._reachability_line("crypto"), "",
+                             "crypto was shown the disclosure the replay "
+                             "measured as profit-destroying")
+            self.assertIn("REACHABILITY",
+                          run_engine._reachability_line("us-stock"),
+                          "a non-crypto market lost the disclosure")
