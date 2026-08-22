@@ -7,6 +7,39 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots, ~$10k,
 crypto); **forevery1969@gmail.com — user 25 / agent 60 / fleet 37**
 (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 205-207 — 01:5xZ / 02:2xZ / 02:5xZ (anchors 01:51:47, 02:21:49, 02:51:50): quiet; **the R28-revert falsification PASSED and is CALLED**
+
+**PROFIT-OR-LOSS FIRST.** Zero trades in all three windows (**44.7h since the
+last fill**), no open positions, ledger unchanged. Rails: fence 0, caps 0,
+zero rail events at all in cycles 206-207. Fleet 37 held **10/10**; fleet 38
+recovered 3/7 → 5/7 as cooldowns expired (R34 behaving as measured).
+
+### R28-revert verdict: VINDICATED (pre-registered test passed)
+
+The pre-registered test (cycle 195): after the 21:11:53Z revert, the
+truncation rate must fall back toward the 0.59-2.37% daily band; if it
+stayed near 5%, R28 was not the cause and the revert bought nothing.
+
+Result: **57 decisions / 0 truncations** since the revert. Under the
+R28-era rate (13/251 = 5.18%), **P(0 in 57) ≈ 0.048 — under the 0.05
+line.** Observed post-revert rate: **0%**.
+
+Control worth noting: the #508 A/B was live during BOTH the R28 window
+(13 truncations) and the post-revert window (0), so the arms' prompt
+composition is common to both windows — the only differential is R28's
+~350-char text. **Verdict: the truncation spike is attributed to R28; the
+revert did what it claimed.** Called only now, after two earlier verdicts
+on R28 had to be walked back for being early — this one waited for the
+threshold.
+
+This closes the last open falsification from the 08-21 work. Standing
+board: **#508 readout is the sole pending gate**; queued behind it, in
+order: desk_record corrections (R30 + staleness), C's cooldown A/B, and
+sizing (OFF — precondition failed in the replay experiment).
+
+Docs merged to main this batch: #523 (5-agent debate), #524 (both step-2
+experiments). Post-revert counter at the 207 anchor: 57+/0.
+
 ## Cycles 203-204 — 00:5xZ / 01:2xZ (anchors 00:51:37, 01:21:45): quiet; **BOTH step-2 experiments COMPLETE** — knee-diff and declined-entry replay
 
 **PROFIT-OR-LOSS FIRST.** Zero trades (43.2h since the last fill), no open
