@@ -8,6 +8,27 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots,
 $10,012, crypto); **forevery1969@gmail.com — user 25 / agent 60 /
 fleet 37** (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 199-201 — 22:5xZ / 23:2xZ / 23:5xZ (anchors 22:51:43, 23:21:49, 23:52:23): quiet close of the UTC day; day ends at ZERO trades
+
+**PROFIT-OR-LOSS FIRST.** Zero trades in every window; **the UTC day closes
+with ZERO trades — no realized row at all** (last fill 08-20T07:10:41Z). No
+open positions. Rails clean throughout: fence 0, caps 0, zero salvaged since
+the revert. Post-revert counter through 23:52Z: 34 decisions / 0 salvaged.
+The single `no_verdict` counted at 22:51 was the 22:21:14Z event inside the
+2-min overlap — corrected in-cycle, no new one fired.
+
+**Empty-reply watch sharpened:** all 3 `no_verdict` events today are
+`kind: empty` (model returned NOTHING — an LLM timeout/refusal, distinct from
+truncation) and ALL are crypto: run 1657 ASTERUSDT ×2, run 1649 LTCUSDT ×1.
+Zero on us-stock/forex. Market-specific concentration at n=3 — carried as a
+watch.
+
+**Day summary (2026-08-21):** ~200 monitoring cycles · 0 trades · rails
+flawless all day · R33 shipped and still untested (regime never re-entered
+panic) · R28 shipped, measured harmful (5.31% truncation destroying published
+plans), REVERTED same day · R30/R32/R34 verified and held · the owner
+requested a 5-agent debate at day's end (recorded in the 08-22 file).
+
 ## Cycles 196-198 — 21:2xZ / 21:5xZ / 22:2xZ (anchors 21:21:37, 21:51:53, 22:21:48): quiet; post-revert truncation counter opened (n=16, NOT yet evidence)
 
 **PROFIT-OR-LOSS FIRST.** Zero trades across all three windows, **zero all day
