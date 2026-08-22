@@ -7,6 +7,77 @@ Targets: **info@askkpop.com — user 5 / agent 6 / fleet 38** (7 slots, ~$10k,
 crypto); **forevery1969@gmail.com — user 25 / agent 60 / fleet 37**
 (us-stock+forex, EXTREME; us-stock watched 13:30–20:00Z).
 
+## Cycles 203-204 — 00:5xZ / 01:2xZ (anchors 00:51:37, 01:21:45): quiet; **BOTH step-2 experiments COMPLETE** — knee-diff and declined-entry replay
+
+**PROFIT-OR-LOSS FIRST.** Zero trades (43.2h since the last fill), no open
+positions, ledger unchanged. Rails clean: fence 0, caps 0, zero salvaged
+since the revert; post-revert counter **43 decisions / 0 truncations**
+(P(0|43) ≈ 0.10 under the R28-era 5.18% — approaching meaningful, not yet
+called). Fleet 37 **10/10**; fleet 38 2-3/7 on the cooldown treadmill (R34).
+
+### EXPERIMENT 1 (knee-diff, E's design) — COMPLETE
+
+Agent 6's actionable decisions per 12h: 11/7 (08-17) → 5/3 (08-18) → 4/1
+(08-19) → 2/0 (08-20) → 0/1 (08-21). **Findings:**
+
+1. **No second switch.** After the known 08-18 level-shift (#505), the fall
+   to zero was a smooth ~halving per day — no deploy after 08-18 can claim
+   the extinction.
+2. **`rag-flat-on` (08-20 21:56, DESK_RECALL_FLAT promotion) is
+   EXONERATED** — actionable was already 0 for the 12h before it deployed.
+   R27 (08-20 08:10) likewise unattributable (last entry predates it; rate
+   already ~1/day).
+3. **A smooth decay under constant conditions suggests a FEEDBACK LOOP, not
+   a switch.** Hypothesis logged (not a finding): each hold cycle writes
+   "no positive-expectancy entry" lessons into the journal/recall corpus,
+   which recall feeds back into later cycles — holding teaches holding.
+   Testable: the decay rate should track corpus growth.
+
+### EXPERIMENT 2 (declined-entry replay, the A-vs-B decider) — COMPLETE, verdict INCONCLUSIVE
+
+Pre-registered H: "the declined book is negative expectancy — the declines
+are correct." Population: **25 declined concrete plans** (one per
+never-traded run, 08-14 → 08-21T12:00Z), replayed at each plan's OWN
+zone/stop/target against actual marks + candles.
+
+| measure | value |
+|---|---|
+| triggered | 15 of 25 (**10 never reached their entry — declining cost $0**) |
+| mean net @ $350 notional | **+$1.87/trade** |
+| without the largest (LTC 1558 +$42.26) | **−$1.02/trade — SIGN FLIPS** |
+| median | **−$2.27** (the typical declined trade LOST) |
+| win rate | 6/15 |
+| by bias | long +$5.70 (ALL of it the one LTC rally) · **short −$2.52 → the refused shorts were clearly correct** |
+
+**Verdict: INCONCLUSIVE by pre-registration** (n=15 < 30; sign flips on one
+contributor). NOT refuted: the declines are approximately right at the
+median; the entire "forfeited profit" is ONE missed LTC rally.
+
+**Known-case reproduced with a correction attached:** run 1577 TRUMP short —
+zone entered, stopped at ~1.72 for **−0.86% net**; the −11.6% figure only
+materializes with NO stop. The scare number overstated the decline's value;
+the decline was still correct.
+
+Caveats recorded: 4/15 replays candle-flagged coarse (understates both
+stop-outs and target-hits); mark cadence often 12-25h (9/15 exits at
+last-available-mark); stops parsed from invalidation text in 25/25.
+
+### Debate resolution after both experiments
+
+- **B stays right about the INSTRUMENT** (denominator bug, dead-regime tape,
+  the 5-pip forex reductio).
+- **A is roughly right about the BEHAVIOR** — even reading a broken mirror,
+  the desk's declines were near-correct at the median.
+- Both true at once: fixing the mirror (after #508) is a CORRECTNESS duty,
+  not a profit unlock. The profit constraint sits deeper — candidate
+  generation and the platform-set sizing envelope (C's and D's territory).
+- **Consensus-plan step 5 (sizing lift) stays OFF** — its precondition
+  ("declined book proves +EV") was NOT met.
+
+Plan status: (1) #508 wait — in force · (2) both step-2 experiments —
+**DONE** · (3) desk_record corrections — queued behind #508 · (4) cooldown
+A/B — queued · (5) sizing — off the table.
+
 ## Cycle 202 — 00:2xZ (anchor 00:27:40): quiet; docs batch; the declined-entry replay experiment LAUNCHED
 
 **PROFIT-OR-LOSS FIRST.** Zero trades (42.3h since the last fill), no open
