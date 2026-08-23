@@ -727,3 +727,7 @@ Tripwires clean: image `20260822-redesign-phase1` both containers, 0 tracebacks.
 ## Phase 1 accountability reading #36 — 2026-08-23 20:11Z (quiet)
 
 **P&L unchanged −$1.08 — no new fills, positions 0 (both forms).** §5: decisions 264 (+2), buy proposals 76 (+0), panel kept 6 non-hold / 0 as buy; 98 panels, all crypto. Last 30 min: 2 holds (ZRO 0.53, DOT 0.56), no panel. H-RECALL-FLAT 263/263. Fleet 39 unchanged; forex opens 21:00Z, CME 22:00Z. 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
+
+## Phase 1 accountability reading #37 — 2026-08-23 20:41Z (quiet)
+
+**P&L unchanged −$1.08 — no new fills, positions 0 (both forms).** §5: decisions 266 (+2), buy proposals 78 (+2), panel kept 6 non-hold / 0 as buy; 100 panels, all crypto. Last 30 min: ZRO desk `buy` 0.63 → panel `hold` 0.45; DOT desk `buy` 0.67 (6th consecutive DOT buy) → panel `hold` 0.58 — 78/78 long proposals demoted. H-RECALL-FLAT 265/265. Fleet 39 unchanged; forex slots reopen 21:00Z, CME 22:00Z. 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
