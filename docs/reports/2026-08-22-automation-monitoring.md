@@ -509,3 +509,26 @@ after the panel.
 
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #11 — 2026-08-23 07:41Z
+
+§5 (verified 2×): decisions **198** (+4), buy proposals **61** (+2), panel kept
+**2** (+1), fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 198/198 — 100%.
+
+Fleet 39 (2.6h in): 25 decisions, **17 buy proposals → 1 "kept" (1/17)** —
+and that one is not an entry. LINKUSDT run 1706 cycle 7 at 07:34:29Z:
+proposed `buy` 0.55 → panel final **`sell` 0.63** (outlook bias flipped to
+short, target 9.30, entry zone 11.25–11.35) → `order_params deferred/absent` →
+`gate_skip stage=risk "spot sell with no inventory — treated as hold"`. This is
+the identical shape to fleet 38's sole survivor (reading #3): the only
+proposals the panel does not demote to hold are the ones it inverts into a
+short that a spot-only run cannot execute. Real entry survival: **0/17**.
+
+The same recall row carried `explore:true` (eps-head-fixed-v1, eps 0.25) and
+still injected `skill:reachable-exits#1` at score 8.32 — exploration does not
+escape H-RECALL-FLAT either.
+
+Last 30 min: SOL 0.62, DASH 0.66, LIT 0.63 `hold`; LINK as above. Fleet 37
+active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0 tracebacks,
+0 `desk_record`|`trading_skills` mentions (1h). No change made.
