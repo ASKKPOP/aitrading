@@ -739,3 +739,7 @@ Tripwires clean: image `20260822-redesign-phase1` both containers, 0 tracebacks.
 ## Phase 1 accountability reading #39 — 2026-08-23 21:41Z (quiet)
 
 **P&L unchanged −$1.08 — no new fills, positions 0 (both forms).** §5: decisions 293 (+14), buy proposals 78 (+0), panel kept 6 non-hold / 0 as buy; 100 panels, all crypto. Forex session active: 14 decisions in 30 min across fleet-37 forex runs + fleet-39 (AUD 0.62, EUR 0.44, NZDJPY 0.58, USDTRY 0.55, ZRO 0.30) — all hold, no panels, no proposals. H-RECALL-FLAT 292/292. Fleet 39 unchanged (ZRO sole crypto); 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
+
+## Phase 1 accountability reading #40 — 2026-08-23 22:11Z — CME open
+
+**P&L unchanged −$1.08 — no new fills, positions 0 (both forms).** §5: decisions 308 (+15), buy proposals 79 (+1), panel kept 6 non-hold / 0 as buy; panels now 100 crypto + **1 futures**. CME opened 22:00Z: SI 1708 first cycle proposed `buy` **0.77** → panel `hold` 0.34 — the first futures panel of the window, demoted (note: research/06 measured futures demotions as RIGHT — 0/73 targets reached — so this is the market where the panel's caution is evidence-backed). ZRO 1716 idle-retired → FILUSDT 1720. 15 decisions in 30 min (forex+futures+crypto), all hold. H-RECALL-FLAT 307/307. 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
