@@ -483,3 +483,16 @@ produced a proposal. Note DASH at 0.71 confidence still ended `hold`.
 
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #9 — 2026-08-23 06:41Z
+
+§5 (verified 2×): decisions **190** (+3), buy proposals **56** (+2), panel kept
+**1** (unchanged), fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 190/190 — 100%.
+
+Fleet 39 (1.6h in): 17 decisions, **12 buy proposals → 0 kept (0/12)**, 7/7
+running. Last 30 min: DASH 0.44, LIT 0.71, LINK 0.52 — all `hold` after the
+panel. Second 0.71-confidence proposal (LIT, after DASH in #8) demoted.
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
+tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
