@@ -652,3 +652,7 @@ Tripwires clean: image `20260822-redesign-phase1` both containers, 0 tracebacks.
 **Reason (one sentence):** a code-labelled daily-overbought short with no authored bracket dipped 0.57% and reversed; the breakeven rail, evaluated on a 5-minute mark, could not hold $0 against a 0.28% five-minute move, and no rail existed that could have banked the +$1.78.
 
 **Verdict:** loss, small, and structural — not bad luck. Three items for Plan 28 (not shipped, experiments first): (i) breakeven rail needs a price-level lock or a faster mark for open positions — the $0.58 is the poll-granularity cost, n=1; (ii) `absent` order params on the light route × 5/5 cycles — the desk is not emitting the order block on gpt-oss:120b; (iii) arm rate 0.001 vs floor rate 0.00045 inconsistency. Phase 1 metric (crypto *entries*): still 0 kept buys; the one fill is a short. Fleet 38 owner decision pending. Nothing changed.
+
+## Phase 1 accountability reading #21 — 2026-08-23 12:41Z (quiet)
+
+**P&L unchanged −$0.58 — no new fills (§5 fills still 2 = the 1710 round trip), positions 0 (both forms).** §5: decisions 233 (+2), buy proposals 68 (+0), panel kept 3 non-hold / 0 as buy; 88 panels, all crypto. Last 30 min: CRV 1712 cycle 1 proposed `sell` 0.58 → panel `hold` 0.45; ASTER 1711 hold 0.53. The `trade`/`stop_mechanism`/`adapt` rows in the window are the 12:19Z cover already analyzed in #20. H-RECALL-FLAT 232/232. Fleet 39 unchanged (ASTER, CRV + 5 weekend-closed); 38 stopped, owner decision pending; 37 active idle. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
