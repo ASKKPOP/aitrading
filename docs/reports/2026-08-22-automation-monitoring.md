@@ -594,3 +594,30 @@ the morning without ever producing a proposal the panel kept.
 
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #16 — 2026-08-23 10:11Z
+
+§5 (verified 2×): decisions **219** (+4), buy proposals **67** (+1), panel kept
+**2** non-hold / **0** as buy, fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 218/218 — 100%. No-verdict 1; `verdict_salvaged` 8 in window.
+
+Fleet 39 (5.1h in): 46 decisions, **23 buy proposals → 0 real entries**. The one
+new proposal — DASHUSDT cycle 11, 09:50:27Z — was the strongest of the day:
+proposed `buy` **0.74** → panel final `hold` 0.62 (conviction 0.45, entry_quality
+0.30; outlook adopted "standing flat bias"). The preceding `verdict_salvaged`
+(truncated at 967 chars, tail "…we take the trade now … We buy at market,
+setting a 2.4% stop") is the first LLM attempt, not the cause of the demotion;
+the completed verdict is the one the panel demoted.
+
+**Structural: idle-retire is draining the crypto slots.** At ~5h flat the
+platform retired LINKUSDT (10:03:04Z) and SOLUSDT (10:10:31Z) as
+`idle_retired`; the replacement rotation drew **SI** (run 1708) and **HG**
+(run 1709) — both futures, both weekend-closed. Fleet 39 is now 2 crypto
+(DASH, LIT) + 2 forex + 3 futures; only the 2 crypto runs can decide before
+Monday. If DASH/LIT retire on the same clock (~10:00Z + their own idle
+timers), the crypto tape ends again — this time by the platform's own rule,
+not the user. The Phase 1 crypto window (ends ~2026-08-25T05:03Z) would then
+measure nothing. Logged for the owner; no fleet touched.
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
+tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
