@@ -532,3 +532,16 @@ escape H-RECALL-FLAT either.
 Last 30 min: SOL 0.62, DASH 0.66, LIT 0.63 `hold`; LINK as above. Fleet 37
 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0 tracebacks,
 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #12 — 2026-08-23 08:11Z
+
+§5 (verified 2×): decisions **202** (+4), buy proposals **64** (+3), panel kept
+**2** non-hold / **0** kept-as-buy, fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 202/202 — 100%.
+
+Fleet 39 (3.1h in): 29 decisions, **20 buy proposals → 0 real entries** (1
+spot-short inversion, reading #11). Last 30 min: SOL 0.66, DASH 0.58, LIT 0.60,
+LINK 0.57 — all `hold` after the panel.
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
+tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
