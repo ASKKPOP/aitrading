@@ -397,3 +397,25 @@ re-opened (the clock would restart at the new fleet's first cycle), or
 (b) treat the crypto leg of Phase 1 as closed-inconclusive and move to the
 Phase 2 queue (ATR bracket replay first). Until one is chosen, the cron will
 keep reporting fleet 37 only (meaningful from Monday 08-24 open).
+
+## Phase 1 accountability reading #5 — 2026-08-23 04:55Z
+
+§5 (since 2026-08-22T10:36Z, verified 2×): decisions **173**, buy proposals **44**,
+panel kept **1** (final≠hold; 0 with final=buy — the one survivor is the spot-short
+gate-skip from reading #3), fills **0**, open positions **0**. P&L **$0**.
+
+Last 2h of `run_events`: 0 decisions; only `equity` 1150 / `gate_skip` 40 /
+`outlook` 37 / `hot_issue` 1, all from fleet 37 (us-stock+forex, weekend-closed).
+Last event ts 04:55:00Z — the worker is alive. Fleet 38 (crypto) remains
+`stopped` since the user's `stop_all` at 01:10Z; 1 active fleet platform-wide.
+
+H-RECALL-FLAT: recall rows 173/173 carry `reachable-exits` — unchanged, still
+unmeasurable without a crypto fleet.
+
+Tripwires: image `sooppiy-backend:20260822-redesign-phase1` on both containers;
+0 tracebacks / 0 `desk_record`|`trading_skills` mentions in worker logs (3h).
+No rollback condition. No change made.
+
+Status: crypto leg of Phase 1 unmeasurable pending owner decision (restart a
+crypto fleet, or close the leg as inconclusive → Phase 2). Fleet 37 readings
+become meaningful after Monday 08-24 open.
