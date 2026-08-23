@@ -699,3 +699,7 @@ Tripwires clean: image `20260822-redesign-phase1` both containers, 0 tracebacks.
 ## Phase 1 accountability reading #29 — 2026-08-23 16:41Z
 
 **P&L unchanged −$1.08 — no new fills (§5 fills 4 = the two round trips), positions 0 (both forms).** §5: decisions 250 (+2), buy proposals 72 (+2), panel kept 6 non-hold / 0 as buy; 94 panels, all crypto. Last 30 min: two buy→`sell` INVERSIONS on spot/long runs — ZRO 1716 cycle 1 desk `buy` 0.58 → panel `sell` 0.66; DOT 1714 cycle 3 desk `buy` **0.71** → panel `sell` 0.62 — both `gate_skip "spot sell with no inventory — treated as hold"`. Kept-non-hold count (6) now overstates actionable keeps: 2 fills + 4 unactionable spot-sell inversions. Note: on both cycles `order_params` were `parsed` (ZRO stop 1.25%/target 2.5%; DOT 2.1%/4.5%, trail 2.1/0.2) — `absent` is not universal on the light route; it occurred on the two cycles that filled (1710 c5, 1712 c8). H-RECALL-FLAT 249/249. Fleet 39: DOT + ZRO crypto, 5 weekend-closed (forex opens 21:00Z, CME 22:00Z); 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
+
+## Phase 1 accountability reading #30 — 2026-08-23 17:11Z (quiet)
+
+**P&L unchanged −$1.08 — no new fills, positions 0 (both forms).** §5: decisions 252 (+2), buy proposals 72 (+0), panel kept 6 non-hold / 0 as buy; 94 panels, all crypto. Last 30 min: 2 holds (ZRO 0.60, DOT 0.58), no panel. H-RECALL-FLAT 251/251. Fleet 39 unchanged; 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
