@@ -237,3 +237,104 @@ collapse instant of agent 6's trade rate; diff every desk input across it).
 - The "sizing is the AI's own choice (0.05–0.82)" line carried since cycle
   177 is **partly wrong**: the AI chooses WITHIN a platform envelope of
   ~8.9% of capital, and was pressing the envelope's ceiling (D, n=5).
+
+---
+
+## Phase 1 accountability reading #1 — 11:08Z (31 min of tape after the 10:36Z deploy)
+
+Taken per HANDOFF-SESSION-2026-08-22 §5 (owner re-ordered monitoring "by"
+that handoff; the 30-min crons stay deleted — this is a manual reading).
+
+**§5 query, verbatim:** decisions **6** · buy_proposals **3** · panel_kept **0** ·
+fills **0**. All 6 decisions are crypto (fleet 38: WLD, TAO, HYPE, CRV, BNB,
+DASH); fleet 37 did not fire in the window (`dispatched: 2` per tick). Open
+positions: 0. `pnl_audit` has nothing to audit — **no tape for the two-agent
+outcome rule this reading.**
+
+**Tripwires (all clean, checked 2×):** image `20260822-redesign-phase1` on
+worker+backend; 0 tracebacks since deploy; 0 post-deploy events carry the
+`reach_ab` key; `measured-entry-record` (id 44, prio 47) present.
+
+**Honest read of n=3:** the panel demoted all three buy proposals to hold
+(WLD 0.68, CRV 0.68, BNB 0.66 conf) — exactly its measured pre-#484 baseline
+(2.6% survival). 31 minutes is not a verdict on anything. The crypto
+entry-intent trend going INTO the deploy is the relevant context and it is
+monotone down, independent of Phase 1: 08-18 **8/166**, 08-19 **5/267**,
+08-20 **2/234**, 08-21 **1/235**, 08-22 **1/143** (decision events with
+action buy/sell). Fills by day: 10 → 4 → 0 → 0.
+
+**New measured fact (doctrine channel, n=589):** flat-cycle recall
+(`DESK_RECALL_FLAT=1`, first fired 2026-08-21T00:24Z) uses a CONSTANT query
+per market — `"crypto flat considering entry fee hurdle expected move"`
+(`run_engine._recall_query`) with `explore:false` — so its top chunks never
+vary: **589/589 flat recalls since 08-21 (100%) inject
+`skill:reachable-exits#1` (score 8.14) + `reentry-discipline#5`**, crypto
+included. Phase 1 removed the reachability *line* for crypto; the
+reachability *lesson* still reaches every crypto flat cycle through recall.
+Post-deploy wording confirms the channel is live: TAO outlook "overridden …
+unreachable with a viable risk-reward", DASH "target is unreachable within
+the remaining horizon" (2 of 6). The query string also still encodes the
+DEAD "fee hurdle" theory (§4).
+
+**Hypothesis (pre-registered, NOT a result):** H-RECALL-FLAT — the 08-21
+flat-recall switch-on is a *current* entry suppressor for crypto, distinct
+from the #413/#414 panel. Supporting: fills went 4 → 0 the day it fired;
+100% chunk constancy. Against: entry intent was already falling 8→5→2 before
+it fired, so it cannot be the cause of the collapse — at most it is a
+remaining brake. **Falsifier:** if crypto entries recover within ~48h of
+tape with recall unchanged, H-RECALL-FLAT is dead. **Proving experiment
+(if they do not):** flip `DESK_RECALL_FLAT=0` for crypto only (or dedupe
+`reachable-exits` out of the flat query) as a pre-registered A/B on entry
+intent, never a blind ship. This is the "doctrine-dedupe" item Phase 2 already
+owns; no gate was loosened in this reading.
+
+**Next reading:** same §5 query after fleet 37 has fired and ≥1 crypto slot
+has cycled twice (≈2–4h); name n; P&L via `pnl_audit` only if fills > 0.
+
+---
+
+## Phase 1 accountability reading #2 — 2026-08-23 00:45Z (14.2h of tape)
+
+Owner re-ordered monitoring ("Always monitoring", ~11:20Z); a 2-hour session
+cron now takes this reading. Numbers verified 2× (aggregate query + hourly
+buckets summing to the same total).
+
+**§5 query:** decisions **164** · buy_proposals **44** · panel_kept **1** ·
+fills **0** · open positions **0**. All 164 decisions are crypto (fleet 38);
+fleet 37 is silent because us-stock/forex are closed on Saturday (`gate_skip:
+market closed` ×283) — no us-stock/forex evidence exists yet, by construction.
+Tripwires clean: image `20260822-redesign-phase1`, 0 tracebacks.
+
+**Panel:** 43 buy→hold, 17 sell→hold, 1 buy→**sell**. Survival 1/44 =
+**2.3%** — indistinguishable from the panel's pre-#484 baseline (2.6%).
+The one survivor (SUIUSDT 18:38Z, proposed buy 0.73, panel final sell 0.62,
+short bias) died at the risk gate: *"spot sell with no inventory — treated
+as hold"*. Fleet 38 is spot-only, so a panel that converts a buy into a
+short can never yield an entry. **Entries in 14h: 0.**
+
+**Verdict so far (profit-or-loss first):** P&L delta from Phase 1 = **$0**,
+because nothing traded. On its own accountability metric (crypto entry
+recovery), Phase 1 has **not moved the metric after 14h**; the 48h window
+(ends ~08-24T10:36Z) is still open, but the shape is already the one §5
+warned about: the remaining suppressor is the panel's own demotion baseline,
+not the reachability line that Phase 1 removed.
+
+**H-RECALL-FLAT:** still live and unrefuted (flat recall continues to inject
+`reachable-exits#1` on every crypto flat cycle, score 8.20 on SUI). Not yet
+confirmed either — 14h without entries is consistent with it AND with the
+panel-baseline explanation; the two are not separable by observation. Only
+the pre-registered A/B (crypto-only `DESK_RECALL_FLAT=0` or dedupe) separates
+them — queued, not shipped.
+
+**Two-agent outcome analysis:** no fills → no tape → not applicable (stated,
+not skipped).
+
+**Withdrawn suspicion (logged so nobody re-chases it):** `llm.source="rule"`
+on every decision looked like an LLM fallback; it is on 100% of decisions
+since 08-12 — a path label, not a regression.
+
+**Next:** the cron continues 2-hourly. First us-stock/forex reading will only
+be meaningful after Monday 08-24 open. If crypto entries are still 0 at the
+48h mark, report Phase 1 as failed on its own metric, and move H-RECALL-FLAT
++ the panel's spot-short conversion (buy→sell on a spot fleet) to the front of
+the Phase 2 queue as a single pre-registered experiment.
