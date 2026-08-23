@@ -453,3 +453,19 @@ statistic. Needs code read + replay before any change; logged for the owner.
 Tripwires: image `sooppiy-backend:20260822-redesign-phase1` both containers;
 0 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No rollback
 condition. No gate loosened, no fleet touched.
+
+## Phase 1 accountability reading #7 — 2026-08-23 05:41Z
+
+§5 (verified 2×): decisions **182** (+5), buy proposals **52** (+5), panel kept
+**1** (unchanged), fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 182/182 — 100%.
+
+Fleet 39 since its first cycle (05:03Z): 9 decisions, **8 buy proposals → 0 kept
+(0/8)**, all 7 runs running. Last 30 min: 5 decisions (LINK 0.57, SOL 0.55,
+DASH 0.34, LIT 0.62, LINK 0.62), every one `hold` after the panel. The crypto
+48h window (ends ~2026-08-25T05:03Z) is 0.6h old: too early for a verdict, but
+the first 8 proposals reproduce the fleet-38 pattern exactly — 0% survival.
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged on both
+containers, 0 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h).
+No change made. H-GATE-SPLIT (reading #6) still open, untested.
