@@ -469,3 +469,17 @@ the first 8 proposals reproduce the fleet-38 pattern exactly — 0% survival.
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged on both
 containers, 0 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h).
 No change made. H-GATE-SPLIT (reading #6) still open, untested.
+
+## Phase 1 accountability reading #8 — 2026-08-23 06:11Z
+
+§5 (verified 2×): decisions **187** (+5), buy proposals **54** (+2), panel kept
+**1** (unchanged), fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 187/187 — 100%.
+
+Fleet 39 (1.1h into its window): 14 decisions, **10 buy proposals → 0 kept
+(0/10)**, 7/7 runs running. Last 30 min: SOL 0.35, DASH 0.71, LIT 0.48,
+LINK 0.48, SOL 0.57 — all `hold` after the panel; only 2 of the 5 cycles even
+produced a proposal. Note DASH at 0.71 confidence still ended `hold`.
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
+tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
