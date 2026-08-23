@@ -338,3 +338,24 @@ be meaningful after Monday 08-24 open. If crypto entries are still 0 at the
 48h mark, report Phase 1 as failed on its own metric, and move H-RECALL-FLAT
 + the panel's spot-short conversion (buy→sell on a spot fleet) to the front of
 the Phase 2 queue as a single pre-registered experiment.
+
+---
+
+## Phase 1 accountability reading #3 — 2026-08-23 01:34Z (15.0h of tape; cron cycle)
+
+**§5 query:** decisions **173** · buy_proposals **44** · panel_kept **1** ·
+fills **0** · open positions **0**. Δ since reading #2 (00:45Z): +9 decisions
+(hourly buckets 00h +5, 01h +4 — cross-checked), **+0 buy proposals**, +1
+sell→hold. All crypto; fleet 37 still weekend-closed. Image
+`20260822-redesign-phase1`, worker up 15h, 0 tracebacks, 0 desk_record /
+trading_skills errors.
+
+**Entries in 15h: 0.** P&L delta from Phase 1: **$0**. Two-agent outcome
+analysis: no tape → not applicable.
+
+**H-RECALL-FLAT:** 173/173 post-deploy flat recalls carry
+`skill:reachable-exits#1` (100%, unchanged). Unrefuted, unconfirmed; the
+48h window (to ~08-24T10:36Z) stays open. Nothing shipped, no gate touched.
+
+**Note on the last hour:** 44 buy proposals in the first 14.2h, 0 in the
+last 0.8h with 9 decisions — within noise for a 7-slot fleet; not a trend.
