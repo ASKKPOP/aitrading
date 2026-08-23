@@ -359,3 +359,41 @@ analysis: no tape → not applicable.
 
 **Note on the last hour:** 44 buy proposals in the first 14.2h, 0 in the
 last 0.8h with 9 decisions — within noise for a 7-slot fleet; not a trend.
+
+---
+
+## Phase 1 accountability reading #4 — 2026-08-23 03:34Z (17.0h since deploy; cron cycle)
+
+**§5 query:** decisions **173** · buy_proposals **44** · panel_kept **1** ·
+fills **0** · open positions **0** — **identical to reading #3.** Zero
+decision events in 02h and 03h. Image `20260822-redesign-phase1`, worker up
+17h, 0 tracebacks, 0 desk_record/trading_skills errors.
+
+**Why the tape stopped (verified 2×: trading_runs status + fleet_events):**
+fleet 38 (crypto, agent 6) received `stop_all {flatten:true}` at
+**2026-08-23T01:10:11Z**; all 10 live runs (1691–1700) went `stopping` →
+`stopped`, fleet status `stopped`, reason `fleet_stop_all` at 01:10:48Z.
+`fleet_stop_all` is by definition the USER's stop (`desk_memory_ingest.py`:
+"the user stopped the whole fleet — not the desk's own call"; it is in
+`fleet_planner.REPLACE_NEVER`, so the planner will not rebuild). No successor
+fleet exists for agent 6. Fleet 38 had 101 runs lifetime, now 0 running.
+Fleet 37 (us-stock/forex) is still `active` with 10 running runs, weekend-idle.
+
+**Consequence for the experiment:** the Phase 1 accountability metric is
+crypto entry recovery within 48h (to ~08-24T10:36Z). With no crypto fleet
+running, that metric is **unmeasurable from 01:10Z onward**. The 14.6h of
+crypto tape that exists (10:36Z→01:10Z) says: 44 buy proposals, 1 panel
+survivor (converted to a spot short, gate-skipped), **0 entries**, P&L **$0**.
+That is not a 48h verdict; it is an inconclusive partial window, and it is
+recorded as such. H-RECALL-FLAT: 173/173 (100%) unchanged; likewise
+unmeasurable until a crypto fleet runs again.
+
+**Not done, deliberately:** no fleet was restarted or modified — fleets are
+the owner's/AI's, not the monitor's. No gate touched. Two-agent outcome
+analysis: no fills → not applicable.
+
+**Owner decision needed:** (a) restart a crypto fleet so the 48h window can be
+re-opened (the clock would restart at the new fleet's first cycle), or
+(b) treat the crypto leg of Phase 1 as closed-inconclusive and move to the
+Phase 2 queue (ATR bracket replay first). Until one is chosen, the cron will
+keep reporting fleet 37 only (meaningful from Monday 08-24 open).
