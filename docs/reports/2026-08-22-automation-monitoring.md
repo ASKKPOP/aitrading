@@ -564,3 +564,19 @@ precedent; 1/34 fleet-39 cycles so far. Logged, not acted on — one data point.
 
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #14 — 2026-08-23 09:11Z
+
+§5 (verified 2×): decisions **211** (+4), buy proposals **66** (+0), panel kept
+**2** non-hold / **0** as buy, fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 210/210 — 100%.
+
+Fleet 39 (4.1h in): 38 decisions, **22 buy proposals → 0 real entries**. Last
+30 min: DASH 0.71, LIT 0.55, LINK 0.52, SOL 0.53 — all `hold`, and for the
+first time no `order_discussion` row at all (the desk itself proposed nothing
+this half-hour). No new no-verdict cycle (the #13 DASH row stands at 1/38;
+note `JSON_EXTRACT(...) IS NULL` does not count it — JSON null ≠ SQL NULL; use
+`JSON_TYPE(...)='NULL'`).
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
+tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
