@@ -580,3 +580,17 @@ note `JSON_EXTRACT(...) IS NULL` does not count it — JSON null ≠ SQL NULL; u
 
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #15 — 2026-08-23 09:41Z
+
+§5 (verified 2×): decisions **215** (+4), buy proposals **66** (+0), panel kept
+**2** non-hold / **0** as buy, fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 214/214 — 100%. No-verdict cycles (JSON_TYPE='NULL'): **1**.
+
+Fleet 39 (4.6h in): 42 decisions, **22 buy proposals → 0 real entries**. Second
+consecutive half-hour with no proposal at all: DASH 0.73, LIT 0.55, LINK 0.47,
+SOL 0.53 — all `hold`. DASH's own confidence has drifted 0.34→0.71→0.73 across
+the morning without ever producing a proposal the panel kept.
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
+tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
