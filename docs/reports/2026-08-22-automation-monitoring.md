@@ -419,3 +419,37 @@ No rollback condition. No change made.
 Status: crypto leg of Phase 1 unmeasurable pending owner decision (restart a
 crypto fleet, or close the leg as inconclusive → Phase 2). Fleet 37 readings
 become meaningful after Monday 08-24 open.
+
+## Phase 1 accountability reading #6 — 2026-08-23 05:11Z (cadence now 30 min)
+
+Cadence changed from 2h to 30 min by owner `/loop 30 min` (cron 7,37 * * * *).
+
+§5 (since 2026-08-22T10:36Z, verified 2× — JSON_EXTRACT and LIKE forms agree):
+decisions **177** (+4), buy proposals **47** (+3), panel kept **1** (unchanged),
+fills **0**, open positions **0**. P&L **$0**. H-RECALL-FLAT 177/177 recalls carry
+`reachable-exits` — still 100%.
+
+**Crypto tape resumed — fleet 39.** The owner created fleet 39 from the UI at
+04:56:38Z (agent 6, `active_fleet_key user:5`, idempotency `ui-1787460998722`,
+$10,005.35, risk `extreme`, scope crypto+futures+forex, 7 slots, archetype short).
+The pending decision is therefore answered: **(a) restart**. The 48h Phase 1
+clock for crypto restarts at the first crypto cycle, 05:03:11Z → window ends
+~**2026-08-25T05:03Z**. Runs 1701 AUDUSD, 1702 ZC, 1703 EURUSD (forex/futures,
+weekend-closed), 1704 DASHUSDT, 1705 LITUSDT, 1706 LINKUSDT, 1707 SOLUSDT.
+
+First crypto cycle (05:03–05:08Z): 4 decisions, all `hold`; 3 buy proposals
+(LIT, LINK, DASH) → panel final `hold` 3/3. Same shape as fleet 38's tape:
+proposals exist, panel demotes every one.
+
+**Observation to test (not a fix):** the build path logged `candidate_skipped
+negative_expectancy: crypto/long is -1.31 over 109 closed runs (mean -0.01/run)`
+for DASH, SOL, LINK, LIT at 04:57:5xZ, then the replacement/rotation path
+(`backtest_gate context=replacement` → `rotation`) started the same four symbols
+at 04:59:00–02Z. Hypothesis H-GATE-SPLIT: the agent-level negative-expectancy
+gate is applied in the initial build but not in replacement rotation. Falsifier:
+the replacement path consults the same gate and these passed on a different
+statistic. Needs code read + replay before any change; logged for the owner.
+
+Tripwires: image `sooppiy-backend:20260822-redesign-phase1` both containers;
+0 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No rollback
+condition. No gate loosened, no fleet touched.
