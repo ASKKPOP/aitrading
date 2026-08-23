@@ -656,3 +656,7 @@ Tripwires clean: image `20260822-redesign-phase1` both containers, 0 tracebacks.
 ## Phase 1 accountability reading #21 — 2026-08-23 12:41Z (quiet)
 
 **P&L unchanged −$0.58 — no new fills (§5 fills still 2 = the 1710 round trip), positions 0 (both forms).** §5: decisions 233 (+2), buy proposals 68 (+0), panel kept 3 non-hold / 0 as buy; 88 panels, all crypto. Last 30 min: CRV 1712 cycle 1 proposed `sell` 0.58 → panel `hold` 0.45; ASTER 1711 hold 0.53. The `trade`/`stop_mechanism`/`adapt` rows in the window are the 12:19Z cover already analyzed in #20. H-RECALL-FLAT 232/232. Fleet 39 unchanged (ASTER, CRV + 5 weekend-closed); 38 stopped, owner decision pending; 37 active idle. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
+
+## Phase 1 accountability reading #22 — 2026-08-23 13:11Z (quiet)
+
+**P&L unchanged −$0.58 — no new fills, positions 0 (both forms).** §5: decisions 235 (+2), buy proposals 69 (+1), panel kept 3 non-hold / 0 as buy; 89 panels, all crypto. Last 30 min: ASTER 1711 proposed `buy` 0.55 → panel `hold` 0.62 (demotion #69, same class); CRV 1712 hold 0.55. H-RECALL-FLAT 234/234. Fleet 39 unchanged; 38 stopped, owner decision pending; 37 active idle. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
