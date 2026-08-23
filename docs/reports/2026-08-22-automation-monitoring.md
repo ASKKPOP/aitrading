@@ -545,3 +545,22 @@ LINK 0.57 — all `hold` after the panel.
 
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #13 — 2026-08-23 08:41Z
+
+§5 (verified 2×): decisions **207** (+5), buy proposals **66** (+2), panel kept
+**2** non-hold / **0** as buy, fills **0**, open positions **0**. P&L **$0**.
+H-RECALL-FLAT 206/206 recalls carry `reachable-exits` — 100% (recall count is
+one below decisions for the first time; see below).
+
+Fleet 39 (3.6h in): 34 decisions, **22 buy proposals → 0 real entries**. Last
+30 min: SOL 0.55, LIT 0.55, LINK 0.57, SOL 0.41 `hold`; **DASHUSDT cycle 8
+(08:18:27Z) was a no-verdict** — `action: null, confidence: null,
+conviction_missing: true, report: ""` → `gate_skip "decision is 'None'"`, and
+no recall/outlook/order_discussion row was written for that cycle. Worker log
+in the same window: `[Price API] Error fetching DASHUSDT (crypto): hyperliquid
+cooldown active for 20.0s`. This is the no-verdict class from the 08-17
+precedent; 1/34 fleet-39 cycles so far. Logged, not acted on — one data point.
+
+Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
+tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
