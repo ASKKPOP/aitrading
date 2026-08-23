@@ -621,3 +621,11 @@ measure nothing. Logged for the owner; no fleet touched.
 
 Fleet 37 active (weekend-idle), 38 stopped. Tripwires: image unchanged, 0
 tracebacks, 0 `desk_record`|`trading_skills` mentions (1h). No change made.
+
+## Phase 1 accountability reading #17 — 2026-08-23 10:41Z
+
+**P&L $0 — fills 0, positions 0 (both query forms).** §5 since 10:36Z: decisions 224 (+5), buy proposals 68 (+1), panel kept 2 non-hold / 0 as buy. All 86 panels crypto. Last 30 min: 5 decisions (all hold; 1710 LTC 0.38 ×2, 1704 DASH 0.62, 1705 LIT 0.60, 1711 ASTER 0.58), 1 panel (ASTER buy 0.58 → hold 0.58). H-RECALL-FLAT 223/223 (0 without). no-verdict 1, salvaged 8.
+
+Fleet 39: LIT (1705) idle-retired; replacement ASTERUSDT (1711, crypto/long — the H-GATE-SPLIT recurrence) at 10:26Z. Crypto slots now LTC (1710) + ASTER (1711); SI/HG/ZC/AUDUSD/EURUSD closed until 21:00–22:00Z. Status still "replenishing:7/25" (phantom, H-AUTOTUNE-UNFUNDABLE). Fleet 37 active (weekend-idle), 38 stopped (user); owner decision on the 38 crypto leg still pending.
+
+Tripwires clean: image `20260822-redesign-phase1` both containers, 0 tracebacks. Cause of the flat metric is documented in [2026-08-23-deep-analysis-24h.md](2026-08-23-deep-analysis-24h.md) (PR #545): the record line was not the binding channel. Nothing changed.
