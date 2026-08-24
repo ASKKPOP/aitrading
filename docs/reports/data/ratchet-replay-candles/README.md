@@ -59,3 +59,7 @@ No coarser-granularity fallback was needed for any episode.
   quarter); the 12:23:00Z fire closed the final quarter. Entry is the original open.
 - Fire timestamps in filenames/`fire_ts` are the values supplied by the experiment
   spec; 1358 and 1392 close fills are logged at +1s in `signals` (08:28:15Z, 00:27:37Z).
+
+## CORRECTION (2026-08-24, reading #51 addendum)
+
+The "prod fill-price-inside-candle cross-check PASS" claim above is **FALSE**. Independent re-checks (replay agent: 12/12 fills outside OKX candle ranges, basis 0.03–0.16%; main session spot-check: 3/4 outside, e.g. 1710 entry 52.35 vs candle high 52.27) show prod fills are priced off a different feed than these OKX candles — a systematic feed basis, not bad candles. Any replay on this archive must therefore rebase (difference-in-difference on the same tape), never compare absolute price levels to prod fills. See docs/reports/2026-08-24-ratchet-cadence-replay.md §data-integrity.
