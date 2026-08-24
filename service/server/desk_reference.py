@@ -50,10 +50,13 @@ the desk's call (`trading-decisions-belong-to-sooppiy-ai`); the platform's job
 is to stop hiding the desk's own record from it.
 
 LEDGER, NOT MODEL — load-bearing. `fees.fee_rate(market)` is a per-market
-CONSTANT behind a flag, not what was charged. This module reads the fee that
-was actually booked on `run_events.trade[].fee`, because a desk shown a
-constant and told it is a measurement has been misled, not informed. The two
-disagreed by 12x in the standing narrative until 2026-08-24.
+CONSTANT behind a flag, not what was charged. This module sums the fee that
+was actually booked on `signals.fee_usd`, because a desk shown a constant and
+told it is a measurement has been misled, not informed. (The rate and the
+constant do currently agree — crypto 0.045%/side, verified across 61 legs on
+2026-08-24. The reason to read the ledger anyway is that agreement is a fact
+to be re-measured, not an invariant to be assumed: two other call sites,
+`routes_signals.py` and `symbol_research.py`, still hardcode the legacy 0.1%.)
 
 DELIBERATELY NOT INCLUDED: any threshold, veto, or "you should not" sentence.
 `desk_record.py`'s history is the cautionary tale — a measured line shipped
@@ -112,68 +115,94 @@ def _median(values: list[float]) -> float:
 
 
 def _closed_trips(market: str) -> list[dict]:
-    """Replay every closed run's trade legs into one row per run.
+    """Every completed ROUND TRIP, paired FIFO from the fill ledger.
 
-    Reads the LEDGER: side/qty/price/fee come off `run_events.trade`
-    payloads, realized P&L off `trading_runs`. Notional is the peak
-    concurrent exposure (the R30 denominator), never the sum of opening
-    legs, which shrinks with re-entry churn."""
+    TRIP-LEVEL, NOT RUN-LEVEL — this distinction is the whole point, and
+    getting it wrong made the first cut of this module useless for the case
+    it was written for. Run 1748 held TWO LINK shorts: -$4.00 at 11:36 and
+    -$0.68 at 17:12. Aggregated per run that is one row worth -$5.00, and
+    while the run was still open it was no row at all — so at 16:59, when the
+    desk re-shorted LINK at 2x size, a run-level record would have shown it
+    NOTHING. Pairing legs from `signals` shows the -$4.00 loss that closed
+    5h23m earlier, which is the fact that was missing.
+
+    Ledger conventions (verified against every row on prod 2026-08-24):
+      * entry legs are `buy`/`short`, carry `fee_usd`, and have `pnl` NULL;
+      * exit legs are `sell`/`cover` and their `pnl` is gross MINUS the
+        exit-side fee only — the entry fee is booked separately;
+      * therefore net for a trip = exit.pnl - entry.fee_usd, pro-rated when
+        the exit only closes part of the entry.
+    `SUM(exit.pnl) - SUM(entry.fee)` reconciles to
+    `SUM(trading_runs.realized_pnl_usd)` to the cent, which is why this is
+    the trustworthy source rather than any per-run aggregate."""
     conn = get_db_connection()
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, symbol, realized_pnl_usd, peak_pnl_usd, stopped_at "
-            "FROM trading_runs WHERE status = 'stopped' AND market = ? "
-            "ORDER BY id DESC LIMIT ?", (market, _MAX_RUNS))
-        runs = {}
-        for r in cur.fetchall():
-            runs[int(r["id"])] = {
-                "run_id": int(r["id"]),
-                "symbol": str(r["symbol"] or ""),
-                "net": float(r["realized_pnl_usd"] or 0.0),
-                "peak": (None if r["peak_pnl_usd"] is None
-                         else float(r["peak_pnl_usd"])),
-                "stopped_at": str(r["stopped_at"] or ""),
-                "side": None, "fees": 0.0, "notional": 0.0,
-                "first_ts": None, "last_ts": None, "legs": 0,
-            }
-        if not runs:
-            return []
-        ids = ",".join("?" for _ in runs)
-        cur.execute(
-            f"SELECT run_id, ts, payload FROM run_events "
-            f"WHERE event_type = 'trade' AND run_id IN ({ids}) "
-            f"ORDER BY run_id, id", tuple(runs))
-        qty_net: dict[int, float] = {}
-        for row in cur.fetchall():
-            try:
-                p = json.loads(row["payload"] or "{}")
-                side = p.get("side")
-                if side not in ("buy", "short", "sell", "cover"):
-                    continue
-                rid = int(row["run_id"])
-                rec = runs.get(rid)
-                if rec is None:
-                    continue
-                qty = abs(float(p["quantity"]))
-                price = float(p["price"])
-                rec["fees"] += abs(float(p.get("fee") or 0.0))
-                rec["legs"] += 1
-                if rec["side"] is None and side in ("buy", "short"):
-                    rec["side"] = "long" if side == "buy" else "short"
-                ts = str(row["ts"] or "")
-                if rec["first_ts"] is None:
-                    rec["first_ts"] = ts
-                rec["last_ts"] = ts
-                qty_net[rid] = qty_net.get(rid, 0.0) + (
-                    qty if side in ("buy", "cover") else -qty)
-                rec["notional"] = max(rec["notional"],
-                                      abs(qty_net[rid]) * price)
-            except (TypeError, ValueError, KeyError):
-                continue
+            "SELECT id, run_id, symbol, side, quantity, entry_price, pnl, "
+            "fee_usd, created_at FROM signals WHERE market = ? "
+            "AND run_id IS NOT NULL ORDER BY run_id, id",
+            (market,))
+        rows = cur.fetchall()
     finally:
         conn.close()
-    return [r for r in runs.values() if r["legs"] > 0 and r["notional"] > 0]
+
+    open_legs: dict[int, list[dict]] = {}
+    trips: list[dict] = []
+    for r in rows:
+        try:
+            side = str(r["side"] or "").lower()
+            rid = int(r["run_id"])
+            qty = abs(float(r["quantity"] or 0.0))
+            if qty <= 0:
+                continue
+            if side in ("buy", "short"):
+                open_legs.setdefault(rid, []).append({
+                    "side": "long" if side == "buy" else "short",
+                    "qty": qty,
+                    # Original size, kept for fee proration: `qty` is
+                    # decremented as partial exits consume the leg, so using
+                    # it as the denominator would charge the last slice the
+                    # whole entry fee.
+                    "qty0": qty,
+                    "price": float(r["entry_price"] or 0.0),
+                    "fee": abs(float(r["fee_usd"] or 0.0)),
+                    "ts": str(r["created_at"] or ""),
+                    "symbol": str(r["symbol"] or ""),
+                })
+                continue
+            if side not in ("sell", "cover"):
+                continue
+            # Exit: match FIFO against this run's open entries.
+            exit_pnl = float(r["pnl"] or 0.0)
+            exit_fee = abs(float(r["fee_usd"] or 0.0))
+            remaining = qty
+            queue = open_legs.get(rid) or []
+            while remaining > 1e-12 and queue:
+                ent = queue[0]
+                matched = min(remaining, ent["qty"])
+                share = matched / qty if qty else 0.0
+                ent_share = matched / ent["qty0"] if ent["qty0"] else 0.0
+                trips.append({
+                    "run_id": rid,
+                    "symbol": ent["symbol"] or str(r["symbol"] or ""),
+                    "side": ent["side"],
+                    # exit.pnl already nets the exit fee; charge the matched
+                    # portion of the entry fee to finish the round trip.
+                    "net": exit_pnl * share - ent["fee"] * ent_share,
+                    "fees": exit_fee * share + ent["fee"] * ent_share,
+                    "notional": ent["price"] * matched,
+                    "first_ts": ent["ts"],
+                    "last_ts": str(r["created_at"] or ""),
+                    "stopped_at": str(r["created_at"] or ""),
+                })
+                ent["qty"] -= matched
+                remaining -= matched
+                if ent["qty"] <= 1e-12:
+                    queue.pop(0)
+        except (TypeError, ValueError, KeyError):
+            continue
+    return [t for t in trips if t["notional"] > 0]
 
 
 def _age_days(ts: str) -> float:
