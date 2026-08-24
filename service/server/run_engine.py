@@ -4428,6 +4428,12 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("breadth_state", _breadth_state_line(run)),
         ("us_psych", _us_psych_line(run)),
         ("fx_risk", _fx_risk_line(run)),
+        # Tier-4 human facts (owner direction 2026-08-24, Research 07 §9):
+        # measured crowd readings — counts, deltas, indices — for the desk
+        # to weigh itself. Facts only; renders empty until the service is
+        # enabled AND fresh readings exist, so the wiring costs nothing on
+        # a keyless deployment.
+        ("human_facts", _human_facts_line(run)),
         ("hold_streak", _hold_streak_line(run, pos_qty)),
         ("brake_distance", _brake_distance_line(run, pos_qty)),
         ("entry_rail", _entry_rail_line(run, pos_qty)),
@@ -4446,6 +4452,31 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
     except Exception:  # noqa: BLE001
         pass
     return "".join(t for _, t in parts)
+
+
+def _human_facts_brief_enabled() -> bool:
+    """Default ON — the owner's direction is that the Sooppiy AI reads the
+    human facts when it decides. Safe as a default because the module
+    returns "" unless HUMAN_FACTS_ENABLED is set AND fresh readings exist,
+    so nothing renders on a keyless deployment."""
+    return (os.getenv("HUMAN_FACTS_BRIEF", "1") or "1").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _human_facts_line(run: dict) -> str:
+    """One labelled line of measured Tier-4 crowd readings (human_facts.py).
+
+    Facts only — numbers with sources, no instruction, no verdict word;
+    the module's contract test enforces it. Fail-soft: a broken collector
+    costs the cycle one sentence, never the decision."""
+    if not _human_facts_brief_enabled():
+        return ""
+    try:
+        import human_facts
+        return human_facts.human_facts_line(
+            str(run.get("symbol") or ""), str(run.get("market") or ""))
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _desk_ledger_enabled() -> bool:

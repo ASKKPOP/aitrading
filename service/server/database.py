@@ -2825,6 +2825,33 @@ def init_database():
         ON desk_memory(run_id)
     """)
 
+    # Tier-4 human-fact readings (human_facts.py, owner direction 2026-08-24,
+    # Research 07 §9): numeric crowd measurements — counts, deltas, indices —
+    # from telegram/youtube/discord/naver, keyed by a collection bucket so a
+    # re-run inside one interval upserts instead of duplicating. `scope` is
+    # either a bare symbol (naver search index) or "source:channel". Facts
+    # only; the read side renders values, never verdict words.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS human_facts (
+            id     INTEGER PRIMARY KEY AUTOINCREMENT,
+            source VARCHAR(24)  NOT NULL,
+            scope  VARCHAR(128) NOT NULL,
+            metric VARCHAR(48)  NOT NULL,
+            bucket VARCHAR(32)  NOT NULL,
+            ts     VARCHAR(32)  NOT NULL,
+            value  REAL NOT NULL,
+            meta   TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_human_facts_key
+        ON human_facts(source, scope, metric, bucket)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_human_facts_ts
+        ON human_facts(ts)
+    """)
+
     # Durable tier of the market_i18n translation cache. Prod is Redis-less
     # and two-process (worker journals, backend serves), so an in-memory or
     # KV cache cannot carry a warmed translation from the write side to the
