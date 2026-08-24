@@ -4405,6 +4405,12 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         # here. Same relative position in the prompt, own brief token so
         # coverage is measurable from the decision event.
         ("recall_entry", _recall_flat_line(run, pos_qty)),
+        # 2026-08-24: the desk's OWN closed ledger, on both flat and holding
+        # cycles. It re-shorted LINK 5h23m after the same thesis lost $4.11
+        # at 2x size because no channel names a prior outcome on a flat
+        # cycle — and flat is 98.6% of the population. Facts only; the
+        # module clamps nothing.
+        ("desk_ledger", _desk_ledger_line(run, cfg, thesis)),
         # R27: a run past the house floor must see that BEFORE it opens the
         # next position — flat cycles only (holding cycles get the full
         # _loss_verdict_line inside position_state).
@@ -4440,6 +4446,37 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
     except Exception:  # noqa: BLE001
         pass
     return "".join(t for _, t in parts)
+
+
+def _desk_ledger_enabled() -> bool:
+    """Default OFF. The registry ships before the measurements are trusted,
+    so the block can be validated on prod against a live prompt before it
+    influences a single decision."""
+    return (os.getenv("DESK_LEDGER_BLOCK", "0") or "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _desk_ledger_line(run: dict, cfg: dict, thesis: dict) -> str:
+    """This desk's own closed record, from the ledger — see desk_reference.
+
+    Renders on FLAT cycles as well as holding ones, deliberately: every
+    existing outcome channel is gated behind an open position, which is why
+    98.6% of cycles carry no outcome evidence at all.
+
+    The direction under evaluation comes from the thesis, because on a flat
+    cycle the desk has not chosen a side yet; when the thesis has no usable
+    direction the per-symbol half simply drops out."""
+    if not _desk_ledger_enabled():
+        return ""
+    try:
+        import desk_reference
+        direction = str((thesis or {}).get("direction") or "").strip().lower()
+        side = ("long" if direction in ("long", "buy")
+                else "short" if direction in ("short", "sell") else None)
+        return desk_reference.reference_block(
+            str(run.get("symbol") or ""), str(run.get("market") or ""), side)
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _predecessor_run_line(run: dict) -> str:
