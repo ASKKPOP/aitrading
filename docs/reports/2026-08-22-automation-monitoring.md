@@ -785,3 +785,7 @@ Tripwires clean: image `20260822-redesign-phase1` both containers, 0 tracebacks.
 ## Phase 1 accountability reading #48 — 2026-08-24 02:11Z (quiet)
 
 **P&L unchanged −$1.22 — no new fills, positions 0 (both forms).** §5: decisions 409 (+12), buy proposals 82 (+1), panel kept 7 non-hold / 0 as buy; panels 108 crypto + 1 futures + 1 forex. Last 30 min: FIL `buy` 0.58 → `hold` 0.44 (82/82 demoted); TRUMP `sell` 0.52 → `hold` 0.58; 1 verdict_salvaged. Two `alert`/run_status pairs = fleet-37 forex rotations, no fills. H-RECALL-FLAT 405/408. Fleet 39 unchanged; 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
+
+## Phase 1 accountability reading #49 — 2026-08-24 02:41Z (quiet)
+
+**P&L unchanged −$1.22 — no new fills, positions 0 (both forms).** §5: decisions 426 (+17), buy proposals 82 (+0), panel kept 7 non-hold / 0 as buy; panels 109 crypto + 1 futures + 1 forex. Last 30 min: TRUMP `sell` 0.65 → `hold` 0.57; rest hold. Idle-retire continues on the ~5h clock: NZDJPY (02:19:56Z) and AUDUSD (02:28:25Z) out → UNIUSDT 1728 (crypto back to 3 slots) and AUDCAD 1731 in. H-RECALL-FLAT 421/425 (4th exception = another ZC exploration draw 02:35Z). Fleet 38 stopped, owner decision pending; 37 active. Image `20260822-redesign-phase1`, 0 tracebacks. Nothing changed.
