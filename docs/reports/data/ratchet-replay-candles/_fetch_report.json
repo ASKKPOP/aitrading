@@ -1,0 +1,112 @@
+[
+ {
+  "run": 1335,
+  "symbol": "AVAXUSDT",
+  "mkt": "fut",
+  "file": "1335-AVAXUSDT-2026-08-17.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=AVAX-USDT-SWAP bar=1m",
+  "count": 126,
+  "span_ok": true,
+  "detail": "first=1786927680000 last=1786935180000 entry_bar=1786929420000 fire_bar=1786933380000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1358,
+  "symbol": "FILUSDT",
+  "mkt": "fut",
+  "file": "1358-FILUSDT-2026-08-17.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=FIL-USDT-SWAP bar=1m",
+  "count": 136,
+  "span_ok": true,
+  "detail": "first=1786948980000 last=1786957080000 entry_bar=1786950720000 fire_bar=1786955280000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1367,
+  "symbol": "SOLUSDT",
+  "mkt": "fut",
+  "file": "1367-SOLUSDT-2026-08-17.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=SOL-USDT-SWAP bar=1m",
+  "count": 143,
+  "span_ok": true,
+  "detail": "first=1786966980000 last=1786975500000 entry_bar=1786968720000 fire_bar=1786973700000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1392,
+  "symbol": "ZECUSDT",
+  "mkt": "spot",
+  "file": "1392-ZECUSDT-2026-08-18.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=ZEC-USDT bar=1m",
+  "count": 90,
+  "span_ok": true,
+  "detail": "first=1787009280000 last=1787014620000 entry_bar=1787011020000 fire_bar=1787012820000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1417,
+  "symbol": "SUIUSDT",
+  "mkt": "fut",
+  "file": "1417-SUIUSDT-2026-08-18.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=SUI-USDT-SWAP bar=1m",
+  "count": 240,
+  "span_ok": true,
+  "detail": "first=1787043240000 last=1787057580000 entry_bar=1787044980000 fire_bar=1787055780000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1489,
+  "symbol": "UNIUSDT",
+  "mkt": "fut",
+  "file": "1489-UNIUSDT-2026-08-19.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=UNI-USDT-SWAP bar=1m",
+  "count": 118,
+  "span_ok": true,
+  "detail": "first=1787104140000 last=1787111160000 entry_bar=1787105880000 fire_bar=1787109360000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1556,
+  "symbol": "LTCUSDT",
+  "mkt": "spot",
+  "file": "1556-LTCUSDT-2026-08-20.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=LTC-USDT bar=1m",
+  "count": 94,
+  "span_ok": true,
+  "detail": "first=1787184360000 last=1787189940000 entry_bar=1787186100000 fire_bar=1787188140000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1710,
+  "symbol": "LTCUSDT",
+  "mkt": "fut",
+  "file": "1710-LTCUSDT-2026-08-23.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=LTC-USDT-SWAP bar=1m",
+  "count": 76,
+  "span_ok": true,
+  "detail": "first=1787484840000 last=1787489340000 entry_bar=1787486580000 fire_bar=1787487540000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1712,
+  "symbol": "CRVUSDT",
+  "mkt": "fut",
+  "file": "1712-CRVUSDT-2026-08-23.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=CRV-USDT-SWAP bar=1m",
+  "count": 88,
+  "span_ok": true,
+  "detail": "first=1787498220000 last=1787503440000 entry_bar=1787499960000 fire_bar=1787501640000 gap_ms=0",
+  "errors": []
+ },
+ {
+  "run": 1721,
+  "symbol": "SOLUSDT",
+  "mkt": "fut",
+  "file": "1721-SOLUSDT-2026-08-23.json",
+  "source": "okx https://www.okx.com/api/v5/market/history-candles instId=SOL-USDT-SWAP bar=1m",
+  "count": 70,
+  "span_ok": true,
+  "detail": "first=1787525400000 last=1787529540000 entry_bar=1787527140000 fire_bar=1787527740000 gap_ms=0",
+  "errors": []
+ }
+]
