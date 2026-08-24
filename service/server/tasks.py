@@ -2044,6 +2044,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "scanner":                 "research",
     # social feed — FB (SEA) / X (elsewhere) posts -> per-symbol tilt (Plan 11 F5)
     "social_feed":             "research",
+    # human facts — Tier-4 crowd readings (telegram/youtube/discord/naver)
+    "human_facts":             "research",
     # factor snapshots — live-only factor history for confluence validation
     "factor_snapshots":        "research",
     # confidence calibration scoreboard — Brier vs outcomes, daily (Step 0)
