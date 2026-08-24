@@ -236,3 +236,60 @@ def test_block_states_facts_not_instructions(mod):
                    "refuse"):
         assert banned not in lowered, f"reference block grew an instruction: {banned}"
     assert "your call" in lowered
+
+
+# ── wiring: the block must actually reach the prompt ───────────────────────
+# `brief-line-wiring-is-untested-by-default` — a line was once unwired in
+# this repo and every test still passed, because the helpers were tested for
+# RENDERING and never for CONCATENATION.
+
+def test_ledger_line_is_wired_into_position_state(monkeypatch):
+    import run_engine
+
+    monkeypatch.setenv("DESK_LEDGER_BLOCK", "1")
+    monkeypatch.setattr(run_engine, "_desk_ledger_enabled", lambda: True)
+
+    fake = types.ModuleType("desk_reference")
+    fake.reference_block = lambda symbol, market, side=None: (
+        f"<<LEDGER {symbol}/{market}/{side}>>")
+    monkeypatch.setitem(sys.modules, "desk_reference", fake)
+
+    # Every other brief helper is silenced so a failure here cannot be
+    # masked by another line happening to contain the marker.
+    for name in dir(run_engine):
+        if name.startswith("_") and name.endswith("_line") \
+                and name != "_desk_ledger_line":
+            try:
+                monkeypatch.setattr(run_engine, name, lambda *a, **k: "")
+            except AttributeError:
+                pass
+
+    out = run_engine._compose_position_state(
+        {"id": 1, "symbol": "LINKUSDT", "market": "crypto"},
+        {}, 0.0, {"direction": "short"})
+    assert "<<LEDGER LINKUSDT/crypto/short>>" in out, \
+        "desk_ledger block never reached the composed prompt"
+
+
+def test_ledger_line_is_off_by_default(monkeypatch):
+    import run_engine
+    monkeypatch.delenv("DESK_LEDGER_BLOCK", raising=False)
+    assert run_engine._desk_ledger_line(
+        {"id": 1, "symbol": "X", "market": "crypto"}, {},
+        {"direction": "short"}) == ""
+
+
+def test_ledger_line_survives_a_broken_registry(monkeypatch):
+    """A raising registry must cost the line, never the cycle."""
+    import run_engine
+    monkeypatch.setattr(run_engine, "_desk_ledger_enabled", lambda: True)
+    broken = types.ModuleType("desk_reference")
+
+    def _boom(*a, **k):
+        raise RuntimeError("registry down")
+
+    broken.reference_block = _boom
+    monkeypatch.setitem(sys.modules, "desk_reference", broken)
+    assert run_engine._desk_ledger_line(
+        {"id": 1, "symbol": "X", "market": "crypto"}, {},
+        {"direction": "short"}) == ""
