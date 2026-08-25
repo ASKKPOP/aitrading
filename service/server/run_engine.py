@@ -4184,6 +4184,87 @@ def _entry_rail_line(run: dict, pos_qty: float) -> str:
             f"rail lost $118 and no authored stop ever acted).\n")
 
 
+def _day_digest_line(run: dict) -> str:
+    """The slot's own decision stream for the last 24h, one line per cycle.
+
+    Owner order 2026-08-25: the desk carries ONE cycle of its own words
+    (_last_cycle_word_line) plus its closed ledger — but not the day's
+    30-min analysis stream, so cycle N cannot see what cycles 1..N-1
+    concluded unless a trade closed. Across run rebuilds the blindness is
+    total (2026-08-14 NQ: the successor desk re-longed at a higher price
+    with zero reference to what the slot had analyzed all day, −$4.57).
+    This line is the compact log: action, confidence, and the desk's own
+    words (~90 chars each), oldest first, across ALL of this agent's runs
+    on this symbol in the window — the slot's day, not the run's.
+
+    Facts only, and all of them the desk's own prior output — the same
+    contract _last_cycle_word_line shipped under. Renders only with >=2
+    rows (one row is last_cycle_word's job). Capped at the newest
+    _DAY_DIGEST_MAX_ROWS rows. Fail-soft: never blocks a cycle.
+
+    Pre-registered falsifier (kill switch DAY_DIGEST_BRIEF=0): over the
+    first 50 decisions composed with a non-empty digest, the
+    side_contradiction rate per decision and the same-symbol
+    re-entry-after-losing-close outcome must improve on the 2026-08-25
+    baseline (3/3 re-entries losing; QNT-class self-contradictions
+    recurring). Neither moves -> flag off, report FAILED."""
+    if (os.getenv("DAY_DIGEST_BRIEF", "1") or "1").strip().lower() not in (
+            "1", "true", "yes", "on"):
+        return ""
+    try:
+        from datetime import datetime, timedelta, timezone
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)
+                  ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT e.run_id, e.ts, e.payload
+                   FROM run_events e JOIN trading_runs r ON r.id = e.run_id
+                   WHERE r.agent_id = ? AND r.symbol = ?
+                     AND e.event_type = 'decision' AND e.ts >= ?
+                   ORDER BY e.id DESC LIMIT ?""",
+                (run.get("agent_id"), run.get("symbol"), cutoff,
+                 _DAY_DIGEST_MAX_ROWS * 2))
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
+        entries = []
+        for row in rows or []:  # newest-first from the query
+            payload = json.loads(row["payload"] or "{}")
+            action = str(payload.get("action") or "").strip()
+            report = " ".join(str(payload.get("report") or "").split())
+            if not action or not report:
+                continue  # errored cycles emit empty decisions — no line
+            if len(report) > 90:
+                report = report[:90].rsplit(" ", 1)[0] + "…"
+            age = ""
+            try:
+                mins = _age_seconds(str(row["ts"] or "")) / 60.0
+                age = (f"{mins:.0f}m ago" if mins < 120
+                       else f"{mins / 60:.0f}h ago")
+            except Exception:  # noqa: BLE001 — unreadable ts drops age only
+                age = ""
+            conf = payload.get("confidence")
+            conf_s = f" conf {conf}" if conf is not None else ""
+            other = ("" if int(row["run_id"] or 0) == int(run.get("id") or 0)
+                     else " (predecessor run)")
+            entries.append(f"- {age}: {action}{conf_s}{other} — \"{report}\"")
+            if len(entries) >= _DAY_DIGEST_MAX_ROWS:
+                break
+        if len(entries) < 2:
+            return ""
+        entries.reverse()  # oldest first — the day reads as a narrative
+        return (f"Your decisions on {run.get('symbol')} over the last 24h "
+                "(this slot's own log across its runs, oldest first — your "
+                "words, not the tape):\n" + "\n".join(entries) + "\n")
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
+_DAY_DIGEST_MAX_ROWS = 24
+
+
 def _last_cycle_word_line(run: dict) -> str:
     """The desk's OWN last-cycle verdict, quoted back to it.
 
@@ -4420,6 +4501,9 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("young_exit", _young_exit_brief(run, cfg, pos_qty)),
         ("contradiction", _contradiction_line(run, pos_qty)),
         ("last_cycle_word", _last_cycle_word_line(run)),
+        # Owner order 2026-08-25: the slot's whole day, not just one cycle —
+        # the compact decision log across this agent's runs on this symbol.
+        ("day_digest", _day_digest_line(run)),
         ("side_contradiction", _side_contradiction_line(
             _last_decision_report(run), pos_qty)),
         ("standing_plan", _standing_plan_line(run)),

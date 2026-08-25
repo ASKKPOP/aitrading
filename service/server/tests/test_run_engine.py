@@ -4187,3 +4187,141 @@ class NoVerdictDiagnosticTests(unittest.TestCase):
         # helper made this test tautological on its first writing.
         self.assertIn("_no_verdict_diagnostic(text)", src)
         self.assertIn('"no_verdict"', src)
+
+
+class DayDigestBriefTests(unittest.TestCase):
+    """Owner order 2026-08-25: "the AI sees 1 cycle of its own words but not
+    the day's 30-min analysis stream — make solution". The day_digest line
+    gives the desk its slot's decisions over the last 24h — its own actions,
+    confidences, and words, one compact dated line per cycle, across run
+    rebuilds on the same symbol (the NQ failure class: a successor desk
+    re-longed with zero reference to what the slot analyzed all day)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _now_iso(self, hours_ago: float) -> str:
+        from datetime import datetime, timedelta, timezone
+        return (datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+                ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def _mk_run(self, rid: int, agent: int = 6, symbol: str = "WIFUSDT"):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO trading_runs (id, agent_id, symbol, market, "
+                "status, created_at) VALUES (?, ?, ?, 'crypto', 'running', "
+                "'2026-08-25T00:00:00Z')", (rid, agent, symbol))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _emit(self, run_id: int, payload: dict, hours_ago: float,
+              seq: int = 0):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload)"
+                " VALUES (?, ?, 'decision', ?, ?)",
+                (run_id, seq, self._now_iso(hours_ago), json.dumps(payload)))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _run_dict(self, rid: int = 50):
+        return {"id": rid, "agent_id": 6, "symbol": "WIFUSDT",
+                "market": "crypto"}
+
+    def test_renders_the_days_stream_oldest_first_across_runs(self):
+        # Two runs of the same slot (same agent+symbol): the predecessor's
+        # decisions must appear too — that stream is what the slot analyzed
+        # today, and its absence is the measured NQ failure.
+        self._mk_run(49)
+        self._mk_run(50)
+        self._emit(49, {"action": "hold", "confidence": 0.55,
+                        "report": "oldest words about the range"}, 5.0, seq=1)
+        self._emit(50, {"action": "buy", "confidence": 0.6,
+                        "report": "newest words about the bounce"}, 0.5, seq=2)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("oldest words", line)
+        self.assertIn("newest words", line)
+        self.assertLess(line.index("oldest words"), line.index("newest words"))
+        self.assertIn("hold", line)
+        self.assertIn("buy", line)
+        self.assertIn("WIFUSDT", line)
+
+    def test_another_symbol_or_agent_never_leaks_in(self):
+        self._mk_run(50)
+        self._mk_run(51, symbol="SOLUSDT")
+        self._mk_run(52, agent=7)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "mine one"}, 2.0, seq=1)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "mine two"}, 1.0, seq=2)
+        self._emit(51, {"action": "buy", "confidence": 0.9,
+                        "report": "other symbol words"}, 1.0, seq=1)
+        self._emit(52, {"action": "buy", "confidence": 0.9,
+                        "report": "other agent words"}, 1.0, seq=1)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("mine one", line)
+        self.assertNotIn("other symbol words", line)
+        self.assertNotIn("other agent words", line)
+
+    def test_silent_with_fewer_than_two_decisions(self):
+        # One decision = last_cycle_word already quotes it in full; a
+        # single-row digest adds bytes and nothing else.
+        self._mk_run(50)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "only words"}, 1.0, seq=1)
+        self.assertEqual(run_engine._day_digest_line(self._run_dict(50)), "")
+        self.assertEqual(run_engine._day_digest_line(self._run_dict(99)), "")
+
+    def test_stale_and_errored_rows_drop_out(self):
+        self._mk_run(50)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "yesterday words"}, 30.0, seq=1)
+        self._emit(50, {"action": "", "report": ""}, 2.0, seq=2)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "today one"}, 1.5, seq=3)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "today two"}, 0.5, seq=4)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertNotIn("yesterday words", line)
+        self.assertIn("today one", line)
+        self.assertIn("today two", line)
+
+    def test_caps_rows_and_bytes(self):
+        self._mk_run(50)
+        for i in range(60):
+            self._emit(50, {"action": "hold", "confidence": 0.5,
+                            "report": f"cycle words number {i} " + "x" * 120},
+                       hours_ago=23.0 - i * 0.35, seq=i + 1)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertLess(len(line), 3400)
+        self.assertNotIn("cycle words number 0 ", line)   # oldest dropped
+        self.assertIn("cycle words number 59", line)      # newest kept
+
+    def test_kill_switch(self):
+        self._mk_run(50)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "one"}, 2.0, seq=1)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "two"}, 1.0, seq=2)
+        with patch.dict(os.environ, {"DAY_DIGEST_BRIEF": "0"}):
+            self.assertEqual(
+                run_engine._day_digest_line(self._run_dict(50)), "")
+
+    def test_wired_into_the_composed_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn('("day_digest", _day_digest_line(run))', src)
