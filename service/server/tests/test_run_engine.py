@@ -4311,6 +4311,18 @@ class DayDigestBriefTests(unittest.TestCase):
         self.assertNotIn("cycle words number 0 ", line)   # oldest dropped
         self.assertIn("cycle words number 59", line)      # newest kept
 
+    def test_carries_the_target_purpose(self):
+        # Owner order 2026-08-25: the log states what it is FOR — plus NET
+        # profit ("make + profit").
+        self._mk_run(50)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "one"}, 2.0, seq=1)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "two"}, 1.0, seq=2)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("NET-POSITIVE", line)
+        self.assertIn("+ profit", line)
+
     def test_kill_switch(self):
         self._mk_run(50)
         self._emit(50, {"action": "hold", "confidence": 0.5,

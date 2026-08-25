@@ -4255,9 +4255,15 @@ def _day_digest_line(run: dict) -> str:
         if len(entries) < 2:
             return ""
         entries.reverse()  # oldest first — the day reads as a narrative
+        # Owner order 2026-08-25 ("add target purpose -> make + profit"):
+        # the log states what it is FOR, in the house law's terms — plus
+        # NET profit, every layer (memory: profit-is-the-target-every-layer).
         return (f"Your decisions on {run.get('symbol')} over the last 24h "
                 "(this slot's own log across its runs, oldest first — your "
-                "words, not the tape):\n" + "\n".join(entries) + "\n")
+                "words, not the tape):\n" + "\n".join(entries) + "\n"
+                "Target purpose of this log: end the day NET-POSITIVE "
+                "(+ profit). Repeat what the record shows MADE money; do "
+                "not repeat what lost it.\n")
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
 
