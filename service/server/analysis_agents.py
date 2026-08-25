@@ -173,6 +173,17 @@ def _gather_sentiment(symbol: str, market: str, news: dict[str, Any]) -> dict[st
             out["social"] = social
     except Exception:  # noqa: BLE001
         pass
+    # Tier-4 human facts (Research 07 §9, owner direction 2026-08-24):
+    # numeric crowd readings — telegram/youtube/discord/naver — for the
+    # Sentiment seat. Values only; None when the service is off or nothing
+    # fresh exists, so the key simply drops out.
+    try:
+        from human_facts import human_facts_payload
+        hf = human_facts_payload(symbol)
+        if hf:
+            out["human_facts"] = hf
+    except Exception:  # noqa: BLE001
+        pass
     # Psych feed (Phase 2): F&G index, sentiment-spike z-scores, odds deltas.
     try:
         from psych_feed import get_psych_payload

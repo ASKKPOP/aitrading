@@ -1263,6 +1263,42 @@ async def social_feed_loop():
         await asyncio.sleep(refresh_interval)
 
 
+async def human_facts_loop():
+    """Background task for the Tier-4 human-fact service (Research 07 §9).
+
+    Every HUMAN_FACTS_INTERVAL seconds (default 5 min, minimum 60), collect
+    numeric crowd readings from every CONFIGURED Tier-4 source
+    (telegram / youtube / discord / naver — tiktok is registered but has no
+    practical public API) and upsert them into human_facts. No-op unless
+    HUMAN_FACTS_ENABLED; a source without its key is skipped silently.
+    See human_facts.py.
+    """
+    from human_facts import collect_once, human_facts_enabled
+
+    await asyncio.sleep(20)
+
+    while True:
+        try:
+            if human_facts_enabled():
+                result = await asyncio.to_thread(collect_once)
+                if result.get("sources"):
+                    print(
+                        "[Human Facts] collected: "
+                        f"sources={','.join(result['sources'])} "
+                        f"stored={result.get('stored', 0)} "
+                        f"errors={result.get('errors') or 'none'}"
+                    )
+        except Exception as e:
+            print(f"[Human Facts Error] {e}")
+
+        try:
+            from human_facts import _interval_s as _hf_interval
+            interval = _hf_interval()
+        except Exception:
+            interval = 300
+        await asyncio.sleep(interval)
+
+
 async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
@@ -1935,6 +1971,7 @@ BACKGROUND_TASK_REGISTRY = {
     "psych_feed": psych_feed_loop,
     "scanner": scanner_loop,
     "social_feed": social_feed_loop,
+    "human_facts": human_facts_loop,
     "factor_snapshots": factor_snapshot_loop,
     "confidence_calibration": confidence_calibration_loop,
     "watches": watch_loop,
@@ -2007,6 +2044,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "scanner":                 "research",
     # social feed — FB (SEA) / X (elsewhere) posts -> per-symbol tilt (Plan 11 F5)
     "social_feed":             "research",
+    # human facts — Tier-4 crowd readings (telegram/youtube/discord/naver)
+    "human_facts":             "research",
     # factor snapshots — live-only factor history for confluence validation
     "factor_snapshots":        "research",
     # confidence calibration scoreboard — Brier vs outcomes, daily (Step 0)
