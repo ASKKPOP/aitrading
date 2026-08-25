@@ -468,3 +468,84 @@ class AnthropicTemperatureRetryTests(unittest.TestCase):
         with patch.dict(sys.modules, {"anthropic": fake_mod}):
             _generate_anthropic(ap, "hi", None, 100, 0.3)
         self.assertIn("temperature", calls[0])   # unknown model still tries
+
+
+class AnthropicSdk1TemperatureTests(unittest.TestCase):
+    """anthropic SDK >= 1.0 removed `temperature` from Messages.create()
+    entirely (sampling moved into output_config), so the call dies
+    CLIENT-SIDE with a TypeError that the BadRequestError guard never sees.
+    2026-08-25: a prod image rebuild pulled SDK 1.0.0 and every panel call
+    failed for ~15h — proposals executed unreviewed (fail-open) and 100% of
+    that day-window's realized loss flowed through entries with no final
+    author. The client must survive the SDK's signature, not just the
+    API's 400."""
+
+    def setUp(self):
+        llm_client._NO_TEMPERATURE_MODELS.clear()
+
+    def tearDown(self):
+        llm_client._NO_TEMPERATURE_MODELS.clear()
+
+    def _run_sdk1(self, model="claude-opus-4-8"):
+        import types
+        calls = []
+
+        class FakeBadRequestError(Exception):
+            pass
+
+        class FakeMessages:
+            def create(self, **kwargs):
+                calls.append(kwargs)
+                if "temperature" in kwargs:
+                    raise TypeError("Messages.create() got an unexpected "
+                                    "keyword argument 'temperature'")
+                block = types.SimpleNamespace(type="text", text="ok")
+                return types.SimpleNamespace(content=[block])
+
+        class FakeClient:
+            def __init__(self, api_key, base_url=None, **client_kw):
+                self.messages = FakeMessages()
+
+        fake_mod = types.SimpleNamespace(Anthropic=FakeClient,
+                                         BadRequestError=FakeBadRequestError)
+        from llm_client import _generate_anthropic, ActiveProvider, _PROVIDERS
+        ap = ActiveProvider(spec=_PROVIDERS["anthropic"], api_key="k",
+                            base_url="https://api.anthropic.com", model=model)
+        with patch.dict(sys.modules, {"anthropic": fake_mod}):
+            out = _generate_anthropic(ap, "hi", None, 100, 0.3)
+        return out, calls
+
+    def test_sdk1_type_error_falls_back_and_succeeds(self):
+        (text, _), calls = self._run_sdk1()
+        self.assertEqual(text, "ok")
+        self.assertEqual(len(calls), 2)
+        self.assertIn("temperature", calls[0])
+        self.assertNotIn("temperature", calls[1])
+
+    def test_sdk1_refusal_is_remembered(self):
+        self._run_sdk1()
+        self.assertIn("claude-opus-4-8", llm_client._NO_TEMPERATURE_MODELS)
+
+    def test_unrelated_type_errors_still_propagate(self):
+        import types
+
+        class FakeBadRequestError(Exception):
+            pass
+
+        class FakeMessages:
+            def create(self, **kwargs):
+                raise TypeError("unrelated signature problem")
+
+        class FakeClient:
+            def __init__(self, api_key, base_url=None, **client_kw):
+                self.messages = FakeMessages()
+
+        fake_mod = types.SimpleNamespace(Anthropic=FakeClient,
+                                         BadRequestError=FakeBadRequestError)
+        from llm_client import _generate_anthropic, ActiveProvider, _PROVIDERS
+        ap = ActiveProvider(spec=_PROVIDERS["anthropic"], api_key="k",
+                            base_url="https://api.anthropic.com",
+                            model="claude-opus-4-8")
+        with patch.dict(sys.modules, {"anthropic": fake_mod}):
+            with self.assertRaises(TypeError):
+                _generate_anthropic(ap, "hi", None, 100, 0.3)

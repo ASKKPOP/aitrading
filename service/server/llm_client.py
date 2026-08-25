@@ -543,6 +543,17 @@ def _generate_anthropic(ap, prompt, system, max_tokens, temperature,
                 raise
             _NO_TEMPERATURE_MODELS.add(ap.model)
             msg = client.messages.create(**kwargs)
+        except TypeError as exc:
+            # anthropic SDK >= 1.0 removed `temperature` from
+            # Messages.create() (sampling moved into output_config), so the
+            # call dies CLIENT-SIDE before any request — the BadRequestError
+            # guard above never sees it. 2026-08-25: an image rebuild pulled
+            # SDK 1.0.0 and every panel call failed for ~15h, model-
+            # independent, while proposals executed unreviewed (fail-open).
+            if "temperature" not in str(exc):
+                raise
+            _NO_TEMPERATURE_MODELS.add(ap.model)
+            msg = client.messages.create(**kwargs)
     parts = [b.text for b in msg.content if getattr(b, "type", None) == "text"]
     text = "\n".join(parts).strip()
     return (text or None), _usage_tokens(getattr(msg, "usage", None))
