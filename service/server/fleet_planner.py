@@ -155,10 +155,13 @@ def _trail_config(max_bet: float, leverage: float,
                   market: Optional[str] = None) -> dict:
     """Trailing-lock config for a run sized at `max_bet` margin on `leverage`.
 
-    activate_usd is the greater of a notional floor and trail_activate_rr ×
-    max_loss_usd — the lock must not bank a win smaller than the loss the run
-    is prepared to take. See the FLEET_BOUNDS note: the frac-only rule armed
-    at exactly 1/10th of the stop and needed a 90.9% hit rate to break even.
+    activate_usd is fee-anchored (2026-08-25): trail_activate_arm_mult × the
+    breakeven ratchet's own arm, capped inside the loss budget — the ≥stop
+    rule it replaces armed on 0 of 13 profit-rail fires (see the FLEET_BOUNDS
+    note). Under TRAIL_FEE_ANCHORED_ACTIVATION=0 the legacy rule applies: the
+    greater of a notional floor and trail_activate_rr × max_loss_usd (which
+    itself replaced the frac-only rule that armed at 1/10th of the stop and
+    needed a 90.9% hit rate to break even).
 
     tighten_usd is the fee-aware "this is a real winner" line: the round trip
     on the position notional costs notional × 2 × the MARKET's fee, so a peak
