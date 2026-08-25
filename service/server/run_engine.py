@@ -4194,21 +4194,40 @@ def _day_digest_line(run: dict) -> str:
     total (2026-08-14 NQ: the successor desk re-longed at a higher price
     with zero reference to what the slot had analyzed all day, −$4.57).
     This line is the compact log: action, confidence, and the desk's own
-    words (~90 chars each), oldest first, across ALL of this agent's runs
-    on this symbol in the window — the slot's day, not the run's.
+    words (~90 chars each), oldest first, across this agent's runs on
+    this symbol AND market — the slot's day, not the run's. Rows from a
+    CONCURRENTLY RUNNING sibling run (several strategies may share a
+    symbol) are excluded: a live different strategy's call quoted as
+    "your words" is a falsehood in a money-path prompt (2026-08-25
+    verification round, probe-reproduced). Only stopped predecessors'
+    rows appear, labelled. The scaffold no-verdict placeholder is not
+    the desk's word and never renders.
 
-    Facts only, and all of them the desk's own prior output — the same
-    contract _last_cycle_word_line shipped under. Renders only with >=2
-    rows (one row is last_cycle_word's job). Capped at the newest
-    _DAY_DIGEST_MAX_ROWS rows. Fail-soft: never blocks a cycle.
+    A closed-record fact line (fills joined from the ledger) grounds the
+    purpose sentence — "repeat what made money" must reference P&L the
+    prompt actually shows (same verification round: an outcome-blind log
+    plus that instruction can invert the lesson).
+
+    Facts only, all of them the desk's own prior output — the contract
+    _last_cycle_word_line shipped under. Renders only with >=2 rows.
+    Capped at the newest _DAY_DIGEST_MAX_ROWS rows with an explicit
+    truncation marker (an unmarked cap under a "last 24h" header
+    re-creates the morning blindness this ships to fix). Fail-soft per
+    ROW and per function: one corrupt row drops that row, not the day.
+
+    Default OFF (DAY_DIGEST_BRIEF=1 to enable — the desk_ledger
+    precedent for untested prompt changes; prod enables explicitly).
 
     Pre-registered falsifier (kill switch DAY_DIGEST_BRIEF=0): over the
-    first 50 decisions composed with a non-empty digest, the
+    first 50 decisions composed with a non-empty digest — (a) the
     side_contradiction rate per decision and the same-symbol
     re-entry-after-losing-close outcome must improve on the 2026-08-25
-    baseline (3/3 re-entries losing; QNT-class self-contradictions
-    recurring). Neither moves -> flag off, report FAILED."""
-    if (os.getenv("DAY_DIGEST_BRIEF", "1") or "1").strip().lower() not in (
+    baseline (3/3 re-entries losing), AND (b) the no-verdict rate over
+    those decisions must not exceed its pre-enable baseline (the
+    measured prompt-length failure mode is LLM oversubscription, and
+    this line adds ~2-3KB to saturated calls). Either (a) fails to move
+    or (b) regresses -> flag off, report FAILED."""
+    if (os.getenv("DAY_DIGEST_BRIEF", "0") or "0").strip().lower() not in (
             "1", "true", "yes", "on"):
         return ""
     try:
@@ -4219,51 +4238,82 @@ def _day_digest_line(run: dict) -> str:
         try:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT e.run_id, e.ts, e.payload
+                """SELECT e.run_id, e.ts, e.payload, r.status
                    FROM run_events e JOIN trading_runs r ON r.id = e.run_id
-                   WHERE r.agent_id = ? AND r.symbol = ?
+                   WHERE r.agent_id = ? AND r.symbol = ? AND r.market = ?
                      AND e.event_type = 'decision' AND e.ts >= ?
                    ORDER BY e.id DESC LIMIT ?""",
-                (run.get("agent_id"), run.get("symbol"), cutoff,
-                 _DAY_DIGEST_MAX_ROWS * 2))
+                (run.get("agent_id"), run.get("symbol"), run.get("market"),
+                 cutoff, _DAY_DIGEST_MAX_ROWS * 3))
             rows = cursor.fetchall()
+            # Closed-record grounding: this slot's fills in the same window.
+            cursor.execute(
+                """SELECT COUNT(*) AS n, COALESCE(SUM(s.pnl), 0) AS net
+                   FROM signals s JOIN trading_runs r ON r.id = s.run_id
+                   WHERE r.agent_id = ? AND r.symbol = ? AND r.market = ?
+                     AND s.pnl IS NOT NULL AND s.timestamp >= ?""",
+                (run.get("agent_id"), run.get("symbol"), run.get("market"),
+                 int(datetime.now(timezone.utc).timestamp()) - 86400))
+            closed = cursor.fetchone()
         finally:
             conn.close()
+        truncated = len(rows or []) > _DAY_DIGEST_MAX_ROWS
         entries = []
         for row in rows or []:  # newest-first from the query
-            payload = json.loads(row["payload"] or "{}")
-            action = str(payload.get("action") or "").strip()
-            report = " ".join(str(payload.get("report") or "").split())
-            if not action or not report:
-                continue  # errored cycles emit empty decisions — no line
-            if len(report) > 90:
-                report = report[:90].rsplit(" ", 1)[0] + "…"
-            age = ""
             try:
-                mins = _age_seconds(str(row["ts"] or "")) / 60.0
-                age = (f"{mins:.0f}m ago" if mins < 120
-                       else f"{mins / 60:.0f}h ago")
-            except Exception:  # noqa: BLE001 — unreadable ts drops age only
+                payload = json.loads(row["payload"] or "{}")
+                action = str(payload.get("action") or "").strip()
+                report = " ".join(str(payload.get("report") or "").split())
+                if not action or not report:
+                    continue  # errored cycles emit empty decisions
+                if report == "light cycle: no LLM verdict":
+                    continue  # scaffold placeholder, not the desk's word
+                other = int(row["run_id"] or 0) != int(run.get("id") or 0)
+                if other and str(row["status"] or "") == "running":
+                    continue  # live sibling strategy — not this desk's words
+                if len(report) > 90:
+                    report = report[:90].rsplit(" ", 1)[0] + "…"
                 age = ""
-            conf = payload.get("confidence")
-            conf_s = f" conf {conf}" if conf is not None else ""
-            other = ("" if int(row["run_id"] or 0) == int(run.get("id") or 0)
-                     else " (predecessor run)")
-            entries.append(f"- {age}: {action}{conf_s}{other} — \"{report}\"")
-            if len(entries) >= _DAY_DIGEST_MAX_ROWS:
-                break
+                mins = _age_seconds(str(row["ts"] or "")) / 60.0
+                if mins != float("inf"):
+                    age = (f"{mins:.0f}m ago" if mins < 120
+                           else f"{mins / 60:.0f}h ago")
+                conf = payload.get("confidence")
+                conf_s = f" conf {conf}" if conf is not None else ""
+                tag = " (predecessor run)" if other else ""
+                entries.append(
+                    f"- {age}: {action}{conf_s}{tag} — \"{report}\"")
+                if len(entries) >= _DAY_DIGEST_MAX_ROWS:
+                    break
+            except Exception:  # noqa: BLE001 — one bad row drops that row
+                continue
         if len(entries) < 2:
             return ""
         entries.reverse()  # oldest first — the day reads as a narrative
-        # Owner order 2026-08-25 ("add target purpose -> make + profit"):
-        # the log states what it is FOR, in the house law's terms — plus
-        # NET profit, every layer (memory: profit-is-the-target-every-layer).
-        return (f"Your decisions on {run.get('symbol')} over the last 24h "
-                "(this slot's own log across its runs, oldest first — your "
-                "words, not the tape):\n" + "\n".join(entries) + "\n"
-                "Target purpose of this log: end the day NET-POSITIVE "
-                "(+ profit). Repeat what the record shows MADE money; do "
-                "not repeat what lost it.\n")
+        marker = ("(older cycles in this window exist beyond this cap and "
+                  "are NOT shown)\n" if truncated else "")
+        closed_line = ""
+        try:
+            n = int(closed["n"] or 0)
+            if n > 0:
+                closed_line = (f"Your closed record on {run.get('symbol')} "
+                               f"in this window: {n} closes, net "
+                               f"${float(closed['net'] or 0.0):,.2f}.\n")
+        except Exception:  # noqa: BLE001 — grounding line is optional
+            closed_line = ""
+        # Owner order 2026-08-25 ("add target purpose -> make + profit"),
+        # grounded per the verification round: the instruction references
+        # the closed record ABOVE and the ledger — P&L the prompt shows —
+        # never outcomes the log does not contain.
+        return (f"Your newest {len(entries)} decisions on "
+                f"{run.get('symbol')} in the last 24h (this slot's own log "
+                "across its runs, oldest first — your words, not the "
+                "tape):\n" + "\n".join(entries) + "\n" + marker + closed_line
+                + "Target purpose of this log: end the day NET-POSITIVE "
+                "(+ profit). Weigh any re-entry against the closed record "
+                "and YOUR LEDGER above — repeat only what the measured "
+                "record shows made money; do not repeat what it shows "
+                "lost.\n")
     except Exception:  # noqa: BLE001 — a brief must never block a cycle
         return ""
 
