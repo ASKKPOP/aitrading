@@ -4187,3 +4187,249 @@ class NoVerdictDiagnosticTests(unittest.TestCase):
         # helper made this test tautological on its first writing.
         self.assertIn("_no_verdict_diagnostic(text)", src)
         self.assertIn('"no_verdict"', src)
+
+
+class DayDigestBriefTests(unittest.TestCase):
+    """Owner order 2026-08-25: "the AI sees 1 cycle of its own words but not
+    the day's 30-min analysis stream — make solution". The day_digest line
+    gives the desk its slot's decisions over the last 24h — its own actions,
+    confidences, and words, one compact dated line per cycle, across run
+    rebuilds on the same symbol (the NQ failure class). Hardened by the
+    2026-08-25 10-agent verification round: sibling-run exclusion, market
+    scoping, per-row fail-soft, honest truncation, grounded purpose."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+        self.env = patch.dict(os.environ, {"DAY_DIGEST_BRIEF": "1"})
+        self.env.start()
+
+    def tearDown(self):
+        self.env.stop()
+        self.tmp.cleanup()
+
+    def _now_iso(self, hours_ago: float) -> str:
+        from datetime import datetime, timedelta, timezone
+        return (datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+                ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def _mk_run(self, rid: int, agent: int = 6, symbol: str = "WIFUSDT",
+                market: str = "crypto", status: str = "running"):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO trading_runs (id, agent_id, symbol, market, "
+                "status, created_at) VALUES (?, ?, ?, ?, ?, "
+                "'2026-08-25T00:00:00Z')", (rid, agent, symbol, market,
+                                            status))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _emit(self, run_id: int, payload: dict, hours_ago: float,
+              seq: int = 0):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload)"
+                " VALUES (?, ?, 'decision', ?, ?)",
+                (run_id, seq, self._now_iso(hours_ago), json.dumps(payload)))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _emit_raw(self, run_id: int, raw_payload: str, hours_ago: float,
+                  seq: int = 0):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload)"
+                " VALUES (?, ?, 'decision', ?, ?)",
+                (run_id, seq, self._now_iso(hours_ago), raw_payload))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _fill(self, run_id: int, pnl, hours_ago: float,
+              symbol: str = "WIFUSDT"):
+        import time as _time
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            database.begin_write_transaction(cur)
+            cur.execute(
+                "INSERT INTO signals (signal_id, agent_id, message_type, run_id, "
+                "symbol, market, side, quantity, entry_price, pnl, fee_usd, "
+                "timestamp, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (int(run_id * 1000 + hours_ago * 10), 6, "operation", run_id,
+                 symbol, "crypto", "sell", 1.0, 1.0, pnl, 0.01,
+                 int(_time.time() - hours_ago * 3600),
+                 self._now_iso(hours_ago)))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _run_dict(self, rid: int = 50):
+        return {"id": rid, "agent_id": 6, "symbol": "WIFUSDT",
+                "market": "crypto"}
+
+    def _two(self, rid: int = 50):
+        self._emit(rid, {"action": "hold", "confidence": 0.5,
+                         "report": "first words"}, 2.0, seq=1)
+        self._emit(rid, {"action": "hold", "confidence": 0.5,
+                         "report": "second words"}, 1.0, seq=2)
+
+    def test_renders_the_days_stream_oldest_first_across_runs(self):
+        # A STOPPED predecessor's decisions appear, labelled — that stream
+        # is what the slot analyzed today (the NQ failure class).
+        self._mk_run(49, status="stopped")
+        self._mk_run(50)
+        self._emit(49, {"action": "hold", "confidence": 0.55,
+                        "report": "oldest words about the range"}, 5.0, seq=1)
+        self._emit(50, {"action": "buy", "confidence": 0.6,
+                        "report": "newest words about the bounce"}, 0.5, seq=2)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("oldest words", line)
+        self.assertIn("newest words", line)
+        self.assertLess(line.index("oldest words"), line.index("newest words"))
+        self.assertIn("(predecessor run)", line)
+        self.assertIn("WIFUSDT", line)
+
+    def test_a_concurrently_running_sibling_never_leaks_in(self):
+        # Several strategies may share a symbol; a LIVE sibling's call
+        # quoted as "your words" is a falsehood (verification round,
+        # probe-reproduced) — only stopped predecessors render.
+        self._mk_run(50)
+        self._mk_run(60, status="running")
+        self._mk_run(61, status="paused")
+        self._two(50)
+        self._emit(60, {"action": "short", "confidence": 0.9,
+                        "report": "sibling strategy shorting hard"}, 1.0,
+                   seq=1)
+        self._emit(61, {"action": "short", "confidence": 0.9,
+                        "report": "paused sibling words"}, 1.0, seq=1)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("first words", line)
+        self.assertNotIn("sibling strategy", line)
+        self.assertNotIn("paused sibling", line)
+
+    def test_another_symbol_market_or_agent_never_leaks_in(self):
+        self._mk_run(50)
+        self._mk_run(51, symbol="SOLUSDT", status="stopped")
+        self._mk_run(52, agent=7, status="stopped")
+        self._mk_run(53, market="us-stock", status="stopped")
+        self._two(50)
+        self._emit(51, {"action": "buy", "confidence": 0.9,
+                        "report": "other symbol words"}, 1.0, seq=1)
+        self._emit(52, {"action": "buy", "confidence": 0.9,
+                        "report": "other agent words"}, 1.0, seq=1)
+        self._emit(53, {"action": "buy", "confidence": 0.9,
+                        "report": "other market words"}, 1.0, seq=1)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("first words", line)
+        self.assertNotIn("other symbol words", line)
+        self.assertNotIn("other agent words", line)
+        self.assertNotIn("other market words", line)
+
+    def test_silent_with_fewer_than_two_decisions(self):
+        self._mk_run(50)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "only words"}, 1.0, seq=1)
+        self.assertEqual(run_engine._day_digest_line(self._run_dict(50)), "")
+        self.assertEqual(run_engine._day_digest_line(self._run_dict(99)), "")
+
+    def test_stale_errored_and_scaffold_rows_drop_out(self):
+        self._mk_run(50)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "yesterday words"}, 30.0, seq=1)
+        self._emit(50, {"action": "", "report": ""}, 2.5, seq=2)
+        self._emit(50, {"action": "hold", "confidence": 0.0,
+                        "report": "light cycle: no LLM verdict"}, 2.2, seq=3)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "today one"}, 1.5, seq=4)
+        self._emit(50, {"action": "hold", "confidence": 0.5,
+                        "report": "today two"}, 0.5, seq=5)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertNotIn("yesterday words", line)
+        self.assertNotIn("no LLM verdict", line)
+        self.assertIn("today one", line)
+        self.assertIn("today two", line)
+
+    def test_one_corrupt_row_drops_that_row_not_the_day(self):
+        self._mk_run(50)
+        self._two(50)
+        self._emit_raw(50, "{corrupt json!!", 1.5, seq=3)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("first words", line)
+        self.assertIn("second words", line)
+
+    def test_caps_rows_and_marks_the_truncation_honestly(self):
+        self._mk_run(50)
+        for i in range(60):
+            self._emit(50, {"action": "hold", "confidence": 0.5,
+                            "report": f"cycle words number {i} " + "x" * 120},
+                       hours_ago=23.0 - i * 0.35, seq=i + 1)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertLess(len(line), 3600)
+        self.assertNotIn("cycle words number 0 ", line)   # oldest dropped
+        self.assertIn("cycle words number 59", line)      # newest kept
+        self.assertIn("NOT shown", line)                  # honest marker
+        self.assertNotIn("over the last 24h", line)       # no false claim
+
+    def test_closed_record_grounds_the_purpose(self):
+        self._mk_run(50)
+        self._mk_run(60, status="running")   # live sibling — its P&L is
+        self._mk_run(49, status="stopped")   # not this desk's record
+        self._two(50)
+        self._fill(50, -0.97, 1.0)
+        self._fill(50, 0.45, 0.5)
+        self._fill(49, -0.10, 3.0)           # stopped predecessor counts
+        self._fill(60, 99.0, 1.0)            # live sibling must NOT
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("closed record", line)
+        self.assertIn("3 closes", line)
+        self.assertIn("-0.62", line)
+        self.assertNotIn("99", line)
+        self.assertIn("closed record above", line)  # reference renders only
+        # because the record itself rendered
+
+    def test_carries_the_target_purpose(self):
+        # Owner order 2026-08-25: the log states what it is FOR — plus NET
+        # profit ("make + profit"). The instruction may reference ONLY
+        # content that actually rendered (re-verify pass): with no closes
+        # and the ledger off, no dangling "record above" reference.
+        self._mk_run(50)
+        self._two(50)
+        line = run_engine._day_digest_line(self._run_dict(50))
+        self.assertIn("NET-POSITIVE", line)
+        self.assertIn("+ profit", line)
+        self.assertNotIn("closed record above", line)
+        self.assertNotIn("YOUR LEDGER", line)
+
+    def test_default_is_off_and_kill_switch_holds(self):
+        # Untested prompt changes ship default-OFF (desk_ledger precedent);
+        # prod enables explicitly with the falsifier watching.
+        self._mk_run(50)
+        self._two(50)
+        self.env.stop()
+        try:
+            self.assertEqual(
+                run_engine._day_digest_line(self._run_dict(50)), "")
+        finally:
+            self.env.start()
+        with patch.dict(os.environ, {"DAY_DIGEST_BRIEF": "0"}):
+            self.assertEqual(
+                run_engine._day_digest_line(self._run_dict(50)), "")
+
+    def test_wired_into_the_composed_brief(self):
+        import inspect
+        src = inspect.getsource(run_engine._compose_position_state)
+        self.assertIn('("day_digest", _day_digest_line(run))', src)
