@@ -188,15 +188,14 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   const [sumDetail, setSumDetail] = useState<null | 'deposit' | 'lifetime' | 'profit' | 'rails'>(null)
   // Profit-graph data for the open tile modal: hourly realized-P&L buckets
   // from the capless server aggregate (the 200-row trades list would flatten
-  // a long window's oldest days — same trap as #219). Lifetime charts the
-  // whole history; the other tiles chart the active period window.
+  // a long window's oldest days — same trap as #219). Every tile charts the
+  // active period window — day chart shows day data, week shows week data
+  // (owner rule 2026-08-25: never mix other periods' data into a chart).
   const [seriesPts, setSeriesPts] = useState<Array<{ t: string; pnl: number; trades: number; split_pnl?: number }> | null>(null)
   useEffect(() => {
     if (!token || !sumDetail) { setSeriesPts(null); return }
     let dead = false
-    const qs = sumDetail === 'lifetime'
-      ? `?split=${EXIT_RAILS_EPOCH}`
-      : `?since=${encodeURIComponent(new Date(periodStartMs(sumPeriod)).toISOString())}&split=${EXIT_RAILS_EPOCH}`
+    const qs = `?since=${encodeURIComponent(new Date(periodStartMs(sumPeriod)).toISOString())}&split=${EXIT_RAILS_EPOCH}`
     fetch(`${API_BASE}/positions/trades/series${qs}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : null))
       .then(d => { if (!dead) setSeriesPts(d?.points ?? null) })
@@ -1078,12 +1077,12 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         )
         // The tile's profit graph. Buckets arrive as UTC hours (server emits
         // only hours that traded); re-bucket to LOCAL hours (오늘) or local
-        // days (longer chips / lifetime) so the axis matches the user's
-        // calendar, then accumulate. Deposit re-anchors the same curve so its
-        // last point equals the current balance.
+        // days (longer chips) so the axis matches the user's calendar, then
+        // accumulate. Deposit re-anchors the same curve so its last point
+        // equals the current balance.
         const chartRows = (() => {
           if (!seriesPts) return null
-          const useHours = sumDetail !== 'lifetime' && sumPeriod === 'today'
+          const useHours = sumPeriod === 'today'
           const key = sumDetail === 'rails' ? 'split_pnl' : 'pnl'
           const acc = new Map<string, number>()
           for (const p of seriesPts) {
@@ -1108,7 +1107,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         const chart = (
           <div style={{ marginTop: 14 }}>
             <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-secondary,#8a8073)', marginBottom: 6 }}>
-              📈 {gTitle[sumDetail]}{sumDetail !== 'lifetime' ? ` · ${periodLabel[sumPeriod]}` : ''}
+              📈 {gTitle[sumDetail]} · {periodLabel[sumPeriod]}
             </div>
             {!chartRows || chartRows.length < 2
               ? <div style={{ height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, color: 'var(--text-muted,#a89f92)' }}>{T.gNoData}</div>
