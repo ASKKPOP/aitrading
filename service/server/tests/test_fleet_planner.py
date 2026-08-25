@@ -192,12 +192,16 @@ class AllocationTests(unittest.TestCase):
         # aggressive: stop_loss_frac_of_bet 0.03
         self.assertAlmostEqual(sc["max_loss_usd"], round(max_bet * 0.03, 2), places=2)
         self.assertIn("trail", sc)
-        # The lock arms against the STOP, not merely 0.3% of notional
-        # (2026-07-26). The old frac-only rule armed at exactly 1/10th of the
-        # stop, so the desk banked ~$6 wins against ~$67 losses — a structure
-        # needing a 90.9% hit rate against a measured 35%.
+        # 2026-08-25: the 2026-07-26 rr=1.0 pin (activate == max_loss) is
+        # SUPERSEDED by measurement — it never armed (0/13 fires, activation
+        # $4.18–9.94 vs day-max peak $2.72). The trail now arms fee-anchored
+        # at trail_activate_arm_mult × the ratchet arm, capped at half the
+        # loss budget, and must sit strictly above the ratchet arm.
+        notional = max_bet * 2.0  # aggressive tier auto-leverage 2×
+        ratchet_arm = notional * 0.001 * 2.0
         self.assertAlmostEqual(sc["trail"]["activate_usd"],
-                               sc["max_loss_usd"], places=2)
+                               round(ratchet_arm * 2.0, 2), places=2)
+        self.assertLess(sc["trail"]["activate_usd"], sc["max_loss_usd"])
         self.assertGreater(sc["trail"]["activate_usd"], round(max_bet * 0.003, 2))
         self.assertEqual(sc["trail"]["giveback_frac"], 0.20)
         # fee-aware ratchet: above 3× the round-trip cost the giveback tightens
@@ -215,13 +219,65 @@ class AllocationTests(unittest.TestCase):
         fee term clears the arming floor and is actually observable.
 
         FEE_PER_MARKET is what prod runs with (verified on the box); the flag
-        defaults off only for an unconfigured environment."""
-        with patch.dict(os.environ, {"FEE_PER_MARKET": "true"}):
+        defaults off only for an unconfigured environment.
+
+        2026-08-25: pinned under the LEGACY activation flag — the new
+        fee-anchored activation (~0.4% of notional) masks the tighten fee
+        term at this synthetic 10× leverage, and this test's purpose is the
+        per-market fee correctness of the tighten term, not activation."""
+        with patch.dict(os.environ, {"FEE_PER_MARKET": "true",
+                                     "TRAIL_FEE_ANCHORED_ACTIVATION": "0"}):
             crypto = fp._trail_config(10_000.0, 10.0, 0.0, market="crypto")
             forex = fp._trail_config(10_000.0, 10.0, 0.0, market="forex")
         # 100k notional × rate × 2 legs × 3 round trips
         self.assertAlmostEqual(crypto["tighten_usd"], 270.0, places=2)
         self.assertAlmostEqual(forex["tighten_usd"], 48.0, places=2)
+
+    def test_trail_activation_is_reachable_after_the_0_of_13_fix(self):
+        """2026-08-25 (fleet 40, measured): the rr-anchored activation NEVER
+        armed — 0 of 13 profit-rail fires, activation $4.18–9.94 against a
+        day-max position peak of $2.72, so $4.15 of excursions round-tripped
+        to −$0.43 through the breakeven ratchet (whose best case is $0 by
+        design). The MFE gate passed (median peak ≈3.3× the round-trip fee,
+        n=13), so the trail must arm on the same fee-anchored scale the
+        ratchet uses: TRAIL arms at trail_activate_arm_mult × the ratchet's
+        own arm (~0.2% of notional), i.e. ~0.4% of notional."""
+        cfg = fp._trail_config(124.0, 1.0, 8.0, market="crypto")
+        # Old formula: max(124×0.003, 8.0×1.0) = $8.00 — unreachable.
+        # New: max(0.37 bet floor, 2 × 124×0.002 ratchet arm) = $0.50.
+        self.assertLessEqual(cfg["activate_usd"], 1.0,
+                             "activation is still loss-anchored (unreachable)")
+        self.assertAlmostEqual(cfg["activate_usd"], 0.50, places=2)
+
+    def test_trail_activation_sits_strictly_above_the_ratchet_arm(self):
+        """Tier stack: the breakeven ratchet protects peaks in [1×..2×) of
+        its arm at $0; the trail banks (1−giveback)×peak above. If activation
+        ever lands at or below the ratchet arm the tiers collapse into one."""
+        for max_bet, lev in ((124.0, 1.0), (500.0, 3.0), (2000.0, 2.0)):
+            cfg = fp._trail_config(max_bet, lev, max_bet * 0.04,
+                                   market="crypto")
+            ratchet_arm = max_bet * lev * 0.001 * 2.0
+            self.assertGreaterEqual(cfg["activate_usd"],
+                                    round(ratchet_arm * 1.2, 2),
+                                    f"bet={max_bet} lev={lev}")
+
+    def test_trail_activation_cap_never_collapses_the_tier(self):
+        """The half-max-loss cap bounds how long the trail waits to arm, but
+        it may never push activation down onto the ratchet arm."""
+        # leverage 2 so the bet floor (0.3% of margin) sits BELOW the ratchet
+        # arm ×1.2 — otherwise the bet floor masks the cap's tier guarantee.
+        cfg = fp._trail_config(124.0, 2.0, 0.5, market="crypto")
+        ratchet_arm = 124.0 * 2.0 * 0.001 * 2.0
+        self.assertGreaterEqual(cfg["activate_usd"],
+                                round(ratchet_arm * 1.2, 2))
+
+    def test_legacy_rr_activation_behind_the_flag(self):
+        """One-flag revert: TRAIL_FEE_ANCHORED_ACTIVATION=0 restores the
+        rr-anchored formula exactly (the pre-registered falsifier's revert
+        path)."""
+        with patch.dict(os.environ, {"TRAIL_FEE_ANCHORED_ACTIVATION": "0"}):
+            cfg = fp._trail_config(124.0, 1.0, 8.0, market="crypto")
+        self.assertAlmostEqual(cfg["activate_usd"], 8.0, places=2)
 
     def test_trail_fee_term_stays_masked_by_the_arming_floor_at_build(self):
         """Honesty pin: at every tier the built config lands on activate × 1.5,

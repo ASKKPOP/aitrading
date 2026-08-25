@@ -99,7 +99,21 @@ FLEET_BOUNDS = {
     # rate to ~55%. Reaching breakeven at 35% would need rr≈2.3, but that also
     # slashes how often the lock ever arms — raise it only with measurement.
     "trail_activate_frac_of_bet": 0.003,   # floor: 0.3% of notional
-    "trail_activate_rr": 1.0,              # …and ≥ 1.0 × max_loss_usd
+    "trail_activate_rr": 1.0,              # legacy anchor (flag-off path only)
+    # 2026-08-25 (fleet 40, measured): the rr=1.0 anchor above NEVER armed —
+    # 0 of 13 profit-rail fires; activation $4.18–9.94 against a day-max
+    # position peak of $2.72, so $4.15 of excursions round-tripped to −$0.43
+    # through the breakeven ratchet, whose best case is $0 by design. The
+    # 90.9%-hit-rate argument that justified rr=1.0 predates the ratchet:
+    # with the ratchet below, the live counterfactual is "bank (1−giveback)
+    # × peak" vs "ratchet closes at $0 minus fees" — banking strictly
+    # dominates, and a trail caps nothing on the way up (exit only on
+    # retrace), so the outlier winner is preserved by construction. The MFE
+    # gate passed before this shipped (median fire peak ≈3.3× the round-trip
+    # fee, n=13). New anchor: the trail arms at this multiple of the
+    # breakeven ratchet's own arm (~0.2% of notional), i.e. ~0.4% of
+    # notional — a strict tier stack. Revert: TRAIL_FEE_ANCHORED_ACTIVATION=0.
+    "trail_activate_arm_mult": 2.0,
     # Giveback cut 0.40 → 0.20 (2026-07-26). At 40% the five prod ZEC winners
     # peaked $6.95–$27.83 and banked $1.98–$7.50: the retrace surrendered up to
     # half the peak and the 0.1%/side round trip took 44–82% of the remainder.
@@ -141,10 +155,13 @@ def _trail_config(max_bet: float, leverage: float,
                   market: Optional[str] = None) -> dict:
     """Trailing-lock config for a run sized at `max_bet` margin on `leverage`.
 
-    activate_usd is the greater of a notional floor and trail_activate_rr ×
-    max_loss_usd — the lock must not bank a win smaller than the loss the run
-    is prepared to take. See the FLEET_BOUNDS note: the frac-only rule armed
-    at exactly 1/10th of the stop and needed a 90.9% hit rate to break even.
+    activate_usd is fee-anchored (2026-08-25): trail_activate_arm_mult × the
+    breakeven ratchet's own arm, capped inside the loss budget — the ≥stop
+    rule it replaces armed on 0 of 13 profit-rail fires (see the FLEET_BOUNDS
+    note). Under TRAIL_FEE_ANCHORED_ACTIVATION=0 the legacy rule applies: the
+    greater of a notional floor and trail_activate_rr × max_loss_usd (which
+    itself replaced the frac-only rule that armed at 1/10th of the stop and
+    needed a 90.9% hit rate to break even).
 
     tighten_usd is the fee-aware "this is a real winner" line: the round trip
     on the position notional costs notional × 2 × the MARKET's fee, so a peak
@@ -159,10 +176,33 @@ def _trail_config(max_bet: float, leverage: float,
     from fees import fee_rate
     notional = max(0.0, float(max_bet)) * max(1.0, float(leverage or 1.0))
     round_trip_usd = notional * fee_rate(market) * 2
-    activate = max(
-        float(max_bet) * FLEET_BOUNDS["trail_activate_frac_of_bet"],
-        max(0.0, float(max_loss_usd)) * FLEET_BOUNDS["trail_activate_rr"],
-    )
+    bet_floor = float(max_bet) * FLEET_BOUNDS["trail_activate_frac_of_bet"]
+    if (os.getenv("TRAIL_FEE_ANCHORED_ACTIVATION", "1") or "1").strip().lower() \
+            in ("1", "true", "yes", "on"):
+        # Fee-anchored activation (2026-08-25, see the FLEET_BOUNDS note):
+        # arm at trail_activate_arm_mult × the breakeven ratchet's own arm,
+        # computed with the SAME flat BREAKEVEN_FEE_RATE the ratchet uses so
+        # the two tiers move together. Pre-registered falsifier: over the
+        # first 20 profit-rail fires on newly composed runs, the trail must
+        # arm on ≥1 position whose peak cleared activation (baseline 0/13)
+        # AND summed banked-at-fire must beat the ratchet-only baseline
+        # (−$0.52/13); otherwise TRAIL_FEE_ANCHORED_ACTIVATION=0, report
+        # FAILED.
+        be_rate = float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
+        ratchet_arm = notional * be_rate * 2.0
+        activate = max(bet_floor,
+                       ratchet_arm * FLEET_BOUNDS["trail_activate_arm_mult"])
+        if max_loss_usd and float(max_loss_usd) > 0:
+            # Never spend more than half the loss budget waiting to arm —
+            # but the cap may not push activation onto the ratchet arm, or
+            # the tiers collapse into one.
+            activate = min(activate, max(0.5 * float(max_loss_usd),
+                                         ratchet_arm * 1.2, bet_floor))
+    else:
+        activate = max(
+            bet_floor,
+            max(0.0, float(max_loss_usd)) * FLEET_BOUNDS["trail_activate_rr"],
+        )
     tighten = round(round_trip_usd * FLEET_BOUNDS["trail_tighten_fee_multiple"], 2)
     # The ratchet only means something above the arming line; with an RR-scaled
     # activation the fee-based tighten can land below it, which would apply the

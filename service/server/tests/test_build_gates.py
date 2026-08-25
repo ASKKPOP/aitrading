@@ -156,22 +156,53 @@ class BucketExpectancyTests(unittest.TestCase):
 class TrailGeometryTests(unittest.TestCase):
     """The 10:1 asymmetry (report #3): the lock armed at 1/10th of the stop,
     so the desk banked ~$6 wins against ~$67 losses — a structure needing a
-    90.9% hit rate against a measured 35%."""
+    90.9% hit rate against a measured 35%.
 
-    def test_activation_is_at_least_the_stop(self):
+    2026-08-25 supersession: the ≥stop cure armed the lock on 0 of 13
+    profit-rail fires (fleet 40: activation $4.18–$9.94 vs a day-max peak
+    of $2.72), so every retrace fell through to the breakeven ratchet
+    ($0-best-case). With the ratchet now sitting below the trail, the
+    live counterfactual is bank-(1−giveback)×peak vs the ratchet's $0 —
+    so activation is fee-anchored (2× the ratchet's own arm) instead of
+    loss-anchored. The original ≥stop pin lives on under
+    TRAIL_FEE_ANCHORED_ACTIVATION=0 (the frac-only 90.9% geometry stays
+    dead on both paths)."""
+
+    def test_activation_sits_inside_the_stop_and_above_the_ratchet(self):
+        # Reachable (strictly inside the loss budget — the ≥stop rule was
+        # the 0/13 defect) but strictly above the ratchet's arm so the two
+        # tiers never collapse into one.
         t = fp._trail_config(2276.08, 2.0, 68.28)
+        notional = 2276.08 * 2.0
+        ratchet_arm = notional * 0.001 * 2.0
+        self.assertLess(t["activate_usd"], 68.28)
+        self.assertGreater(t["activate_usd"], ratchet_arm)
+
+    def test_worst_case_trail_fire_beats_the_ratchet_net_of_fees(self):
+        # The smallest possible trail bank (fire exactly at activation)
+        # must still clear the round trip — otherwise arming earlier just
+        # re-creates the ratchet with extra steps.
+        t = fp._trail_config(2276.08, 2.0, 68.28)
+        notional = 2276.08 * 2.0
+        round_trip = notional * 0.001 * 2.0
+        realized = t["activate_usd"] * (1 - t["giveback_frac"])
+        self.assertGreater(realized, round_trip)
+
+    def test_legacy_flag_restores_the_at_least_the_stop_geometry(self):
+        from unittest import mock
+        with mock.patch.dict(os.environ,
+                             {"TRAIL_FEE_ANCHORED_ACTIVATION": "0"}):
+            t = fp._trail_config(2276.08, 2.0, 68.28)
         self.assertGreaterEqual(t["activate_usd"], 68.28)
 
-    def test_breakeven_hit_rate_is_no_longer_absurd(self):
-        ml = 68.28
-        t = fp._trail_config(2276.08, 2.0, ml)
-        realized = t["activate_usd"] * (1 - t["giveback_frac"])
-        breakeven = ml / (ml + realized)
-        self.assertLess(breakeven, 0.60, "was 0.909 under the frac-only rule")
-
     def test_notional_floor_still_applies_without_a_stop(self):
+        # No stop ⇒ no cap; activation is the fee anchor: 2× the ratchet
+        # arm = 0.4% of NOTIONAL (which dominates the 0.3%-of-margin
+        # bet floor at any leverage ≥ 1).
         t = fp._trail_config(2276.08, 2.0, 0.0)
-        self.assertAlmostEqual(t["activate_usd"], round(2276.08 * 0.003, 2))
+        notional = 2276.08 * 2.0
+        self.assertAlmostEqual(t["activate_usd"], round(notional * 0.004, 2))
+        self.assertGreaterEqual(t["activate_usd"], round(2276.08 * 0.003, 2))
 
     def test_tighten_line_stays_above_activation(self):
         """An RR-scaled activation can overtake the fee-based tighten; if it
