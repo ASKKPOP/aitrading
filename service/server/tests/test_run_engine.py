@@ -4309,13 +4309,17 @@ class DayDigestBriefTests(unittest.TestCase):
         # probe-reproduced) — only stopped predecessors render.
         self._mk_run(50)
         self._mk_run(60, status="running")
+        self._mk_run(61, status="paused")
         self._two(50)
         self._emit(60, {"action": "short", "confidence": 0.9,
                         "report": "sibling strategy shorting hard"}, 1.0,
                    seq=1)
+        self._emit(61, {"action": "short", "confidence": 0.9,
+                        "report": "paused sibling words"}, 1.0, seq=1)
         line = run_engine._day_digest_line(self._run_dict(50))
         self.assertIn("first words", line)
         self.assertNotIn("sibling strategy", line)
+        self.assertNotIn("paused sibling", line)
 
     def test_another_symbol_market_or_agent_never_leaks_in(self):
         self._mk_run(50)
@@ -4382,23 +4386,33 @@ class DayDigestBriefTests(unittest.TestCase):
 
     def test_closed_record_grounds_the_purpose(self):
         self._mk_run(50)
+        self._mk_run(60, status="running")   # live sibling — its P&L is
+        self._mk_run(49, status="stopped")   # not this desk's record
         self._two(50)
         self._fill(50, -0.97, 1.0)
         self._fill(50, 0.45, 0.5)
+        self._fill(49, -0.10, 3.0)           # stopped predecessor counts
+        self._fill(60, 99.0, 1.0)            # live sibling must NOT
         line = run_engine._day_digest_line(self._run_dict(50))
         self.assertIn("closed record", line)
-        self.assertIn("2 closes", line)
-        self.assertIn("-0.52", line)
+        self.assertIn("3 closes", line)
+        self.assertIn("-0.62", line)
+        self.assertNotIn("99", line)
+        self.assertIn("closed record above", line)  # reference renders only
+        # because the record itself rendered
 
     def test_carries_the_target_purpose(self):
         # Owner order 2026-08-25: the log states what it is FOR — plus NET
-        # profit ("make + profit") — grounded in the measured record.
+        # profit ("make + profit"). The instruction may reference ONLY
+        # content that actually rendered (re-verify pass): with no closes
+        # and the ledger off, no dangling "record above" reference.
         self._mk_run(50)
         self._two(50)
         line = run_engine._day_digest_line(self._run_dict(50))
         self.assertIn("NET-POSITIVE", line)
         self.assertIn("+ profit", line)
-        self.assertIn("measured record", line)
+        self.assertNotIn("closed record above", line)
+        self.assertNotIn("YOUR LEDGER", line)
 
     def test_default_is_off_and_kill_switch_holds(self):
         # Untested prompt changes ship default-OFF (desk_ledger precedent);
