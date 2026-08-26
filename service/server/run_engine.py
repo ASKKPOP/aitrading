@@ -6307,6 +6307,11 @@ def _produces_order(action: "str | None", held: float) -> bool:
     return action == "retire" and abs(held) > 1e-12
 
 
+def _panel_local_fallback_enabled() -> bool:
+    return (os.getenv("PANEL_LOCAL_FALLBACK", "1") or "1").strip().lower() \
+        in ("1", "true", "yes", "on")
+
+
 def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
     """Owner rule 2026-08-13 (STRONG, all trading orders): "Must be final
     discussion for contract or order by sooppiy AI — NOT any programming
@@ -6338,47 +6343,83 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
         return analysis
     payload: dict = {"proposed": {"action": action,
                                   "confidence": proposal.get("confidence")}}
-    try:
-        from analysis_agents import run_analysis
-        second = run_analysis(
-            run["symbol"], run["market"], cfg.get("lang") or "en",
-            provider=cfg.get("provider") or None,
-            agent_id=run["agent_id"],
-            llm_tiers=cfg.get("llm_tiers") or None,
-            position_state=analysis.get("position_state") or "",
-            can_sell=bool(trading_runs.is_futures_book(
-                run.get("market"), (run.get("market_type") or "spot"))
-                or held > 0))
-        final = dict(second.get("decision") or {})
-        if not final.get("action"):
-            raise ValueError("discussion returned no action")
-        # A rule-engine fallback is NOT the sooppiy AI speaking (owner
-        # policy 2026-07-31: user-owned calls never borrow the platform
-        # default, so a user without Settings-page AI gets decided_by=
-        # 'rule' here). Replacing the cheap tier's GENUINE AI verdict with
-        # a rule hold would let programming overrule the AI — the exact
-        # inversion of the owner's rule — and, worse, silently convert the
-        # desk's own risk-reducing exits into holds. Treat it as a failed
-        # meeting: journal it, keep the AI's proposal.
-        if final.get("decided_by") == "rule":
-            raise RuntimeError("panel fallback (not the AI): "
-                               + str(final.get("fallback_reason") or "rule"))
-        final["escalated_from"] = payload["proposed"]
-        payload["final"] = {"action": final.get("action"),
-                            "confidence": final.get("confidence")}
-        emit_telemetry_event(run["id"], "order_discussion", payload)
-        return {"decision": final,
-                "analysts": (second.get("analysts")
-                             if isinstance(second.get("analysts"), dict)
-                             else {}),
-                "position_state": analysis.get("position_state") or ""}
-    except Exception as exc:  # noqa: BLE001 — fail-open, journal the miss
-        payload["error"] = str(exc)[:200]
+    # Fail-closed-to-local (owner order 2026-08-25 "solve claude and local
+    # AI"): when the CONFIGURED provider's meeting fails on INFRASTRUCTURE
+    # (a dead SDK, a timeout, unparseable output), retry the meeting ONCE
+    # on the platform's local AI so the order still gets a genuine AI
+    # review — ~15h of a dead Anthropic SDK passed every proposal through
+    # fail-open, and 100% of that window's realized loss entered through
+    # unreviewed orders. The 2026-07-31 policy stands: a user with NO
+    # configured AI (fallback_reason "no llm provider configured") never
+    # borrows the platform default — that rule outcome fails open with no
+    # local retry, exactly as before. Only if the local meeting ALSO fails
+    # does the original fail-open stand (an LLM hiccup must not freeze the
+    # book). Kill switch PANEL_LOCAL_FALLBACK=0. Pre-registered falsifier:
+    # over the first 20 local-fallback meetings, the local panel must
+    # return a genuine (non-rule) verdict on >=80% of them; below that the
+    # retry is latency for nothing -> flag off, report FAILED.
+    from analysis_agents import run_analysis
+    _can_sell = bool(trading_runs.is_futures_book(
+        run.get("market"), (run.get("market_type") or "spot")) or held > 0)
+    _INFRA_RULE_REASONS = ("no llm response", "decision json unparseable")
+    attempts = [cfg.get("provider") or None]
+    errors: list = []
+
+    def _want_local():
+        if not _panel_local_fallback_enabled():
+            return
+        if "local" in ((cfg.get("provider") or "").strip().lower(),):
+            return  # the configured provider IS local — nothing to fall to
+        if "local" not in attempts:
+            attempts.append("local")
+
+    for prov in attempts:
         try:
+            second = run_analysis(
+                run["symbol"], run["market"], cfg.get("lang") or "en",
+                provider=prov,
+                agent_id=run["agent_id"],
+                llm_tiers=cfg.get("llm_tiers") or None,
+                position_state=analysis.get("position_state") or "",
+                can_sell=_can_sell)
+            final = dict(second.get("decision") or {})
+            if not final.get("action"):
+                raise ValueError("discussion returned no action")
+            # A rule-engine fallback is NOT the sooppiy AI speaking (owner
+            # policy 2026-07-31). Replacing the cheap tier's GENUINE AI
+            # verdict with a rule hold would let programming overrule the
+            # AI — and silently convert the desk's own risk-reducing exits
+            # into holds. Infra-shaped reasons earn the local retry; the
+            # no-provider reason does not.
+            if final.get("decided_by") == "rule":
+                reason = str(final.get("fallback_reason") or "rule")
+                errors.append("panel fallback (not the AI): " + reason)
+                if reason in _INFRA_RULE_REASONS:
+                    _want_local()
+                continue
+            final["escalated_from"] = payload["proposed"]
+            payload["final"] = {"action": final.get("action"),
+                                "confidence": final.get("confidence")}
+            if prov == "local" and attempts[0] != "local":
+                payload["reviewed_by"] = "local-fallback"
+                final["panel_provider"] = "local-fallback"
             emit_telemetry_event(run["id"], "order_discussion", payload)
-        except Exception:  # noqa: BLE001
-            pass
-        return analysis
+            return {"decision": final,
+                    "analysts": (second.get("analysts")
+                                 if isinstance(second.get("analysts"), dict)
+                                 else {}),
+                    "position_state": analysis.get("position_state") or ""}
+        except Exception as exc:  # noqa: BLE001 — infra miss: try local once
+            errors.append(str(exc)[:150])
+            _want_local()
+            continue
+    # fail-open, journal every miss in one event
+    payload["error"] = " | ".join(errors)[:200]
+    try:
+        emit_telemetry_event(run["id"], "order_discussion", payload)
+    except Exception:  # noqa: BLE001
+        pass
+    return analysis
 
 
 def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
