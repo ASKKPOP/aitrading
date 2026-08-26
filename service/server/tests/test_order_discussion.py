@@ -153,3 +153,113 @@ class OrderDiscussionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PanelLocalFallbackTests(unittest.TestCase):
+    """Owner order 2026-08-25 ("solve claude and local AI"): when the
+    CONFIGURED provider's meeting fails on infrastructure (a dead SDK, a
+    timeout, unparseable output), the panel retries ONCE on the platform's
+    local AI so the order still gets a genuine AI review — ~15h of a dead
+    Anthropic SDK passed every proposal through fail-open, and 100% of that
+    window's realized loss entered through unreviewed orders. The 2026-07-31
+    policy stands untouched: a user with NO configured AI gets no borrowed
+    default — their rule fallback fails open exactly as before."""
+
+    def setUp(self):
+        self.events = []
+        self.emit = patch.object(
+            run_engine, "emit_telemetry_event",
+            side_effect=lambda rid, et, payload: self.events.append(
+                (et, payload)))
+        self.emit.start()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=0.0)
+        self.held.start()
+
+    def tearDown(self):
+        self.emit.stop()
+        self.held.stop()
+
+    @staticmethod
+    def _infra_rule_panel():
+        return {"decision": {"action": "hold", "confidence": 0.5,
+                             "decided_by": "rule",
+                             "fallback_reason": "no llm response"},
+                "analysts": {}}
+
+    @staticmethod
+    def _local_panel(action="hold", confidence=0.62):
+        return {"decision": {"action": action, "confidence": confidence},
+                "analysts": {}}
+
+    def test_infra_failure_convenes_the_local_panel(self):
+        calls = []
+
+        def fake(*a, **kw):
+            calls.append(kw.get("provider"))
+            if kw.get("provider") == "local":
+                return self._local_panel("hold", 0.62)
+            return self._infra_rule_panel()
+
+        with patch("analysis_agents.run_analysis", side_effect=fake):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(calls, [None, "local"])
+        self.assertEqual(out["decision"]["action"], "hold",
+                         "the local panel's verdict governs")
+        et, payload = self.events[0]
+        self.assertEqual(payload["reviewed_by"], "local-fallback")
+
+    def test_exception_failure_also_convenes_the_local_panel(self):
+        calls = []
+
+        def fake(*a, **kw):
+            calls.append(kw.get("provider"))
+            if kw.get("provider") == "local":
+                return self._local_panel("buy", 0.71)
+            raise RuntimeError("anthropic sdk exploded")
+
+        with patch("analysis_agents.run_analysis", side_effect=fake):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(calls, [None, "local"])
+        self.assertEqual(out["decision"]["confidence"], 0.71)
+
+    def test_no_provider_user_never_borrows_the_local_default(self):
+        # 2026-07-31 policy: rule fallback for a user with no Settings AI
+        # fails open with NO local retry.
+        panel = {"decision": {"action": "hold", "confidence": 0.5,
+                              "decided_by": "rule",
+                              "fallback_reason":
+                                  "no llm provider configured"},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis",
+                   return_value=panel) as ra:
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(ra.call_count, 1)
+        self.assertEqual(out["decision"]["action"], "sell")
+
+    def test_local_also_failing_fails_open_with_both_errors(self):
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("llm down")) as ra:
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(ra.call_count, 2)
+        self.assertEqual(out["decision"]["action"], "buy")
+        et, payload = self.events[0]
+        self.assertIn("llm down", payload["error"])
+
+    def test_kill_switch_restores_single_attempt(self):
+        import os
+        with patch.dict(os.environ, {"PANEL_LOCAL_FALLBACK": "0"}):
+            with patch("analysis_agents.run_analysis",
+                       side_effect=RuntimeError("llm down")) as ra:
+                out = run_engine._order_discussion(_RUN, {},
+                                                   _analysis("buy"))
+        self.assertEqual(ra.call_count, 1)
+        self.assertEqual(out["decision"]["action"], "buy")
+
+    def test_a_local_first_config_never_retries_itself(self):
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("ollama down")) as ra:
+            out = run_engine._order_discussion(
+                _RUN, {"provider": "local"}, _analysis("buy"))
+        self.assertEqual(ra.call_count, 1)
+        self.assertEqual(out["decision"]["action"], "buy")
