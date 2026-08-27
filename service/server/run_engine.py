@@ -1028,7 +1028,38 @@ def _breakeven_floor_hit(peak_pnl: "float | None", current_pnl: float,
         # GROSS (the open fee is already inside `realized`, i.e. inside the
         # baseline), so a one-leg floor would leave the best case at -1 open
         # fee. Round trip in, best case exactly $0 net.
-        return float(current_pnl) - base <= max(0.0, float(exit_fee_usd or 0))
+        fee_floor = max(0.0, float(exit_fee_usd or 0))
+        # LOCK A FRACTION OF THE PEAK (2026-08-27). "Best case exactly $0"
+        # is precisely why the book cannot win. Measured across all 30
+        # fires since 08-01: peak/arm median 1.18x (24 of 30 never reached
+        # 2x), give-back median 103.1% of peak, realized median -$0.0066.
+        # A position that peaks just over its arm and then exits at
+        # breakeven hands back everything it earned — that is the 0.22
+        # payoff ratio, and no entry-side intelligence survives it (the
+        # directional win rate is already 46%, near a coin flip).
+        #
+        # So the armed floor rises with the peak: exit at the fee floor
+        # PLUS a fraction of what the excursion actually earned. Clamped
+        # strictly below the peak — a floor at or above the peak would
+        # flatten every armed position the instant it armed.
+        #
+        # Falsifier: over the first 30 fires under this rule the median
+        # give-back must fall below 100% of peak AND median realized must
+        # be positive. Either misses -> RATCHET_LOCK_FRAC=0 (which
+        # restores this line to the fee floor exactly), report FAILED.
+        try:
+            frac = float(os.getenv("RATCHET_LOCK_FRAC", "0.5"))
+        except (TypeError, ValueError):
+            frac = 0.5
+        frac = max(0.0, min(0.95, frac))
+        # Lock a fraction of what the excursion earned ABOVE its own fee
+        # floor, so the retrace a position is allowed stays ~(1-frac) of
+        # the net peak instead of swinging with the fee/peak ratio. The
+        # floor can therefore never sit below fee_floor — the 2026-08-15
+        # JTO 1304 guarantee (no fire at a built-in loss) is preserved by
+        # construction — nor at/above the peak itself.
+        floor = fee_floor + frac * max(0.0, peak - fee_floor)
+        return float(current_pnl) - base <= floor
     except (TypeError, ValueError):
         return False
 

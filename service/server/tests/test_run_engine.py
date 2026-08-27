@@ -1616,12 +1616,26 @@ class BreakevenRatchetTests(unittest.TestCase):
         self.assertTrue(
             run_engine._breakeven_floor_hit(16.15, -54.50, self.ARM))
 
-    def test_it_does_not_cut_a_winner_that_never_breaches(self):
-        # run 969 — the day's BEST at +19.11 — armed and never went <= 0.
+    def test_it_does_not_cut_a_winner_on_a_shallow_retrace(self):
+        # run 969 — the day's BEST at +19.11 — armed and never breached.
+        # A 13% retrace off the peak must still be left to run.
         self.assertFalse(
             run_engine._breakeven_floor_hit(22.07, 19.11, self.ARM))
-        self.assertFalse(
+
+    def test_a_near_total_giveback_IS_cut(self):
+        # SUPERSEDED 2026-08-27. This case previously asserted that a
+        # $22.07 peak decaying to $0.01 must NOT fire, because the old rule
+        # only ever protected against going NEGATIVE. Measurement across
+        # all 30 fires since 08-01 shows that tolerance is the defect:
+        # median give-back 103.1% of peak, median realized -$0.0066,
+        # payoff ratio 0.22. Handing back 99.95% of a peak is not
+        # "protecting a winner", it is the loss.
+        self.assertTrue(
             run_engine._breakeven_floor_hit(22.07, 0.01, self.ARM))
+        with patch.dict(os.environ, {"RATCHET_LOCK_FRAC": "0"}):
+            self.assertFalse(
+                run_engine._breakeven_floor_hit(22.07, 0.01, self.ARM),
+                "the kill switch must restore the old tolerance exactly")
 
     def test_a_peak_that_never_paid_its_round_trip_never_arms(self):
         # runs 957 (+2.60) and 962 (+1.94): below the fee floor, so their
@@ -1650,13 +1664,24 @@ class BreakevenRatchetTests(unittest.TestCase):
             16.15, 0.009, self.ARM, exit_fee_usd=0.011))
         self.assertTrue(run_engine._breakeven_floor_hit(
             16.15, 0.011, self.ARM, exit_fee_usd=0.011))
-        # comfortably above the fee: no fire.
-        self.assertFalse(run_engine._breakeven_floor_hit(
-            16.15, 0.05, self.ARM, exit_fee_usd=0.011))
+        # "comfortably above the fee" — pinned under the kill switch. With
+        # the 2026-08-27 lock ON this DOES fire, and must: $16.15 of peak
+        # decayed to $0.05 is a 99.7% give-back, the exact shape whose
+        # median (103.1%) is why the payoff ratio is 0.22.
+        with patch.dict(os.environ, {"RATCHET_LOCK_FRAC": "0"}):
+            self.assertFalse(run_engine._breakeven_floor_hit(
+                16.15, 0.05, self.ARM, exit_fee_usd=0.011))
+        self.assertTrue(run_engine._breakeven_floor_hit(
+            16.15, 0.05, self.ARM, exit_fee_usd=0.011),
+            "a 99.7% give-back must be banked, not tolerated")
 
     def test_the_fee_floor_defaults_off_for_old_callers(self):
-        # without exit_fee_usd the boundary is the old gross zero.
-        self.assertFalse(run_engine._breakeven_floor_hit(16.15, 0.009, self.ARM))
+        # without exit_fee_usd the boundary is the old gross zero — pinned
+        # under RATCHET_LOCK_FRAC=0, since the 2026-08-27 lock deliberately
+        # raises the floor above gross zero for armed positions.
+        with patch.dict(os.environ, {"RATCHET_LOCK_FRAC": "0"}):
+            self.assertFalse(
+                run_engine._breakeven_floor_hit(16.15, 0.009, self.ARM))
 
     def test_the_ratchet_fire_is_discriminated_on_the_tape(self):
         # Two mechanisms share the stop_event:trailing_lock label (the real

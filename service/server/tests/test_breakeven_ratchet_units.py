@@ -27,6 +27,8 @@ is that a protection rail fired at a guaranteed loss, not the amount.
 import os
 import sys
 import unittest
+import unittest.mock
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -60,11 +62,31 @@ class BreakevenUnitTests(unittest.TestCase):
         less than the cost of the round trip it is closing."""
         round_trip = 42.02759448 * 0.66614 * 0.00045 * 2
         self.assertAlmostEqual(round_trip, 0.025196, places=5)
-        self.assertFalse(
-            run_engine._breakeven_floor_hit(
-                0.06093749033999656, 0.015127412356799744, 0.056,
-                exit_fee_usd=round_trip, baseline_pnl=-0.0126108),
-            "fired while still above its own round-trip cost")
+        args = (0.06093749033999656, 0.015127412356799744, 0.056)
+        kw = {"exit_fee_usd": round_trip, "baseline_pnl": -0.0126108}
+        # SUPERSEDED 2026-08-27 for the fire/no-fire call, PRESERVED for the
+        # invariant it actually guards. Its own excursion peaked at 0.073548
+        # and this reading is 0.027738 — a 62% give-back. The old rule held
+        # on, because it only ever protected against going negative; the
+        # 30-fire measurement (median give-back 103.1% of peak) says that
+        # tolerance IS the loss, so under the lock it banks here instead.
+        with patch.dict(os.environ, {"RATCHET_LOCK_FRAC": "0"}):
+            self.assertFalse(run_engine._breakeven_floor_hit(*args, **kw),
+                             "kill switch must restore the old tolerance")
+        self.assertTrue(run_engine._breakeven_floor_hit(*args, **kw),
+                        "a 62% give-back must be banked, not ridden down")
+        # The ORIGINAL 2026-08-15 guarantee still holds: the lock can only
+        # RAISE the floor (it adds a non-negative term to fee_floor), so
+        # every case that fired under the old rule still fires. Checked at
+        # the old boundary itself — gross exactly at the fee floor.
+        at_fee_floor = (-0.0126108) + round_trip
+        for frac in ("0", "0.5"):
+            with patch.dict(os.environ, {"RATCHET_LOCK_FRAC": frac}):
+                self.assertTrue(
+                    run_engine._breakeven_floor_hit(
+                        0.06093749033999656, at_fee_floor, 0.056,
+                        exit_fee_usd=round_trip, baseline_pnl=-0.0126108),
+                    f"lock={frac} must not un-fire the old boundary")
 
     def test_sol_1367_still_fires(self):
         """The rail doing its job: +0.160316 excursion given back to
@@ -222,3 +244,136 @@ class PeakEpochBaselineTests(unittest.TestCase):
         src = inspect.getsource(run_engine._ratchet_peak_pnl)
         self.assertIn("peak_realized_usd", src)
         self.assertIn('pnl.get("realized")', src)
+
+
+class RatchetLockFractionTests(unittest.TestCase):
+    """The ratchet's best case was $0 BY CONSTRUCTION — and that is why the
+    book cannot win.
+
+    Measured 2026-08-27 across all 30 stop_mechanism fires since 08-01:
+      peak / arm      median 1.18x, p75 1.76x  (24 of 30 never reached 2x)
+      give-back       median 103.1% of peak, p25 84.0%
+      realized total  median -$0.0066
+
+    A position that peaks at 1.18x its arm and then exits at breakeven
+    returns the ENTIRE peak; the median trip gives back MORE than it ever
+    earned. With a 46% directional win rate the book still loses, because
+    the payoff ratio is 0.22 — winners capped near zero, losers run to the
+    stop. No entry-side intelligence can survive that geometry.
+
+    The fix locks a FRACTION of the earned peak instead of exiting at
+    breakeven: floor = exit_fee + RATCHET_LOCK_FRAC x peak_excursion.
+    Every historical fire must still fire (they were deep give-backs); the
+    never-arm cases must still never arm; RATCHET_LOCK_FRAC=0 restores the
+    old behaviour exactly.
+
+    Pre-registered falsifier: over the first 30 fires under this rule the
+    median give-back must fall below 100% of peak AND median realized must
+    be positive. Either misses -> RATCHET_LOCK_FRAC=0, report FAILED.
+    """
+
+    def setUp(self):
+        self.env = unittest.mock.patch.dict(
+            os.environ, {"RATCHET_LOCK_FRAC": "0.5"})
+        self.env.start()
+
+    def tearDown(self):
+        self.env.stop()
+
+    def test_a_median_shaped_trip_exits_above_breakeven_not_at_it(self):
+        # The measured median shape: arm 0.20, peak 1.18x arm = 0.236.
+        # Locking half the peak puts the floor at 0.118 + exit fee, so a
+        # retrace to bare breakeven must NOT be where it fires.
+        arm, peak, exit_fee = 0.20, 0.236, 0.01
+        # at gross 0.13 (above fee + 0.118 = 0.128) it holds
+        self.assertFalse(
+            run_engine._breakeven_floor_hit(peak, 0.130, arm,
+                                            exit_fee_usd=exit_fee),
+            "held above the locked floor")
+        # at gross 0.12 (below the floor) it fires — banking ~0.11 NET,
+        # where the old rule banked 0.00
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(peak, 0.120, arm,
+                                            exit_fee_usd=exit_fee),
+            "must fire at the locked floor, not wait for breakeven")
+
+    def test_the_fire_banks_a_positive_net(self):
+        arm, peak, exit_fee = 0.20, 0.236, 0.01
+        frac = 0.5
+        floor = exit_fee + frac * (peak - exit_fee)
+        net_at_floor = floor - exit_fee
+        self.assertGreater(net_at_floor, 0.0,
+                           "the whole point: best case is no longer $0")
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(peak, floor - 1e-9, arm,
+                                            exit_fee_usd=exit_fee))
+
+    def test_kill_switch_restores_the_breakeven_rule_exactly(self):
+        arm, peak, exit_fee = 0.20, 0.236, 0.01
+        with unittest.mock.patch.dict(os.environ,
+                                      {"RATCHET_LOCK_FRAC": "0"}):
+            # old rule: fires only at/below the exit fee
+            self.assertFalse(
+                run_engine._breakeven_floor_hit(peak, 0.05, arm,
+                                                exit_fee_usd=exit_fee))
+            self.assertTrue(
+                run_engine._breakeven_floor_hit(peak, exit_fee, arm,
+                                                exit_fee_usd=exit_fee))
+
+    def test_never_armed_positions_are_untouched(self):
+        # peak under the arm never arms, whatever the lock fraction says
+        self.assertFalse(
+            run_engine._breakeven_floor_hit(0.10, 0.09, 0.20,
+                                            exit_fee_usd=0.01))
+
+    def test_historical_deep_givebacks_still_fire(self):
+        # SOL 1367: +0.160316 -> -0.067; ZEC 1392: +1.224 -> -0.534.
+        # A raised floor can only make these fire EARLIER, never later.
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(0.160316, -0.067, 0.05,
+                                            exit_fee_usd=0.02))
+        self.assertTrue(
+            run_engine._breakeven_floor_hit(1.224, -0.534, 0.30,
+                                            exit_fee_usd=0.05))
+
+    def test_lock_never_exceeds_what_was_earned(self):
+        # A pathological fraction must not put the floor above the peak —
+        # that would fire instantly on every armed position.
+        arm, peak, exit_fee = 0.20, 0.236, 0.01
+        with unittest.mock.patch.dict(os.environ,
+                                      {"RATCHET_LOCK_FRAC": "5.0"}):
+            self.assertFalse(
+                run_engine._breakeven_floor_hit(peak, peak, arm,
+                                                exit_fee_usd=exit_fee),
+                "a position sitting AT its peak must never be flattened")
+
+    def test_baseline_still_respected_with_the_lock(self):
+        # AVAX 1335 shape: run-cumulative peak inherited from a closed
+        # position must still not arm the fresh one.
+        self.assertFalse(
+            run_engine._breakeven_floor_hit(
+                0.4228002106349821, 0.11828140938999473, 0.398,
+                exit_fee_usd=0.199, baseline_pnl=0.080608))
+
+
+class RatchetClampTests(unittest.TestCase):
+    """The `max(0.0, peak - fee_floor)` clamp is load-bearing, not cosmetic.
+
+    The arm is priced off BREAKEVEN_FEE_RATE (0.001) while the fee floor is
+    the position's REAL round trip. In a market whose true rate exceeds
+    0.001 the floor can exceed the arm, so a peak may arm while still
+    sitting UNDER its own round trip. Unclamped, `frac * (peak - fee_floor)`
+    goes negative and drags the floor BELOW fee_floor — re-opening exactly
+    the 2026-08-15 JTO 1304 defect the fee floor was added to close (a rail
+    firing at a built-in loss while the label reports a banked winner).
+    """
+
+    def test_a_sub_fee_peak_never_drags_the_floor_under_the_fee_floor(self):
+        arm, peak, exit_fee = 0.02, 0.025, 0.04   # high-fee market shape
+        with patch.dict(os.environ, {"RATCHET_LOCK_FRAC": "0.5"}):
+            # clamped floor == fee_floor (0.04); unclamped it would be
+            # 0.0325, so a reading of 0.035 would wrongly hold.
+            self.assertTrue(
+                run_engine._breakeven_floor_hit(peak, 0.035, arm,
+                                                exit_fee_usd=exit_fee),
+                "floor fell below the position's own round trip")
