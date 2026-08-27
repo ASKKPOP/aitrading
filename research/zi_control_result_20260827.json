@@ -1,0 +1,77 @@
+{
+ "cohort_n": 57,
+ "draws": 1000,
+ "seed": 20260827,
+ "results": {
+  "slip_0.0003": {
+   "ai_total": -6.6,
+   "zi_draw_total_mean": -11.09,
+   "zi_draw_total_p05_p95": [
+    -40.3,
+    25.06
+   ],
+   "ai_percentile_vs_zi": 0.637,
+   "mean_trip_diff_CI90": [
+    -0.3139,
+    0.4624
+   ],
+   "beats_random": false,
+   "loses_to_random": false,
+   "strip_largest": {
+    "ai": 0.0,
+    "zi": -11.01,
+    "stripped_trip_net": -6.5993
+   },
+   "zi_long_only_mean": -4.24,
+   "zi_short_only_mean": -17.76,
+   "regimes": {
+    "H1": {
+     "n": 26,
+     "ai_net": 5.35,
+     "zi_exp": -4.3
+    },
+    "H2": {
+     "n": 31,
+     "ai_net": -11.95,
+     "zi_exp": -6.78
+    }
+   },
+   "zi_mean_trip": -0.1945
+  },
+  "slip_0.0016": {
+   "ai_total": -6.6,
+   "zi_draw_total_mean": -33.81,
+   "zi_draw_total_p05_p95": [
+    -66.31,
+    6.89
+   ],
+   "ai_percentile_vs_zi": 0.887,
+   "mean_trip_diff_CI90": [
+    0.076,
+    0.8998
+   ],
+   "beats_random": true,
+   "loses_to_random": false,
+   "strip_largest": {
+    "ai": 0.0,
+    "zi": -32.19,
+    "stripped_trip_net": -6.5993
+   },
+   "zi_long_only_mean": -25.97,
+   "zi_short_only_mean": -41.38,
+   "regimes": {
+    "H1": {
+     "n": 26,
+     "ai_net": 5.35,
+     "zi_exp": -16.04
+    },
+    "H2": {
+     "n": 31,
+     "ai_net": -11.95,
+     "zi_exp": -17.77
+    }
+   },
+   "zi_mean_trip": -0.5931
+  }
+ }
+}
