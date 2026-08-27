@@ -143,6 +143,20 @@ def supervise_fleet(fleet: dict) -> dict:
     # refresh view after possible warning writes
     fleet = fp.get_fleet(fleet["id"]) or fleet
 
+    # ── H-CONSOL (owner 2026-08-27): consolidate toward FLEET_TARGET_SLOTS.
+    # Machine lowering only — the existing drain semantics (excess slots
+    # retire as they empty, a live position is never touched) and #437's
+    # user_size_cap rules are unchanged. Kill switch: unset the env.
+    tgt = _target_slots()
+    if tgt > 0 and int(fleet["n_runs"]) > tgt:
+        try:
+            fp.set_fleet_size(fleet["id"], tgt)
+            fleet = fp.get_fleet(fleet["id"]) or fleet
+            out["consolidated_to"] = tgt
+        except Exception:  # noqa: BLE001 — consolidation must never wedge supervision
+            logger.exception("consolidation resize failed (fleet %s)",
+                             fleet["id"])
+
     # ── slot bookkeeping + replacement (suspended while warned/paused/held)
     _slot_pass(fleet, members, eq)
 
@@ -616,6 +630,32 @@ def _replacements_suspended(fleet: dict) -> bool:
     return False
 
 
+def _target_slots() -> int:
+    """H-CONSOL (owner 2026-08-27): FLEET_TARGET_SLOTS > 0 makes the
+    supervisor consolidate every active fleet DOWN toward this slot count.
+    The ZI control (research/zi_control_replay.py) measured that even
+    long-only random entries lose after rails+fees at the current per-slot
+    size — the entry deadlock is structural, so fewer/bigger slots.
+    Kill switch: unset/0. Lowering only — growth stays with the user and
+    auto-tune paths."""
+    try:
+        return int(os.environ.get("FLEET_TARGET_SLOTS", "0") or "0")
+    except ValueError:
+        return 0
+
+
+def _slot_anchor(slot: dict, total: float, n: int) -> float:
+    """The dollar figure a slot's funding aims for. The designed allocation,
+    unless consolidation is on — then at least the CURRENT equal share
+    (total/n): the resize drain deletes emptied excess slots but never
+    re-anchors survivors, so without this a consolidation is cosmetic —
+    the remaining slots would keep their old small allocations forever."""
+    orig = float(slot["original_allocation_usd"])
+    if _target_slots() > 0:
+        return max(orig, total / max(n, 1))
+    return orig
+
+
 def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
     """Per-slot lifecycle: positions_held handling, dormancy re-evaluation,
     replacement per the per-reason table with sequential funding."""
@@ -659,7 +699,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
         # its OWN designed allocation — dormancy means "headroom can't fund
         # this slot", never "this slot was designed small".
         slot_floor = min(floor_usd,
-                         float(slot["original_allocation_usd"]) / 2.0)
+                         _slot_anchor(slot, total, n) / 2.0)
 
         if drain_excess > 0 and (
                 member is None
@@ -704,7 +744,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
                     fp._bind_slot(fleet["id"], slot["slot_index"], None,
                                   "waiting")
                 continue
-            funding = min(float(slot["original_allocation_usd"]), headroom)
+            funding = min(_slot_anchor(slot, total, n), headroom)
             if funding < slot_floor:
                 fp._bind_slot(fleet["id"], slot["slot_index"], None, "dormant")
                 fp.emit_fleet_event(fleet["id"], "slot_dormant",
@@ -807,7 +847,7 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
             continue
 
         # funding: min(original allocation, headroom), sequential
-        funding = min(float(slot["original_allocation_usd"]), headroom)
+        funding = min(_slot_anchor(slot, total, n), headroom)
         if funding < slot_floor:
             fp._bind_slot(fleet["id"], slot["slot_index"], member["id"],
                           "dormant")
