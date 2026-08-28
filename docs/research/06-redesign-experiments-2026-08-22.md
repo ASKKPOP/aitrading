@@ -67,6 +67,8 @@ realized P&L; H-DECORATION if targets are hit <20% even given full horizon.
 1. **Crypto: entry suppression is the defect.** The panel/doctrine wall demoted
    entries that would have paid (+$145/8d, robust). The suppression channels
    (reachability line, panel prompt) must stop firing for crypto.
+   > **2026-08-23 note (24h after deploy):** the reachability line was removed and is verifiably uncited (crypto decision reports citing it 21% → 0.9%), yet panel-kept buys stayed 0/68. The line was NOT the binding channel. The binding channels measured are the panel's technical read (68/68), the outcome-less `agent_memory` echo (24/223 decisions cite "desk memory", rising), and `desk_memory` recall ranking `reachable-exits#1` first in 222/222 flat cycles while the new `measured-entry-record` skill ranks #11 under the pooled (outcome+lesson) BM25 IDF — pool is 5, so it is never shown. See [reports/2026-08-23-deep-analysis-24h.md](../reports/2026-08-23-deep-analysis-24h.md).
+
 2. **Futures + forex: the generator is the defect.** No authored target has
    ever been reached inside its horizon (0/73 demoted + 0/44 opened). Blocking
    these trades protected money; un-gating changes nothing until targets are
