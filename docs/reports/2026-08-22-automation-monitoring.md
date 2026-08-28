@@ -1253,3 +1253,22 @@ Fleet 42 holds its 25 target; fleet 41 is 16 (was 17 — normal idle-retire/rebu
 **Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a seventh consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
 
 **Operational note, flagged not acted on.** The deploy cadence rule puts us in mode ① (deploy every cycle) until the first fill, and that trigger has not fired. But the cost side has changed since the rule was set: the fleet now carries **41 live runs producing ~7 proposals/hour**, so each hourly deploy restarts a worker that is materially busier than the 8-run, 0-proposal book the rule was written against. Still correct under the rule as written; worth the owner's attention if the drought continues.
+
+---
+
+## Reading #63 — 2026-08-28T11:13Z — quiet; nothing changed
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **21.0 hours**. No completed trips, so no three-agent dispatch. Every hypothesis stated before the data was confirmed and none moved. Fleet 42 at its 25 target, fleet 41 at 17, **42 runs total**. Health: 75 decisions, `no_verdict` 0, `verdict_salvaged` 0, 0 tracebacks. Prod healthy on `sooppiy-backend:20260828-reading62`.
+
+**Panel sample since P0: 24 entry proposals, 0 kept (4 this hour).** Rather than keep reporting a growing zero, here is when it becomes decidable — computed once so future cycles can stop re-deriving it:
+
+| Question | Answer |
+|---|---|
+| Baseline keep rate (9-day, 342 proposals / 3 kept) | **0.93%** |
+| P(0 kept \| n=24) if the rate is unchanged | **0.799** — unremarkable |
+| n needed for "0 kept" to be significant at p<0.05 | **321 proposals** |
+| Time to reach it at the current ~5 proposals/hour | **≈64 hours ≈ 2.7 days** |
+
+**So the panel-demotion question is not answerable by observation before roughly 2026-08-31**, and every reading until then that reports a growing zero is reporting noise, not a finding. This is the same class of problem as #592 (n=1 of 30) and #591 (0 of 20): **the falsifiers this stack is carrying are all sample-starved, and the drought makes them slower still.** The decidable path remains replay (Plan 29 P2/P3), not accrual.
+
+**Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for an eighth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
