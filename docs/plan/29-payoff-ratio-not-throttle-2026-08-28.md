@@ -150,3 +150,49 @@ Then raise **count** levers first, one at a time, re-measuring after each. **The
 - The ~20× impact projection uses a square-root law — **inference, not measurement** (n=9 slippage observations, all at ~$137 notional). Could be 2× off either way.
 - Hold-time matching across markets is not achievable at current n (forex n=1, futures n=2 in the <1h bucket); the horizon artifact is noted, not excluded.
 - **Methodology trap recorded:** this ledger closes positions in dust-halving slices. Equal-weighting partials reports crypto at **+13.48 bp**; collapsing to position episodes gives **−4.55 bp**. **Any per-trip statistic here that does not collapse partials is wrong by ~46 bp and by sign.** An earlier "+5.10 bp gross edge" figure in this stack could not be reproduced on any slice and is retracted.
+
+---
+
+## 6. EXECUTION LOG
+
+### P0 — DONE (2026-08-28, owner-approved)
+
+**Disarmed.** `FLEET_TARGET_SLOTS` removed from prod `.env` (backup `.env.bak-plan29-p0`) and `n_runs` restored to the code's own `recommended_max_slots()` = 25 on both fleets, via the validated `fleet_planner.set_fleet_size()` path — not raw SQL.
+
+| Fleet | n_runs | Slot budget | max_bet before | max_bet after |
+|---|---|---|---|---|
+| 41 (agent 6) | 4 → **25** | $400.00 | $1,125.00 | **$180.00** |
+| 42 (agent 60) | 4 → **25** | $4,000.03 | $11,250 (armed) | **$1,800.01** |
+
+Fleet 41's $180.00 is *exactly* its pre-consolidation baseline. Total exposure is unchanged (25 × $1,800 ≡ 4 × $11,250 = $45,000); what falls is **concentration and per-trade market impact**, which is the axis that matters given 9-of-9 adverse exit slippage.
+
+**Sequencing error, recorded because it cost a cycle:** the first attempt removed the env var from `.env` and then set `n_runs`, but the *running* worker still had `FLEET_TARGET_SLOTS=4` loaded, so its supervisor pass re-consolidated back to 4 before the restart. **Recreate the worker FIRST, then write the state.** Verified to persist across multiple supervisor passes after the correct ordering.
+
+**Verified before acting** (each of these would have invalidated the action): `user_size_cap` is NULL on both fleets so it does not bind; the env default is `"0"` guarded by `if tgt > 0`, so unsetting is the documented kill switch; consolidation is *lowering-only* and had already written `n_runs=4` to the DB, so **unsetting the env alone would NOT have disarmed anything** — the state had to be restored explicitly.
+
+### P1 — the "settlement defect" DOES NOT EXIST. Root cause found; no code fix required.
+
+**Three hypotheses were tested and killed before the answer was found:**
+1. *"The writer overwrites `entry_price` with `exit_price` on exit rows."* **REFUTED** — that is true of **every** exit row for **every** agent (5: 134/134, 59: 59/59, 6: 102/102, 60: 9/9). It is how `automation.py` writes exits (`price` is passed into the `entry_price` column) and it is harmless: `pnl` is computed from the *position's* cost basis, not from the row.
+2. *"`realized_pnl` stayed None and MySQL coerced NULL → 0."* **REFUTED** — `signals.pnl` is `IS_NULLABLE=YES DEFAULT NULL`, sql_mode is `STRICT_TRANS_TABLES`, and there are **0 NULL pnl rows** across all 304 exit legs.
+3. *"Some code path writes an exact zero."* **REFUTED** — both writers (`automation.py:190-212`, `routes_signals.py:359-369`) compute `(price − entry) × qty − fee`, which cannot equal exactly 0.00000000 with a non-zero fee; it would yield `−fee`.
+
+**ACTUAL CAUSE: agent 6 (the prod test account, user 5) was administratively RESET.** The originals are preserved in `reset6_bak_signals`, `reset6_bak_fleets`, `reset6_bak_run_events`, `reset6_bak_trading_runs` — **174 backup rows against 174 live rows, matching by `id`**, with P&L intact:
+
+| id | symbol | live `pnl` | backup `pnl` | independent `stop_mechanism.total` |
+|---|---|---|---|---|
+| 1541 | AVAX | 0.00000000 | −0.040837 | −0.0408358 |
+| 1533 | WIF | 0.00000000 | −0.968617 | −0.9690271 |
+| 1537 | FIL | 0.00000000 | +0.043086 | +0.0430473 |
+
+**Recovered agent-6 truth:** exit P&L **−$2.5865**, entry fees **$4.5207**, **trip net −$7.1072** over 174 legs. Win/loss shape: **58 W / 44 L = 56.9% win rate**, avg win +$0.3885, avg loss −$0.5709, **payoff ratio 0.681**.
+
+**This independently reproduces Plan 29's central diagnosis from a dataset every prior analysis discarded as corrupt:** the hit rate is healthy (56.9%, in line with the 57.9% measured elsewhere) and the payoff ratio is the defect (0.681 < 1). Expectancy per trip = `0.569 × 0.3885 − 0.431 × 0.5709` = **−$0.025**.
+
+**Consequences:**
+- **Reading #55's retraction is superseded on its open question.** It correctly killed the "$0 by construction" claim and correctly refused to name a cause; the cause is now known and it is *not a defect*.
+- Every analysis that excluded agent 6 as "contaminated" can be **re-run on the backup**. The data was never lost.
+- **P1's code fix is cancelled** — there is nothing to repair. P1 reduces to its second half: persist the desk's confidence on every closed trip, which remains genuinely missing and blocks pricing any frequency change.
+- **P2 is unblocked.** The ZI control's degeneracy (56 of 57 trips netting exactly $0.00, effective n≈1) was an artifact of reading the reset table. Re-running it against `reset6_bak_signals` restores a real n.
+
+**Method note:** the answer came from a table name (`reset6_bak_*`) surfaced in passing, not from the code. Three agents and this session all searched the write path for a bug that was never there. **When a data anomaly is perfectly scoped to one account, check for an administrative action before auditing the writer.**
