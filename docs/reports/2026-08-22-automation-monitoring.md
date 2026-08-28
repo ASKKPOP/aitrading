@@ -1166,3 +1166,53 @@ Fleet 42 held only four *legacy* runs at $180–$335 when P0 ran; the $11,250 wa
 Decision volume tracks run count as expected. **Zero `no_verdict` and zero `verdict_salvaged` across the increase** — no LLM oversubscription, which was the live risk given [[admin-local-ai-switch-noop]]'s ~5× contention finding. Worker log: **0 tracebacks in 15 minutes.**
 
 **Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a fourth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30**; #591 **0 of 20, untested**. At zero fills none can accrue. Prod healthy on `sooppiy-backend:20260828-p0p1`.
+
+---
+
+## Reading #60 — 2026-08-28T08:13Z — P0 became an experiment: proposals doubled, the panel demoted 100%
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **18.0 hours**. No completed trips, so no three-agent dispatch. **But this is not a quiet cycle** — P0 restored slot count and thereby ran an unplanned experiment whose result is unambiguous.
+
+### The experiment P0 accidentally ran
+
+P0 restored `n_runs` to 25, and the supervisor rebuilt the fleet. That multiplied both the decision opportunity and, crucially, the **crypto** slot count:
+
+| | Before P0 | Now |
+|---|---|---|
+| Live runs | 8 | **35** (fleet 42 at its 25 target, fleet 41 building at 10) |
+| Crypto slots | **2** | **14** |
+| Market mix | 5 us-stock / 2 crypto / 1 forex | crypto 14 / futures 9 / forex 7 / us-stock 5 |
+| Decisions per hour | 6 | **66** (07h) |
+
+**Result on the entry funnel:**
+
+| Window | Panel meetings | Entry proposals | Kept | Rate |
+|---|---|---|---|---|
+| Prior 24h | 61 | 42 (**1.75/h**) | **1** | **2.4%** |
+| Since P0 (~2h) | 9 | 8 (**4.0/h**) | **0** | **0%** |
+
+**Two findings, and they point in opposite directions from each other:**
+
+1. **Capacity DOES move proposals.** The proposal rate rose **2.3×** (1.75/h → 4.0/h) purely from restoring slots, most of them crypto. Reading #57's picture — a desk proposing nothing for six hours — was a consequence of having only 2 crypto slots among 8, not of the desk having gone silent.
+2. **The panel is now unambiguously the binding stage.** Every one of the 8 entry proposals was demoted. All four in the most recent hour were `buy`, and all four were flipped to `hold`:
+
+| ts | run | proposed | final |
+|---|---|---|---|
+| 07:23:48Z | 2126 | buy @ 0.62 | hold @ 0.55 |
+| 07:25:01Z | 2123 | buy @ 0.63 | hold @ 0.56 |
+| 07:37:43Z | 2121 | buy @ 0.55 | hold @ 0.48 |
+| 07:41:27Z | 2126 | buy @ 0.60 | hold @ 0.56 |
+
+Mean confidence is shaved **0.603 → 0.536** across the meetings. This reproduces the 9-day figure independently (342 proposals, 3 kept by a working panel = 0.93%) and matches [[entry-collapse-traced-to-reachability]] (#413/#414, 98.2% of buys demoted).
+
+**Method correction, recorded because it nearly produced a false finding.** A first pass using `payload LIKE '%"action": "buy"%'` on `decision` events reported **zero buy proposals**. That is wrong: the `decision` event records the **FINAL** action, so a demoted buy is stored as `hold`. Proposals are only visible in `order_discussion.proposed.action`. **Any funnel counted off `decision` events alone understates proposals by exactly the panel's demotion rate** — which is ~100%, so it reports the desk as silent when it is in fact proposing and being overruled.
+
+### What this does and does not settle
+
+It **sharpens** Plan 29 rather than changing its conclusion. Capacity was never the constraint on *entries* — 0 fills in 18h stands — but it is a constraint on *proposals*, and the proposal stage is upstream of the real chokepoint. The chokepoint is stage E.
+
+**It does not tell us whether the panel is right to demote.** Two measured facts remain in tension and only a replay can settle them: Plan 29 measured gross edge at **−20.76 bp before any fee** and the 08-25 panel outage produced **−$6.15 with 9 of 22 correct calls still losing** (panel right); while the Phase 1 redesign measured **crypto demotions as wrong, +$145 over 8 days, robust** (panel wrong in crypto specifically). **The fleet is now 14/35 crypto, so this tension is about to be exercised at 7× the previous crypto exposure.** That is the P2/P3 question and it should not be pre-judged from either side.
+
+### Load and falsifiers
+
+At 66 decisions/hour — an **11× increase** over the pre-P0 rate — `no_verdict` **0** and `verdict_salvaged` **0**, worker log 0 tracebacks. No LLM oversubscription at the higher load. Frozen-mark falsifier **unmeasurable** for a fifth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**. Prod healthy on `sooppiy-backend:20260828-reading59`.
