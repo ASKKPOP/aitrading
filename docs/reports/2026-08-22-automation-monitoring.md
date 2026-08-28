@@ -1481,3 +1481,53 @@ Replace the median-only test with **both** conditions, and report the interval r
 **Current status unchanged: #592 stands at 1 of 30 fires** (zero `stop_mechanism` fires this hour, and none since the drought began). At the current rate this verdict is not reachable; the correction above matters for whenever trading resumes.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** for a thirteenth consecutive cycle; H-LEDGER **not tripped**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #69 — 2026-08-28T17:13Z — P1b cancelled (the data already exists) and conviction measured: it predicts NOTHING
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **27.0 hours**. No completed trips, so no three-agent dispatch. 42 runs; panel since P0 **45 entry proposals, 0 kept**; health 88 decisions, `no_verdict` 0, `verdict_salvaged` 1, 0 tracebacks.
+
+### P1b is CANCELLED — the instrumentation gap does not exist
+
+Plan 29 P1b was written to "persist the desk's confidence on every closed trip", on an agent's report that *"no conviction/confidence score is persisted per closed trip, so I could only sign the direction, not size it."* **That is false.** The link is already there:
+
+- `signals.client_order_id` on every entry is `run:<run_id>:cyc:<n>` — it encodes the run **and the cycle**
+- the `decision` event payload carries `cycle`, `confidence`, `conviction`, and four sub-scores (`thesis_alignment`, `momentum_quality`, `entry_quality`, `risk_context`)
+- joining on `run_id` + `cycle` recovers all of it
+
+**Coverage: 153 of 153 entry fills carry the `:cyc:` tag — 100%.** Verified 1:1 (no entry matches more than one decision event). **No code change is needed and none was made.**
+
+### The measurement that gap was blocking, now run: conviction has NO predictive power
+
+**First pass, in dollars, looked like a dramatic inversion:**
+
+| conviction | n | mean net $ | total $ | wins |
+|---|---|---|---|---|
+| low (<0.55) | 7 | **+0.2760** | +1.93 | 4/7 |
+| mid (0.55–0.65) | 30 | −0.5780 | −17.34 | 8/30 |
+| high (≥0.65) | 37 | **−1.8353** | −67.91 | 8/37 |
+
+Pearson r = **−0.3088**. Monotone, and pointing the wrong way.
+
+**It was a size confound and nothing else.** High-conviction entries carry **~2× the notional** (avg $643.08 vs $327.36 low / $304.21 mid), so they lose twice the dollars at the same rate. Renormalised per unit notional:
+
+| conviction | n | **mean bp** | median bp | wins |
+|---|---|---|---|---|
+| low (<0.55) | 7 | −17.73 | +11.73 | 4/7 |
+| mid | 30 | −24.59 | −9.60 | 8/30 |
+| high (≥0.65) | 37 | −18.72 | −9.15 | 8/37 |
+
+**Pearson r (conviction vs bp) = −0.0393 — indistinguishable from zero, n=74.** All three buckets lose 18–25 bp. **Conviction carries no information about per-unit outcome.**
+
+**Independent cross-check:** the overall mean here is **−21.01 bp**, against **−20.76 bp** measured by a completely different route (position-episode fill-price replay, reading #66 lineage). Two methods, same answer.
+
+### Two consequences
+
+**1. "Marginal ≤ average by construction" is REFUTED.** The aggression analysis argued that lowering the conviction bar must admit worse-than-average trades, and therefore that frequency levers are worse than linear. **At n=74 that does not hold**: conviction does not predict per-unit outcome, so the marginal trade is not worse than the average — it is the same. **This does not make aggression good.** The average is −21 bp; more trades at −21 bp is simply more loss, linearly rather than super-linearly. The NO-GO stands, for the original reason.
+
+**2. Sizing amplifies a signal that carries no information.** High-conviction entries get roughly double the notional while conviction predicts nothing about the per-unit result. That adds variance without adding expected return — the worst kind of sizing rule. *Stated as an observed association: this reading did not verify in code that size is explicitly conviction-scaled, and that check should precede any change.*
+
+**Method note:** the dollar-level result (r = −0.31, clean and monotone) was wrong, and only the notional normalisation exposed it. **Any per-trade statistic on this ledger must be normalised by notional before it is interpreted** — the same class of trap as the partial-exit weighting error recorded in reading #64.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** for a fourteenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30** (metric corrected in #68); #591 **0 of 20, untested**.
