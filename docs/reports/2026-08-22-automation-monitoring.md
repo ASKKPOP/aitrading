@@ -1405,3 +1405,39 @@ Reading #65 measured that **random entries lose −0.23/trip through the house r
 **Required before any rail change ships:** bootstrap CI on the top cells, a second non-overlapping window, and a run using the AI's actual entries rather than random ones. Until those exist this is a **lead, not a result to implement.**
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** for an eleventh consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30** (and see above — its metric needs revision); #591 **0 of 20, untested**.
+
+---
+
+## Reading #67 — 2026-08-28T15:13Z — the #66 rail lead is REFUTED on validation
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **25.0 hours**. No completed trips, so no three-agent dispatch. 42 runs; panel since P0 **43 entry proposals, 0 kept**; health 82 decisions, `no_verdict` 1, `verdict_salvaged` 0, 0 tracebacks.
+
+### P3 validation — and it kills yesterday's lead
+
+Reading #66 reported **H-RAILS: SUPPORTED** and a "best" cell (stop 0.015 / target 0.080 / ratchet frac 0.0) worth **+0.2478/trip** over the live config, while explicitly refusing to ship it until three checks were done. Those checks are now done, committed as `research/rail_validate.py` + result JSON.
+
+**Pre-registered before running:** the lead survives only if its advantage over the live cell holds with **CI90 excluding 0 in BOTH half-windows AND on real entries.** Any failure → regime- or method-specific, must not ship.
+
+| Config | full window | H1 (first half) | H2 (second half) | AI's real entries |
+|---|---|---|---|---|
+| **LIVE** (0.015/0.045/0.5) | −0.1898 **[−0.2435, −0.1369]** | −0.0747 **[−0.1182, −0.0294]** | −0.2810 **[−0.3173, −0.2428]** | −0.3298 [−0.8101, +0.0834] |
+| **"BEST"** (0.015/0.080/0.0) | +0.0580 **[−0.0374, +0.1554]** | **+0.4270** [+0.3384, +0.5157] | **−0.3144** [−0.3732, −0.2543] | −0.2119 [−0.7640, +0.4445] |
+| ALT (0.025/0.080/0.0) | +0.0164 [−0.0846, +0.1182] | +0.4368 | −0.3501 | +0.1055 [−0.4002, +0.7288] |
+
+**BEST minus LIVE:** full **+0.2478** (CIs disjoint), H1 **+0.5017** (CIs disjoint), **H2 −0.0334 (CIs OVERLAP — and the sign FLIPS)**, **real entries +0.1179 (CIs OVERLAP)**.
+
+### VERDICT: H-RAILS as supported in reading #66 is REFUTED
+
+1. **The headline was never significant.** The full-window +0.0580 carries **CI90 [−0.0374, +0.1554] — it includes zero.** Reading #66 reported "2 of 42 configurations non-negative" without a CI, and that framing was wrong: a point estimate above zero is not a non-negative configuration.
+2. **It is regime-specific, dramatically.** The same cell is **+0.4270 in the first half and −0.3144 in the second** — both with tight, disjoint CIs. A far-target/no-lock bracket is a trend-following profile; it earns in a trending window and bleeds in the other. **Half the tape would have produced the opposite recommendation.**
+3. **It does not survive on real entries.** Against the AI's actual entry points the advantage is +0.1179 with overlapping CIs — indistinguishable from the live config.
+
+**The monotone gradients in #66 were real** (lock ↑ → mean ↓, median ↑; wider target → higher mean) **but the magnitude of the winning cell was regime luck, not an edge.** Recorded so no future session re-runs this: **a far target with the ratchet disabled is NOT a proven improvement.**
+
+### What DID survive, and it matters
+
+**The live rails are significantly negative in every window tested** — full [−0.2435, −0.1369], H1 [−0.1182, −0.0294], H2 [−0.3173, −0.2428], all excluding zero. That is now the most robust single fact in this stack: **the current bracket geometry loses money on random entries across both regimes, and we do not yet have a proven better one.** Plan 29's ordering stands; its P3 does not yet have an answer.
+
+**Also unchanged and still owed:** the #66 finding that **#592's falsifier is defined purely on medians** — the exact quantity a higher lock improves by construction, while the mean it degrades is what compounds. That correction is independent of today's refutation and still needs applying before #592's 30-fire verdict is read.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** for a twelfth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
