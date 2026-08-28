@@ -1354,3 +1354,54 @@ Pre-registered before running: **H0 — AI entry selection has no edge over rand
 It does not show the AI is worse than random — the CI includes zero and this session will not round it. It does not measure size (all figures are per-unit-notional). And n=57 remains the binding limit: at the observed dispersion, separating a 0.10/trip effect needs far more cohort than the live book will produce this year, so **any future ZI work must come from replay depth, not from waiting for fills.**
 
 **Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a tenth consecutive cycle; H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #66 — 2026-08-28T14:13Z — 24h flat; P3 rail sweep finds a monotone payoff dial, and it argues against #592
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **exactly 24.0 hours**. No completed trips, so no three-agent dispatch. 42 runs; panel since P0 **40 entry proposals, 0 kept**; health 75 decisions, `no_verdict` 0, `verdict_salvaged` 3, 0 tracebacks.
+
+### H3 settled by natural test: market hours were a ceiling, not the constraint
+
+The US session opened at 13:30Z. Since then us-stock logged **18 decisions and ZERO "market closed" skips** — those five slots are genuinely live and cycling for the first time in this reading series — and produced **no entries**. Reading #57 correctly identified market hours as a structural ceiling (46% of slot-hours tradeable); this reading shows removing that ceiling changes nothing, because the binding constraint is downstream.
+
+### P3 — rail sweep (committed: `research/rail_sweep.py`, `research/rail_sweep_result_20260828.json`)
+
+Reading #65 measured that **random entries lose −0.23/trip through the house rails**, i.e. the structure is negative before entry skill enters. **Pre-registered H-RAILS:** there exists a (stop, target, ratchet_frac) setting under which random entries are non-negative on this tape. **Falsifier:** no configuration in the grid is non-negative → tape and fee floor dominate and bracket geometry is the wrong target.
+
+**H-RAILS: SUPPORTED — 2 of 42 configurations are non-negative.** 42 configs × 57 trips × 120 draws.
+
+**Two independent monotone gradients, which is why this is structure and not noise:**
+
+| Ratchet lock (avg over all stop/target) | mean | median |
+|---|---|---|
+| frac 0.0 | **−0.1249** | −0.1632 |
+| **frac 0.5 — LIVE (#592 default)** | −0.2167 | −0.0337 |
+| frac 0.9 | **−0.2381** | **+0.0032** |
+
+| Target, frac=0 | mean |
+|---|---|
+| 0.010 | −0.2476 |
+| 0.020 | −0.2348 |
+| **0.045 — LIVE** | −0.1521 |
+| 0.080 | **−0.0072** |
+
+**Live config (stop 0.015 / target 0.045 / frac 0.5): mean −0.1898, median +0.0023.**
+**Best (stop 0.015 / target 0.080 / frac 0.0): mean +0.0580, median −0.1556. Delta +0.2478 per trip.**
+
+### The finding that matters: #592's own falsifier measures the wrong quantity
+
+**As the ratchet lock rises, the mean gets monotonically WORSE and the median monotonically BETTER.** That is the payoff-ratio dial made explicit — locking converts a few large winners into many small ones.
+
+#592 (`RATCHET_LOCK_FRAC=0.5`) was shipped with this falsifier: *"median give-back must fall below 100% of peak AND median realized must be POSITIVE."* **Both are median statistics — exactly the quantity a higher lock fraction improves by construction.** The sweep says the lock simultaneously degrades the mean, and **the mean is what compounds.** So **#592 can PASS its own falsifier while making the book lose more money.** That is a defect in the falsifier, not necessarily in the fix, and it should be corrected before its 30-fire verdict is read: **#592's accountability metric must include the mean, not only the median.**
+
+### What this does NOT license — no config change is proposed
+
+1. **No confidence intervals.** Each cell is a well-sampled mean (6,840 simulated trips) but no CI was computed; +0.0580 could still be noise against the cell-to-cell spread.
+2. **One window, one regime.** The tape is 12 days (08-15→08-27) heavy in crypto down-legs. A far-target/no-lock configuration is a trend-following profile and will look very different in a chop regime.
+3. **Random entries, not the AI's.** The sweep varies rails under zero-intelligence entry; the interaction with actual desk entries is unmeasured.
+4. **The winning config has a NEGATIVE median (−0.1556)** — most trips lose, and a few far-target winners carry it. That is a materially different risk profile from what is running, and the owner's own outlier discipline applies to it.
+
+**Required before any rail change ships:** bootstrap CI on the top cells, a second non-overlapping window, and a run using the AI's actual entries rather than random ones. Until those exist this is a **lead, not a result to implement.**
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** for an eleventh consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30** (and see above — its metric needs revision); #591 **0 of 20, untested**.
