@@ -1079,3 +1079,33 @@ Stop reasons since 08-27T20:00Z: **`idle_retired` 28, `desk_retired` 12** — 40
 Falsifier status carries forward from reading #55 with no new evidence: frozen-mark **PASS** (77.8% → 2.3%, n=171); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30, undecided**; #591 fail-closed **0 of 20, untested**. Prod healthy on `sooppiy-backend:20260828-readings`; `POSITION_REFRESH_INTERVAL=60`, `DESK_LEDGER_BLOCK=1`, `FLEET_TARGET_SLOTS=4` all set; 0 tracebacks in the worker log; feed noise only.
 
 **Still awaiting an owner decision (unchanged from reading #55):** the armed slot scale-up rests on a replay that is mathematically incapable of measuring size. Revert if wanted: remove `FLEET_TARGET_SLOTS` from `/home/ec2-user/sooppiy/.env` and recreate the worker.
+
+---
+
+## Reading #57 — 2026-08-28T05:13Z — the drought has a structural reason: 5 of 8 slots are in a closed market
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **15.0 hours**. No new tape, so no three-agent dispatch. Prod healthy on `sooppiy-backend:20260828-reading56`; all flags unchanged.
+
+**Hypotheses stated before the data:** H1 (still no fills) **CONFIRMED**; H2 (fleet 42 not re-anchored) **CONFIRMED** — its four incumbents are byte-identical to last hour and the ~40× scale-up stays armed; H3 (the drain bottomed at 8 running) **CONFIRMED** — the same 8 run IDs, no turnover in an hour.
+
+### Why nothing is entering — and it is not the gate
+
+The desk is **not being blocked; it is not proposing.** Last 6 hours of `decision` events: **`hold` 96, `retire` 1, and zero `buy` or `short`.** `gate_skip` over the last 3h: **"market closed" 31, "decision is 'hold'" 22** — the second is a consequence of the first, not an independent filter. Only 3 `order_discussion` (panel) events fired in 6 hours, because a panel only convenes on a proposal.
+
+**The structural reason, measured:**
+
+| Market | Slots | Symbols | State at this reading |
+|---|---|---|---|
+| **us-stock** | **5 of 8** | PFE ×2, QCOM, IBM, MSTR | **all gate-skipping "market closed"** (6–7 skips each in 3h) |
+| crypto | 2 | LITUSDT, TRUMPUSDT | open 24/7 |
+| forex | 1 | AUDCAD | open |
+
+**H-CONSOL cut the fleet 35 → 8 slots, and 62.5% of the survivors are US equities.** US cash equities trade ~6.5h × 5 days ≈ **19% of the week**, so those five slots are structurally unable to trade for roughly four fifths of elapsed time. At this reading (05:13Z, i.e. 22:13 PDT Thursday) the US session has been shut for over 9 hours and does not reopen for another ~8.3. **Effective live capacity right now is 3 slots, not 8.**
+
+**Crypto — the only 24/7 market, and the market every experiment in this stack is measured on — holds 2 of 8 slots.** The two runs that DID re-anchor to the new $1,125 size (2106, 2107, created 03:25/03:31Z) went to crypto and forex, so the mix improves as incumbents recycle; but the five us-stock incumbents were all created 08-27T14:36–16:25Z and none has turned over.
+
+**Why this matters beyond throughput, stated in profit terms:** the pending falsifiers are all measured on crypto trips. With 2 crypto slots and zero fills in 15h, #592 (29 more fires needed) and #589 (18 more) are not merely slow — **they are being measured on a quarter of the fleet.** Reading #56 recorded that consolidation cut cycle volume ~77%; this reading shows the surviving quarter is further reduced by market hours. The two effects compound and neither was part of H-CONSOL's stated justification.
+
+**This is an observation, not a proposed change.** Widening crypto's share of the slots would raise measurement rate, but it would also apply a **measured-negative crypto expectancy (−3.9 bp/trip)** to more capital, which is the opposite of what the evidence supports. The honest statement is that the current mix throttles *measurement* while the consolidation raises *size* — and both moved without an experiment that could measure either. See the armed-scale-up section in reading #55.
+
+**Unchanged:** frozen-mark falsifier **unmeasurable again** (0 open positions — recorded as unmeasurable, not as a pass); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30**; #591 **0 of 20, untested**. Worker log clean — 0 tracebacks, feed noise only.
