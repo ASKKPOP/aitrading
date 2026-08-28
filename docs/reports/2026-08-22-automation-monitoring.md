@@ -1044,3 +1044,38 @@ Runs 1821 and 1824 carry **positive** mechanism totals. A rule whose best case i
 - **"The 13×$769 sizing deadlock"** — stale; that config no longer exists.
 - **"The ZI control's n=57 is a real sample"** — refuted. Its own result file shows `strip_largest/ai = 0.0`: one trip carries 100% of the AI's −$6.60 and the other 56 netted exactly $0.00 — the same concealed-ledger defect. **Effective n ≈ 1.** "AI ≈ random at n=57" is a measurement of the broken column, not of entry quality, and the control needs re-running on healthy accounting.
 - **`docs/plan/28-zero-entry-solution-2026-08-23.md` does not exist on any branch** (PR #549 unmerged) — readings citing it cannot be followed as written.
+
+---
+
+## Reading #56 — 2026-08-28T04:13Z — quiet; the throughput decay is the consolidation, not a defect
+
+**Profit first: no change. Zero fills. Last fill anywhere is still `2026-08-27T14:11:52Z` — now 14.0 hours.** 0 open positions, 8 runs running. Realized P&L for the period: **$0.00, on no trades.** No new tape, therefore no three-agent dispatch this cycle (the rule requires tape).
+
+**Hypotheses stated before the data, and their outcomes:**
+- **H1 — the book is still not trading.** CONFIRMED. 1 fill event since 08-27T14:11:52Z and it is that fill itself.
+- **H2 — fleet 42 has not re-anchored.** CONFIRMED. Its four incumbents are unchanged (`max_bet` $180.00, $269.52, $293.63, $335.34; all created 08-27T12:28–16:25Z). Fleet 41 still carries the two re-anchored runs at **$1,125.00** (2106, 2107). The ~40× scale-up on the $100k book remains **armed and undischarged**.
+- **H3 — the mark-refresh fix still holds.** Not measurable this cycle: 0 open positions means no mark series to sample. Recorded as unmeasurable, not as a pass.
+
+### A decay I chased and then refuted — recorded so nobody re-chases it
+
+Decision events fell **51/h → 9/h (−82%)** over eight hours. First read: the engine is grinding to a halt. **That is wrong.** The decay is uniform across every event type — `equity` polls fell 1,434 → 454 (−68%), `gate_skip` 61 → 19, `outlook` 58 → 18, all proportional — so nothing is stalling at the decision stage. It tracks the live-run count exactly:
+
+| hour | runs alive | equity | decisions |
+|---|---|---|---|
+| 08-27T20 | **35** | 1,434 | 51 |
+| 08-27T22 | 30 | 1,365 | 55 |
+| 08-28T00 | 22 | 963 | 25 |
+| 08-28T02 | 14 | 494 | 9 |
+| 08-28T04 | **14** (8 `running`) | 454* | 9 |
+
+Stop reasons since 08-27T20:00Z: **`idle_retired` 28, `desk_retired` 12** — 40 runs retired in 8 hours, and `FLEET_TARGET_SLOTS=4` caps replenishment at 4 per fleet = **8 total**. The fleet is draining from 35 slots to its new target of 8, which is precisely what H-CONSOL was shipped to do. **This is the consolidation working, not a defect, and reporting it as one would have been a manufactured finding.** (*04h is a partial hour.)
+
+**The consequence that IS worth stating:** steady-state cycle volume will settle ~77% below the 08-27 level. Combined with 14 hours of zero fills, **every pending falsifier accrues more slowly than the estimates in reading #55, not faster** — #592 needs 29 more fires, #589 needs 18 more, and at zero fills the answer is "never", not "30 days".
+
+**Ruled out, because it was mine to rule out:** the decay began at **08-27T23:00Z, five hours before this session's deploy** (`20260828-readings`, 03:53Z). The deploy did not cause it.
+
+### Unchanged this cycle
+
+Falsifier status carries forward from reading #55 with no new evidence: frozen-mark **PASS** (77.8% → 2.3%, n=171); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30, undecided**; #591 fail-closed **0 of 20, untested**. Prod healthy on `sooppiy-backend:20260828-readings`; `POSITION_REFRESH_INTERVAL=60`, `DESK_LEDGER_BLOCK=1`, `FLEET_TARGET_SLOTS=4` all set; 0 tracebacks in the worker log; feed noise only.
+
+**Still awaiting an owner decision (unchanged from reading #55):** the armed slot scale-up rests on a replay that is mathematically incapable of measuring size. Revert if wanted: remove `FLEET_TARGET_SLOTS` from `/home/ec2-user/sooppiy/.env` and recreate the worker.
