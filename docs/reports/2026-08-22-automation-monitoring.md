@@ -1109,3 +1109,15 @@ The desk is **not being blocked; it is not proposing.** Last 6 hours of `decisio
 **This is an observation, not a proposed change.** Widening crypto's share of the slots would raise measurement rate, but it would also apply a **measured-negative crypto expectancy (−3.9 bp/trip)** to more capital, which is the opposite of what the evidence supports. The honest statement is that the current mix throttles *measurement* while the consolidation raises *size* — and both moved without an experiment that could measure either. See the armed-scale-up section in reading #55.
 
 **Unchanged:** frozen-mark falsifier **unmeasurable again** (0 open positions — recorded as unmeasurable, not as a pass); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30**; #591 **0 of 20, untested**. Worker log clean — 0 tracebacks, feed noise only.
+
+---
+
+## Reading #58 — 2026-08-28T06:13Z — quiet; nothing changed
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **16.0 hours**. No new tape, so no three-agent dispatch.
+
+Every hypothesis stated before the data was confirmed, and none of them moved: **H1** no fills; **H2** fleet 42's four incumbents unchanged ($180.00, $269.52, $293.63, $335.34) with the ~40× scale-up still armed and undischarged; **H3** the slot mix is identical to reading #57 — 5 us-stock (PFE ×2, QCOM, IBM, MSTR, all still "market closed"), 2 crypto, 1 forex — so effective live capacity remains **3 slots of 8**. Hourly event counts are flat against last hour (equity 472, gate_skip 17, outlook 14, decision 6). Prod healthy on `sooppiy-backend:20260828-reading57`; flags unchanged; worker log clean.
+
+**The one thing that did move — and it settles a mechanism question from reading #56.** `desk_memory` monitoring chunks went **1,456 → 1,459**, newest `2026-08-28T05:16:37Z`, i.e. reading #57 ingested roughly three minutes after its deploy. This **confirms** the corrected model recorded last cycle: ingestion is not triggered by the deploy but by `maybe_ingest` inside a run cycle (`run_engine.py:7754`), with `_last_ingest_epoch` resetting on worker restart so the first post-deploy cycle carries it. The dependency stands: **if the fleet ever stops cycling entirely, notes stop reaching the corpus no matter how often prod is deployed** — and with cycles at ~6/hour that margin is thinner than it was at 51/hour.
+
+**Falsifiers, all carried forward with no new evidence:** frozen-mark **unmeasurable** for the third consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30**; #591 **0 of 20, untested**. At zero fills none of them can accrue.
