@@ -1441,3 +1441,43 @@ Reading #66 reported **H-RAILS: SUPPORTED** and a "best" cell (stop 0.015 / targ
 **Also unchanged and still owed:** the #66 finding that **#592's falsifier is defined purely on medians** — the exact quantity a higher lock improves by construction, while the mean it degrades is what compounds. That correction is independent of today's refutation and still needs applying before #592's 30-fire verdict is read.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** for a twelfth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #68 — 2026-08-28T16:13Z — quiet; #592's falsifier corrected and made decidable
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **26.0 hours**. No completed trips, so no three-agent dispatch. 42 runs; panel since P0 **44 entry proposals, 0 kept**; health 85 decisions, `no_verdict` 0, `verdict_salvaged` 2, 0 tracebacks, 0 `stop_mechanism` fires.
+
+### The one item that survived #67's refutation, now resolved
+
+Reading #66 found that **#592's falsifier is defined purely on medians** — *"median give-back must fall below 100% of peak AND median realized must be POSITIVE"* — while the rail sweep showed the lock fraction moves **median UP and mean DOWN monotonically**. A median-only criterion is therefore biased toward passing by construction, and the mean is what compounds.
+
+**Power analysis on the actual pre-ship fire population (n=20 `stop_mechanism` trip NETs):**
+
+| | value |
+|---|---|
+| MEAN | **−0.1522** ← what compounds |
+| MEDIAN | −0.0568 ← what the falsifier uses |
+| SD | 0.2893 |
+| positive | **1 of 20** |
+
+| Mean shift to detect (α=.10 one-sided, power .80) | n per arm |
+|---|---|
+| +0.0500 | 151 |
+| **+0.1000** | **38** |
+| +0.1522 (reaches break-even) | **16** |
+| +0.3000 | 4 |
+
+**CORRECTION to this session's own framing in #66/#67.** Those readings implied the mean might not be decidable at n=30 — carrying forward an n≈690 figure. **That figure belongs to a different population**: it was derived from *all trips* at SD 88.4 bp, whereas the `stop_mechanism` fire subpopulation has SD 0.2893 in dollars and is far tighter. **At n=30 the CI90 half-width on the mean is ±0.0869**, so a mean criterion IS usable — it can resolve any shift of roughly +0.11/fire or larger.
+
+### Corrected falsifier for #592, to be applied when the 30 fires accrue
+
+Replace the median-only test with **both** conditions, and report the interval rather than a binary:
+
+1. **PRIMARY — mean.** Mean realized per fire over the first 30 fires, with bootstrap CI90, compared against the pre-ship mean of **−0.1522** (n=20). **#592 FAILS if the post-ship mean CI90 does not lie above the pre-ship mean.** State the CI; do not reduce it to pass/fail.
+2. **SECONDARY — median (the original test), retained but demoted.** Median give-back below 100% of peak and median realized positive. **Passing this alone is NOT sufficient** and must never be reported as #592 working.
+3. **Power caveat, stated in advance.** #592's own claimed effect is **+$0.104 per segment** (the two-sided counterfactual, +$3.4296 over 33 segments). Detecting that at 80% power needs **n=38**, so **n=30 gives roughly 70% power for the effect actually claimed.** A null result at n=30 is therefore **INCONCLUSIVE, not FAILED** — and this must be pre-committed now, before the data arrives, so the standard cannot be moved afterwards.
+
+**Current status unchanged: #592 stands at 1 of 30 fires** (zero `stop_mechanism` fires this hour, and none since the drought began). At the current rate this verdict is not reachable; the correction above matters for whenever trading resumes.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** for a thirteenth consecutive cycle; H-LEDGER **not tripped**; #591 **0 of 20, untested**.
