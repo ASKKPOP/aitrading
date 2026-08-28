@@ -1649,3 +1649,68 @@ And this session's own independent measurement agrees: **−21.01 bp per trip**,
 **The treadmill cost stands and is the number worth quoting:** in the last 24h, **140 runs built, 1,134 decision cycles consumed, 0 fills.** The drought is not free — it is expensive and producing nothing — but the fix is expectancy (Plan 29 P3), not throughput.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** for a seventeenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #73 — 2026-08-28T21:13Z — THREE-AGENT VERIFICATION (owner-ordered). The conclusion survives; most of its evidence does not.
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **31.0 hours**. 25 runs (fleet 42: 10, fleet 41: 15). Panel since P0: **54 entry proposals, 0 kept.**
+
+**Owner order (2026-08-28), verbatim:** *"we got mistaken many time, So must be verification with 3 agents always, do not missing anymore."* Recorded as binding in [[three-agent-verification-always]]. Three axes were run — **A: DATA** (re-derive every number by a different route), **B: CODE** (verify every behavioural claim against `origin/main` AND the running image), **C: ADVERSARY** (actively refute this session's own conclusion). This reading is their cross-check.
+
+### The central conclusion SURVIVES — on evidence this session did not have
+
+> *"The book has no positive edge; the zero-order state is the system correctly declining it."*
+
+**Survives**, but the load-bearing number changes. Agent C's replay of the **1,072 proposals the panel blocked**, on their own price paths under identical rules (MDE 5.4 bp, all agents, both regimes): net expectancy **−11.35 bp, CI90 [−18.27, −4.42], excluding zero.** The AI's directional calls (−4.98 bp gross) **lose to a random-side control (+1.01) and to always-long (+5.27) on identical price paths**, robust across six exit rules. Overall win rate 53.7% is not significantly different from 50% (p=0.364).
+
+**This replaces −21 bp as the citable figure.** It is a stronger test than anything reported in readings #55–#72.
+
+### REFUTED — "four layers correctly refuse to trade"
+
+| cohort | n | gross bp | median | win% |
+|---|---|---|---|---|
+| KEPT | 16 | −5.82 | +2.55 | 56.2 |
+| DEMOTED | 1,072 | −4.98 | −0.26 | 49.0 |
+
+**KEPT − DEMOTED = −0.84 bp, z = −0.02, p = 0.983.** The gate stack refuses **98.5%** of proposals and what it passes is **statistically indistinguishable from what it blocks**. Reading #72's claim that four independent layers "correctly refuse" is **wrong**: they are right by base rate, not by discrimination.
+
+**LIVE RISK, stated plainly:** a stack with p=0.983 discrimination cannot tell a good candidate from a bad one. **If #592, the consolidation, or any future fix restores a real edge, this same stack will refuse it — and nothing in the current instrumentation would reveal that.** This is now a measured defect, not a suspicion, and it outranks the remaining P3 work.
+
+### Claims by this session that are REFUTED and must not be re-quoted
+
+| claim | verdict |
+|---|---|
+| "−21.01 bp **per trip**, two methods converge" | **A + C:** a dollar-weighted figure mislabeled. Equal-weighted is **−5.06 bp** (C) / −10.85 bp (A), CI spanning zero, **median +1.36 bp POSITIVE**. The "convergence" compared net-equal-weighted-74 against **gross**-notional-weighted-148 — different quantities |
+| "Gross edge negative in **all four markets**" | **A + C:** true of the mean only. **No market is statistically negative** (every CI includes 0); medians are **positive** in crypto (+3.24) and forex (+2.16). Forex flips to +0.09 bp on dropping one episode |
+| **"P0 set fleet 41 to exactly $180.00"** | **B, re-verified by this session:** true for **10 of 15** runs. Live range is **$59.40 – $810.23** — the top is **4.5× the reported figure**. Per-slot size is NOT `budget ÷ n_runs`: `allocate_budget` applies a confidence × vol-parity tilt clamped to [0.5×, 2×], legacy slots keep old allocations, and `PROBATION_SIZE_FRAC = 0.33` produces ratios of 0.1485 |
+| "Ingest needs a run cycle; if the fleet stops cycling, notes never reach the corpus" | **B:** called from `run_engine.py:7754` inside **`tick()` — the scheduler tick**, which runs regardless of whether any run cycles. The dependency does not exist |
+| "The formula cannot produce exactly 0.00000000 with a non-zero fee" | **B:** refuted by **102 actual rows**. Run 1817 true −0.7538 and run 1820 true −0.2568 are both stored as `0E-8` |
+| "9 of 9 armed exits adverse, mean 18.9 bp" | **C: 7 of 9.** 18.9 was the mean of \|slippage\| without mapping sign to side. Signed mean **−12.42 bp**, and the sign is **100% mechanically forced** by the trigger geometry — discretization, not adverse selection |
+| "08-25 proves trading loses (n=22)" | **C:** ≈**6 independent bets** after collapsing same-direction opens within 2h, and the two clusters **offset** (9 longs −$5.41 vs 10 shorts +$3.79). MDE ≈89 bp. An anecdote, not a measurement |
+| "9-day baseline 342 proposals / 3 kept = 0.93%" | **A:** not reproducible — windows give **351–397**, always 3 kept → 0.76–0.85%. Also internally wrong: 3/342 = **0.877%** |
+| "1,134 decision cycles" | **A:** not reproducible (1,069–1,226 by definition) |
+| "140 runs created in 24h" | **A: 139. B: 188.** Neither reproduces 140 — the agents disagree on window definition |
+
+### The correlated-event strip this session never ran (owner law requires it)
+
+**A:** 71% of the total net loss — **$133.82 of $187.24** — closed inside **three one-hour windows on 2026-08-13**. Stripping them: gross mean −5.06 → **−1.29**; **us-stock flips −12.83 → +26.14**.
+**C, independently and wider:** **100.6% of the gross loss falls in the first 2 of 16 days** (08-12/08-13); the remaining 14 days and 80 trips return **+$0.89**. It is also an *agent* split — **agent 5 alone is −$168.54, i.e. 107% of the entire book's loss**; agents 6, 59, 60 are all positive. Crypto post-08-14: **+2.61 bp**, median +3.97, win 58.8%.
+
+**Consequence:** the effective independent n is far below 148, and the loss is a concentration phenomenon, not a uniform absence of edge. **This does NOT reverse the conclusion** — C's n=1,072 test spans both regimes and all agents and still excludes zero — but every per-market and per-window figure in readings #55–#72 must be read as regime-bound.
+
+### Where the agents DISAGREE — recorded, because the disagreement is the finding
+
+1. **The `pnl = 0` mechanism.** This session asserted an **administrative reset** (from `reset6_bak_*`, 174 rows matching by `id`). **B could not determine a mechanism** — no arithmetic path, `execute_paper_trade` is the sole writer, no `UPDATE signals SET pnl` exists, and **`SHOW TRIGGERS` returns NONE** — and reports it **UNRESOLVED** rather than inferring. The backup tables remain strong evidence of an administrative action, but **B is right that this session asserted a cause it had not proven.** Status: agent-scoped (agent 6: 102/102 zeroed; agents 59/60: 0/10), mechanism **open**.
+2. **08-25 fail-open scale.** Earlier: "64 legs". **B measures 46 fail-open of 68 `order_discussion` events**, and via the **rule-fallback branch (`no llm response`), NOT the exception branch** — which matters for anyone trying to reproduce it by injecting an exception.
+3. **24h run creation:** A 139, B 188.
+
+### Confirmed clean
+
+**No deploy drift** — `automation.py`, `run_engine.py`, `fleet_planner.py`, `fleet_supervisor.py`, `desk_memory_ingest.py` are **md5-identical** between the running image and `origin/main` (`655da8c3`). `_conviction_size_scale` verified shrink-only by executing it across v∈[0,3] × leverage∈{1…100}: **max 1.0**. `simulate_trip` homogeneity re-proved numerically: worst deviation **1.8e-14**. `FLEET_TARGET_SLOTS` absent from `.env` and worker env — with the nuance that `fleet_auto_tune.py:171` and `routes_fleets.py:560` *can* raise `n_runs`, so "unsetting does not restore" is true of the H-CONSOL path only.
+
+### New defect nobody had flagged
+
+**`trading_runs.realized_pnl_usd` is not a usable P&L source** — it is 0 on **519/519** stopped agent-6 runs *and* **378/383** agent-60 runs since 08-15. Any report reading that column sees no loss anywhere. This is broader than the agent-6 anomaly and affects both live agents.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** (0 open positions); H-LEDGER **not tripped**; #592 **1 of 30** (metric corrected in #68); #591 **0 of 20, untested**.
