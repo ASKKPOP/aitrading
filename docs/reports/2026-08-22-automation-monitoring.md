@@ -1828,3 +1828,48 @@ Cycles 9 (demoted) and 10 (kept) are 29 minutes apart with **byte-identical `rec
 Last fill at/before the trigger: run 2019 LITUSDT cover, `2026-08-27T14:11:52Z`. Next: run 2208 BNBUSDT short, `2026-08-28T21:38:20Z`. **Mode ① → mode ②: merge every cycle, deploy only on deploy-worthy content.** This reading qualifies.
 
 **Falsifiers:** frozen-mark — **measurable again next cycle** if a position opens (0 open now); H-LEDGER **not tripped**; #592 **2 of 30**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #75 — 2026-08-28T23:13Z — quiet; reading #68's falsifier baseline CORRECTED
+
+**Profit first: no change. Zero new fills, zero open positions, $0.00 realized this cycle.** The BNBUSDT trip (+$0.108151) remains the only fill; last fill `2026-08-28T22:01:01Z`, 72 minutes ago. Drought resumed. 24 runs (fleet 42: 10, fleet 41: 14); panel 4 proposals, 0 kept; 16 decisions; **0 `stop_mechanism` fires**; 0 tracebacks. No new tape, so no three-agent dispatch.
+
+### Correcting reading #68 — its pre-ship baseline is not reproducible
+
+Reading #68 pre-committed a corrected #592 falsifier using a pre-ship population of **n=20, mean −0.1522, SD 0.2893**. Agent B could not reproduce it from any subset (#74). **This session has now recomputed it independently, and #68 is wrong.**
+
+Pulling **all 32 `stop_mechanism` fires** and splitting at the #592 ship (`2026-08-27T05:45:44Z`, the image build time):
+
+| source | n | mean | median | SD | basis |
+|---|---|---|---|---|---|
+| **reading #68 (claimed)** | 20 | −0.1522 | −0.0568 | 0.2893 | **not reproducible** |
+| Agent B (#74) | **30** | **−0.2194** | −0.0663 | **0.3138** | net trip |
+| this session, independent | **30** | −0.2184 | −0.0080 | 0.9506 | **gross at fire** |
+
+**n=30 is confirmed twice; #68's n=20 is wrong.** B and this session agree on n and on the mean to within $0.001 (−0.2194 vs −0.2184).
+
+**The remaining gap between B and this session is net-vs-gross — the same trap that has now bitten this stack three times.** This session computed `total_cum − peak_realized_usd`, i.e. **gross at the fire**; B replayed **net trip**. On the BNB fire that is +0.3753 (gross) against +0.1082 (net) — the divergence is entirely the round-trip fee. **B's net basis is the correct one for a falsifier about realized P&L**, so B's figures are adopted. Recorded because catching it required checking the two post-ship values against each other, not the summary statistics.
+
+### The corrected falsifier, and a useful intermediate readout
+
+Replacing SD 0.2893 with **0.3138** and the comparator −0.1522 with **−0.2194**:
+
+| shift to detect | n (80% power, α=.10 one-sided) |
+|---|---|
+| +0.0500 | 178 |
+| +0.1000 | 44 |
+| **+0.104 (#592's claimed effect)** | **41** — reading #68 quoted 38 |
+| +0.1500 | 20 |
+| **+0.2194 (reach BREAKEVEN)** | **9** |
+
+CI90 half-width at n=30 is **±0.0942** (was quoted as ±0.0869).
+
+**Two consequences, both pre-committed now:**
+
+1. **#68's "n=38 for 80% power" becomes n=41**, so n=30 gives roughly 50% power for the claimed effect. The pre-commitment stands and is reinforced: **a null at n=30 is INCONCLUSIVE, not FAILED.**
+2. **A useful intermediate readout exists that #68 missed.** Asking *"did #592 lift ratchet fires to breakeven?"* is a **+0.2194 shift, detectable at n=9** — roughly 7 more fires rather than 28. **This should be read and reported at n=9**, with the same discipline: mean with CI90, median demoted, and a null reported as inconclusive rather than as failure.
+
+**Current tally: n=2 of 30** (TAO +$0.9868, BNB +$0.1082 on the net basis; both verified #592-attributable by arithmetic in #74). Post-ship mean +0.5475 with a **degenerate** bootstrap at n=2 — it can only return the two observed values and carries no information. **Nothing is decided.**
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** (0 open positions); H-LEDGER **not tripped**; #591 **0 of 20, untested**.
