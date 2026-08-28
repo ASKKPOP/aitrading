@@ -955,3 +955,26 @@ Image `sooppiy-backend:20260827-consol-hconsol` (deployed 08-27T22:30, container
 ### Ops
 
 Reading PRs **#572–#583 remain unmerged** and reading #54 never got a PR. Per [[cycle-notes-must-reach-main-for-rag]] a note enters the desk's corpus only after MERGE→DEPLOY, so **~13 cycles of findings are currently invisible to the AI that is supposed to learn from them.** This is now the largest process defect on the board and needs an owner decision: merge the stack, or declare it archival and stop paying the cost of writing it.
+
+### URGENT — an armed scale-up rests on an experiment that cannot support it
+
+**Verified by inspection this cycle, independently of the agent that raised it.** `research/zi_control_replay.py::simulate_trip` is **exactly homogeneous of degree 1 in `notional`**. Every term is either notional-independent (`entry`, `stop = entry·(1−sgn·STOP_PCT)`, `target`) or exactly linear (`qty = notional/entry`, `fee_floor = 2·FEE_LEG·notional`, `arm = RATCHET_ARM_X·fee_floor`, `pnl = sgn·(cl−entry)·qty`, `floor = fee_floor + RATCHET_FRAC·max(0, peak−fee_floor)`, `gross`, `fees`). Both sides of every exit comparison are linear in notional, so scaling notional by *k* leaves the exit path identical and scales P&L by exactly *k*. An agent confirmed this numerically: 2,000 random trials, worst relative deviation **3.1e-15** (floating-point noise).
+
+**Therefore #593's secondary finding — "even long-only random loses at the current slot size" — cannot support slot consolidation.** It is equally true at every slot size. The replay is mathematically incapable of seeing size. What it actually measured is that the house rails lose at *all* sizes, which argues *against* consolidating, because consolidation multiplies the per-trip loss.
+
+**This violates the owner's own experimental-mindset rule** ("implement ONLY on an experimental result; a fix justified by reasoning is a guess"). The consolidation is not merely unsupported — it is supported by a quantity the experiment could not have measured.
+
+**The live exposure, measured this cycle (`config_snapshot_json.max_bet_usd`, `fleets.total_budget_usd`):**
+
+| Fleet | Budget | Incumbent max_bet | New-run max_bet | Scale-up | State |
+|---|---|---|---|---|---|
+| 41 (agent 6) | $10,000.00 | $130.39, $267.38 | **$1,125.00** (runs 2106/2107, created 2026-08-28T03:25:23Z / 03:31:30Z) | **4.2×–8.6×** | **ALREADY LIVE** |
+| 42 (agent 60) | $100,000.76 | $180.00–$335.34 (4 runs, all created 08-27T12:28–16:25Z) | ~$11,250 at budget/4 | **~40×** | **ARMED**, fires on incumbent turnover, no deadline |
+
+`FLEET_TARGET_SLOTS=4` is set in prod `.env` and is **not** a no-op — it is **half-applied**: `_slot_anchor` binds only at funding time, and the consolidation resize never fires because `n_runs (4) > tgt (4)` is false. Fleet 42 therefore re-anchors silently whenever a slot recycles.
+
+**Agent 6 is the account that booked 102 of 102 exits at exactly $0.0000.** It is now trading at 4–8× size, having re-anchored during this very monitoring session. #592 fixed the geometry that produced those zeros, but that fix stands at **1 of 30 fires** — the size increase is being applied ahead of the evidence that the exit rule works.
+
+**This is an owner decision and was NOT actioned by this session.** The revert, if wanted, is one line — set `FLEET_TARGET_SLOTS` back (or unset it) in `/home/ec2-user/sooppiy/.env` and recreate the worker. Recorded here rather than acted on, per [[never-touch-live-trading-config]].
+
+**Correction to a document in this corpus:** `docs/reports/HANDOFF-ratchet-monitoring-2026-08-27.md` states that `signals.pnl` "deducts only the entry fee". That is **wrong** — it nets the **EXIT** fee only, verified to 6 decimals against the LIT partial covers (signals 1554/1555) and reconciling to `trading_runs.realized_pnl_usd` to the cent. Trip net = `exit.pnl − entry.fee_usd`. The ratchet falsifier's arithmetic depends on this convention.
