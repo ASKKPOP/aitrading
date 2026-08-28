@@ -1531,3 +1531,38 @@ Pearson r = **−0.3088**. Monotone, and pointing the wrong way.
 **Method note:** the dollar-level result (r = −0.31, clean and monotone) was wrong, and only the notional normalisation exposed it. **Any per-trade statistic on this ledger must be normalised by notional before it is interpreted** — the same class of trap as the partial-exit weighting error recorded in reading #64.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** for a fourteenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30** (metric corrected in #68); #591 **0 of 20, untested**.
+
+---
+
+## Reading #70 — 2026-08-28T18:13Z — the conviction-sizing check: my #69 framing was wrong, and a shipped flag-gate now has its answer
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **28.0 hours**. No completed trips, so no three-agent dispatch. 41 runs (fleet 42 at 24, fleet 41 at 17); panel since P0 **48 entry proposals, 0 kept**; health 76 decisions, `no_verdict` 0, `verdict_salvaged` 2, 0 tracebacks.
+
+### The code check reading #69 deferred, now done
+
+#69 observed that high-conviction entries carry ~2× the notional and flagged it as *"sizing amplifies a signal that carries no information — variance without expected return,"* explicitly deferring a code check. **That check reverses the framing.**
+
+`run_engine.py:3147 _conviction_size_scale` (Plan 15 rec-2), live by default via `RUN_SIZE_BY_CONVICTION`:
+
+```
+base = max(0.40, min(1.0, (v - 0.45) / 0.30))
+# "strictly shrink-only so it can never lever up"
+```
+
+Conviction 0.45→0.75 maps to a size scale of **0.40→1.00**. **High conviction is not amplified — low conviction is damped, to as little as 0.40×.** The observed ratio (avg notional $643 high vs $304 mid) is **≈2.1×, against the rule's own range of 1.00/0.40 = 2.5×.** Mechanism confirmed; **my description of it was wrong.**
+
+**And the correction changes the conclusion.** A shrink-only rule on a book whose trades are *uniformly* ≈−21 bp (reading #69: no conviction bucket differs, r = −0.0393) **reduces exposure on a subset without giving up any edge, because there is no edge to give up.** It is **accidentally protective**: removing it would put full size on trades that are no better, and would *increase* the loss. **Do not remove it** — but record that it works for a different reason than its docstring claims.
+
+### A pre-registered gate in the code now has its answer, and the answer is NO
+
+`_conf_v2_enabled` (`RUN_CONF_V2`, default OFF) carries this condition verbatim:
+
+> *"Default OFF — enable only after the shadow period shows conviction correlates with outcomes better than the scalar."*
+
+**Reading #69 is that shadow measurement.** Conviction vs per-unit outcome: **Pearson r = −0.0393, n=74, indistinguishable from zero**, with all three conviction buckets losing 18–25 bp. **The stated enable condition is not met and is not close to met.**
+
+**Recorded decision: `RUN_CONF_V2` stays OFF, now on evidence rather than caution.** Any future session proposing to flip it must first beat r = −0.0393 on a larger sample; this reading is the baseline it has to clear. Verified in prod: both `RUN_SIZE_BY_CONVICTION` and `RUN_CONF_V2` are unset in `.env`, so the code defaults (ON / OFF respectively) are what is running.
+
+**No change was made to either flag.** The live behaviour is already what the evidence supports.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** for a fifteenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30** (metric corrected in #68); #591 **0 of 20, untested**.
