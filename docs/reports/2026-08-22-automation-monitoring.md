@@ -1601,3 +1601,51 @@ This is a **self-reinforcing loop**: no entries → `idle_retired` → rebuild �
 **No change made.** This is an observation; nothing here justifies touching build rates or retirement thresholds while entry expectancy is −21 bp — building *more* runs that would trade at a loss is not an improvement, and slowing retirement would only hold idle runs longer.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** for a sixteenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #72 — 2026-08-28T20:33Z — #71's "builder stall" is RETRACTED; four layers independently refuse to trade
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **30.4 hours**. No completed trips, so no three-agent dispatch. Health: 89 decisions, `no_verdict` 0, `verdict_salvaged` 2, 0 tracebacks.
+
+### RETRACTION — reading #71's "known stall signature" was wrong
+
+#71 reported `[FleetPlanner] tick: {'claimed': 2, 'researched': 0, 'built': 0}` as *"the [[fleet-replenish-stall-trio]] pattern"*. **That was a false match.** Verified in code (`fleet_planner.py:2015-2029`):
+
+```
+if status == STATUS_RESEARCHING:  _do_research(fleet); out["researched"] += 1
+elif status == STATUS_BUILDING:   _do_build(fleet);    out["built"] += 1
+else:                             supervise_fleet(fleet); out["supervised"] += 1
+```
+
+`built` and `researched` **only** increment for fleets in `BUILDING`/`RESEARCHING` status. **Both fleets are `active`**, so they take the third branch — `supervised: 2` — every tick. **`{'researched': 0, 'built': 0, 'supervised': 2}` is the correct, expected output for two active fleets, not a stall.** Replacement runs through `supervise_fleet` and is demonstrably working: **8 `slot_created` events and 5 runs actually created** in the window. This session pattern-matched a remembered failure mode onto a counter that means something different in this state.
+
+### The real reason for the drain — and for days of zero orders
+
+Fleet: **42 → 34 → 24 runs.** This hour **15 retired (idle 10, desk 5) against 5 replaced.** Replacement works but is *slower* than retirement, and the reason is visible in `fleet_events`:
+
+| gate | verdict on the freshest pass |
+|---|---|
+| `fee_gate` | kept `NG, ZW, GC`; **dropped GBPUSD** — *"fee_infeasible: min_edge: claimed 0.55% × 0.25 realization = 0.14% < 0.15% floor"* |
+| `backtest_gate` | kept `ZW, GC`; **dropped NG** — *"non-positive expectancy −140.62 USD/trade over 8 closed trades"* |
+
+**The gates are not broken and are not over-tight — they are keeping most candidates and dropping the ones that fail an explicit arithmetic test.**
+
+### The finding that answers the owner's question
+
+**Four independent layers, each measuring separately, all reach the same conclusion: there is nothing here worth trading.**
+
+1. **`fee_gate`** — rejects candidates whose realizable edge (0.14%) is below the fee-aware floor (0.15%).
+2. **`backtest_gate`** — rejects candidates whose replayed expectancy is negative (−140.62 USD/trade).
+3. **The desk** — 580 of 2,279 holds cite fee/expectancy: *"lacks a defensible, fee-positive edge at current levels."*
+4. **The panel** — **52 entry proposals since P0, 0 kept.**
+
+And this session's own independent measurement agrees: **−21.01 bp per trip**, reproduced by two unrelated methods (conviction-bucket join and position-episode fill-price replay), and **negative in every market before a cent of fees**.
+
+**So "days of zero orders" is not one broken component.** It is four gates, built at different times by different mechanisms, independently arriving at the same arithmetic — the same arithmetic this session verified four ways. **The plumbing is working. The edge is what is missing.**
+
+**This is the honest and uncomfortable statement:** the only ways to produce orders today are to disable a gate, lower the fee floor, or ignore the backtest — and 08-25 already measured what that costs. When the panel failed open, the book took 64 legs and lost **−$6.15**, with **9 of 22 directionally correct calls still losing to fees**. Manufacturing orders is available; profitable orders are not.
+
+**The treadmill cost stands and is the number worth quoting:** in the last 24h, **140 runs built, 1,134 decision cycles consumed, 0 fills.** The drought is not free — it is expensive and producing nothing — but the fix is expectancy (Plan 29 P3), not throughput.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** for a seventeenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
