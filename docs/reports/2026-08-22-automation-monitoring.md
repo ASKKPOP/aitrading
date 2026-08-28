@@ -1566,3 +1566,38 @@ Conviction 0.45→0.75 maps to a size scale of **0.40→1.00**. **High convictio
 **No change was made to either flag.** The live behaviour is already what the evidence supports.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** for a fifteenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30** (metric corrected in #68); #591 **0 of 20, untested**.
+
+---
+
+## Reading #71 — 2026-08-28T19:13Z — H3 REFUTED: the fleet is draining, and the treadmill is now quantified
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is `2026-08-27T14:11:52Z` — **29.0 hours**. No completed trips, so no three-agent dispatch. Panel since P0: **52 entry proposals, 0 kept**. Health: 86 decisions, `no_verdict` 0, `verdict_salvaged` 2, 0 tracebacks.
+
+### H3 (fleet stable) is REFUTED
+
+Live runs fell **41 → 34** in one hour; fleet 42 went **24 → 17** while its target is still 25. Not the churn seen in earlier cycles.
+
+**Cause, measured:** 13 runs stopped (`idle_retired` 12, `desk_retired` 1) against only **6 built**. Retirement is outpacing replenishment roughly 2:1. Both fleets are `active`, targets 25/25, `entry_paused_reason` NULL, `held_by_master` 0 — nothing is paused or held.
+
+**The builder shows the known stall signature** — `[FleetPlanner] tick: {'claimed': 2, 'researched': 0, 'built': 0, 'supervised': 2}` on essentially every tick, with 8 slots of headroom per fleet. That is the [[fleet-replenish-stall-trio]] pattern, though here it is a **partial** stall (~6 builds/hour) rather than the full 0/hour case.
+
+**Theses are NOT the constraint, and this was checked rather than assumed:** SymbolResearch is healthy (`universe 160, survivors 110, persisted 110, llm 110`), **220 fresh theses in the last hour** (us-stock 80, forex 58, crypto 42, futures 40), `market_scope_json` is **NULL on both fleets** so nothing is scope-excluded, and there are **zero** feasibility/exposure/build-gate rejections in the log. Supply is ample; the build *rate* is the limit.
+
+### The treadmill, quantified — the real cost of the drought
+
+| Last 24 hours | |
+|---|---|
+| Runs **created** | **140** |
+| Runs stopped | 107 (of which **`idle_retired` 71**) |
+| Runs that **ever filled** | **0** |
+| Decision cycles consumed by runs that never traded | **1,134** |
+
+**The platform built 140 runs, ran 1,134 LLM decision cycles, and produced zero trades.** Every run in the window was pure overhead: researched, funded, cycled, retired for never trading, replaced.
+
+This is a **self-reinforcing loop**: no entries → `idle_retired` → rebuild → still no entries. It also explains the drain — idle-retirement fires at ~71/24h while the builder sustains only ~6/hour, so the fleet settles at whatever level those two rates cross, well below the 25/25 target.
+
+**Stated in profit terms, which is what matters:** the loss from the drought is $0.00 realized, but the *cost* is 1,134 decision cycles and 140 run builds spent for nothing. That is the number to quote when the drought is described as "quiet" — it is not quiet, it is expensive and producing nothing. The treadmill was already named as an open item in the Phase 2 queue (docs/research/06); this reading gives it a measured size for the first time.
+
+**No change made.** This is an observation; nothing here justifies touching build rates or retirement thresholds while entry expectancy is −21 bp — building *more* runs that would trade at a loss is not an improvement, and slowing retirement would only hold idle runs longer.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** for a sixteenth consecutive cycle; H-LEDGER **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
