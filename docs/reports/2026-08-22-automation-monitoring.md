@@ -910,3 +910,48 @@ The desk now reads its own fill ledger on every cycle including FLAT ones: recor
 - **n=16 cannot distinguish skill from noise** (26% of coin-flip weeks are this bad; ~n=45–90 needed). The proposal-level signal (n=444) is real and negative but sits in ONE regime.
 
 **Ops note:** GitHub Actions is BILLING-BLOCKED (all 5 checks fail in 3s; Actions itself operational; annotation names the payment failure). Every job was reproduced locally as merge evidence — 4579 pytest passed, ruff clean, gitleaks 0 in-range, frontend build green; pip-audit could not run locally and is unaffected (no manifest touched). Owner action required to restore CI.
+
+---
+
+## Reading #55 — 2026-08-28T03:25–04:00Z — falsifier harvest after a 3-day monitoring gap
+
+**Monitoring was OFF for ~77 hours** (owner stop order 08-24T21:55Z → owner re-order 08-28T03:2xZ, hourly/3-agent cadence). Four ships landed in that gap from other sessions. This reading is therefore a **falsifier harvest**, not an incremental cycle: every pre-registered falsifier that came due while nobody was watching is settled here, and the ones that are still undecidable are named as undecidable rather than quietly passed.
+
+**Profit first.** All-time trip net across the 4 agents that ever filled: **−$184.65**. Stripping the largest contributor (agent 5, −$187.86, whose entire book is 08-12→08-14 under the pre-redesign logic) leaves **+$3.21** — **the sign flips**, so per the outlier law the all-time verdict is INCONCLUSIVE as a judgement on current logic and is dominated by a three-day window in mid-August. Trailing 24h: **+$0.4417** (5 legs). Trailing 48h: 9 fills. Book is flat right now (0 open position rows); 8 runs running.
+
+### The finding of this reading: 102 of 102 exits at exactly $0.0000
+
+Agent 6 — 53 filled runs, 08-15→08-26 — booked **102 exit legs whose `pnl` is EXACTLY 0.0000** (0 NULLs; verified). Against $4.5207 of entry fees, its trip net is **−$4.52**: a pure fee bleed with zero gross extracted across 102 round trips. This is `_breakeven_floor_hit` (`current <= exit_fee`, best case $0 BY CONSTRUCTION) caught at full scale, and it is the strongest evidence yet for the payoff-ratio diagnosis. The same fingerprint appears in the daily cut: 08-24 and 08-25 together booked 39 exits summing to exactly $0.0000 against ~$2.75 of entry fees. No other agent shows it (agent 5: 0 of 134 zero exits; agents 59/60: 0 of 68) — so it is the rule's fingerprint, not a ledger artefact.
+
+Agents 59 (+$6.98, 59 exits) and 60 (+$0.76, 9 exits) are **net positive** and carry no zero-capped exits.
+
+### FALSIFIER 1 — frozen mark (mine, reading #54): **PASS**
+
+Pre-registered: consecutive-identical-mark rate must fall **77.8% → <20%**, else report FAILED.
+**Measured 2.3%** (4 identical of 171 consecutive pairs, 5 runs, 08-26→08-27), median poll gap **62–74 s**, matching `POSITION_REFRESH_INTERVAL=60` plus scan overhead. Per-run: 1825 0.0%, 1894 0.0%, 1895 5.3%, 2001 0.0%, 2019 1.4%.
+
+**Method correction, recorded because the first two passes were both wrong.** Pass 1 filtered equity events by `payload NOT LIKE '%"unrealized": 0.0,%'` and returned 2.4%. Pass 2, unfiltered but bounded by `trades >= 1`, returned **95.7% / 90.1%** — because `trades` is a CUMULATIVE counter, so a run keeps polling at `unrealized: 0.0` long after its position closes, and those flat rows are trivially identical. Neither number is the answer. Pass 3 — the one reported — bounds polls to true open intervals reconstructed from entry→exit leg timestamps in `signals`. **A single green check was wrong here; the disagreement between passes was the finding.** The direct check (`positions.price_updated_at` age) was unavailable: the book is flat, 0 position rows.
+
+### FALSIFIER 2 — H-LEDGER revert guard (mine, reading #54): **NOT TRIPPED, flag stays ON**
+
+Guard: revert if kept-buy rate or fill count falls below the pre-ship baseline (0 kept buys/102 proposals, **6 fills**) over 48h of comparable tape. Measured trailing 48h: **9 fills** (`trade` events), 2455 decisions → 115 order_intent → 9 trades. 9 ≥ 6, so entries did NOT collapse and `DESK_LEDGER_BLOCK=1` stands. The #484 failure mode did not recur.
+
+### FALSIFIER 3 — RATCHET_LOCK_FRAC (#592): **1 of 30 fires — NOT DECIDED**
+
+Pre-registered: over the first 30 fires, median give-back must fall below 100% of peak AND median realized must be positive.
+Exactly **one** `stop_mechanism` fire since the 08-27T05:45Z ship — 08-27T10:14:46Z, run 2001, TAOUSDT: `peak 2.2846, arm 0.4486, exit_fee 0.2018, total 1.0877`. New floor = `0.2018 + 0.5 × (2.2846 − 0.2018) = 1.2432`; old floor was `exit_fee = 0.2018`, i.e. **best case $0**. Give-back **52.4% of peak** vs the pre-ship median of 103.1%; realized **+$1.0877** vs a pre-ship median of −$0.0066. Directionally exactly what was designed, and it is the single largest positive leg in the window.
+**This does not pass the falsifier.** n=1 of 30. At the observed rate (2 fires / 48h) 30 fires needs **~30 days**. Reported as UNDECIDED; a session that reports #592 as "working" on this evidence is overclaiming.
+
+### FALSIFIER 4 — PANEL_LOCAL_FALLBACK (#591): **0 of 20 — UNTESTED, not passed**
+
+Pre-registered: first 20 fallback meetings ≥80% genuine verdicts. Measured since the 08-26T00:14Z ship: **0 fallback meetings out of 122** `order_discussion` events — no payload contains `local-fallback`. The good reading is that no INFRA panel failure occurred; the honest reading is that **the safety net has never been exercised in production and is therefore unverified**. It cannot be decided by waiting — only by fault injection. `verdict_salvaged` fired 27 times against 122 meetings (**22%**), and `no_verdict` 8 — the truncated-JSON salvage path is carrying a material share of verdicts and deserves its own measurement.
+
+### State verified on prod this cycle
+
+Image `sooppiy-backend:20260827-consol-hconsol` (deployed 08-27T22:30, containers up 5h). `POSITION_REFRESH_INTERVAL=60`, `DESK_LEDGER_BLOCK=1`, `DAY_DIGEST_BRIEF=1` set; `RATCHET_LOCK_FRAC` and `PANEL_LOCAL_FALLBACK` unset, so both run on code defaults (0.5 and ON). Deploys in the gap: `20260825-humanfacts`, `20260825-period-chart`, `20260825-trailfix`, `20260825-daydigest`, `20260826-panelfix`, `20260827-ratchetlock`, `20260827-consol-hconsol`. Worker errors in the last 20 min are benign feed noise only (`RTY`, `NZDJPY` delisted/no data), 0 tracebacks.
+
+**#593 shipped the zero-intelligence control** — the experiment recorded for weeks as "the decisive unrun experiment" is no longer unrun. Verdict, pre-registered on both fill bases: **INCONCLUSIVE** — 57 closed crypto trips (ledger net −$6.60) vs 1,000 symbol+size-matched random draws under identical rails; at the realistic 0.03% basis the AI sits at the **63.7th percentile** of random with CI90 of the mean trip difference including 0. AI entry selection is **not distinguishable from random-with-rails at n=57**. Secondary result, and the actionable one: **even long-only random loses at the current slot size in a rising market**, which is experimental support for the `FLEET_TARGET_SLOTS` consolidation that shipped in the same PR.
+
+### Ops
+
+Reading PRs **#572–#583 remain unmerged** and reading #54 never got a PR. Per [[cycle-notes-must-reach-main-for-rag]] a note enters the desk's corpus only after MERGE→DEPLOY, so **~13 cycles of findings are currently invisible to the AI that is supposed to learn from them.** This is now the largest process defect on the board and needs an owner decision: merge the stack, or declare it archival and stop paying the cost of writing it.
