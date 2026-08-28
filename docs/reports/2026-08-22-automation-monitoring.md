@@ -978,3 +978,34 @@ Reading PRs **#572–#583 remain unmerged** and reading #54 never got a PR. Per 
 **This is an owner decision and was NOT actioned by this session.** The revert, if wanted, is one line — set `FLEET_TARGET_SLOTS` back (or unset it) in `/home/ec2-user/sooppiy/.env` and recreate the worker. Recorded here rather than acted on, per [[never-touch-live-trading-config]].
 
 **Correction to a document in this corpus:** `docs/reports/HANDOFF-ratchet-monitoring-2026-08-27.md` states that `signals.pnl` "deducts only the entry fee". That is **wrong** — it nets the **EXIT** fee only, verified to 6 decimals against the LIT partial covers (signals 1554/1555) and reconciling to `trading_runs.realized_pnl_usd` to the cent. Trip net = `exit.pnl − entry.fee_usd`. The ratchet falsifier's arithmetic depends on this convention.
+
+### RETRACTION — the "102 exits at $0 = the ratchet's $0-by-construction" claim in this reading is WRONG
+
+**Raised by the AI-authorship agent, then verified independently by the main session. The earlier section of reading #55 stands retracted on this point and is superseded by what follows.**
+
+The zeros are an **accounting defect scoped to agent 6**, not the old breakeven rule operating as designed. Two decisive tests:
+
+**Test 1 — the cash never moved.** After 101 closing trades with real fees charged, `agents.cash − agents.starting_capital` for agent 6 is **exactly 0.00000000**. Every other agent moved: 5 → −187.86425815, 59 → +6.97524996, 60 → +0.75744194. A book that completed 101 round trips and paid $4.52 of entry fees cannot have a zero cash delta.
+
+**Test 2 — the same trip carries two different numbers.** The exit mechanism computed real, non-zero P&L at the very timestamp `signals.pnl` recorded 0:
+
+| Run | ts | `stop_mechanism.total` | `signals.pnl` | `fee_usd` |
+|---|---|---|---|---|
+| 1819 | 08-25T21:07:43Z | **−0.9690271402** | 0.00000000 | 0.05750201 |
+| 1820 | 08-25T23:57:23Z | **−0.2566679257** | 0.00000000 | 0.05796958 |
+| 1821 | 08-25T23:00:00Z | **+0.0185817133** | 0.00000000 | 0.02333276 |
+| 1824 | 08-25T23:27:07Z | **+0.0430472722** | 0.00000000 | 0.04343894 |
+| 1825 | 08-26T00:01:30Z | **−0.0408358198** | 0.00000000 | 0.04347906 |
+
+Runs 1821 and 1824 carry **positive** mechanism totals. A rule whose best case is exactly $0 by construction cannot produce a positive total. That single fact kills the ratchet explanation on its own.
+
+**The split is agent-scoped, not time-scoped:** agent 6 → 101 of 101 exit legs exactly 0.00000000; agents 5/59/60 → 0 of 202. Agents 6 and 60 traded the same days (08-18, 08-26) with opposite results, so no deploy window explains it. Agent 6 is user 5, the prod test account.
+
+**Why this correction matters more than the claim it replaces:**
+1. **Every P&L figure computed from `signals.pnl` or `trading_runs.realized_pnl_usd` for agent 6 is $0 and false**, including the per-agent table earlier in this reading (agent 6 "−$4.52" is entry fees only; the true figure is unknown and non-zero). Ledger replay of `signals` fills, or the `stop_mechanism` totals, are the only trustworthy sources for that account.
+2. **The `insufficient cash` sizing gate cannot bind on an account whose cash never moves.**
+3. **It compounds the armed scale-up above.** Fleet 41 — the fleet that re-anchored to $1,125 max_bet during this session — is **agent 6**. The consolidation is scaling the one account whose realized P&L is unmeasurable through the normal fields. Nobody can tell from the standard reports whether that 4–8× is working.
+
+**NOT yet determined — do not assert a cause.** Deployed `automation.py` is byte-identical to `main` and has no arithmetic path to exactly 0.00000000 with a non-zero fee; no `UPDATE signals SET pnl` exists in the repo. **Next probe (pre-registered): replay `execute_paper_trade` against agent 6's book in a shadow and observe the written `pnl` — that separates an agent-scoped data condition from a deploy-scoped one.** Until that runs, the mechanism is unknown.
+
+**Method note for future sessions:** the wrong claim was reached by reading a single column (`signals.pnl`) and inferring a mechanism that fit it. The refutation came from cross-checking a SECOND independent record of the same event (`stop_mechanism.total`) and a THIRD (`agents.cash`). A column that agrees with your hypothesis is not evidence until an independent record of the same event agrees too. This is the third time in one cycle that a first-pass measurement in this reading was wrong (see also the identical-mark rate, which took three passes).
