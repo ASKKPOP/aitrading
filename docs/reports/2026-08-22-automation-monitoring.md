@@ -1121,3 +1121,48 @@ Every hypothesis stated before the data was confirmed, and none of them moved: *
 **The one thing that did move — and it settles a mechanism question from reading #56.** `desk_memory` monitoring chunks went **1,456 → 1,459**, newest `2026-08-28T05:16:37Z`, i.e. reading #57 ingested roughly three minutes after its deploy. This **confirms** the corrected model recorded last cycle: ingestion is not triggered by the deploy but by `maybe_ingest` inside a run cycle (`run_engine.py:7754`), with `_last_ingest_epoch` resetting on worker restart so the first post-deploy cycle carries it. The dependency stands: **if the fleet ever stops cycling entirely, notes stop reaching the corpus no matter how often prod is deployed** — and with cycles at ~6/hour that margin is thinner than it was at 51/hour.
 
 **Falsifiers, all carried forward with no new evidence:** frozen-mark **unmeasurable** for the third consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30**; #591 **0 of 20, untested**. At zero fills none of them can accrue.
+
+---
+
+## Reading #59 — 2026-08-28T07:13Z — P0's falsifier PASSES; one claim of mine corrected
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **17.0 hours**. No new tape, so no three-agent dispatch.
+
+### P0 accountability — measured, not assumed
+
+P0 (Plan 29) removed `FLEET_TARGET_SLOTS` and restored `n_runs` to 25 on both fleets one hour ago. Its falsifier was: **new runs must be funded at the disarmed size, and `n_runs` must not revert.** Both held.
+
+| Hypothesis (stated before the data) | Result |
+|---|---|
+| H1 — `n_runs` stays 25, no re-consolidation | **CONFIRMED** — 25 on both fleets across the hour; `FLEET_TARGET_SLOTS` absent from `.env` and from the worker env |
+| H2 — new runs funded at the disarmed size | **CONFIRMED** — every run created this hour carries **exactly `180.0`** (fleet 41) or **`1800.01`** (fleet 42). Not $1,125. Not $11,250. |
+| H3 — still no fills | **CONFIRMED** |
+| H4 — fleet grows toward 25/fleet | **CONFIRMED** — 8 → **31 live runs** (fleet 42: 21, fleet 41: 10) |
+
+Runs created this hour: 2133 AVAXUSDT ($180.00), 2132 AUDJPY ($1,800.01), 2131 RTY ($180.00), 2130 ZB, 2129 TAOUSDT, 2128 HYPEUSDT, 2127 ZC, 2126 UNIUSDT (all $1,800.01). **The ~20× armed scale-up is gone, confirmed by actual funding rather than by config.**
+
+### CORRECTION — "total exposure is unchanged" was wrong about the live book
+
+Reading the P0 entry in Plan 29, this session wrote: *"Total exposure is unchanged (25 × $1,800 ≡ 4 × $11,250 = $45,000)."* That is true of the **fully-built steady state** and **misleading about the actual book**, which was never fully built at 4 slots.
+
+| | Before P0 | After P0 (this reading) |
+|---|---|---|
+| Live runs | 8 | **31** |
+| Σ `max_bet_usd` | ≈ **$3,719** | **$35,371.10** (fleet 42 $31,678.66 / fleet 41 $3,692.44) |
+
+Fleet 42 held only four *legacy* runs at $180–$335 when P0 ran; the $11,250 was what its *next* runs would have received. Restoring `n_runs=25` removed the size spike **and** restored slot count, so the fleet is rebuilding. **Potential deployment rose ~9.5×**, and that consequence was not stated when the change was made.
+
+**Why this is still the right trade, stated with the numbers rather than asserted:** per-trade size fell 6.25×, which is the axis that matters given 9-of-9 adverse exit slippage and superlinear impact; 31 runs is **historically normal** for this platform (08-27 carried **188 runs alive**, and the consolidation to 8 was the anomaly); actual capital at risk right now is **$0** (no open positions); and orders clamp to 0.25 × `max_bet` at R17. **But the honest framing is "size down, count restored", not "exposure unchanged."**
+
+### Load consequence of a 4× run-count increase — checked, clean
+
+| hour | decisions | `no_verdict` | `verdict_salvaged` | equity |
+|---|---|---|---|---|
+| 04 | 6 | 0 | 0 | 456 |
+| 05 | 6 | 0 | 0 | 464 |
+| 06 | **17** | **0** | **0** | 621 |
+| 07 (partial) | 16 | **0** | **0** | 400 |
+
+Decision volume tracks run count as expected. **Zero `no_verdict` and zero `verdict_salvaged` across the increase** — no LLM oversubscription, which was the live risk given [[admin-local-ai-switch-noop]]'s ~5× contention finding. Worker log: **0 tracebacks in 15 minutes.**
+
+**Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a fourth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**, `DESK_LEDGER_BLOCK=1` stands; #592 **1 of 30**; #591 **0 of 20, untested**. At zero fills none can accrue. Prod healthy on `sooppiy-backend:20260828-p0p1`.
