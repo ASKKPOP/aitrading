@@ -1272,3 +1272,47 @@ Fleet 42 holds its 25 target; fleet 41 is 16 (was 17 — normal idle-retire/rebu
 **So the panel-demotion question is not answerable by observation before roughly 2026-08-31**, and every reading until then that reports a growing zero is reporting noise, not a finding. This is the same class of problem as #592 (n=1 of 30) and #591 (0 of 20): **the falsifiers this stack is carrying are all sample-starved, and the drought makes them slower still.** The decidable path remains replay (Plan 29 P2/P3), not accrual.
 
 **Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for an eighth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #64 — 2026-08-28T12:13Z — quiet tape; P2's premise examined and KILLED
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **22.0 hours**. No completed trips, so no three-agent dispatch. Fleet 42 at its 25 target, fleet 41 at 17, **42 runs**. Panel since P0: **27 entry proposals, 0 kept** (still far short of the n=321 needed to mean anything — reading #63). Health: 79 decisions, `no_verdict` 2, `verdict_salvaged` 1, 0 tracebacks.
+
+Since reading #63 established that no falsifier here is answerable by waiting, this cycle was spent on **Plan 29 P2** instead. The result is that **P2's stated premise is dead.**
+
+### P2's premise was wrong — the ZI control never used the corrupted column
+
+Plan 29 (and readings #55, #60) carried this claim, sourced from an agent and propagated by this session without independent checking:
+
+> *"The ZI control's n=57 was degenerate — 56 of 57 trips netted exactly $0.00 from the settlement defect ⇒ effective n≈1. Recovering `reset6_bak_signals` unblocks a re-run."*
+
+**Checked against the actual input, `research/ai_trips_20260815_27.json`: FALSE.** The file contains **0 of 57 nets equal to zero**. Every trip carries a real value (min −6.5993, max +6.2438, median −0.0462, 18 positive / 39 negative), and the file's own fields (`entry_px`, `fees_usd`, `notional_usd`) show it was built by **fill-price replay** — it never read `signals.pnl`. **The ZI control was never contaminated by the agent-6 reset, and recovering the backup did not unblock it.** P2 as written is cancelled.
+
+**Where the "degenerate" impression came from — and it is a real methodological trap.** The result file reports `strip_largest: {ai: 0.0, ...}`. That is true, and misleading:
+
+| Robustness test | Total |
+|---|---|
+| All 57 | **−6.5968** |
+| Strip 1 largest-\|·\| | **+0.0025** — sign FLIPS |
+| Strip 2 largest (both FIL) | **−6.2413** — negative again |
+| Strip 4 largest | **+4.3790** — flips AGAIN |
+| 47 small trips only (\|net\| ≤ $1) | **−6.0897**, median **−0.0513** |
+| Trimmed mean (drop 3 per tail), scaled to n | **−2.5707** |
+
+The two largest trips are **FILUSDT shorts of nearly equal and opposite size** — run 1531 **−6.5993** and run 1322 **+6.2438**, both agent 6. Stripping only the largest deletes one half of an offsetting pair, which is why the sign flips. Stripping four removes two big losers (INJ −5.6171, LINK −5.0032) and flips it the other way.
+
+**METHOD FINDING, and it applies to every past and future use of the owner's outlier law here: the strip-largest test is not valid when the top contributors offset each other.** A single-strip sign flip is evidence of an offsetting pair, not necessarily of a fragile result. The defensible statement on this cohort is split:
+
+- **The TYPICAL trip is robustly negative** — median −$0.0513, trimmed mean equivalent −$2.5707, and the 47 trips under $1 sum to **−$6.0897** on their own, i.e. nearly the entire book loss comes from the *mass* of ordinary trips, not from outliers.
+- **The TOTAL is fragile** — four large trips swing it between −$6.60 and +$4.38 depending on how many are excluded. Any claim about the total alone should be treated as inconclusive.
+
+### What P2 actually needs, restated
+
+The ZI control's verdict stands as originally reported and for a legitimate reason that has nothing to do with data corruption: its own **`mean_trip_diff_CI90` is [−0.3139, +0.4624], which includes 0.** AI entry selection is **not distinguishable from random-with-rails** — and that is a *power* problem, not a *data* problem.
+
+There is a second, independent flaw worth fixing when it is re-run: the arms are **asymmetric**. `ai_nets = [t["net_usd"] for t in cohort]` takes the AI arm from the **real ledger**, while the ZI arm comes from `simulate_trip()`. Real fills carry real slippage and booked fees; simulated trips carry modelled ones. **A correct control simulates BOTH arms through identical rails and differs only in entry selection.** That, plus enough power, is the actual P2 — not a data re-run.
+
+**Corrections to the record, by name:** the "56 of 57 netted exactly $0.00" mechanism is **dead**; "recovering the backup unblocks P2" is **dead**; "effective n≈1" is **half-right** — the total is outlier-sensitive, but the central tendency is not, and the reason is an offsetting pair rather than a settlement defect. This session propagated all three without checking the input file, and they had reached Plan 29 and two readings before this cycle caught them.
+
+**Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a ninth consecutive cycle; H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
