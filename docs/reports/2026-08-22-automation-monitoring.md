@@ -1316,3 +1316,41 @@ There is a second, independent flaw worth fixing when it is re-run: the arms are
 **Corrections to the record, by name:** the "56 of 57 netted exactly $0.00" mechanism is **dead**; "recovering the backup unblocks P2" is **dead**; "effective n≈1" is **half-right** — the total is outlier-sensitive, but the central tendency is not, and the reason is an offsetting pair rather than a settlement defect. This session propagated all three without checking the input file, and they had reached Plan 29 and two readings before this cycle caught them.
 
 **Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a ninth consecutive cycle; H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #65 — 2026-08-28T13:13Z — quiet tape; P2 RUN properly, and it converges on the payoff-ratio diagnosis
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **23.0 hours**. No completed trips, so no three-agent dispatch. Fleet 42 at its 25 target, fleet 41 at 17, **42 runs**. Panel since P0: **32 entry proposals, 0 kept** (n=321 needed before that means anything — reading #63). Health: 70 decisions, `no_verdict` 0, `verdict_salvaged` 0, 0 tracebacks.
+
+Cycle spent on **Plan 29 P2**, rebuilt to fix the asymmetry reading #64 identified. Script and result committed: `research/zi_control_symmetric.py`, `research/zi_control_symmetric_result_20260828.json`.
+
+### The fix
+
+The original control took the AI arm from the **ledger** (`net_usd`) and the ZI arm from `simulate_trip()` — real fills against modelled ones. The rebuild runs **both arms through identical rails** (same 1.5%/4.5% brackets, same #592 ratchet, same fee and slippage model, same notional) and differs **only in entry selection**. A third arm was added: random entry time but the **AI's own side**, which isolates the value of its directional call from its timing.
+
+Pre-registered before running: **H0 — AI entry selection has no edge over random.** Falsifier: CI90 of the paired mean difference excludes 0 (above → edge; below → worse than random); contains 0 → INCONCLUSIVE, reported as such.
+
+### Result (n=57, 400 draws, realistic 0.03% slippage basis)
+
+| Arm | mean | **median** | trimmed mean | total |
+|---|---|---|---|---|
+| AI, its actual entries | **−0.3298** | **−0.0119** | −0.1847 | −18.797 |
+| ZI — random time, random side | −0.2298 | −0.1353 | −0.1774 | −13.100 |
+| ZI — random time, **AI's own side** | −0.2300 | −0.0888 | −0.1455 | −13.108 |
+
+**Paired mean difference −0.1000, CI90 [−0.5221, +0.3288] → INCONCLUSIVE.** Same verdict at the 0.16% basis (CI90 [−0.5591, +0.3270]). The headline is unchanged from the original control, but now for a defensible reason: **AI entry selection is not distinguishable from random-with-rails at n=57**, and the CI is ~0.85 wide against a 0.10 effect — a **power** problem, exactly as reading #64 predicted.
+
+### Three findings the symmetric design exposes that the original could not
+
+**1. The statistics disagree in SIGN, and the disagreement is the finding.** Mean says AI is worse (−0.100); **median says AI is better (+0.1235)**; trimmed mean says they are the same (−0.0073). That pattern is the signature of a **better typical trip with a worse loss tail** — which is precisely Plan 29's payoff-ratio diagnosis (healthy hit rate, broken magnitude), now reproduced by an entirely independent method. *Stated as a directional observation, not a verdict: the median difference carries no CI here and needs its own test before anyone acts on it.*
+
+**2. The AI's directional bias is worth exactly nothing.** The cohort is 40 short / 17 long — a 70% short book. Giving the random arm the AI's **own side** with random timing changes its result by **−0.000150 per trip**. Whatever the desk knows, it is not direction: its side call carries no measurable information once timing is randomised.
+
+**3. The rails lose money for ANY entry.** Random entries through the house structure lose **−0.2298/trip (mean), −0.1353 (median)** at the realistic basis. **Entry selection cannot rescue this**: even a perfect random draw is negative before any question of skill. This is the strongest argument yet that Plan 29's ordering is right — **P3 (payoff geometry) is the job, and entry-side work cannot pay until the rails stop being negative-expectancy on their own.**
+
+### What this does NOT show
+
+It does not show the AI is worse than random — the CI includes zero and this session will not round it. It does not measure size (all figures are per-unit-notional). And n=57 remains the binding limit: at the observed dispersion, separating a 0.10/trip effect needs far more cohort than the live book will produce this year, so **any future ZI work must come from replay depth, not from waiting for fills.**
+
+**Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a tenth consecutive cycle; H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
