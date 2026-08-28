@@ -1216,3 +1216,26 @@ It **sharpens** Plan 29 rather than changing its conclusion. Capacity was never 
 ### Load and falsifiers
 
 At 66 decisions/hour — an **11× increase** over the pre-P0 rate — `no_verdict` **0** and `verdict_salvaged` **0**, worker log 0 tracebacks. No LLM oversubscription at the higher load. Frozen-mark falsifier **unmeasurable** for a fifth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**. Prod healthy on `sooppiy-backend:20260828-reading59`.
+
+---
+
+## Reading #61 — 2026-08-28T09:13Z — nothing changed in kind; the panel sample grew to 13 of 13
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **19.0 hours**. No completed trips, so no three-agent dispatch.
+
+All four hypotheses stated before the data were confirmed and none moved: **H1** no fills; **H2** panel keep rate stays 0%; **H3** proposal rate holds (5 this hour vs 4 last); **H4** the fleet keeps building — fleet 42 at its 25 target, fleet 41 now 17 (was 10), **42 runs total**, mix crypto **20** / futures 10 / forex 7 / us-stock 5.
+
+**The one quantity that advanced — the panel sample.** Cumulative since P0 (06:20Z):
+
+| | Value |
+|---|---|
+| Entry proposals | **13** |
+| Kept | **0 (0%)** |
+| Proposed confidence range | **0.550 – 0.680** |
+| Final action | **`hold` on all 13** (best final confidence 0.620) |
+
+Every proposal is converted to `hold` **regardless of conviction**, including proposals at 0.68 that sit well clear of the 0.57 `min_confidence` gate for an aggressive fleet. This is why the confidence gate never fires: the panel resolves to `hold` upstream of it, so the gate has nothing to evaluate. n=13 at 0% is fully consistent with the 9-day baseline of 342 proposals / 3 kept (0.93%) — **the panel is not behaving unusually; the sample is simply accruing faster now that capacity is restored.** Nothing here is a new finding, and it is not reported as one.
+
+**Health:** 78 decisions in the hour, `no_verdict` 0, `verdict_salvaged` 1, 0 trades, 0 tracebacks. Prod healthy on `sooppiy-backend:20260828-reading60`.
+
+**Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a sixth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**. At zero fills none can accrue.
