@@ -1714,3 +1714,117 @@ And this session's own independent measurement agrees: **−21.01 bp per trip**,
 **`trading_runs.realized_pnl_usd` is not a usable P&L source** — it is 0 on **519/519** stopped agent-6 runs *and* **378/383** agent-60 runs since 08-15. Any report reading that column sees no loss anywhere. This is broader than the agent-6 anomaly and affects both live agents.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** (0 open positions); H-LEDGER **not tripped**; #592 **1 of 30** (metric corrected in #68); #591 **0 of 20, untested**.
+
+---
+
+## Reading #74 — 2026-08-28T22:13Z — THE DROUGHT BROKE. Three agents on n=1, and the selection mechanism is now known.
+
+**Profit first: +$0.108151 net (+3.64 bp on $297.01 notional).** First fill in **31h26m**. The book stands at ≈ **−$187.13**. This trip moves the standing estimate by **+0.045 bp** and refutes nothing.
+
+Run 2208, fleet 42, agent 60, BNBUSDT: short 0.43137255 @ 688.53 (21:38:20Z) → cover @ 687.66 (22:01:01Z), 22m41s, closed by `stop_event:trailing_lock`.
+
+| | value |
+|---|---|
+| gross | **+12.64 bp** (+$0.375294) |
+| round-trip fee | **−8.99 bp** ($0.267143) |
+| **net** | **+3.64 bp** (+$0.108151) |
+| **fees as share of gross** | **71.2%** |
+
+### THE FINDING — run 2208 was selected because its DIRECTION bypassed the only gate with teeth
+
+Every `backtest_gate` ruling fleet 42 ever made on BNBUSDT: **461 rulings — 459 DROP, 2 KEEP.** Every drop carries the byte-identical reason *"non-positive expectancy −188.48 USD/trade over 5 closed trades"*, unchanged 08-26 → 08-28. **The two KEEPs are 08-28T15:12:55 and 08-28T17:20:01 — the second is run 2208's birth.** The gate reverted to DROP at **22:01:45, 44 seconds after the flatten**, with the same stale figure.
+
+The cause is in the code, not the data:
+
+```python
+if direction == "short":
+    # The replay engine is LONG-ONLY ... Alien evidence must not veto — fail open
+    kept.append(thesis); continue
+```
+
+**Short theses are admitted unconditionally and unscored.** BNBUSDT theses are **103 long / 24 short**; longs get scored and dropped, shorts bypass. The two KEEPs align exactly with short batches — and `research:496648` (short) is **verbatim the `batch_id` in run 2208's own config snapshot.**
+
+> **Run 2208 was not selected because it beat the 86 demoted proposals. It was selected because its direction skipped the only gate that discriminates.**
+
+**This is the mechanism behind the short bias.** The ZI control measured the desk's 70%-short tilt as worth **−0.00015/trip — literally nothing**. Now we know why the tilt exists at all: **short is the only direction that can reach a fill.** The bias was never a view; it is a survivorship artifact of a long-only replay engine failing open.
+
+### And the designated safety net for shorts is structurally dead
+
+`backtest_gate` delegates short theses to `fleet_planner._bucket_expectancy_block`, which vetoes on `SUM(trading_runs.realized_pnl_usd)`. Measured on prod: agent 60, crypto/short, stopped, fleet-built = **n=37** (over the min-8 threshold) but `SUM = +0.1766`, computed from **3 non-zero rows out of 37**. Agent 60 overall: **6 of 384** stopped runs have a non-zero value — **98.4% zeros**. `total >= 0` → returns `None` → **allow**.
+
+**The gate cannot veto anything and never will while that column is 98.4% zeros.** Reading #73 recorded `realized_pnl_usd` as *"not a usable P&L source"*. It is worse than that: **it is load-bearing in a live admission gate.**
+
+### #592 — fire n=2 of 30. UNDECIDED.
+
+Both post-ship fires verified #592-attributable **by arithmetic, not by timestamp** (the old floor cannot explain either exit):
+
+| n | run | symbol | net | bp | old rule fires? |
+|---|---|---|---|---|---|
+| 1 | 2001 | TAOUSDT long | +0.9868 | +44.0 | **No** — old floor 0.2018 vs exit 1.1881 |
+| 2 | 2208 | BNBUSDT short | +0.1082 | +3.64 | **No** — old floor 0.267 vs 0.3753 |
+
+**Old-rule counterfactual on this trip**, walked on Hyperliquid 1m candles (the same feed that produced the marks, basis-checked at three points): the old rule holds through 22:02–22:06 while the position is worth **more** (+$0.32 / +$0.37 / +$0.28 net), then fires at **22:07–22:08 for −$0.034 to −$0.073**; its impossible best case is **−$0.0001**. **Delta from #592: +$0.14 to +$0.18.** The "best case exactly $0 by construction" the PR was written to kill is reproduced live.
+
+**Applying the corrected falsifier from #68:** post-ship mean +0.5475 with a bootstrap CI90 of [0.1082, 0.9868] — **degenerate at n=2, it can only return the two observed values, and that interval carries no information.** Median passes but is DEMOTED and passing it alone is not #592 working. **n=2 of 30 decides nothing.** Both fires rank 1 and 2 of all 32, permutation p=0.0020 — but a fire under the new rule is positive **nearly by construction**, so this restates the mechanism rather than testing it.
+
+**Baseline discrepancy — reading #68 needs correcting.** Agent B could not reproduce #68's pre-ship figure of n=20 / mean −0.1522 / SD 0.2893 from any subset. Replaying all 30 telemetry-visible fires gives **n=30 / mean −0.2194 / median −0.0663 / SD 0.3138**, cross-checked against `realized_pnl_usd` on the 3 runs where it is populated. B's figure is *more* negative so the direction is unaffected, but **#68's n=20 subset must be named or corrected.**
+
+### The mark cadence cost more than the trade earned — agreed to the cent by two agents
+
+The #592 floor sat at 0.510951 → trigger price **687.3455**. The equity series polls at ~65s: 21:59:56 gross 0.741891 (above floor), 22:01:01 gross 0.375294 (below). **Price gapped straight through the floor between two polls.** Exiting *at* the floor banks **+$0.243869**; it banked **+$0.108152**. Overrun **−$0.135718 = 125% of what the trade kept.** Agents A and B derived this independently and agree to the cent. **#592 set the lock correctly; the mark cadence gave back more than half of it.**
+
+**Give-back, with the #55 error corrected:** baseline-adjusted **50.29% of peak gross** (payload naive read shows 61.10% — overstated by 10.82pp). Peak **net** 16.43 bp → kept 3.64 bp = **77.8% of peak net surrendered**. P3 stands.
+
+### The hurdle rate — why the median trip cannot pay
+
+| slice | n | gross median | clears own fee | **dead on arrival** |
+|---|---|---|---|---|
+| all crypto | 87 | +3.24 bp *(CI90 spans zero)* | 34.5% | **65.5%** |
+| **simple 1×1 episodes (69% of trips)** | 60 | **−0.16 bp** | **25.0%** | **75.0%** |
+| forex | 22 | +2.16 bp (fee 1.60) | 50.0% | 50.0% |
+
+**The median crypto trip is −5.76 bp net by construction.** This trip needed **3.90× the median gross** (70th percentile) to net +3.64 bp.
+
+**New refutation:** reading #73's "medians are positive in crypto and forex" is **not robust**. It survives only through multi-leg episodes (n=27, median +17.61 bp); on the 69% that are one-open/one-close the gross median is **−0.16 bp**.
+
+### The entry was unblocked by sampling variance, not information
+
+Cycles 9 (demoted) and 10 (kept) are 29 minutes apart with **byte-identical `recall` payloads**, the same 9 brief lines, unchanged market read (long/short 2.57, RSI ~66), an **identical `sell 0.58` proposal**, and a price that moved **against** the short (687.8 → 688.5). Only the LLM outputs moved. The desk logged `plan_adherence: "deviated"` — it acted against its own standing trigger, neither of which fired.
+
+**The panel demoted the best trade of the run.** Counterfactual gross at the identical exit: cycle 2 @692.80 = **+74.19 bp (demoted)**; cycle 6, highest conviction 0.60 = +20.90 bp (demoted); **cycle 10 = +12.20 bp — KEPT, rank 4 of 7.** Cycle 9 was demoted at a *higher* final confidence (0.58) than the kept cycle 10 (0.56).
+
+**And the panel is a black box.** `order_discussion` persists **101 bytes** — `{proposed, final}` only, no rationale. It demoted **86 of 86** proposals on 08-28. The most consequential actor in the entry pipeline leaves no reasoning trail. **Highest-leverage instrumentation gap on the board.**
+
+**Power, restated honestly:** reading #73's p=0.983 rests on **n=16 — ~35× underpowered.** Detecting an 8.99 bp edge needs **n_kept ≈ 568 ≈ 16 weeks.** It does not show the panel works or fails; **it shows the test cannot see.** The panel question must be decided by replay — the 1,072 demoted proposals are already the control arm.
+
+### The desk never saw its own position
+
+`interval_minutes: 45`; the position lived **22m41s**; the next desk cycle was due 22 minutes *after* it closed. The exit was **100% algorithmic**, confirmed three ways (no `decision`/`order_intent`/`armed_exit` in the window, while `armed_exit` demonstrably fires elsewhere). Agent A reproduced the ratchet decision exactly from deployed source: of 23 equity samples, **exactly one** satisfies the trigger, and it is the actual fire.
+
+**Configured rails were decorative:** `profit_target_usd` $240 (peak = 0.31% of it), `max_loss_usd` $17.82 (MAE = 0.31%), `trail.activate_usd` $4.75 — **6.3× out of reach, never armed**. The whole trip lived in a **57-cent band, 0.083% of price**, governed by a fee-anchored rail at 0.20% of notional. It captured **3.0% of the desk's own $660 target** and never came within 97% of its $702 stop. *A thesis resolved after 1.4% of its planned range was not validated by the outcome — it was bypassed by it.*
+
+### Sizing chain, reproduced to the cent
+
+`4000.03 slot → ×0.45 aggressive = 1800.01 → ×0.33 PROBATION_SIZE_FRAC = 594.00 → ×0.30 desk size_scale = 178.20 → ×0.25 null_size_cap = 148.50 margin → ×2.0 leverage = $297.00 notional → /688.53 = 0.43137254901960786` — **the filled quantity to the last digit.** 594.00/1800.01 = 0.33000 exactly; no other tier value reproduces it. Probation applies because 2208 is agent 60's only-ever BNBUSDT run.
+
+### Agent disagreements — recorded
+
+1. **Drought length:** A 32h46m41s (entry-to-entry), B **31h26m28s** (fill-to-fill). Both correct for different definitions; **quote fill-to-fill.**
+2. **"54 demoted":** this session's figure. A measures **86 of 86 on 08-28**; B could not reproduce 54 from any table. **54 is wrong — use 86.**
+3. **Loss concentration:** #73 said 100.6% in 2 of 16 days; C's rebuild gives **88.1%** (−$164.78 of −$187.13) and agent 5 = **−$187.86 = 100.4%** of the book, all other agents **+$0.73** combined.
+4. **Panel counts:** raw all-time `order_discussion` = **1,390** (demoted 1,208, kept 104; strict same-action 83). The 1,072/16 used for p=0.983 is a filtered subset — **restate n=16 whenever that p-value is quoted.**
+5. **Kept ≠ fill:** 08-26 had 3 kept and 08-27 had 2 kept, yet **zero fills** in that window. Something downstream of the panel also blocks.
+
+### Next measurement, ranked
+
+**#1 — MFE distribution on the 1,072 blocked proposals' own paths.** Measures gross max-favourable-excursion, not terminal gross. It forks the whole program: **if ≥50% reach MFE > 18 bp** (2× round-trip fee) the exit rule is binding and P3 is correctly prioritised; **if <50% and median MFE < 8.99 bp**, no exit rule can pay for itself in crypto, P3 is refuted as top priority, and the lever becomes market mix (forex clears its 1.60 bp hurdle 50% of the time vs crypto's 34.5% at 8.99 bp). Uses existing replay infrastructure, no live risk, **not throughput-gated**.
+
+**#2 — the short-direction bypass.** Now the highest-value *code* finding. The long-only replay engine fails open on shorts, so shorts enter unscored while longs are scored and dropped. Quantifying the cost needs the same MFE replay split by direction.
+
+**#3 — #592 live accrual: explicitly not worth waiting on** (n≈449–568, 13–16 weeks). Decide by replay.
+
+### Deploy cadence — trigger FIRED
+
+Last fill at/before the trigger: run 2019 LITUSDT cover, `2026-08-27T14:11:52Z`. Next: run 2208 BNBUSDT short, `2026-08-28T21:38:20Z`. **Mode ① → mode ②: merge every cycle, deploy only on deploy-worthy content.** This reading qualifies.
+
+**Falsifiers:** frozen-mark — **measurable again next cycle** if a position opens (0 open now); H-LEDGER **not tripped**; #592 **2 of 30**; #591 **0 of 20, untested**.
