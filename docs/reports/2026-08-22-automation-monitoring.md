@@ -1239,3 +1239,17 @@ Every proposal is converted to `hold` **regardless of conviction**, including pr
 **Health:** 78 decisions in the hour, `no_verdict` 0, `verdict_salvaged` 1, 0 trades, 0 tracebacks. Prod healthy on `sooppiy-backend:20260828-reading60`.
 
 **Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a sixth consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**. At zero fills none can accrue.
+
+---
+
+## Reading #62 — 2026-08-28T10:13Z — quiet; nothing changed
+
+**Profit first: no change. Zero fills, zero open positions, $0.00 realized.** Last fill anywhere is still `2026-08-27T14:11:52Z` — **20.0 hours**. No completed trips, so no three-agent dispatch. Every hypothesis stated before the data was confirmed and none moved.
+
+**Panel sample since P0 advanced to 20 entry proposals, 0 kept (0%)** — 7 proposals this hour, all demoted. At the 9-day baseline keep rate of 0.93% the expected number kept at n=20 is **0.19**, so observing zero is unremarkable (p≈0.83) and is **not** evidence that anything worsened. Recorded only because n is the quantity that will eventually make the panel question decidable.
+
+Fleet 42 holds its 25 target; fleet 41 is 16 (was 17 — normal idle-retire/rebuild churn), **41 runs total**. Health: 78 decisions, `no_verdict` 0, `verdict_salvaged` 1, 0 tracebacks. Prod healthy on `sooppiy-backend:20260828-reading61`.
+
+**Falsifiers carried forward, no new evidence:** frozen-mark **unmeasurable** for a seventh consecutive cycle (0 open positions — recorded as unmeasurable, never as a pass); H-LEDGER guard **not tripped**; #592 **1 of 30**; #591 **0 of 20, untested**.
+
+**Operational note, flagged not acted on.** The deploy cadence rule puts us in mode ① (deploy every cycle) until the first fill, and that trigger has not fired. But the cost side has changed since the rule was set: the fleet now carries **41 live runs producing ~7 proposals/hour**, so each hourly deploy restarts a worker that is materially busier than the 8-run, 0-proposal book the rule was written against. Still correct under the rule as written; worth the owner's attention if the drought continues.
