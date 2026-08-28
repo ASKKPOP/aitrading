@@ -10,7 +10,7 @@
  *   SignInPage         — email+password → optional MFA step
  *   SignUpPage         — email → 6-digit code → password
  *   MfaSetupPage       — secret + otpauth URL + 10 backup codes
- *   GoogleCallbackPage — receives session, redirects to /my-trading
+ *   GoogleCallbackPage — receives session, redirects to /automation
  */
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
@@ -156,7 +156,7 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
       }
       storeUserToken(body.token)
       onLogin(body.token)
-      navigate('/my-trading')
+      navigate('/automation')
     } catch (err) {
       setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}`, id: `Kesalahan jaringan: ${err}` }))
     } finally {
@@ -181,7 +181,7 @@ export function SignInPage({ onLogin }: { onLogin: (token: string) => void }) {
       const body = await r.json()
       storeUserToken(body.token)
       onLogin(body.token)
-      navigate('/my-trading')
+      navigate('/automation')
     } catch (err) {
       setError(tr(language, { ko: `네트워크 오류: ${err}`, en: `Network error: ${err}`, ja: `ネットワークエラー: ${err}`, th: `ข้อผิดพลาดเครือข่าย: ${err}`, vi: `Lỗi mạng: ${err}`, id: `Kesalahan jaringan: ${err}` }))
     } finally {
@@ -628,7 +628,7 @@ export function MfaSetupPage({ userToken }: { userToken: string | null }) {
         }}>
           {setup?.backup_codes.map(c => <div key={c}>{c}</div>)}
         </div>
-        <button onClick={() => navigate('/my-trading')} style={buttonStyle}>{tr(language, { ko: '계속', en: 'Continue', ja: '続行', th: 'ดำเนินการต่อ', vi: 'Tiếp tục', id: 'Lanjutkan' })}</button>
+        <button onClick={() => navigate('/automation')} style={buttonStyle}>{tr(language, { ko: '계속', en: 'Continue', ja: '続行', th: 'ดำเนินการต่อ', vi: 'Tiếp tục', id: 'Lanjutkan' })}</button>
       </AuthShell>
     )
   }
@@ -726,7 +726,7 @@ export function GoogleCallbackPage({ onLogin }: { onLogin: (token: string) => vo
         onLogin(d.token)
         // The backend says whether this callback just CREATED the account —
         // only a first-visit member is routed to the welcome page.
-        navigate(d.created ? '/welcome' : '/my-trading')
+        navigate(d.created ? '/welcome' : '/automation')
       })
       .catch(d => setError(errMessage(d, tr(language, { ko: 'Google 로그인에 실패했습니다', en: 'Google sign-in failed', ja: 'Googleログインに失敗しました', th: 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ', vi: 'Đăng nhập Google thất bại', id: 'Gagal masuk dengan Google' }))))
   }, [params, onLogin, navigate, language])
@@ -774,7 +774,7 @@ export function AppleCallbackPage({ onLogin }: { onLogin: (token: string) => voi
       .then(d => {
         storeUserToken(d.token)
         onLogin(d.token)
-        navigate(d.created ? '/welcome' : '/my-trading')
+        navigate(d.created ? '/welcome' : '/automation')
       })
       .catch(d => setError(errMessage(d, tr(language, { ko: 'Apple 로그인에 실패했습니다', en: 'Apple sign-in failed', ja: 'Appleログインに失敗しました', th: 'เข้าสู่ระบบด้วย Apple ไม่สำเร็จ', vi: 'Đăng nhập Apple thất bại', id: 'Gagal masuk dengan Apple' }))))
   }, [params, onLogin, navigate, language])
