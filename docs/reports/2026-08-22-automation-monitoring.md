@@ -2123,3 +2123,33 @@ ingest; 1 reading pending ingest, staleness bound ~6 cycles). Plan 30 merged
 this hour (PR #620). Verdicts above stated profit-first; every outcome carries
 its reason; disagreements between agents (cover authorship, realized-P&L
 convention) resolved in-text.
+
+---
+
+## Reading #79 — 2026-08-29T05:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Hypotheses:** H1 2251's open half still open → held. H2 worker healthy → held
+(0 restarts, 0 tracebacks). H3 #592 stays n=3/30 → held (0 fires). H4 keep-rate
+drought → held (0 of 5 kept).
+
+**Profit-or-loss first:** 0 fills, $0 realized this window. The open LINKUSDT
+half-short (run 2251, 4.431 @ 11.359) swung against: mark 11.383 →
+**−$0.106 unrealized**, putting the whole trip at ≈**−$0.081 net** (realized
++$0.025 cash minus the open leg). Reasons, not descriptions: (1) the give-back
+from the +$0.177 gross peak now totals ~$0.28 with **zero algorithmic
+protection** — the ratchet never armed because the arm demands $0.2013 (2.22×
+real fees; #77 Defect 4, same instance as #78, now with the cost realized on
+the mark rather than hypothetical); (2) in hindsight-so-far the panel's #78
+half-cover banked the only profit this trip has produced — consistent with
+C's #78 note that banking early is locally rational inside the broken
+geometry; the desk's 0.77 press proposal would currently be −$0.21 worse.
+Stop 11.5336 is 1.3% away; max_loss $10.06 and at_time 08-30T03:35Z stand.
+
+**Process:** 24 holds across the fleet; 5 demotions (buy 0.55 / sell 0.57 /
+buy 0.57 / sell 0.62 / buy 0.55 — all to hold); one new run 2252 built and
+running (draft→running 05:07Z), no stops — treadmill quiet this hour. Mark
+freshness nominal (45s). No no_verdict, no errors, no panel fallback.
+F-PRED-CYCLE1 counter: run 2252's first cycle produced a demoted buy, not an
+entry (counts toward the baseline arm, predecessor-context status to be
+classified at tally time). Mode ②: merged without deploy; 2 readings pending
+RAG ingest (bound ~6).
