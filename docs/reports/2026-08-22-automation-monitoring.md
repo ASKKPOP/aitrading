@@ -2179,3 +2179,113 @@ first-cycle demoted buy; F-PRED-CYCLE1 tally note). Fleet 32→35 running
 extends: 1 keep in the last 19 discussions). No errors, no no_verdict, marks
 fresh (10s). Mode ②: merged without deploy; 3 readings pending RAG ingest
 (bound ~6).
+
+---
+
+## Reading #81 — 2026-08-29T07:47Z (hourly; tape — trip 2251 closed; 3 agents + cross-check)
+
+*(Corpus note: this reading analyzes exit truncation. It is NOT a lesson to
+bank gains faster or slower; see the RAG-loop finding below before ingesting
+more exit-behavior commentary.)*
+
+**Hypotheses:** H1 2251 resolves or rides → RESOLVED (closed, no stop hit).
+H2 worker healthy → held (0 restarts/tracebacks; but 2 desk-output truncations,
+below). H3 #592 unchanged → held (0 fires — and see the starvation finding).
+H4 keep drought → held (0 of 7; 1 keep in the last 26 discussions).
+
+### Profit-or-loss first
+
+**Trip 2251 (LINKUSDT short 8.862 @ 11.359) closed +$0.1953 net** — verified
+to the cent by three routes (leg arithmetic, equity chain, trading_runs).
+Window realized +$0.170 (covers 3 and 4). Gross $0.2858; **fees $0.0905 =
+31.7% of gross** (2235 was 34.2% — the standing regime). +19.4bp on notional
+over 2h58m. The deepest print (11.313 at the covers; 11.290 interim) reached
+**9.1% of the way to the desk's own 4.46% target — 91% of the authored thesis
+was never approached**; realized = 4.4% of the full-target payoff. Two green
+trips in a row (+$0.29, +$0.195) remain right-tail draws from a process
+measured at −17.89bp/trip mean — not improvement, per the 08-13 law.
+
+### Exit authorship — corrected twice, and a NEW governance gap (D-INTENT-UNDER-HOLD)
+
+Final attribution of the three cuts (A and C disagreed; the executable
+artifacts decide):
+- Cover 1 (03:55, half): panel flip of the desk's 0.77 press → panel-authored
+  (#78 stands for this leg).
+- Cover 2 (06:15, quarter): desk proposed FULL cover (buy 0.58); panel final
+  was **hold** — **the trade executed anyway** via the desk's
+  `order_intent: reduce 0.5` (`run:2251:cyc:7`).
+- Cover 3 (06:38, quarter): panel-less cycle; desk `reduce 0.5` railed to 1.0
+  by `dust_remainder_closed` (platform-completed).
+
+**The gap:** panel demotion of the ACTION does not bind the intent compiler
+for reduces — a "hold" final still trades when the desk's intent block says
+reduce. Both such exits also rode on `verdict_salvaged` TRUNCATED desk outputs
+(911/977 chars, gpt-oss light route — 2 salvages in one trip; cycle 8's real
+reasoning partly lost). The least-audited channel (salvaged verdict →
+intent-under-hold → trade) authored 2 of 3 exits. #78's "the panel is the
+truncation channel" is corrected: on the full trip it is 1 of 3 panel,
+2 of 3 desk-intent-under-hold. No keep-rate statistic sees this channel.
+
+### The ratchet counterfactual — B and C converged independently to the cent
+
+Correction first (B): `peak_pnl_usd` re-anchors to banked total when flat
+(run_engine.py:1371) — the INTRA-trip scoped peak reached **97.2% of the arm**
+(closest approach 06:14:46Z, $0.0056 short), on a mark up to 60s old (the true
+tape may have crossed unseen). The ratchet never armed; partial covers WIDEN
+the miss mechanically (each cover raises the realized baseline while floor_qty
+stays at max-book).
+
+**Counterfactual at the corrected fee constant (arm ≈$0.0905): arms 03:50:09Z,
+locks, and FIRES 04:04:37Z → trip +$0.0734.** Actual desk exits: +$0.1953.
+**Defect 4 SAVED +$0.1219 on this trip — stated plainly.** Both agents
+computed this independently and agree to the cent. (Their frac=0 variants
+disagree on timing/value — 04:12Z/+$0.043 vs 04:33Z/+$0.007 — noted, sign
+identical: every armed variant loses to the desk here.) Consequences:
+(1) #79/#80's one-sided "Defect 4 cost exhibit" framing is corrected — the
+corrected arm trades give-back insurance for recovery forfeiture, and ONLY the
+replay population (including recovery-forfeit paths like this one) can sign
+the fix — Plan 30 A1's falsifier is upgraded accordingly; (2) with the arm
+2.22× overpriced the ratchet is effectively DORMANT at current book sizes, so
+**the #592 tally (n=3/30) is starving by construction** — it cannot decide on
+live accrual; replay is the only route (consistent with #75).
+
+### The RAG loop is co-authoring the truncation (C; systemic)
+
+2251's recall stream from cycle 3 onward queried "gave back peak … bank the
+gain … take partial profit," and cycle 10's top chunk was
+`skill:reachable-exits#1` (score 9.59). The multi-cut exit is NOT new behavior
+(20 of 109 all-time trips have ≥2 close legs; a 12-trip mono-close streak
+08-25→08-29 just ended) — it is a RETURN, now instruction-driven: the lesson
+corpus built from our own give-back monitoring commentary teaches the desk to
+cut winners, which structurally prevents the 4.5% winner Plan 29/30 requires.
+**Recommendation for owner review: audit what exit-behavior content the
+desk_memory ingest serves before deploying more monitoring text** (4 readings
+currently pending ingest — the lag is currently protective).
+
+### Other findings
+
+- Desk post-flatten hallucination (cycle 10): narrative claims a held position
+  and a "$11.00 reduction arm" — run flat, `armed_order_json` NULL. Harmless
+  this window; a re-entry on that world-model would not be.
+- Re-entry appetite 2-of-2 post-close cycles: cycle 9 blocked by the 45m
+  cooldown gate, cycle 10's fresh sell 0.60 demoted by the panel. The ledger
+  line's win recap ("profit across all three closes") is teaching return —
+  H-LEDGER watch stays open; 2251 can re-enter when cooldown lapses (run
+  retires at_time 08-30T03:35Z; idle-retire cannot touch it — it has trades).
+- **F-PRED-CYCLE1 has a design defect:** `predecessor_run` sections are
+  universal (24/24 runs), so the registered no-predecessor control arm does
+  not exist. Re-based on CONTENT (same-symbol prior trip within 24h). Tally
+  8/10 collected; cycle-1 entry rate 1/8.
+- Churn: 06h was the day's peak (9 starts/7 stops vs 3–5/h baseline). Two
+  retire→rebuild loops re-served rejected candidates: SOL 2239→2261 in 52s;
+  ZEC 2240→2264 rebuilt in 31s then desk-killed in 106s (second sub-2-min desk
+  kill in ~7h). Paid churn = the candidate-quality constraint made visible.
+- Marks: cadence 66–68s, max gap 90s, no stale refusals; frozen-mark aliasing
+  present at 9+ points including the trip peak (relevant to the 97.2% near-miss).
+- Panel 0/7 kept; one demotion RAISED confidence (FIL sell 0.55 → hold 0.58) — odd, logged.
+
+**Process:** mode ② — merged without deploy (and see the RAG-loop
+recommendation above: ingest review before the next deploy). Falsifier board:
+#592 n=3/30 STARVING (see above); #589 trail unreachable again (activation
+$2.68 = 14× trip P&L; D-trail-sizing stands); F-PRED-CYCLE1 re-based;
+H-LEDGER guard not tripped (2 fills, keeps present).
