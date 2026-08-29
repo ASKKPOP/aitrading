@@ -239,3 +239,66 @@ least twice by independent routes; corrections applied where QA refuted the
 first pass are marked. Artifacts: session scratchpad `fee_sweep.py`,
 `fee_sweep_trips.json`, `realized_trips.json`, `maker_fill_check.py`, QA
 scripts `qa_audit.py`/`qa_resim.py`/`qa_ref_zi.py`.*
+
+---
+
+## Execution log — 2026-08-29: owner orders "target price make lower, and then make order" + "make human fact more higher" (each depending on the human factor)
+
+**Experiment first (per the house law), then code.** The 1,099-trip target
+sweep (artifacts: `research/target_sweep_20260829.py` + results JSONs) decided:
+
+- **Flat 0.30% is the mean- AND median-maximising target** (target-hit 0.5% →
+  61.9%; stop:target 27.8:1 → 1:4.9; median +17.98bp; 71% winners). Stated
+  plainly: NO level's mean CI90 clears zero — 0.30% closes 31.5% of the
+  −18.64bp same-trip gap (→ −12.77bp [−15.84, −9.85]); the residual is
+  authored by the 1.5% stop's 1:5 reward:risk and fees, out of this order's
+  scope. Ratchet must stay ON (off is worse at every level).
+- **Psych-conditional target levels are UNSUPPORTED**: fear (n=622) and greed
+  (n=455) regimes both pick 0.30% with overlapping CIs; F&G extremes never
+  occurred in-window. The cap MACHINERY is regime-keyed (the owner's ask);
+  its VALUES ship flat until extreme regimes are actually observed.
+
+**Shipped (branch `feat/reachable-targets-psych`):**
+1. `target_policy.py` — regime-keyed target cap; env `TARGET_PSYCH_CAP` (off
+   by default) + `TARGET_PSYCH_CAP_MAP` (market→regime→pct JSON); reads
+   `regime.current_regime_state()`; every failure falls to `base`, never
+   blocks a trade.
+2. run_cycle clamp at the single bracket choke point — pulls take-profit
+   INWARD only, floored at `max(cap, RR_FLOOR×stop_dist, fee_floor)` so the
+   R:R gate can never be tripped by it; covers the AI bracket AND the
+   deferred/absent-params 5%/10% default (Defect 2 routing); `target_cap`
+   telemetry on every pull.
+3. `RR_FLOOR` env-tunable (default 2.0 UNCHANGED — the code default moves
+   nothing); prod .env will set `RR_FLOOR=0.2` so the evidence-optimal
+   0.30%-vs-1.5%-stop geometry is legal. Blast radius stated: the research
+   funnel (`thesis_rr_feasible`) widens — which serves "make order".
+   Both desk prompts now state the floor dynamically ({RR_FLOOR:g}x).
+4. Human factor raised: NEW `_crypto_psych_line` (the crypto light path —
+   the default route — previously read zero market psychology);
+   `PSYCH_WEIGHT_LEVEL=high` appends one first-class-evidence sentence to
+   all three market psych lines (default env = byte-identical prompts);
+   `_target_band_line` teaches the band (the clamp bypasses order_params
+   notes — the brief line is the only teaching channel). "Never the sole
+   reason" invariant verbatim everywhere.
+
+**Prod .env at deploy:** `TARGET_PSYCH_CAP=1`,
+`TARGET_PSYCH_CAP_MAP={"crypto":{"base":0.3}}` (crypto only — the pooled
+evidence is 66% crypto; other markets get their own split before capping),
+`RR_FLOOR=0.2`, `PSYCH_WEIGHT_LEVEL=high`.
+
+**Pre-registered falsifiers:**
+- **F-TARGET-CAP:** over the first 30 fills with the cap live: target-exit
+  share ≥ 30% (replay predicts ~62%, baseline 0.5%) — below 30% = FAILED in
+  these terms; and the capped-trip net mean is compared against the −17.89bp
+  replay baseline at n=30 (directional; decisive only by replay refresh).
+- **F-PSYCH-WIRE:** ≥90% of crypto light cycles render the crypto_psych
+  line within 24h (brief journal query); FAILED = wiring regression.
+- **F-PSYCH-WEIGHT:** psychology-citation rate in decision reports over the
+  first 50 decisions vs the prior 50 (grep fng/fear/greed/crowd terms);
+  no movement = the sentence is inert, report as such.
+- **Kill switches:** unset `TARGET_PSYCH_CAP` / `PSYCH_WEIGHT_LEVEL` /
+  `RR_FLOOR` and recreate the worker; each restores prior behavior exactly
+  (tested: env-absent = byte-identical brackets and prompts).
+
+Verification: 94 targeted tests green; 2 mutations injected and caught
+(clamp floor drop, brief-line unwire); full local CI on the PR.

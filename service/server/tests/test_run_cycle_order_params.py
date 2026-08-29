@@ -393,6 +393,82 @@ class RunCycleOrderParamTests(unittest.TestCase):
             result = run_engine.run_cycle(run_id)
         self.assertTrue(result["executed"], result.get("skip_reason"))
 
+    # ── reachable-target cap (owner order 2026-08-29) ──────────────────
+
+    def _cap_env(self, floor: float | None = None):
+        os.environ["TARGET_PSYCH_CAP"] = "1"
+        os.environ["TARGET_PSYCH_CAP_MAP"] = '{"crypto": {"base": 0.3}}'
+        self.addCleanup(os.environ.pop, "TARGET_PSYCH_CAP", None)
+        self.addCleanup(os.environ.pop, "TARGET_PSYCH_CAP_MAP", None)
+        if floor is not None:
+            import order_params
+            self._floor_patch = patch.object(order_params, "RR_FLOOR", floor)
+            self._floor_patch.start()
+            self.addCleanup(self._floor_patch.stop)
+
+    def test_cap_env_absent_leaves_brackets_byte_identical(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        os.environ["TARGET_PSYCH_CAP_MAP"] = '{"crypto": {"base": 0.3}}'
+        self.addCleanup(os.environ.pop, "TARGET_PSYCH_CAP_MAP", None)
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={"defer": True})):
+            run_engine.run_cycle(run_id)
+        fill = self._fill(run_id)[0]
+        self.assertAlmostEqual(float(fill["take_profit"]), 110.0, places=2)
+        self.assertEqual(self._events(run_id, "target_cap"), [])
+
+    def test_cap_under_rr_floor_is_inert_and_never_skips(self):
+        """The recon's trap #1: at the default RR_FLOOR (2.0) a 0.3% cap on a
+        5% stop must floor to 10%% — bracket unchanged, entry NOT refused,
+        and no target_cap telemetry claiming credit for a no-op."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        self._cap_env()
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={"defer": True})):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fill = self._fill(run_id)[0]
+        self.assertAlmostEqual(float(fill["take_profit"]), 110.0, places=2)
+        self.assertEqual(self._events(run_id, "target_cap"), [])
+        skips = [e for e in self._events(run_id, "gate_skip")
+                 if e.get("stage") == "rr_floor"]
+        self.assertEqual(skips, [])
+
+    def test_cap_pulls_the_deferred_default_bracket_in(self):
+        """Defect-2 routing: the absent/deferred 5%%/10%% house bracket must
+        route through the cap too. With RR_FLOOR 0.2, eff = max(0.3,
+        5.0*0.2, fee floor) = 1.0%% -> take_profit 101.0, not 110.0."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        self._cap_env(floor=0.2)
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={"defer": True})):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fill = self._fill(run_id)[0]
+        self.assertAlmostEqual(float(fill["stop_loss"]), 95.0, places=2)
+        self.assertAlmostEqual(float(fill["take_profit"]), 101.0, places=2)
+        caps = self._events(run_id, "target_cap")
+        self.assertEqual(len(caps), 1, "the pull-in must be journaled")
+        self.assertAlmostEqual(caps[0]["eff_cap_pct"], 1.0, places=3)
+
+    def test_cap_pulls_a_wide_ai_bracket_in(self):
+        """AI-authored 2%%/6%% at RR_FLOOR 0.2: eff = max(0.3, 0.4, fee) =
+        0.4%% -> take_profit 100.4."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        self._cap_env(floor=0.2)
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=dict(ORDER))):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        fill = self._fill(run_id)[0]
+        self.assertAlmostEqual(float(fill["stop_loss"]), 98.0, places=2)
+        self.assertAlmostEqual(float(fill["take_profit"]), 100.4, places=2)
+        self.assertEqual(len(self._events(run_id, "target_cap")), 1)
+
     # ── R10 stop-coherence clamp (2026-08-14) ──────────────────────────
 
     def _pin_max_loss(self, run_id: int, max_loss: float,

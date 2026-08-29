@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Optional
 
 from llm_client import generate_text, llm_configured
+from order_params import RR_FLOOR
 
 logger = logging.getLogger(__name__)
 
@@ -682,7 +683,7 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         '"stop_pct":number (PERCENT from entry — 2.5 means 2.5%%, NOT a '
         'fraction; size it to THIS instrument\'s volatility, not a house '
         'default),'
-        '"target_pct":number (%% from entry — must be at least 2x stop_pct),'
+        f'"target_pct":number (%% from entry — must be at least {RR_FLOOR:g}x stop_pct),'
         '"trail_arm_pct":number (%% profit before the trailing lock arms),'
         '"trail_give":0.05-0.40 (fraction of peak profit you will surrender),'
         '"horizon_hours":number,"max_adds":0-3,'
