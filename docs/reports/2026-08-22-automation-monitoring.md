@@ -2715,3 +2715,14 @@ at ≤2/20): the #86 keep was the rate-limiter's 9th re-proposal passing, not
 changed panel dynamics. F-TARGET-CAP 0/1 (7.5h without a second capped
 entry); #592 n=4/30. 31 holds + 3 desk retires; churn 7 builds / 7 stops
 (2 flat at_time expiries). Worker healthy. Mode ②: merged without deploy.
+
+---
+
+## Reading #94 — 2026-08-29T20:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Profit-or-loss first:** 0 fills, $0 realized. Orphan 483 ≈**−$2.23** (mark
+11.449, fresh; watcher stop 3.5% away, capped ≈−$8.4). Panel-shift
+discriminator **0 of 18** — two discussions from the formal coincidence
+verdict. F-TARGET-CAP 0/1 (8.5h without a second capped entry); #592 n=4/30.
+39 holds + 1 desk retire; churn 4 builds / 4 stops (3 idle). Worker healthy.
+Mode ②: merged without deploy.
