@@ -2479,3 +2479,24 @@ deploy (docs only; the D-COOLDOWN-AMPLIFIER fix awaits owner sign-off +
 replay per the experimental-mindset rule — it is the next ship candidate,
 ahead of Plan 30 A-items, since it is the only defect shown to take down half
 the fleet).
+
+---
+
+## Reading #84 — 2026-08-29T10:13Z (hourly; quiet post-incident — no trade outcomes, no agent dispatch)
+
+**Hypotheses:** H1 orphan 483 open under watcher, possible reclaim close →
+open, NO reclaim action yet (eligible ~10:09:44Z, sweeps every 900s; expected
+verdict HOLD since a stop is present). H2 fleet 42 stays resumed → held
+(33 running, 0 paused; 30 holds this window). H3 LINKUSDT rebuild refusal →
+not yet observable (no candidate_skipped rows in window; 1 new build started).
+H4 worker healthy → held (0 restarts/tracebacks; 1 no_verdict).
+
+**Profit-or-loss first:** 0 fills, $0 realized. Orphan 483 (short 14.84 @
+11.299) marks fresh again — verified by timestamped logs: the last
+`skipped_cooldown` line was 09:32:45Z (blackout tail); since 09:33 the poller
+reports `updated=1 failed=0` every 60s; position mark 11.300 at 10:13:46Z
+(uPNL ≈ −$0.015). The incident's recovery is durable, not a one-tick fluke.
+Panel 0/6 kept (drought: 1 keep in the last ~37 discussions). #592 no fires;
+F-STREAK #1 open (frozen-window annotation stands); H-LEDGER guard not
+tripped. Mode ②: merged without deploy; D-COOLDOWN-AMPLIFIER fix still the
+top ship candidate awaiting owner sign-off.
