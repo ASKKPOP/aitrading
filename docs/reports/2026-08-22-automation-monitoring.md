@@ -2289,3 +2289,100 @@ recommendation above: ingest review before the next deploy). Falsifier board:
 #592 n=3/30 STARVING (see above); #589 trail unreachable again (activation
 $2.68 = 14× trip P&L; D-trail-sizing stands); F-PRED-CYCLE1 re-based;
 H-LEDGER guard not tripped (2 fills, keeps present).
+
+---
+
+## Reading #82 — 2026-08-29T08:14Z (hourly; tape — run 2251 re-entered; 3 agents + cross-check)
+
+**Hypotheses:** H1 flat book with re-entry risk from 2251 → the risk case FIRED
+(4th consecutive LINKUSDT short in ~29h, 08:09:44Z). H2 worker healthy → held.
+H3 churn 3–6/h → held (2 builds, 0 stops).
+
+### Profit-or-loss first
+
+**OPEN — no trip verdict.** Run 2251 trip 2: short 14.84068 @ 11.299,
+$167.7 notional, panel KEPT (sell 0.66 → sell 0.58, the window's only keep of
+4). Entry fee −$0.0755 took run-lifetime realized to +$0.1199; at window close
+uPNL −$0.089 (worst −$0.148 in the first 4 minutes). In expectation this entry
+is net-negative at 1.67× the exposure of the process that produced the wins
+(−17.89bp mean × $167.7 ≈ −$0.30). Two right-tail draws do not move a
+negative mean.
+
+### The headline: size AND risk geometry were authored by the absent-params path (Defect 2, scope EXTENDED)
+
+Cycle 11's `order_params` came back `deferred: true, outcome: "absent"`. All
+three agents converge on the consequences, reconstructed to every digit:
+
+1. **Size $167.7 was authored by nobody.** `null_size_cap` fallback: 0.25 ×
+   max_bet × lev 2 (size_clamp 104.06→83.83 margin). Trip 1 was DESK-authored
+   at size_frac 0.15 → $100.7. **The 1.67× "escalation" is exactly 0.25/0.15 —
+   a fallback constant, not conviction: the desk's own conviction scale FELL
+   (0.4209 → 0.3103).** An absent-params re-entry is structurally ~1.7× larger
+   than this desk's authored size. The code's own measurement of this class:
+   **−$178.71 over 46 runs, 66% losers** (vs +$5.57 desk-sized).
+2. **The desk's narrated brackets never compiled.** It reasoned "stop 11.48
+   (1.6%), target 10.85, R:R>2"; the book holds the DEFAULT_LIMITS
+   **11.8629 / 10.1682 (exactly 5%/10%)** — the enforced stop is 3.1× the
+   stated risk ($8.52 vs $2.84 incl fees). Trip 1 of the SAME run on the SAME
+   thesis drew the authored path (1.6/4.4). Whether a live entry's risk plan
+   exists is currently a lottery.
+
+**Pre-registered judgment standard for this trip:** if it loses, the excess of
+the loss over a 0.15-sized, 1.6%-stopped loss belongs to the absent-params
+path, not the thesis — that is the reason to record, not "timing."
+**Plan 30 A2's scope is extended accordingly: honor-authored-brackets must
+also cover size (refuse the open or re-fetch once when deferred params return
+absent), decided on the 46-run class replay the code comment already carries.**
+
+### The re-entry mechanics (streak vs edge — and the panel as rate limiter)
+
+- Thesis: the SAME RSI/crowding contrarian case — momentum figures **verbatim
+  identical** between demoted cycle 10 and kept cycle 11 ("momentum −63%,
+  reversal +33%"), no new catalyst, risk_context DOWN (0.55→0.45), entry
+  0.21% lower against a fixed target. The only thing that rose: self-reported
+  proposal confidence (0.60→0.66) after two green closes — the streak
+  signature. Ledger influence unproven: `desk_ledger` was in the brief but the
+  decision text never cites the wins (H-LEDGER original arm stays intact,
+  unsupported this cycle).
+- **The cooldown had already lapsed at cycle 10 (expired 07:23Z)** — only the
+  panel blocked re-entry, and its demote rationale was authored over a PHANTOM
+  position ("we keep the position, arm a half-size reduction at $11.00" while
+  `position_qty 0.0` — #81's hallucination is in the executed verdict chain).
+  The demote→keep pair therefore shows no discrimination; C grades the keep a
+  variance-class draw. **Structural point: against a desk that re-proposes
+  every eligible cycle, a sampling panel is a rate limiter (expected delay ≈
+  1/keep-rate cycles), not a filter.**
+- **F-STREAK pre-registered** (new arm; the H-LEDGER loss-re-entry falsifier
+  is NOT mutated): next N=10 same-symbol re-entries within 24h of a net-green
+  close by the same agent — record cycles-to-re-entry, size ratio,
+  params_state, panel verdict, confidence delta, net bp. Hypothesis:
+  performance ≤ fleet baseline with elevated frequency on unchanged evidence.
+  Refuted if mean net bp > 0 with CI excluding baseline or ≥9/10 positive.
+  Interim readout n=5. **This entry is tally #1.**
+- Fee/geometry: RT ≈ $0.151; to beat trip 1's +$0.195 the trip needs price
+  < 11.276 on full size — a new low below the 11.290 level that rejected the
+  fade twice in trip 1. Breakeven win rate vs a desk-managed loss at the modal
+  +$0.195 winner: ~95% (fleet baseline ≈46%).
+
+### Rails on the new trip (B; all defaults verified)
+
+Ratchet arm ≈ **$0.335 = a 0.20% favorable move (LINK ≤ ~11.276)** — for the
+first time in this run's life the arm is REACHABLE at current size (floor_qty
+now 14.84); if it arms, #592 finally accrues a live fire. Trail $2.68 (1.60%)
+still unreachable in practice (D-trail-sizing stands). max_loss $10.06 is
+shadowed by the 5% default stop (fires first at ≈−$8.25). **at_time
+2026-08-30T03:35:37Z still binds — trip 2 has 19h26m of horizon** against a
+target needing −3.97%. Realistic exit order: desk cycle exits, then ratchet,
+then at_time.
+
+### Fleet / process
+
+2 builds, 0 stops (34 running; 17/17). Both builds same-symbol rebuilds by
+agent 6: BTCUSDT 2267 (3rd BTC run since 08-28; its sells demoted twice this
+window at risk_context 0.25–0.28) and ZECUSDT 2268 (**5th ZEC build since
+08-28 13:04** — the slot churns builds against repeated desk/idle rejections;
+paid-churn signature n=3). Worker clean (0 restarts/tracebacks, no
+no_verdict). Panel 1 of 4 kept. Mode ②: merged without deploy (RAG ingest
+review still recommended before next deploy; 6 readings pending — at the
+staleness bound; deploy decision deferred to the ingest-content review, which
+the RAG-loop finding (#81) makes the safer default).
