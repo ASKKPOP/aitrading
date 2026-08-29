@@ -2663,3 +2663,15 @@ gets tested before LINK turns.
 (no capped fills); #592 n=4/30; 17 holds + 1 desk retire; 1 no_verdict
 (salvage-class, no cluster); churn light (2 builds). Worker healthy. Mode ②:
 merged without deploy.
+
+---
+
+## Reading #90 — 2026-08-29T16:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Profit-or-loss first:** 0 fills, $0 realized. Orphan 483 retraced to
+≈**−$1.32** (mark 11.388, fresh; the 11.8629 watcher stop was never tested —
+peak adverse this stretch was ≈−$1.83 at #89). One flat run expired
+`stop_event:at_time` (no position, no P&L). Panel 0/1 — discriminator 0/5 of
+20. F-TARGET-CAP 0/1, #592 n=4/30, F-PSYCH-WIRE holding (all decisions
+crypto-side carry the lines). 19 holds; 1 build. Worker healthy (0
+restarts/tracebacks). Mode ②: merged without deploy.
