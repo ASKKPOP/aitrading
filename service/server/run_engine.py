@@ -56,6 +56,7 @@ import trading_runs
 import desk_memory_ingest
 from database import begin_write_transaction, get_db_connection
 from order_params import (
+    RR_FLOOR,
     exit_prices as order_exit_prices,
     mode as order_params_mode,
     outcome as order_params_outcome,
@@ -4611,6 +4612,10 @@ def _compose_position_state(run: dict, cfg: dict, pos_qty: float,
         ("breadth_state", _breadth_state_line(run)),
         ("us_psych", _us_psych_line(run)),
         ("fx_risk", _fx_risk_line(run)),
+        # Owner order 2026-08-29 ("make human fact more higher"): crypto was
+        # the one market whose light path read no crowd psychology at all.
+        ("crypto_psych", _crypto_psych_line(run)),
+        ("target_band", _target_band_line(run)),
         # Tier-4 human facts (owner direction 2026-08-24, Research 07 §9):
         # measured crowd readings — counts, deltas, indices — for the desk
         # to weigh itself. Facts only; renders empty until the service is
@@ -4781,6 +4786,72 @@ def _breadth_state_line(run: dict) -> str:
 
 
 
+def _psych_weight_suffix() -> str:
+    """Owner order 2026-08-29 ("make human fact more higher"): raise the
+    weight of the crowd-psychology evidence. Default env keeps every psych
+    line byte-identical to before; PSYCH_WEIGHT_LEVEL=high appends exactly
+    one sentence. The "never the sole reason" invariant stays verbatim in
+    every line — this raises the weight, it does not license psychology-only
+    trades."""
+    if (os.environ.get("PSYCH_WEIGHT_LEVEL") or "").strip().lower() != "high":
+        return ""
+    return (" Weigh this crowd evidence as first-class, co-equal with the "
+            "technical read — a decision that ignores it must say why in "
+            "the report.")
+
+
+def _crypto_psych_line(run: dict) -> str:
+    """Crypto market crowd psychology (advisory) — owner order 2026-08-29.
+
+    Until this line the crypto LIGHT path (the default route for most
+    cycles) read no market psychology at all: Fear & Greed reached a crypto
+    decision only when a shock escalated to the full desk. Facts only,
+    advisory framing, same contract as _us_psych_line — the desk owns the
+    interpretation. A feed problem renders ""."""
+    if (run.get("market") or "") != "crypto":
+        return ""
+    try:
+        import psych_feed
+        payload = psych_feed.get_psych_payload()
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+    if not payload or not payload.get("available"):
+        return ""
+    fg = payload.get("fear_greed") or {}
+    val = fg.get("value")
+    if val is None:
+        return ""
+    line = (f"Crypto crowd psychology (advisory, Fear & Greed): "
+            f"{float(val):.0f}/100"
+            + (f" ({fg.get('classification')})" if fg.get("classification")
+               else ""))
+    d3 = fg.get("delta_3d")
+    if d3 is not None:
+        try:
+            line += f", {float(d3):+.0f} vs 3 days ago"
+        except (TypeError, ValueError):
+            pass
+    if payload.get("shock"):
+        line += "; an unresolved liquidation shock is active"
+    line += (". Extremes (roughly 20 and below, or 80 and above) are "
+             "contrarian regimes; mid-range confirms momentum. Regime "
+             "evidence only — crowd psychology is never the sole reason "
+             "for an order.")
+    return line + _psych_weight_suffix() + "\n"
+
+
+def _target_band_line(run: dict) -> str:
+    """The reachable-target band as a brief fact line (owner order
+    2026-08-29). Rides _compose_position_state so BOTH prompts see it —
+    the run_cycle clamp bypasses order_params notes, making this the only
+    teaching channel. Renders "" while TARGET_PSYCH_CAP is off."""
+    try:
+        import target_policy
+        return target_policy.prompt_line(run.get("market"))
+    except Exception:  # noqa: BLE001 — a brief must never block a cycle
+        return ""
+
+
 def _us_psych_line(run: dict) -> str:
     """US market-level crowd psychology as regime evidence (advisory).
 
@@ -4818,7 +4889,7 @@ def _us_psych_line(run: dict) -> str:
                  "contrarian regimes; mid-range confirms momentum.")
     line += (" Regime evidence only — crowd psychology is never the sole "
              "reason for an order.")
-    return line + "\n"
+    return line + _psych_weight_suffix() + "\n"
 
 
 def _fx_risk_line(run: dict) -> str:
@@ -4865,7 +4936,7 @@ def _fx_risk_line(run: dict) -> str:
             + ". Risk-off bids JPY/CHF/USD and pressures high-beta FX; "
               "risk-on is the mirror. Regime evidence only — one signal "
               "alone is no trade.")
-    return line + "\n"
+    return line + _psych_weight_suffix() + "\n"
 
 LOSS_FLOOR_USD = 0.99
 LOSS_FLOOR_FRAC = 0.006   # of run budget — what $0.99 WAS at the $1000 seed
@@ -6123,7 +6194,7 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         "a currency pair and unreachable on a volatile crypto name, so size "
         "both to the symbol's own recent range shown above: stop_pct = %% from "
         "entry to your invalidation level, target_pct = %% to a level the move "
-        "can realistically reach. target_pct MUST be at least 2x stop_pct. If "
+        f"can realistically reach. target_pct MUST be at least {RR_FLOOR:g}x stop_pct. If "
         "you have no concrete basis, omit them and the house defaults apply.\n"
         # Plan 26: the outlook — the slot's standing plan, published beside
         # the decision and quoted back on the next cycle (standing_plan brief
@@ -7484,6 +7555,41 @@ def run_cycle(run_id: int) -> dict:
             ai_sl, ai_tp = order_exit_prices(order_params, float(entry), is_short)
             if ai_sl and ai_tp:
                 stop_loss, take_profit = ai_sl, ai_tp
+
+        # Reachable-target cap (owner order 2026-08-29). The target sweep on
+        # 1,099 replayed prod entries measured the 4.5%-class target filled
+        # on 6 trips while 0.30% fills 62% and maximises the mean — targets
+        # were decoration. Regime-keyed via target_policy; pulls the
+        # take-profit INWARD only, floored at RR_FLOOR x the actual stop
+        # distance and at the fee floor so it can never convert an entry
+        # into an rr_floor skip. Runs on WHICHEVER bracket won, so the
+        # deferred/absent-params 5%/10% default is capped too.
+        if action in ("buy", "short") and entry and stop_loss and take_profit:
+            try:
+                import target_policy
+                _cap, _cap_regime = target_policy.cap_for(run.get("market"))
+                if _cap is not None:
+                    from fees import fee_rate as _cap_fee_rate
+                    from order_params import (RR_FLOOR as _cap_rr_floor,
+                                              _fee_floor_target)
+                    _e = float(entry)
+                    _stop_dist = abs(float(stop_loss) - _e) / _e * 100.0
+                    _eff = max(_cap, _stop_dist * _cap_rr_floor,
+                               _fee_floor_target(
+                                   _cap_fee_rate(run.get("market"))))
+                    _tp_dist = abs(float(take_profit) - _e) / _e * 100.0
+                    if _tp_dist > _eff + 1e-9:
+                        _new_tp = _e * (1 - _eff / 100.0) if is_short \
+                            else _e * (1 + _eff / 100.0)
+                        emit_telemetry_event(
+                            run_id, "target_cap",
+                            {"cycle": seq, "regime": _cap_regime,
+                             "cap_pct": _cap, "eff_cap_pct": round(_eff, 4),
+                             "tp_before": float(take_profit),
+                             "tp_after": round(_new_tp, 8)})
+                        take_profit = _new_tp
+            except Exception:  # noqa: BLE001 — the cap must never block a trade
+                logger.exception("target cap failed; bracket left unchanged")
 
         # R:R floor — applied to WHICHEVER bracket won, AI or deterministic.
         # The rail exists because the fleet's own tier maths produced a 10:1

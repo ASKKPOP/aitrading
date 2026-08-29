@@ -58,7 +58,19 @@ logger = logging.getLogger(__name__)
 # so a target that cannot pay its own cost is not a target.
 FEE_MULTIPLE = 3.0
 # target_pct >= RR_FLOOR * stop_pct. The single most valuable invariant here.
-RR_FLOOR = 2.0
+# Env-tunable since 2026-08-29 (owner order "target price make lower"): the
+# 1,099-trip target sweep measured the mean-optimal target at 0.30% against
+# 1.5-1.6% stops — a geometry the 2.0 floor forbids. The DEFAULT stays 2.0;
+# lowering it is a prod .env decision that also widens the research funnel
+# (symbol_research.thesis_rr_feasible imports this value).
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+RR_FLOOR = _env_float("RR_FLOOR", 2.0)
 # target_pct <= RR_CEILING * stop_pct. The floor's mirror, added 2026-08-17
 # after four experiments agreed the target was set past anything the market
 # offers: no target above 2.00% has EVER been reached even given a run's own
