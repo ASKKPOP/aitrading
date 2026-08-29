@@ -2005,3 +2005,121 @@ Two keeps in four hours after a long demote streak looked like a shift. It is no
 - The agents' own retractions: the adversary retracted its short-gap staleness test as vacuous, and corrected an 08-25 keep count (67.6% → **0 of 68**, a `LIKE`-spacing error) within its own report.
 - **Sizing reproduced bit-exact** for run 2235: slot **$745.20** (not $1,800.01 — confirming #73's tilted-allocation finding) × 0.45 = $335.34, **no probation** (4 prior LINKUSDT runs), × size_scale 0.3696 = $123.94, × `null_size_cap` 0.25 = $83.835, × leverage 2.0 = $167.67 ÷ 11.394 = **14.71563981042654**, the filled quantity to the last binary digit.
 - **#54's pre-fix 77.8% baseline REPRODUCED** (76/98 = 77.6%) — unlike #68's, it stands.
+
+---
+
+## Reading #78 — 2026-08-29T04:30Z (hourly; 3 agents dispatched — tape present)
+
+**Hypotheses first:** H1 book flat since LINK 2235 close, zero fills → **REFUTED**
+(new entry + partial cover); H2 worker healthy on `20260829-reading77` → held
+(0 restarts, 0 tracebacks, 0 error/no_verdict events); H3 #592 tally stays
+n=3/30 → held (0 stop_mechanism fires).
+
+Context: this cycle ran alongside the owner-ordered 10-agent profit analysis;
+its deliverable is **Plan 30** (`docs/plan/30-aggressive-profit-program-2026-08-29.md`,
+PR #620) plus committed fee-sweep artifacts in `research/`. Fee-sweep verdict
+(pre-registered in #77, now DECIDED): **NO sign flip at maker/zero fee — gross
+−6.14bp CI90 < 0; exit mix 167 stops : 6 targets (28:1)**. Retired numbers list
+in Plan 30 §7 (includes the old 4.36% keep baseline — all-time is 84/1,412 = 5.95%).
+
+### Profit-or-loss first
+
+**Window (03:15→04:30Z): +$0.0251 realized cash (all fees paid), +$0.036
+unrealized on the open half at window end — total ≈ +$0.061.** One trip: run
+2251 (agent 60) LINKUSDT short 8.862 @ 11.359 (panel kept 1 of 8, conf 0.58,
+the only keep), half-covered 15 min later at 11.338. Accrual view: +$0.0478
+net on the covered half (pro-rated entry fee), fees ate 49% of that leg's
+gross. Trip stays net-positive iff the open half exits < ≈11.3596; stop
+(11.5336) costs −$0.77, target (10.8525) pays +$2.25. Adversary's frame stands:
+a +$0.06 draw from a process measured at −17.89bp/trip mean is variance, not
+improvement.
+
+### The load-bearing finding: the PANEL authored the payoff truncation
+
+At 03:55Z the desk proposed **sell 0.77 — its highest-confidence call of the
+window (press the short)**; the panel's re-sample flipped it 180° to **buy 0.62
+(cover half)**, with a self-refuting rationale ("only moved 0.12% of the
+expected 4% move, so the edge is diminishing" — 3% progress toward target, 15
+min into a 36h horizon, is not evidence of a dying edge). All three agents
+agree on the event data; B's "desk-authored cover" label is corrected — under
+the wholesale-replacement mechanism the cover and its rationale are the
+panel's. Cost shape: $2.21 of target payoff forfeited on that half for $0.048
+banked (46:1). In-window hindsight the flip was right (price chopped back to
+~11.353), and inside the measured 28:1 stop:target geometry, banking at 2× fees
+is locally defensible — **the root defect remains the unreachable target
+(Plan 30 B2), but this window shows the truncation channel is the panel, not
+only the ratchet.** Keep-rate mechanism note: demotions-to-hold are not the
+only panel action; direction flips against 0.77-confidence proposals now have
+a live example.
+
+### Algorithm side (B) — $0 authored, correctly; two structural findings
+
+1. **Zero algorithm exits owed, zero fired** (price 11.334–11.371 never near
+   any threshold). The one adapt event was a no-op feedback row.
+2. **#77 Defect 4's live cost signature, third instance:** ratchet arm =
+   $0.2013 (2.222× the real $0.0906 round trip; BREAKEVEN_FEE_RATE default
+   0.001 vs booked 0.00045). Peak excursion $0.1772 paid real fees 1.96× over
+   yet never armed; ~$0.10 of the post-cover peak was given back with no
+   algorithmic protection.
+3. **NEW (D-trail-sizing):** trail `activate_usd 2.68` is computed at BUILD
+   time on the full max_bet notional ($670.68), but the desk entered at
+   size_frac 0.15 — actual tiering is **13.3×** the runtime ratchet arm, not
+   the intended 2×. On desk-fractional entries the #589 falsifier ("trail arms
+   on ≥1 of first 20 profit-rail fires") is structurally hard to pass.
+   Measurable; carry to the next profit-rail fires.
+4. Sizing was desk-authored (size_frac 0.15, no size_clamp event; platform
+   only capped leverage 3→2). Brackets are the desk's AUTHORED levels
+   (stop_pct 1.6 / target_pct 4.4 off the decision mark — bit-exact
+   11.5336/10.8525); this entry took the good path, not #77 Defect 2's 23.9%
+   discard path. Minor: desk prose said "stop at 11.55" vs compiled 11.5336
+   (0.14% drift between stated plan and executable bracket).
+5. Fleet: 3 starts / 3 stops in 75 min (~2.4/h vs prior 20h's 5.9/h). One
+   churn signature: run 2250 (LINKUSDT) desk-retired **105 seconds** after
+   build (risk_context 0.30); planner rebuilt LINKUSDT 2 minutes later as
+   2251, whose desk shorted it 4 minutes after that. n=1, logged not chased.
+6. Mark freshness nominal (price_updated_at 22s stale; equity cadence ~66s).
+
+### Re-entry under the ledger line (C) — new pre-registered falsifier
+
+2251 is the third LINKUSDT short in ~26h, entered 66 min after 2235's +$0.29
+ratchet close — **on cycle 1** (2235 deliberated 3 cycles), with
+`desk_ledger` + `predecessor_run` demonstrably in the prompt but zero textual
+reference to the prior win in the decision report. Not the H-LEDGER baseline
+pattern (that was re-entry after LOSSES); this is re-entry after a win —
+unmeasured. **Pre-registered falsifier F-PRED-CYCLE1: over the next 10
+first-cycles that carry predecessor context, does the cycle-1 entry rate
+exceed the no-predecessor baseline?** H-LEDGER revert guard: NOT tripped
+(fills continue; keep occurred).
+
+### Maker lever — live counterexample for C1's design
+
+On this trip, posting maker at the PROPOSAL price (11.352) would have filled
+but net LOST $0.032 vs the taker fill (forfeited +6.2bp favorable drift);
+posting at the fill level would have saved ~$0.053 of the $0.068 fees paid.
+Plan 30 C1's shadow fill simulator must log drift-forfeit vs adverse-selection
+per fill — "maker at signal price" is not free money on tape like this.
+
+### Panel demotions check (observation, not conclusion)
+
+7 demotions in-window: none of the demoted symbols approached the ~4.4% target
+band within the window (best: AVAX +0.30% favorable = 1/15th of band; SOL buy
+demoted then −0.37% against — demotion right). 75-minute windows cannot judge
+36h proposals; the instrument is the MFE replay (Plan 30 B2).
+
+### Falsifier board
+
+- **#592:** n=3/30, 3/3 positive (no new fires). n=9 breakeven readout pending.
+- **Frozen-mark:** RETIRED as FAILED (#77); replacement metric (median overrun
+  ÷ band width per fire) had zero fires to measure this window.
+- **#589 trail:** 0 arms; see D-trail-sizing above — the falsifier may be
+  structurally unpassable on fractional entries; re-scope proposed at next fire.
+- **H-LEDGER:** guard not tripped. New: F-PRED-CYCLE1 (above).
+- **#591 panel fallback:** 1 local-fallback activation in the prior 20h window
+  (run 2182); none this window.
+
+**Process:** deploys 20260829-reading77 current; mode ② — this reading is
+merged without deploy (no desk-actionable content requiring immediate RAG
+ingest; 1 reading pending ingest, staleness bound ~6 cycles). Plan 30 merged
+this hour (PR #620). Verdicts above stated profit-first; every outcome carries
+its reason; disagreements between agents (cover authorship, realized-P&L
+convention) resolved in-text.
