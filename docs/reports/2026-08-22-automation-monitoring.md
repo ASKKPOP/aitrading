@@ -2675,3 +2675,16 @@ peak adverse this stretch was ≈−$1.83 at #89). One flat run expired
 20. F-TARGET-CAP 0/1, #592 n=4/30, F-PSYCH-WIRE holding (all decisions
 crypto-side carry the lines). 19 holds; 1 build. Worker healthy (0
 restarts/tracebacks). Mode ②: merged without deploy.
+
+---
+
+## Reading #91 — 2026-08-29T17:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Profit-or-loss first:** 0 fills, $0 realized. Orphan 483 at a new adverse
+extreme ≈**−$1.88** (mark 11.426, fresh; watcher stop 11.8629 = 3.8% away,
+loss capped ≈−$8.4). Zero panel discussions this hour (no proposals at all —
+the drought now shows at the proposal layer, not just keeps); discriminator
+holds 0/5 of 20. F-TARGET-CAP 0/1, #592 n=4/30 unchanged. 17 holds, 2 idle
+retires, worker healthy. Mode ②: merged without deploy (7th consecutive
+docs-only cycle since the 11:06Z ship — RAG ingest of readings #85+ pending
+the corpus review from #81; the lag remains deliberately protective).
