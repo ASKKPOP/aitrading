@@ -1873,3 +1873,32 @@ CI90 half-width at n=30 is **±0.0942** (was quoted as ±0.0869).
 **Current tally: n=2 of 30** (TAO +$0.9868, BNB +$0.1082 on the net basis; both verified #592-attributable by arithmetic in #74). Post-ship mean +0.5475 with a **degenerate** bootstrap at n=2 — it can only return the two observed values and carries no information. **Nothing is decided.**
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** (0 open positions); H-LEDGER **not tripped**; #591 **0 of 20, untested**.
+
+---
+
+## Reading #76 — 2026-08-29T00:13Z — quiet tape; #74's bypass claim CORRECTED and sharpened
+
+**Profit first: no change. Zero new fills, zero open positions, $0.00 realized this cycle.** Last fill remains `2026-08-28T22:01:01Z` — **2.2 hours**. The BNBUSDT trip (+$0.108151) is still the only fill. 24 runs (fleet 42: 10, fleet 41: 14), stable. Panel 2 proposals, **0 kept**. 14 decisions, **0 `stop_mechanism` fires**, 0 tracebacks. No new tape, so no three-agent dispatch.
+
+### CORRECTION to reading #74 — "short is the only direction that can reach a fill" was too strong
+
+#74 concluded from the `backtest_gate` short-bypass that *"short is the only direction that can reach a fill"*. **That overstates it.** Live run directions this cycle: **21 long, 3 short.** Longs are built in quantity, and a long has filled recently (run 2001 TAOUSDT, +$0.9868). The claim as written is refuted by the fleet's own composition.
+
+### The correct statement — the bypass shows up in the FILL RATE, not the fleet mix
+
+| window | direction | runs built | ever filled | **fill rate** |
+|---|---|---|---|---|
+| all time | long | 866 | 60 | **6.9%** |
+| all time | **short** | 186 | 47 | **25.3%** |
+| since 08-26 | long | 331 | **1** | **0.3%** |
+| since 08-26 | **short** | 74 | 4 | **5.4%** |
+
+**Shorts convert to fills at 3.7× the long rate all-time, and 18× since 08-26.** The built fleet is **82% long** (866 of 1,052) while the filled cohort measured by the ZI control was **70% short** (40 of 57). Those looked contradictory; they are both true, and the fill-rate table is what reconciles them: **most runs are long, most fills are short.**
+
+**Mechanism, established in #74 and unchanged:** `backtest_gate` admits short theses **unconditionally and unscored** because the replay engine is long-only and fails open, while long theses are scored and mostly dropped. The delegated short safety net (`_bucket_expectancy_block`) cannot veto because it reads `SUM(realized_pnl_usd)`, which is **98.4% zeros**.
+
+**Attribution discipline — stated, not glossed.** The code path is verified and the asymmetry is measured, but this reading does **not** claim the bypass explains the full 3.7×–18× gap. Other contributors are plausible and untested: short theses may be generated only under narrower conditions, and the recent 18× rests on **1 long fill out of 331** — a single observation in the denominator's numerator. **The mechanism is established; the magnitude is not attributed.**
+
+**Why this matters more than the earlier framing:** an admission gate that scores one direction and waves the other through is not merely uneven — it means **the measured "short bias" was never a directional view at all.** The ZI control priced that tilt at **−0.00015/trip, indistinguishable from nothing**. A tilt worth nothing, produced by a gate asymmetry rather than by judgement, is a defect in candidate admission, not in the desk.
+
+**Falsifiers carried forward:** frozen-mark **unmeasurable** (0 open positions); H-LEDGER **not tripped**; #592 **2 of 30** — with the **n=9 breakeven readout pre-committed in #75** as the first meaningful checkpoint; #591 **0 of 20, untested**.
