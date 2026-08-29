@@ -2500,3 +2500,31 @@ Panel 0/6 kept (drought: 1 keep in the last ~37 discussions). #592 no fires;
 F-STREAK #1 open (frozen-window annotation stands); H-LEDGER guard not
 tripped. Mode ②: merged without deploy; D-COOLDOWN-AMPLIFIER fix still the
 top ship candidate awaiting owner sign-off.
+
+---
+
+## Reading #85 — 2026-08-29T11:13Z (hourly; quiet — deploy cycle; no trade outcomes, no agent dispatch)
+
+**Context: the owner-ordered ship went live mid-window.** PR #628
+(`sooppiy-backend:20260829-targets`, worker up 11:06:51Z, rollback
+`20260829-reading77`): reachable-target cap (regime-keyed, crypto base
+0.30%), `RR_FLOOR=0.2` env, crypto psych brief line, `PSYCH_WEIGHT_LEVEL=high`,
+`target_band` teaching line. Decided by the 1,099-trip target sweep
+(artifacts in `research/`); falsifiers pre-registered in Plan 30's execution
+log (F-TARGET-CAP: ≥30% target-exit share over the first 30 capped fills,
+else FAILED; F-PSYCH-WIRE; F-PSYCH-WEIGHT).
+
+**Hypotheses:** H1 orphan 483 open under watcher → held (mark fresh 11.330,
+uPNL −$0.46, 4.7% from the 11.8629 stop; no reclaim action). H2 post-deploy
+wiring holds → held on first data: **1 of 1** new-image crypto decisions
+(run 2260, 11:11:43Z) journals BOTH `crypto_psych` and `target_band`
+(F-PSYCH-WIRE 1/1). H3 worker healthy on the new image → held (0 restarts
+since 11:06:51, 0 tracebacks, 0 no_verdict). H4 entry-rate rise → too early
+(7 min of post-deploy tape).
+
+**Profit-or-loss first:** 0 fills, $0 realized this window; 31 holds, panel
+0/5 kept (drought: 1 keep in ~42 discussions), 2 idle retires, 0
+stop_mechanism, 0 `target_cap` events (no entries yet — the F-TARGET-CAP
+tally opens with the first capped fill). #592 n=3/30 unchanged (and starving
+per #81); F-STREAK #1 (2251 trip 2) untouched — the trip is the orphan.
+Mode ②: merged without deploy (the ship itself deployed at 11:06Z).
