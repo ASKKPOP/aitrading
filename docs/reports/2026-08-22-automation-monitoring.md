@@ -2614,3 +2614,18 @@ configured fails by construction and the fix is stop-side.**
   the same replay — #81 showed its sign is not free).
 - Fleet: 8 idle retires, 1 desk retire (reason given, fee-aware), 2 builds;
   worker clean; marks fresh. Mode ②: merged without deploy.
+
+---
+
+## Reading #87 — 2026-08-29T13:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Hypotheses:** H1 panel discriminator advances → 1 discussion, demoted (buy
+0.55 → hold): tally 0 keeps / 1 of the next 20. H2 more capped entries → none
+(0 fills, 0 target_cap; F-TARGET-CAP stays 0 target-exits / 1 fill). H3
+orphan 483 open, unreclaimed → held (mark fresh, uPNL ≈ −$0.19; ~3h past
+reclaim eligibility, zero orphan events — open item ages). H4 worker healthy
+→ held (0 restarts/tracebacks/no_verdict).
+
+**Profit-or-loss first:** 0 fills, $0 realized. 16 holds; F-PSYCH-WIRE
+16/16 this window (cumulative 100% since deploy). Churn light: 3 idle
+retires / 3 builds. #592 n=4/30 unchanged. Mode ②: merged without deploy.
