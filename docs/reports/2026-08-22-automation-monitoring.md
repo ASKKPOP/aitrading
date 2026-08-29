@@ -2702,3 +2702,16 @@ capped entries in 6.5h since the first; the entry channel, not the new
 geometry, remains the binding constraint (consistent with the whole record).
 Churn burst: 10 builds / 7 stops (3 flat at_time expiries, 3 desk retires, 1
 idle). #592 n=4/30. Worker healthy. Mode ②: merged without deploy.
+
+---
+
+## Reading #93 — 2026-08-29T19:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Profit-or-loss first:** 0 fills, $0 realized. Orphan 483 at a new adverse
+extreme ≈**−$2.09** (mark 11.440, fresh; watcher stop 11.8629 = 3.6% away,
+loss capped ≈−$8.4). **Panel-shift discriminator 0 keeps of 16** — the
+coincidence verdict is effectively locked (even 2 keeps in the final 4 lands
+at ≤2/20): the #86 keep was the rate-limiter's 9th re-proposal passing, not
+changed panel dynamics. F-TARGET-CAP 0/1 (7.5h without a second capped
+entry); #592 n=4/30. 31 holds + 3 desk retires; churn 7 builds / 7 stops
+(2 flat at_time expiries). Worker healthy. Mode ②: merged without deploy.
