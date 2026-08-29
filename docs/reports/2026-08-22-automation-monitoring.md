@@ -2645,3 +2645,21 @@ eligibility). H4 worker healthy → held (0 restarts/tracebacks/no_verdict).
 **Profit-or-loss first:** 0 fills, $0 realized; the book's only exposure is
 the orphan at −$0.83. 14 holds; churn light (1 idle retire, 2 builds). #592
 n=4/30 unchanged. Mode ②: merged without deploy.
+
+---
+
+## Reading #89 — 2026-08-29T15:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Profit-or-loss first:** 0 fills, $0 realized. The one exposure moved:
+**orphan 483's adverse drift accelerated to ≈−$1.83** (mark 11.422, fresh;
+LINK rallying against the orphaned short). The watcher stop 11.8629 sits
+3.9% away and caps the loss at ≈−$8.4; per the #83 design review the watcher
+is the position's only manager and it is live on fresh marks. Hands stay off
+per the constraints — this is the stop-and-hold terminal doing its designed
+job; the P&L question is whether the 5%-default stop (Defect 2's width)
+gets tested before LINK turns.
+
+**Board:** panel 0/1 (discriminator 0/4 of 20); F-TARGET-CAP 0/1 unchanged
+(no capped fills); #592 n=4/30; 17 holds + 1 desk retire; 1 no_verdict
+(salvage-class, no cluster); churn light (2 builds). Worker healthy. Mode ②:
+merged without deploy.
