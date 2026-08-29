@@ -2386,3 +2386,96 @@ no_verdict). Panel 1 of 4 kept. Mode ②: merged without deploy (RAG ingest
 review still recommended before next deploy; 6 readings pending — at the
 staleness bound; deploy decision deferred to the ingest-content review, which
 the RAG-loop finding (#81) makes the safer default).
+
+---
+
+## Reading #83 — 2026-08-29T09:14Z (hourly; INCIDENT — mark blackout → run stop → fleet freeze; self-resolved under observation; 3 agents + cross-check)
+
+**Profit-or-loss first: no realized loss.** The incident's dollar cost was
+≈−$0.33 of hidden unrealized drift on the $167.7 LINK short (mark frozen at
+11.302 while the tape moved to ~11.322); no fill occurred; the stop was never
+within 4.6%. The real cost was integrity: **for 62 minutes (08:32:23→09:34:25Z)
+the book's only open position was invisible to every safety rail, and agent
+60's entire 16-run fleet was frozen for 47 of those minutes.** Full
+auto-recovery at **09:34:48Z was observed live** — `eval_recovered` (first
+production firing ever) resumed 16/16 runs; the mark refreshes every 60s again;
+the watcher bracket (11.8629/10.1682) is live. Owner was paged at detection and
+sent the all-clear.
+
+### Causal chain (A/B/C converged; every step evidenced to the second)
+
+1. **08:33:26Z** — ONE transient LINKUSDT poll failure (a ~15s Hyperliquid
+   rate-limit window; healthy again by 08:37:36 when the desk path fetched
+   $11.297 successfully). `_record_price_failure` (tasks.py:115) applied the
+   default **3600s per-symbol cooldown on the first failure** — the poller
+   skipped LINKUSDT every 60s tick for an hour. The system KNEW the fresh
+   price at 08:37 and threw it away (desk fetches don't write position marks).
+2. Mark age crossed the **900s** staleness rail at 08:47:23 →
+   `_evaluate_stop` fail-closed ("refusing to evaluate P&L stops on frozen
+   prices"), 5 consecutive failures (limit 5; DB `consecutive_errors=5`) →
+   stopping 08:49:40 with `stop_flatten=0` (deliberate: never price a forced
+   exit on untrusted data) → **stopped `positions_held` 08:50:16, releasing
+   `positions.run_id → NULL` — the DESIGNED stop-and-hold terminal**, not
+   corruption (run_engine.py:1691-1693; 2026-07-26 precedent: forced flattens
+   on frozen marks cost −$14.41 across six runs).
+3. The same frozen mark made fleet 42's shared `marked_equity` fail every
+   ~61s tick (`_zombie_pnl` → None on a stale unowned-book mark); at 5
+   consecutive failures `_pause_entries` paused **all 16 running members in
+   one second (08:51:52-53)**. Per-fleet scope by construction — agent 6
+   untouched.
+4. **09:33:26Z cooldown expired → 09:33:46 fetch succeeded → 09:34:48
+   `eval_recovered`, 16/16 resumed, 16 cycles dispatched 09:34:57.** The
+   recovery path (written after the 2026-07-28 fleet-20 deadlock) passed its
+   first real exercise.
+
+**Theories killed with data (C):** the truncated verdict (8 minutes of healthy
+cycles sit between it and the failure; different loop entirely); a
+deploy/restart (worker up 7h continuously). "Hyperliquid caused it" is HALF
+right — the blip was the trigger; **the amplifier was ours.**
+
+### Standing defect register (new; all pipeline-fixable, none fixed this session — read-only honored)
+
+- **D-COOLDOWN-AMPLIFIER (MEDIUM, systemic — will recur):** first-failure
+  cooldown 3600s vs 60s poll and 900s staleness rail = one bad tick blinds a
+  held symbol 4× past the fail-closed threshold, deterministically stopping
+  its run and freezing its fleet; a second failure at retry doubles the
+  blackout to 2h (cap 6h). Fix candidates for owner/experiment: open-position
+  carve-out (short cooldown for symbols with `quantity != 0`) vs a lower env
+  default; pre-registered falsifier: replay this incident's timeline under the
+  carve-out — blackout must end < 900s and no stop_eval_failed fires.
+- **D-WATCHER-STALENESS (LOW-MEDIUM):** the SL/TP watcher evaluates
+  `positions.current_price` with NO mark-age check — during the blackout the
+  stop was unenforceable while the engine (correctly) failed closed. The two
+  layers disagree on failure philosophy: engine fail-closed, watcher
+  silent-open.
+- **D-MARK-WRITE-PATH (LOW):** the desk's successful 08:37:36 fetch could
+  have ended the incident 55 minutes early if cycle-path prices wrote through
+  `price_dispatch.apply_price_update`.
+- **Config contradiction (LOW):** `ORPHAN_RECLAIM_EXIT=true` on prod while
+  the adjacent .env comment says it stays false — desk-driven orphan closing
+  is ARMED, possibly unintentionally. Position 483 becomes reclaim-eligible
+  ~10:09Z (120-min floor); with the exit arm on, a desk read may close it once
+  LINKUSDT blocks fleet 42's rebuild.
+- **Dead rails on stopped runs (by design, now with a live instance):** run
+  2251's at_time/max_loss/trail will never evaluate again (`control_pass`
+  skips `stopped`); the orphan keeps only its row-level SL/TP.
+
+### Falsifier / tally notes
+
+- **F-STREAK #1 (this trip): the 08:32–09:34 window is UNMEASURABLE**
+  (mark stood still) — annotate, not zero. Trip 2 remains open, orphaned,
+  bracket-managed.
+- #592: no fires (the run that could have armed is stopped; the orphan is
+  outside the ratchet's scope — watcher bracket only).
+- Mark-refresh falsifier note: the #77-retired metric aside, this incident is
+  the strongest evidence yet that mark PLUMBING, not mark cadence, is the
+  binding risk.
+- H-LEDGER revert guard: not tripped (fills present earlier today; keeps
+  present).
+
+**Process:** worker healthy throughout (0 restarts — the incident was pure
+data-state); 1 no_verdict; panel 0/5 kept this window. Mode ②: merged without
+deploy (docs only; the D-COOLDOWN-AMPLIFIER fix awaits owner sign-off +
+replay per the experimental-mindset rule — it is the next ship candidate,
+ahead of Plan 30 A-items, since it is the only defect shown to take down half
+the fleet).
