@@ -1902,3 +1902,106 @@ CI90 half-width at n=30 is **±0.0942** (was quoted as ±0.0869).
 **Why this matters more than the earlier framing:** an admission gate that scores one direction and waves the other through is not merely uneven — it means **the measured "short bias" was never a directional view at all.** The ZI control priced that tilt at **−0.00015/trip, indistinguishable from nothing**. A tilt worth nothing, produced by a gate asymmetry rather than by judgement, is a defect in candidate admission, not in the desk.
 
 **Falsifiers carried forward:** frozen-mark **unmeasurable** (0 open positions); H-LEDGER **not tripped**; #592 **2 of 30** — with the **n=9 breakeven readout pre-committed in #75** as the first meaningful checkpoint; #591 **0 of 20, untested**.
+
+---
+
+## Reading #77 — 2026-08-29T02:13Z — THE FROZEN-MARK FALSIFIER IS **FAILED**, not passed. Three agents; four defects found.
+
+**Profit first.** Run 2235 LINKUSDT short is **still open**: entry 11.399, mark 11.396, **+$0.0441 gross**, **−$0.031 net** of the $0.0755 entry fee. No trip outcome is stated. The BNBUSDT trip (+$0.108151) remains the only completed fill since the drought. 30 runs; 14 decisions; 0 `stop_mechanism` fires; 0 tracebacks.
+
+### RETRACTION — this session reported the frozen-mark falsifier as PASS. It is FAILED.
+
+Reading #77's first pass measured run 2235's live position at **3 identical of 26 pairs = 11.5%** against the pre-registered `<20%` threshold and reported **PASS**. **That is wrong on four independent counts**, all established by the adversary agent and accepted here.
+
+**1. It was never statistically a pass.** Wilson CI95 on 3/26 is **[4.0%, 29.0%]** — the 20% threshold sits *inside* it. One-sided `P(X≤3 | n=26, p=0.20) = 0.207`. Rejecting p=0.20 at this rate needs **n=64 pairs**; the cycle had 26. **Reporting PASS from a non-rejection was a basic error.**
+
+**2. The rate is confounded by tick grid, not mark freshness.** Reconstructing the implied tick for all six runs with a live position:
+
+| run | symbol | tick (bp of px) | 66s move SD (ticks) | observed tie rate | **fresh-feed null** |
+|---|---|---|---|---|---|
+| 1894 | AAVE | 0.79 | 12.4 | 0.0% | 3.2% |
+| 1895 | WLD | 0.25 | 85.7 | 5.3% | 0.5% |
+| 2019 | LIT | 0.15 | 114.8 | 1.4% | 0.3% |
+| **2235** | **LINK** | **0.88** | **6.1** | **9.4%** | **6.6%** |
+
+**A perfectly fresh feed on LINK produces ~6.6% exact ties.** Reading #55's cohort sat on 12–115-tick grids where the null is 0.3–3.2%. **The entire 2.3% → 11.5% "discrepancy" is instrument coarseness, not a real difference** — and this session treated it as a discrepancy worth flagging rather than as the artifact it is.
+
+**3. The instrument has a blind spot exactly where the fix put the defect.** `run_engine.py::_maybe_emit_equity` is **on-change with a heartbeat**: an identical `total` inside `RUN_EQUITY_HEARTBEAT` (default 60s, unset in prod) is **never emitted**. **The falsifier counts identical rows in a stream that deletes identical rows.**
+
+Pre-fix this did not bite: a 300s freeze ÷ 66s emission = 4.5 rows, exactly reading #54's *"347 of 383 freeze episodes lasting 4–5 polls."* **Post-fix the freeze is one 33s tick, always inside the 60s heartbeat — invisible.** The metric was calibrated on a defect large enough to exceed its own blind spot, and the fix pushed the residual into that blind spot.
+
+**4. The decisive direct measurement.** Sampling `positions.price_updated_at` every 6s: refreshes at 01:55:40 / 01:56:41 / 01:57:43 / 01:58:45 / 01:59:46 / 02:00:47 / 02:01:50 → **mean 61.7s (n=6)**. All 7 published marks reached the rail stream (zero skipped), with emission lag drifting monotonically **3→9→14→18→23→28s then resetting on a 35s gap** — the beat signature of a **~33s scan tick** against a 61.7s refresh. `RUN_TICK_INTERVAL` default 30s, unset; logged tick gaps quantise at 33/66/99/132s.
+
+**The quantity the falsifier actually names — the rate at which consecutive rail evaluations act on a mark already seen — is `1 − 33/61.7 = 46.5%` by model and 50% counted directly (7 ties of 14 tick-pairs). The pre-registered `<20%` threshold is FAILED.**
+
+**What IS true, and must not be lost in the retraction:** the fix worked on the *mechanism*. Effective rail resolution went **300s → 61.7s**, a ~2.2× smaller price gap between usable observations. Reading #74's live fire still measured the residual costing **−$0.1357 = 125% of what that trade kept**. **Mechanism improved; metric failed; the reported PASS was measurement error.**
+
+**A cross-agent invalidation, recorded because it cuts both ways.** The algorithm agent argued staleness was refuted by *"0 of 11 short-gap (<50s) pairs identical."* The adversary agent independently ran the same test, then **retracted it**: the dedup makes short-gap ties **structurally impossible**, so the test is vacuous. **That retraction applies to the algorithm agent's argument equally.** Neither the tie rate nor the short-gap test can speak to staleness.
+
+**The metric is the wrong statistic and should be replaced.** #54 quantified the original defect as *"rail trigger bands 2.1–4.7× narrower than the unobserved mark gap"* — a **band-to-gap ratio**, governed by the scan tick (33s, never changed) and the refresh (300→60s), **not by mark identity**. A threshold-crossing rail on a discrete grid overruns by ≈ E[|move| between usable marks]/2 however you count ties. **Replacement metric, pre-registered here: median overrun as a fraction of the band, per fire.** #74 already supplies one observation (overrun $0.1357 against a band the rail intended).
+
+### DEFECT 2 — the desk's authored bracket is discarded on ~24% of entries
+
+Run 2235's desk authored, verbatim: *"A 1.5% stop just above the MA-5 resistance (≈11.57) and a 3% target near recent support (≈11.05) give a clean 2:1 R:R."*
+
+**What is written to `positions` row 481: stop_loss 11.9637 (+4.95%), take_profit 10.2546 (−10.04%).** Verified by exact arithmetic — `11.394 × 1.05 = 11.9637` and `11.394 × 0.90 = 10.2546` — these are `risk_engine.DEFAULT_LIMITS`, a flat 5%/10% for every instrument in every regime.
+
+**Cause:** the desk's bracket replaces the default only when `order_params is not None and order_params.has_exits()`. Cycle 3's `order_params` reads **`"outcome": "absent"`** — the desk stated its levels **in prose only** and emitted no structured params. **Generality: 16 of 67 entries over 7 days (23.9%) got the flat default.**
+
+The R:R is *not* degraded (0.493 vs 0.490, both ~2:1) — **the change is scale: both legs are 3.30× further away.** The desk believes its stop is at 11.57; **it is at 11.9637**, and the tail is 3.3× what it sized for. Cycle 4 *did* emit parsed params (`stop_pct 1.16`), but `stop_pct` is consumed **only on an opening action**, so the tighter stop can never take effect for this position.
+
+### DEFECT 3 — the expectancy gate is not called on the path that builds 95% of runs
+
+Readings #74/#76 attributed the dead short safety net to `SUM(realized_pnl_usd)` being 98.4% zeros. **That mechanism is falsified.** Run 2019 booked **−$0.545** at 00:28:58Z, flipping agent 60's crypto/short bucket from **+$0.1766 (n=37)** — reproducing #74's figure exactly — to **−$0.3685 (n=40)**. **n≥8 and total<0: the veto condition is MET**, and has been continuously since. Yet three crypto/short runs built after the flip — **2235 (+19s), 2238 (+12m42s), 2243 (+64m)** — with **zero `candidate_skipped`**. The 64-minute case rules out a race.
+
+**Root cause:** `_bucket_expectancy_block` has exactly **one** production call site, `fleet_planner.py:1847` inside `_do_build`. **`fleet_supervisor._build_replacement` never calls it — while its own comments claim it does** (*"the expectancy gate so a replacement can't sneak a negative-edge symbol past the bar"*; *"The expectancy gate below cannot catch this class"* — there is no expectancy gate below).
+
+| path | events | share |
+|---|---|---|
+| `run_started` (gated, `_do_build`) | **52** | 4.9% |
+| `rotation` (ungated, replacement) | **1,011** | **95.1%** |
+
+The gate works when called (11 historical `negative_expectancy` skips). **It is simply off the hot path**, and `test_build_gates.py` calls the function directly nine times without ever asserting it is *reached* via the replacement path — **the tests give false assurance.**
+
+### DEFECT 4 — a third stale 0.1% fee site, and this one governs exits
+
+`_breakeven_arm_usd` uses `BREAKEVEN_FEE_RATE = 0.001` (10 bp/leg) while the **booked** fee is `0.00045` (4.5 bp/leg, verified exactly on both fills). **The ratchet arm therefore demands a peak 2.22× the real round trip** ($0.3356 vs $0.1510 on run 2235). Against the measured median crypto gross of **+3.24 bp**, the arm sits at **20 bp of notional ≈ 6× the median trip's entire gross excursion** — a concrete, testable reason the ratchet so rarely arms. Joins `routes_signals.py` and `symbol_research.py`, but unlike those it is **on the exit/money path**.
+
+**Run 2235 currently has no active protective rail of any kind:** `trail.activate` is **26.5× out of reach** (worse than 2208's 6.3×), and the **ratchet is not armed** — peak $0.101 is **3.3× below** the $0.3356 arm. Its only brackets are the platform defaults from Defect 2.
+
+### CORRECTION — the short-fill attribution is a non-sequitur
+
+Reading #76 attributed the long/short fill-rate gap to the `backtest_gate` short bypass. **The causal claim does not hold.**
+
+- `backtest_gate` runs at **fleet composition, before a run exists**. Conditional on being built, longs have **passed** a positive-expectancy screen and shorts were never screened — **the gate should raise the built-long fill rate, not lower it.**
+- **`run_engine.py` contains 0 references to `backtest_gate`.** There is no runtime channel.
+- **Direction is perfectly collinear with market type**: every short in the book is crypto/futures, every long is spot. **No direction effect is identifiable from this data at all.**
+- The **18× collapses**: crypto-only since 08-26 is **6.3×, CI95 [0.76, 53.2], p=0.088 — not significant.** Market mix explains it (442 `market closed` skips on longs, **zero** on shorts).
+- Censoring tested and **rejected** (lifetimes 272.7 vs 265.4 min; cycles 10.23 vs 10.00).
+- Measured proximate author of a long not filling: the desk's own `hold` (2901 long vs 728 short skips).
+
+**What survives:** the all-time 3.7× is real and well-powered (CI95 [2.60, 5.2], p=8e-12), and **the bypass is a genuine defect on its own terms.** Fix it because it is wrong, not because it explains the fill gap.
+
+### CORRECTION — the panel keeps are noise, and the rate is falling
+
+Two keeps in four hours after a long demote streak looked like a shift. It is not. Keeps 08-22→08-29: **21 of 482 = 4.36%.** The recent pair is **3.66h apart — rank 4 of 6 gaps**; permutation p that some consecutive pair of 7 keeps lands ≤3.66h apart = **0.954**. Last 24h **2/100 = 2.0%** vs prior **5/122 = 4.1%** (Fisher p=0.46); Cochran-Armitage trend **z = −1.57, falling**.
+
+**And "86 of 86 demoted on 08-28" — quoted in #74 and #76 — is stale.** 08-28 finished **1 kept of 93**; the BNB keep is itself an 08-28 event.
+
+**The confidence-delta inference is also dead.** Kept-row Δconfidence: **n=21, mean +0.0086, SD 0.0725, 12 raised / 7 lowered / 2 flat**, sign test p≈0.36. **Run 2235's own 00:49:18Z cycle was DEMOTED with confidence RAISED 0.55 → 0.57** — the identical 0.57, 29 minutes before the keep. **71 of 415 demotions carry a raised confidence.** And the code settles it: *"The panel's decision REPLACES the proposal wholesale — code convenes the meeting and never arbitrates."* `proposed` and `final` are **two independent samples**; the association is correlated by construction and has **zero ex-ante value**.
+
+### THE HIGHEST-LEVERAGE UNTESTED ASSUMPTION
+
+**Every fee figure in this stack comes from a config constant with exactly zero variance** — crypto 0.000450, forex 0.000080, futures/us-stock 0.000050. **No venue-reported fill fee exists in this system.** The 9.0 bp crypto round trip is `2 × 4.5 bp`, the Hyperliquid **taker** rate — the worst case. **Maker is 1.5 bp/side.**
+
+**At maker fees the hurdle is 3 bp, not 9 — and the median crypto trip moves from −5.76 bp "dead by construction" to roughly +0.24 bp, i.e. alive.**
+
+**"65.5% dead on arrival" is not a property of the tape; it is a property of a chosen constant.** The most-quoted number in this stack (−11.35 bp net; median trip −5.76 bp) has **never been tested against the assumption that generates it.**
+
+**Pre-registered next experiment, and it is now the top of the queue:** sweep the 1,072-blocked-proposal replay at **0 / 3 / 9 bp** round trip. **Falsifier: if the sign of the headline flips at maker fees, the "no edge" diagnosis is substantially a modelling artifact and the lever becomes execution style (resting vs taking), not entry or exit logic.** Offline, no live risk, not throughput-gated.
+
+### Also recorded
+
+- The agents' own retractions: the adversary retracted its short-gap staleness test as vacuous, and corrected an 08-25 keep count (67.6% → **0 of 68**, a `LIKE`-spacing error) within its own report.
+- **Sizing reproduced bit-exact** for run 2235: slot **$745.20** (not $1,800.01 — confirming #73's tilted-allocation finding) × 0.45 = $335.34, **no probation** (4 prior LINKUSDT runs), × size_scale 0.3696 = $123.94, × `null_size_cap` 0.25 = $83.835, × leverage 2.0 = $167.67 ÷ 11.394 = **14.71563981042654**, the filled quantity to the last binary digit.
+- **#54's pre-fix 77.8% baseline REPRODUCED** (76/98 = 77.6%) — unlike #68's, it stands.
