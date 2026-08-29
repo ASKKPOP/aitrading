@@ -2629,3 +2629,19 @@ reclaim eligibility, zero orphan events — open item ages). H4 worker healthy
 **Profit-or-loss first:** 0 fills, $0 realized. 16 holds; F-PSYCH-WIRE
 16/16 this window (cumulative 100% since deploy). Churn light: 3 idle
 retires / 3 builds. #592 n=4/30 unchanged. Mode ②: merged without deploy.
+
+---
+
+## Reading #88 — 2026-08-29T14:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Hypotheses:** H1 panel discriminator → 0 keeps / 2 discussions (tally 0/3
+of 20). H2 capped fills → none (F-TARGET-CAP 0/1 unchanged). H3 orphan → open,
+**adverse drift deepened to ≈−$0.83** (mark 11.355, fresh; 4.3% from the
+11.8629 stop). All-time `orphan%` events remain ZERO — consistent with #83-B's
+"reclaim verdicts HOLD silently when a stop is present," but silent-HOLD vs
+loop-not-running is not yet distinguished; open item ages (~4h past
+eligibility). H4 worker healthy → held (0 restarts/tracebacks/no_verdict).
+
+**Profit-or-loss first:** 0 fills, $0 realized; the book's only exposure is
+the orphan at −$0.83. 14 holds; churn light (1 idle retire, 2 builds). #592
+n=4/30 unchanged. Mode ②: merged without deploy.
