@@ -2153,3 +2153,29 @@ F-PRED-CYCLE1 counter: run 2252's first cycle produced a demoted buy, not an
 entry (counts toward the baseline arm, predecessor-context status to be
 classified at tally time). Mode ②: merged without deploy; 2 readings pending
 RAG ingest (bound ~6).
+
+---
+
+## Reading #80 — 2026-08-29T06:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Hypotheses:** H1 2251 open half survives → held (stop never approached after
+the 05:13 adverse print). H2 worker healthy → held (0 restarts/tracebacks).
+H3 #592 n=3/30 → held (0 fires). H4 keep drought → held (0 of 6 kept).
+
+**Profit-or-loss first:** 0 fills, $0 realized. The open LINKUSDT half-short
+recovered: mark 11.329 → **+$0.133 unrealized**, trip 2251 back to ≈**+$0.158
+net**. Reason: LINK retraced without the stop (11.5336) being threatened after
+05:13; the adverse excursion peaked between readings. The ratchet REMAINS
+unarmed — run peak $0.1581 vs arm $0.2013 (Defect 4) — so the position has now
+swung +0.18 → −0.11 → +0.13 with zero algorithmic profit protection at any
+point. This trip is becoming the cleanest single-trip exhibit of Defect 4's
+cost profile (protection absent precisely through a full round-trip of
+give-back and recovery).
+
+**Process:** treadmill resumed at prior pace — 8 builds / 6 stops in the hour
+(5 idle_retired, 1 desk_retired: run 2252 lived 17 minutes after its
+first-cycle demoted buy; F-PRED-CYCLE1 tally note). Fleet 32→35 running
+(agent 60: 18, agent 6: 17). 35 holds + 1 retire; panel 0/6 kept (drought
+extends: 1 keep in the last 19 discussions). No errors, no no_verdict, marks
+fresh (10s). Mode ②: merged without deploy; 3 readings pending RAG ingest
+(bound ~6).
