@@ -2688,3 +2688,17 @@ holds 0/5 of 20. F-TARGET-CAP 0/1, #592 n=4/30 unchanged. 17 holds, 2 idle
 retires, worker healthy. Mode ②: merged without deploy (7th consecutive
 docs-only cycle since the 11:06Z ship — RAG ingest of readings #85+ pending
 the corpus review from #81; the lag remains deliberately protective).
+
+---
+
+## Reading #92 — 2026-08-29T18:13Z (hourly; quiet — no trade outcomes, no agent dispatch)
+
+**Profit-or-loss first:** 0 fills, $0 realized. Orphan 483 eased to ≈−$1.13
+(mark 11.375, fresh; stop untested). **Panel-shift discriminator: 0 keeps of
+11** (6 more demotions this hour) — trending toward the "coincidence" verdict
+(≤2 of 20); the #86 keep increasingly looks like the 9th-re-proposal
+rate-limiter event, not a dynamics change. F-TARGET-CAP still 0/1 — no
+capped entries in 6.5h since the first; the entry channel, not the new
+geometry, remains the binding constraint (consistent with the whole record).
+Churn burst: 10 builds / 7 stops (3 flat at_time expiries, 3 desk retires, 1
+idle). #592 n=4/30. Worker healthy. Mode ②: merged without deploy.
