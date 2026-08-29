@@ -2528,3 +2528,89 @@ stop_mechanism, 0 `target_cap` events (no entries yet — the F-TARGET-CAP
 tally opens with the first capped fill). #592 n=3/30 unchanged (and starving
 per #81); F-STREAK #1 (2251 trip 2) untouched — the trip is the orphan.
 Mode ②: merged without deploy (the ship itself deployed at 11:06Z).
+
+---
+
+## Reading #86 — 2026-08-29T12:13Z (hourly; tape — FIRST TRIP under the reachable-target regime; 3 agents + cross-check)
+
+**Profit-or-loss first:** window +$0.0073 net on $90.26 notional (+0.81bp) —
+one trip, run 2259 TAOUSDT short, entered with the FIRST `target_cap` event
+(regime caution) and closed 11 min later by the breakeven ratchet. **Fees
+took 91.7% of gross.** A winner, but 22× below the sweep's predicted median
+(+17.98bp) — the reasons are the two defects below, not variance alone.
+Nothing is validated at n=1.
+
+### What worked (verified to the cent, A+B converged)
+
+- **The clamp fired correctly:** authored target 8.09% → capped per its own
+  formula; `target_cap` telemetry exact; the ratchet fire was LEGITIMATE —
+  the true peak excursion was **0.243%** (the "0.10%" premise was a
+  payload-units misread: peak/total are run-cumulative, entry-fee-netted;
+  the rail compares baseline-subtracted gross $0.2193 ≥ arm $0.1803).
+- **The desk CITED the new crypto psychology line, contrarian-correctly**
+  ("long crowding ~2.2 … sentiment greed is elevated, adding contrarian
+  pressure") — the human-factor raise is being consumed on its first
+  actionable decision. F-PSYCH-WIRE **27/27 (100%)**. F-PSYCH-WEIGHT
+  baseline fixed: grep `$.report` only (whole-payload greps score 27/27
+  spuriously); report-text citation rate 1/27 overall, **1/1 actionable**.
+- **#592 tally n=4/30, 4/4 positive** (+$0.0073) — but this fire banked only
+  **5.3% of its peak** (below), which is how the falsifier can pass while
+  the mechanism bleeds.
+- **H-LEDGER note:** `realized_pnl_usd` wrote the correct non-zero net for
+  2259 — the 98.4%-zeros defect did not bite here.
+- Panel: 1/1 kept, confidence RAISED 0.56→0.62 — opposite of the drought
+  pattern. **Pre-registered discriminator: ≥4 keeps in the next 20
+  discussions = panel dynamics changed (p≈0.03 vs the 5.95% baseline); ≤2 =
+  coincidence; 3 = extend to 40.** Context against comfort: this was the
+  **9th** near-identical TAO short proposal (7 demoted on run 2238, 1 on
+  2259), kept at the LOWEST proposed confidence of the nine — the #82
+  rate-limiter signature, entangled with the deploy at n=1.
+
+### Two live defects found on trip #1 (C, confirmed against code + tape)
+
+1. **D-CAP-STOP-LEAK — the clamp is RR_FLOOR-leaky.** `eff_cap = max(cap,
+   RR_FLOOR×stop_dist, fee_floor)`: the desk's authored 3.68% stop made the
+   effective cap **0.736% = 2.45× the evidence-optimal 0.30%**, and 18/25
+   recent authored stops exceed 1.5% (median 2.27% → eff ≈0.45%; up to
+   1.6%). The sweep optimized a flat 0.30% against a 1.5% stop; the deployed
+   machinery routinely delivers 0.45–1.6% against 2–8% stops. The desk's
+   teaching failure (0/2 authored-in-band post-deploy; its report still
+   recites the OLD "2:1 R-R" and it sized against a fictitious 2.2:1 payoff
+   vs the actual 1:5.9 book bracket) passes straight through the clamp via
+   the STOP leg. One stop-out at 3.68% (−$3.40) erases ≈466 wins of this
+   trip's size. **The unfixed author is the stop side, which the cap never
+   touches.**
+2. **Poll overrun gutted the ratchet's own floor (Plan 30 B1, second live
+   instance):** designed lock floor $0.1503; the 66s scan exited at $0.0885
+   gross — **41% below its own floor**; 89% of the designed keep was lost
+   between polls (exit slip 0.068% vs the sweep's modeled 0.03%).
+   Refinement of Defect 4: within this SAME fire the arm used the legacy
+   0.001/leg rate while the fee floor used the real 0.00045/leg — an
+   internal asymmetry with an exact fix surface.
+
+### Exit hierarchy on capped trips (B) + falsifier ruling (C adopted over B)
+
+Ratchet arm 0.20% < capped target 0.45–1.6% < trail/stop — **the ratchet
+owns the band; the #589 trail is structurally dead on capped trips**
+(activate $3.31 vs max band profit $0.66). B proposed F-TARGET-CAP may need
+re-registration; **C's ruling stands: the falsifier is sound for the
+geometry the experiment tested** — the sweep modeled this exact ratchet at a
+0.30% target and still predicted ~62% target exits; the deviation is the
+stop-leak, a defect, not a falsifier flaw. F-TARGET-CAP is read stratified
+by `eff_cap_pct` (already in telemetry). **Deciding experiment
+(pre-registered): re-run the sweep with per-trip eff = max(0.3,
+0.2×authored_stop) drawn from the real stop distribution, 60s polling,
+0.068% measured slip — predicted target-share <30% means the ship as
+configured fails by construction and the fix is stop-side.**
+
+### Open items
+
+- **Orphan 483 unreclaimed 2h+ past eligibility** (mark fresh, −$0.37;
+  watcher bracket live; zero orphan events) — carry forward.
+- Next-ship queue by leverage (all owner sign-off + experiment): (1) close
+  D-CAP-STOP-LEAK (stop-side design — cap the stop or compute both legs
+  coherently; the deciding re-sweep above picks), (2) B1 resting price-level
+  lock (two live instances now), (3) the arm fee-rate asymmetry (folded into
+  the same replay — #81 showed its sign is not free).
+- Fleet: 8 idle retires, 1 desk retire (reason given, fee-aware), 2 builds;
+  worker clean; marks fresh. Mode ②: merged without deploy.
