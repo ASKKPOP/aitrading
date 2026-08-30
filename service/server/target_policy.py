@@ -96,10 +96,31 @@ def cap_for(market: Optional[str]) -> tuple[Optional[float], str]:
 def prompt_line(market: Optional[str]) -> str:
     """The teaching channel: run_cycle clamps bypass order_params notes, so
     without this line the desk re-authors the same far target forever (the
-    run-1375 lesson). Renders '' whenever the cap does."""
+    run-1375 lesson). Renders '' whenever the cap does.
+
+    Plan 31: the line states the FULL house geometry as fact. Post-08-29
+    tape showed the desk retiring slots because a 0.30% target against a
+    1.5-3.7% stop offends its internalised target>=stop norm (8/8 sampled
+    retires cited an "unconstructible bracket") — so when the stop cap is
+    active the line says both numbers and that the geometry is deliberate.
+    Facts only; no imperative about holding (that would manufacture
+    entries via prompt, which the owner prohibits)."""
     cap, regime = cap_for(market)
     if cap is None:
         return ""
+    stop_cap = ""
+    if (market or "") == "crypto":
+        stop_cap = os.environ.get("STOP_CAP_PCT_CRYPTO", "").strip()
+    if stop_cap:
+        try:
+            return (f"House bracket right now ({regime} regime): stop_pct is "
+                    f"capped at {float(stop_cap):g}% and target_pct at "
+                    f"{cap:g}% — wider values are cut to these at order "
+                    f"time. Target below stop is the house design: the "
+                    f"breakeven ratchet and trailing lock carry a winner "
+                    f"past the target; the tight stop bounds the loser.\n")
+        except ValueError:
+            pass
     return (f"House target band right now ({regime} regime): write "
             f"target_pct at or below {cap:g}% — a wider target is cut to "
             f"it at order time.\n")

@@ -543,6 +543,16 @@ def evaluate_execution_gates(config: dict[str, Any], agent_id: int, symbol: str,
             if multiplier != 1.0:
                 quantity *= multiplier
                 out["regime_size_multiplier"] = multiplier
+        else:
+            # Plan 31 item 8: SHADOW (log-only) — when the regime is NOT
+            # enforced, journal what the entry policy WOULD have done to
+            # this buy (veto / resize / allow) without touching quantity.
+            # No-op unless REGIME_SHADOW; enforcement above stays untouched.
+            from regime import shadow_gate_check
+            shadow = shadow_gate_check(regime_read, market=market,
+                                       symbol=symbol, action=action)
+            if shadow is not None:
+                out["regime_shadow"] = shadow
         # Risk gate: breaker → limits → vol sizing → Kelly. No-op unless
         # RISK_ENGINE_ENABLED; rejections are journaled via skip_reason.
         # σ passed is the DAILY sigma (never sigma_24h_pct — hourly units).
@@ -752,6 +762,12 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
                                          confidence, entry, regime_read, technical)
         if gates.get("regime_size_multiplier") is not None:
             result["regime_size_multiplier"] = gates["regime_size_multiplier"]
+        if gates.get("regime_shadow") is not None \
+                and isinstance(result.get("regime"), dict):
+            # Plan 31 item 8: the shadow verdict rides the regime telemetry
+            # (automation_runs row via _record_run) so the two-week census of
+            # would-be vetoes/sizings is measurable from the DB, not just logs.
+            result["regime"]["shadow"] = gates["regime_shadow"]
         gate = gates.get("gate")
         if gates["skip_reason"] is not None or gate is None:
             result["skip_reason"] = gates["skip_reason"]

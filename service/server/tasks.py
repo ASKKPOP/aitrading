@@ -888,6 +888,33 @@ async def outlook_refresher_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def ledger_invariant_loop():
+    """Plan 31 item 1: nightly row-level ledger invariant.
+
+    Every LEDGER_INVARIANT_INTERVAL seconds (default 24h): recompute each
+    exit fill's expected P&L by replaying its book and compare against
+    signals.pnl; violations write run_events telemetry + one admin alert
+    (the agent-6 pnl=0 reset would have fired this within a day). Pure
+    measurement — reads the ledger, never writes it. Gated by
+    LEDGER_INVARIANT_ENABLED (default on).
+    """
+    from ledger_invariant import ledger_invariant_enabled, run_nightly_check
+
+    tick_interval = _env_int("LEDGER_INVARIANT_INTERVAL", 86400, minimum=3600)
+
+    await asyncio.sleep(45)
+
+    while True:
+        try:
+            if ledger_invariant_enabled():
+                result = await asyncio.to_thread(run_nightly_check)
+                print(f"[LedgerInvariant] sweep: {result}")
+        except Exception as e:
+            print(f"[LedgerInvariant Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def subscription_enforcer_loop():
     """Background task for Trading Runs entitlements (Plan 10, Phase 5).
 
@@ -1982,6 +2009,7 @@ BACKGROUND_TASK_REGISTRY = {
     "orphan_reclaim": _orphan_reclaim_loop,
     "desk_brief": desk_brief_loop,
     "outlook_refresher": outlook_refresher_loop,
+    "ledger_invariant": ledger_invariant_loop,
 }
 
 
@@ -2066,6 +2094,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     # Plan 26 — outlook sweeper lives with the runs engine (it writes
     # run_events rows the desk's next cycle reads back as its standing plan)
     "outlook_refresher":       "settlement",
+    # Plan 31 item 1 — nightly exit-row P&L invariant; pure measurement
+    "ledger_invariant":        "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")
