@@ -3499,3 +3499,51 @@ desk ruling); D-TARGET-VS-DRIFT (mean opening drift 0.1552% ≈ 52% of the
 `20260830-shockfix` with restarts 0 and **0 tracebacks in 40 minutes**;
 ledger sweep `violations: 0, cash_violations: 0`. Merged, not deployed —
 no code change this cycle.
+
+### Reading #107 — 2026-08-30 ~15:35Z — orphan bleed continues; shock fix holds at 45/0; my geometry-retire count is a LOWER BOUND
+
+**P&L: no new fills. The orphan is still the only money moving, and it is
+moving against us.** Mark 11.576 vs entry 11.299 → **−$4.11**, now **49.1%
+of the way to its 11.8629 stop** (which caps the damage at −$8.37).
+Four-hour trajectory: −$1.23 → −$1.86 → −$2.89 → −$3.65 → **−$4.11**. The
+reclaim daemon evaluated it twice this hour (15:15, 15:30) and returned
+**HOLD** both times; `blocking` remains 0, so it is no longer costing a
+fleet slot. Not touched. Platform trading record since the ship unchanged:
+**n=2 trips, −$7.61, 4 fills**.
+
+**D-SHOCK-CONST fix — still clean, and now past the window boundary.**
+Cumulative since the 14:00:03Z restart: **45 decisions, `psych_shock`
+present 0 times**, spanning both the 60-minute window (where the old code
+measured 24/24, 33/33, 5/5) and the period after it. Live payload remains
+`[('BTCUSDT', False), ('ETHUSDT', False)]` → `present() == False`. The
+trigger is tracking the market. The untested half stands: a genuine shock
+must escalate.
+
+**F31-GEOM secondary — still FAILED, and my own count has been UNDER-
+reporting it.** At 398 decisions since the ship: 11 retires, of which my
+LIKE pattern set matches **5** as geometry-citing (threshold was >2 per
+300). But this hour's retire reads *"Retire because platform constraints
+block a viable short entry"* — geometry in substance, and **my patterns miss
+it** because the desk phrases the same complaint differently every time
+("house limits", "platform caps", "unexpressible", now "platform
+constraints"). **Every geometry-retire count I have published is a lower
+bound**, including #100's correction of #99. The falsifier's verdict is
+unchanged (failed either way) but the magnitude I reported is too small, and
+a keyword-matched count of free text was the wrong instrument for it.
+
+**Falsifier board.** F31-GEOM: primary n=2 (unchanged); secondary FAILED,
+count is a lower bound. F31-SHOCK-QUIET: fix holding 45/0; other half
+untested. F31-SHADOW-CENSUS: **0 events, deadline 2026-09-01T03:15Z** —
+under 12 hours left, and it can only fire on a buy while every entry since
+the ship has been a short. F31-TREND: 0 signals. F31-ADDS / F31-ARM /
+F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB: unchanged, starved of tape.
+
+**Unshipped, still pre-registered:** D-STOP-RACE ($1.777 measured, three
+candidate fixes, n=1); D-STOP-BLACKOUT (30 min of unenforced stop after a
+desk ruling); D-TARGET-VS-DRIFT (mean opening drift ≈52% of the target
+distance).
+
+**Process health.** 20 runs active (down from 23), 27 decisions this window
+(26 hold, 1 retire), worker on `20260830-shockfix`, restarts 0, **0
+tracebacks in 60 minutes**; ledger sweep `violations: 0, cash_violations: 0`.
+Merged, not deployed — no code change.
