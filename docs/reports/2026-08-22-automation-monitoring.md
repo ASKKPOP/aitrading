@@ -3808,3 +3808,78 @@ D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
 **Process health.** 14 runs active, worker on `20260830-shockfix`, restarts
 0, **0 tracebacks in 60 minutes**; ledger sweep `violations: 0,
 cash_violations: 0`. Merged, not deployed.
+
+### Analysis (owner-requested) — why info@askkpop.com lost last week, 2026-08-24..26
+
+Account: user 5 / **agent 6**. Window 08-24 → 08-26 (69 fills, 29 entries,
+40 exits, 24 runs).
+
+**Reconciliation to the screen.** Exit P&L sum −$9.8414, entry fees −$1.3976
+→ **true net −$11.239**, matching the UI's −11.24 exactly. (All-time reads
+−7.11 because periods outside this week were net positive.)
+
+**The desk's PREDICTION was not the problem. Its SIZING was.**
+- **21 wins vs 19 losses — a 52.5% win rate. It won more often than it lost.**
+- Average win **+$0.213**; average loss **−$0.753**. Payoff ratio **0.283**.
+- At that payoff the account needed a **78.0% win rate** to break even. It
+  had 52.5%. The gap is arithmetic, not luck.
+
+**Where the money went — by position size, which is the whole story:**
+
+| notional | trades | win rate | total P&L |
+|---|---|---|---|
+| under $50 | 16 | **69%** | **+$1.79** |
+| $50–100 | 16 | 56% | −$0.25 |
+| **over $100** | **8** | **12.5%** | **−$11.39** |
+
+**The account was PROFITABLE on every trade under $50. Eight trades over
+$100 — 20% of the exits — lost more than the entire week's result.**
+Everything else combined made +$1.55. Stripping the single largest loss
+(LINK −$4.00) leaves the big bucket at −$7.39 on n=7: the sign holds, so this
+is not one outlier. Win rate falls monotonically with size, 69% → 56% →
+12.5%. The platform put the most money on its worst trades.
+
+**Two symbols caused 74% of the gross loss, and both by the same mechanism:
+lose, then immediately re-enter the same symbol in the same direction.**
+- **LINK (run 1748, −$5.00):** short 21.0 @ 11.526 → covered at 11.711 for
+  **−$4.00** (price ran 1.6% against it). Five hours later it shorted the
+  same symbol again — **at 41.9 units, DOUBLE the size** ($484 notional) —
+  and covered 12 minutes later for another −$0.68.
+- **INJ (run 1785, −$5.49):** bought 24.59 @ 5.928 → sold at 5.7779 for
+  **−$3.76**. Ninety minutes later it bought INJ again **at 5.9049 — a
+  HIGHER price than it had just sold at** — and sold an hour later for
+  −$1.73. Run ended `adapt_retired`.
+
+This is the identical pattern that produced yesterday's −$7.61 (run 2341
+re-entered the same short 109 seconds after being stopped out). It is not a
+market read; it is a missing cooldown. The re-entry gate exists but is
+guarded by a check evaluated while the old position is still open (the TOCTOU
+recorded in reading #104), so it never fires.
+
+**Who authored the exits — the AI's own decisions were the only profitable
+category:**
+
+| exit author | runs | P&L |
+|---|---|---|
+| **desk_retired** (the AI choosing to stop) | 2 | **+$1.35** |
+| trailing_lock (automatic) | 19 | −$5.29 |
+| adapt_retired (automatic) | 1 | −$5.62 |
+| fleet_stop_all (automatic) | 2 | −$1.68 |
+
+Every automatic exit class lost money; the only positive class was the desk
+deciding for itself.
+
+**Answering the question directly — why no profit?** Not because the desk
+picked the wrong direction: it was right 52.5% of the time. It lost because
+(1) the winners were cut to a third of the size of the losers, so a
+better-than-coin-flip hit rate still needed 78% to break even; (2) position
+size was largest exactly where the outcomes were worst — eight oversized
+trades erased everything the other 32 earned; and (3) after a loss it
+re-entered the same symbol in the same direction, once at double size,
+because the cooldown that should have blocked it is bypassed by a
+time-of-check bug.
+
+**None of this is fixed by better market prediction.** The three levers are
+size discipline, the payoff geometry (already failed 21/21 on the desk's own
+retire reports), and closing the re-entry TOCTOU (D-STOP-RACE's neighbour,
+pre-registered since #104).
