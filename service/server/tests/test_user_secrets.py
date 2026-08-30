@@ -267,6 +267,22 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(self._run("--apply"), 0)   # second pass: no-op
         self.assertEqual(self._keys()[1], stored)
 
+    def test_aborts_and_rolls_back_when_round_trip_fails(self):
+        """The verification is the migration's whole safety property: a key
+        that cannot be read back is worse than a plaintext one. Simulate a
+        ciphertext that does not decrypt to the original and assert the run
+        aborts with the row untouched (kills the 'if False:' mutant)."""
+        import importlib.util
+        path = SERVER_DIR.parents[1] / "scripts" / "encrypt_user_api_keys.py"
+        spec = importlib.util.spec_from_file_location("mig_bad", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with patch.object(mod, "decrypt_secret", return_value="not-the-key"), \
+             patch.object(sys, "argv", ["mig", "--apply"]):
+            rc = mod.main()
+        self.assertEqual(rc, 1)
+        self.assertEqual(self._keys()[1], SAMPLE)   # rolled back, still plain
+
     def test_refuses_without_the_encryption_key(self):
         os.environ.pop("EXECUTION_ENCRYPTION_KEY", None)
         self.assertEqual(self._run("--apply"), 2)
