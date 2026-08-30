@@ -3107,3 +3107,108 @@ idle, F31-SHOCK-QUIET holding, shadow census still gated on buys. Local CI
 green — **4,825 passed + 1,349 subtests, 0 failed**, ruff clean, frontend
 build clean, gitleaks no leaks. Deployed (deploy-worthy content, per #97's
 cadence rule).
+
+### Reading #102 — 2026-08-30 ~11:25Z — FIRST TAPE since the ship: three agents, and they corrected me three times
+
+**P&L (the only number that counts): the one live trade is losing.** Position
+485, run 2341, agent 60 — BTCUSDT SHORT, opened 09:39:50Z at 77983, $900
+notional at 2x, entry fee $0.405. At the 11:10 mark (78182) it stood at
+**−$2.30 unrealized, −$2.70 on the book, −34.5bp true-net if flattened** —
+already worse than the replay's predicted −22.76bp mean. It has used **50.8%
+of its stop room in 1.5 of ~21 hours**, and its best moment in life was
+**+$0.51 gross (5.64bp)** — 35% of the way to the $1.44 ratchet arm, which
+has therefore never armed. It ends the 22.05-hour entry drought (previous
+entry 2026-08-29T11:36:40Z).
+
+Three verification agents ran (data / code / adversary) as the tape rule
+requires. They agree on the mechanics and they disagree with ME on the
+framing. The disagreements are the finding.
+
+**What the shipped rails did — mechanically flawless.** `order_params` came
+back `deferred/absent`, so the deterministic 5%/10% bracket stood and both
+caps clamped it, computed off the decision mark 77984.9 to eight decimal
+places: `stop_cap` 81884.145 → 78374.8245 (5.00% → **0.500000%**),
+`target_cap` 70186.41 → 77750.9453 (10.00% → **0.300000%**), `eff_cap_pct`
+0.3 — **not** the 1.0% the pre-fix leak would have produced. D1 bound the
+drift (0.0024% actual, cap 0.5%): **not born through its stop**. Adds gate,
+rr_floor, freeze, master hold, SL/TP watcher selection — all correct, with
+payloads. **Every rail did what it shipped to do.**
+
+**And that is the problem. The caps did not repair a bad bracket — they
+inverted a good one.** The desk asked for 5% stop / 10% target = **2:1
+favourable**. The caps rewrote it to **1:1.69 adverse**. After real fees the
+target nets **+$1.87** and the stop costs **−$5.33**: payoff 0.35:1,
+**breakeven win rate 74.0% (fees only) → 82.5% (mid) → 91.0% (full slip)**,
+against a measured 42.7% trip win rate and a desk directional accuracy of
+35%. Barrier arithmetic on a driftless walk: P(target first) = 391.8/623.9 =
+**62.8%**, gross EV **+0.00bp by construction** — the entire expectation of
+this trade is its cost.
+
+**THREE CORRECTIONS TO MY OWN RECORD (all verified independently):**
+1. **"The desk opened a position" — FALSE. The platform did.** Cycle 7's
+   `order_params` was `{"outcome": "absent"}`: no size, no stop, no target.
+   Size came from `null_size_cap` (734.22 → 450.0), the bracket from the
+   deterministic default. The desk contributed the word "short" at 0.58.
+   `run_engine.py:7545` records this family at **−$178.71 over 46 runs (66%
+   losers)** vs +$5.57 over 18 desk-sized.
+2. **"~70–82% breakeven" quoted the friendly end.** This bracket's own
+   numbers run **74.0% → 91.0%**. 82% is the middle, not the top.
+3. **"Orphan 483 — hands off, by design" — FALSE, and I repeated it in
+   #95–#101.** Prod carries `ORPHAN_RECLAIM_ENABLED=true` **and**
+   `ORPHAN_RECLAIM_EXIT=true`; the worker logs every 15 minutes
+   `[OrphanReclaim] {'scanned': 1, 'held': 1, 'blocking': 1}`. **An
+   autonomous daemon with CLOSE AUTHORITY has been evaluating that position
+   all along and returning HOLD.** I described a live money path as inert,
+   seven readings running. Worse, `blocking: 1` means LINKUSDT is right now
+   refusing a fleet-42 slot — the orphan's real cost is a symbol deleted
+   from the universe, which no reading has counted, plus a −$8.37 stop
+   sitting outside every run-level rail.
+
+**The desk's own behaviour on this run is incoherent, on the record.**
+Cycles 1–6 refused this exact trade on this exact arithmetic (c1: *"the
+house stop (0.5%) exceeds the target (0.3%), any entry would have negative
+expectancy"*; c3, c5, c6 the same). Cycle 7 accepted it with **nothing
+changed** — confidences 0.57/0.55/0.52/0.55/0.52/0.53 then **0.58**. That is
+sampling variance across a 0.5 gate, not a decision. Then cycle 8 armed a
+full close at 77930 worth **$0.612 gross against $0.811 of fees — a −$0.20
+guaranteed loss** — while narrating the underwater short as *"near its
+target"*; cycle 9 called it *"modestly below entry"* when it was above; and
+cycle 10 is managing a 76700 target the watcher will never honour.
+
+**SHIPPED THIS CYCLE — a defect the geometry ship itself created**
+(PR #650, image `20260830-reanchor`, rollback `-userkeys`). The bracket is
+priced off the DECISION mark while only `fill_price` is refreshed, so both
+legs drift by the gap. Harmless at 0.24bp here — but with targets capped at
+0.30% and drift permitted to 0.50%, an adverse drift in **(0.30%, 0.50%]**
+fills a position **already through its own take-profit**: the watcher closes
+it instantly for ~zero gross minus a full round trip, journaled as a
+`take_profit`. A guaranteed fee loss labelled a win, in a 20bp window that
+did not exist before the target cap. The fix holds the bracket DISTANCES
+fixed and re-prices them off the fill (also restoring the exact 0.5000/0.3000
+geometry). 3 tests, 2 mutants killed, CI **4,828 passed + 1,349 subtests**,
+deployed and verified live.
+
+**Confirmed structural defects (all three agents agree).** The trail is dead
+by **5.37x** — `activate_usd` $14.40 frozen at composition off a $3600
+notional basis while the real position is $900, against a maximum attainable
+gain of $2.68 (#96 CONFIRMED and understated). The ratchet's band is
+**[12.51, 19.50]bp gross** against 15.8bp of cost — it is set up to exit into
+a loss-making band if it ever wins (#96 CONFIRMED; trap: the fee floor is a
+ROUND TRIP, not one leg). `max_loss_usd` 54.0 needs a 6.00% move (12x out of
+reach) and `profit_target_usd` 120.0 needs **64 winning trips inside a
+32-cycle lifetime** — arithmetically unreachable. No live directional
+exposure control exists: `FLEET_DIR_BALANCE` counts candidate theses at
+selection and never reads `positions`, so agent 60's book is **two correlated
+crypto shorts, 100% one-directional**, unconstrained.
+
+**Falsifier board.** F31-GEOM: n=1 and censored — says **nothing** about
+expectancy either way; secondary (geometry retires) still FAILED. F31-ADDS:
+untestable at n=1, not passed. F31-SHOCK-QUIET: **#101's "holding" was
+stale** — that deploy restarted the worker and opened a fresh window, exactly
+as #97 warned; cycle 10 duly carries the trigger. F31-SHADOW-CENSUS: the
+first entry produced **nothing** because the census fires only on buys and
+this was a short — structurally invisible, not merely untriggered.
+F31-ARM/ARM-NONCRYPTO/TREND/FREEZE unchanged.
+
+**Process health.** Worker on `20260830-reanchor`, restarts 0. Ledger sweep
+`violations: 0, cash_violations: 0`.
