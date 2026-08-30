@@ -3050,3 +3050,60 @@ idle, 0 trend signals.
 
 **Process health.** 24 running runs; worker restarts 0, **0 tracebacks in 65
 minutes**; ledger sweep clean. Merged, not deployed (no code change).
+
+### Reading #101 — 2026-08-30 ~11:00Z — the #100 security finding is FIXED and live
+
+**P&L: no trades, so no profit and no loss.** This cycle was spent on the
+plaintext-credential finding from #100, on owner instruction to fix it.
+
+**Shipped: provider API keys are encrypted at rest** (PR #648, image
+`sooppiy-backend:20260830-20260830-userkeys`, rollback `-plan31r2`).
+`user_secrets.py` (AES-GCM, `encv1:` + base64url(nonce‖ct)) is wired into all
+four read/write paths — the settings upsert, `_user_llm_settings`, the
+settings mask, and `services.llm_context_for_agent`. It reuses the existing
+32-byte `EXECUTION_ENCRYPTION_KEY` rather than adding a second key whose
+absence would silently destroy stored secrets; domain separation comes from
+an AAD, so a broker-credential blob cannot be swapped into the api_key column
+and decrypt. Reads tolerate legacy plaintext, and a value that fails to
+decrypt returns None rather than the ciphertext — which would otherwise be
+handed to a provider as if it were a key.
+
+**Migration applied to prod:** `scripts/encrypt_user_api_keys.py`, dry-run
+first, then `--apply` — 1 row (user 5, target llm) encrypted and verified,
+0 plaintext remaining, second run a clean no-op. The script refuses to run
+without the encryption key, verifies each ciphertext round-trips to the exact
+original before committing, and never prints a key value.
+
+**Live verification (two passes).** The column now reads `encv1:…`, length
+190, and does not match `sk-%`. In-container, `llm_context_for_agent(6)`
+resolves a usable `sk-ant-…` key (not ciphertext) with provider/model intact.
+Two Anthropic calls completed after the migration with real completion tokens
+and **zero auth or decrypt errors** in the worker log.
+
+**Two defects in my own work, found and fixed before deploy.**
+1. Mutation testing killed 4 of 5 injected defects but **one survived**: the
+   migration's round-trip verification was unpinned — deleting it left the
+   suite green. A dedicated test now kills it (6/6).
+2. The first `_key()` minted a **fresh random key per call** when the env var
+   is unset, so a value was unreadable on the very next read rather than
+   after a restart. The pre-existing `test_user_api_settings` mask assertions
+   caught it; fixed with a process-stable ephemeral key and a regression test.
+   *Process note:* I then lost that fix to `git checkout --` during mutation
+   testing — the third instance of that trap today, and my own recorded rule.
+   Re-applied and committed immediately.
+
+**Residual risk that is NOT closed by this ship — owner action.** Encryption
+protects the value from here on; it does not retroactively scrub the copies
+that already exist. The plaintext key remains inside the weekly full DB dumps
+on the box (the 2026-08-30T04:00 dump is the clearly-affected one, the key
+having been set 08-25) and in the pre-migration table dump taken today.
+Backups have been tightened to owner-only (files 0600, directory 0700) and
+nothing was deleted — the dumps are a rollback path. **The key should still
+be rotated at the provider**, which is the owner's action: I do not handle
+credential values.
+
+**Falsifier board / process health.** Unchanged this cycle: no tape, agent 5
+idle, F31-SHOCK-QUIET holding, shadow census still gated on buys. Local CI
+green — **4,825 passed + 1,349 subtests, 0 failed**, ruff clean, frontend
+build clean, gitleaks no leaks. Deployed (deploy-worthy content, per #97's
+cadence rule).
