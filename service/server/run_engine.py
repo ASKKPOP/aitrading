@@ -7895,6 +7895,37 @@ def run_cycle(run_id: int) -> dict:
                                       "drift_pct": round(drift_pct, 4)})
             fill_price = float(fresh_mark)
 
+        # Re-anchor the bracket to the price we actually fill at (monitoring
+        # reading #102). The bracket was derived from the DECISION mark and
+        # only `fill_price` was being refreshed, so both legs drifted by the
+        # gap between them. Harmless at the 0.24bp seen on run 2341 — but
+        # once the target cap shrank targets to 0.30% while the drift cap
+        # allows 0.50%, an adverse drift in (0.30%, 0.50%] fills a position
+        # ALREADY THROUGH its own take-profit: the watcher closes it at once
+        # for ~zero gross minus a full round trip, journaled as a
+        # `take_profit`, i.e. a guaranteed fee loss labelled a win. Holding
+        # the DISTANCES fixed and re-pricing off the fill closes that window
+        # and restores the exact 0.50/0.30 geometry the caps intended.
+        if action in ("buy", "short") and entry and fill_price \
+                and abs(fill_price - float(entry)) > 1e-12:
+            try:
+                _e0 = float(entry)
+                _sl_frac = (float(stop_loss) / _e0) if stop_loss else None
+                _tp_frac = (float(take_profit) / _e0) if take_profit else None
+                _before = (stop_loss, take_profit)
+                if _sl_frac:
+                    stop_loss = fill_price * _sl_frac
+                if _tp_frac:
+                    take_profit = fill_price * _tp_frac
+                emit_telemetry_event(
+                    run_id, "bracket_reanchor",
+                    {"cycle": seq, "decision_mark": _e0,
+                     "fill_price": fill_price,
+                     "stop_before": _before[0], "stop_after": stop_loss,
+                     "tp_before": _before[1], "tp_after": take_profit})
+            except Exception:  # noqa: BLE001 — never block a fill
+                logger.exception("bracket re-anchor failed; bracket unchanged")
+
         client_order_id = f"run:{run_id}:cyc:{seq}"
         signal_id, skip = execute_paper_trade(
             run["agent_id"], run["symbol"], run["market"], action,
