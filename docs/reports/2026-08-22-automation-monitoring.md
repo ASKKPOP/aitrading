@@ -3375,3 +3375,73 @@ cadence that cost the stop $0.660 — one root cause, two rails.
 ledger sweep `violations: 0, cash_violations: 0`; book back to the orphan
 alone (BTCUSDT slot cooled for agent 60 until 18:29:34Z). Merged, NOT
 deployed.
+
+### Reading #105 — 2026-08-30 ~14:00Z — D-SHOCK-CONST proven live in the cleanest case, and FIXED
+
+**P&L: no new fills; no profit, no loss.** The book is the orphan alone —
+483 (LINKUSDT short, run_id NULL) at 11.494 vs entry 11.299 → **−$2.89**,
+its worst mark yet as LINK keeps rising against the short. 19 decisions this
+window, all hold. Platform trading record since the ship is unchanged at
+**n=2 completed trips, −$7.61**.
+
+**D-SHOCK-CONST — proven live, then fixed and deployed** (PR #654, image
+`20260830-shockfix`, rollback `-reanchor`). This hour handed me the cleanest
+possible demonstration: prod's payload read
+`[('BTCUSDT', False), ('ETHUSDT', False)]` — **both symbols explicitly not in
+shock** — while `bool(payload["shock"])` was still **True**, because the
+field is a per-symbol LIST that is always populated. And the full behaviour
+is worse than #104 recorded:
+- The latch armed on the first read after any worker restart regardless of
+  the market, because truthiness never varies;
+- the clear branch (`not psych.get("shock")`) was therefore **unreachable**,
+  so the latch never reset;
+- so the trigger fired for exactly 60 minutes after every restart and then
+  went **permanently silent until the next restart**. Measured this hour: 16
+  decisions, trigger present **0 times**, while the list stayed truthy.
+- Both failure modes in one: saturated where unguarded, blind where guarded.
+  It never carried information — which is why the genuine $922,639
+  short-side liquidation shock at 12:23:04Z escalated 0 of 9 cycles while
+  our book was short.
+
+Fix: `_psych_shock_present()` asks the entries, not the container; tolerates
+a bare bool and malformed entries. Verified live in the deployed worker on
+the current payload — **old semantics `True`, new semantics `False`**, which
+is the correct reading of a quiet market. 7 tests; 2 mutants killed
+(container truthiness restored; `any`→`all`). Two routing fixtures used
+`{"symbol": "BTC"}` with no `shock` key — they only counted as a shock under
+the defect — corrected to the real payload shape. **All four prior
+F31-SHOCK-QUIET PASSes are formally withdrawn.**
+
+**Why this one shipped when #104's four did not.** #104 deliberately shipped
+nothing because I had been shipping reflexively, twice on the same day, once
+on a hole with zero observations. This one is the opposite case: a defect
+with a live demonstration in hand, exactly one correct fix, and no design
+choice to get wrong. It also went out while the book was **flat** — the only
+position is the run-less orphan — so the worker restart could not disturb an
+open trade. That timing was deliberate.
+
+**Still pre-registered, still not shipped: D-STOP-RACE** (the $1.777 measured
+loss). Its three candidate fixes are genuine design alternatives and I have
+n=1; it waits for a second routed hit or an explicit decision. **D-STOP-
+BLACKOUT** (30 minutes of entirely unenforced stop after any desk ruling) and
+**D-TARGET-VS-DRIFT** (mean opening drift 0.1552% ≈ 52% of the whole 0.30%
+target distance) likewise stand recorded.
+
+**Process note — the deploy health check is not what it appears.**
+`scripts/deploy.sh` runs its verification curls from the OPERATOR's machine.
+Mine lost DNS for sooppiy.com mid-deploy, so the script printed
+`/api/subscriptions/plans 000` and I read it as an outage. From the box both
+the site and the API answer **200**. A local resolver failure is
+indistinguishable in that output from a dead site; the check should run
+server-side, or its failures should be re-tested from the box before anyone
+acts on them.
+
+**Falsifier board.** F31-SHOCK-QUIET: **VOID until the fix accrues data** —
+the window resets at 14:00:03Z; the first meaningful reading is the first
+deploy-free hour after it. F31-GEOM: n=2, unchanged. F31-SHADOW-CENSUS: 0,
+deadline 2026-09-01T03:15Z. F31-TREND: 0 signals. F31-ADDS / F31-ARM /
+F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB: unchanged.
+
+**Process health.** Worker on `20260830-shockfix`, restarts 0, 0 tracebacks;
+ledger sweep `violations: 0, cash_violations: 0`; 22 runs active. CI green:
+**4,835 passed + 1,349 subtests**, ruff, frontend, gitleaks all clean.
