@@ -1,0 +1,5551 @@
+{
+ "pre_registered": "",
+ "constants": {
+  "ratchet_arm_bp": 16.02,
+  "ratchet_fee_floor_bp": 9.0,
+  "ratchet_lock_frac": 0.5,
+  "cost_bp": 15.8,
+  "cost_bp_high": 22.599999999999998,
+  "horizon_h": 24.0
+ },
+ "n_trips": 68,
+ "arms": [
+  {
+   "arm": "A deployed 0.5/0.3",
+   "n": 68,
+   "mean_bp": -22.757,
+   "median_bp": -4.27,
+   "ci90": [
+    -33.864,
+    -12.629
+   ],
+   "win_rate": 0.338,
+   "avg_win_bp": 18.14,
+   "avg_loss_bp": -43.66,
+   "payoff": 0.415,
+   "total_usd": -49.88,
+   "authors": {
+    "ratchet": 29,
+    "stop": 20,
+    "target": 19
+   },
+   "median_hold_min": 11.6,
+   "ex_largest": {
+    "dropped": "KAITOUSDT run 1104 (-23.72)",
+    "mean_bp": -19.628,
+    "median_bp": -4.063,
+    "ci90": [
+     -29.369,
+     -10.535
+    ],
+    "total_usd": -26.16,
+    "sign_flip": false
+   }
+  },
+  {
+   "arm": "B 0.3/0.3",
+   "n": 68,
+   "mean_bp": -21.724,
+   "median_bp": -5.936,
+   "ci90": [
+    -31.794,
+    -12.643
+   ],
+   "win_rate": 0.294,
+   "avg_win_bp": 17.47,
+   "avg_loss_bp": -38.05,
+   "payoff": 0.459,
+   "total_usd": -46.6,
+   "authors": {
+    "stop": 26,
+    "ratchet": 26,
+    "target": 16
+   },
+   "median_hold_min": 8.8,
+   "ex_largest": {
+    "dropped": "KAITOUSDT run 1104 (-23.72)",
+    "mean_bp": -18.579,
+    "median_bp": -5.526,
+    "ci90": [
+     -27.084,
+     -10.792
+    ],
+    "total_usd": -22.88,
+    "sign_flip": false
+   }
+  },
+  {
+   "arm": "C 1.0/0.3",
+   "n": 68,
+   "mean_bp": -27.606,
+   "median_bp": -3.661,
+   "ci90": [
+    -41.131,
+    -15.052
+   ],
+   "win_rate": 0.368,
+   "avg_win_bp": 18.34,
+   "avg_loss_bp": -54.32,
+   "payoff": 0.338,
+   "total_usd": -52.63,
+   "authors": {
+    "ratchet": 31,
+    "target": 21,
+    "stop": 15,
+    "horizon": 1
+   },
+   "median_hold_min": 21.7,
+   "ex_largest": {
+    "dropped": "KAITOUSDT run 1104 (-23.72)",
+    "mean_bp": -24.549,
+    "median_bp": -3.519,
+    "ci90": [
+     -37.173,
+     -12.836
+    ],
+    "total_usd": -28.91,
+    "sign_flip": false
+   }
+  },
+  {
+   "arm": "D 0.5/no-TP",
+   "n": 68,
+   "mean_bp": -22.983,
+   "median_bp": -4.761,
+   "ci90": [
+    -34.97,
+    -11.425
+   ],
+   "win_rate": 0.294,
+   "avg_win_bp": 25.3,
+   "avg_loss_bp": -43.1,
+   "payoff": 0.587,
+   "total_usd": -52.65,
+   "authors": {
+    "ratchet": 45,
+    "stop": 21,
+    "trail": 2
+   },
+   "median_hold_min": 17.2,
+   "ex_largest": {
+    "dropped": "KAITOUSDT run 1104 (-23.72)",
+    "mean_bp": -19.857,
+    "median_bp": -4.686,
+    "ci90": [
+     -30.477,
+     -9.354
+    ],
+    "total_usd": -28.93,
+    "sign_flip": false
+   }
+  },
+  {
+   "arm": "E control authored",
+   "n": 68,
+   "mean_bp": -32.996,
+   "median_bp": -3.876,
+   "ci90": [
+    -54.018,
+    -13.941
+   ],
+   "win_rate": 0.338,
+   "avg_win_bp": 24.11,
+   "avg_loss_bp": -62.18,
+   "payoff": 0.388,
+   "total_usd": -47.88,
+   "authors": {
+    "ratchet": 53,
+    "stop": 9,
+    "horizon": 4,
+    "trail": 2
+   },
+   "median_hold_min": 27.4,
+   "ex_largest": {
+    "dropped": "KAITOUSDT run 1104 (-23.72)",
+    "mean_bp": -30.019,
+    "median_bp": -3.802,
+    "ci90": [
+     -50.224,
+     -11.837
+    ],
+    "total_usd": -24.16,
+    "sign_flip": false
+   }
+  },
+  {
+   "arm": "Z A, ratchet+trail off",
+   "n": 68,
+   "mean_bp": -24.509,
+   "median_bp": 14.941,
+   "ci90": [
+    -36.797,
+    -13.143
+   ],
+   "win_rate": 0.574,
+   "avg_win_bp": 20.51,
+   "avg_loss_bp": -85.05,
+   "payoff": 0.241,
+   "total_usd": -57.16,
+   "authors": {
+    "target": 39,
+    "stop": 29
+   },
+   "median_hold_min": 27.7,
+   "ex_largest": {
+    "dropped": "KAITOUSDT run 1104 (-23.72)",
+    "mean_bp": -21.405,
+    "median_bp": 14.978,
+    "ci90": [
+     -32.23,
+     -10.725
+    ],
+    "total_usd": -33.44,
+    "sign_flip": false
+   }
+  }
+ ],
+ "sensitivity": {
+  "cost_22.6bp": {
+   "A deployed 0.5/0.3": {
+    "n": 68,
+    "mean_bp": -29.557,
+    "ci90": [
+     -40.664,
+     -19.429
+    ],
+    "total_usd": -58.51,
+    "payoff": 0.318,
+    "win_rate": 0.279,
+    "authors": {
+     "ratchet": 29,
+     "stop": 20,
+     "target": 19
+    },
+    "ex_largest_mean_bp": -26.428,
+    "sign_flip": false
+   },
+   "B 0.3/0.3": {
+    "n": 68,
+    "mean_bp": -28.524,
+    "ci90": [
+     -38.594,
+     -19.443
+    ],
+    "total_usd": -55.23,
+    "payoff": 0.352,
+    "win_rate": 0.235,
+    "authors": {
+     "stop": 26,
+     "ratchet": 26,
+     "target": 16
+    },
+    "ex_largest_mean_bp": -25.379,
+    "sign_flip": false
+   },
+   "C 1.0/0.3": {
+    "n": 68,
+    "mean_bp": -34.406,
+    "ci90": [
+     -47.931,
+     -21.852
+    ],
+    "total_usd": -61.26,
+    "payoff": 0.262,
+    "win_rate": 0.309,
+    "authors": {
+     "ratchet": 31,
+     "target": 21,
+     "stop": 15,
+     "horizon": 1
+    },
+    "ex_largest_mean_bp": -31.349,
+    "sign_flip": false
+   },
+   "D 0.5/no-TP": {
+    "n": 68,
+    "mean_bp": -29.783,
+    "ci90": [
+     -41.77,
+     -18.225
+    ],
+    "total_usd": -61.27,
+    "payoff": 1.085,
+    "win_rate": 0.132,
+    "authors": {
+     "ratchet": 45,
+     "stop": 21,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -26.657,
+    "sign_flip": false
+   },
+   "E control authored": {
+    "n": 68,
+    "mean_bp": -39.796,
+    "ci90": [
+     -60.818,
+     -20.741
+    ],
+    "total_usd": -56.51,
+    "payoff": 0.716,
+    "win_rate": 0.162,
+    "authors": {
+     "ratchet": 53,
+     "stop": 9,
+     "horizon": 4,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -36.819,
+    "sign_flip": false
+   },
+   "Z A, ratchet+trail off": {
+    "n": 68,
+    "mean_bp": -31.309,
+    "ci90": [
+     -43.597,
+     -19.943
+    ],
+    "total_usd": -65.79,
+    "payoff": 0.149,
+    "win_rate": 0.574,
+    "authors": {
+     "target": 39,
+     "stop": 29
+    },
+    "ex_largest_mean_bp": -28.205,
+    "sign_flip": false
+   }
+  },
+  "intrabar_extremes": {
+   "A deployed 0.5/0.3": {
+    "n": 68,
+    "mean_bp": -17.622,
+    "ci90": [
+     -24.319,
+     -11.085
+    ],
+    "total_usd": -28.87,
+    "payoff": 0.37,
+    "win_rate": 0.353,
+    "authors": {
+     "ratchet": 26,
+     "stop": 21,
+     "target": 21
+    },
+    "ex_largest_mean_bp": -16.903,
+    "sign_flip": false
+   },
+   "B 0.3/0.3": {
+    "n": 68,
+    "mean_bp": -17.647,
+    "ci90": [
+     -22.72,
+     -12.606
+    ],
+    "total_usd": -24.43,
+    "payoff": 0.417,
+    "win_rate": 0.279,
+    "authors": {
+     "stop": 29,
+     "ratchet": 23,
+     "target": 16
+    },
+    "ex_largest_mean_bp": -17.226,
+    "sign_flip": false
+   },
+   "C 1.0/0.3": {
+    "n": 68,
+    "mean_bp": -24.053,
+    "ci90": [
+     -34.836,
+     -14.048
+    ],
+    "total_usd": -39.51,
+    "payoff": 0.265,
+    "win_rate": 0.397,
+    "authors": {
+     "ratchet": 28,
+     "target": 24,
+     "stop": 16
+    },
+    "ex_largest_mean_bp": -22.683,
+    "sign_flip": false
+   },
+   "D 0.5/no-TP": {
+    "n": 68,
+    "mean_bp": -16.103,
+    "ci90": [
+     -24.315,
+     -7.461
+    ],
+    "total_usd": -27.97,
+    "payoff": 0.794,
+    "win_rate": 0.279,
+    "authors": {
+     "ratchet": 44,
+     "stop": 22,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -15.361,
+    "sign_flip": false
+   },
+   "E control authored": {
+    "n": 68,
+    "mean_bp": -28.908,
+    "ci90": [
+     -47.927,
+     -11.672
+    ],
+    "total_usd": -36.15,
+    "payoff": 0.444,
+    "win_rate": 0.338,
+    "authors": {
+     "ratchet": 53,
+     "stop": 9,
+     "horizon": 4,
+     "target": 1,
+     "trail": 1
+    },
+    "ex_largest_mean_bp": -27.163,
+    "sign_flip": false
+   },
+   "Z A, ratchet+trail off": {
+    "n": 68,
+    "mean_bp": -18.741,
+    "ci90": [
+     -26.976,
+     -10.506
+    ],
+    "total_usd": -35.32,
+    "payoff": 0.216,
+    "win_rate": 0.588,
+    "authors": {
+     "target": 40,
+     "stop": 28
+    },
+    "ex_largest_mean_bp": -18.039,
+    "sign_flip": false
+   }
+  },
+  "marks_300s": {
+   "A deployed 0.5/0.3": {
+    "n": 68,
+    "mean_bp": -19.464,
+    "ci90": [
+     -31.666,
+     -8.073
+    ],
+    "total_usd": -42.27,
+    "payoff": 0.382,
+    "win_rate": 0.5,
+    "authors": {
+     "target": 32,
+     "stop": 20,
+     "ratchet": 16
+    },
+    "ex_largest_mean_bp": -16.452,
+    "sign_flip": false
+   },
+   "B 0.3/0.3": {
+    "n": 68,
+    "mean_bp": -21.477,
+    "ci90": [
+     -32.129,
+     -11.118
+    ],
+    "total_usd": -43.38,
+    "payoff": 0.477,
+    "win_rate": 0.397,
+    "authors": {
+     "stop": 28,
+     "target": 25,
+     "ratchet": 15
+    },
+    "ex_largest_mean_bp": -18.496,
+    "sign_flip": false
+   },
+   "C 1.0/0.3": {
+    "n": 68,
+    "mean_bp": -26.195,
+    "ci90": [
+     -41.209,
+     -11.997
+    ],
+    "total_usd": -52.29,
+    "payoff": 0.288,
+    "win_rate": 0.529,
+    "authors": {
+     "target": 34,
+     "ratchet": 17,
+     "stop": 16,
+     "horizon": 1
+    },
+    "ex_largest_mean_bp": -23.284,
+    "sign_flip": false
+   },
+   "D 0.5/no-TP": {
+    "n": 68,
+    "mean_bp": -6.269,
+    "ci90": [
+     -29.587,
+     20.612
+    ],
+    "total_usd": -43.98,
+    "payoff": 1.706,
+    "win_rate": 0.324,
+    "authors": {
+     "ratchet": 44,
+     "stop": 20,
+     "trail": 3,
+     "horizon": 1
+    },
+    "ex_largest_mean_bp": -3.06,
+    "sign_flip": false
+   },
+   "E control authored": {
+    "n": 68,
+    "mean_bp": -9.912,
+    "ci90": [
+     -41.715,
+     24.508
+    ],
+    "total_usd": -41.47,
+    "payoff": 1.239,
+    "win_rate": 0.382,
+    "authors": {
+     "ratchet": 51,
+     "stop": 9,
+     "horizon": 4,
+     "trail": 2,
+     "target": 2
+    },
+    "ex_largest_mean_bp": -6.758,
+    "sign_flip": false
+   },
+   "Z A, ratchet+trail off": {
+    "n": 68,
+    "mean_bp": -25.956,
+    "ci90": [
+     -38.884,
+     -13.674
+    ],
+    "total_usd": -50.86,
+    "payoff": 0.277,
+    "win_rate": 0.559,
+    "authors": {
+     "target": 38,
+     "stop": 29,
+     "horizon": 1
+    },
+    "ex_largest_mean_bp": -23.041,
+    "sign_flip": false
+   }
+  },
+  "entry_reanchored_to_okx": {
+   "A deployed 0.5/0.3": {
+    "n": 68,
+    "mean_bp": -14.116,
+    "ci90": [
+     -21.721,
+     -6.638
+    ],
+    "total_usd": -29.22,
+    "payoff": 0.454,
+    "win_rate": 0.412,
+    "authors": {
+     "ratchet": 28,
+     "target": 23,
+     "stop": 17
+    },
+    "ex_largest_mean_bp": -12.906,
+    "sign_flip": false
+   },
+   "B 0.3/0.3": {
+    "n": 68,
+    "mean_bp": -12.803,
+    "ci90": [
+     -18.994,
+     -6.686
+    ],
+    "total_usd": -26.16,
+    "payoff": 0.553,
+    "win_rate": 0.368,
+    "authors": {
+     "ratchet": 25,
+     "stop": 22,
+     "target": 21
+    },
+    "ex_largest_mean_bp": -11.573,
+    "sign_flip": false
+   },
+   "C 1.0/0.3": {
+    "n": 68,
+    "mean_bp": -14.023,
+    "ci90": [
+     -24.022,
+     -5.004
+    ],
+    "total_usd": -31.13,
+    "payoff": 0.43,
+    "win_rate": 0.441,
+    "authors": {
+     "ratchet": 32,
+     "target": 25,
+     "stop": 10,
+     "horizon": 1
+    },
+    "ex_largest_mean_bp": -12.416,
+    "sign_flip": false
+   },
+   "D 0.5/no-TP": {
+    "n": 68,
+    "mean_bp": -14.727,
+    "ci90": [
+     -23.772,
+     -5.49
+    ],
+    "total_usd": -31.11,
+    "payoff": 0.729,
+    "win_rate": 0.324,
+    "authors": {
+     "ratchet": 48,
+     "stop": 18,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -13.526,
+    "sign_flip": false
+   },
+   "E control authored": {
+    "n": 68,
+    "mean_bp": -10.79,
+    "ci90": [
+     -21.659,
+     -0.255
+    ],
+    "total_usd": -19.19,
+    "payoff": 0.764,
+    "win_rate": 0.368,
+    "authors": {
+     "ratchet": 58,
+     "stop": 5,
+     "horizon": 3,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -8.707,
+    "sign_flip": false
+   },
+   "Z A, ratchet+trail off": {
+    "n": 68,
+    "mean_bp": -14.875,
+    "ci90": [
+     -24.39,
+     -5.825
+    ],
+    "total_usd": -35.71,
+    "payoff": 0.267,
+    "win_rate": 0.632,
+    "authors": {
+     "target": 43,
+     "stop": 25
+    },
+    "ex_largest_mean_bp": -13.676,
+    "sign_flip": false
+   }
+  },
+  "basis_le_20bp_only": {
+   "A deployed 0.5/0.3": {
+    "n": 61,
+    "mean_bp": -17.409,
+    "ci90": [
+     -25.601,
+     -9.304
+    ],
+    "total_usd": -19.72,
+    "payoff": 0.504,
+    "win_rate": 0.328,
+    "authors": {
+     "ratchet": 28,
+     "stop": 17,
+     "target": 16
+    },
+    "ex_largest_mean_bp": -16.594,
+    "sign_flip": false
+   },
+   "B 0.3/0.3": {
+    "n": 61,
+    "mean_bp": -15.069,
+    "ci90": [
+     -21.288,
+     -8.95
+    ],
+    "total_usd": -16.19,
+    "payoff": 0.605,
+    "win_rate": 0.295,
+    "authors": {
+     "ratchet": 25,
+     "stop": 22,
+     "target": 14
+    },
+    "ex_largest_mean_bp": -14.485,
+    "sign_flip": false
+   },
+   "C 1.0/0.3": {
+    "n": 61,
+    "mean_bp": -21.818,
+    "ci90": [
+     -33.496,
+     -10.895
+    ],
+    "total_usd": -21.58,
+    "payoff": 0.399,
+    "win_rate": 0.361,
+    "authors": {
+     "ratchet": 30,
+     "target": 18,
+     "stop": 12,
+     "horizon": 1
+    },
+    "ex_largest_mean_bp": -20.239,
+    "sign_flip": false
+   },
+   "D 0.5/no-TP": {
+    "n": 61,
+    "mean_bp": -19.572,
+    "ci90": [
+     -28.318,
+     -10.601
+    ],
+    "total_usd": -23.29,
+    "payoff": 0.544,
+    "win_rate": 0.279,
+    "authors": {
+     "ratchet": 41,
+     "stop": 18,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -18.793,
+    "sign_flip": false
+   },
+   "E control authored": {
+    "n": 61,
+    "mean_bp": -22.728,
+    "ci90": [
+     -37.604,
+     -9.033
+    ],
+    "total_usd": -8.57,
+    "payoff": 0.429,
+    "win_rate": 0.328,
+    "authors": {
+     "ratchet": 49,
+     "stop": 6,
+     "horizon": 4,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -20.428,
+    "sign_flip": false
+   },
+   "Z A, ratchet+trail off": {
+    "n": 61,
+    "mean_bp": -19.686,
+    "ci90": [
+     -29.7,
+     -9.77
+    ],
+    "total_usd": -27.25,
+    "payoff": 0.277,
+    "win_rate": 0.574,
+    "authors": {
+     "target": 35,
+     "stop": 26
+    },
+    "ex_largest_mean_bp": -18.91,
+    "sign_flip": false
+   }
+  },
+  "reanchored_and_intrabar": {
+   "A deployed 0.5/0.3": {
+    "n": 68,
+    "mean_bp": -11.179,
+    "ci90": [
+     -17.789,
+     -4.737
+    ],
+    "total_usd": -24.21,
+    "payoff": 0.368,
+    "win_rate": 0.5,
+    "authors": {
+     "target": 31,
+     "ratchet": 20,
+     "stop": 17
+    },
+    "ex_largest_mean_bp": -10.363,
+    "sign_flip": false
+   },
+   "B 0.3/0.3": {
+    "n": 68,
+    "mean_bp": -15.163,
+    "ci90": [
+     -20.448,
+     -9.832
+    ],
+    "total_usd": -22.5,
+    "payoff": 0.415,
+    "win_rate": 0.368,
+    "authors": {
+     "stop": 28,
+     "target": 23,
+     "ratchet": 17
+    },
+    "ex_largest_mean_bp": -14.706,
+    "sign_flip": false
+   },
+   "C 1.0/0.3": {
+    "n": 68,
+    "mean_bp": -13.497,
+    "ci90": [
+     -23.098,
+     -4.79
+    ],
+    "total_usd": -30.24,
+    "payoff": 0.301,
+    "win_rate": 0.529,
+    "authors": {
+     "target": 33,
+     "ratchet": 24,
+     "stop": 11
+    },
+    "ex_largest_mean_bp": -11.97,
+    "sign_flip": false
+   },
+   "D 0.5/no-TP": {
+    "n": 68,
+    "mean_bp": -11.676,
+    "ci90": [
+     -19.757,
+     -3.348
+    ],
+    "total_usd": -25.13,
+    "payoff": 0.843,
+    "win_rate": 0.324,
+    "authors": {
+     "ratchet": 48,
+     "stop": 18,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -10.868,
+    "sign_flip": false
+   },
+   "E control authored": {
+    "n": 68,
+    "mean_bp": -11.279,
+    "ci90": [
+     -21.908,
+     -0.898
+    ],
+    "total_usd": -22.75,
+    "payoff": 0.746,
+    "win_rate": 0.368,
+    "authors": {
+     "ratchet": 57,
+     "stop": 6,
+     "horizon": 3,
+     "trail": 2
+    },
+    "ex_largest_mean_bp": -9.272,
+    "sign_flip": false
+   },
+   "Z A, ratchet+trail off": {
+    "n": 68,
+    "mean_bp": -14.035,
+    "ci90": [
+     -22.271,
+     -6.976
+    ],
+    "total_usd": -30.61,
+    "payoff": 0.216,
+    "win_rate": 0.647,
+    "authors": {
+     "target": 44,
+     "stop": 24
+    },
+    "ex_largest_mean_bp": -13.263,
+    "sign_flip": false
+   }
+  }
+ },
+ "actual_tape": {
+  "arm": "ACTUAL (recorded pnl - entry fee)",
+  "n": 68,
+  "mean_bp": -7.528,
+  "median_bp": -5.402,
+  "ci90": [
+   -43.237,
+   29.173
+  ],
+  "win_rate": 0.353,
+  "avg_win_bp": 112.01,
+  "avg_loss_bp": -72.73,
+  "payoff": 1.54,
+  "total_usd": -102.44,
+  "authors": {
+   "actual": 68
+  },
+  "median_hold_min": 85.9,
+  "ex_largest": {
+   "dropped": "SOLUSDT run 1099 (-65.45)",
+   "mean_bp": 2.176,
+   "median_bp": -5.044,
+   "ci90": [
+    -27.852,
+    36.822
+   ],
+   "total_usd": -36.99,
+   "sign_flip": true
+  }
+ },
+ "feed_basis_bp": [
+  0.0,
+  0.0,
+  0.1,
+  0.43,
+  0.52,
+  0.58,
+  0.85,
+  0.86,
+  0.87,
+  1.24,
+  1.39,
+  1.55,
+  1.58,
+  1.58,
+  1.59,
+  1.59,
+  1.76,
+  1.77,
+  2.18,
+  2.24,
+  2.56,
+  2.88,
+  2.96,
+  2.99,
+  3.04,
+  3.92,
+  3.96,
+  4.06,
+  4.08,
+  4.38,
+  4.4,
+  4.4,
+  4.56,
+  4.77,
+  4.82,
+  5.49,
+  6.0,
+  6.73,
+  7.34,
+  7.5,
+  7.73,
+  7.9,
+  8.59,
+  8.64,
+  8.82,
+  8.87,
+  9.06,
+  9.22,
+  10.74,
+  11.64,
+  12.71,
+  13.38,
+  14.02,
+  14.32,
+  15.5,
+  16.18,
+  16.3,
+  17.19,
+  17.22,
+  18.3,
+  18.89,
+  20.24,
+  21.53,
+  22.04,
+  26.15,
+  35.9,
+  136.15,
+  269.31
+ ],
+ "A_minus_E_paired": {
+  "n": 68,
+  "mean_bp": 10.239,
+  "ci90": [
+   -2.62,
+   23.973
+  ],
+  "beats_E_at_90": false
+ },
+ "B 0.3/0.3_minus_A_paired": {
+  "n": 68,
+  "mean_bp": 1.034,
+  "ci90": [
+   -3.64,
+   5.317
+  ],
+  "beats_A_at_90": false
+ },
+ "C 1.0/0.3_minus_A_paired": {
+  "n": 68,
+  "mean_bp": -4.848,
+  "ci90": [
+   -10.686,
+   1.104
+  ],
+  "beats_A_at_90": false
+ },
+ "D 0.5/no-TP_minus_A_paired": {
+  "n": 68,
+  "mean_bp": -0.226,
+  "ci90": [
+   -5.024,
+   5.006
+  ],
+  "beats_A_at_90": false
+ },
+ "desk_refusal": {
+  "breakeven_wr_hard_TP": 0.8225,
+  "breakeven_wr_hard_TP_zero_cost": 0.625,
+  "measured_trip_win_rate": 0.427,
+  "note_ratchet_median_gross_bp": 11.74,
+  "realised_avg_win_bp": 18.14,
+  "realised_avg_loss_bp": -43.66,
+  "breakeven_wr_effective": 0.7065,
+  "TP_hard_cap_theory": {
+   "breakeven_wr": 0.8225,
+   "note": "stop 50bp / target 30bp / cost 15.8bp, as a pure binary bracket"
+  },
+  "TP_hard_cap_replayed_armA": {
+   "breakeven_wr": 0.7065,
+   "achieved_wr": 0.3382,
+   "avg_win_bp": 18.14,
+   "avg_loss_bp": -43.66
+  },
+  "TP_cleared_post_arm_replayed_armD": {
+   "breakeven_wr": 0.6301,
+   "achieved_wr": 0.2941,
+   "avg_win_bp": 25.3,
+   "avg_loss_bp": -43.1
+  },
+  "reanchored_armA": {
+   "breakeven_wr": 0.6878,
+   "achieved_wr": 0.4118,
+   "avg_win_bp": 15.97,
+   "avg_loss_bp": -35.17
+  },
+  "max_stop_that_breaks_even_at_measured_wr": {
+   "target_30bp_cost_15.8bp": -5.22,
+   "target_30bp_cost_0bp": 22.36,
+   "note": "negative = NO positive stop can break even at a 42.7% win rate"
+  }
+ },
+ "per_trip": {
+  "A deployed 0.5/0.3": [
+   {
+    "run_id": "1083",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455996622,
+    "gross_bp": -65.86042615569947,
+    "net_bp": -81.66042615569947,
+    "net_usd": -4.731862362262808,
+    "author": "stop",
+    "hold_s": 4542
+   },
+   {
+    "run_id": "1086",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 314.9999982792,
+    "gross_bp": -77.00543567781274,
+    "net_bp": -92.80543567781274,
+    "net_usd": -2.9233712078811416,
+    "author": "stop",
+    "hold_s": 333
+   },
+   {
+    "run_id": "1099",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 995.2199998028999,
+    "gross_bp": 41.20427050011035,
+    "net_bp": 25.40427050011035,
+    "net_usd": 2.5282838082112638,
+    "author": "target",
+    "hold_s": 2601
+   },
+   {
+    "run_id": "1104",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 1020.5645999991544,
+    "gross_bp": -216.62828910598986,
+    "net_bp": -232.42828910598988,
+    "net_usd": -23.72080838999424,
+    "author": "stop",
+    "hold_s": 84
+   },
+   {
+    "run_id": "1107",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455992242,
+    "gross_bp": 8.35728734163705,
+    "net_bp": -7.442712658362949,
+    "net_usd": -0.43127244484237964,
+    "author": "ratchet",
+    "hold_s": 7574
+   },
+   {
+    "run_id": "1148",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 933.2400002634001,
+    "gross_bp": -50.48664966429048,
+    "net_bp": -66.28664966429048,
+    "net_usd": -6.1861352950162365,
+    "author": "stop",
+    "hold_s": 4652
+   },
+   {
+    "run_id": "1175",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 629.99999997858,
+    "gross_bp": 38.04083136986501,
+    "net_bp": 22.24083136986501,
+    "net_usd": 1.401172376253856,
+    "author": "target",
+    "hold_s": 105
+   },
+   {
+    "run_id": "1894",
+    "symbol": "AAVEUSDT",
+    "side": "short",
+    "notional": 19.971571167,
+    "gross_bp": 14.234875444840396,
+    "net_bp": -1.5651245551596038,
+    "net_usd": -0.0031257996438589244,
+    "author": "ratchet",
+    "hold_s": 527
+   },
+   {
+    "run_id": "1895",
+    "symbol": "WLDUSDT",
+    "side": "short",
+    "notional": 10.000756621068799,
+    "gross_bp": 36.062845181953115,
+    "net_bp": 20.26284518195311,
+    "net_usd": 0.02026437831151096,
+    "author": "target",
+    "hold_s": 1441
+   },
+   {
+    "run_id": "2001",
+    "symbol": "TAOUSDT",
+    "side": "long",
+    "notional": 223.0882269233,
+    "gross_bp": 35.8988520257208,
+    "net_bp": 20.098852025720802,
+    "net_usd": 0.448381726161183,
+    "author": "target",
+    "hold_s": 179
+   },
+   {
+    "run_id": "2019",
+    "symbol": "LITUSDT",
+    "side": "short",
+    "notional": 33.584330601591994,
+    "gross_bp": -69.05468543387,
+    "net_bp": -84.85468543387,
+    "net_usd": -0.28497878087051826,
+    "author": "stop",
+    "hold_s": 981
+   },
+   {
+    "run_id": "2208",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 297.0129418515,
+    "gross_bp": 10.602297648613977,
+    "net_bp": -5.197702351386023,
+    "net_usd": -0.15437848662536216,
+    "author": "ratchet",
+    "hold_s": 1300
+   },
+   {
+    "run_id": "2235",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 167.74357819419,
+    "gross_bp": 30.70444775857388,
+    "net_bp": 14.904447758573882,
+    "net_usd": 0.2500125398031558,
+    "author": "target",
+    "hold_s": 3717
+   },
+   {
+    "run_id": "2251",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 100.66403435566001,
+    "gross_bp": 8.803591865480929,
+    "net_bp": -6.996408134519071,
+    "net_usd": -0.0704286668819447,
+    "author": "ratchet",
+    "hold_s": 1381
+   },
+   {
+    "run_id": "2259",
+    "symbol": "TAOUSDT",
+    "side": "short",
+    "notional": 90.2621521768,
+    "gross_bp": 16.199164464149707,
+    "net_bp": 0.3991644641497083,
+    "net_usd": 0.00360294436066518,
+    "author": "ratchet",
+    "hold_s": 560
+   },
+   {
+    "run_id": "1293",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 20.00000000276,
+    "gross_bp": -52.259452812787906,
+    "net_bp": -68.0594528127879,
+    "net_usd": -0.13611890564436022,
+    "author": "stop",
+    "hold_s": 6171
+   },
+   {
+    "run_id": "1286",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 34.46999999913,
+    "gross_bp": 33.16510454217691,
+    "net_bp": 17.365104542176912,
+    "net_usd": 0.05985751535537306,
+    "author": "target",
+    "hold_s": 322
+   },
+   {
+    "run_id": "1297",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 26.272000166399998,
+    "gross_bp": 11.322463768115298,
+    "net_bp": -4.477536231884701,
+    "net_usd": -0.011763383262913691,
+    "author": "ratchet",
+    "hold_s": 21936
+   },
+   {
+    "run_id": "1302",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 51.058004131000004,
+    "gross_bp": 13.323424810234041,
+    "net_bp": -2.4765751897659594,
+    "net_usd": -0.012644898626980247,
+    "author": "ratchet",
+    "hold_s": 31052
+   },
+   {
+    "run_id": "1296",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 19.9999999968,
+    "gross_bp": 11.73708920187827,
+    "net_bp": -4.062910798121729,
+    "net_usd": -0.008125821594943327,
+    "author": "ratchet",
+    "hold_s": 1778
+   },
+   {
+    "run_id": "1303",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 20.000000002653,
+    "gross_bp": 46.656298600311665,
+    "net_bp": 30.856298600311664,
+    "net_usd": 0.061712597208809505,
+    "author": "target",
+    "hold_s": 526
+   },
+   {
+    "run_id": "1304",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 25.250000001577998,
+    "gross_bp": 13.778849466069978,
+    "net_bp": -2.0211505339300215,
+    "net_usd": -0.005103405098492241,
+    "author": "ratchet",
+    "hold_s": 331
+   },
+   {
+    "run_id": "1305",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 208.90799999688002,
+    "gross_bp": 43.66812227074239,
+    "net_bp": 27.868122270742393,
+    "net_usd": 0.5821873687249304,
+    "author": "target",
+    "hold_s": 2532
+   },
+   {
+    "run_id": "1306",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 47.210000003307,
+    "gross_bp": 19.210876311511274,
+    "net_bp": 3.4108763115112737,
+    "net_usd": 0.0161027470677727,
+    "author": "ratchet",
+    "hold_s": 4545
+   },
+   {
+    "run_id": "1308",
+    "symbol": "DOTUSDT",
+    "side": "short",
+    "notional": 67.454999997231,
+    "gross_bp": 13.190871916633702,
+    "net_bp": -2.6091280833662993,
+    "net_usd": -0.017599873485624903,
+    "author": "ratchet",
+    "hold_s": 1504
+   },
+   {
+    "run_id": "1322",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 104.454000001935,
+    "gross_bp": 10.274475267870747,
+    "net_bp": -5.525524732129254,
+    "net_usd": -0.0577163160380521,
+    "author": "ratchet",
+    "hold_s": 575
+   },
+   {
+    "run_id": "1329",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 187.55700000611003,
+    "gross_bp": 35.03854239663711,
+    "net_bp": 19.23854239663711,
+    "net_usd": 0.36083232964036144,
+    "author": "target",
+    "hold_s": 1886
+   },
+   {
+    "run_id": "1335",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 49.7589999831,
+    "gross_bp": 7.880220646177926,
+    "net_bp": -7.919779353822075,
+    "net_usd": -0.039408030073298836,
+    "author": "ratchet",
+    "hold_s": 3339
+   },
+   {
+    "run_id": "1344",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 386.80999999796,
+    "gross_bp": -50.107372942017854,
+    "net_bp": -65.90737294201786,
+    "net_usd": -2.5493630927567477,
+    "author": "stop",
+    "hold_s": 4840
+   },
+   {
+    "run_id": "1358",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 28.023999999263996,
+    "gross_bp": 11.9976004799027,
+    "net_bp": -3.8023995200973006,
+    "net_usd": -0.010655844414840817,
+    "author": "ratchet",
+    "hold_s": 4113
+   },
+   {
+    "run_id": "1356",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 65.411200003368,
+    "gross_bp": 16.281823564239048,
+    "net_bp": 0.48182356423904626,
+    "net_usd": 0.0031516657526775883,
+    "author": "ratchet",
+    "hold_s": 4277
+   },
+   {
+    "run_id": "1367",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 52.179000240600004,
+    "gross_bp": 9.270295325123477,
+    "net_bp": -6.529704674876522,
+    "net_usd": -0.0340713461801429,
+    "author": "ratchet",
+    "hold_s": 1931
+   },
+   {
+    "run_id": "1370",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 47.2100000037,
+    "gross_bp": -58.77680698967422,
+    "net_bp": -74.57680698967421,
+    "net_usd": -0.3520771058258454,
+    "author": "stop",
+    "hold_s": 5155
+   },
+   {
+    "run_id": "1392",
+    "symbol": "ZECUSDT",
+    "side": "long",
+    "notional": 473.86979975160006,
+    "gross_bp": 11.85133376075875,
+    "net_bp": -3.9486662392412506,
+    "net_usd": -0.1871153680075155,
+    "author": "ratchet",
+    "hold_s": 1301
+   },
+   {
+    "run_id": "1411",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 28.024000005359998,
+    "gross_bp": -50.84207181442648,
+    "net_bp": -66.64207181442649,
+    "net_usd": -0.1867577420884689,
+    "author": "stop",
+    "hold_s": 288
+   },
+   {
+    "run_id": "1417",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 126.23499999726002,
+    "gross_bp": -52.566481137909065,
+    "net_bp": -68.36648113790906,
+    "net_usd": -0.8630242746256628,
+    "author": "stop",
+    "hold_s": 6304
+   },
+   {
+    "run_id": "1462",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 49.68600000001201,
+    "gross_bp": 49.38988959906971,
+    "net_bp": 33.58988959906971,
+    "net_usd": 0.1668947254619781,
+    "author": "target",
+    "hold_s": 568
+   },
+   {
+    "run_id": "1479",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 224.8950000032,
+    "gross_bp": 13.803680981595274,
+    "net_bp": -1.9963190184047255,
+    "net_usd": -0.0448962165650519,
+    "author": "ratchet",
+    "hold_s": 1865
+   },
+   {
+    "run_id": "1489",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 10.00000000674,
+    "gross_bp": 9.107468123861912,
+    "net_bp": -6.692531876138089,
+    "net_usd": -0.006692531880648856,
+    "author": "ratchet",
+    "hold_s": 164
+   },
+   {
+    "run_id": "1531",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 244.094999997456,
+    "gross_bp": -232.3791935980302,
+    "net_bp": -248.17919359803022,
+    "net_usd": -6.057930026067981,
+    "author": "stop",
+    "hold_s": 91
+   },
+   {
+    "run_id": "1556",
+    "symbol": "LTCUSDT",
+    "side": "long",
+    "notional": 350.42499999564,
+    "gross_bp": 14.050325712096587,
+    "net_bp": -1.749674287903414,
+    "net_usd": -0.061312961233092524,
+    "author": "ratchet",
+    "hold_s": 310
+   },
+   {
+    "run_id": "1710",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 529.161150987,
+    "gross_bp": 55.39637058261684,
+    "net_bp": 39.59637058261684,
+    "net_usd": 2.0952861032405314,
+    "author": "target",
+    "hold_s": 176
+   },
+   {
+    "run_id": "1712",
+    "symbol": "CRVUSDT",
+    "side": "short",
+    "notional": 528.5354441775951,
+    "gross_bp": -59.9700149925038,
+    "net_bp": -75.7700149925038,
+    "net_usd": -4.004713852940603,
+    "author": "stop",
+    "hold_s": 878
+   },
+   {
+    "run_id": "1721",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 485.93149814847,
+    "gross_bp": 30.243095888404177,
+    "net_bp": 14.443095888404176,
+    "net_usd": 0.7018355222954248,
+    "author": "target",
+    "hold_s": 207
+   },
+   {
+    "run_id": "1748",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 242.09544423479997,
+    "gross_bp": -59.86465382613295,
+    "net_bp": -75.66465382613295,
+    "net_usd": -1.8318067980910013,
+    "author": "stop",
+    "hold_s": 654
+   },
+   {
+    "run_id": "1784",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 124.2822867504,
+    "gross_bp": 12.963701635420367,
+    "net_bp": -2.836298364579633,
+    "net_usd": -0.03525016466563766,
+    "author": "ratchet",
+    "hold_s": 710
+   },
+   {
+    "run_id": "1780",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 96.61750005603999,
+    "gross_bp": 9.453420419388975,
+    "net_bp": -6.346579580611026,
+    "net_usd": -0.06131906529853481,
+    "author": "ratchet",
+    "hold_s": 171
+   },
+   {
+    "run_id": "1785",
+    "symbol": "INJUSDT",
+    "side": "long",
+    "notional": 145.7774999772,
+    "gross_bp": -55.668016194332594,
+    "net_bp": -71.46801619433259,
+    "net_usd": -1.0418428729139848,
+    "author": "stop",
+    "hold_s": 667
+   },
+   {
+    "run_id": "1781",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 65.72750003946001,
+    "gross_bp": 30.407807940360286,
+    "net_bp": 14.607807940360287,
+    "net_usd": 0.0960134696976455,
+    "author": "target",
+    "hold_s": 307
+   },
+   {
+    "run_id": "1783",
+    "symbol": "LITUSDT",
+    "side": "long",
+    "notional": 57.49430991098399,
+    "gross_bp": -62.11897951518325,
+    "net_bp": -77.91897951518325,
+    "net_usd": -0.4479897956193559,
+    "author": "stop",
+    "hold_s": 1011
+   },
+   {
+    "run_id": "1787",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 124.24249999035,
+    "gross_bp": 11.113883281544435,
+    "net_bp": -4.6861167184555645,
+    "net_usd": -0.058221485634749444,
+    "author": "ratchet",
+    "hold_s": 204
+   },
+   {
+    "run_id": "1790",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 52.343636146117994,
+    "gross_bp": -59.243465000472405,
+    "net_bp": -75.0434650004724,
+    "net_usd": -0.3928047827128668,
+    "author": "stop",
+    "hold_s": 2234
+   },
+   {
+    "run_id": "1789",
+    "symbol": "VIRTUALUSDT",
+    "side": "short",
+    "notional": 65.4599211936098,
+    "gross_bp": 16.301994447132476,
+    "net_bp": 0.5019944471324769,
+    "net_usd": 0.0032860516948921654,
+    "author": "ratchet",
+    "hold_s": 170
+   },
+   {
+    "run_id": "1793",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 52.316889399400004,
+    "gross_bp": 33.64271909522619,
+    "net_bp": 17.842719095226194,
+    "net_usd": 0.09334755614895113,
+    "author": "target",
+    "hold_s": 1218
+   },
+   {
+    "run_id": "1794",
+    "symbol": "SUIUSDT",
+    "side": "long",
+    "notional": 96.52090082344081,
+    "gross_bp": -66.61344244299201,
+    "net_bp": -82.41344244299202,
+    "net_usd": -0.795461970455838,
+    "author": "stop",
+    "hold_s": 1331
+   },
+   {
+    "run_id": "1795",
+    "symbol": "VIRTUALUSDT",
+    "side": "long",
+    "notional": 52.2485670727972,
+    "gross_bp": -74.99009926287327,
+    "net_bp": -90.79009926287327,
+    "net_usd": -0.474365259088215,
+    "author": "stop",
+    "hold_s": 341
+   },
+   {
+    "run_id": "1797",
+    "symbol": "ENAUSDT",
+    "side": "short",
+    "notional": 52.420598546533796,
+    "gross_bp": 39.760091650381234,
+    "net_bp": 23.96009165038124,
+    "net_usd": 0.12560023455427913,
+    "author": "target",
+    "hold_s": 127
+   },
+   {
+    "run_id": "1796",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 65.61785784213,
+    "gross_bp": 7.996723293870594,
+    "net_bp": -7.803276706129407,
+    "net_usd": -0.05120343016056038,
+    "author": "ratchet",
+    "hold_s": 340
+   },
+   {
+    "run_id": "1805",
+    "symbol": "ETHUSDT",
+    "side": "long",
+    "notional": 124.09680159,
+    "gross_bp": 15.666856075978862,
+    "net_bp": -0.1331439240211379,
+    "net_usd": -0.0016522735122165182,
+    "author": "ratchet",
+    "hold_s": 423
+   },
+   {
+    "run_id": "1801",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 57.525024024000004,
+    "gross_bp": 33.48752047797982,
+    "net_bp": 17.68752047797982,
+    "net_usd": 0.10174750404207812,
+    "author": "target",
+    "hold_s": 110
+   },
+   {
+    "run_id": "1810",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 96.61888119310001,
+    "gross_bp": 30.462079716259247,
+    "net_bp": 14.662079716259246,
+    "net_usd": 0.14166337381490135,
+    "author": "target",
+    "hold_s": 86
+   },
+   {
+    "run_id": "1813",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 65.57166793715999,
+    "gross_bp": -50.120981679916895,
+    "net_bp": -65.92098167991689,
+    "net_usd": -0.4322548720807117,
+    "author": "stop",
+    "hold_s": 3165
+   },
+   {
+    "run_id": "1817",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 57.52246711193,
+    "gross_bp": -60.13333469458582,
+    "net_bp": -75.93333469458582,
+    "net_usd": -0.4367872747668486,
+    "author": "stop",
+    "hold_s": 2283
+   },
+   {
+    "run_id": "1819",
+    "symbol": "WIFUSDT",
+    "side": "long",
+    "notional": 128.6933495253881,
+    "gross_bp": 35.657071985945116,
+    "net_bp": 19.857071985945122,
+    "net_usd": 0.2555473105638028,
+    "author": "target",
+    "hold_s": 382
+   },
+   {
+    "run_id": "1821",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 51.89250000825,
+    "gross_bp": 33.67003367003295,
+    "net_bp": 17.870033670032953,
+    "net_usd": 0.09273207223696128,
+    "author": "target",
+    "hold_s": 683
+   },
+   {
+    "run_id": "1824",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 96.61750000045551,
+    "gross_bp": 6.296788637795585,
+    "net_bp": -9.503211362204416,
+    "net_usd": -0.0918176523792114,
+    "author": "ratchet",
+    "hold_s": 375
+   },
+   {
+    "run_id": "1820",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 128.62249999783728,
+    "gross_bp": 10.963898392401854,
+    "net_bp": -4.836101607598147,
+    "net_usd": -0.06220314790128336,
+    "author": "ratchet",
+    "hold_s": 129
+   },
+   {
+    "run_id": "1825",
+    "symbol": "AVAXUSDT",
+    "side": "long",
+    "notional": 96.617499965766,
+    "gross_bp": 3.008012250813807,
+    "net_bp": -12.791987749186193,
+    "net_usd": -0.12359298759190762,
+    "author": "ratchet",
+    "hold_s": 241
+   }
+  ],
+  "B 0.3/0.3": [
+   {
+    "run_id": "1083",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455996622,
+    "gross_bp": -35.966703313963244,
+    "net_bp": -51.76670331396324,
+    "net_usd": -2.9996526660627962,
+    "author": "stop",
+    "hold_s": 2802
+   },
+   {
+    "run_id": "1086",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 314.9999982792,
+    "gross_bp": -34.17888321528513,
+    "net_bp": -49.97888321528513,
+    "net_usd": -1.5743348126811152,
+    "author": "stop",
+    "hold_s": 273
+   },
+   {
+    "run_id": "1099",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 995.2199998028999,
+    "gross_bp": 41.20427050011035,
+    "net_bp": 25.40427050011035,
+    "net_usd": 2.5282838082112638,
+    "author": "target",
+    "hold_s": 2601
+   },
+   {
+    "run_id": "1104",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 1020.5645999991544,
+    "gross_bp": -216.62828910598986,
+    "net_bp": -232.42828910598988,
+    "net_usd": -23.72080838999424,
+    "author": "stop",
+    "hold_s": 84
+   },
+   {
+    "run_id": "1107",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455992242,
+    "gross_bp": -32.41775790482352,
+    "net_bp": -48.21775790482352,
+    "net_usd": -2.794006875042405,
+    "author": "stop",
+    "hold_s": 2174
+   },
+   {
+    "run_id": "1148",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 933.2400002634001,
+    "gross_bp": -34.351741008692095,
+    "net_bp": -50.15174100869209,
+    "net_usd": -4.680361079216179,
+    "author": "stop",
+    "hold_s": 3452
+   },
+   {
+    "run_id": "1175",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 629.99999997858,
+    "gross_bp": 38.04083136986501,
+    "net_bp": 22.24083136986501,
+    "net_usd": 1.401172376253856,
+    "author": "target",
+    "hold_s": 105
+   },
+   {
+    "run_id": "1894",
+    "symbol": "AAVEUSDT",
+    "side": "short",
+    "notional": 19.971571167,
+    "gross_bp": 14.234875444840396,
+    "net_bp": -1.5651245551596038,
+    "net_usd": -0.0031257996438589244,
+    "author": "ratchet",
+    "hold_s": 527
+   },
+   {
+    "run_id": "1895",
+    "symbol": "WLDUSDT",
+    "side": "short",
+    "notional": 10.000756621068799,
+    "gross_bp": 36.062845181953115,
+    "net_bp": 20.26284518195311,
+    "net_usd": 0.02026437831151096,
+    "author": "target",
+    "hold_s": 1441
+   },
+   {
+    "run_id": "2001",
+    "symbol": "TAOUSDT",
+    "side": "long",
+    "notional": 223.0882269233,
+    "gross_bp": 35.8988520257208,
+    "net_bp": 20.098852025720802,
+    "net_usd": 0.448381726161183,
+    "author": "target",
+    "hold_s": 179
+   },
+   {
+    "run_id": "2019",
+    "symbol": "LITUSDT",
+    "side": "short",
+    "notional": 33.584330601591994,
+    "gross_bp": -33.49886867855801,
+    "net_bp": -49.298868678558016,
+    "net_usd": -0.1655669503985161,
+    "author": "stop",
+    "hold_s": 261
+   },
+   {
+    "run_id": "2208",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 297.0129418515,
+    "gross_bp": 10.602297648613977,
+    "net_bp": -5.197702351386023,
+    "net_usd": -0.15437848662536216,
+    "author": "ratchet",
+    "hold_s": 1300
+   },
+   {
+    "run_id": "2235",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 167.74357819419,
+    "gross_bp": -31.581717694535808,
+    "net_bp": -47.38171769453581,
+    "net_usd": -0.7947978867068404,
+    "author": "stop",
+    "hold_s": 417
+   },
+   {
+    "run_id": "2251",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 100.66403435566001,
+    "gross_bp": 8.803591865480929,
+    "net_bp": -6.996408134519071,
+    "net_usd": -0.0704286668819447,
+    "author": "ratchet",
+    "hold_s": 1381
+   },
+   {
+    "run_id": "2259",
+    "symbol": "TAOUSDT",
+    "side": "short",
+    "notional": 90.2621521768,
+    "gross_bp": 16.199164464149707,
+    "net_bp": 0.3991644641497083,
+    "net_usd": 0.00360294436066518,
+    "author": "ratchet",
+    "hold_s": 560
+   },
+   {
+    "run_id": "1293",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 20.00000000276,
+    "gross_bp": -30.740854595757106,
+    "net_bp": -46.540854595757104,
+    "net_usd": -0.09308170920435949,
+    "author": "stop",
+    "hold_s": 591
+   },
+   {
+    "run_id": "1286",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 34.46999999913,
+    "gross_bp": 33.16510454217691,
+    "net_bp": 17.365104542176912,
+    "net_usd": 0.05985751535537306,
+    "author": "target",
+    "hold_s": 322
+   },
+   {
+    "run_id": "1297",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 26.272000166399998,
+    "gross_bp": -31.70289855072477,
+    "net_bp": -47.502898550724765,
+    "net_usd": -0.12479961586291233,
+    "author": "stop",
+    "hold_s": 1896
+   },
+   {
+    "run_id": "1302",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 51.058004131000004,
+    "gross_bp": 13.323424810234041,
+    "net_bp": -2.4765751897659594,
+    "net_usd": -0.012644898626980247,
+    "author": "ratchet",
+    "hold_s": 31052
+   },
+   {
+    "run_id": "1296",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 19.9999999968,
+    "gross_bp": 11.73708920187827,
+    "net_bp": -4.062910798121729,
+    "net_usd": -0.008125821594943327,
+    "author": "ratchet",
+    "hold_s": 1778
+   },
+   {
+    "run_id": "1303",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 20.000000002653,
+    "gross_bp": 46.656298600311665,
+    "net_bp": 30.856298600311664,
+    "net_usd": 0.061712597208809505,
+    "author": "target",
+    "hold_s": 526
+   },
+   {
+    "run_id": "1304",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 25.250000001577998,
+    "gross_bp": 13.778849466069978,
+    "net_bp": -2.0211505339300215,
+    "net_usd": -0.005103405098492241,
+    "author": "ratchet",
+    "hold_s": 331
+   },
+   {
+    "run_id": "1305",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 208.90799999688002,
+    "gross_bp": 43.66812227074239,
+    "net_bp": 27.868122270742393,
+    "net_usd": 0.5821873687249304,
+    "author": "target",
+    "hold_s": 2532
+   },
+   {
+    "run_id": "1306",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 47.210000003307,
+    "gross_bp": 19.210876311511274,
+    "net_bp": 3.4108763115112737,
+    "net_usd": 0.0161027470677727,
+    "author": "ratchet",
+    "hold_s": 4545
+   },
+   {
+    "run_id": "1308",
+    "symbol": "DOTUSDT",
+    "side": "short",
+    "notional": 67.454999997231,
+    "gross_bp": 13.190871916633702,
+    "net_bp": -2.6091280833662993,
+    "net_usd": -0.017599873485624903,
+    "author": "ratchet",
+    "hold_s": 1504
+   },
+   {
+    "run_id": "1322",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 104.454000001935,
+    "gross_bp": 10.274475267870747,
+    "net_bp": -5.525524732129254,
+    "net_usd": -0.0577163160380521,
+    "author": "ratchet",
+    "hold_s": 575
+   },
+   {
+    "run_id": "1329",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 187.55700000611003,
+    "gross_bp": -35.038542396635556,
+    "net_bp": -50.83854239663555,
+    "net_usd": -0.9535124496596399,
+    "author": "stop",
+    "hold_s": 746
+   },
+   {
+    "run_id": "1335",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 49.7589999831,
+    "gross_bp": 7.880220646177926,
+    "net_bp": -7.919779353822075,
+    "net_usd": -0.039408030073298836,
+    "author": "ratchet",
+    "hold_s": 3339
+   },
+   {
+    "run_id": "1344",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 386.80999999796,
+    "gross_bp": -35.79098067286967,
+    "net_bp": -51.59098067286968,
+    "net_usd": -1.9955907233967474,
+    "author": "stop",
+    "hold_s": 2560
+   },
+   {
+    "run_id": "1358",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 28.023999999263996,
+    "gross_bp": -49.49010197960529,
+    "net_bp": -65.2901019796053,
+    "net_usd": -0.1829689817828405,
+    "author": "stop",
+    "hold_s": 2613
+   },
+   {
+    "run_id": "1356",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 65.411200003368,
+    "gross_bp": 16.281823564239048,
+    "net_bp": 0.48182356423904626,
+    "net_usd": 0.0031516657526775883,
+    "author": "ratchet",
+    "hold_s": 4277
+   },
+   {
+    "run_id": "1367",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 52.179000240600004,
+    "gross_bp": 9.270295325123477,
+    "net_bp": -6.529704674876522,
+    "net_usd": -0.0340713461801429,
+    "author": "ratchet",
+    "hold_s": 1931
+   },
+   {
+    "run_id": "1370",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 47.2100000037,
+    "gross_bp": -30.182684670373515,
+    "net_bp": -45.982684670373516,
+    "net_usd": -0.21708425434584697,
+    "author": "stop",
+    "hold_s": 415
+   },
+   {
+    "run_id": "1392",
+    "symbol": "ZECUSDT",
+    "side": "long",
+    "notional": 473.86979975160006,
+    "gross_bp": 11.85133376075875,
+    "net_bp": -3.9486662392412506,
+    "net_usd": -0.1871153680075155,
+    "author": "ratchet",
+    "hold_s": 1301
+   },
+   {
+    "run_id": "1411",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 28.024000005359998,
+    "gross_bp": -38.131553860819864,
+    "net_bp": -53.93155386081987,
+    "net_usd": -0.1511377865684689,
+    "author": "stop",
+    "hold_s": 168
+   },
+   {
+    "run_id": "1417",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 126.23499999726002,
+    "gross_bp": -35.55967841682079,
+    "net_bp": -51.35967841682079,
+    "net_usd": -0.6483389004806648,
+    "author": "stop",
+    "hold_s": 2404
+   },
+   {
+    "run_id": "1462",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 49.68600000001201,
+    "gross_bp": -34.863451481696075,
+    "net_bp": -50.66345148169608,
+    "net_usd": -0.251726425032016,
+    "author": "stop",
+    "hold_s": 268
+   },
+   {
+    "run_id": "1479",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 224.8950000032,
+    "gross_bp": 13.803680981595274,
+    "net_bp": -1.9963190184047255,
+    "net_usd": -0.0448962165650519,
+    "author": "ratchet",
+    "hold_s": 1865
+   },
+   {
+    "run_id": "1489",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 10.00000000674,
+    "gross_bp": 9.107468123861912,
+    "net_bp": -6.692531876138089,
+    "net_usd": -0.006692531880648856,
+    "author": "ratchet",
+    "hold_s": 164
+   },
+   {
+    "run_id": "1531",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 244.094999997456,
+    "gross_bp": -232.3791935980302,
+    "net_bp": -248.17919359803022,
+    "net_usd": -6.057930026067981,
+    "author": "stop",
+    "hold_s": 91
+   },
+   {
+    "run_id": "1556",
+    "symbol": "LTCUSDT",
+    "side": "long",
+    "notional": 350.42499999564,
+    "gross_bp": 14.050325712096587,
+    "net_bp": -1.749674287903414,
+    "net_usd": -0.061312961233092524,
+    "author": "ratchet",
+    "hold_s": 310
+   },
+   {
+    "run_id": "1710",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 529.161150987,
+    "gross_bp": 55.39637058261684,
+    "net_bp": 39.59637058261684,
+    "net_usd": 2.0952861032405314,
+    "author": "target",
+    "hold_s": 176
+   },
+   {
+    "run_id": "1712",
+    "symbol": "CRVUSDT",
+    "side": "short",
+    "notional": 528.5354441775951,
+    "gross_bp": -35.98200899550161,
+    "net_bp": -51.782008995501606,
+    "net_usd": -2.736862712484567,
+    "author": "stop",
+    "hold_s": 338
+   },
+   {
+    "run_id": "1721",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 485.93149814847,
+    "gross_bp": 30.243095888404177,
+    "net_bp": 14.443095888404176,
+    "net_usd": 0.7018355222954248,
+    "author": "target",
+    "hold_s": 207
+   },
+   {
+    "run_id": "1748",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 242.09544423479997,
+    "gross_bp": -35.57175082422381,
+    "net_bp": -51.37175082422381,
+    "net_usd": -1.2436866836909917,
+    "author": "stop",
+    "hold_s": 414
+   },
+   {
+    "run_id": "1784",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 124.2822867504,
+    "gross_bp": 12.963701635420367,
+    "net_bp": -2.836298364579633,
+    "net_usd": -0.03525016466563766,
+    "author": "ratchet",
+    "hold_s": 710
+   },
+   {
+    "run_id": "1780",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 96.61750005603999,
+    "gross_bp": 9.453420419388975,
+    "net_bp": -6.346579580611026,
+    "net_usd": -0.06131906529853481,
+    "author": "ratchet",
+    "hold_s": 171
+   },
+   {
+    "run_id": "1785",
+    "symbol": "INJUSDT",
+    "side": "long",
+    "notional": 145.7774999772,
+    "gross_bp": -43.85964912280669,
+    "net_bp": -59.659649122806684,
+    "net_usd": -0.8697034498639711,
+    "author": "stop",
+    "hold_s": 607
+   },
+   {
+    "run_id": "1781",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 65.72750003946001,
+    "gross_bp": 30.407807940360286,
+    "net_bp": 14.607807940360287,
+    "net_usd": 0.0960134696976455,
+    "author": "target",
+    "hold_s": 307
+   },
+   {
+    "run_id": "1783",
+    "symbol": "LITUSDT",
+    "side": "long",
+    "notional": 57.49430991098399,
+    "gross_bp": -34.093207361821484,
+    "net_bp": -49.89320736182148,
+    "net_usd": -0.28685755265135526,
+    "author": "stop",
+    "hold_s": 831
+   },
+   {
+    "run_id": "1787",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 124.24249999035,
+    "gross_bp": 11.113883281544435,
+    "net_bp": -4.6861167184555645,
+    "net_usd": -0.058221485634749444,
+    "author": "ratchet",
+    "hold_s": 204
+   },
+   {
+    "run_id": "1790",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 52.343636146117994,
+    "gross_bp": -30.903766480884393,
+    "net_bp": -46.70376648088439,
+    "net_usd": -0.24446449593286743,
+    "author": "stop",
+    "hold_s": 1274
+   },
+   {
+    "run_id": "1789",
+    "symbol": "VIRTUALUSDT",
+    "side": "short",
+    "notional": 65.4599211936098,
+    "gross_bp": 16.301994447132476,
+    "net_bp": 0.5019944471324769,
+    "net_usd": 0.0032860516948921654,
+    "author": "ratchet",
+    "hold_s": 170
+   },
+   {
+    "run_id": "1793",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 52.316889399400004,
+    "gross_bp": 33.64271909522619,
+    "net_bp": 17.842719095226194,
+    "net_usd": 0.09334755614895113,
+    "author": "target",
+    "hold_s": 1218
+   },
+   {
+    "run_id": "1794",
+    "symbol": "SUIUSDT",
+    "side": "long",
+    "notional": 96.52090082344081,
+    "gross_bp": -32.93248839878219,
+    "net_bp": -48.732488398782195,
+    "net_usd": -0.47037036796183357,
+    "author": "stop",
+    "hold_s": 1031
+   },
+   {
+    "run_id": "1795",
+    "symbol": "VIRTUALUSDT",
+    "side": "long",
+    "notional": 52.2485670727972,
+    "gross_bp": -44.32975203444145,
+    "net_bp": -60.129752034441445,
+    "net_usd": -0.3141693382242178,
+    "author": "stop",
+    "hold_s": 281
+   },
+   {
+    "run_id": "1797",
+    "symbol": "ENAUSDT",
+    "side": "short",
+    "notional": 52.420598546533796,
+    "gross_bp": 39.760091650381234,
+    "net_bp": 23.96009165038124,
+    "net_usd": 0.12560023455427913,
+    "author": "target",
+    "hold_s": 127
+   },
+   {
+    "run_id": "1796",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 65.61785784213,
+    "gross_bp": 7.996723293870594,
+    "net_bp": -7.803276706129407,
+    "net_usd": -0.05120343016056038,
+    "author": "ratchet",
+    "hold_s": 340
+   },
+   {
+    "run_id": "1805",
+    "symbol": "ETHUSDT",
+    "side": "long",
+    "notional": 124.09680159,
+    "gross_bp": 15.666856075978862,
+    "net_bp": -0.1331439240211379,
+    "net_usd": -0.0016522735122165182,
+    "author": "ratchet",
+    "hold_s": 423
+   },
+   {
+    "run_id": "1801",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 57.525024024000004,
+    "gross_bp": 33.48752047797982,
+    "net_bp": 17.68752047797982,
+    "net_usd": 0.10174750404207812,
+    "author": "target",
+    "hold_s": 110
+   },
+   {
+    "run_id": "1810",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 96.61888119310001,
+    "gross_bp": 30.462079716259247,
+    "net_bp": 14.662079716259246,
+    "net_usd": 0.14166337381490135,
+    "author": "target",
+    "hold_s": 86
+   },
+   {
+    "run_id": "1813",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 65.57166793715999,
+    "gross_bp": -39.751123401312974,
+    "net_bp": -55.55112340131297,
+    "net_usd": -0.36425798172070917,
+    "author": "stop",
+    "hold_s": 1905
+   },
+   {
+    "run_id": "1817",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 57.52246711193,
+    "gross_bp": -37.67266638760986,
+    "net_bp": -53.472666387609856,
+    "net_usd": -0.3075879693668493,
+    "author": "stop",
+    "hold_s": 183
+   },
+   {
+    "run_id": "1819",
+    "symbol": "WIFUSDT",
+    "side": "long",
+    "notional": 128.6933495253881,
+    "gross_bp": 35.657071985945116,
+    "net_bp": 19.857071985945122,
+    "net_usd": 0.2555473105638028,
+    "author": "target",
+    "hold_s": 382
+   },
+   {
+    "run_id": "1821",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 51.89250000825,
+    "gross_bp": 33.67003367003295,
+    "net_bp": 17.870033670032953,
+    "net_usd": 0.09273207223696128,
+    "author": "target",
+    "hold_s": 683
+   },
+   {
+    "run_id": "1824",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 96.61750000045551,
+    "gross_bp": 6.296788637795585,
+    "net_bp": -9.503211362204416,
+    "net_usd": -0.0918176523792114,
+    "author": "ratchet",
+    "hold_s": 375
+   },
+   {
+    "run_id": "1820",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 128.62249999783728,
+    "gross_bp": 10.963898392401854,
+    "net_bp": -4.836101607598147,
+    "net_usd": -0.06220314790128336,
+    "author": "ratchet",
+    "hold_s": 129
+   },
+   {
+    "run_id": "1825",
+    "symbol": "AVAXUSDT",
+    "side": "long",
+    "notional": 96.617499965766,
+    "gross_bp": 3.008012250813807,
+    "net_bp": -12.791987749186193,
+    "net_usd": -0.12359298759190762,
+    "author": "ratchet",
+    "hold_s": 241
+   }
+  ],
+  "C 1.0/0.3": [
+   {
+    "run_id": "1083",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455996622,
+    "gross_bp": 10.41830270666462,
+    "net_bp": -5.38169729333538,
+    "net_usd": -0.31184567686275727,
+    "author": "ratchet",
+    "hold_s": 5622
+   },
+   {
+    "run_id": "1086",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 314.9999982792,
+    "gross_bp": -124.97941031131596,
+    "net_bp": -140.77941031131596,
+    "net_usd": -4.434551400581132,
+    "author": "stop",
+    "hold_s": 2433
+   },
+   {
+    "run_id": "1099",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 995.2199998028999,
+    "gross_bp": 41.20427050011035,
+    "net_bp": 25.40427050011035,
+    "net_usd": 2.5282838082112638,
+    "author": "target",
+    "hold_s": 2601
+   },
+   {
+    "run_id": "1104",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 1020.5645999991544,
+    "gross_bp": -216.62828910598986,
+    "net_bp": -232.42828910598988,
+    "net_usd": -23.72080838999424,
+    "author": "stop",
+    "hold_s": 84
+   },
+   {
+    "run_id": "1107",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455992242,
+    "gross_bp": 8.35728734163705,
+    "net_bp": -7.442712658362949,
+    "net_usd": -0.43127244484237964,
+    "author": "ratchet",
+    "hold_s": 7574
+   },
+   {
+    "run_id": "1148",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 933.2400002634001,
+    "gross_bp": -100.7998056871221,
+    "net_bp": -116.5998056871221,
+    "net_usd": -10.881560269016223,
+    "author": "stop",
+    "hold_s": 5852
+   },
+   {
+    "run_id": "1175",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 629.99999997858,
+    "gross_bp": 38.04083136986501,
+    "net_bp": 22.24083136986501,
+    "net_usd": 1.401172376253856,
+    "author": "target",
+    "hold_s": 105
+   },
+   {
+    "run_id": "1894",
+    "symbol": "AAVEUSDT",
+    "side": "short",
+    "notional": 19.971571167,
+    "gross_bp": 14.234875444840396,
+    "net_bp": -1.5651245551596038,
+    "net_usd": -0.0031257996438589244,
+    "author": "ratchet",
+    "hold_s": 527
+   },
+   {
+    "run_id": "1895",
+    "symbol": "WLDUSDT",
+    "side": "short",
+    "notional": 10.000756621068799,
+    "gross_bp": 36.062845181953115,
+    "net_bp": 20.26284518195311,
+    "net_usd": 0.02026437831151096,
+    "author": "target",
+    "hold_s": 1441
+   },
+   {
+    "run_id": "2001",
+    "symbol": "TAOUSDT",
+    "side": "long",
+    "notional": 223.0882269233,
+    "gross_bp": 35.8988520257208,
+    "net_bp": 20.098852025720802,
+    "net_usd": 0.448381726161183,
+    "author": "target",
+    "hold_s": 179
+   },
+   {
+    "run_id": "2019",
+    "symbol": "LITUSDT",
+    "side": "short",
+    "notional": 33.584330601591994,
+    "gross_bp": -119.00913872645589,
+    "net_bp": -134.80913872645587,
+    "net_usd": -0.45274746831051726,
+    "author": "stop",
+    "hold_s": 1701
+   },
+   {
+    "run_id": "2208",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 297.0129418515,
+    "gross_bp": 10.602297648613977,
+    "net_bp": -5.197702351386023,
+    "net_usd": -0.15437848662536216,
+    "author": "ratchet",
+    "hold_s": 1300
+   },
+   {
+    "run_id": "2235",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 167.74357819419,
+    "gross_bp": 30.70444775857388,
+    "net_bp": 14.904447758573882,
+    "net_usd": 0.2500125398031558,
+    "author": "target",
+    "hold_s": 3717
+   },
+   {
+    "run_id": "2251",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 100.66403435566001,
+    "gross_bp": 8.803591865480929,
+    "net_bp": -6.996408134519071,
+    "net_usd": -0.0704286668819447,
+    "author": "ratchet",
+    "hold_s": 1381
+   },
+   {
+    "run_id": "2259",
+    "symbol": "TAOUSDT",
+    "side": "short",
+    "notional": 90.2621521768,
+    "gross_bp": 16.199164464149707,
+    "net_bp": 0.3991644641497083,
+    "net_usd": 0.00360294436066518,
+    "author": "ratchet",
+    "hold_s": 560
+   },
+   {
+    "run_id": "1293",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 20.00000000276,
+    "gross_bp": 36.88902551490934,
+    "net_bp": 21.08902551490935,
+    "net_usd": 0.042178051035639263,
+    "author": "target",
+    "hold_s": 12591
+   },
+   {
+    "run_id": "1286",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 34.46999999913,
+    "gross_bp": 33.16510454217691,
+    "net_bp": 17.365104542176912,
+    "net_usd": 0.05985751535537306,
+    "author": "target",
+    "hold_s": 322
+   },
+   {
+    "run_id": "1297",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 26.272000166399998,
+    "gross_bp": 11.322463768115298,
+    "net_bp": -4.477536231884701,
+    "net_usd": -0.011763383262913691,
+    "author": "ratchet",
+    "hold_s": 21936
+   },
+   {
+    "run_id": "1302",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 51.058004131000004,
+    "gross_bp": 13.323424810234041,
+    "net_bp": -2.4765751897659594,
+    "net_usd": -0.012644898626980247,
+    "author": "ratchet",
+    "hold_s": 31052
+   },
+   {
+    "run_id": "1296",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 19.9999999968,
+    "gross_bp": 11.73708920187827,
+    "net_bp": -4.062910798121729,
+    "net_usd": -0.008125821594943327,
+    "author": "ratchet",
+    "hold_s": 1778
+   },
+   {
+    "run_id": "1303",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 20.000000002653,
+    "gross_bp": 46.656298600311665,
+    "net_bp": 30.856298600311664,
+    "net_usd": 0.061712597208809505,
+    "author": "target",
+    "hold_s": 526
+   },
+   {
+    "run_id": "1304",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 25.250000001577998,
+    "gross_bp": 13.778849466069978,
+    "net_bp": -2.0211505339300215,
+    "net_usd": -0.005103405098492241,
+    "author": "ratchet",
+    "hold_s": 331
+   },
+   {
+    "run_id": "1305",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 208.90799999688002,
+    "gross_bp": 43.66812227074239,
+    "net_bp": 27.868122270742393,
+    "net_usd": 0.5821873687249304,
+    "author": "target",
+    "hold_s": 2532
+   },
+   {
+    "run_id": "1306",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 47.210000003307,
+    "gross_bp": 19.210876311511274,
+    "net_bp": 3.4108763115112737,
+    "net_usd": 0.0161027470677727,
+    "author": "ratchet",
+    "hold_s": 4545
+   },
+   {
+    "run_id": "1308",
+    "symbol": "DOTUSDT",
+    "side": "short",
+    "notional": 67.454999997231,
+    "gross_bp": 13.190871916633702,
+    "net_bp": -2.6091280833662993,
+    "net_usd": -0.017599873485624903,
+    "author": "ratchet",
+    "hold_s": 1504
+   },
+   {
+    "run_id": "1322",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 104.454000001935,
+    "gross_bp": 10.274475267870747,
+    "net_bp": -5.525524732129254,
+    "net_usd": -0.0577163160380521,
+    "author": "ratchet",
+    "hold_s": 575
+   },
+   {
+    "run_id": "1329",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 187.55700000611003,
+    "gross_bp": 35.03854239663711,
+    "net_bp": 19.23854239663711,
+    "net_usd": 0.36083232964036144,
+    "author": "target",
+    "hold_s": 1886
+   },
+   {
+    "run_id": "1335",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 49.7589999831,
+    "gross_bp": 7.880220646177926,
+    "net_bp": -7.919779353822075,
+    "net_usd": -0.039408030073298836,
+    "author": "ratchet",
+    "hold_s": 3339
+   },
+   {
+    "run_id": "1344",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 386.80999999796,
+    "gross_bp": -100.21474588403731,
+    "net_bp": -116.01474588403731,
+    "net_usd": -4.48756638551678,
+    "author": "stop",
+    "hold_s": 6040
+   },
+   {
+    "run_id": "1358",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 28.023999999263996,
+    "gross_bp": 11.9976004799027,
+    "net_bp": -3.8023995200973006,
+    "net_usd": -0.010655844414840817,
+    "author": "ratchet",
+    "hold_s": 4113
+   },
+   {
+    "run_id": "1356",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 65.411200003368,
+    "gross_bp": 16.281823564239048,
+    "net_bp": 0.48182356423904626,
+    "net_usd": 0.0031516657526775883,
+    "author": "ratchet",
+    "hold_s": 4277
+   },
+   {
+    "run_id": "1367",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 52.179000240600004,
+    "gross_bp": 9.270295325123477,
+    "net_bp": -6.529704674876522,
+    "net_usd": -0.0340713461801429,
+    "author": "ratchet",
+    "hold_s": 1931
+   },
+   {
+    "run_id": "1370",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 47.2100000037,
+    "gross_bp": -63.54249404289124,
+    "net_bp": -79.34249404289123,
+    "net_usd": -0.3745759144058463,
+    "author": "horizon",
+    "hold_s": 28553
+   },
+   {
+    "run_id": "1392",
+    "symbol": "ZECUSDT",
+    "side": "long",
+    "notional": 473.86979975160006,
+    "gross_bp": 11.85133376075875,
+    "net_bp": -3.9486662392412506,
+    "net_usd": -0.1871153680075155,
+    "author": "ratchet",
+    "hold_s": 1301
+   },
+   {
+    "run_id": "1411",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 28.024000005359998,
+    "gross_bp": -104.86177311725568,
+    "net_bp": -120.66177311725568,
+    "net_usd": -0.338142553048472,
+    "author": "stop",
+    "hold_s": 22128
+   },
+   {
+    "run_id": "1417",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 126.23499999726002,
+    "gross_bp": -102.04081632652967,
+    "net_bp": -117.84081632652966,
+    "net_usd": -1.487563544865659,
+    "author": "stop",
+    "hold_s": 7264
+   },
+   {
+    "run_id": "1462",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 49.68600000001201,
+    "gross_bp": 49.38988959906971,
+    "net_bp": 33.58988959906971,
+    "net_usd": 0.1668947254619781,
+    "author": "target",
+    "hold_s": 568
+   },
+   {
+    "run_id": "1479",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 224.8950000032,
+    "gross_bp": 13.803680981595274,
+    "net_bp": -1.9963190184047255,
+    "net_usd": -0.0448962165650519,
+    "author": "ratchet",
+    "hold_s": 1865
+   },
+   {
+    "run_id": "1489",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 10.00000000674,
+    "gross_bp": 9.107468123861912,
+    "net_bp": -6.692531876138089,
+    "net_usd": -0.006692531880648856,
+    "author": "ratchet",
+    "hold_s": 164
+   },
+   {
+    "run_id": "1531",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 244.094999997456,
+    "gross_bp": -232.3791935980302,
+    "net_bp": -248.17919359803022,
+    "net_usd": -6.057930026067981,
+    "author": "stop",
+    "hold_s": 91
+   },
+   {
+    "run_id": "1556",
+    "symbol": "LTCUSDT",
+    "side": "long",
+    "notional": 350.42499999564,
+    "gross_bp": 14.050325712096587,
+    "net_bp": -1.749674287903414,
+    "net_usd": -0.061312961233092524,
+    "author": "ratchet",
+    "hold_s": 310
+   },
+   {
+    "run_id": "1710",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 529.161150987,
+    "gross_bp": 55.39637058261684,
+    "net_bp": 39.59637058261684,
+    "net_usd": 2.0952861032405314,
+    "author": "target",
+    "hold_s": 176
+   },
+   {
+    "run_id": "1712",
+    "symbol": "CRVUSDT",
+    "side": "short",
+    "notional": 528.5354441775951,
+    "gross_bp": 35.98200899550328,
+    "net_bp": 20.182008995503278,
+    "net_usd": 1.0666907088834545,
+    "author": "target",
+    "hold_s": 1298
+   },
+   {
+    "run_id": "1721",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 485.93149814847,
+    "gross_bp": 30.243095888404177,
+    "net_bp": 14.443095888404176,
+    "net_usd": 0.7018355222954248,
+    "author": "target",
+    "hold_s": 207
+   },
+   {
+    "run_id": "1748",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 242.09544423479997,
+    "gross_bp": -107.58285615131057,
+    "net_bp": -123.38285615131056,
+    "net_usd": -2.987042737090995,
+    "author": "stop",
+    "hold_s": 1734
+   },
+   {
+    "run_id": "1784",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 124.2822867504,
+    "gross_bp": 12.963701635420367,
+    "net_bp": -2.836298364579633,
+    "net_usd": -0.03525016466563766,
+    "author": "ratchet",
+    "hold_s": 710
+   },
+   {
+    "run_id": "1780",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 96.61750005603999,
+    "gross_bp": 9.453420419388975,
+    "net_bp": -6.346579580611026,
+    "net_usd": -0.06131906529853481,
+    "author": "ratchet",
+    "hold_s": 171
+   },
+   {
+    "run_id": "1785",
+    "symbol": "INJUSDT",
+    "side": "long",
+    "notional": 145.7774999772,
+    "gross_bp": -116.39676113360316,
+    "net_bp": -132.19676113360316,
+    "net_usd": -1.9271313343139747,
+    "author": "stop",
+    "hold_s": 2047
+   },
+   {
+    "run_id": "1781",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 65.72750003946001,
+    "gross_bp": 30.407807940360286,
+    "net_bp": 14.607807940360287,
+    "net_usd": 0.0960134696976455,
+    "author": "target",
+    "hold_s": 307
+   },
+   {
+    "run_id": "1783",
+    "symbol": "LITUSDT",
+    "side": "long",
+    "notional": 57.49430991098399,
+    "gross_bp": -109.21383375227609,
+    "net_bp": -125.01383375227608,
+    "net_usd": -0.7187584100913592,
+    "author": "stop",
+    "hold_s": 1131
+   },
+   {
+    "run_id": "1787",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 124.24249999035,
+    "gross_bp": 11.113883281544435,
+    "net_bp": -4.6861167184555645,
+    "net_usd": -0.058221485634749444,
+    "author": "ratchet",
+    "hold_s": 204
+   },
+   {
+    "run_id": "1790",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 52.343636146117994,
+    "gross_bp": 12.280536025154403,
+    "net_bp": -3.519463974845597,
+    "net_usd": -0.01842215417286881,
+    "author": "ratchet",
+    "hold_s": 6374
+   },
+   {
+    "run_id": "1789",
+    "symbol": "VIRTUALUSDT",
+    "side": "short",
+    "notional": 65.4599211936098,
+    "gross_bp": 16.301994447132476,
+    "net_bp": 0.5019944471324769,
+    "net_usd": 0.0032860516948921654,
+    "author": "ratchet",
+    "hold_s": 170
+   },
+   {
+    "run_id": "1793",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 52.316889399400004,
+    "gross_bp": 33.64271909522619,
+    "net_bp": 17.842719095226194,
+    "net_usd": 0.09334755614895113,
+    "author": "target",
+    "hold_s": 1218
+   },
+   {
+    "run_id": "1794",
+    "symbol": "SUIUSDT",
+    "side": "long",
+    "notional": 96.52090082344081,
+    "gross_bp": -116.51115213811704,
+    "net_bp": -132.31115213811705,
+    "net_usd": -1.2770791593358384,
+    "author": "stop",
+    "hold_s": 5531
+   },
+   {
+    "run_id": "1795",
+    "symbol": "VIRTUALUSDT",
+    "side": "long",
+    "notional": 52.2485670727972,
+    "gross_bp": -117.14807670196879,
+    "net_bp": -132.9480767019688,
+    "net_usd": -0.6946346502762203,
+    "author": "stop",
+    "hold_s": 1481
+   },
+   {
+    "run_id": "1797",
+    "symbol": "ENAUSDT",
+    "side": "short",
+    "notional": 52.420598546533796,
+    "gross_bp": 39.760091650381234,
+    "net_bp": 23.96009165038124,
+    "net_usd": 0.12560023455427913,
+    "author": "target",
+    "hold_s": 127
+   },
+   {
+    "run_id": "1796",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 65.61785784213,
+    "gross_bp": 7.996723293870594,
+    "net_bp": -7.803276706129407,
+    "net_usd": -0.05120343016056038,
+    "author": "ratchet",
+    "hold_s": 340
+   },
+   {
+    "run_id": "1805",
+    "symbol": "ETHUSDT",
+    "side": "long",
+    "notional": 124.09680159,
+    "gross_bp": 15.666856075978862,
+    "net_bp": -0.1331439240211379,
+    "net_usd": -0.0016522735122165182,
+    "author": "ratchet",
+    "hold_s": 423
+   },
+   {
+    "run_id": "1801",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 57.525024024000004,
+    "gross_bp": 33.48752047797982,
+    "net_bp": 17.68752047797982,
+    "net_usd": 0.10174750404207812,
+    "author": "target",
+    "hold_s": 110
+   },
+   {
+    "run_id": "1810",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 96.61888119310001,
+    "gross_bp": 30.462079716259247,
+    "net_bp": 14.662079716259246,
+    "net_usd": 0.14166337381490135,
+    "author": "target",
+    "hold_s": 86
+   },
+   {
+    "run_id": "1813",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 65.57166793715999,
+    "gross_bp": -105.42689249913575,
+    "net_bp": -121.22689249913574,
+    "net_usd": -0.794904954000712,
+    "author": "stop",
+    "hold_s": 4245
+   },
+   {
+    "run_id": "1817",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 57.52246711193,
+    "gross_bp": -113.22218705652887,
+    "net_bp": -129.02218705652888,
+    "net_usd": -0.7421674511668462,
+    "author": "stop",
+    "hold_s": 2763
+   },
+   {
+    "run_id": "1819",
+    "symbol": "WIFUSDT",
+    "side": "long",
+    "notional": 128.6933495253881,
+    "gross_bp": 35.657071985945116,
+    "net_bp": 19.857071985945122,
+    "net_usd": 0.2555473105638028,
+    "author": "target",
+    "hold_s": 382
+   },
+   {
+    "run_id": "1821",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 51.89250000825,
+    "gross_bp": 33.67003367003295,
+    "net_bp": 17.870033670032953,
+    "net_usd": 0.09273207223696128,
+    "author": "target",
+    "hold_s": 683
+   },
+   {
+    "run_id": "1824",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 96.61750000045551,
+    "gross_bp": 6.296788637795585,
+    "net_bp": -9.503211362204416,
+    "net_usd": -0.0918176523792114,
+    "author": "ratchet",
+    "hold_s": 375
+   },
+   {
+    "run_id": "1820",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 128.62249999783728,
+    "gross_bp": 10.963898392401854,
+    "net_bp": -4.836101607598147,
+    "net_usd": -0.06220314790128336,
+    "author": "ratchet",
+    "hold_s": 129
+   },
+   {
+    "run_id": "1825",
+    "symbol": "AVAXUSDT",
+    "side": "long",
+    "notional": 96.617499965766,
+    "gross_bp": 3.008012250813807,
+    "net_bp": -12.791987749186193,
+    "net_usd": -0.12359298759190762,
+    "author": "ratchet",
+    "hold_s": 241
+   }
+  ],
+  "D 0.5/no-TP": [
+   {
+    "run_id": "1083",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455996622,
+    "gross_bp": -65.86042615569947,
+    "net_bp": -81.66042615569947,
+    "net_usd": -4.731862362262808,
+    "author": "stop",
+    "hold_s": 4542
+   },
+   {
+    "run_id": "1086",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 314.9999982792,
+    "gross_bp": -77.00543567781274,
+    "net_bp": -92.80543567781274,
+    "net_usd": -2.9233712078811416,
+    "author": "stop",
+    "hold_s": 333
+   },
+   {
+    "run_id": "1099",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 995.2199998028999,
+    "gross_bp": 37.254979397863046,
+    "net_bp": 21.45497939786305,
+    "net_usd": 2.1352424592112484,
+    "author": "ratchet",
+    "hold_s": 3621
+   },
+   {
+    "run_id": "1104",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 1020.5645999991544,
+    "gross_bp": -216.62828910598986,
+    "net_bp": -232.42828910598988,
+    "net_usd": -23.72080838999424,
+    "author": "stop",
+    "hold_s": 84
+   },
+   {
+    "run_id": "1107",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455992242,
+    "gross_bp": 8.35728734163705,
+    "net_bp": -7.442712658362949,
+    "net_usd": -0.43127244484237964,
+    "author": "ratchet",
+    "hold_s": 7574
+   },
+   {
+    "run_id": "1148",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 933.2400002634001,
+    "gross_bp": -50.48664966429048,
+    "net_bp": -66.28664966429048,
+    "net_usd": -6.1861352950162365,
+    "author": "stop",
+    "hold_s": 4652
+   },
+   {
+    "run_id": "1175",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 629.99999997858,
+    "gross_bp": 22.24533045504165,
+    "net_bp": 6.44533045504165,
+    "net_usd": 0.40605581865381807,
+    "author": "ratchet",
+    "hold_s": 405
+   },
+   {
+    "run_id": "1894",
+    "symbol": "AAVEUSDT",
+    "side": "short",
+    "notional": 19.971571167,
+    "gross_bp": 14.234875444840396,
+    "net_bp": -1.5651245551596038,
+    "net_usd": -0.0031257996438589244,
+    "author": "ratchet",
+    "hold_s": 527
+   },
+   {
+    "run_id": "1895",
+    "symbol": "WLDUSDT",
+    "side": "short",
+    "notional": 10.000756621068799,
+    "gross_bp": 99.10977731823543,
+    "net_bp": 83.30977731823542,
+    "net_usd": 0.08331608071151102,
+    "author": "ratchet",
+    "hold_s": 4861
+   },
+   {
+    "run_id": "2001",
+    "symbol": "TAOUSDT",
+    "side": "long",
+    "notional": 223.0882269233,
+    "gross_bp": 43.788709613790886,
+    "net_bp": 27.988709613790885,
+    "net_usd": 0.6243951601611729,
+    "author": "ratchet",
+    "hold_s": 779
+   },
+   {
+    "run_id": "2019",
+    "symbol": "LITUSDT",
+    "side": "short",
+    "notional": 33.584330601591994,
+    "gross_bp": -69.05468543387,
+    "net_bp": -84.85468543387,
+    "net_usd": -0.28497878087051826,
+    "author": "stop",
+    "hold_s": 981
+   },
+   {
+    "run_id": "2208",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 297.0129418515,
+    "gross_bp": 10.602297648613977,
+    "net_bp": -5.197702351386023,
+    "net_usd": -0.15437848662536216,
+    "author": "ratchet",
+    "hold_s": 1300
+   },
+   {
+    "run_id": "2235",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 167.74357819419,
+    "gross_bp": 20.177208527063506,
+    "net_bp": 4.377208527063506,
+    "net_usd": 0.07342486208317524,
+    "author": "ratchet",
+    "hold_s": 4437
+   },
+   {
+    "run_id": "2251",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 100.66403435566001,
+    "gross_bp": 8.803591865480929,
+    "net_bp": -6.996408134519071,
+    "net_usd": -0.0704286668819447,
+    "author": "ratchet",
+    "hold_s": 1381
+   },
+   {
+    "run_id": "2259",
+    "symbol": "TAOUSDT",
+    "side": "short",
+    "notional": 90.2621521768,
+    "gross_bp": 16.199164464149707,
+    "net_bp": 0.3991644641497083,
+    "net_usd": 0.00360294436066518,
+    "author": "ratchet",
+    "hold_s": 560
+   },
+   {
+    "run_id": "1293",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 20.00000000276,
+    "gross_bp": -52.259452812787906,
+    "net_bp": -68.0594528127879,
+    "net_usd": -0.13611890564436022,
+    "author": "stop",
+    "hold_s": 6171
+   },
+   {
+    "run_id": "1286",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 34.46999999913,
+    "gross_bp": 21.62941600576866,
+    "net_bp": 5.829416005768662,
+    "net_usd": 0.020093996971377422,
+    "author": "ratchet",
+    "hold_s": 1162
+   },
+   {
+    "run_id": "1297",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 26.272000166399998,
+    "gross_bp": 11.322463768115298,
+    "net_bp": -4.477536231884701,
+    "net_usd": -0.011763383262913691,
+    "author": "ratchet",
+    "hold_s": 21936
+   },
+   {
+    "run_id": "1302",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 51.058004131000004,
+    "gross_bp": 13.323424810234041,
+    "net_bp": -2.4765751897659594,
+    "net_usd": -0.012644898626980247,
+    "author": "ratchet",
+    "hold_s": 31052
+   },
+   {
+    "run_id": "1296",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 19.9999999968,
+    "gross_bp": 11.73708920187827,
+    "net_bp": -4.062910798121729,
+    "net_usd": -0.008125821594943327,
+    "author": "ratchet",
+    "hold_s": 1778
+   },
+   {
+    "run_id": "1303",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 20.000000002653,
+    "gross_bp": 38.0162433039568,
+    "net_bp": 22.216243303956798,
+    "net_usd": 0.04443248661380756,
+    "author": "trail",
+    "hold_s": 586
+   },
+   {
+    "run_id": "1304",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 25.250000001577998,
+    "gross_bp": 13.778849466069978,
+    "net_bp": -2.0211505339300215,
+    "net_usd": -0.005103405098492241,
+    "author": "ratchet",
+    "hold_s": 331
+   },
+   {
+    "run_id": "1305",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 208.90799999688002,
+    "gross_bp": 133.9155749636113,
+    "net_bp": 118.1155749636113,
+    "net_usd": 2.467528853412959,
+    "author": "trail",
+    "hold_s": 4392
+   },
+   {
+    "run_id": "1306",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 47.210000003307,
+    "gross_bp": 19.210876311511274,
+    "net_bp": 3.4108763115112737,
+    "net_usd": 0.0161027470677727,
+    "author": "ratchet",
+    "hold_s": 4545
+   },
+   {
+    "run_id": "1308",
+    "symbol": "DOTUSDT",
+    "side": "short",
+    "notional": 67.454999997231,
+    "gross_bp": 13.190871916633702,
+    "net_bp": -2.6091280833662993,
+    "net_usd": -0.017599873485624903,
+    "author": "ratchet",
+    "hold_s": 1504
+   },
+   {
+    "run_id": "1322",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 104.454000001935,
+    "gross_bp": 10.274475267870747,
+    "net_bp": -5.525524732129254,
+    "net_usd": -0.0577163160380521,
+    "author": "ratchet",
+    "hold_s": 575
+   },
+   {
+    "run_id": "1329",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 187.55700000611003,
+    "gross_bp": 21.023125437982575,
+    "net_bp": 5.223125437982575,
+    "net_usd": 0.09796337378036113,
+    "author": "ratchet",
+    "hold_s": 2486
+   },
+   {
+    "run_id": "1335",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 49.7589999831,
+    "gross_bp": 7.880220646177926,
+    "net_bp": -7.919779353822075,
+    "net_usd": -0.039408030073298836,
+    "author": "ratchet",
+    "hold_s": 3339
+   },
+   {
+    "run_id": "1344",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 386.80999999796,
+    "gross_bp": -50.107372942017854,
+    "net_bp": -65.90737294201786,
+    "net_usd": -2.5493630927567477,
+    "author": "stop",
+    "hold_s": 4840
+   },
+   {
+    "run_id": "1358",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 28.023999999263996,
+    "gross_bp": 11.9976004799027,
+    "net_bp": -3.8023995200973006,
+    "net_usd": -0.010655844414840817,
+    "author": "ratchet",
+    "hold_s": 4113
+   },
+   {
+    "run_id": "1356",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 65.411200003368,
+    "gross_bp": 16.281823564239048,
+    "net_bp": 0.48182356423904626,
+    "net_usd": 0.0031516657526775883,
+    "author": "ratchet",
+    "hold_s": 4277
+   },
+   {
+    "run_id": "1367",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 52.179000240600004,
+    "gross_bp": 9.270295325123477,
+    "net_bp": -6.529704674876522,
+    "net_usd": -0.0340713461801429,
+    "author": "ratchet",
+    "hold_s": 1931
+   },
+   {
+    "run_id": "1370",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 47.2100000037,
+    "gross_bp": -58.77680698967422,
+    "net_bp": -74.57680698967421,
+    "net_usd": -0.3520771058258454,
+    "author": "stop",
+    "hold_s": 5155
+   },
+   {
+    "run_id": "1392",
+    "symbol": "ZECUSDT",
+    "side": "long",
+    "notional": 473.86979975160006,
+    "gross_bp": 11.85133376075875,
+    "net_bp": -3.9486662392412506,
+    "net_usd": -0.1871153680075155,
+    "author": "ratchet",
+    "hold_s": 1301
+   },
+   {
+    "run_id": "1411",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 28.024000005359998,
+    "gross_bp": -50.84207181442648,
+    "net_bp": -66.64207181442649,
+    "net_usd": -0.1867577420884689,
+    "author": "stop",
+    "hold_s": 288
+   },
+   {
+    "run_id": "1417",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 126.23499999726002,
+    "gross_bp": -52.566481137909065,
+    "net_bp": -68.36648113790906,
+    "net_usd": -0.8630242746256628,
+    "author": "stop",
+    "hold_s": 6304
+   },
+   {
+    "run_id": "1462",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 49.68600000001201,
+    "gross_bp": 34.863451481696075,
+    "net_bp": 19.063451481696074,
+    "net_usd": 0.094718665031978,
+    "author": "ratchet",
+    "hold_s": 1048
+   },
+   {
+    "run_id": "1479",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 224.8950000032,
+    "gross_bp": 13.803680981595274,
+    "net_bp": -1.9963190184047255,
+    "net_usd": -0.0448962165650519,
+    "author": "ratchet",
+    "hold_s": 1865
+   },
+   {
+    "run_id": "1489",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 10.00000000674,
+    "gross_bp": 9.107468123861912,
+    "net_bp": -6.692531876138089,
+    "net_usd": -0.006692531880648856,
+    "author": "ratchet",
+    "hold_s": 164
+   },
+   {
+    "run_id": "1531",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 244.094999997456,
+    "gross_bp": -232.3791935980302,
+    "net_bp": -248.17919359803022,
+    "net_usd": -6.057930026067981,
+    "author": "stop",
+    "hold_s": 91
+   },
+   {
+    "run_id": "1556",
+    "symbol": "LTCUSDT",
+    "side": "long",
+    "notional": 350.42499999564,
+    "gross_bp": 14.050325712096587,
+    "net_bp": -1.749674287903414,
+    "net_usd": -0.061312961233092524,
+    "author": "ratchet",
+    "hold_s": 310
+   },
+   {
+    "run_id": "1710",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 529.161150987,
+    "gross_bp": 30.563514804203187,
+    "net_bp": 14.763514804203187,
+    "net_usd": 0.7812278486405773,
+    "author": "ratchet",
+    "hold_s": 356
+   },
+   {
+    "run_id": "1712",
+    "symbol": "CRVUSDT",
+    "side": "short",
+    "notional": 528.5354441775951,
+    "gross_bp": -59.9700149925038,
+    "net_bp": -75.7700149925038,
+    "net_usd": -4.004713852940603,
+    "author": "stop",
+    "hold_s": 878
+   },
+   {
+    "run_id": "1721",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 485.93149814847,
+    "gross_bp": 21.871304639019158,
+    "net_bp": 6.071304639019158,
+    "net_usd": 0.2950238158954335,
+    "author": "ratchet",
+    "hold_s": 447
+   },
+   {
+    "run_id": "1748",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 242.09544423479997,
+    "gross_bp": -59.86465382613295,
+    "net_bp": -75.66465382613295,
+    "net_usd": -1.8318067980910013,
+    "author": "stop",
+    "hold_s": 654
+   },
+   {
+    "run_id": "1784",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 124.2822867504,
+    "gross_bp": 12.963701635420367,
+    "net_bp": -2.836298364579633,
+    "net_usd": -0.03525016466563766,
+    "author": "ratchet",
+    "hold_s": 710
+   },
+   {
+    "run_id": "1780",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 96.61750005603999,
+    "gross_bp": 9.453420419388975,
+    "net_bp": -6.346579580611026,
+    "net_usd": -0.06131906529853481,
+    "author": "ratchet",
+    "hold_s": 171
+   },
+   {
+    "run_id": "1785",
+    "symbol": "INJUSDT",
+    "side": "long",
+    "notional": 145.7774999772,
+    "gross_bp": -55.668016194332594,
+    "net_bp": -71.46801619433259,
+    "net_usd": -1.0418428729139848,
+    "author": "stop",
+    "hold_s": 667
+   },
+   {
+    "run_id": "1781",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 65.72750003946001,
+    "gross_bp": 10.054194560925186,
+    "net_bp": -5.745805439074815,
+    "net_usd": -0.03776574272235194,
+    "author": "ratchet",
+    "hold_s": 487
+   },
+   {
+    "run_id": "1783",
+    "symbol": "LITUSDT",
+    "side": "long",
+    "notional": 57.49430991098399,
+    "gross_bp": -62.11897951518325,
+    "net_bp": -77.91897951518325,
+    "net_usd": -0.4479897956193559,
+    "author": "stop",
+    "hold_s": 1011
+   },
+   {
+    "run_id": "1787",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 124.24249999035,
+    "gross_bp": 11.113883281544435,
+    "net_bp": -4.6861167184555645,
+    "net_usd": -0.058221485634749444,
+    "author": "ratchet",
+    "hold_s": 204
+   },
+   {
+    "run_id": "1790",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 52.343636146117994,
+    "gross_bp": -59.243465000472405,
+    "net_bp": -75.0434650004724,
+    "net_usd": -0.3928047827128668,
+    "author": "stop",
+    "hold_s": 2234
+   },
+   {
+    "run_id": "1789",
+    "symbol": "VIRTUALUSDT",
+    "side": "short",
+    "notional": 65.4599211936098,
+    "gross_bp": 16.301994447132476,
+    "net_bp": 0.5019944471324769,
+    "net_usd": 0.0032860516948921654,
+    "author": "ratchet",
+    "hold_s": 170
+   },
+   {
+    "run_id": "1793",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 52.316889399400004,
+    "gross_bp": 30.779508959462202,
+    "net_bp": 14.979508959462203,
+    "net_usd": 0.07836813134895056,
+    "author": "ratchet",
+    "hold_s": 1458
+   },
+   {
+    "run_id": "1794",
+    "symbol": "SUIUSDT",
+    "side": "long",
+    "notional": 96.52090082344081,
+    "gross_bp": -66.61344244299201,
+    "net_bp": -82.41344244299202,
+    "net_usd": -0.795461970455838,
+    "author": "stop",
+    "hold_s": 1331
+   },
+   {
+    "run_id": "1795",
+    "symbol": "VIRTUALUSDT",
+    "side": "long",
+    "notional": 52.2485670727972,
+    "gross_bp": -74.99009926287327,
+    "net_bp": -90.79009926287327,
+    "net_usd": -0.474365259088215,
+    "author": "stop",
+    "hold_s": 341
+   },
+   {
+    "run_id": "1797",
+    "symbol": "ENAUSDT",
+    "side": "short",
+    "notional": 52.420598546533796,
+    "gross_bp": 21.564795471392074,
+    "net_bp": 5.764795471392074,
+    "net_usd": 0.030219402910871995,
+    "author": "ratchet",
+    "hold_s": 187
+   },
+   {
+    "run_id": "1796",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 65.61785784213,
+    "gross_bp": 7.996723293870594,
+    "net_bp": -7.803276706129407,
+    "net_usd": -0.05120343016056038,
+    "author": "ratchet",
+    "hold_s": 340
+   },
+   {
+    "run_id": "1805",
+    "symbol": "ETHUSDT",
+    "side": "long",
+    "notional": 124.09680159,
+    "gross_bp": 15.666856075978862,
+    "net_bp": -0.1331439240211379,
+    "net_usd": -0.0016522735122165182,
+    "author": "ratchet",
+    "hold_s": 423
+   },
+   {
+    "run_id": "1801",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 57.525024024000004,
+    "gross_bp": 156.71677748867677,
+    "net_bp": 140.9167774886768,
+    "net_usd": 0.8106241010420795,
+    "author": "ratchet",
+    "hold_s": 4850
+   },
+   {
+    "run_id": "1810",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 96.61888119310001,
+    "gross_bp": 20.451067602935566,
+    "net_bp": 4.651067602935565,
+    "net_usd": 0.044938094814910776,
+    "author": "ratchet",
+    "hold_s": 506
+   },
+   {
+    "run_id": "1813",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 65.57166793715999,
+    "gross_bp": -50.120981679916895,
+    "net_bp": -65.92098167991689,
+    "net_usd": -0.4322548720807117,
+    "author": "stop",
+    "hold_s": 3165
+   },
+   {
+    "run_id": "1817",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 57.52246711193,
+    "gross_bp": -60.13333469458582,
+    "net_bp": -75.93333469458582,
+    "net_usd": -0.4367872747668486,
+    "author": "stop",
+    "hold_s": 2283
+   },
+   {
+    "run_id": "1819",
+    "symbol": "WIFUSDT",
+    "side": "long",
+    "notional": 128.6933495253881,
+    "gross_bp": -78.03214304170243,
+    "net_bp": -93.83214304170244,
+    "net_usd": -1.2075572781182025,
+    "author": "stop",
+    "hold_s": 502
+   },
+   {
+    "run_id": "1821",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 51.89250000825,
+    "gross_bp": 11.22334455667765,
+    "net_bp": -4.57665544332235,
+    "net_usd": -0.023749409263036248,
+    "author": "ratchet",
+    "hold_s": 1103
+   },
+   {
+    "run_id": "1824",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 96.61750000045551,
+    "gross_bp": 6.296788637795585,
+    "net_bp": -9.503211362204416,
+    "net_usd": -0.0918176523792114,
+    "author": "ratchet",
+    "hold_s": 375
+   },
+   {
+    "run_id": "1820",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 128.62249999783728,
+    "gross_bp": 10.963898392401854,
+    "net_bp": -4.836101607598147,
+    "net_usd": -0.06220314790128336,
+    "author": "ratchet",
+    "hold_s": 129
+   },
+   {
+    "run_id": "1825",
+    "symbol": "AVAXUSDT",
+    "side": "long",
+    "notional": 96.617499965766,
+    "gross_bp": 3.008012250813807,
+    "net_bp": -12.791987749186193,
+    "net_usd": -0.12359298759190762,
+    "author": "ratchet",
+    "hold_s": 241
+   }
+  ],
+  "E control authored": [
+   {
+    "run_id": "1083",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455996622,
+    "gross_bp": 10.41830270666462,
+    "net_bp": -5.38169729333538,
+    "net_usd": -0.31184567686275727,
+    "author": "ratchet",
+    "hold_s": 5622
+   },
+   {
+    "run_id": "1086",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 314.9999982792,
+    "gross_bp": 14.206885191895852,
+    "net_bp": -1.593114808104148,
+    "net_usd": -0.05018311618113746,
+    "author": "ratchet",
+    "hold_s": 15153
+   },
+   {
+    "run_id": "1099",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 995.2199998028999,
+    "gross_bp": 37.254979397863046,
+    "net_bp": 21.45497939786305,
+    "net_usd": 2.1352424592112484,
+    "author": "ratchet",
+    "hold_s": 3621
+   },
+   {
+    "run_id": "1104",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 1020.5645999991544,
+    "gross_bp": -216.62828910598986,
+    "net_bp": -232.42828910598988,
+    "net_usd": -23.72080838999424,
+    "author": "stop",
+    "hold_s": 84
+   },
+   {
+    "run_id": "1107",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455992242,
+    "gross_bp": 8.35728734163705,
+    "net_bp": -7.442712658362949,
+    "net_usd": -0.43127244484237964,
+    "author": "ratchet",
+    "hold_s": 7574
+   },
+   {
+    "run_id": "1148",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 933.2400002634001,
+    "gross_bp": 38.515588403684,
+    "net_bp": 22.715588403684,
+    "net_usd": 2.1199095727837345,
+    "author": "ratchet",
+    "hold_s": 13532
+   },
+   {
+    "run_id": "1175",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 629.99999997858,
+    "gross_bp": 22.24533045504165,
+    "net_bp": 6.44533045504165,
+    "net_usd": 0.40605581865381807,
+    "author": "ratchet",
+    "hold_s": 405
+   },
+   {
+    "run_id": "1894",
+    "symbol": "AAVEUSDT",
+    "side": "short",
+    "notional": 19.971571167,
+    "gross_bp": 14.234875444840396,
+    "net_bp": -1.5651245551596038,
+    "net_usd": -0.0031257996438589244,
+    "author": "ratchet",
+    "hold_s": 527
+   },
+   {
+    "run_id": "1895",
+    "symbol": "WLDUSDT",
+    "side": "short",
+    "notional": 10.000756621068799,
+    "gross_bp": 99.10977731823543,
+    "net_bp": 83.30977731823542,
+    "net_usd": 0.08331608071151102,
+    "author": "ratchet",
+    "hold_s": 4861
+   },
+   {
+    "run_id": "2001",
+    "symbol": "TAOUSDT",
+    "side": "long",
+    "notional": 223.0882269233,
+    "gross_bp": 43.788709613790886,
+    "net_bp": 27.988709613790885,
+    "net_usd": 0.6243951601611729,
+    "author": "ratchet",
+    "hold_s": 779
+   },
+   {
+    "run_id": "2019",
+    "symbol": "LITUSDT",
+    "side": "short",
+    "notional": 33.584330601591994,
+    "gross_bp": -153.6834063060158,
+    "net_bp": -169.4834063060158,
+    "net_usd": -0.5691986748865177,
+    "author": "stop",
+    "hold_s": 1881
+   },
+   {
+    "run_id": "2208",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 297.0129418515,
+    "gross_bp": 10.602297648613977,
+    "net_bp": -5.197702351386023,
+    "net_usd": -0.15437848662536216,
+    "author": "ratchet",
+    "hold_s": 1300
+   },
+   {
+    "run_id": "2235",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 167.74357819419,
+    "gross_bp": 20.177208527063506,
+    "net_bp": 4.377208527063506,
+    "net_usd": 0.07342486208317524,
+    "author": "ratchet",
+    "hold_s": 4437
+   },
+   {
+    "run_id": "2251",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 100.66403435566001,
+    "gross_bp": 8.803591865480929,
+    "net_bp": -6.996408134519071,
+    "net_usd": -0.0704286668819447,
+    "author": "ratchet",
+    "hold_s": 1381
+   },
+   {
+    "run_id": "2259",
+    "symbol": "TAOUSDT",
+    "side": "short",
+    "notional": 90.2621521768,
+    "gross_bp": 16.199164464149707,
+    "net_bp": 0.3991644641497083,
+    "net_usd": 0.00360294436066518,
+    "author": "ratchet",
+    "hold_s": 560
+   },
+   {
+    "run_id": "1293",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 20.00000000276,
+    "gross_bp": 18.444512757455357,
+    "net_bp": 2.644512757455355,
+    "net_usd": 0.005289025515640596,
+    "author": "ratchet",
+    "hold_s": 12891
+   },
+   {
+    "run_id": "1286",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 34.46999999913,
+    "gross_bp": 21.62941600576866,
+    "net_bp": 5.829416005768662,
+    "net_usd": 0.020093996971377422,
+    "author": "ratchet",
+    "hold_s": 1162
+   },
+   {
+    "run_id": "1297",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 26.272000166399998,
+    "gross_bp": 11.322463768115298,
+    "net_bp": -4.477536231884701,
+    "net_usd": -0.011763383262913691,
+    "author": "ratchet",
+    "hold_s": 21936
+   },
+   {
+    "run_id": "1302",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 51.058004131000004,
+    "gross_bp": 13.323424810234041,
+    "net_bp": -2.4765751897659594,
+    "net_usd": -0.012644898626980247,
+    "author": "ratchet",
+    "hold_s": 31052
+   },
+   {
+    "run_id": "1296",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 19.9999999968,
+    "gross_bp": 11.73708920187827,
+    "net_bp": -4.062910798121729,
+    "net_usd": -0.008125821594943327,
+    "author": "ratchet",
+    "hold_s": 1778
+   },
+   {
+    "run_id": "1303",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 20.000000002653,
+    "gross_bp": 38.0162433039568,
+    "net_bp": 22.216243303956798,
+    "net_usd": 0.04443248661380756,
+    "author": "trail",
+    "hold_s": 586
+   },
+   {
+    "run_id": "1304",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 25.250000001577998,
+    "gross_bp": 13.778849466069978,
+    "net_bp": -2.0211505339300215,
+    "net_usd": -0.005103405098492241,
+    "author": "ratchet",
+    "hold_s": 331
+   },
+   {
+    "run_id": "1305",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 208.90799999688002,
+    "gross_bp": 133.9155749636113,
+    "net_bp": 118.1155749636113,
+    "net_usd": 2.467528853412959,
+    "author": "trail",
+    "hold_s": 4392
+   },
+   {
+    "run_id": "1306",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 47.210000003307,
+    "gross_bp": 19.210876311511274,
+    "net_bp": 3.4108763115112737,
+    "net_usd": 0.0161027470677727,
+    "author": "ratchet",
+    "hold_s": 4545
+   },
+   {
+    "run_id": "1308",
+    "symbol": "DOTUSDT",
+    "side": "short",
+    "notional": 67.454999997231,
+    "gross_bp": 13.190871916633702,
+    "net_bp": -2.6091280833662993,
+    "net_usd": -0.017599873485624903,
+    "author": "ratchet",
+    "hold_s": 1504
+   },
+   {
+    "run_id": "1322",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 104.454000001935,
+    "gross_bp": 10.274475267870747,
+    "net_bp": -5.525524732129254,
+    "net_usd": -0.0577163160380521,
+    "author": "ratchet",
+    "hold_s": 575
+   },
+   {
+    "run_id": "1329",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 187.55700000611003,
+    "gross_bp": 21.023125437982575,
+    "net_bp": 5.223125437982575,
+    "net_usd": 0.09796337378036113,
+    "author": "ratchet",
+    "hold_s": 2486
+   },
+   {
+    "run_id": "1335",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 49.7589999831,
+    "gross_bp": 7.880220646177926,
+    "net_bp": -7.919779353822075,
+    "net_usd": -0.039408030073298836,
+    "author": "ratchet",
+    "hold_s": 3339
+   },
+   {
+    "run_id": "1344",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 386.80999999796,
+    "gross_bp": -64.42376521116604,
+    "net_bp": -80.22376521116604,
+    "net_usd": -3.103135462116748,
+    "author": "horizon",
+    "hold_s": 43025
+   },
+   {
+    "run_id": "1358",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 28.023999999263996,
+    "gross_bp": 11.9976004799027,
+    "net_bp": -3.8023995200973006,
+    "net_usd": -0.010655844414840817,
+    "author": "ratchet",
+    "hold_s": 4113
+   },
+   {
+    "run_id": "1356",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 65.411200003368,
+    "gross_bp": 16.281823564239048,
+    "net_bp": 0.48182356423904626,
+    "net_usd": 0.0031516657526775883,
+    "author": "ratchet",
+    "hold_s": 4277
+   },
+   {
+    "run_id": "1367",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 52.179000240600004,
+    "gross_bp": 9.270295325123477,
+    "net_bp": -6.529704674876522,
+    "net_usd": -0.0340713461801429,
+    "author": "ratchet",
+    "hold_s": 1931
+   },
+   {
+    "run_id": "1370",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 47.2100000037,
+    "gross_bp": -63.54249404289124,
+    "net_bp": -79.34249404289123,
+    "net_usd": -0.3745759144058463,
+    "author": "horizon",
+    "hold_s": 28553
+   },
+   {
+    "run_id": "1392",
+    "symbol": "ZECUSDT",
+    "side": "long",
+    "notional": 473.86979975160006,
+    "gross_bp": 11.85133376075875,
+    "net_bp": -3.9486662392412506,
+    "net_usd": -0.1871153680075155,
+    "author": "ratchet",
+    "hold_s": 1301
+   },
+   {
+    "run_id": "1411",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 28.024000005359998,
+    "gross_bp": -92.15125516364907,
+    "net_bp": -107.95125516364907,
+    "net_usd": -0.302522597528472,
+    "author": "horizon",
+    "hold_s": 77080
+   },
+   {
+    "run_id": "1417",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 126.23499999726002,
+    "gross_bp": -148.4230055658618,
+    "net_bp": -164.2230055658618,
+    "net_usd": -2.0730691107156596,
+    "author": "horizon",
+    "hold_s": 79205
+   },
+   {
+    "run_id": "1462",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 49.68600000001201,
+    "gross_bp": 34.863451481696075,
+    "net_bp": 19.063451481696074,
+    "net_usd": 0.094718665031978,
+    "author": "ratchet",
+    "hold_s": 1048
+   },
+   {
+    "run_id": "1479",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 224.8950000032,
+    "gross_bp": 13.803680981595274,
+    "net_bp": -1.9963190184047255,
+    "net_usd": -0.0448962165650519,
+    "author": "ratchet",
+    "hold_s": 1865
+   },
+   {
+    "run_id": "1489",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 10.00000000674,
+    "gross_bp": 9.107468123861912,
+    "net_bp": -6.692531876138089,
+    "net_usd": -0.006692531880648856,
+    "author": "ratchet",
+    "hold_s": 164
+   },
+   {
+    "run_id": "1531",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 244.094999997456,
+    "gross_bp": -521.6989843028613,
+    "net_bp": -537.4989843028613,
+    "net_usd": -13.120081457203954,
+    "author": "stop",
+    "hold_s": 20131
+   },
+   {
+    "run_id": "1556",
+    "symbol": "LTCUSDT",
+    "side": "long",
+    "notional": 350.42499999564,
+    "gross_bp": 14.050325712096587,
+    "net_bp": -1.749674287903414,
+    "net_usd": -0.061312961233092524,
+    "author": "ratchet",
+    "hold_s": 310
+   },
+   {
+    "run_id": "1710",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 529.161150987,
+    "gross_bp": 30.563514804203187,
+    "net_bp": 14.763514804203187,
+    "net_usd": 0.7812278486405773,
+    "author": "ratchet",
+    "hold_s": 356
+   },
+   {
+    "run_id": "1712",
+    "symbol": "CRVUSDT",
+    "side": "short",
+    "notional": 528.5354441775951,
+    "gross_bp": 38.98050974512813,
+    "net_bp": 23.180509745128138,
+    "net_usd": 1.225172101440437,
+    "author": "ratchet",
+    "hold_s": 1478
+   },
+   {
+    "run_id": "1721",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 485.93149814847,
+    "gross_bp": 21.871304639019158,
+    "net_bp": 6.071304639019158,
+    "net_usd": 0.2950238158954335,
+    "author": "ratchet",
+    "hold_s": 447
+   },
+   {
+    "run_id": "1748",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 242.09544423479997,
+    "gross_bp": -144.88981433281262,
+    "net_bp": -160.6898143328126,
+    "net_usd": -3.8902271984909795,
+    "author": "stop",
+    "hold_s": 1854
+   },
+   {
+    "run_id": "1784",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 124.2822867504,
+    "gross_bp": 12.963701635420367,
+    "net_bp": -2.836298364579633,
+    "net_usd": -0.03525016466563766,
+    "author": "ratchet",
+    "hold_s": 710
+   },
+   {
+    "run_id": "1780",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 96.61750005603999,
+    "gross_bp": 9.453420419388975,
+    "net_bp": -6.346579580611026,
+    "net_usd": -0.06131906529853481,
+    "author": "ratchet",
+    "hold_s": 171
+   },
+   {
+    "run_id": "1785",
+    "symbol": "INJUSDT",
+    "side": "long",
+    "notional": 145.7774999772,
+    "gross_bp": -254.72334682860964,
+    "net_bp": -270.52334682860965,
+    "net_usd": -3.9436217186139713,
+    "author": "stop",
+    "hold_s": 2767
+   },
+   {
+    "run_id": "1781",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 65.72750003946001,
+    "gross_bp": 10.054194560925186,
+    "net_bp": -5.745805439074815,
+    "net_usd": -0.03776574272235194,
+    "author": "ratchet",
+    "hold_s": 487
+   },
+   {
+    "run_id": "1783",
+    "symbol": "LITUSDT",
+    "side": "long",
+    "notional": 57.49430991098399,
+    "gross_bp": -0.8667764583519373,
+    "net_bp": -16.666776458351936,
+    "net_usd": -0.09582448109135785,
+    "author": "ratchet",
+    "hold_s": 12171
+   },
+   {
+    "run_id": "1787",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 124.24249999035,
+    "gross_bp": 11.113883281544435,
+    "net_bp": -4.6861167184555645,
+    "net_usd": -0.058221485634749444,
+    "author": "ratchet",
+    "hold_s": 204
+   },
+   {
+    "run_id": "1790",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 52.343636146117994,
+    "gross_bp": 12.280536025154403,
+    "net_bp": -3.519463974845597,
+    "net_usd": -0.01842215417286881,
+    "author": "ratchet",
+    "hold_s": 6374
+   },
+   {
+    "run_id": "1789",
+    "symbol": "VIRTUALUSDT",
+    "side": "short",
+    "notional": 65.4599211936098,
+    "gross_bp": 16.301994447132476,
+    "net_bp": 0.5019944471324769,
+    "net_usd": 0.0032860516948921654,
+    "author": "ratchet",
+    "hold_s": 170
+   },
+   {
+    "run_id": "1793",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 52.316889399400004,
+    "gross_bp": 30.779508959462202,
+    "net_bp": 14.979508959462203,
+    "net_usd": 0.07836813134895056,
+    "author": "ratchet",
+    "hold_s": 1458
+   },
+   {
+    "run_id": "1794",
+    "symbol": "SUIUSDT",
+    "side": "long",
+    "notional": 96.52090082344081,
+    "gross_bp": -163.9139763484861,
+    "net_bp": -179.7139763484861,
+    "net_usd": -1.7346154887718417,
+    "author": "stop",
+    "hold_s": 5891
+   },
+   {
+    "run_id": "1795",
+    "symbol": "VIRTUALUSDT",
+    "side": "long",
+    "notional": 52.2485670727972,
+    "gross_bp": -325.38293496173833,
+    "net_bp": -341.18293496173834,
+    "net_usd": -1.782631946144219,
+    "author": "stop",
+    "hold_s": 4841
+   },
+   {
+    "run_id": "1797",
+    "symbol": "ENAUSDT",
+    "side": "short",
+    "notional": 52.420598546533796,
+    "gross_bp": 21.564795471392074,
+    "net_bp": 5.764795471392074,
+    "net_usd": 0.030219402910871995,
+    "author": "ratchet",
+    "hold_s": 187
+   },
+   {
+    "run_id": "1796",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 65.61785784213,
+    "gross_bp": 7.996723293870594,
+    "net_bp": -7.803276706129407,
+    "net_usd": -0.05120343016056038,
+    "author": "ratchet",
+    "hold_s": 340
+   },
+   {
+    "run_id": "1805",
+    "symbol": "ETHUSDT",
+    "side": "long",
+    "notional": 124.09680159,
+    "gross_bp": 15.666856075978862,
+    "net_bp": -0.1331439240211379,
+    "net_usd": -0.0016522735122165182,
+    "author": "ratchet",
+    "hold_s": 423
+   },
+   {
+    "run_id": "1801",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 57.525024024000004,
+    "gross_bp": 156.71677748867677,
+    "net_bp": 140.9167774886768,
+    "net_usd": 0.8106241010420795,
+    "author": "ratchet",
+    "hold_s": 4850
+   },
+   {
+    "run_id": "1810",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 96.61888119310001,
+    "gross_bp": 20.451067602935566,
+    "net_bp": 4.651067602935565,
+    "net_usd": 0.044938094814910776,
+    "author": "ratchet",
+    "hold_s": 506
+   },
+   {
+    "run_id": "1813",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 65.57166793715999,
+    "gross_bp": -88.1437953681287,
+    "net_bp": -103.9437953681287,
+    "net_usd": -0.6815768034007044,
+    "author": "stop",
+    "hold_s": 3465
+   },
+   {
+    "run_id": "1817",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 57.52246711193,
+    "gross_bp": -99.94997396604347,
+    "net_bp": -115.74997396604347,
+    "net_usd": -0.6658224070668489,
+    "author": "stop",
+    "hold_s": 2403
+   },
+   {
+    "run_id": "1819",
+    "symbol": "WIFUSDT",
+    "side": "long",
+    "notional": 128.6933495253881,
+    "gross_bp": -78.03214304170243,
+    "net_bp": -93.83214304170244,
+    "net_usd": -1.2075572781182025,
+    "author": "ratchet",
+    "hold_s": 502
+   },
+   {
+    "run_id": "1821",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 51.89250000825,
+    "gross_bp": 11.22334455667765,
+    "net_bp": -4.57665544332235,
+    "net_usd": -0.023749409263036248,
+    "author": "ratchet",
+    "hold_s": 1103
+   },
+   {
+    "run_id": "1824",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 96.61750000045551,
+    "gross_bp": 6.296788637795585,
+    "net_bp": -9.503211362204416,
+    "net_usd": -0.0918176523792114,
+    "author": "ratchet",
+    "hold_s": 375
+   },
+   {
+    "run_id": "1820",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 128.62249999783728,
+    "gross_bp": 10.963898392401854,
+    "net_bp": -4.836101607598147,
+    "net_usd": -0.06220314790128336,
+    "author": "ratchet",
+    "hold_s": 129
+   },
+   {
+    "run_id": "1825",
+    "symbol": "AVAXUSDT",
+    "side": "long",
+    "notional": 96.617499965766,
+    "gross_bp": 3.008012250813807,
+    "net_bp": -12.791987749186193,
+    "net_usd": -0.12359298759190762,
+    "author": "ratchet",
+    "hold_s": 241
+   }
+  ],
+  "Z A, ratchet+trail off": [
+   {
+    "run_id": "1083",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455996622,
+    "gross_bp": -65.86042615569947,
+    "net_bp": -81.66042615569947,
+    "net_usd": -4.731862362262808,
+    "author": "stop",
+    "hold_s": 4542
+   },
+   {
+    "run_id": "1086",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 314.9999982792,
+    "gross_bp": -77.00543567781274,
+    "net_bp": -92.80543567781274,
+    "net_usd": -2.9233712078811416,
+    "author": "stop",
+    "hold_s": 333
+   },
+   {
+    "run_id": "1099",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 995.2199998028999,
+    "gross_bp": 41.20427050011035,
+    "net_bp": 25.40427050011035,
+    "net_usd": 2.5282838082112638,
+    "author": "target",
+    "hold_s": 2601
+   },
+   {
+    "run_id": "1104",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 1020.5645999991544,
+    "gross_bp": -216.62828910598986,
+    "net_bp": -232.42828910598988,
+    "net_usd": -23.72080838999424,
+    "author": "stop",
+    "hold_s": 84
+   },
+   {
+    "run_id": "1107",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 579.455992242,
+    "gross_bp": -51.580964548067996,
+    "net_bp": -67.380964548068,
+    "net_usd": -3.9044303670423766,
+    "author": "stop",
+    "hold_s": 15074
+   },
+   {
+    "run_id": "1148",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 933.2400002634001,
+    "gross_bp": -50.48664966429048,
+    "net_bp": -66.28664966429048,
+    "net_usd": -6.1861352950162365,
+    "author": "stop",
+    "hold_s": 4652
+   },
+   {
+    "run_id": "1175",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 629.99999997858,
+    "gross_bp": 38.04083136986501,
+    "net_bp": 22.24083136986501,
+    "net_usd": 1.401172376253856,
+    "author": "target",
+    "hold_s": 105
+   },
+   {
+    "run_id": "1894",
+    "symbol": "AAVEUSDT",
+    "side": "short",
+    "notional": 19.971571167,
+    "gross_bp": 37.16884143930398,
+    "net_bp": 21.368841439303985,
+    "net_usd": 0.042676933756139825,
+    "author": "target",
+    "hold_s": 887
+   },
+   {
+    "run_id": "1895",
+    "symbol": "WLDUSDT",
+    "side": "short",
+    "notional": 10.000756621068799,
+    "gross_bp": 36.062845181953115,
+    "net_bp": 20.26284518195311,
+    "net_usd": 0.02026437831151096,
+    "author": "target",
+    "hold_s": 1441
+   },
+   {
+    "run_id": "2001",
+    "symbol": "TAOUSDT",
+    "side": "long",
+    "notional": 223.0882269233,
+    "gross_bp": 35.8988520257208,
+    "net_bp": 20.098852025720802,
+    "net_usd": 0.448381726161183,
+    "author": "target",
+    "hold_s": 179
+   },
+   {
+    "run_id": "2019",
+    "symbol": "LITUSDT",
+    "side": "short",
+    "notional": 33.584330601591994,
+    "gross_bp": -69.05468543387,
+    "net_bp": -84.85468543387,
+    "net_usd": -0.28497878087051826,
+    "author": "stop",
+    "hold_s": 981
+   },
+   {
+    "run_id": "2208",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 297.0129418515,
+    "gross_bp": -57.659070773968125,
+    "net_bp": -73.45907077396812,
+    "net_usd": -2.181829471625382,
+    "author": "stop",
+    "hold_s": 8680
+   },
+   {
+    "run_id": "2235",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 167.74357819419,
+    "gross_bp": 30.70444775857388,
+    "net_bp": 14.904447758573882,
+    "net_usd": 0.2500125398031558,
+    "author": "target",
+    "hold_s": 3717
+   },
+   {
+    "run_id": "2251",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 100.66403435566001,
+    "gross_bp": 31.692930715731656,
+    "net_bp": 15.892930715731655,
+    "net_usd": 0.15998465235805354,
+    "author": "target",
+    "hold_s": 9241
+   },
+   {
+    "run_id": "2259",
+    "symbol": "TAOUSDT",
+    "side": "short",
+    "notional": 90.2621521768,
+    "gross_bp": -56.27078182283201,
+    "net_bp": -72.070781822832,
+    "net_usd": -0.6505263876393413,
+    "author": "stop",
+    "hold_s": 6020
+   },
+   {
+    "run_id": "1293",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 20.00000000276,
+    "gross_bp": -52.259452812787906,
+    "net_bp": -68.0594528127879,
+    "net_usd": -0.13611890564436022,
+    "author": "stop",
+    "hold_s": 6171
+   },
+   {
+    "run_id": "1286",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 34.46999999913,
+    "gross_bp": 33.16510454217691,
+    "net_bp": 17.365104542176912,
+    "net_usd": 0.05985751535537306,
+    "author": "target",
+    "hold_s": 322
+   },
+   {
+    "run_id": "1297",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 26.272000166399998,
+    "gross_bp": -52.08333333333424,
+    "net_bp": -67.88333333333424,
+    "net_usd": -0.17834309446291435,
+    "author": "stop",
+    "hold_s": 62256
+   },
+   {
+    "run_id": "1302",
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "notional": 51.058004131000004,
+    "gross_bp": 34.60905568236096,
+    "net_bp": 18.80905568236096,
+    "net_usd": 0.0960352842730195,
+    "author": "target",
+    "hold_s": 32492
+   },
+   {
+    "run_id": "1296",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 19.9999999968,
+    "gross_bp": 35.21126760563318,
+    "net_bp": 19.41126760563318,
+    "net_usd": 0.03882253520505476,
+    "author": "target",
+    "hold_s": 2138
+   },
+   {
+    "run_id": "1303",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 20.000000002653,
+    "gross_bp": 46.656298600311665,
+    "net_bp": 30.856298600311664,
+    "net_usd": 0.061712597208809505,
+    "author": "target",
+    "hold_s": 526
+   },
+   {
+    "run_id": "1304",
+    "symbol": "JTOUSDT",
+    "side": "long",
+    "notional": 25.250000001577998,
+    "gross_bp": 53.3930416810195,
+    "net_bp": 37.5930416810195,
+    "net_usd": 0.09492243025050641,
+    "author": "target",
+    "hold_s": 4051
+   },
+   {
+    "run_id": "1305",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 208.90799999688002,
+    "gross_bp": 43.66812227074239,
+    "net_bp": 27.868122270742393,
+    "net_usd": 0.5821873687249304,
+    "author": "target",
+    "hold_s": 2532
+   },
+   {
+    "run_id": "1306",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 47.210000003307,
+    "gross_bp": 31.03295404167269,
+    "net_bp": 15.23295404167269,
+    "net_usd": 0.0719147760357743,
+    "author": "target",
+    "hold_s": 6645
+   },
+   {
+    "run_id": "1308",
+    "symbol": "DOTUSDT",
+    "side": "short",
+    "notional": 67.454999997231,
+    "gross_bp": -50.12531328320836,
+    "net_bp": -65.92531328320835,
+    "net_usd": -0.44469920073362723,
+    "author": "stop",
+    "hold_s": 23164
+   },
+   {
+    "run_id": "1322",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 104.454000001935,
+    "gross_bp": 33.758990165858926,
+    "net_bp": 17.95899016585893,
+    "net_usd": 0.1875888358819379,
+    "author": "target",
+    "hold_s": 11255
+   },
+   {
+    "run_id": "1329",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 187.55700000611003,
+    "gross_bp": 35.03854239663711,
+    "net_bp": 19.23854239663711,
+    "net_usd": 0.36083232964036144,
+    "author": "target",
+    "hold_s": 1886
+   },
+   {
+    "run_id": "1335",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 49.7589999831,
+    "gross_bp": 31.520882584711703,
+    "net_bp": 15.7208825847117,
+    "net_usd": 0.07822553962669866,
+    "author": "target",
+    "hold_s": 5799
+   },
+   {
+    "run_id": "1344",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 386.80999999796,
+    "gross_bp": -50.107372942017854,
+    "net_bp": -65.90737294201786,
+    "net_usd": -2.5493630927567477,
+    "author": "stop",
+    "hold_s": 4840
+   },
+   {
+    "run_id": "1358",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 28.023999999263996,
+    "gross_bp": 31.493701259747912,
+    "net_bp": 15.693701259747913,
+    "net_usd": 0.043980028409162486,
+    "author": "target",
+    "hold_s": 5793
+   },
+   {
+    "run_id": "1356",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 65.411200003368,
+    "gross_bp": -51.80580224985285,
+    "net_bp": -67.60580224985286,
+    "net_usd": -0.4422176652353271,
+    "author": "stop",
+    "hold_s": 6197
+   },
+   {
+    "run_id": "1367",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 52.179000240600004,
+    "gross_bp": -62.24341146867949,
+    "net_bp": -78.04341146867948,
+    "net_usd": -0.4072227185801472,
+    "author": "stop",
+    "hold_s": 9491
+   },
+   {
+    "run_id": "1370",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 47.2100000037,
+    "gross_bp": -58.77680698967422,
+    "net_bp": -74.57680698967421,
+    "net_usd": -0.3520771058258454,
+    "author": "stop",
+    "hold_s": 5155
+   },
+   {
+    "run_id": "1392",
+    "symbol": "ZECUSDT",
+    "side": "long",
+    "notional": 473.86979975160006,
+    "gross_bp": -50.90244992325784,
+    "net_bp": -66.70244992325783,
+    "net_usd": -3.1608276588075324,
+    "author": "stop",
+    "hold_s": 2261
+   },
+   {
+    "run_id": "1411",
+    "symbol": "AVAXUSDT",
+    "side": "short",
+    "notional": 28.024000005359998,
+    "gross_bp": -50.84207181442648,
+    "net_bp": -66.64207181442649,
+    "net_usd": -0.1867577420884689,
+    "author": "stop",
+    "hold_s": 288
+   },
+   {
+    "run_id": "1417",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 126.23499999726002,
+    "gross_bp": -52.566481137909065,
+    "net_bp": -68.36648113790906,
+    "net_usd": -0.8630242746256628,
+    "author": "stop",
+    "hold_s": 6304
+   },
+   {
+    "run_id": "1462",
+    "symbol": "KAITOUSDT",
+    "side": "short",
+    "notional": 49.68600000001201,
+    "gross_bp": 49.38988959906971,
+    "net_bp": 33.58988959906971,
+    "net_usd": 0.1668947254619781,
+    "author": "target",
+    "hold_s": 568
+   },
+   {
+    "run_id": "1479",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 224.8950000032,
+    "gross_bp": 30.674846625766897,
+    "net_bp": 14.874846625766898,
+    "net_usd": 0.3345278631949446,
+    "author": "target",
+    "hold_s": 1985
+   },
+   {
+    "run_id": "1489",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 10.00000000674,
+    "gross_bp": 39.46569520339982,
+    "net_bp": 23.665695203399817,
+    "net_usd": 0.023665695219350497,
+    "author": "target",
+    "hold_s": 1364
+   },
+   {
+    "run_id": "1531",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 244.094999997456,
+    "gross_bp": -232.3791935980302,
+    "net_bp": -248.17919359803022,
+    "net_usd": -6.057930026067981,
+    "author": "stop",
+    "hold_s": 91
+   },
+   {
+    "run_id": "1556",
+    "symbol": "LTCUSDT",
+    "side": "long",
+    "notional": 350.42499999564,
+    "gross_bp": 31.081023544939924,
+    "net_bp": 15.281023544939925,
+    "net_usd": 0.5354852675668949,
+    "author": "target",
+    "hold_s": 370
+   },
+   {
+    "run_id": "1710",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 529.161150987,
+    "gross_bp": 55.39637058261684,
+    "net_bp": 39.59637058261684,
+    "net_usd": 2.0952861032405314,
+    "author": "target",
+    "hold_s": 176
+   },
+   {
+    "run_id": "1712",
+    "symbol": "CRVUSDT",
+    "side": "short",
+    "notional": 528.5354441775951,
+    "gross_bp": -59.9700149925038,
+    "net_bp": -75.7700149925038,
+    "net_usd": -4.004713852940603,
+    "author": "stop",
+    "hold_s": 878
+   },
+   {
+    "run_id": "1721",
+    "symbol": "SOLUSDT",
+    "side": "short",
+    "notional": 485.93149814847,
+    "gross_bp": 30.243095888404177,
+    "net_bp": 14.443095888404176,
+    "net_usd": 0.7018355222954248,
+    "author": "target",
+    "hold_s": 207
+   },
+   {
+    "run_id": "1748",
+    "symbol": "LINKUSDT",
+    "side": "short",
+    "notional": 242.09544423479997,
+    "gross_bp": -59.86465382613295,
+    "net_bp": -75.66465382613295,
+    "net_usd": -1.8318067980910013,
+    "author": "stop",
+    "hold_s": 654
+   },
+   {
+    "run_id": "1784",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 124.2822867504,
+    "gross_bp": -50.857598723574505,
+    "net_bp": -66.65759872357451,
+    "net_usd": -0.8284358798656384,
+    "author": "stop",
+    "hold_s": 2570
+   },
+   {
+    "run_id": "1780",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 96.61750005603999,
+    "gross_bp": 38.67308353386037,
+    "net_bp": 22.873083533860374,
+    "net_usd": 0.2209940149614562,
+    "author": "target",
+    "hold_s": 531
+   },
+   {
+    "run_id": "1785",
+    "symbol": "INJUSDT",
+    "side": "long",
+    "notional": 145.7774999772,
+    "gross_bp": -55.668016194332594,
+    "net_bp": -71.46801619433259,
+    "net_usd": -1.0418428729139848,
+    "author": "stop",
+    "hold_s": 667
+   },
+   {
+    "run_id": "1781",
+    "symbol": "HYPEUSDT",
+    "side": "long",
+    "notional": 65.72750003946001,
+    "gross_bp": 30.407807940360286,
+    "net_bp": 14.607807940360287,
+    "net_usd": 0.0960134696976455,
+    "author": "target",
+    "hold_s": 307
+   },
+   {
+    "run_id": "1783",
+    "symbol": "LITUSDT",
+    "side": "long",
+    "notional": 57.49430991098399,
+    "gross_bp": -62.11897951518325,
+    "net_bp": -77.91897951518325,
+    "net_usd": -0.4479897956193559,
+    "author": "stop",
+    "hold_s": 1011
+   },
+   {
+    "run_id": "1787",
+    "symbol": "UNIUSDT",
+    "side": "short",
+    "notional": 124.24249999035,
+    "gross_bp": 49.672253850167785,
+    "net_bp": 33.87225385016779,
+    "net_usd": 0.4208373498652604,
+    "author": "target",
+    "hold_s": 924
+   },
+   {
+    "run_id": "1790",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 52.343636146117994,
+    "gross_bp": -59.243465000472405,
+    "net_bp": -75.0434650004724,
+    "net_usd": -0.3928047827128668,
+    "author": "stop",
+    "hold_s": 2234
+   },
+   {
+    "run_id": "1789",
+    "symbol": "VIRTUALUSDT",
+    "side": "short",
+    "notional": 65.4599211936098,
+    "gross_bp": 31.58511424132094,
+    "net_bp": 15.785114241320942,
+    "net_usd": 0.10332923342689966,
+    "author": "target",
+    "hold_s": 2330
+   },
+   {
+    "run_id": "1793",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 52.316889399400004,
+    "gross_bp": 33.64271909522619,
+    "net_bp": 17.842719095226194,
+    "net_usd": 0.09334755614895113,
+    "author": "target",
+    "hold_s": 1218
+   },
+   {
+    "run_id": "1794",
+    "symbol": "SUIUSDT",
+    "side": "long",
+    "notional": 96.52090082344081,
+    "gross_bp": -66.61344244299201,
+    "net_bp": -82.41344244299202,
+    "net_usd": -0.795461970455838,
+    "author": "stop",
+    "hold_s": 1331
+   },
+   {
+    "run_id": "1795",
+    "symbol": "VIRTUALUSDT",
+    "side": "long",
+    "notional": 52.2485670727972,
+    "gross_bp": -74.99009926287327,
+    "net_bp": -90.79009926287327,
+    "net_usd": -0.474365259088215,
+    "author": "stop",
+    "hold_s": 341
+   },
+   {
+    "run_id": "1797",
+    "symbol": "ENAUSDT",
+    "side": "short",
+    "notional": 52.420598546533796,
+    "gross_bp": 39.760091650381234,
+    "net_bp": 23.96009165038124,
+    "net_usd": 0.12560023455427913,
+    "author": "target",
+    "hold_s": 127
+   },
+   {
+    "run_id": "1796",
+    "symbol": "LTCUSDT",
+    "side": "short",
+    "notional": 65.61785784213,
+    "gross_bp": 31.401767080806177,
+    "net_bp": 15.601767080806177,
+    "net_usd": 0.10237545343943631,
+    "author": "target",
+    "hold_s": 1960
+   },
+   {
+    "run_id": "1805",
+    "symbol": "ETHUSDT",
+    "side": "long",
+    "notional": 124.09680159,
+    "gross_bp": 31.45547528208458,
+    "net_bp": 15.65547528208458,
+    "net_usd": 0.19427944098779995,
+    "author": "target",
+    "hold_s": 1023
+   },
+   {
+    "run_id": "1801",
+    "symbol": "ZECUSDT",
+    "side": "short",
+    "notional": 57.525024024000004,
+    "gross_bp": 33.48752047797982,
+    "net_bp": 17.68752047797982,
+    "net_usd": 0.10174750404207812,
+    "author": "target",
+    "hold_s": 110
+   },
+   {
+    "run_id": "1810",
+    "symbol": "BNBUSDT",
+    "side": "short",
+    "notional": 96.61888119310001,
+    "gross_bp": 30.462079716259247,
+    "net_bp": 14.662079716259246,
+    "net_usd": 0.14166337381490135,
+    "author": "target",
+    "hold_s": 86
+   },
+   {
+    "run_id": "1813",
+    "symbol": "LINKUSDT",
+    "side": "long",
+    "notional": 65.57166793715999,
+    "gross_bp": -50.120981679916895,
+    "net_bp": -65.92098167991689,
+    "net_usd": -0.4322548720807117,
+    "author": "stop",
+    "hold_s": 3165
+   },
+   {
+    "run_id": "1817",
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "notional": 57.52246711193,
+    "gross_bp": -60.13333469458582,
+    "net_bp": -75.93333469458582,
+    "net_usd": -0.4367872747668486,
+    "author": "stop",
+    "hold_s": 2283
+   },
+   {
+    "run_id": "1819",
+    "symbol": "WIFUSDT",
+    "side": "long",
+    "notional": 128.6933495253881,
+    "gross_bp": 35.657071985945116,
+    "net_bp": 19.857071985945122,
+    "net_usd": 0.2555473105638028,
+    "author": "target",
+    "hold_s": 382
+   },
+   {
+    "run_id": "1821",
+    "symbol": "TRUMPUSDT",
+    "side": "short",
+    "notional": 51.89250000825,
+    "gross_bp": 33.67003367003295,
+    "net_bp": 17.870033670032953,
+    "net_usd": 0.09273207223696128,
+    "author": "target",
+    "hold_s": 683
+   },
+   {
+    "run_id": "1824",
+    "symbol": "FILUSDT",
+    "side": "short",
+    "notional": 96.61750000045551,
+    "gross_bp": 37.081088644791734,
+    "net_bp": 21.281088644791733,
+    "net_usd": 0.20561255821478588,
+    "author": "target",
+    "hold_s": 1395
+   },
+   {
+    "run_id": "1820",
+    "symbol": "SUIUSDT",
+    "side": "short",
+    "notional": 128.62249999783728,
+    "gross_bp": 30.778172595537075,
+    "net_bp": 14.978172595537076,
+    "net_usd": 0.1926530004637074,
+    "author": "target",
+    "hold_s": 669
+   },
+   {
+    "run_id": "1825",
+    "symbol": "AVAXUSDT",
+    "side": "long",
+    "notional": 96.617499965766,
+    "gross_bp": 31.720856463124655,
+    "net_bp": 15.920856463124656,
+    "net_usd": 0.1538233348780912,
+    "author": "target",
+    "hold_s": 1921
+   }
+  ]
+ }
+}

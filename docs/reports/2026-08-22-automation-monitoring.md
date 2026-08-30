@@ -2789,3 +2789,92 @@ live: `violations: 0, cash_violations: 0`. Decisions 92 hold / 4 retire
 
 Mode ①: flat book — merged and deployed per cadence (no code change this
 cycle; note-only merge).
+
+### Reading #96 — 2026-08-30 ~07:00Z — THE PAIR REPLAY VERDICT: geometry is not the lever, and reading #95's self-correction was wrong
+
+**P&L: still no trades, so no profit and no loss.** Orphan 483 ≈ −$1.4. But
+this reading changes the program's direction, so it is not a quiet one.
+
+**The experiment launched in #95 reported. H1 is DEAD.** Replay of 68 crypto
+trips from their real entry fills over OKX 1m candles, exits filled at the
+60s polled mark, peak lagged one bar (prod stamps `peak_pnl_usd` after
+`_evaluate_stop`), each run's own max_loss/target/trail/at_time, costs 15.8bp:
+
+| arm | mean net bp | CI90 | wr | payoff | ex-largest |
+|---|---|---|---|---|---|
+| **A deployed 0.5/0.3** | **−22.76** | [−33.86, −12.63] | .338 | 0.415 | −19.63 |
+| B 0.3/0.3 (the dropped D7 arm) | −21.72 | [−31.79, −12.64] | .294 | 0.459 | −18.58 |
+| C 1.0/0.3 | −27.61 | [−41.13, −15.05] | .368 | 0.338 | −24.55 |
+| D 0.5 / no target at all | −22.98 | [−34.97, −11.43] | .294 | 0.587 | −19.86 |
+| E control (pre-ship authored) | −33.00 | [−54.02, −13.94] | .338 | 0.388 | −30.02 |
+
+**Every arm is negative on every basis** (raw, 22.6bp cost, intrabar extremes,
+300s marks, entry re-anchored to the OKX book to remove the feed-basis error,
+basis ≤20bp subset). No sign flip ex-largest for any modelled arm. Paired
+same-trip comparisons all contain zero: A−E +10.24 [−2.62, +23.97], A−B
+−1.03, A−C +4.85, A−D +0.23. **A is not vindicated and is not distinguishable
+from what it replaced.** No stop/target pair — 0.3, 0.5 or 1.0% stop, with or
+without a take-profit — produces positive expectancy. Geometry is not the
+lever; the entry-side edge is the only one left.
+
+**The desk's refusal is arithmetically correct.** Impossibility proof: at the
+measured 42.7% trip win rate, a 30bp target and 15.8bp round-trip cost, the
+largest stop that breaks even is **−5.22bp** — negative. No positive stop
+exists. (At literally zero cost one exists at 22.4bp, which is inside the
+0.15% noise floor.) Breakeven win rate for the deployed bracket is 82.2%
+as a hard cap, 70.7% as actually replayed; achieved 33.8%. The desk saying
+"our house limits force a stop larger than the target, eliminating any
+positive expectancy" is right, and the refusal is protecting the book.
+
+**Correction to reading #95 — my own, stated plainly.** In #95 I "corrected"
+myself into believing `risk_engine.py:~628` clears the take-profit once the
+ratchet arms, and therefore that the 82.2%-breakeven reading did not apply.
+**That was wrong.** The clearing line lives inside `_apply_trailing_stop`,
+gated on `use_trailing` from `risk_limits`; the trigger is `+1×trail_pct`
+(default 5%), not the breakeven ratchet. Verified on prod: `risk_limits` has
+4 rows (agents 11/22/23/56) and **neither running agent — 6 or 60 — has one**,
+so both fall to `DEFAULT_LIMITS.use_trailing = 0` and that branch has never
+executed for the live book. The take-profit is never cleared. My #95
+correction was the error; the original arithmetic stood. (Sub-agent
+bookkeeping note, per the three-agent rule: the replay agent reported
+`risk_limits` as having ZERO rows — that specific evidence is false; the
+conclusion survives on the corrected evidence above. A right answer resting
+on a wrong fact still gets corrected.)
+
+**Two new structural defects, both caused by our own 0.30% cap:**
+1. **The trailing lock can never arm under it.** Trail activation is
+   2 × (notional × flat BREAKEVEN_FEE_RATE 0.001 × 2) = 40bp, and
+   `activate_usd` is frozen per run at composition — on this tape 30–3383bp
+   of first-entry notional (median 444bp). With the target capped at 30bp the
+   position is closed long before activation: **0 trail exits in arm A**, 2 in
+   arm D across 68 trips. The cap silently disabled the trailing lock.
+2. **The ratchet's operating band is net-negative by construction.** Arm
+   16.02bp, floor 4.5 + 0.5×peak bp; with peak capped at 30bp the ratchet can
+   only ever fire with a floor in [12.51, 19.50)bp gross — against a 15.8bp
+   cost. Replayed: **25 of 29 ratchet fires under arm A are net-negative**,
+   median exit 11.74bp gross = −4.06bp net. The most frequent exit author is,
+   under our cap, a loss-making device.
+
+Empirical confirmation: across the 68 trips' 145 exit fills, watcher
+`take_profit` exits = **0** (desk 87, run flatten 43, watcher stop 8,
+armed_exit 7) — the target has never once fired, all-time.
+
+**Decision this cycle: NO live geometry change.** No arm is positive and none
+is distinguishable from another, so flipping the cap either way would be a
+change without an experimental result behind it — the exact thing the owner
+rule forbids. Leaving the cap ON keeps the desk refusing entries, and with
+every geometry negative, **flat is the profit-maximising book**: the cap is
+functioning as a de-facto trading halt and that is currently worth more than
+any bracket we know how to write. The trend module (item 7) — a different
+strategy class with its own falsifier — remains the only live candidate for
+positive expectancy.
+
+**Falsifier board.** F31-GEOM: primary still unmeasurable (0 entries), but
+its premise is now refuted by replay — recorded. F31-SHOCK-QUIET: PASS
+(holding). F31-ARM-NONCRYPTO: PASS. F31-SHADOW-CENSUS: still 0, structurally
+gated on buys. F31-TREND: 0 signals, ADX out of band on all 5 symbols.
+Worker clean, ledger sweeps 0 violations / 0 cash_violations.
+
+Artifacts: `research/replan30/pair_replay_20260830.py`,
+`pair_replay_results_20260830.json` (per-trip rows for every arm),
+`fetch_candles_1m.py` (the 9.4MB OKX candle cache was deleted; refetchable).
