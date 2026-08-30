@@ -182,6 +182,24 @@ class CryptoPsychScreenTests(unittest.TestCase):
             with_fear = self._screen(universe)[0]["screen_score"]
         self.assertGreater(with_fear, without)
 
+    def test_crypto_tilt_never_leaks_to_other_markets(self):
+        """Round-2 mutation pin (Q3 #7): the tilt is market-scoped — a mutant
+        dropping the market == 'crypto' guard fed the crypto F&G tilt into
+        us-stock and forex candidates' psych subscores."""
+        os.environ.pop("FLEET_PSYCH_WEIGHTS_V2", None)  # us_tilts path off
+        universe = [{"symbol": "UP", "market": "crypto"},
+                    {"symbol": "AAPL", "market": "us-stock"},
+                    {"symbol": "EURUSD", "market": "forex"}]
+        p1, p2 = _patched_feed(5)  # extreme fear, tilt = +25/30
+        with p1, p2:
+            by = {(s["symbol"], s["market"]): s for s in self._screen(universe)}
+        self.assertAlmostEqual(by[("UP", "crypto")]["subscores"]["psych"],
+                               25.0 / 30.0)
+        self.assertIn(("AAPL", "us-stock"), by)
+        self.assertIn(("EURUSD", "forex"), by)
+        self.assertIsNone(by[("AAPL", "us-stock")]["subscores"]["psych"])
+        self.assertIsNone(by[("EURUSD", "forex")]["subscores"]["psych"])
+
 
 # ── regime shadow mode at the automation gate sites ─────────────────────────
 
@@ -290,6 +308,22 @@ class RegimeShadowGateTests(_DbTestCase):
                           gates["skip_reason"], f"REGIME_SHADOW={shadow_flag}")
             self.assertNotIn("regime_shadow", gates)
 
+    def test_none_read_with_shadow_on_fails_soft(self):
+        """Round-2 mutation pin (Q3 #9): REGIME_SHADOW=1 with regime_read
+        None (any non-crypto or read-failure path) must neither raise nor
+        emit a shadow verdict — a mutant dropping the None guard crashed
+        the whole gate chain on every such cycle."""
+        os.environ["REGIME_SHADOW"] = "1"
+        from automation import evaluate_execution_gates
+        config = {"auto_execute": 1, "account_type": "simulator",
+                  "min_confidence": 0.1, "size_usd": 100.0}
+        gates = evaluate_execution_gates(config, self.agent_id, "BTC",
+                                         "crypto", "buy", 0.9, 100.0, None,
+                                         {"sigma_daily_pct": 2.0})
+        self.assertIsNone(gates["skip_reason"])
+        self.assertNotIn("regime_shadow", gates)
+        self.assertIsNone(gates["regime_size_multiplier"])
+
     def test_enforced_caution_still_halves_size(self):
         os.environ["REGIME_SHADOW"] = "1"  # must not interfere with enforcement
         captured = {}
@@ -305,6 +339,33 @@ class RegimeShadowGateTests(_DbTestCase):
         self.assertEqual(gates["regime_size_multiplier"], 0.5)
         self.assertEqual(captured["quantity"], 0.5)
         self.assertNotIn("regime_shadow", gates)
+
+
+class ShadowAllowVerdictTests(unittest.TestCase):
+    """Round-2 mutation pin (Q3 #8): an allow-regime buy must return a dict
+    with would_action 'allow' — a mutant returning None there silently
+    dropped the census DENOMINATOR (allowed entries)."""
+
+    def setUp(self):
+        _clean_env()
+
+    def tearDown(self):
+        _clean_env()
+
+    def test_allow_regime_buy_returns_allow_verdict(self):
+        os.environ["REGIME_SHADOW"] = "1"
+        import regime
+        read = {"regime": "trend", "reasons": [], "allow_new_buys": True,
+                "size_multiplier": 1.0, "enforced": False}
+        with self.assertLogs("regime", level="INFO") as logs:
+            verdict = regime.shadow_gate_check(read, market="crypto",
+                                               symbol="BTC", action="buy")
+        self.assertIsNotNone(verdict)
+        self.assertEqual(verdict["would_action"], "allow")
+        self.assertEqual(verdict["size_mult"], 1.0)
+        line = next(m for m in logs.output if "regime_shadow" in m)
+        payload = json.loads(line.split("regime_shadow ", 1)[1])
+        self.assertEqual(payload["would_action"], "allow")
 
 
 _BUY_ANALYSIS = {

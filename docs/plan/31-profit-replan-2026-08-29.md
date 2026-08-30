@@ -257,3 +257,53 @@ every gate mutation-tested (11 injected bugs total, 11 caught).
 - F31-TREND: 30 trips or 60 trading days sim — true-net EV ≤ 0 or payoff < 1.5 → module dies, no capital.
 - F31-SHADOW: 2 weeks of regime_shadow logs → enforce per-arm only if vetoed-entry EV < allowed-entry EV.
 - F31-PSYCH-SUB: candidate composites must actually move with F&G (measurable in screen logs); dead subscore = wiring failed.
+
+---
+
+## Part E — 10-agent verification (owner-ordered) + round-2 fixes (2026-08-30)
+
+Workflow `wf_2a66c9fe-f44`: 5 analysis (A1 prod state, A2 gate code, A3 trend
+module, A4 live tape, A5 measurement) + 5 QA (Q1 refutation, Q2 money path,
+Q3 test quality, Q4 regression, Q5 method). Unanimous verdict:
+**VERIFIED-WITH-DEFECTS** — deployment faithful (A1: per-file sha256 of all
+1,602 prod files == fa6474fb; backfill blast radius exactly 102 rows), money
+path proven isolated (Q2: submit_live has one caller and prod has 0
+automation_configs; fleet 38 stopped, untouched), backfill numerically
+perfect (A5: 0 violations over all 310 prod exits) — and the following
+defects found and fixed the same night:
+
+| ID | Finding (agent) | Fix |
+|----|-----------------|-----|
+| D1 | Stop cap 0.5% < entry mark-drift cap 0.75% → an entry can fill already through its capped stop; watcher then closes it at a guaranteed loss (A2-3, confirmed Q1-1/Q2-10) | prod env `RUN_ENTRY_MARK_DRIFT_CAP_PCT=0.5` — drift refusal bound at the stop cap |
+| D2 | `trading_runs.realized_pnl_usd` still 0.00 for all 575 agent-6 runs; consumed live by fleet budget/planner/supervisor/auto-tune, confidence calibration, desk briefs, RAG ingest under ACTIVE fleet 41 (A5-7, bound to item-1 acceptance by Q1-2) | `scripts/backfill_agent6_runs_realized.py` — per-run restore mirroring the production writer's formula, ground-truthed against agent-5 stored values |
+| D3 | REGIME_SHADOW census wired to a dead path: desk passes regime_read=None; automation rules have 0 configs → 2-week census collects nothing (Q5-1, refines Q2-7/A4-5) | run_cycle now computes the crypto regime read when shadow is on AND enforcement is off (the None stays whenever REGIME_FILTER_ENABLED is set, so enforcement semantics are unchanged) |
+| D4 | Per-market ratchet arm collapsed non-crypto arms 7–11× (us-stock 1.78bp) and set polymarket's to 0 = ratchet disabled; the Part-B rationale was arithmetically inverted (A2-8, Q1-7, Q4-3) | arm re-scoped to the evidence: crypto gets fee_rate×mult; every other market keeps the byte-identical legacy anchor (0.001, mult 1.0) |
+| D5 | Trend module: crash between ledger commit and state save leaves an unmanaged lot; next-day rerun double-enters (A3-5) | ledger reconcile at cycle start adopts any module-agent lot missing from state; same-day duplicate refusals re-adopt too |
+| D6 | 12 surviving mutants = 12 test gaps (Q3): short-side stop cap, min_hold cover, ARM_FEES multiplier, invariant tolerance/window/partial-exit, trend short stop, size_mult clamp, exit-failure retention, tilt scoping, shadow allow/None-read | all 12 pinned with mutant-kill proofs |
+| D7 | Item 3(b)'s 0.5-vs-0.3 stop-cap experiment silently dropped (Q5-2, Q1-4) | RECORDED here: after F31-GEOM's 50 trips at 0.5%, run the next 50-trip window at `STOP_CAP_PCT_CRYPTO=0.3` (sequential-window design); the two windows decide the cap level |
+| D9 | min_hold consumer had no producer — arm B uncreatable without a DB row edit (A2-6, Q1-5) | `RunIn.min_hold_hours` (0<h≤720) flows into config_snapshot — the sanctioned producer |
+| D10 | TREND_AGENT_ID mistyped to a real user's agent would trade that book unvalidated (Q2-2) | `_agent_is_dedicated`: agent must exist with user_id NULL, fail-closed |
+| D11 | psych_shock state reset by a feed outage → re-convenes the full desk every feed flap (A2-10) | only an affirmative no-shock read clears the transition state |
+| D12 | Invariant blind spots: NULL-pnl exits invisible; no message_type filter; and the 08-26 incident's cash-reset half would pass the row replay clean (A5-5/6, Q1-3) | NULL-pnl exits flagged; operation filter added; per-agent cash snapshot reconcile added (the Part-B cash-delta spec, implemented) |
+
+Recorded deviations (deliberate, now documented): trend module uses 20-day
+Donchian (not 20/55) and 1.5×ATR uncapped initial stop (not 1×ATR≤0.5%) —
+the trend pole needs vol-scaled room; judged solely by F31-TREND. The
+call-budget-cap rider was for a deterministic full-routing restore that was
+NOT shipped (only psych_shock de-saturation was), so no cap is currently
+needed; if full-routing is ever forced, ship the cap with it. Q4-2a/2b edge
+deviations (degenerate no-open-fills add blocked; add_gate_error telemetry)
+accepted as conservative. Trail-lock fee anchor (run_engine.py:~1236) left
+at flat 0.001 — pre-existing, conservative direction, documented
+inconsistency. UI render check: API-level totals verified (agent-6 month
+−7.11, platform −186.71); browser-level render not exercised.
+
+Additional falsifiers from this round:
+- F31-SHOCK-QUIET: after any worker (re)start +60min, decisions must stop
+  carrying psych_shock until the shock state clears and re-enters. First
+  window (01:48–02:48) consistent: 35/35 decisions inside the window, 0 after.
+- F31-SHADOW-CENSUS: within 48h of the D3 fix deploy, ≥1 regime_shadow
+  verdict must appear in run telemetry on a crypto buy cycle — else the
+  census is still dead and D3 failed.
+- F31-ARM-NONCRYPTO: non-crypto stop_mechanism fires must show arm ≈ 20bp
+  of notional (legacy) — any 1.78bp-class arm after the D4 fix deploy = regression.

@@ -232,14 +232,13 @@ class CycleBase(unittest.TestCase):
         database.init_database()
         conn = database.get_db_connection()
         cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO users (email, password_hash, created_at) "
-            "VALUES ('trend@x.com', 'x', '2026-01-01T00:00:00Z')")
-        user_id = cur.lastrowid
+        # The dedicated module agent carries user_id NULL — that shape IS
+        # the module's authorization (verification Q2-2: _agent_is_dedicated
+        # refuses any agent linked to a user).
         cur.execute(
             "INSERT INTO agents (name, token_hash, cash, user_id, created_at) "
-            "VALUES ('trend-agent', 'tth1', 100000, ?, '2026-01-01T00:00:00Z')",
-            (user_id,))
+            "VALUES ('trend-agent', 'tth1', 100000, NULL, "
+            "'2026-01-01T00:00:00Z')")
         self.agent_id = cur.lastrowid
         conn.commit()
         conn.close()
@@ -449,6 +448,141 @@ class TestCycleExits(CycleBase):
         highs, lows, closes = tm._series(bars)
         atr = tm.wilder_atr(highs, lows, closes)
         self.assertAlmostEqual(pos["trail"], closes[-1] - 3.0 * atr, places=6)
+
+
+class TestCycleShortEntry(CycleBase):
+    """Round-2 mutation pin (Q3 #4): a donchian SHORT's initial stop must sit
+    ABOVE entry at entry + 1.5xATR — a side-flipped mutant placed it below,
+    an already-triggered stop that check_exit fires instantly."""
+
+    def test_short_entry_initial_stop_above_entry(self):
+        bars = _bars_down()
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            summary = tm.run_trend_cycle()
+        self.assertEqual(summary["entries"], 1)
+        self.assertEqual(self._signals()[0]["side"], "short")
+        pos = self._state()["positions"]["BTCUSDT"]
+        self.assertEqual(pos["side"], "short")
+        highs, lows, closes = tm._series(bars)
+        atr = tm.wilder_atr(highs, lows, closes)
+        self.assertGreater(pos["initial_stop"], pos["entry_price"])
+        self.assertAlmostEqual(pos["initial_stop"],
+                               closes[-1] + 1.5 * atr, places=6)
+
+
+class TestLlmSizeMultWhitelist(CycleBase):
+    """Round-2 mutation pin (Q3 #5): size_mult outside {0.5, 1.0} is clamped
+    to 1.0 THROUGH the cycle — a mutant dropping the whitelist let a runaway
+    LLM 10x the position."""
+
+    def test_out_of_whitelist_mult_enters_at_full_size(self):
+        bars = _bars_up()
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text",
+                   return_value='{"veto": false, "size_mult": 10.0}'):
+            summary = tm.run_trend_cycle()
+        self.assertEqual(summary["entries"], 1)
+        highs, lows, closes = tm._series(bars)
+        atr = tm.wilder_atr(highs, lows, closes)
+        self.assertAlmostEqual(self._signals()[0]["quantity"],
+                               25.0 / (1.5 * atr), places=6)  # 1.0-mult qty
+
+
+class TestExitFailureRetention(CycleBase):
+    """Round-2 mutation pin (Q3 #6): a failed exit whose error does NOT
+    contain 'position' keeps the position in state (retry next cycle) — a
+    mutant dropping state on ANY error orphaned the ledger lot."""
+
+    def test_transient_exit_error_keeps_state(self):
+        bars = _bars_up()
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            self.assertEqual(tm.run_trend_cycle()["entries"], 1)
+        # force a time-stop exit, then fail it with a transient error
+        from platform_settings import get_setting, set_setting
+        state = json.loads(get_setting(tm.STATE_KEY))
+        stale = (datetime.now(timezone.utc) - timedelta(days=31)).isoformat()
+        state["positions"]["BTCUSDT"]["entry_ts"] = stale
+        set_setting(tm.STATE_KEY, json.dumps(state), updated_by="test")
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None), \
+             patch("automation.execute_paper_trade",
+                   return_value=(None, "temporary db error")):
+            summary = tm.run_trend_cycle()
+        self.assertEqual(summary["exits"], 0)
+        self.assertIn("BTCUSDT", self._state()["positions"])  # RETAINED
+        events = [e["event"] for e in summary["actions"]]
+        self.assertIn("exit_failed", events)
+        self.assertNotIn("state_desync", events)
+
+
+class TestDedicatedAgentRefusal(CycleBase):
+    """Round-2 fix D5: a TREND_AGENT_ID pointing at an agent linked to a
+    USER (user_id not NULL) is refused — the module must never trade a real
+    user's sim book."""
+
+    def test_user_linked_agent_refused(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO agents (name, token_hash, cash, user_id, created_at) "
+            "VALUES ('user-agent', 'tth2', 100000, 77, "
+            "'2026-01-01T00:00:00Z')")
+        user_agent_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        os.environ["TREND_AGENT_ID"] = str(user_agent_id)
+        with patch.object(tm, "_get_bars") as bars_mock:
+            summary = tm.run_trend_cycle()
+        self.assertEqual(summary["error"],
+                         "TREND_AGENT_ID not a dedicated agent")
+        self.assertEqual(summary["entries"], 0)
+        bars_mock.assert_not_called()
+        self.assertEqual(self._signals(), [])
+
+
+class TestOrphanReconcile(CycleBase):
+    """Round-2 fix D10: a ledger lot on the module agent that state forgot
+    (crash between ledger commit and _save_state) is adopted at the top of
+    the next cycle — with a rebuilt stop, and then managed like any other."""
+
+    def test_ledger_orphan_adopted_with_stop_and_managed(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO positions (agent_id, symbol, market, side, quantity, "
+            "entry_price, opened_at) VALUES (?, 'BTCUSDT', 'crypto', 'long', "
+            "2.0, 100.0, '2026-01-01T00:00:00Z')", (self.agent_id,))
+        conn.commit()
+        conn.close()
+        self.assertEqual(self._state(), {})  # state has never seen it
+        bars = _bars_up()
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            summary = tm.run_trend_cycle()
+        events = [e["event"] for e in summary["actions"]]
+        self.assertIn("orphan_adopted", events)
+        pos = self._state()["positions"]["BTCUSDT"]
+        self.assertEqual(pos["side"], "long")
+        self.assertEqual(pos["entry_kind"], "adopted")
+        self.assertAlmostEqual(pos["qty"], 2.0)
+        highs, lows, closes = tm._series(bars)
+        atr = tm.wilder_atr(highs, lows, closes)
+        self.assertAlmostEqual(pos["initial_stop"], 100.0 - 1.5 * atr,
+                               places=6)  # stop rebuilt from current bars
+        self.assertIn("trail_update", events)  # managed in the same cycle
+        self.assertEqual(summary["entries"], 0)  # no double-entry on top
 
 
 if __name__ == "__main__":
