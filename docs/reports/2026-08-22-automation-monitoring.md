@@ -2942,3 +2942,55 @@ F31-TREND 0 signals; F31-ARM-NONCRYPTO unchanged PASS.
 0, up since 03:15Z, **0 tracebacks in 65 minutes**; ledger sweep
 `violations: 0, cash_violations: 0`. Merged, not deployed (no code change;
 per #97's cadence note, hourly deploys would re-saturate psych_shock).
+
+### Reading #99 — 2026-08-30 ~08:35Z — F31-GEOM's secondary falsifier FIRED; and the flat book is not free
+
+**P&L: still no trades — but this cycle found a real cost, so "no loss" is
+no longer accurate.** 0 fills; the entry drought is now **20 hours** (last
+entry platform-wide 2026-08-29T11:36:40Z). Orphan 483 uPnL −$1.33 at 11.389.
+
+**F31-GEOM SECONDARY: FAILED.** The pre-registered threshold was ">2
+geometry-citing retires in the next 300 decisions". At **208** decisions since
+the ship we have **9 retires, 4 of them citing the geometry** — e.g. run 2343
+(08:22:02Z): *"Retiring because the required stop and target exceed platform
+caps, making the short thesis unexpressible."* The item-3 prompt fix (stating
+the house bracket as fact) did **not** stop the desk retiring slots over the
+bracket. Reading #96 already explains why it could not: the desk's refusal is
+arithmetically correct, and no wording changes an impossible expectancy. This
+falsifier is now recorded as FAILED rather than pending — the fix did not do
+what it was shipped to do.
+
+**NEW FINDING — the flat book costs real money.** Since the ship (6.75h):
+**20 runs built, 27 stopped (17 idle_retired + 9 desk_retired), 0 trades**,
+649 research theses generated, 1,163 LLM calls. Verified as real cash, not
+notional (local calls are free; the spend is Anthropic API):
+`decision/claude-opus-4-8` 6 calls **$1.3485**, `brief/claude-sonnet-5` 410
+calls $0.8184, `brief/claude-opus-4-8` 15 calls $0.4576 → **$2.62 in 6.75h
+≈ $9.3/day ≈ $280/month, for zero trades.**
+
+**This corrects reading #96's conclusion.** I wrote there that "flat is the
+profit-maximising book". That is true only against the *trading* line. Taking
+operating cost into account, the honest comparison is: trading the old
+geometry ≈ −$302/mo of trading loss **plus** spend, versus the current flat
+book ≈ **−$280/mo of spend with no trading loss and no output**. Flat is still
+the better of the two, but it is not free and it is not far from the number
+the whole program set out to fix. A fleet that rebuilds slots into a wall the
+desk correctly refuses is a churn loop, and the loop is metered.
+
+**Spend concentration (measurement only, no change this cycle).** 21 Opus
+calls carry **69%** of the spend; the 6 decision-tier Opus calls alone are
+**51%** ($0.22/call). Fifteen **brief**-tier calls also ran on Opus ($0.031
+each) where brief is meant to be the cheap tier. *Hypothesis for #100:* those
+15 are either a per-agent `llm_tiers` override or a deliberate cost A/B.
+*Falsifier:* if neither an override nor a recorded A/B explains them, brief-on-
+Opus is a misroute and the cheapest real saving available in a flat book.
+Nothing changed this cycle — the hypothesis is pre-registered, not acted on.
+
+**Other falsifiers.** F31-SHOCK-QUIET holding at **1 of 123** post-window
+decisions. F31-PSYCH-SUB wired (mid-band neutral). F31-SHADOW-CENSUS still 0
+(structurally gated on buys). F31-ADDS/ARM/FREEZE/TREND unmeasurable — no
+tape, agent 5 idle, 0 trend signals.
+
+**Process health.** 22 running runs; 26 decisions this window (25 hold, 1
+retire); worker restarts 0, **0 tracebacks in 65 minutes**; ledger sweep
+`violations: 0, cash_violations: 0`. Merged, not deployed (no code change).
