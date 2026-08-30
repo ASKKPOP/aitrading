@@ -89,7 +89,8 @@ class ClassifierUnitTests(unittest.TestCase):
                              return_value=("light", "ambient market-wide flag")):
             out = self._classify(psych=("psych_feed.get_psych_payload",
                                         {"available": True,
-                                         "shock": [{"symbol": "BTC"}]}))
+                                         "shock": [{"symbol": "BTC",
+                                                    "shock": True}]}))
         self.assertEqual(out["route"], "light")
         self.assertEqual(out["rule_route"], "full")
         self.assertEqual(out["route_by"], "ai")
@@ -125,7 +126,7 @@ class ClassifierUnitTests(unittest.TestCase):
 
     def test_psych_shock_routes_full_for_crypto_only(self):
         shock = ("psych_feed.get_psych_payload",
-                 {"available": True, "shock": [{"symbol": "BTC"}]})
+                 {"available": True, "shock": [{"symbol": "BTC", "shock": True}]})
         out = self._classify(psych=shock)
         self.assertEqual(out["route"], "full")
         self.assertIn("psych_shock", out["triggers"])

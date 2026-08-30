@@ -2654,6 +2654,24 @@ _AMBIENT_TRIGGERS = frozenset({"psych_shock", "hot_issue", "psych_extreme"})
 _PSYCH_SHOCK_STATE = {"active": False, "since": 0.0}
 
 
+def _psych_shock_present(psych: dict) -> bool:
+    """True only when SOME monitored symbol is actually in shock.
+
+    `payload["shock"]` is a list of per-symbol status dicts, each carrying its
+    own boolean. It is always populated, so the container's truthiness says
+    nothing about the market. Tolerates a bare bool (older payload shape) and
+    a list of non-dicts."""
+    raw = psych.get("shock")
+    if isinstance(raw, bool):
+        return raw
+    if not raw:
+        return False
+    try:
+        return any(bool(e.get("shock")) for e in raw if isinstance(e, dict))
+    except (AttributeError, TypeError):
+        return bool(raw)
+
+
 def _psych_shock_fresh(shock: bool) -> bool:
     """Plan 31: the psych_shock trigger fired on 300/300 sampled cycles —
     a flag that is always on carries zero routing information (R3/R5). Fire
@@ -3101,10 +3119,22 @@ def _classify_situation(run: dict, cfg: dict) -> dict:
         try:
             from psych_feed import get_psych_payload
             psych = get_psych_payload()
-            if psych.get("available") and psych.get("shock") \
+            # `shock` is a PER-SYMBOL LIST — one entry per monitored symbol,
+            # always populated — so `bool(...)` is true even when every entry
+            # reads shock:false (monitoring #104/#105: verified live with both
+            # symbols false). Truthiness therefore armed the transition latch
+            # on the first read after any worker restart, and because the
+            # clear branch could never be reached the latch never reset: the
+            # trigger fired for 60 minutes after every restart regardless of
+            # the market, then went permanently silent — including through a
+            # real $922,639 short-side liquidation shock at 12:23:04Z that
+            # escalated 0 of 9 cycles while our book was short. Ask the
+            # entries, not the container.
+            _shock_now = _psych_shock_present(psych)
+            if psych.get("available") and _shock_now \
                     and _psych_shock_fresh(True):
                 triggers.append("psych_shock")
-            elif psych.get("available") and not psych.get("shock"):
+            elif psych.get("available") and not _shock_now:
                 # Only an AFFIRMATIVE no-shock read clears the transition
                 # state — an unavailable feed must not reset it, or a
                 # flapping feed re-convenes the full desk on every recovery
