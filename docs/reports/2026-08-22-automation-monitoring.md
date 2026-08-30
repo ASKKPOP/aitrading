@@ -3547,3 +3547,61 @@ distance).
 (26 hold, 1 retire), worker on `20260830-shockfix`, restarts 0, **0
 tracebacks in 60 minutes**; ledger sweep `violations: 0, cash_violations: 0`.
 Merged, not deployed — no code change.
+
+### Reading #108 — 2026-08-30 ~16:35Z — I replaced the bad instrument and the answer is 15 of 15: EVERY retire since the ship blames our geometry
+
+**P&L: no new fills; the orphan keeps bleeding.** Mark 11.644 vs entry
+11.299 → **−$5.12**, now **61.2% of the way to its 11.8629 stop** (cap
+−$8.37). Five-hour trajectory: −$1.23 → −$1.86 → −$2.89 → −$3.65 → −$4.11 →
+**−$5.12**. Not touched. Platform trading record unchanged: **n=2, −$7.61**.
+
+**THE FINDING — I stopped keyword-matching and read every retire report
+verbatim. All 15 of them cite the house geometry. Not 5. Fifteen of
+fifteen — 100%.** #107 flagged that my LIKE patterns were a lower bound;
+they were worse than that, missing 10 of 15. The desk phrases the identical
+objection a different way every time, so a keyword count of free text was
+never going to work. Verbatim, since 01:48Z:
+
+- 2305 *"avoids a guaranteed negative-expectancy trade under current house constraints"*
+- 2314 *"Given the house-imposed 0.5% stop and 0.3% target limits, the short thesis cannot be expressed profitably"*
+- 2333 *"the inability to size a viable stop/target within house limits"*
+- 2334 *"the allowed risk-reward structure is unfavorable and unlikely to produce net-positive realized P&L"*
+- 2335 *"the required stop/target cannot be set profitably under current constraints"*
+- 2336 *"a safe, realistic bracket cannot be constructed under current house constraints"*
+- 2337 *"cannot be executed profitably within the platform's constraints"*
+- 2339 *"Given the constrained stop/target caps and poor long expectancy"*
+- 2343 *"the required stop and target exceed platform caps, making the short thesis unexpressible"*
+- 2346 *"impossible risk parameters"*
+- 2360 *"platform constraints block a viable short entry"*
+- 2361 *"the platform's stop/target caps prevent a viable short trade"*
+- 2362 *"an unusable bracket"*
+- 2363 *"the allowed stop/target sizes cannot accommodate the intended 5% move, rendering the trade unprofitable after fees"*
+- 2366 *"the required bracket cannot meet a viable risk-reward and would be noise-triggered"*
+
+**F31-GEOM secondary: FAILED by 7.5x its threshold** (>2 per 300 decisions;
+actual 15). And it is **accelerating** — 4 of the 15 landed in this hour
+alone. Every retire destroys a researched slot, so the caps are not merely
+declining trades, they are consuming the fleet's research output. This is
+the same conclusion #96's replay reached from price data, now stated by the
+desk itself in its own words, fifteen times, unprompted.
+
+**D-SHOCK-CONST fix: still clean at 74 decisions / 0 triggers** since the
+14:00:03Z restart, across both sides of the window boundary. Holding.
+
+**Falsifier board.** F31-GEOM: primary n=2 (unchanged, starved); **secondary
+FAILED 15/15**. F31-SHOCK-QUIET: 74/0, fix holding; the "a real shock must
+escalate" half remains untested. F31-SHADOW-CENSUS: **0 events, ~11 hours to
+its deadline**, and it can only fire on a buy while every entry since the
+ship has been a short — it will almost certainly expire unmeasured through
+that structural gap rather than through D3 having failed. F31-TREND: 0
+signals. F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB:
+unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777 measured, n=1, three
+candidate fixes); D-STOP-BLACKOUT; D-TARGET-VS-DRIFT (mean opening drift
+≈52% of the target distance — which is the same complaint the desk is making
+in its own words above).
+
+**Process health.** 19 runs active (23 → 20 → 19 as retires outpace builds),
+28 decisions this window (24 hold, 4 retire), worker on `20260830-shockfix`,
+restarts 0, **0 tracebacks in 60 minutes**. Merged, not deployed.
