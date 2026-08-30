@@ -14,6 +14,7 @@ from analysis_agents import LANG_NAMES
 from cache import delete as _cache_delete, get_json as _cache_get, set_json as _cache_set
 from email_sender import send_verification_code_email, send_welcome_email
 from database import get_db_connection
+from user_secrets import decrypt_secret, encrypt_secret
 import sms_i18n
 from routes_models import (
     PhoneForgotPasswordRequest,
@@ -200,7 +201,7 @@ def _user_llm_settings(user_id: int) -> dict | None:
             config = {}
         out = {'provider': (config.get('provider') or '').strip().lower() or None,
                'model': (config.get('model') or '').strip() or None,
-               'api_key': (row['api_key'] or '').strip() or None}
+               'api_key': (decrypt_secret(row['api_key']) or '').strip() or None}
         return out if any(out.values()) else None
     except Exception:  # noqa: BLE001
         _logger.warning('user llm settings lookup failed for user %s', user_id, exc_info=True)
@@ -980,7 +981,9 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         targets = []
         for target, spec in API_TARGET_CATALOG.items():
             row = rows.get(target)
-            api_key = (row or {}).get('api_key') or ''
+            # Decrypt for the mask: the last four characters shown to the
+            # owner must be the KEY's, not the ciphertext's.
+            api_key = decrypt_secret((row or {}).get('api_key')) or ''
             try:
                 config = json.loads((row or {}).get('config_json') or '{}')
             except (TypeError, ValueError):
@@ -1074,7 +1077,10 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         row = cursor.fetchone()
         if row is not None:
             # Partial update: absent fields keep their stored values.
-            new_key = data.api_key if data.api_key is not None else row['api_key']
+            # Encrypt only a NEWLY supplied key; the stored value is
+            # already ciphertext and must be carried forward untouched.
+            new_key = (encrypt_secret(data.api_key) if data.api_key is not None
+                       else row['api_key'])
             if data.config is not None:
                 new_config = json.dumps(config)
             else:
@@ -1087,7 +1093,7 @@ def register_user_routes(app: FastAPI, ctx: RouteContext) -> None:
         else:
             cursor.execute(
                 'INSERT INTO user_api_settings (user_id, target, api_key, config_json, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-                (user['id'], target, data.api_key, json.dumps(config),
+                (user['id'], target, encrypt_secret(data.api_key), json.dumps(config),
                  int(data.enabled) if data.enabled is not None else 1, now),
             )
         conn.commit()
