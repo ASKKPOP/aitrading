@@ -395,5 +395,16 @@ class PromptLineTests(unittest.TestCase):
         self.assertNotIn("stop_pct is capped", line)
 
 
+class TrendModuleWiringTests(unittest.TestCase):
+    def test_trend_loop_registered_and_gated(self):
+        import tasks
+        self.assertIn("trend_module", tasks.BACKGROUND_TASK_REGISTRY)
+        self.assertEqual(tasks.BACKGROUND_TASK_ROLES["trend_module"],
+                         "research")
+        src = inspect.getsource(tasks.trend_module_loop)
+        self.assertIn("run_trend_cycle", src)
+        self.assertIn("module_enabled", src)
+
+
 if __name__ == "__main__":
     unittest.main()

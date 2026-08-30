@@ -228,3 +228,32 @@ book until a class with an edge exists.
   except at program gates); calendar timeouts; chandelier replay requires a
   continuous mark source (prod mark cache/OKX candles — feed-basis trap noted)
   or is unrunnable on the exit-censored fills tape.
+
+---
+
+## Part D — Execution log (owner: "do all", 2026-08-29/30)
+
+All eight Part-B items implemented in one program (branch plan31-ship). Three
+implementation agents on disjoint files + the main session on run_engine.py;
+every gate mutation-tested (11 injected bugs total, 11 caught).
+
+| # | Item | Mechanism shipped | Env (prod value) |
+|---|------|-------------------|------------------|
+| 1 | Measurement | agent-6 diagnosis: NOT a live write defect — a one-time reset 08-26 00:32Z (reset6_bak_* tables; live pnl zeroed, cash restored to 10000). Backfill script restores the 102 exit rows (`scripts/backfill_agent6_pnl.py`, dry-run default, sum-guard, idempotent). Nightly row-level invariant `ledger_invariant.py` replays each book (validated on all 310 prod exits, worst delta 3.1e-7) + admin alert. UI note: the server aggregate is ALREADY entry-fee-accurate (`COALESCE(pnl, -fee_usd)`, routes_trading.py:995) — only the zeroed rows corrupted it. | LEDGER_INVARIANT_ENABLED=1 (default) |
+| 2 | Agent-5 stand-down | `_entry_frozen()` platform rail: AGENT_ENTRY_FREEZE csv of agent ids; buy/short skip with journaled gate_skip stage entry_freeze; sell/cover and every platform exit author untouched. | AGENT_ENTRY_FREEZE=5 |
+| 3 | Geometry (atomic) | Stop clamp BEFORE the target-cap block on WHICHEVER bracket won (AI rails and the deterministic gate bracket both flow through it); clamped stop bounds the RR_FLOOR leak term at cap×RR_FLOOR — never-refuse invariant preserved at every RR_FLOOR. `stop_cap` telemetry. Prompt line now states the full house geometry as FACT (stop cap + target cap + "target below stop is the house design"), no imperative. | STOP_CAP_PCT_CRYPTO=0.5 |
+| 4 | Adds-gate fail-close | Underwater block moved ABOVE the add_limits/opens early-outs; with the env on, unknown uPnL fail-CLOSES the add; intent-keyed via the existing open_side logic (a buy against a short book is a cover → never blocked; unit-tested both directions). qty-unreadable path stays fail-open (blocking there would block fresh entries) but now logs + emits add_gate_error. | ADD_INTO_LOSER_BLOCK=1 |
+| 5 | Ratchet arm | `_breakeven_arm_usd` prices the arm at `fees.fee_rate(market)` (crypto 0.00045 vs legacy 0.001); BREAKEVEN_FEE_RATE env, when set, overrides everything (kill switch). Both call sites pass the market. Arm floor incl. slip via multiplier. | BREAKEVEN_ARM_FEES=1.78 (→ ~16bp arm on crypto) |
+| 6 | Min-hold (sim A/B) | Per-run cfg `min_hold_hours` (NEVER a global env): desk sell/cover on a younger position converts to a journaled gate_skip stage min_hold; platform exit authors (max_loss, ratchet/trail, at_time, retire flatten, fleet_stop_all, armed_exit, watcher) run outside this path — whitelisted by construction; fails OPEN on stale mark or any error. Arm-B creation deferred until entries resume post-item-3 (an A/B needs flow to measure). | (per-run config) |
+| 7 | Trend module | `trend_module.py` (522 lines, 33 tests, 8/8 mutations caught): Donchian-20 breakout gated by ADX 25–40 + 200MA, F&G≥80 blocks longs, F&G≤20 arms a tagged contrarian long; 1.5×ATR initial stop, RATCHETED 3×ATR chandelier trail (never loosens — the give-back lesson), 30d time-stop, vol-parity sizing (RISK_USD/1.5×ATR), max 3 positions; ONE LLM veto/size call per signal (fail-soft to no-veto); executes via `automation.execute_paper_trade` with run_id=None and idempotent client_order_ids — outside the desk world, invisible to the SL/TP watcher, sim ledger only, refuses to run without a dedicated TREND_AGENT_ID. Wired as hourly `trend_module_loop` (acts on daily closes). `trend_stats()` is the falsifier readout. | TREND_MODULE_ENABLED=1, TREND_AGENT_ID=(dedicated sim agent) |
+| 8 | Psych with teeth | Crypto psych subscore wired (was hardcoded None): F&G→[−1,+1] tilt, direction-aligned contrarian (extreme fear boosts longs/penalizes shorts), knees at 30/70 matching regime bands, fail-soft None; the 0.20 weight now binds (tested). Regime SHADOW mode: REGIME_SHADOW=1 logs would-veto/resize verdicts (log line + automation_runs telemetry) without enforcing; REGIME_FILTER_ENABLED stays unset (global enforce rejected — placeholder bands). | CRYPTO_PSYCH_SUBSCORE=1 (default), REGIME_SHADOW=1 |
+| + | psych_shock de-saturation | Trigger fires on the TRANSITION into shock + 60min, then quiet until it clears and re-enters (was: 300/300 cycles). PSYCH_SHOCK_DELTA=0 restores always-on. | (default on) |
+
+### Falsifier board (frozen at ship)
+- F31-GEOM: 50 completed crypto trips post-ship — payoff must improve from 0.27 (CI) and true-net EV/trip better than −$0.15 vs −$0.55 baseline; >2 geometry-citing retires in the next 300 decisions also fails it.
+- F31-ADDS: any post-ship run with ≥2 entry fills at negative uPnL fails; 30d blocked-add walk-to-stop counterfactual must not exceed prevented loss.
+- F31-ARM: arm rate of trips peaking >16bp must rise; give-back baseline = post-#592 fires only (47–73%, n=3); ≥100% median at n=20 fails.
+- F31-FREEZE: 30d — surviving agents' true-net EV degrading below baseline (n≥30, CI) WITH F31-GEOM not fired → unfreeze agent 5.
+- F31-TREND: 30 trips or 60 trading days sim — true-net EV ≤ 0 or payoff < 1.5 → module dies, no capital.
+- F31-SHADOW: 2 weeks of regime_shadow logs → enforce per-arm only if vetoed-entry EV < allowed-entry EV.
+- F31-PSYCH-SUB: candidate composites must actually move with F&G (measurable in screen logs); dead subscore = wiring failed.
