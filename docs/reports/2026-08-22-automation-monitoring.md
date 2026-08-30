@@ -3778,3 +3778,33 @@ D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
 **Process health.** 13 runs active, worker on `20260830-shockfix`, restarts
 0, **0 tracebacks in 60 minutes**; ledger sweep `violations: 0,
 cash_violations: 0`; trend module ticking. Merged, not deployed.
+
+### Reading #113 — 2026-08-30 ~20:35Z — quiet (15-minute window); orphan recovering, fleet drain reversed
+
+**Nothing material changed.** The cycle fired ~15 minutes after #112 rather
+than an hour, so this window covers only 4 decisions, all hold — too short to
+carry a finding, and I am not inventing one.
+
+**P&L: no fills. The orphan continues recovering** — LINK 11.543 → uPnL
+**−$3.62**, from −$4.45 an hour ago and a −$5.58 low at #110. It sits 43.3%
+of the way to its stop. Trading record unchanged: **n=2, −$7.61**.
+
+**Two small positives worth one line each.** The fleet drain **reversed**:
+13 → **14** active (agent 60: 8, agent 6: 6), and the composer is still
+replenishing — builds 4/1/1 against stops 6/3/0 across 18Z/19Z/20Z, so the
+gap has closed from −2 to +1. And **no new retires** this window; the count
+holds at 21.
+
+**Falsifier board: unchanged.** F31-GEOM primary n=2, starved; secondary
+FAILED (21 retires, every one geometry-citing on the verbatim audit).
+F31-SHADOW-CENSUS 0 events, **30.6h to the 2026-09-01T03:15Z deadline**
+(restated correctly per #112's 24-hour correction). F31-SHOCK-QUIET PASS,
+closed. F31-TREND 0 signals. F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO /
+F31-FREEZE / F31-PSYCH-SUB unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777 measured, n=1);
+D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
+
+**Process health.** 14 runs active, worker on `20260830-shockfix`, restarts
+0, **0 tracebacks in 60 minutes**; ledger sweep `violations: 0,
+cash_violations: 0`. Merged, not deployed.
