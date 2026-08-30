@@ -3605,3 +3605,56 @@ in its own words above).
 **Process health.** 19 runs active (23 → 20 → 19 as retires outpace builds),
 28 decisions this window (24 hold, 4 retire), worker on `20260830-shockfix`,
 restarts 0, **0 tracebacks in 60 minutes**. Merged, not deployed.
+
+### Reading #109 — 2026-08-30 ~17:35Z — F31-SHOCK-QUIET PASSES BOTH HALVES on live data; retires reach 17/17
+
+**P&L: no new fills.** Orphan at 11.651 vs entry 11.299 → **−$5.22**, 62.4%
+of the way to its 11.8629 stop (cap −$8.37). Six-hour trajectory: −$1.23 →
+−$1.86 → −$2.89 → −$3.65 → −$4.11 → −$5.12 → **−$5.22** — the bleed slowed
+this hour but has not reversed. Not touched. Trading record unchanged:
+**n=2, −$7.61, 4 fills**.
+
+**F31-SHOCK-QUIET — CLOSED, PASSING, both halves measured.** The half that
+had never been testable finally was, and the timeline is unambiguous:
+
+| when | feed state | trigger |
+|---|---|---|
+| 15:00:32Z snapshot | both symbols `shock: false` | silent |
+| 16:00:38Z snapshot | both symbols `shock: false` | silent |
+| **through 17:00** | quiet | **74 decisions, 0 fires** |
+| **17:00:44Z snapshot** | **ETHUSDT `shock: TRUE`** | — |
+| **17:01:36Z** | — | **FIRST FIRE, 52 seconds later** |
+| 17:01–17:32 | shock persists | 15 fires |
+
+So: silent through 74 consecutive decisions of genuine quiet, then escalating
+within a minute of a real per-symbol shock flag. **Under the old code this
+shock would have been missed entirely** — the latch had expired and could
+never clear, which is precisely how the $922,639 short-side shock at
+12:23:04Z escalated 0 of 9 cycles. The fix is confirmed working in both
+directions on live evidence, and the falsifier is closed.
+*(Method note: `docker exec python -c` starts a FRESH process, so the
+in-memory latch it prints is meaningless. The evidence is the decision tape,
+not the process state — worth remembering before anyone reads that value as
+a fact.)*
+
+**Retires: 17 total since the ship, and this hour's 2 are geometry again** —
+run 2367 *"the required risk/reward cannot be expressed within house-imposed
+stop–target bounds"*, run 2370 *"avoids an unexpressible, negative-expectancy
+short trade under current house constraints"*. **17 of 17, still 100%.**
+F31-GEOM secondary remains failed by >8x its threshold. Active runs 19 → 17
+as retires continue to outpace builds.
+
+**Falsifier board.** F31-SHOCK-QUIET: **PASS, closed** (both halves).
+F31-GEOM: primary n=2 starved; secondary FAILED 17/17. F31-SHADOW-CENSUS:
+**0 events, ~9.5 hours left**; buys-only gate versus an all-short entry
+record means it will expire unmeasured — that is a measurement-design
+failure, not evidence about D3. F31-TREND: 0 signals. F31-ADDS / F31-ARM /
+F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB: unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777 measured, n=1);
+D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
+
+**Process health.** 17 runs active, 29 decisions this window (27 hold, 2
+retire), worker on `20260830-shockfix`, restarts 0, **0 tracebacks in 60
+minutes**; ledger sweep `violations: 0, cash_violations: 0`. Merged, not
+deployed — no code change.
