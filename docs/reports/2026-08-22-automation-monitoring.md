@@ -2726,3 +2726,66 @@ discriminator **0 of 18** — two discussions from the formal coincidence
 verdict. F-TARGET-CAP 0/1 (8.5h without a second capped entry); #592 n=4/30.
 39 holds + 1 desk retire; churn 4 builds / 4 stops (3 idle). Worker healthy.
 Mode ②: merged without deploy.
+
+### Reading #95 — 2026-08-30 ~06:20Z (monitoring RESUMED on owner order; first cycle after the Plan 31 round-2 ship)
+
+**P&L: no trades, so no profit and no loss.** Zero fills platform-wide since
+the round-2 deploy (03:15Z) — and zero since the Plan 31 ship (01:48Z) before
+that. Open book is the single orphan position 483 (agent 60, LINKUSDT short
+−14.84 @ 11.299, run_id NULL, by design — hands off): mark 11.391, uPnL
+≈ **−$1.37**. Agent-6 run-level P&L holds at the backfilled 53 runs / −7.1072.
+
+**The finding: the desk is refusing the geometry we mandated, and the pair we
+mandated has never been tested as a pair.**
+- The house-bracket line is wired and accurate — verified in the live worker
+  (`target_policy.prompt_line('crypto')` renders the full stop-cap +
+  target-cap + "target below stop is the house design" text) and `target_band`
+  is present in the brief keys of live decisions (2/2 sampled).
+- Yet **15 of 96 decisions since 03:15Z still say a defensible bracket
+  "cannot be constructed under current house limits"**, including run 2333
+  which RETIRED the slot for it ("inability to size a viable stop/target
+  within house limits"). F31-GEOM's secondary falsifier (>2 geometry-citing
+  retires per 300 decisions) is not yet fired but is on that trajectory at
+  1 per 96.
+- Self-correction, recorded: I first read this as the prompt line making a
+  false promise, on the theory that the 0.3% take-profit is a hard exit
+  (which would need an 82.2% win rate against a measured 42.7%). REFUTED by
+  the code — `risk_engine.py:~628` clears the take-profit once the breakeven
+  ratchet arms (~16bp of notional at prod BREAKEVEN_ARM_FEES=1.78), so the
+  trail does carry winners past the target and the line is truthful. The
+  82.2% figure applies only to trips that never arm.
+- What survives: the deployed pair (stop 0.5% + target 0.3%) was assembled
+  from two experiments that each measured one half against the OLD other
+  half — the 0.30% target sweep ran against 1.5–8% stops, and the stop-cap
+  replay truncated losses at 0.5% while leaving winners at their actual
+  exits. **The pair has never been replayed as a pair, with the TP-clearing
+  and trail mechanics in the loop.** The desk's refusal may be correct.
+- Action taken: launched that replay as the deciding experiment (arms:
+  deployed 0.5/0.3 · 0.3/0.3 — the D7 arm silently dropped at ship · 1.0/0.3 ·
+  0.5 with no TP at all · pre-ship control), pre-registered decision rule,
+  every figure to be reported with and without the largest contributor. No
+  live change until it reports. Nothing was loosened to manufacture entries.
+
+**Falsifier board.**
+- **F31-SHOCK-QUIET: PASS (first real result).** Worker started 03:15:06Z;
+  33/33 decisions inside the 60-minute fresh window carried `psych_shock`,
+  and only **1 of 63 after it** (04:15:06Z, a boundary-adjacent fire). Against
+  the pre-ship saturation of 300/300 cycles, the trigger is de-saturated.
+- **F31-SHADOW-CENSUS: UNMEASURABLE, and structurally so.** 0 `regime_shadow`
+  events. The census fires only on BUY cycles, and there have been 0 buys —
+  so the D3 fix cannot be distinguished from a still-dead path by absence.
+  It is gated on exactly the event that is scarce. Deadline 2026-09-01T03:15Z.
+- **F31-ARM-NONCRYPTO: PASS (in-container).** crypto arm $16.02, us-stock
+  $20.00 (legacy restored), polymarket $20.00 (ratchet re-enabled) per $10k.
+- **F31-GEOM / F31-ADDS / F31-ARM / F31-FREEZE: unmeasurable — no tape.**
+- **F31-TREND: 0 signals**, 5 symbols scanned every cycle; ADX out of the
+  25–40 band on all five, so 0 is the arithmetically correct output.
+- **F31-PSYCH-SUB: pending** the next research batch.
+
+**Process health.** Worker on `20260830-20260830-plan31r2`, restarts 0, **0
+tracebacks in 3h**. Ledger invariant sweeping clean with the new detector
+live: `violations: 0, cash_violations: 0`. Decisions 92 hold / 4 retire
+(95.8% hold). Trend module ticking hourly.
+
+Mode ①: flat book — merged and deployed per cadence (no code change this
+cycle; note-only merge).
