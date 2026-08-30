@@ -3254,3 +3254,124 @@ F31-PSYCH-SUB / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE: unchanged.
 tracebacks in 45 minutes**; ledger sweep `violations: 0, cash_violations: 0`;
 trend module ticking. Merged, not deployed — no code change, and per defect 1
 this cycle deliberately does not deploy so the next can measure the trigger.
+
+### Reading #104 — 2026-08-30 ~12:50Z — FIRST COMPLETED TRIPS: −$7.61, and the three agents corrected me SEVEN times
+
+**P&L: run 2341 closed at −$7.608781 true-net.** Trip 1 −$7.772195 (−86.4bp),
+trip 2 +$0.163413 (+1.8bp), fees $1.6245. That is the platform's ENTIRE
+trading record since the ship: **n=2 completed trips, 50% win rate, payoff
+0.021**. The other 38 runs that stopped in the window closed at $0.00. No
+extrapolation from n=2.
+
+**ROOT CAUSE OF THE LOSS — a 2-second dispatch race, not geometry.**
+The stop was 78374.8245; the fill was 78586 — **211.2 pts / 27.0bp beyond
+it, $2.437 of excess loss**. Decomposition: mark discretisation $0.660
+(27.1%); **stop-router hold + timeout $1.777 (72.9%)**.
+Sequence: 12:07:24.336 cycle 12 claims the run → **12:07:26.296 the stop hit
+lands, 2 seconds too late** → `begin_ruling()` (its ONLY call site,
+`run_engine.py:6893`, at the top of run_cycle) had already run and found
+nothing pending, so `deciding_since` was never stamped → the deadline stayed
+at hit+180s → the priority re-dispatch that would have repaired it was
+dropped by `_in_flight` (`run_engine.py:8113`) → 12:10:32 fail-safe close.
+**Reordering does not fix it**: even a correct stamp gives 12:10:24, EARLIER
+than hit+180. A hit landing inside a running cycle gets only what remains of
+180s; this cycle needed 297s. The same race left the route at
+`["psych_shock","hot_issue"]` on the LIGHT tier — the mandatory full-tier
+emergency never convened, and the desk was asked about a book the watcher had
+flattened 104s earlier.
+
+**SEVEN CORRECTIONS TO MY OWN RECORD.** All verified independently.
+1. **#102's "every rail did what it shipped to do — mechanically flawless" is
+   FALSE.** I audited this exact run in that hour and graded the rails a pass
+   while a $1.78 routing failure sat in the log I was reading.
+2. **The ratchet is NOT defective.** `peak: −6.125` is run-cumulative
+   *reporting*; the decision is trip-scoped against `baseline =
+   peak_realized_usd` (−8.178124): excursion **+$2.0529** ≥ arm 1.4526 →
+   armed; floor 1.43195; current +$0.9748 → fire. It protected a real +$2.05
+   excursion. Arithmetic reproduces to the last digit. **The defect is the
+   telemetry mixing two scopes**, which is exactly what made me misread it.
+3. **It was RIGHT to cut trip 2.** Barrier EV at the flatten mark was
+   **−$0.41** (the exit fee) against the +$0.16 it banked — **the ratchet was
+   ~$0.57 better than holding.**
+4. **My PR #650 re-anchor is EV-NEUTRAL, not harmful — and shipping it was
+   NOT justified.** Barrier arithmetic: pre-fix P(target first) 0.3389, post
+   0.6250, **gross EV +0.000000 both**. The "1.95 → 0.60 R:R" framing is the
+   R:R-for-expectancy substitution #96's own replay killed — and I wrote
+   "gross EV +0.00bp by construction" six lines from calling one bracket
+   "good". **The experiment was one query away:** `mark_refresh` holds 19
+   opening legs; max adverse drift ever **0.2781%**; count in the (0.30%,
+   0.50%] window PR #650 exists to close: **ZERO**. I shipped a live
+   money-path change, restarted the worker and reset a falsifier for the
+   third time, to close a hole with no observations.
+5. **F31-SHOCK-QUIET has been MEANINGLESS for four readings.**
+   `psych_feed` sets `payload["shock"]` to a per-symbol LIST — always
+   populated, one entry per monitored symbol — so `bool(...)` is ALWAYS true
+   regardless of each entry's own `shock` flag. Verified live: snapshot 1485
+   had both symbols `shock: false` and still evaluated truthy; the clear
+   branch at `run_engine.py:3107` is **unreachable**. The 60-minute window is
+   correct code wrapped around a **constant input**. **And the inversion is
+   worse:** a genuine BTC shock DID land at 12:23:04 — σ×3.32, volume ×4.66,
+   **$922,639 of liquidations, entirely short-side, while our book was
+   short** — and **0 of 9 post-window cycles escalated**. Saturated where
+   unguarded, blind where guarded: zero information in both directions.
+6. **My "63% worse" was a mixed basis** (exit-fee-netted actual ÷ gross
+   promise). Like-for-like it is **45.7%**.
+7. **My `run_engine.py:7545` citation used the WRONG population.** That
+   comment is dated 08-18 and defines two classes; trip 1 was `absent`, whose
+   own figure in that same comment is **n=3 / +$0.61**, not the −$178.71 I
+   quoted from the parsed-null class.
+
+**TRIP 2 WAS NOT A RE-ENTRY DECISION — it was a stale ruling mis-executed.**
+The cycle-12 report says *"Our existing short position … Reducing half the
+position"* — the position had closed 109 seconds earlier. `sell` on a flat
+book opens a short, so a "reduce half" became a **new full-size short**
+($943.21 requested = 128% of trip 1, cut to $450 only by `null_size_cap`).
+The 45-minute re-entry cooldown never ran: `_pre_gate_skip` guards it with
+`if not has_position:`, evaluated at 12:07:24 while position 485 was still
+open — a TOCTOU. **And the defect made money:** executing the desk's actual
+ruling would have realised **−$8.078** against the actual −$7.609. The bug
+beat the AI by $0.47. n=1, noise, recorded.
+
+**NEW DEFECTS, none shipped this cycle (pre-registered instead).**
+- **D-STOP-RACE** ($1.777 measured): a hit landing inside a running cycle can
+  never extend its own fail-safe window. Fix options: stamp `deciding_since`
+  at note time when a cycle is in flight; or let the priority re-dispatch
+  preempt `_in_flight`; or close immediately when the desk demonstrably
+  cannot rule in time. *Falsifier:* next 10 routed hits — mean overrun must
+  fall below the 27bp observed here.
+- **D-SHOCK-CONST**: `any(e.get("shock") for e in payload["shock"])` instead
+  of `bool(...)`. *Falsifier:* after the fix, a no-shock snapshot must
+  produce 0 escalations and a real shock must produce ≥1.
+- **D-STOP-BLACKOUT**: `_SUPPRESS_UNTIL = now + renote_min()*60` = **30
+  minutes** during which `note_hit` returns "do not close" without creating a
+  pending entry — the stop is entirely unenforced. Did not fire here; armed
+  on every future routed hit.
+- **D-TARGET-VS-DRIFT** (measured, and the strongest argument against the
+  cap): mean opening drift **0.1552%**, median 0.1431% — **~52% of the entire
+  0.30% target distance**. The take-profit is barely twice the typical
+  execution error.
+- Also unnamed until now: a fourth exit author `run:N:arm:M` (9 legs,
+  −$4.43); `peak_realized_usd` is realized-at-peak-epoch, not a maximum.
+
+**Why nothing shipped this cycle.** I have shipped twice today inside
+monitoring cycles; the second rested on a defect with zero observations, and
+each ship restarted the worker and reset a falsifier. The rule is implement
+only on an experimental result. D-STOP-RACE and D-SHOCK-CONST now HAVE
+observations, so they are shippable — but they ship as a considered change
+with their falsifiers pre-registered, not reflexively in the hour I found
+them.
+
+**Falsifier board.** F31-GEOM: **n=2, −$7.61, payoff 0.021** — establishes
+nothing about expectancy (one path, one symbol, 2h51m); the loss was
+authored by plumbing, and the PRE-ship geometry was **$0.43 ahead** at the
+last observable mark, having touched neither leg. F31-SHOCK-QUIET: **VOID —
+the trigger reads a constant** (see correction 5); all prior PASSes
+withdrawn. F31-ADDS: not triggered, n=2. F31-SHADOW-CENSUS: 0 (deadline
+2026-09-01T03:15Z). F31-TREND: 0 signals. F31-ARM: one fire, armed and fired
+correctly, but **$0.457 (31.9%) below its own floor** on the same ~64s
+cadence that cost the stop $0.660 — one root cause, two rails.
+
+**Process health.** Worker on `20260830-reanchor`, restarts 0, 0 tracebacks;
+ledger sweep `violations: 0, cash_violations: 0`; book back to the orphan
+alone (BTCUSDT slot cooled for agent 60 until 18:29:34Z). Merged, NOT
+deployed.
