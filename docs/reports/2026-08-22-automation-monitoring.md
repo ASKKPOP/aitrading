@@ -4000,3 +4000,43 @@ D-TARGET-VS-DRIFT; D-REENTRY-1X.
 **Process health.** 41 runs active, 81 decisions (76 hold, 5 retire), worker
 on `20260830-shockfix`, restarts 0, **0 tracebacks in 60 minutes**; ledger
 sweep `violations: 0, cash_violations: 0`. Merged, not deployed.
+
+### Reading #116 — 2026-08-30 ~23:35Z — the orphan is PROFITABLE for the first time; the build burst is over
+
+**P&L: the open book turned positive.** LINK fell 0.74% below the short's
+entry, so orphan 483 is now at **+$1.25 unrealized** — the first positive
+mark in the entire monitoring window. Its arc across today: −$1.23 → −$1.86 →
+−$2.89 → −$3.65 → −$4.11 → −$5.12 (low) → −$5.22 → −$5.58 → −$4.81 → −$4.45 →
+−$3.62 → −$3.26 → −$2.00 → **+$1.25**. That is a **+$6.83 swing** off the low,
+and its stop is now 5.8% away rather than the 66.7%-of-the-way it reached at
+#110. No fills, so the realised record is unchanged: **n=2, −$7.61**.
+
+Worth stating plainly because it cuts against my own reporting: I have
+described this position as "bleeding" for six consecutive readings, and it
+has now recovered entirely on its own while every automated mechanism held
+it. The reclaim daemon returned HOLD at 23:06 and 23:21 as it has all day —
+on this instance, holding was right and the seven readings that framed it as
+a mounting loss were describing an open mark, not a result. An unrealised
+loss is a price, not an outcome.
+
+**The build burst is over.** Builds by hour: 21Z **21**, 22Z **17**, 23Z **2**.
+Fleet 41 → **40** active. Cumulative since the ship: **96 built, 85 stopped,
+4 fills — conversion 4.2%** (from 4.4% last hour, 7.4% at #110). The two-hour
+surge produced 38 slots and zero trades.
+
+**Retires: 29 cumulative**, +1 this window. The geometry pattern is unchanged
+on every verbatim read.
+
+**Falsifier board.** F31-GEOM primary n=2 and structurally starved (the
+primary needs 50 trips; conversion is falling). Secondary FAILED, 29 retires.
+F31-SHOCK-QUIET PASS/closed — 0 of 80 on a quiet market. F31-SHADOW-CENSUS
+0 events, **27.7h** to its 2026-09-01T03:15Z deadline. F31-TREND 0 signals.
+F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB
+unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777, n=1); D-STOP-BLACKOUT;
+D-TARGET-VS-DRIFT; D-REENTRY-1X.
+
+**Process health.** 40 runs active, 80 decisions (79 hold, 1 retire), worker
+on `20260830-shockfix`, restarts 0, **0 tracebacks in 60 minutes**; ledger
+sweep `violations: 0, cash_violations: 0`. Merged, not deployed.
