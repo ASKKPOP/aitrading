@@ -1,0 +1,41 @@
+r	c
+decision is 'hold'	10535
+market closed	4244
+market closed — flatten queued to the next open	1477
+desk retired this run	244
+loss cooldown	240
+re-entry cooldown (60m at 3x leverage)	30
+fence: lease expired	18
+re-entry cooldown (45m at 2x leverage)	17
+spot sell with no inventory — treated as hold	14
+risk: max concurrent positions reached (8/8)	12
+risk: max concurrent positions reached (10/8)	6
+loss cooldown BYPASSED: routed stop hit awaits the desk's ruling	4
+risk: max concurrent positions reached (9/8)	4
+risk: max concurrent positions reached (11/8)	3
+fence: run is stopped	3
+confidence 0.45 below threshold 0.5	2
+dust order skip (margin $8.62 < floor $10.00)	2
+confidence 0.58 below threshold 0.6	2
+confidence 0.62 below threshold 0.65	2
+decision is 'None'	2
+confidence 0.58 below threshold 0.6000000000000001	2
+confidence 0.53 below threshold 0.55	2
+risk: max concurrent positions reached (12/8)	2
+re-entry cooldown (120m at 5x leverage)	1
+stale mark: moved 0.94% since the decision mark (3.6042 -> 3.5703); entry refused — re-decide on fresh data	1
+stale mark: moved 0.97% since the decision mark (3.7343 -> 3.6979); entry refused — re-decide on fresh data	1
+confidence 0.58 below threshold 0.5800000000000001	1
+dust order skip (margin $9.25 < floor $10.00)	1
+confidence 0.52 below threshold 0.63	1
+confidence 0.58 below threshold 0.66	1
+confidence 0.48 below threshold 0.5	1
+confidence 0.56 below threshold 0.63	1
+confidence 0.58 below threshold 0.685	1
+confidence 0.52 below threshold 0.545	1
+confidence 0.6 below threshold 0.6000000000000001	1
+add_limit: position underwater (unrealized $-0.74)	1
+confidence 0.6 below threshold 0.65	1
+confidence 0.64 below threshold 0.6699999999999999	1
+risk: symbol exposure limit ($9181.81 held + $1625.53 order > $10000.00 cap)	1
+risk: symbol exposure limit ($9188.93 held + $995.22 order > $10000.00 cap)	1
