@@ -2920,3 +2920,25 @@ corpus.
 all hold. Worker on `20260830-plan31r2`, restarts 0, uptime since 03:15Z,
 **0 tracebacks in 70 minutes**. Ledger invariant sweep `violations: 0,
 cash_violations: 0`. Trend module ticking hourly, scanning 5, signalling 0.
+
+### Reading #98 — 2026-08-30 ~07:35Z — quiet
+
+**No trades, so no profit and no loss.** 0 fills since #97; 20 decisions, all
+hold. Orphan 483 (LINKUSDT short, run_id NULL, by design) uPnL **−$1.78**,
+recovered from −$2.05 as LINK eased to 11.419. Hands off.
+
+**Falsifier board: one strengthened, none moved otherwise.** F31-SHOCK-QUIET
+now **1 of 97** post-window decisions carrying the trigger (was 1 of 63 at
+#95) — the single 04:15:06Z boundary fire, with 34 further decisions clean;
+against the pre-ship 300/300 saturation the de-saturation is holding.
+F31-PSYCH-SUB still 0.0/−0.0 at coverage 0.5 with F&G mid-band; the −0.0 on a
+short-side thesis is the direction-alignment multiply (tilt × −1) visibly
+executing, which is minor corroboration that the wiring is live rather than
+a constant. F31-GEOM/ADDS/ARM/FREEZE unmeasurable (no tape, agent 5 has 0
+running runs); F31-SHADOW-CENSUS still 0 (0 buys, structurally gated);
+F31-TREND 0 signals; F31-ARM-NONCRYPTO unchanged PASS.
+
+**Process health.** 22 running runs; worker on `20260830-plan31r2`, restarts
+0, up since 03:15Z, **0 tracebacks in 65 minutes**; ledger sweep
+`violations: 0, cash_violations: 0`. Merged, not deployed (no code change;
+per #97's cadence note, hourly deploys would re-saturate psych_shock).
