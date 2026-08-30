@@ -3707,3 +3707,33 @@ D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
 this window (28 hold, 3 retire), worker on `20260830-shockfix`, restarts 0,
 **0 tracebacks in 60 minutes**; ledger sweep `violations: 0,
 cash_violations: 0`. Merged, not deployed.
+
+### Reading #111 — 2026-08-30 ~19:35Z — quiet; orphan pulled back from its stop; shock trigger went quiet when the shock cleared
+
+**P&L: no fills. The orphan did NOT stop out** — LINK eased to 11.623, so
+uPnL recovered to **−$4.81** from −$5.58, and it sits 57.5% of the way to its
+11.8629 stop rather than 66.7%. Trading record unchanged: **n=2, −$7.61**.
+`blocking` is back to 1, so it is again withholding a LINKUSDT slot from
+fleet 42.
+
+**One further confirmation of the shock fix, unprompted by me.** The ETHUSDT
+shock that ran 17:00–18:3x has cleared in the feed, and the trigger followed
+it down: **0 of 22 decisions this window carry it**, after 16 of 31 last
+hour. That is the full cycle now observed end to end on live data —
+silent in quiet (74/0), escalating within 52s of a real shock (#109),
+persisting while the shock persists (16/31, #110), and going quiet again when
+it clears (0/22, here). Under the old code the trigger could not have
+followed any of those transitions.
+
+**Everything else unchanged.** Fleet 16 → **14** active as the drain
+continues; 21 retires cumulative; F31-GEOM primary still starved at n=2;
+F31-SHADOW-CENSUS **0 events with ~7.5 hours to its deadline**, still gated
+on buys against an all-short entry record; F31-TREND 0 signals; F31-ADDS /
+F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777 measured, n=1);
+D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
+
+**Process health.** 14 runs active, 22 decisions all hold, worker on
+`20260830-shockfix`, restarts 0, **0 tracebacks in 60 minutes**; ledger sweep
+`violations: 0, cash_violations: 0`. Merged, not deployed.
