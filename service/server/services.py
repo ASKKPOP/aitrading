@@ -547,7 +547,8 @@ def llm_context_for_agent(agent_id: Optional[int]):
             config = {}
         provider = (config.get("provider") or "").strip().lower() or None
         model = (config.get("model") or "").strip() or None
-        api_key = (row["api_key"] or "").strip() or None
+        from user_secrets import decrypt_secret
+        api_key = (decrypt_secret(row["api_key"]) or "").strip() or None
         if not (provider or model or api_key):
             return None
         from llm_client import LlmContext
