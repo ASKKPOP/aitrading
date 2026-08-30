@@ -3946,3 +3946,57 @@ D-TARGET-VS-DRIFT; **D-REENTRY-1X** (new).
 **Process health.** 32 runs active, 60 decisions (58 hold, 2 retire), worker
 on `20260830-shockfix`, restarts 0, **0 tracebacks in 60 minutes**; ledger
 sweep `violations: 0, cash_violations: 0`. Merged, not deployed.
+
+### Reading #115 — 2026-08-30 ~22:35Z — the churn ACCELERATED: 35 slots built in two hours, 0 traded, conversion down to 4.4%
+
+**P&L: no fills. The orphan recovered strongly** — LINK 11.434 → **−$2.00**
+(from −$3.26), now only 23.9% of the way to its stop, down from a 66.7% peak
+at #110. Trading record unchanged: **n=2, −$7.61**.
+
+**#114 asked whether the refilled slots would survive the geometry wall.
+They did not, and the loop is now running faster than at any point today.**
+
+| hour | built | stopped |
+|---|---|---|
+| 19Z | 1 | 3 |
+| 20Z | 1 | 1 |
+| **21Z** | **21** | 3 |
+| **22Z** | **14** | 4 |
+
+**35 slots built in two hours**, against roughly one per hour before that.
+Fleet is now **41 active** — the highest all day. And of the ~35 built since
+20:30, **zero have traded**; four have already retired, all `desk_retired`.
+
+**Cumulative since the ship (~21h): 91 runs BUILT, 79 stopped, 4 fills.
+Conversion from a built run to any fill at all is now 4.4% — down from 7.4%
+at #110.** Building faster has not produced trades; it has produced retires
+faster.
+
+**All 5 retires this window cite the geometry again — 28 cumulative, and
+every one read verbatim so far cites it.** This window's, in the desk's own
+words:
+- 2364 *"a viable short stop cannot be placed within the platform's constraints"*
+- 2403 *"the tight loss rail … the desk cannot safely express the long thesis"*
+- 2410 *"cannot be sized to satisfy the rail, making the bracket infeasible"*
+- 2411 *"no acceptable risk-reward geometry can be defined"*
+- 2414 *"cannot be expressed with a viable bracket"*
+
+Note 2410's wording — *"cannot be sized to satisfy the rail"* — is the SIZING
+complaint, not the bracket complaint, and it is the same axis last week's
+analysis identified as the actual cause of the −$11.24. Two independent
+routes now point at size: the desk saying it cannot size to the rail, and the
+size buckets showing every trade over $100 losing.
+
+**Falsifier board.** F31-GEOM primary n=2, starved — and note the primary
+**cannot** accrue while the conversion rate falls; secondary FAILED, 28
+retires. F31-SHOCK-QUIET PASS/closed, 0 of 81 on a quiet market.
+F31-SHADOW-CENSUS 0 events, **28.7h** to deadline. F31-TREND 0 signals.
+F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB
+unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777, n=1); D-STOP-BLACKOUT;
+D-TARGET-VS-DRIFT; D-REENTRY-1X.
+
+**Process health.** 41 runs active, 81 decisions (76 hold, 5 retire), worker
+on `20260830-shockfix`, restarts 0, **0 tracebacks in 60 minutes**; ledger
+sweep `violations: 0, cash_violations: 0`. Merged, not deployed.
