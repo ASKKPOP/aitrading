@@ -1761,7 +1761,9 @@ class BreakevenRatchetTests(unittest.TestCase):
         import inspect
         src = inspect.getsource(run_engine._evaluate_stop)
         self.assertIn("_breakeven_floor_hit(", src)
-        self.assertIn("_breakeven_arm_usd(pnl, _run_max_abs_qty(run))", src)
+        self.assertIn("_breakeven_arm_usd(pnl, _run_max_abs_qty(run),", src)
+        # Plan 31 item 5: the arm prices at the MARKET's own fee rate.
+        self.assertIn('market=run.get("market")', src)
 
     def test_it_works_with_NO_trail_config_at_all(self):
         # run 961 carries stop_conditions_json = {} and therefore had no peak

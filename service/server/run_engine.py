@@ -888,7 +888,8 @@ def _breakeven_ratchet_enabled() -> bool:
         not in ("0", "false", "off", "no")
 
 
-def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None) -> float:
+def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None,
+                       market: "str | None" = None) -> float:
     """The peak a position must clear before the floor applies: ITS OWN
     round-trip cost.
 
@@ -912,7 +913,20 @@ def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None) -> float:
             qty = max(qty, float(floor_qty or 0))
         except (TypeError, ValueError):
             pass
-        rate = float(os.getenv("BREAKEVEN_FEE_RATE", "0.001"))
+        # Plan 31 item 5: arm at the REAL per-market round trip, not the
+        # legacy 0.001 flat rate — crypto's true rate is 0.00045/side, so
+        # the flat constant priced the arm 2.2x too high and winners under
+        # 0.2% of notional never armed (run 1159 SPCX peaked +5.78
+        # unprotected and realized −35.81). BREAKEVEN_FEE_RATE, when set,
+        # overrides everything and is the kill switch back to any flat rate.
+        rate_env = (os.getenv("BREAKEVEN_FEE_RATE") or "").strip()
+        if rate_env:
+            rate = float(rate_env)
+        elif market:
+            from fees import fee_rate as _arm_fee_rate
+            rate = float(_arm_fee_rate(market))
+        else:
+            rate = 0.001
         mult = float(os.getenv("BREAKEVEN_ARM_FEES", "1.0"))
         return qty * mark * rate * 2.0 * max(0.0, mult)
     except (TypeError, ValueError):
@@ -1241,7 +1255,8 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # The arm is anchored to the largest book the run ever held — a reduce
     # must not lower the bar under an already-earned peak (run 976).
     if has_position and pnl["mark_age_ok"]:
-        _be_arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run))
+        _be_arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run),
+                                     market=run.get("market"))
         # ROUND-TRIP cost on the CURRENT book, priced at the MARKET's own rate.
         # It was one leg at the legacy flat 0.001; `fees.fee_rate("crypto")`
         # is 0.00045, so the floor was mispriced on both the leg count and the
@@ -2488,6 +2503,46 @@ def _fence(run_id: int):
     return _check
 
 
+def _entry_age_hours(run: dict) -> "float | None":
+    """Hours since this run's LATEST entry-side fill (buy/short). The latest
+    leg — not the earliest — so an add resets the clock upward, which is the
+    conservative direction for a minimum-hold check; a run that closed and
+    re-entered is also handled without bookkeeping. None when no entry fill
+    exists (callers fail open)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT MAX(timestamp) AS ts FROM signals WHERE run_id = ? "
+            "AND side IN ('buy', 'short') AND executed_at IS NOT NULL",
+            (run["id"],))
+        row = cursor.fetchone()
+        if not row or not row["ts"]:
+            return None
+        return max(0.0, (time.time() - float(row["ts"])) / 3600.0)
+    except Exception:  # noqa: BLE001
+        return None
+    finally:
+        conn.close()
+
+
+def _entry_frozen(agent_id: int) -> bool:
+    """Plan 31 item 2: per-agent NEW-ENTRY freeze, env-driven so it is a
+    platform mechanism with a kill switch rather than a DB row patch.
+    AGENT_ENTRY_FREEZE is a comma-separated agent-id list; a frozen agent's
+    buy/short orders (fresh entries AND adds) skip with a journaled reason
+    while sell/cover — and every platform exit author — run untouched, so
+    open positions exit normally. Rationale: agent 5 authored −$178.22 of
+    the window's −$171.65 (wr 22.6%, payoff 0.20, all top-5 loss trips)."""
+    raw = (os.getenv("AGENT_ENTRY_FREEZE") or "").strip()
+    if not raw:
+        return False
+    try:
+        return str(int(agent_id)) in {p.strip() for p in raw.split(",") if p.strip()}
+    except (TypeError, ValueError):
+        return False
+
+
 def _master_held(agent_id: int) -> bool:
     """Plan 14 §6.7: account-level master hold — the zero-cost pre-gate. A
     held account cannot trade even if an individual object was missed by the
@@ -2550,6 +2605,17 @@ def _adds_require_profit() -> bool:
         "1", "true", "yes", "on")
 
 
+def _add_into_loser_block() -> bool:
+    """Plan 31 item 4: extend the underwater-add block to runs WITHOUT
+    add_limits config and fail it CLOSED on unreadable unrealized P&L.
+    Run 1099 (no add_limits) stacked 6 adds into a losing SOLUSDT short
+    for −$65 — 30% of the whole window's gross loss — through exactly
+    those two fail-open holes. Default off so unset envs stay
+    byte-identical; prod sets ADD_INTO_LOSER_BLOCK=1."""
+    return os.getenv("ADD_INTO_LOSER_BLOCK", "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
 def _unrealized_pnl(run: dict) -> Optional[float]:
     """This run's unrealized P&L, or None when it cannot be trusted (no live
     mark, stale mark, unreadable book) — callers must treat None as 'unknown'
@@ -2575,6 +2641,34 @@ def _unrealized_pnl(run: dict) -> Optional[float]:
 # — a complete, internally consistent risk plan — and the engine kept less
 # than half of it. This section honours the rest.
 _AMBIENT_TRIGGERS = frozenset({"psych_shock", "hot_issue", "psych_extreme"})
+
+_PSYCH_SHOCK_STATE = {"active": False, "since": 0.0}
+
+
+def _psych_shock_fresh(shock: bool) -> bool:
+    """Plan 31: the psych_shock trigger fired on 300/300 sampled cycles —
+    a flag that is always on carries zero routing information (R3/R5). Fire
+    on the TRANSITION into shock and for PSYCH_SHOCK_FRESH_MIN minutes
+    after (default 60), then stay quiet until the state clears and
+    re-enters. Process-local on purpose: a worker restart costs at most one
+    extra full-desk convocation. PSYCH_SHOCK_DELTA=0 restores the old
+    always-on behavior."""
+    if os.getenv("PSYCH_SHOCK_DELTA", "1").strip().lower() in (
+            "0", "false", "off", "no"):
+        return bool(shock)
+    now = time.time()
+    st = _PSYCH_SHOCK_STATE
+    if shock:
+        if not st["active"]:
+            st["active"] = True
+            st["since"] = now
+        try:
+            fresh_win = float(os.getenv("PSYCH_SHOCK_FRESH_MIN", "60")) * 60.0
+        except (TypeError, ValueError):
+            fresh_win = 3600.0
+        return (now - st["since"]) <= fresh_win
+    st["active"] = False
+    return False
 
 
 def _order_plan_enabled() -> bool:
@@ -2875,12 +2969,23 @@ def _add_limit_skip(run: dict, cfg: dict, action: str,
     composer; absent config (manual runs) disables the guard. Reduce/close
     orders are never limited. Returns a skip reason or None."""
     limits = cfg.get("add_limits") if isinstance(cfg.get("add_limits"), dict) else None
-    if not limits:
+    if not limits and not _add_into_loser_block():
         return None
     try:
         qty = _position_quantity(run["agent_id"], run["market"],
                                  run["symbol"], run["id"])
     except Exception:  # noqa: BLE001
+        # Cannot tell an add from a fresh entry without the book; blocking
+        # here would block ENTRIES during a DB hiccup. Allow, but loudly —
+        # this was fail-open hole #2 that let run 1099 stack 6 adds into a
+        # losing short (Plan 31 item 4), so it must at least be visible.
+        logger.warning("add gate: position quantity unreadable (run %s) — "
+                       "gate skipped", run.get("id"), exc_info=True)
+        try:
+            emit_telemetry_event(run["id"], "add_gate_error",
+                                 {"reason": "position_quantity unreadable"})
+        except Exception:  # noqa: BLE001
+            pass
         return None
     if not qty:
         return None
@@ -2898,6 +3003,27 @@ def _add_limit_skip(run: dict, cfg: dict, action: str,
         open_side = "short"
     else:
         return None  # reducing/closing — never limited
+    # Never average into a loser (2026-07-26). Run 112 doubled a losing ETH
+    # short at −$27 unrealized, and run 104 stacked five shorts on the way to
+    # −$38.62: an add is a fresh bet that the thesis is working, so it must be
+    # earned by the position already working. Only the sign of unrealized P&L
+    # gates here — the fee hurdle on the new leg is a separate gate.
+    # Plan 31 item 4: this block now runs BEFORE the add_limits/opens checks
+    # (run 1099 had no add_limits and stacked 6 adds into a losing short for
+    # −$65 = 30% of the window's gross loss), and with ADD_INTO_LOSER_BLOCK
+    # on, an UNREADABLE unrealized P&L blocks the add too — an add into an
+    # unknown book is the run-1099 shape, while a blocked add is only a
+    # missed size-up. Reduce/close orders never reach here (open_side gate
+    # above), so a losing-short COVER is never blocked.
+    if _adds_require_profit() or _add_into_loser_block():
+        upnl = _unrealized_pnl(run)
+        if upnl is not None and upnl < 0:
+            return f"add_limit: position underwater (unrealized ${upnl:.2f})"
+        if upnl is None and _add_into_loser_block():
+            return ("add_limit: unrealized P&L unreadable — add blocked "
+                    "(fail-closed)")
+    if not limits:
+        return None
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -2910,15 +3036,6 @@ def _add_limit_skip(run: dict, cfg: dict, action: str,
         conn.close()
     if not opens:
         return None
-    # Never average into a loser (2026-07-26). Run 112 doubled a losing ETH
-    # short at −$27 unrealized, and run 104 stacked five shorts on the way to
-    # −$38.62: an add is a fresh bet that the thesis is working, so it must be
-    # earned by the position already working. Only the sign of unrealized P&L
-    # gates here — the fee hurdle on the new leg is a separate gate.
-    if _adds_require_profit():
-        upnl = _unrealized_pnl(run)
-        if upnl is not None and upnl < 0:
-            return f"add_limit: position underwater (unrealized ${upnl:.2f})"
     max_adds = int(limits.get("max_adds") or 0)
     # The desk's own max_adds, when it authored one. Shrink-only against the
     # house limit for the same reason every other order-block field is: the
@@ -2975,8 +3092,11 @@ def _classify_situation(run: dict, cfg: dict) -> dict:
         try:
             from psych_feed import get_psych_payload
             psych = get_psych_payload()
-            if psych.get("available") and psych.get("shock"):
+            if psych.get("available") and psych.get("shock") \
+                    and _psych_shock_fresh(True):
                 triggers.append("psych_shock")
+            elif not psych.get("shock"):
+                _psych_shock_fresh(False)
         except Exception:  # noqa: BLE001
             pass
     try:
@@ -5565,7 +5685,8 @@ def _floor_status_line(run: dict, pnl: dict, peak: "float | None") -> str:
     exist. Fail-soft: anything unreadable renders "".
     """
     try:
-        arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run))
+        arm = _breakeven_arm_usd(pnl, _run_max_abs_qty(run),
+                                 market=run.get("market"))
         if arm <= 0:
             return ""
         best = float(peak or 0)
@@ -7556,6 +7677,35 @@ def run_cycle(run_id: int) -> dict:
             if ai_sl and ai_tp:
                 stop_loss, take_profit = ai_sl, ai_tp
 
+        # Stop cap (Plan 31 item 3, 2026-08-29). D-CAP-STOP-LEAK: with the
+        # target capped at 0.30% while authored stops run 1.5-8%, the
+        # RR_FLOOR term below inflated the effective target cap to
+        # RR_FLOOR x stop — deployed R:R pinned at 1:5 AGAINST for 72% of
+        # entries (proven live, run 2259). Clamping the stop here bounds
+        # that term at cap x RR_FLOOR, killing the leak while keeping the
+        # never-skip invariant intact for every RR_FLOOR value. Replay on
+        # the 110-trip tape: 0.5% cap lifts payoff 0.27 -> ~1.1 and cuts
+        # the window loss ~40% ($-weighted). Runs on WHICHEVER bracket won,
+        # like the target cap below. Env-gated; unset = off.
+        if action in ("buy", "short") and entry and stop_loss:
+            try:
+                _scap_env = os.getenv("STOP_CAP_PCT_CRYPTO", "").strip()
+                if _scap_env and (run.get("market") or "") == "crypto":
+                    _scap = float(_scap_env)
+                    _e0 = float(entry)
+                    _sd0 = abs(float(stop_loss) - _e0) / _e0 * 100.0
+                    if _scap > 0 and _sd0 > _scap + 1e-9:
+                        _new_sl = _e0 * (1 + _scap / 100.0) if is_short \
+                            else _e0 * (1 - _scap / 100.0)
+                        emit_telemetry_event(
+                            run_id, "stop_cap",
+                            {"cycle": seq, "cap_pct": _scap,
+                             "stop_before": float(stop_loss),
+                             "stop_after": round(_new_sl, 8)})
+                        stop_loss = _new_sl
+            except Exception:  # noqa: BLE001 — the cap must never block a trade
+                logger.exception("stop cap failed; stop left unchanged")
+
         # Reachable-target cap (owner order 2026-08-29). The target sweep on
         # 1,099 replayed prod entries measured the 4.5%-class target filled
         # on 6 trips while 0.30% fills 62% and maximises the mean — targets
@@ -7606,6 +7756,50 @@ def run_cycle(run_id: int) -> dict:
                                      {"cycle": seq, "stage": "rr_floor",
                                       "reason": violation})
                 return result
+
+        # Plan 31 item 6 (sim A/B arm B): per-run minimum hold. The ≥12h
+        # bucket stat is INCONCLUSIVE (sign flips ex-largest-winner), so
+        # this ships as a per-run CONFIG for a sim arm, never a global env.
+        # Desk-authored sell/cover only — every platform exit author
+        # (max_loss, ratchet/trail, at_time, adapt/retire flatten,
+        # fleet_stop_all, armed_exit, SL/TP watcher) runs outside this
+        # decision path and is untouched. Fails OPEN on a stale mark or any
+        # error: during a mark blackout nothing may trap a position.
+        if action in ("sell", "cover"):
+            try:
+                _mh = float(cfg.get("min_hold_hours") or 0)
+            except (TypeError, ValueError):
+                _mh = 0.0
+            if _mh > 0:
+                try:
+                    _pnl6 = compute_run_pnl(run)
+                    _pos6 = _pnl6.get("position")
+                    if _pos6 and float(_pos6.get("quantity") or 0) != 0 \
+                            and bool(_pnl6.get("mark_age_ok")):
+                        _age = _entry_age_hours(run)
+                        if _age is not None and _age < _mh:
+                            result["skip_reason"] = (
+                                f"min_hold: position {_age:.1f}h old, config "
+                                f"holds desk exits until {_mh:g}h (platform "
+                                "stops unaffected)")
+                            emit_telemetry_event(
+                                run_id, "gate_skip",
+                                {"cycle": seq, "stage": "min_hold",
+                                 "reason": result["skip_reason"]})
+                            return result
+                except Exception:  # noqa: BLE001 — fail open, never trap
+                    logger.debug("min_hold check failed open (run %s)",
+                                 run_id, exc_info=True)
+
+        # Plan 31 item 2: per-agent entry freeze — buy/short only, so open
+        # positions exit normally through every author.
+        if action in ("buy", "short") and _entry_frozen(run["agent_id"]):
+            result["skip_reason"] = (
+                f"agent {run['agent_id']} entry freeze (AGENT_ENTRY_FREEZE)")
+            emit_telemetry_event(run_id, "gate_skip",
+                                 {"cycle": seq, "stage": "entry_freeze",
+                                  "reason": result["skip_reason"]})
+            return result
 
         # Plan 14 §6.7 depth (2): re-check the master hold immediately before
         # the trade write — a hold landing mid-cycle (past the pre-gate, during

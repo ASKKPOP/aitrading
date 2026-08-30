@@ -888,6 +888,61 @@ async def outlook_refresher_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def ledger_invariant_loop():
+    """Plan 31 item 1: nightly row-level ledger invariant.
+
+    Every LEDGER_INVARIANT_INTERVAL seconds (default 24h): recompute each
+    exit fill's expected P&L by replaying its book and compare against
+    signals.pnl; violations write run_events telemetry + one admin alert
+    (the agent-6 pnl=0 reset would have fired this within a day). Pure
+    measurement — reads the ledger, never writes it. Gated by
+    LEDGER_INVARIANT_ENABLED (default on).
+    """
+    from ledger_invariant import ledger_invariant_enabled, run_nightly_check
+
+    tick_interval = _env_int("LEDGER_INVARIANT_INTERVAL", 86400, minimum=3600)
+
+    await asyncio.sleep(45)
+
+    while True:
+        try:
+            if ledger_invariant_enabled():
+                result = await asyncio.to_thread(run_nightly_check)
+                print(f"[LedgerInvariant] sweep: {result}")
+        except Exception as e:
+            print(f"[LedgerInvariant Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
+async def trend_module_loop():
+    """Plan 31 item 7: the sim-only regime-gated trend module.
+
+    Deterministic Donchian/ATR trend strategy on daily bars — the desk's
+    30-min horizon is cost-infeasible (RT cost 1.18σ of a 30-min move), so
+    this class trades daily signals with chandelier-trail exits and the LLM
+    demoted to one veto/size call per signal. Hourly tick is plenty: the
+    module acts on DAILY closes and no-ops within the same bar. Inert
+    unless TREND_MODULE_ENABLED=1 AND TREND_AGENT_ID names a dedicated sim
+    agent (double gate — it can never touch a real user's book).
+    """
+    from trend_module import module_enabled, run_trend_cycle
+
+    tick_interval = _env_int("TREND_MODULE_INTERVAL", 3600, minimum=300)
+
+    await asyncio.sleep(90)
+
+    while True:
+        try:
+            if module_enabled():
+                result = await asyncio.to_thread(run_trend_cycle)
+                print(f"[TrendModule] cycle: {result}")
+        except Exception as e:
+            print(f"[TrendModule Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def subscription_enforcer_loop():
     """Background task for Trading Runs entitlements (Plan 10, Phase 5).
 
@@ -1982,6 +2037,8 @@ BACKGROUND_TASK_REGISTRY = {
     "orphan_reclaim": _orphan_reclaim_loop,
     "desk_brief": desk_brief_loop,
     "outlook_refresher": outlook_refresher_loop,
+    "ledger_invariant": ledger_invariant_loop,
+    "trend_module": trend_module_loop,
 }
 
 
@@ -2066,6 +2123,10 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     # Plan 26 — outlook sweeper lives with the runs engine (it writes
     # run_events rows the desk's next cycle reads back as its standing plan)
     "outlook_refresher":       "settlement",
+    # Plan 31 item 1 — nightly exit-row P&L invariant; pure measurement
+    "ledger_invariant":        "research",
+    # Plan 31 item 7 — sim-only trend module; daily bars, hourly tick
+    "trend_module":            "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")

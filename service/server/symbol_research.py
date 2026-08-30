@@ -493,6 +493,47 @@ def _weight_profile(market: str) -> dict[str, float]:
     return WEIGHT_PROFILES.get(market) or WEIGHT_PROFILES["crypto"]
 
 
+def _crypto_psych_enabled() -> bool:
+    """Plan 31 item 8 kill switch — default ON. Off restores the pre-item-8
+    behavior (crypto psych subscore None, weight renormalized away)."""
+    return os.environ.get("CRYPTO_PSYCH_SUBSCORE", "1").strip().lower() \
+        in {"1", "true", "yes", "on"}
+
+
+def crypto_psych_tilt() -> Optional[float]:
+    """F&G-derived contrarian tilt ∈ [−1, +1] for crypto candidates.
+
+    Plan 31 item 8 (R5 finding 2): crypto's 0.20 psych weight had NEVER
+    bound — the subscore was hardcoded None and coverage renormalization
+    removed it. Source is the cached psych snapshot
+    (psych_feed.get_psych_payload — DB/cache read, never a live external
+    call, same discipline as _read_overlays). The mapping is contrarian at
+    the extremes and neutral mid-band, mirroring regime.py's F&G bands
+    ([30,70) = trend): F&G 0 → +1.0 fading to 0 at 30 (extreme fear is the
+    documented edge — F&G≤10 → +48% avg 90-day forward, R5 §3); 70 → 0
+    fading to −1.0 at 100 (greed fades longs). The call site aligns the
+    tilt with candidate direction exactly like us_tilts, so fear boosts
+    longs and penalizes shorts. Fail-soft None on ANY problem — a dead
+    feed restores the pre-item-8 composite.
+    """
+    try:
+        import psych_feed
+        if not psych_feed.psych_feed_enabled():
+            return None
+        payload = psych_feed.get_psych_payload() or {}
+        value = (payload.get("fear_greed") or {}).get("value")
+        if value is None:
+            return None
+        fng = float(value)
+        if fng <= 30.0:
+            return _clip((30.0 - fng) / 30.0)
+        if fng >= 70.0:
+            return _clip((70.0 - fng) / 30.0)
+        return 0.0
+    except Exception:  # noqa: BLE001 — a dead feed costs the screen nothing
+        return None
+
+
 def technical_subscore(f: dict[str, Any]) -> Optional[float]:
     """Blend candle factors into one technical subscore ∈ [−1, +1]."""
     parts: list[float] = []
@@ -836,6 +877,11 @@ def screen_universe(universe: list[dict[str, str]],
         except Exception:  # noqa: BLE001 — a dead feed costs the screen nothing
             us_tilts = {}
 
+    # Plan 31 item 8: one market-level F&G read per screen (fail-soft None).
+    crypto_tilt: Optional[float] = None
+    if _crypto_psych_enabled():
+        crypto_tilt = crypto_psych_tilt()
+
     scored: list[dict[str, Any]] = []
     for cand in universe:
         sym, market = cand["symbol"], cand["market"]
@@ -863,6 +909,12 @@ def screen_universe(universe: list[dict[str, str]],
             # confirms; disagreement scores negative. Clamped, per-symbol.
             tilt = max(-1.0, min(1.0, us_tilts[sym.upper()]))
             subs["psych"] = tilt * (1.0 if direction == "long" else -1.0)
+        elif market == "crypto" and crypto_tilt is not None:
+            # Plan 31 item 8: F&G contrarian tilt aligned with candidate
+            # direction (same convention as us_tilts above) — extreme fear
+            # boosts longs / penalizes shorts, extreme greed the reverse;
+            # mid-band F&G contributes a real, neutral 0.0.
+            subs["psych"] = crypto_tilt * (1.0 if direction == "long" else -1.0)
         if market in ("crypto", "us-stock") and overlays.get("policy", {}).get(market):
             # attention flag only — direction comes from the LLM reading titles
             subs["policy"] = 0.2

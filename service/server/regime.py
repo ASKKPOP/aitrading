@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -142,6 +143,58 @@ def compute_regime(
         "unresolved_shock": unresolved_shock,
         "event_window_active": bool(event_window_active),
     }
+
+
+# ──────────────── shadow mode (Plan 31 item 8) ────────────────
+# The bands above are self-described UNVALIDATED PLACEHOLDERS, so a global
+# REGIME_FILTER_ENABLED flip is rejected. Shadow mode is the measurement
+# path: log what the entry policy WOULD do (veto / resize / allow) for two
+# weeks without enforcing anything, then decide per-arm on vetoed-entry EV
+# vs allowed-entry EV. Exits are never even shadow-evaluated.
+
+
+def regime_shadow_enabled() -> bool:
+    """REGIME_SHADOW=1 turns on log-only shadow evaluation at the automation
+    gate sites. Default OFF — byte-identical to today."""
+    raw = os.getenv("REGIME_SHADOW")
+    if raw is None:
+        return False
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def shadow_gate_check(regime_read: Optional[dict[str, Any]], *, market: str,
+                      symbol: str, action: Optional[str]) -> Optional[dict[str, Any]]:
+    """What the regime entry policy WOULD do to this new buy if it were
+    enforced — logged, never applied.
+
+    Returns None (and stays silent) unless REGIME_SHADOW is on, the read is
+    NOT enforced (an enforced read is the real gate's job — shadow must never
+    double-report it), and the order is a new buy (sells are never
+    regime-gated; exit-permissiveness rule). Emits ONE structured log line
+    per would-be-executed buy so the two-week census is greppable:
+
+        regime_shadow {"market":..,"symbol":..,"regime":..,
+                       "would_action":"veto|resize|allow","size_mult":..}
+    """
+    if action != "buy" or not regime_read:
+        return None
+    if regime_read.get("enforced"):
+        return None
+    if not regime_shadow_enabled():
+        return None
+    mult = float(regime_read.get("size_multiplier") or 1.0)
+    if regime_read.get("allow_new_buys", True) is False:
+        would_action, mult = "veto", 0.0
+    elif mult != 1.0:
+        would_action = "resize"
+    else:
+        would_action = "allow"
+    payload = {"market": market, "symbol": symbol,
+               "regime": regime_read.get("regime"),
+               "would_action": would_action, "size_mult": mult,
+               "reasons": regime_read.get("reasons") or []}
+    logger.info("regime_shadow %s", json.dumps(payload, ensure_ascii=False))
+    return payload
 
 
 # ──────────────── crypto composite (Plan 21 P3) ────────────────
