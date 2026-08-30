@@ -635,3 +635,65 @@ class TrendModuleWiringTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BracketReanchorTests(_CycleHarness):
+    """Monitoring #102: the bracket was priced off the DECISION mark while
+    only the fill price was refreshed, so both legs drifted by the gap. With
+    targets capped at 0.30% and drift permitted to 0.50%, an adverse drift in
+    (0.30%, 0.50%] filled a position already THROUGH its take-profit — closed
+    at once for ~zero gross minus a round trip, journaled as a `take_profit`.
+    """
+
+    def test_bracket_is_repriced_off_the_fill(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        os.environ["STOP_CAP_PCT_CRYPTO"] = "0.5"
+        run_id = self._run()
+        # Decision mark 100.0 (harness probe); fill 0.4% lower — inside the
+        # 0.5% drift cap, but wider than a 0.30% target.
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch("run_engine._mark_refresh_min_age_s", return_value=-1), \
+             patch("price_fetcher.get_price_from_market", return_value=99.6):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        pos = self._position(run_id)
+        fill = 99.6
+        # Distances must be preserved against the FILL, not the stale mark.
+        self.assertAlmostEqual(float(pos["stop_loss"]) / fill, 0.995, places=6)
+        evs = self._events(run_id, "bracket_reanchor")
+        self.assertEqual(len(evs), 1)
+        self.assertAlmostEqual(evs[0]["fill_price"], fill, places=6)
+        self.assertNotAlmostEqual(evs[0]["stop_before"], evs[0]["stop_after"],
+                                  places=6)
+
+    def test_long_is_not_born_through_its_target(self):
+        """The defect itself: a long filled 0.4% ABOVE the decision mark must
+        still have its take-profit above the fill."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        os.environ["STOP_CAP_PCT_CRYPTO"] = "0.5"
+        os.environ["TARGET_PSYCH_CAP"] = "1"
+        os.environ["TARGET_PSYCH_CAP_MAP"] = '{"crypto":{"base":0.3}}'
+        import target_policy as _tp
+        _tp._MAP_RAW = None
+        _tp._MAP_CACHE = {}
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch("run_engine._mark_refresh_min_age_s", return_value=-1), \
+             patch("price_fetcher.get_price_from_market", return_value=100.4):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        pos = self._position(run_id)
+        self.assertGreater(float(pos["take_profit"]), 100.4)
+        self.assertLess(float(pos["stop_loss"]), 100.4)
+
+    def test_no_drift_leaves_the_bracket_untouched(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        os.environ["STOP_CAP_PCT_CRYPTO"] = "0.5"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        self.assertEqual(self._events(run_id, "bracket_reanchor"), [])
