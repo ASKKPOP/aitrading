@@ -2994,3 +2994,59 @@ tape, agent 5 idle, 0 trend signals.
 **Process health.** 22 running runs; 26 decisions this window (25 hold, 1
 retire); worker restarts 0, **0 tracebacks in 65 minutes**; ledger sweep
 `violations: 0, cash_violations: 0`. Merged, not deployed (no code change).
+
+### Reading #100 — 2026-08-30 ~09:35Z — hypothesis answered; my #99 cost figure corrected; a plaintext-credential finding
+
+**P&L: no trades.** 0 fills; 28 decisions, all hold. Orphan 483 uPnL −$0.92
+at 11.361 (recovering as LINK eases). Entry drought now 21h.
+
+**CORRECTION TO READING #99 — my cost extrapolation was wrong by ~4x.** I
+reported ~$9.3/day ≈ $280/mo of real spend. Hourly buckets show that figure
+came from a two-hour burst, not the steady state:
+
+| hour (UTC) | 01 | 02 | 03 | 04 | **05** | **06** | 07 | 08 | 09 |
+|---|---|---|---|---|---|---|---|---|---|
+| $ | .036 | .126 | .118 | .120 | **1.339** | **0.742** | .092 | .088 | .072 |
+
+Hours 05–06 carry $2.08 of the $2.62 total. **Steady state is ~$0.09–0.12/h
+≈ $2.4/day ≈ $72/month**, not $280. The qualitative point from #99 survives —
+a flat book still costs real money for zero output — but the magnitude I
+attached to it was a 3.9x over-extrapolation from a burst window, and the
+comparison I drew to the −$302/mo trading bleed was therefore overstated.
+
+**PRE-REGISTERED HYPOTHESIS (#99) — ANSWERED: not a misroute.** The 21 Opus
+calls (69% of spend, and the entire 05–06 burst) belong to agent 6 / user 5
+and are produced by a deliberate per-user setting: `user_api_settings` row
+for user 5, target `llm`, `config_json {"provider":"anthropic","model":
+"claude-opus-4-8"}`, enabled, set 2026-08-25. The falsifier said "if neither
+an override nor a recorded A/B explains them, it is a misroute" — an override
+explains them, so **no misroute, no change warranted**. Cost note for
+context: one decision-tier Opus call ran **19,872 prompt tokens for $0.3916**
+— the desk prompt is large enough that Opus on the decision tier is ~$0.22–
+0.39 per call, which is what makes agent 6 the spend concentration.
+
+**NEW FINDING (security, needs an owner decision — no action taken).** That
+setting stores the account's Anthropic API key **in plaintext** in
+`user_api_settings.api_key`. Broker credentials on this platform are
+AES-GCM encrypted (`EXECUTION_ENCRYPTION_KEY`); LLM provider keys are not.
+Consequences: the key is readable by anything with DB read access and is
+carried in plaintext inside every full DB backup on the box. **The key value
+has not been written to this repo, this note, or any artifact.** This is a
+credential-handling decision for the owner — rotate and encrypt, or accept —
+and is not something a monitoring session should act on unilaterally.
+(The signals-only dump taken before the Plan 31 backfill does not contain
+this table.)
+
+**F31-GEOM SECONDARY — FAILED, now on a stable definition.** #99 reported 4
+geometry-citing retires using a narrower LIKE set; with the union of both
+pattern sets the count is **5 of 9 retires across 237 decisions** (threshold
+was >2 per 300). Direction unchanged, magnitude slightly worse. The count in
+#99 should be read as 5, not 4.
+
+**Other falsifiers.** F31-SHOCK-QUIET holding at **1 of 152**. F31-PSYCH-SUB
+wired, mid-band neutral. F31-SHADOW-CENSUS 0 (gated on buys; 48h deadline
+2026-09-01T03:15Z). F31-ADDS/ARM/FREEZE/TREND unmeasurable — no tape, agent 5
+idle, 0 trend signals.
+
+**Process health.** 24 running runs; worker restarts 0, **0 tracebacks in 65
+minutes**; ledger sweep clean. Merged, not deployed (no code change).
