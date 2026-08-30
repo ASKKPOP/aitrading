@@ -3658,3 +3658,52 @@ D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
 retire), worker on `20260830-shockfix`, restarts 0, **0 tracebacks in 60
 minutes**; ledger sweep `violations: 0, cash_violations: 0`. Merged, not
 deployed — no code change.
+
+### Reading #110 — 2026-08-30 ~18:35Z — the churn loop, quantified: 54 runs built to produce 4 fills
+
+**P&L: no new fills; the orphan resumed bleeding.** Mark 11.675 → **−$5.58**,
+**66.7% of the way to its 11.8629 stop** (cap −$8.37). Seven-hour
+trajectory: −$1.23 → −$1.86 → −$2.89 → −$3.65 → −$4.11 → −$5.12 → −$5.22 →
+**−$5.58**. Not touched. Trading record unchanged: **n=2, −$7.61**.
+
+**THE CHURN LOOP, MEASURED.** #99 named it and mis-sized its cost; #108
+showed every retire blames the geometry. Here is the throughput itself,
+since the ship (~16.8 hours):
+
+| | count |
+|---|---|
+| runs **built** | **54** |
+| runs **stopped** | **67** (net −13) |
+| retires | **20**, all 20 citing the house geometry |
+| fills produced | **4** |
+| completed trips | **2** |
+| realised P&L | **−$7.61** |
+| **conversion: built run → any fill at all** | **7.4%** |
+
+Fifty-four researched slots, each costing model calls and a symbol
+reservation, to produce four fills and two trips. Builds and stops run
+roughly in lockstep hour by hour (peaks of 9 built / 8 stopped at 05–06Z, 6
+and 8 at 16Z), so the fleet is not growing into a wall — it is **recycling
+against one**, and has shrunk 23 → 20 → 19 → 17 → **16** active over four
+readings. This is the cost the desk's own 20-for-20 refusal keeps incurring,
+and it is not visible in the trading P&L at all.
+
+**Shock trigger: behaving correctly on a persisting shock.** 31 decisions
+this window, 16 carrying the trigger — the ETHUSDT shock that began at
+17:00:44Z is still live in the feed, so continued escalation is the right
+output. F31-SHOCK-QUIET stays closed and passing (#109 measured both halves).
+
+**Falsifier board.** F31-GEOM: primary n=2, starved; **secondary FAILED,
+20/20**. F31-SHOCK-QUIET: PASS, closed. F31-SHADOW-CENSUS: **0 events, ~8.5
+hours left** — will expire unmeasured through its buys-only gate against an
+all-short entry record; a measurement-design failure, not evidence about D3.
+F31-TREND: 0 signals. F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE /
+F31-PSYCH-SUB: unchanged, starved.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777 measured, n=1);
+D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
+
+**Process health.** 16 runs active (agent 60: 9, agent 6: 7), 31 decisions
+this window (28 hold, 3 retire), worker on `20260830-shockfix`, restarts 0,
+**0 tracebacks in 60 minutes**; ledger sweep `violations: 0,
+cash_violations: 0`. Merged, not deployed.
