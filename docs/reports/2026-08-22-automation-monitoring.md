@@ -3212,3 +3212,45 @@ F31-ARM/ARM-NONCRYPTO/TREND/FREEZE unchanged.
 
 **Process health.** Worker on `20260830-reanchor`, restarts 0. Ledger sweep
 `violations: 0, cash_violations: 0`.
+
+### Reading #103 — 2026-08-30 ~11:35Z — quiet tape; two process defects, both mine
+
+**P&L: no new fills. The open trade is still losing.** Position 485
+(BTCUSDT short) at 78172 vs entry 77983 → **−$2.18 unrealized, −$2.59 on the
+book**, 48.2% of the way to its stop, run still `running` with peak
+$0.1028 (the ratchet has never armed). Orphan 483 at 11.382 → **−$1.23**.
+Five decisions this window, all hold. `bracket_reanchor` has fired 0 times —
+correct, no entry has occurred since that fix deployed.
+
+**Process defect 1 — I have made F31-SHOCK-QUIET unmeasurable by my own
+deploys.** The worker restarted at 11:22:24Z for the re-anchor ship, opening
+a *third* consecutive fresh 60-minute psych_shock window (5/5 in-window
+decisions carry the trigger, as designed). #97 predicted this collision, #101
+reported "holding" without noticing its own deploy had reset the clock, and
+#102 recorded that correction — and then I deployed again. **The falsifier
+cannot be evaluated on any hour in which I deploy.** From here: either a
+cycle deploys or it measures F31-SHOCK-QUIET, not both. The first
+deploy-free hour after a restart is the only valid reading, and the window
+must be quoted from the worker's actual `StartedAt`, never assumed.
+
+**Process defect 2 — the monitoring prompt itself carries a refuted claim.**
+The recurring cycle instruction still reads *"orphan position 483 (hands
+off, by design)"*. #102 established that is false: prod runs
+`ORPHAN_RECLAIM_ENABLED=true` **and** `ORPHAN_RECLAIM_EXIT=true`, and the
+daemon logged `{'scanned': 1, 'held': 1, 'blocking': 1}` again this hour at
+11:22:55Z — it holds close authority and is deciding, not ignoring. Any
+future session reading that prompt inherits the error. Recorded here so the
+note, which does reach the corpus, contradicts it.
+
+**Falsifier board.** F31-GEOM: one open trade, censored, n=1 — still says
+nothing about expectancy; secondary (geometry retires) FAILED, unchanged.
+F31-ADDS: no second entry fill on run 2341 → not triggered, still untestable
+at n=1. F31-SHADOW-CENSUS: 0 events (deadline 2026-09-01T03:15Z); the one
+entry that has occurred was a short and the census only covers buys.
+F31-SHOCK-QUIET: reset, see above. F31-TREND: 0 signals, 5 scanned.
+F31-PSYCH-SUB / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE: unchanged.
+
+**Process health.** Worker on `20260830-reanchor`, restarts 0, **0
+tracebacks in 45 minutes**; ledger sweep `violations: 0, cash_violations: 0`;
+trend module ticking. Merged, not deployed — no code change, and per defect 1
+this cycle deliberately does not deploy so the next can measure the trigger.
