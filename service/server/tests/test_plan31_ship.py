@@ -565,8 +565,12 @@ class PsychShockUnavailableGuardTests(unittest.TestCase):
         run_engine._PSYCH_SHOCK_STATE.update({"active": False, "since": 0.0})
 
     def test_router_guard_wiring(self):
+        """The property, not the spelling: the latch may only be cleared by
+        an AVAILABLE feed reporting no shock — an outage must leave it be.
+        (#105 rewrote the shock test to `_shock_now`; the guard survives.)"""
         src = inspect.getsource(run_engine._classify_situation)
-        self.assertIn('psych.get("available") and not psych.get("shock")', src)
+        self.assertIn('psych.get("available") and not _shock_now', src)
+        self.assertIn('psych.get("available") and _shock_now', src)
 
     def test_unavailable_payload_keeps_transition_state(self):
         run = {"id": 1, "market": "crypto", "symbol": "BTC",
@@ -697,3 +701,69 @@ class BracketReanchorTests(_CycleHarness):
             result = run_engine.run_cycle(run_id)
         self.assertTrue(result["executed"], result.get("skip_reason"))
         self.assertEqual(self._events(run_id, "bracket_reanchor"), [])
+
+
+class PsychShockPresenceTests(unittest.TestCase):
+    """Monitoring #104/#105: `payload["shock"]` is a per-symbol LIST, always
+    populated, so `bool(...)` was true even with every entry shock:false.
+    That armed the transition latch on the first read after any restart and,
+    because the clear branch was then unreachable, the latch never reset —
+    the trigger fired for 60 minutes after every restart regardless of the
+    market and went permanently silent afterwards, including through a real
+    short-side liquidation shock while the book was short.
+    """
+
+    def setUp(self):
+        run_engine._PSYCH_SHOCK_STATE.update({"active": False, "since": 0.0})
+
+    def tearDown(self):
+        run_engine._PSYCH_SHOCK_STATE.update({"active": False, "since": 0.0})
+
+    def test_all_entries_false_is_not_a_shock(self):
+        payload = {"available": True, "shock": [
+            {"symbol": "BTCUSDT", "shock": False},
+            {"symbol": "ETHUSDT", "shock": False}]}
+        self.assertFalse(run_engine._psych_shock_present(payload))
+
+    def test_any_entry_true_is_a_shock(self):
+        payload = {"available": True, "shock": [
+            {"symbol": "BTCUSDT", "shock": True},
+            {"symbol": "ETHUSDT", "shock": False}]}
+        self.assertTrue(run_engine._psych_shock_present(payload))
+
+    def test_empty_list_is_not_a_shock(self):
+        self.assertFalse(run_engine._psych_shock_present({"shock": []}))
+        self.assertFalse(run_engine._psych_shock_present({}))
+
+    def test_bare_bool_payload_still_works(self):
+        self.assertTrue(run_engine._psych_shock_present({"shock": True}))
+        self.assertFalse(run_engine._psych_shock_present({"shock": False}))
+
+    def test_malformed_entries_do_not_raise(self):
+        self.assertFalse(
+            run_engine._psych_shock_present({"shock": ["x", 1, None]}))
+
+    def test_the_latch_can_now_clear_and_refire(self):
+        """The behaviour the defect made impossible: quiet clears the latch,
+        so a LATER genuine shock re-fires instead of being swallowed."""
+        quiet = {"available": True, "shock": [{"symbol": "B", "shock": False}]}
+        loud = {"available": True, "shock": [{"symbol": "B", "shock": True}]}
+        self.assertTrue(run_engine._psych_shock_fresh(
+            run_engine._psych_shock_present(loud)))
+        # window expires
+        run_engine._PSYCH_SHOCK_STATE["since"] = time.time() - 3700
+        self.assertFalse(run_engine._psych_shock_fresh(
+            run_engine._psych_shock_present(loud)))
+        # a quiet read CLEARS (this is what could never happen before)
+        run_engine._psych_shock_fresh(run_engine._psych_shock_present(quiet))
+        self.assertFalse(run_engine._PSYCH_SHOCK_STATE["active"])
+        # …so the next genuine shock fires again
+        self.assertTrue(run_engine._psych_shock_fresh(
+            run_engine._psych_shock_present(loud)))
+
+    def test_router_uses_the_helper_not_truthiness(self):
+        src = inspect.getsource(run_engine)
+        idx = src.index("_shock_now = _psych_shock_present(psych)")
+        window = src[idx:idx + 400]
+        self.assertIn("and _shock_now", window)
+        self.assertIn("not _shock_now", window)
