@@ -3737,3 +3737,44 @@ D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
 **Process health.** 14 runs active, 22 decisions all hold, worker on
 `20260830-shockfix`, restarts 0, **0 tracebacks in 60 minutes**; ledger sweep
 `violations: 0, cash_violations: 0`. Merged, not deployed.
+
+### Reading #112 — 2026-08-30 ~20:20Z — quiet; and my shadow-census countdown was wrong by 24 hours in four consecutive readings
+
+**P&L: no fills. The orphan recovered further** — LINK eased to 11.599, so
+uPnL improved to **−$4.45** from −$4.81, now 53.2% of the way to its stop
+(from a 66.7% peak at #110). Trading record unchanged: **n=2, −$7.61**.
+14 decisions this window, all hold, no retires.
+
+**CORRECTION — the F31-SHADOW-CENSUS countdown I have been publishing is
+wrong by exactly one day.** The falsifier is "≥1 `regime_shadow` event within
+**48h** of the 2026-08-30T03:15Z deploy", i.e. a deadline of
+**2026-09-01T03:15Z**. I have been computing against 08-**31**T03:15Z:
+
+| reading | I published | actual remaining | error |
+|---|---|---|---|
+| #108 | ~11h | 34.7h | −23.7h |
+| #109 | ~9.5h | 33.7h | −24.2h |
+| #110 | ~8.5h | 32.7h | −24.2h |
+| #111 | ~7.5h | 31.7h | −24.2h |
+| **#112 (now)** | — | **30.9h** | — |
+
+The substance is unchanged — the census is still at 0 events and still gated
+on buys against an all-short entry record — but every countdown I gave made
+the deadline look more imminent than it was, and it has now been repeated
+four times without either me or the arithmetic catching it. A date I typed
+once became a fact I kept quoting. Deadline restated: **2026-09-01T03:15Z,
+30.9 hours from this reading.**
+
+**Everything else unchanged.** Fleet 14 → **13** active as the drain
+continues (23 → 20 → 19 → 17 → 16 → 14 → 13 across seven readings); 21
+retires cumulative, unchanged this hour; shock trigger 0 of 14 on a quiet
+market (correct); F31-GEOM primary starved at n=2; F31-TREND 0 signals
+(5 scanned); F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE /
+F31-PSYCH-SUB unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777 measured, n=1);
+D-STOP-BLACKOUT; D-TARGET-VS-DRIFT.
+
+**Process health.** 13 runs active, worker on `20260830-shockfix`, restarts
+0, **0 tracebacks in 60 minutes**; ledger sweep `violations: 0,
+cash_violations: 0`; trend module ticking. Merged, not deployed.
