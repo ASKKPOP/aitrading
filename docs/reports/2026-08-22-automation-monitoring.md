@@ -3883,3 +3883,66 @@ time-of-check bug.
 size discipline, the payoff geometry (already failed 21/21 on the desk's own
 retire reports), and closing the re-entry TOCTOU (D-STOP-RACE's neighbour,
 pre-registered since #104).
+
+### Reading #114 — 2026-08-30 ~21:35Z — CORRECTION to the week analysis: LINK and INJ were NOT cooldown bypasses; and the cooldown is ZERO at 1x leverage by design
+
+**P&L: no fills. Orphan improved again** — LINK 11.519 → **−$3.26** (from
+−$3.62), 39.0% of the way to its stop, well off the −$5.58 low at #110.
+Trading record unchanged: **n=2, −$7.61**.
+
+**CORRECTION — I gave the owner a wrong cause one hour ago.** In the
+owner-requested week analysis (PR #664) I wrote that LINK and INJ's
+re-entries happened because "the re-entry gate … is guarded by a check
+evaluated while the old position is still open … so it never fires."
+**That is false for both of them.** Checked against the actual formula
+(`run_engine.py:262-269`, `interval × (leverage − 1) × mult`, whose own
+comment reads `1× → 0`):
+
+| run | symbol | interval | leverage | cooldown | actual gap | verdict |
+|---|---|---|---|---|---|---|
+| 2341 | BTC | 45m | 2.0x | **45m** | **1.8m** | **genuine TOCTOU bypass** |
+| 1785 | INJ | 60m | 1.0x | **0m** | 86.2m | **no cooldown exists** |
+| 1748 | LINK | 30m | 3.0x | 60m | 323.5m | legal — cooldown long expired |
+
+Only run 2341 was a bypass. LINK re-entered 5h23m later, far beyond its
+60-minute cooldown. INJ had **no cooldown at all**. I generalised from one
+case to three because they shared a surface pattern, and attributed a
+mechanism the data does not support.
+
+**What survives the correction, unchanged:** the week's arithmetic (52.5%
+win rate, payoff 0.283, breakeven 78.0%), the size buckets (under $50
+**+$1.79** at 69% wins; over $100 **−$11.39** at 12.5% wins on n=8, sign
+holding ex-largest at −$7.39), the two-symbol concentration (74% of gross
+loss), and LINK **doubling its notional from $242 to $485 on the re-entry** —
+which is the sizing story, not a gate story. The week's cause is sizing.
+
+**NEW FINDING (this is what the correction uncovered) — the re-entry
+cooldown is ZERO for every unleveraged run, by design.** The formula
+multiplies by `(leverage − 1)`, and the gate at `run_engine.py:6746` is
+skipped entirely when the result is 0. So any 1x run may lose and re-enter
+the same symbol on its very next cycle with no delay. INJ is exactly that
+case: sold at 5.7779 for −$3.76, then bought back **at 5.9049 — a higher
+price than it had just sold at** — 86 minutes later, and lost another $1.73.
+Whether unleveraged runs should be exempt is a design question, not a bug,
+but it is undocumented and it cost real money here. Pre-registered, not
+shipped: **D-REENTRY-1X**. *Falsifier:* if 1x runs' post-loss re-entries are
+not measurably worse than their other entries at n≥10, the exemption is
+harmless and this dies.
+
+**Fleet: a large replenishment burst.** 14 → **32** active — 20 runs built in
+the 21Z hour alone (agent 60: 17, agent 6: 15). The composer is refilling
+aggressively after the day-long drain; whether those slots survive the
+geometry wall is the next thing to watch.
+
+**Falsifier board.** F31-GEOM primary n=2, starved; secondary FAILED (**23**
+retires now, +2 this window). F31-SHOCK-QUIET PASS/closed — 0 of 60 on a
+quiet market. F31-SHADOW-CENSUS 0 events, **29.7h** to its 2026-09-01T03:15Z
+deadline. F31-TREND 0 signals. F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO /
+F31-FREEZE / F31-PSYCH-SUB unchanged.
+
+**Unshipped, pre-registered:** D-STOP-RACE ($1.777, n=1); D-STOP-BLACKOUT;
+D-TARGET-VS-DRIFT; **D-REENTRY-1X** (new).
+
+**Process health.** 32 runs active, 60 decisions (58 hold, 2 retire), worker
+on `20260830-shockfix`, restarts 0, **0 tracebacks in 60 minutes**; ledger
+sweep `violations: 0, cash_violations: 0`. Merged, not deployed.
