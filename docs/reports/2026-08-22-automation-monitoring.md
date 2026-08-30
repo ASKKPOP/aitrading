@@ -2878,3 +2878,45 @@ Worker clean, ledger sweeps 0 violations / 0 cash_violations.
 Artifacts: `research/replan30/pair_replay_20260830.py`,
 `pair_replay_results_20260830.json` (per-trip rows for every arm),
 `fetch_candles_1m.py` (the 9.4MB OKX candle cache was deleted; refetchable).
+
+### Reading #97 — 2026-08-30 ~06:45Z — quiet; F31-PSYCH-SUB confirmed PASS on wiring
+
+**P&L: no trades, so no profit and no loss.** Zero fills since #96. The only
+exposure is orphan 483 (LINKUSDT short, run_id NULL, by design): mark 11.437
+against entry 11.299 → uPnL **−$2.05**, drifted from −$1.37 an hour ago as
+LINK rose 1.22% against the short. It has no run and no desk; the watcher
+stop remains the only bound. Hands off, as ordered.
+
+**Falsifier board delta — one movement.**
+- **F31-PSYCH-SUB: PASS (wiring).** Crypto theses created after the r2 deploy
+  now carry a real psych subscore — thesis 37149 (TAOUSDT, 05:40:55Z):
+  `"subscores": {"technical": 0.342, "psych": 0.0, ...}, "coverage": 0.5`.
+  Pre-ship the crypto psych subscore was `null` with coverage 0.3; the 0.20
+  weight now binds. The VALUE is 0.0 because F&G 69 sits mid-band (30–70 →
+  neutral by design), so "the subscore moves with F&G" stays untestable until
+  F&G leaves that band — recorded as pending, not as a pass.
+  *Process note:* my first query read `$.psych` and returned 66/66 crypto
+  theses NULL, which would have read as a falsifier FAILURE. The value lives
+  at `$.subscores.psych`. The second pass caught it. A wrong JSON path very
+  nearly produced a manufactured defect — the two-pass rule earned its keep.
+- All others unchanged: F31-SHOCK-QUIET holding (no restart since 03:15Z);
+  F31-ARM-NONCRYPTO PASS; F31-SHADOW-CENSUS still 0 (0 buys — structurally
+  gated); F31-GEOM/ADDS/ARM/FREEZE unmeasurable (no tape, agent 5 has 0
+  running runs); F31-TREND 0 signals (ADX out of band on all five).
+
+**Deploy-cadence conflict — stated rather than silently deviated from.**
+Mode ① says "deploy every cycle while the book is flat". That rule now
+collides with F31-SHOCK-QUIET: every deploy restarts the worker, and each
+restart opens a fresh 60-minute psych_shock window (measured in #95: 33/33
+decisions inside the window carry the trigger, 1/63 after). Deploying hourly
+would hold the trigger permanently saturated and destroy the de-saturation
+we just shipped. **This cycle is merged, not deployed** — there is no code
+change, and the note reaches the RAG corpus at the next deploy that carries
+real content. Cadence for flat-book cycles is hereby: merge every cycle,
+deploy only on deploy-worthy content or when a note genuinely needs the
+corpus.
+
+**Process health.** 22 running runs (agents 6 and 60), 3 decisions since #96,
+all hold. Worker on `20260830-plan31r2`, restarts 0, uptime since 03:15Z,
+**0 tracebacks in 70 minutes**. Ledger invariant sweep `violations: 0,
+cash_violations: 0`. Trend module ticking hourly, scanning 5, signalling 0.
