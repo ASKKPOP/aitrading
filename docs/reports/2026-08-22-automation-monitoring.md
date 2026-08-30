@@ -3445,3 +3445,57 @@ F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB: unchanged.
 **Process health.** Worker on `20260830-shockfix`, restarts 0, 0 tracebacks;
 ledger sweep `violations: 0, cash_violations: 0`; 22 runs active. CI green:
 **4,835 passed + 1,349 subtests**, ruff, frontend, gitleaks all clean.
+
+### Reading #106 — 2026-08-30 ~14:35Z — the shock fix is CONFIRMED working; the orphan is the only thing losing money, and it is bleeding steadily
+
+**P&L: no new fills, but the book is losing.** The orphan is the entire open
+book and it has moved against us every hour:
+
+| reading | mark | uPnL |
+|---|---|---|
+| #103 ~11:35Z | 11.382 | −$1.23 |
+| #104 ~12:46Z | 11.424 | −$1.86 |
+| #105 ~13:33Z | 11.494 | −$2.89 |
+| **#106 now** | **11.545** | **−$3.65** |
+
+LINK has risen against the short for three straight hours; the loss has
+**tripled** in that time. Its watcher stop at 11.8629 caps the damage at
+**−$8.37**, and it is now 43.6% of the way there. The orphan-reclaim daemon —
+which holds close authority, contrary to what readings #95–#101 claimed —
+evaluated it three times this hour (14:00, 14:15, 14:30) and returned
+**HOLD** each time. Note `blocking` has dropped from 1 to **0**, so it is no
+longer costing the fleet a LINKUSDT slot. Platform trading record since the
+ship is unchanged: **n=2 trips, −$7.61**. I am not touching the position.
+
+**D-SHOCK-CONST FIX — CONFIRMED WORKING on live data.** This is the
+post-ship measurement the rule requires, and it passes cleanly. The worker
+restarted at 14:00:03Z, so under the old code every decision in the
+following 60 minutes would have carried `psych_shock` (measured previously
+at 24/24, 33/33 and 5/5 in exactly this position). Measured now:
+
+- live payload: `[('BTCUSDT', False), ('ETHUSDT', False)]` — genuinely quiet
+- old semantics `bool(list)` → **True**; new semantics `_psych_shock_present()`
+  → **False**
+- **17 decisions since the restart, `psych_shock` present 0 times.**
+
+The trigger now tracks the market instead of the container. F31-SHOCK-QUIET
+is measuring something real for the first time; it stays open until a genuine
+shock arrives and is required to escalate.
+
+**Falsifier board.** F31-SHOCK-QUIET: **fix verified, falsifier re-armed** —
+the remaining half (a real shock MUST escalate) is untested until one occurs.
+F31-GEOM: n=2, −$7.61, unchanged. F31-SHADOW-CENSUS: **0 events, deadline
+2026-09-01T03:15Z** — and note the structural problem stands: it fires only
+on buys, and the only entries since the ship were shorts. F31-TREND: 0
+signals. F31-ADDS / F31-ARM / F31-ARM-NONCRYPTO / F31-FREEZE / F31-PSYCH-SUB:
+unchanged, all starved of tape.
+
+**Still pre-registered, unshipped:** D-STOP-RACE ($1.777 measured, three
+candidate fixes, n=1); D-STOP-BLACKOUT (30 min of unenforced stop after any
+desk ruling); D-TARGET-VS-DRIFT (mean opening drift 0.1552% ≈ 52% of the
+0.30% target distance).
+
+**Process health.** 23 runs active, 17 decisions all hold, worker on
+`20260830-shockfix` with restarts 0 and **0 tracebacks in 40 minutes**;
+ledger sweep `violations: 0, cash_violations: 0`. Merged, not deployed —
+no code change this cycle.
