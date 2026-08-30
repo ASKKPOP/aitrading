@@ -118,6 +118,11 @@ class RunIn(BaseModel):
     # Per-tier LLM routing (cost A/B), e.g. {"brief": {"provider": "local"},
     # "decision": {"provider": "anthropic", "model": "claude-sonnet-5"}}.
     llm_tiers: Optional[dict] = None
+    # Plan 31 item 6 (sim A/B arm B): hours the desk may not author an exit
+    # after entry. Platform stops are unaffected; enforcement fails open on
+    # stale marks. 0/None = off. Verification Q1-5 found the consumer had no
+    # producer — this field is the sanctioned path (never a DB row edit).
+    min_hold_hours: Optional[float] = None
 
     @field_validator("symbol")
     @classmethod
@@ -470,6 +475,11 @@ def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
     }
     if data.llm_tiers:
         settings["llm_tiers"] = data.llm_tiers
+    if data.min_hold_hours:
+        mh = float(data.min_hold_hours)
+        if not (0 < mh <= 720):
+            raise ValueError("min_hold_hours must be in (0, 720]")
+        settings["min_hold_hours"] = mh
     return settings, start_condition, stop_conditions
 
 

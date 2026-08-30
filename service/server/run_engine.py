@@ -913,21 +913,30 @@ def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None,
             qty = max(qty, float(floor_qty or 0))
         except (TypeError, ValueError):
             pass
-        # Plan 31 item 5: arm at the REAL per-market round trip, not the
-        # legacy 0.001 flat rate — crypto's true rate is 0.00045/side, so
-        # the flat constant priced the arm 2.2x too high and winners under
-        # 0.2% of notional never armed (run 1159 SPCX peaked +5.78
-        # unprotected and realized −35.81). BREAKEVEN_FEE_RATE, when set,
-        # overrides everything and is the kill switch back to any flat rate.
+        # Plan 31 item 5, CRYPTO-SCOPED (verification round, Q1-7/Q4-3):
+        # crypto's true rate is 0.00045/side, so the flat 0.001 priced the
+        # crypto arm 2.2x too high and winners under 0.2% of notional never
+        # armed (run 1159 SPCX peaked +5.78 unprotected, realized −35.81).
+        # The evidence was crypto-only; pricing EVERY market at its raw fee
+        # collapsed us-stock/forex arms 7-11x into tick noise and set the
+        # polymarket arm to 0 (fee 0.0 → ratchet disabled outright). So the
+        # real per-market rate applies ONLY where it was measured — crypto —
+        # and every other market keeps the legacy flat anchor.
+        # BREAKEVEN_FEE_RATE, when set, overrides everything (kill switch).
         rate_env = (os.getenv("BREAKEVEN_FEE_RATE") or "").strip()
         if rate_env:
             rate = float(rate_env)
-        elif market:
+            mult = float(os.getenv("BREAKEVEN_ARM_FEES", "1.0"))
+        elif (market or "") == "crypto":
             from fees import fee_rate as _arm_fee_rate
             rate = float(_arm_fee_rate(market))
+            mult = float(os.getenv("BREAKEVEN_ARM_FEES", "1.0"))
         else:
+            # Non-crypto: LEGACY arm, byte-identical — flat rate, no
+            # multiplier. The 1.78 slip calibration is crypto's number;
+            # applying it here would RAISE these arms 78% unmeasured.
             rate = 0.001
-        mult = float(os.getenv("BREAKEVEN_ARM_FEES", "1.0"))
+            mult = 1.0
         return qty * mark * rate * 2.0 * max(0.0, mult)
     except (TypeError, ValueError):
         return 0.0
@@ -3095,7 +3104,11 @@ def _classify_situation(run: dict, cfg: dict) -> dict:
             if psych.get("available") and psych.get("shock") \
                     and _psych_shock_fresh(True):
                 triggers.append("psych_shock")
-            elif not psych.get("shock"):
+            elif psych.get("available") and not psych.get("shock"):
+                # Only an AFFIRMATIVE no-shock read clears the transition
+                # state — an unavailable feed must not reset it, or a
+                # flapping feed re-convenes the full desk on every recovery
+                # during one continuous shock (verification A2-10).
                 _psych_shock_fresh(False)
         except Exception:  # noqa: BLE001
             pass
@@ -7625,9 +7638,34 @@ def run_cycle(run_id: int) -> dict:
         gate_cfg = {"auto_execute": 1, "account_type": "simulator",
                     "min_confidence": 0.0 if intent_exit else min_confidence,
                     "size_usd": float(size_usd or 0) * lev, "mode": "manual"}
+        # Plan 31 item 8 fix (verification Q5-1): the shadow census was wired
+        # only to the automation-RULE path, which has zero traffic — the desk
+        # path passed regime_read=None, so the two-week census could never
+        # collect a verdict. Compute the read here for crypto, but ONLY in
+        # shadow-without-enforcement mode: passing a real read while
+        # REGIME_FILTER_ENABLED is on would silently start ENFORCING regime
+        # policy on the desk path, which today's None deliberately prevents.
+        _regime_read = None
+        try:
+            from regime import regime_shadow_enabled
+            from strategy_config import regime_filter_enabled
+            if (run.get("market") or "") == "crypto" \
+                    and regime_shadow_enabled() and not regime_filter_enabled():
+                from regime import evaluate_market_regime
+                _regime_read = evaluate_market_regime()
+        except Exception:  # noqa: BLE001 — census only, never blocks
+            _regime_read = None
         gates = evaluate_execution_gates(gate_cfg, run["agent_id"], run["symbol"],
                                          run["market"], action, gate_confidence, entry,
-                                         None, technical, run_id=run_id)
+                                         _regime_read, technical, run_id=run_id)
+        # The census must be DB-queryable (falsifier F31-SHADOW-CENSUS), not
+        # a log-grep: journal the shadow verdict when one was produced.
+        if gates.get("regime_shadow"):
+            try:
+                emit_telemetry_event(run_id, "regime_shadow",
+                                     {"cycle": seq, **gates["regime_shadow"]})
+            except Exception:  # noqa: BLE001 — census only
+                pass
         gate = gates.get("gate")
         if gates["skip_reason"] is not None or gate is None:
             result["skip_reason"] = gates["skip_reason"] or "no gate verdict"

@@ -106,11 +106,21 @@ def prompt_line(market: Optional[str]) -> str:
     Facts only; no imperative about holding (that would manufacture
     entries via prompt, which the owner prohibits)."""
     cap, regime = cap_for(market)
-    if cap is None:
-        return ""
     stop_cap = ""
     if (market or "") == "crypto":
         stop_cap = os.environ.get("STOP_CAP_PCT_CRYPTO", "").strip()
+    if cap is None:
+        # Stop cap active with the target cap off (verification Q4-7): the
+        # stops are still cut at order time, so the teaching line must still
+        # say so or the desk re-authors wide stops forever (run-1375 shape).
+        if stop_cap:
+            try:
+                return (f"House bracket right now: stop_pct is capped at "
+                        f"{float(stop_cap):g}% — a wider stop is cut to it "
+                        f"at order time.\n")
+            except ValueError:
+                pass
+        return ""
     if stop_cap:
         try:
             return (f"House bracket right now ({regime} regime): stop_pct is "

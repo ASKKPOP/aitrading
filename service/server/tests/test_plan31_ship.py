@@ -394,6 +394,233 @@ class PromptLineTests(unittest.TestCase):
         self.assertIn("House target band", line)
         self.assertNotIn("stop_pct is capped", line)
 
+    def test_stop_cap_alone_yields_stop_only_house_line(self):
+        # Round-2 fix Q4-7: STOP_CAP_PCT_CRYPTO set with TARGET_PSYCH_CAP off
+        # must still teach the stop cap — not render '' (run-1375 shape).
+        os.environ["STOP_CAP_PCT_CRYPTO"] = "0.5"
+        line = target_policy.prompt_line("crypto")
+        self.assertNotEqual(line, "")
+        self.assertIn("stop_pct is capped at 0.5%", line)
+        self.assertNotIn("target_pct", line)
+
+
+class StopCapShortTests(_CycleHarness):
+    """Round-2 mutation pin (Q3 #1): the cap's SHORT branch must place the
+    clamped stop ABOVE entry at entry x (1 + cap/100) — a mutant that used
+    the long-side formula put the short's stop below entry, an instant-stop
+    geometry no test caught."""
+
+    def test_capped_short_stop_lands_above_entry(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        os.environ["STOP_CAP_PCT_CRYPTO"] = "0.5"
+        run_id = self._run(market_type="futures")
+        # a futures 'sell' with no long remaps to 'short' inside run_cycle
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER, action="sell")):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        pos = self._position(run_id)
+        self.assertLess(float(pos["quantity"]), 0)          # really short
+        self.assertGreater(float(pos["stop_loss"]), 100.0)  # stop ABOVE entry
+        self.assertAlmostEqual(float(pos["stop_loss"]), 100.5, places=4)
+        evs = self._events(run_id, "stop_cap")
+        self.assertEqual(len(evs), 1)
+        self.assertAlmostEqual(evs[0]["stop_after"], 100.5, places=4)
+
+
+class MinHoldCoverTests(_CycleHarness):
+    """Round-2 mutation pin (Q3 #2): min_hold must defer `cover` too — a
+    mutant matching only 'sell' let a young SHORT book exit through the
+    desk while the long side was held."""
+
+    def _set_min_hold(self, run_id, hours):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT config_snapshot_json FROM trading_runs "
+                        "WHERE id = ?", (run_id,))
+            cfg = json.loads(cur.fetchone()["config_snapshot_json"] or "{}")
+            cfg["min_hold_hours"] = hours
+            cur.execute("UPDATE trading_runs SET config_snapshot_json = ? "
+                        "WHERE id = ?", (json.dumps(cfg), run_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_young_short_desk_cover_deferred(self):
+        run_id = self._run(market_type="futures")
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER, action="sell")):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        pos = self._position(run_id)
+        self.assertLess(float(pos["quantity"]), 0)
+        self._set_min_hold(run_id, 12)
+        # a futures 'buy' while short remaps to 'cover' inside run_cycle
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(action="buy")):
+            result = run_engine.run_cycle(run_id)
+        self.assertFalse(result.get("executed"))
+        self.assertIn("min_hold", result.get("skip_reason") or "")
+        pos = self._position(run_id)
+        self.assertIsNotNone(pos)
+        self.assertLess(float(pos["quantity"]), 0)  # still short
+
+
+class RatchetArmFeeMultiplierTests(unittest.TestCase):
+    """Round-2 pins (Q3 #3 + D4 arm scoping): BREAKEVEN_ARM_FEES multiplies
+    the crypto arm; non-crypto markets keep the LEGACY flat arm byte-for-byte
+    (0.001 x 2, multiplier IGNORED) even with both envs set; polymarket's
+    arm stays positive (its raw fee is 0.0 — pricing it would disable the
+    ratchet outright)."""
+
+    PNL = {"position": {"quantity": 1.0, "current_price": 10000.0}}
+
+    def setUp(self):
+        os.environ["FEE_PER_MARKET"] = "true"
+        os.environ["BREAKEVEN_ARM_FEES"] = "1.78"
+
+    def tearDown(self):
+        for key in ("FEE_PER_MARKET", "BREAKEVEN_ARM_FEES",
+                    "BREAKEVEN_FEE_RATE"):
+            os.environ.pop(key, None)
+
+    def test_crypto_arm_is_fee_rate_times_multiplier(self):
+        arm = run_engine._breakeven_arm_usd(self.PNL, market="crypto")
+        self.assertAlmostEqual(arm, 10000.0 * 0.00045 * 2.0 * 1.78, places=6)
+
+    def test_non_crypto_ignores_multiplier_and_fee_env(self):
+        for market in ("us-stock", "forex", "futures"):
+            arm = run_engine._breakeven_arm_usd(self.PNL, market=market)
+            self.assertAlmostEqual(arm, 10000.0 * 0.001 * 2.0 * 1.0,
+                                   places=10, msg=market)
+
+    def test_polymarket_arm_stays_positive(self):
+        arm = run_engine._breakeven_arm_usd(self.PNL, market="polymarket")
+        self.assertAlmostEqual(arm, 20.0, places=10)
+        self.assertGreater(arm, 0.0)
+
+
+class ShadowDeskWiringTests(_CycleHarness):
+    """Round-2 fix D3: run_cycle computes a regime read for crypto when
+    shadow is on and enforcement is OFF (was hardcoded None — the census
+    had zero desk-path traffic), and the trade still executes (log-only)."""
+
+    def tearDown(self):
+        os.environ.pop("REGIME_SHADOW", None)
+        super().tearDown()
+
+    def test_run_cycle_guards_the_shadow_read(self):
+        src = inspect.getsource(run_engine.run_cycle)
+        idx = src.index("regime_shadow_enabled() and not regime_filter_enabled()")
+        # crypto-scoped, and shadow-without-enforcement only
+        self.assertIn('== "crypto"', src[idx - 300:idx])
+
+    def test_shadow_verdict_logged_and_trade_executes(self):
+        os.environ["REGIME_SHADOW"] = "1"
+        run_id = self._run()
+        panic = {"regime": "panic", "reasons": ["synthetic panic read"],
+                 "allow_new_buys": False, "size_multiplier": 0.0,
+                 "enforced": False}
+        import regime as _regime
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch.object(_regime, "evaluate_market_regime",
+                          return_value=dict(panic)), \
+             self.assertLogs("regime", level="INFO") as logs:
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        line = next(m for m in logs.output if "regime_shadow" in m)
+        payload = json.loads(line.split("regime_shadow ", 1)[1])
+        self.assertEqual(payload["would_action"], "veto")
+        self.assertEqual(payload["symbol"], "BTC")
+        self.assertEqual(payload["regime"], "panic")
+        # the would-vetoed entry really landed — shadow never blocks
+        pos = self._position(run_id)
+        self.assertIsNotNone(pos)
+        self.assertNotEqual(float(pos["quantity"]), 0)
+
+    def test_shadow_off_run_cycle_passes_none(self):
+        run_id = self._run()
+        import regime as _regime
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)), \
+             patch.object(_regime, "evaluate_market_regime",
+                          side_effect=AssertionError(
+                              "must not read regime with shadow off")):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+
+
+class PsychShockUnavailableGuardTests(unittest.TestCase):
+    """Round-2 fix D11: an UNAVAILABLE psych payload must not reset the
+    shock transition state — only an affirmative no-shock read clears it
+    (a flapping feed must not re-convene the full desk every recovery)."""
+
+    def setUp(self):
+        run_engine._PSYCH_SHOCK_STATE.update({"active": False, "since": 0.0})
+
+    def tearDown(self):
+        os.environ.pop("PSYCH_SHOCK_DELTA", None)
+        run_engine._PSYCH_SHOCK_STATE.update({"active": False, "since": 0.0})
+
+    def test_router_guard_wiring(self):
+        src = inspect.getsource(run_engine._classify_situation)
+        self.assertIn('psych.get("available") and not psych.get("shock")', src)
+
+    def test_unavailable_payload_keeps_transition_state(self):
+        run = {"id": 1, "market": "crypto", "symbol": "BTC",
+               "stop_conditions_json": "{}"}
+        self.assertTrue(run_engine._psych_shock_fresh(True))  # in shock
+        self.assertTrue(run_engine._PSYCH_SHOCK_STATE["active"])
+        with patch("psych_feed.get_psych_payload",
+                   return_value={"available": False}):
+            run_engine._classify_situation(run, {})
+        self.assertTrue(run_engine._PSYCH_SHOCK_STATE["active"])  # NOT reset
+        with patch("psych_feed.get_psych_payload",
+                   return_value={"available": True, "shock": False}):
+            run_engine._classify_situation(run, {})
+        self.assertFalse(run_engine._PSYCH_SHOCK_STATE["active"])  # cleared
+
+
+class MinHoldProducerTests(_CycleHarness):
+    """Round-2 fix D9: RunIn.min_hold_hours is the sanctioned producer for
+    the run_cycle consumer (verification Q1-5 found the consumer had no
+    producer at all)."""
+
+    def _snapshot(self, run_id):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT config_snapshot_json FROM trading_runs "
+                        "WHERE id = ?", (run_id,))
+            return json.loads(cur.fetchone()["config_snapshot_json"] or "{}")
+        finally:
+            conn.close()
+
+    def _create(self, **overrides):
+        payload = {"symbol": "BTC", "market": "crypto", "max_bet_usd": 500.0}
+        payload.update(overrides)
+        return self.client.post("/api/runs", json=payload, headers=self._h())
+
+    def test_min_hold_hours_lands_in_config_snapshot(self):
+        resp = self._create(min_hold_hours=12)
+        self.assertEqual(resp.status_code, 200, resp.text)
+        cfg = self._snapshot(resp.json()["id"])
+        self.assertEqual(cfg.get("min_hold_hours"), 12)
+
+    def test_zero_and_none_are_omitted(self):
+        for value in (0, None):
+            resp = self._create(min_hold_hours=value)
+            self.assertEqual(resp.status_code, 200, resp.text)
+            cfg = self._snapshot(resp.json()["id"])
+            self.assertNotIn("min_hold_hours", cfg)
+
+    def test_out_of_range_rejected_400(self):
+        resp = self._create(min_hold_hours=9999)
+        self.assertEqual(resp.status_code, 400, resp.text)
+        self.assertIn("min_hold_hours", resp.json()["detail"])
+
 
 class TrendModuleWiringTests(unittest.TestCase):
     def test_trend_loop_registered_and_gated(self):

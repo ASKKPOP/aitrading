@@ -323,6 +323,95 @@ def _llm_veto(symbol: str, sig: dict[str, Any]) -> dict[str, Any]:
 
 # ─────────────────────────── state / telemetry ───────────────────────────
 
+def _agent_is_dedicated(agent_id: int) -> bool:
+    """Verification Q2-2: a mistyped TREND_AGENT_ID pointing at a REAL
+    user's agent would trade that user's sim book with no check (and the
+    entry freeze would not stop it — the freeze lives in run_cycle). The
+    dedicated module agent is created with user_id NULL; refuse anything
+    else. Fail closed on lookup errors — a module that cannot prove its
+    agent is dedicated must not trade."""
+    from database import get_db_connection
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM agents WHERE id = ?", (agent_id,))
+        row = cursor.fetchone()
+        return bool(row) and row["user_id"] is None
+    except Exception:  # noqa: BLE001
+        return False
+    finally:
+        conn.close()
+
+
+def _ledger_positions(agent_id: int) -> dict[str, dict[str, Any]]:
+    """The module agent's OPEN ledger positions, keyed by symbol. Every
+    lot on a dedicated agent belongs to this module, so any symbol here
+    that state does not track is an orphan (crash between ledger commit
+    and _save_state — verification A3-5) and must be re-adopted."""
+    from database import get_db_connection
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT symbol, quantity, entry_price FROM positions "
+            "WHERE agent_id = ? AND market = 'crypto'", (agent_id,))
+        return {r["symbol"]: dict(r) for r in cursor.fetchall()
+                if float(r["quantity"] or 0) != 0}
+    except Exception:  # noqa: BLE001
+        return {}
+    finally:
+        conn.close()
+
+
+def _reconcile_ledger(state: dict[str, Any], actions: list[dict[str, Any]],
+                      agent_id: int) -> None:
+    """Adopt ledger lots the state forgot. Stops/trail are rebuilt from the
+    CURRENT bars (entry-time ATR is lost with the crash) — approximate but
+    managed beats exact but orphaned."""
+    for symbol, row in _ledger_positions(agent_id).items():
+        if symbol in state["positions"]:
+            continue
+        highs, lows, closes = _series(_get_bars(symbol))
+        atr = wilder_atr(highs, lows, closes) if closes else None
+        if not closes or not atr or atr <= 0:
+            _emit(state, actions, "orphan_unadoptable", symbol=symbol,
+                  reason="insufficient bars")
+            continue
+        qty = float(row["quantity"])
+        side = "long" if qty > 0 else "short"
+        entry = float(row["entry_price"] or closes[-1])
+        stop = entry - STOP_ATR_MULT * atr if side == "long" \
+            else entry + STOP_ATR_MULT * atr
+        state["positions"][symbol] = {
+            "side": side, "qty": abs(qty), "entry_price": entry,
+            "entry_atr": atr, "initial_stop": stop, "trail": None,
+            "best_close": entry, "entry_ts": _now_iso(),
+            "entry_kind": "adopted", "signal_id": None,
+        }
+        _emit(state, actions, "orphan_adopted", symbol=symbol,
+              qty=abs(qty), price=entry, signal_id=None)
+
+
+def _adopt_orphan(agent_id: int, symbol: str, sig: dict[str, Any],
+                  today: str) -> "dict[str, Any] | None":
+    """Same-day duplicate refusal: the ledger already holds today's entry
+    for this signal. Rebuild the position from the ledger row + the
+    current signal's ATR."""
+    positions = _ledger_positions(agent_id)
+    row = positions.get(symbol)
+    if not row:
+        return None
+    qty = float(row["quantity"])
+    side = "long" if qty > 0 else "short"
+    entry = float(row["entry_price"] or sig["close"])
+    stop = entry - STOP_ATR_MULT * sig["atr"] if side == "long" \
+        else entry + STOP_ATR_MULT * sig["atr"]
+    return {"side": side, "qty": abs(qty), "entry_price": entry,
+            "entry_atr": sig["atr"], "initial_stop": stop, "trail": None,
+            "best_close": entry, "entry_ts": _now_iso(),
+            "entry_kind": sig["entry_kind"], "signal_id": None}
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -375,10 +464,18 @@ def run_trend_cycle() -> dict[str, Any]:
         summary["error"] = "TREND_AGENT_ID unset"
         return summary
 
+    if not _agent_is_dedicated(agent_id):
+        logger.warning("trend_module: TREND_AGENT_ID=%s is not a dedicated "
+                       "agent (user_id must be NULL) — refusing to run",
+                       agent_id)
+        summary["error"] = "TREND_AGENT_ID not a dedicated agent"
+        return summary
+
     from automation import execute_paper_trade
 
     state = _load_state()
     actions: list[dict[str, Any]] = []
+    _reconcile_ledger(state, actions, agent_id)
     fear_greed = _fear_greed_value()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -465,6 +562,20 @@ def run_trend_cycle() -> dict[str, Any]:
             run_id=None,
             client_order_id=f"trend:{agent_id}:{symbol}:{sig['side']}:{today}")
         if signal_id is None:
+            if err and "client_order_id" in err:
+                # Verification A3-5: a crash between the ledger commit and
+                # _save_state leaves an orphaned lot the module forgot; the
+                # next-day rerun then DOUBLE-enters. The duplicate refusal
+                # is that orphan announcing itself — re-adopt it into state
+                # (same-day parameters are reconstructible from the signal)
+                # instead of leaving it unmanaged.
+                adopted = _adopt_orphan(agent_id, symbol, sig, today)
+                if adopted:
+                    state["positions"][symbol] = adopted
+                    _emit(state, actions, "orphan_adopted", symbol=symbol,
+                          qty=adopted["qty"], price=adopted["entry_price"],
+                          signal_id=adopted["signal_id"])
+                    continue
             _emit(state, actions, "entry_failed", symbol=symbol, reason=err)
             continue
         state["positions"][symbol] = {
