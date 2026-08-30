@@ -34,17 +34,30 @@ _NONCE_BYTES = 12
 _AAD = b"user_api_settings.api_key"
 
 
+_EPHEMERAL: bytes | None = None
+
+
 def _key() -> bytes:
     """Read the key at CALL time, not import time — tests and the migration
     script set the variable after import, and an import-time cache would pin
-    an ephemeral dev key for the life of the process."""
+    a dev key for the life of the process.
+
+    The unset case must still be PROCESS-STABLE. Minting a fresh random key
+    per call (the first version of this function) made every value
+    unreadable on the very next read rather than merely after a restart —
+    caught by test_user_api_settings' mask assertions, which run without the
+    variable set. Cached ephemeral matches execution/crypto.py's contract:
+    usable within a process, gone across restarts, and loudly warned about."""
     raw = os.environ.get("EXECUTION_ENCRYPTION_KEY", "").strip()
     if raw:
         return base64.urlsafe_b64decode(raw + "==")
-    logger.warning(
-        "EXECUTION_ENCRYPTION_KEY not set — user secrets will use an "
-        "ephemeral key and cannot be decrypted after restart.")
-    return secrets.token_bytes(32)
+    global _EPHEMERAL
+    if _EPHEMERAL is None:
+        _EPHEMERAL = secrets.token_bytes(32)
+        logger.warning(
+            "EXECUTION_ENCRYPTION_KEY not set — user secrets will use an "
+            "ephemeral key and cannot be decrypted after restart.")
+    return _EPHEMERAL
 
 
 def is_encrypted(stored: str | None) -> bool:

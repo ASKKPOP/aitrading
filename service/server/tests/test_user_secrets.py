@@ -95,11 +95,34 @@ class CryptoTests(unittest.TestCase):
         """A key set after import must be honoured — an import-time cache
         would pin an ephemeral key and silently break every stored secret."""
         os.environ.pop("EXECUTION_ENCRYPTION_KEY", None)
+        user_secrets._EPHEMERAL = None
         ephemeral_token = user_secrets.encrypt_secret(SAMPLE)
         os.environ["EXECUTION_ENCRYPTION_KEY"] = KEY_B64
         # Encrypted under a different (ephemeral) key → unreadable now.
         self.assertIsNone(user_secrets.decrypt_secret(ephemeral_token))
         # …but a fresh encrypt under the real key round-trips.
+        self.assertEqual(
+            user_secrets.decrypt_secret(user_secrets.encrypt_secret(SAMPLE)),
+            SAMPLE)
+
+
+class EphemeralKeyStabilityTests(unittest.TestCase):
+    """Regression: the first version of _key() minted a NEW random key per
+    call when EXECUTION_ENCRYPTION_KEY was unset, so a value written without
+    the variable set was unreadable on the very next read — not merely after
+    a restart. test_user_api_settings' mask assertions caught it."""
+
+    def setUp(self):
+        os.environ.pop("EXECUTION_ENCRYPTION_KEY", None)
+        user_secrets._EPHEMERAL = None
+
+    def tearDown(self):
+        user_secrets._EPHEMERAL = None
+
+    def test_round_trips_within_a_process_without_the_env(self):
+        token = user_secrets.encrypt_secret(SAMPLE)
+        self.assertEqual(user_secrets.decrypt_secret(token), SAMPLE)
+        # and a second encrypt/decrypt pair still agrees
         self.assertEqual(
             user_secrets.decrypt_secret(user_secrets.encrypt_secret(SAMPLE)),
             SAMPLE)
