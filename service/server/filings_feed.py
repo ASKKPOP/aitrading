@@ -219,9 +219,13 @@ def insider_read(symbol: str, today: Optional[str] = None) -> dict[str, Any]:
     buy_usd = 0.0
     sell_usd = 0.0
     counted = 0
+    attempted = 0
     skipped: Counter = Counter()
+    cap = max_filings_per_symbol()
     for form, filing_date, accession, document in zip(forms, dates, accessions, documents):
-        if read["filings_read"] >= max_filings_per_symbol():
+        # Bound ATTEMPTS, not successes: a systematically failing SEC would
+        # otherwise cost one request per Form 4 in the whole index.
+        if attempted >= cap:
             break
         if str(form).strip() != "4":
             continue
@@ -231,6 +235,7 @@ def insider_read(symbol: str, today: Optional[str] = None) -> dict[str, Any]:
             continue
         if filed < cutoff:
             continue
+        attempted += 1
         try:
             xml_text = _get_text(_document_url(cik, accession, document))
             f_buy, f_sell, f_count, f_skipped = _parse_form4(xml_text)

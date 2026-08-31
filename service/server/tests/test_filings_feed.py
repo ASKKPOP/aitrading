@@ -161,6 +161,32 @@ class InsiderScoreTest(unittest.TestCase):
         self.assertEqual(read["score"], 100.0)
         self.assertEqual(read["errors"], 1)
 
+    def test_a_dead_upstream_cannot_walk_the_whole_filing_index(self):
+        """The per-symbol cap must bound ATTEMPTS, not successes. Counting
+        only successes lets a systematically failing SEC (403/500) issue one
+        request per Form 4 in the index — a retry storm per symbol, per pass.
+        """
+        forms = [("4", "2026-08-20", f"0001-26-{i:06d}", f"x/f{i}.xml") for i in range(200)]
+        attempts = {"n": 0}
+
+        def always_fails(url, *a, **k):
+            attempts["n"] += 1
+            raise RuntimeError("503 from sec.gov")
+
+        def fake_get_json(url, *a, **k):
+            if "company_tickers" in url:
+                return TICKERS
+            return _submissions(forms)
+
+        with patch.dict("os.environ", {"FILINGS_MAX_PER_SYMBOL": "5"}), \
+             patch.object(filings_feed, "_get_json", fake_get_json), \
+             patch.object(filings_feed, "_get_text", always_fails):
+            read = filings_feed.insider_read("NVDA", today="2026-08-30")
+
+        self.assertLessEqual(attempts["n"], 5)
+        self.assertEqual(read["errors"], attempts["n"])
+        self.assertIsNone(read["score"])
+
     def test_raw_xml_url_drops_the_xsl_render_prefix(self):
         self.assertEqual(
             filings_feed._document_url(1045810, "0001347842-26-000015",
