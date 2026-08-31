@@ -2852,6 +2852,32 @@ def init_database():
         ON human_facts(ts)
     """)
 
+    # Crawl bookkeeping (crawl_monitor.py): one row per collector pass in the
+    # swing signal stack — ok/duration/items/error. The admin console's feed
+    # probes only answer "does the upstream answer right now"; these rows are
+    # what OUR crawlers actually did, so a silently dead collector is visible.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS crawl_runs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            feed        VARCHAR(48) NOT NULL,
+            started_at  VARCHAR(32) NOT NULL,
+            finished_at VARCHAR(32),
+            duration_ms INTEGER,
+            ok          INTEGER NOT NULL,
+            items       INTEGER,
+            detail      TEXT,
+            error       TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_crawl_runs_feed_started
+        ON crawl_runs(feed, started_at)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_crawl_runs_started
+        ON crawl_runs(started_at)
+    """)
+
     # Durable tier of the market_i18n translation cache. Prod is Redis-less
     # and two-process (worker journals, backend serves), so an in-memory or
     # KV cache cannot carry a warmed translation from the write side to the
