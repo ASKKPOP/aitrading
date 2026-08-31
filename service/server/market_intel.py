@@ -10,6 +10,7 @@ Market intelligence snapshots and read models.
 from __future__ import annotations
 
 import json
+import logging
 import math
 import os
 import threading
@@ -29,6 +30,8 @@ except ImportError:  # pragma: no cover - Python < 3.9 fallback
 from cache import delete_pattern, get_json, set_json
 from config import ALPHA_VANTAGE_API_KEY
 from database import get_db_connection
+
+logger = logging.getLogger(__name__)
 from json_safe import json_safe
 
 ALPHA_VANTAGE_BASE_URL = os.getenv("ALPHA_VANTAGE_BASE_URL", "https://www.alphavantage.co/query").strip()
@@ -517,6 +520,83 @@ def _dedupe_news_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         seen.add(dedupe_key)
         deduped.append(item)
     return deduped
+
+
+# Alpha Vantage's own label boundary: ticker_sentiment_score >= 0.35 is
+# "Bullish", <= -0.35 "Bearish". The vendor scale is compressed, so a raw
+# x100 would read a solidly bullish article as a lukewarm 35 — normalize by
+# the boundary instead, then clamp.
+NEWS_SENTIMENT_FULL_SCALE = 0.35
+
+
+def news_sentiment_for(symbol: str) -> dict[str, Any]:
+    """Per-symbol news sentiment from snapshots we already store.
+
+    refresh_market_news_snapshots persists the FULL Alpha Vantage items,
+    including per-ticker sentiment; only mention counts were ever summarized,
+    so the scores were collected and discarded. This reads the newest snapshot
+    of each category and returns a relevance-weighted mean on the -100..+100
+    processor scale.
+
+    `score` is None when no article mentions the symbol (no coverage) — never
+    a neutral 0. `articles` lets the caller apply a minimum-sample gate.
+    """
+    symbol = (symbol or "").strip().upper()
+    empty: dict[str, Any] = {"symbol": symbol, "score": None, "articles": 0,
+                             "raw": None}
+    if not symbol:
+        return empty
+
+    weighted = 0.0
+    weight_total = 0.0
+    articles = 0
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            for category in NEWS_CATEGORY_DEFINITIONS:
+                cursor.execute(
+                    """
+                    SELECT items_json FROM market_news_snapshots
+                    WHERE category = ?
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT 1
+                    """,
+                    (category,),
+                )
+                row = cursor.fetchone()
+                if not row or not row["items_json"]:
+                    continue
+                try:
+                    items = json.loads(row["items_json"]) or []
+                except (TypeError, ValueError):
+                    continue
+                for item in items:
+                    for entry in (item or {}).get("ticker_sentiment") or []:
+                        if str(entry.get("ticker") or "").strip().upper() != symbol:
+                            continue
+                        try:
+                            relevance = float(entry.get("relevance_score") or 0.0)
+                            score = float(entry.get("sentiment_score") or 0.0)
+                        except (TypeError, ValueError):
+                            continue
+                        articles += 1
+                        if relevance <= 0:
+                            continue
+                        weighted += relevance * score
+                        weight_total += relevance
+        finally:
+            conn.close()
+    except Exception as exc:  # noqa: BLE001 — a read must degrade, not raise
+        logger.warning("news_sentiment_for(%s) failed: %s", symbol, exc)
+        return empty
+
+    if weight_total <= 0:
+        return {**empty, "articles": articles}
+    raw = weighted / weight_total
+    scaled = max(-100.0, min(100.0, raw / NEWS_SENTIMENT_FULL_SCALE * 100.0))
+    return {"symbol": symbol, "score": round(scaled, 2), "articles": articles,
+            "raw": round(raw, 4)}
 
 
 def _build_news_summary(category: str, items: list[dict[str, Any]]) -> dict[str, Any]:

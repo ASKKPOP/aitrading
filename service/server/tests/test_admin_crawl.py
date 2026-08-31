@@ -73,14 +73,52 @@ class AdminCrawlConsoleTest(unittest.TestCase):
         self.assertEqual(body["decide"]["buy_threshold"], 40.0)
         self.assertEqual(body["decide"]["sell_threshold"], -40.0)
 
+    def _overview(self, mode="off"):
+        with patch.dict(os.environ, {"SWING_SENTIMENT_BLEND": mode}):
+            return self.client.get("/api/admin/crawl/overview", headers=self.admin).json()
+
     def test_overview_marks_a_collector_that_feeds_no_score(self):
         """A healthy crawler that is wired to nothing must not read as wired."""
-        body = self.client.get("/api/admin/crawl/overview", headers=self.admin).json()
+        body = self._overview("off")
         by_key = {n["key"]: n for n in body["collect"]}
         self.assertFalse(by_key["social_crawl"]["wired"])
         self.assertFalse(by_key["news"]["wired"])
         self.assertTrue(by_key["price_volume"]["wired"])
         self.assertIn("not an input", by_key["social_crawl"]["note"])
+
+    def test_shadow_mode_is_not_reported_as_wired(self):
+        """Shadow measures without deciding — claiming it is wired would
+        overstate what the score actually uses."""
+        by_key = {n["key"]: n for n in self._overview("shadow")["collect"]}
+        self.assertFalse(by_key["news"]["wired"])
+        self.assertEqual(by_key["news"]["blend_mode"], "shadow")
+        self.assertIn("shadow", by_key["news"]["note"].lower())
+
+    def test_live_mode_reports_the_feeds_as_wired(self):
+        by_key = {n["key"]: n for n in self._overview("live")["collect"]}
+        self.assertTrue(by_key["news"]["wired"])
+        self.assertTrue(by_key["social_crawl"]["wired"])
+
+    def test_blend_readout_counts_decisions_the_shadow_would_change(self):
+        """The whole point of shadow mode: how often would it have differed?"""
+        agree = _decision(symbol="AAA")
+        agree["sentiment_shadow"] = 30.0          # same side, no flip
+        flip = _decision(symbol="BBB")
+        flip["sentiment_shadow"] = -100.0         # drags the composite down
+        swing_pipeline._persist(agree)
+        swing_pipeline._persist(flip)
+
+        blend = self._overview("shadow")["blend"]
+        self.assertEqual(blend["mode"], "shadow")
+        self.assertEqual(blend["measured"], 2)
+        self.assertEqual(blend["action_flips"], 1)
+        self.assertEqual(blend["flipped_symbols"], ["BBB"])
+
+    def test_blend_readout_is_empty_before_any_shadow_is_recorded(self):
+        swing_pipeline._persist(_decision(symbol="AAA"))
+        blend = self._overview("shadow")["blend"]
+        self.assertEqual(blend["measured"], 0)
+        self.assertEqual(blend["action_flips"], 0)
 
     def test_a_feed_that_never_ran_is_idle_not_ok(self):
         body = self.client.get("/api/admin/crawl/overview", headers=self.admin).json()

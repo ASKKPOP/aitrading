@@ -360,6 +360,9 @@ export function AdminPage() {
     crawlDecisionsTitle: tr(language, { ko: '심볼별 최신 결정', en: 'Latest decision per symbol', ja: 'シンボル別の最新判断', th: 'การตัดสินล่าสุดต่อสัญลักษณ์', vi: 'Quyết định mới nhất theo mã', id: 'Keputusan terbaru per simbol' }),
     crawlDisabled: tr(language, { ko: '파이프라인 비활성 (SWING_PIPELINE_ENABLED)', en: 'pipeline disabled (SWING_PIPELINE_ENABLED)', ja: 'パイプライン無効 (SWING_PIPELINE_ENABLED)', th: 'ไปป์ไลน์ปิดอยู่ (SWING_PIPELINE_ENABLED)', vi: 'pipeline đã tắt (SWING_PIPELINE_ENABLED)', id: 'pipeline nonaktif (SWING_PIPELINE_ENABLED)' }),
     crawlAll: tr(language, { ko: '전체', en: 'all feeds', ja: '全フィード', th: 'ทุกฟีด', vi: 'tất cả feed', id: 'semua feed' }),
+    crawlBlend: tr(language, { ko: '심볼별 sentiment 혼합', en: 'Per-symbol sentiment blend', ja: 'シンボル別センチメント混合', th: 'การผสมเซนทิเมนต์รายสัญลักษณ์', vi: 'Trộn tâm lý theo mã', id: 'Campuran sentimen per simbol' }),
+    crawlBlendShadow: tr(language, { ko: '섀도우 측정 중 — 결정에는 사용되지 않음', en: 'measuring in shadow — not used to decide', ja: 'シャドー測定中 — 判断には未使用', th: 'กำลังวัดแบบเงา — ไม่ใช้ตัดสิน', vi: 'đang đo ở chế độ bóng — không dùng để quyết định', id: 'mengukur dalam bayangan — tidak dipakai memutuskan' }),
+    crawlBlendFlips: tr(language, { ko: '결정이 뒤집힌 건수', en: 'decisions it would have flipped', ja: '判断が反転する件数', th: 'จำนวนการตัดสินที่จะพลิก', vi: 'số quyết định sẽ đảo chiều', id: 'keputusan yang akan berbalik' }),
     crawlNoRuns: tr(language, { ko: '아직 크롤 기록이 없습니다.', en: 'No crawl recorded yet.', ja: 'クロール記録はまだありません。', th: 'ยังไม่มีบันทึกการรวบรวม', vi: 'Chưa có bản ghi thu thập nào.', id: 'Belum ada perayapan tercatat.' }),
     tabSupport: tr(language, { ko: '문의 · 알림', en: 'Support & alerts', ja: '問い合わせ・通知', th: 'ซัพพอร์ต · การแจ้งเตือน', vi: 'Hỗ trợ · Thông báo', id: 'Dukungan & peringatan' }),
     tabDiscussions: tr(language, { ko: '토론 관리', en: 'Discussions', ja: '議論管理', th: 'จัดการกระทู้', vi: 'Thảo luận', id: 'Diskusi' }),
@@ -1757,6 +1760,33 @@ export function AdminPage() {
             )}
           </div>
 
+          {crawlOverview?.blend && crawlOverview.blend.mode !== 'off' && (
+            <div style={{ ...card }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{T.crawlBlend}</div>
+                <span style={{ fontSize: 11.5, padding: '2px 8px', borderRadius: 7, fontWeight: 700,
+                  color: crawlOverview.blend.mode === 'live' ? '#22c55e' : '#eab308',
+                  border: `1px solid ${crawlOverview.blend.mode === 'live' ? '#22c55e' : '#eab308'}` }}>
+                  {crawlOverview.blend.mode}
+                </span>
+                {crawlOverview.blend.mode === 'shadow' && (
+                  <span style={{ fontSize: 11.5, color: 'var(--text-muted,#8a8073)' }}>{T.crawlBlendShadow}</span>
+                )}
+              </div>
+              <div style={{ fontSize: 12.5, marginTop: 8 }}>
+                {T.crawlBlendFlips}:{' '}
+                <b>{crawlOverview.blend.action_flips}</b> / {crawlOverview.blend.measured}
+                {crawlOverview.blend.flip_rate != null &&
+                  ` (${(crawlOverview.blend.flip_rate * 100).toFixed(0)}%)`}
+                {!!(crawlOverview.blend.flipped_symbols || []).length && (
+                  <span style={{ color: 'var(--text-muted,#8a8073)' }}>
+                    {' '}· {crawlOverview.blend.flipped_symbols.join(', ')}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div style={{ ...card }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{T.crawlDecisionsTitle}</div>
             {!crawlDecisions.length && <div style={{ fontSize: 12.5, color: 'var(--text-muted,#8a8073)' }}>—</div>}
@@ -1771,6 +1801,7 @@ export function AdminPage() {
                     {['sentiment', 'macro', 'thesis', 'smart_money', 'technical'].map(k => (
                       <th key={k} style={th}>{k}</th>
                     ))}
+                    <th style={th}>shadow</th>
                     <th style={th}>veto</th>
                     <th style={th}>{T.feedCheckedAt}</th>
                   </tr></thead>
@@ -1789,6 +1820,9 @@ export function AdminPage() {
                             {(d.scores || {})[k] == null ? '—' : (d.scores || {})[k].toFixed(0)}
                           </td>
                         ))}
+                        <td style={{ ...td, color: 'var(--text-muted,#8a8073)' }}>
+                          {d.sentiment_shadow == null ? '—' : d.sentiment_shadow.toFixed(0)}
+                        </td>
                         <td style={{ ...td, color: d.veto ? '#eab308' : 'inherit' }}>{d.veto || '—'}</td>
                         <td style={{ ...td, fontSize: 11.5 }}>
                           {d.computed_at ? new Date(d.computed_at).toLocaleString() : '—'}

@@ -102,6 +102,30 @@ COLLECT_NODES: tuple[dict[str, Any], ...] = (
      "feeds": "technical", "wired": True, "note": None},
 )
 
+_BLEND_NOTES = {
+    "off": "collected; not an input to the sentiment score",
+    "shadow": "shadow only — the blended value is recorded beside each decision "
+              "for comparison, and is NOT used to decide",
+    "live": "blended into the per-symbol sentiment score",
+}
+
+
+def collect_nodes() -> tuple[dict[str, Any], ...]:
+    """COLLECT_NODES with the sentiment feeds' wiring resolved for the current
+    blend mode. `wired` means "affects decisions" — shadow does not, and must
+    not be reported as if it did."""
+    mode = sentiment_blend_mode()
+    resolved: list[dict[str, Any]] = []
+    for node in COLLECT_NODES:
+        entry = dict(node)
+        if entry["key"] in (FEED_SOCIAL, FEED_NEWS):
+            entry["wired"] = mode == "live"
+            entry["note"] = _BLEND_NOTES[mode]
+            entry["blend_mode"] = mode
+        resolved.append(entry)
+    return tuple(resolved)
+
+
 PROCESSOR_NODES: tuple[dict[str, Any], ...] = tuple(
     {"key": name, "weight": swing_stack.WEIGHTS[name],
      "axis": "qualitative" if name in swing_stack.QUAL_FEEDS
@@ -243,6 +267,41 @@ def fetch_fear_greed(market: str) -> Optional[dict[str, Optional[float]]]:
         return None
 
 
+SENTIMENT_BLEND_MODES = ("off", "shadow", "live")
+
+
+def sentiment_blend_mode() -> str:
+    """off | shadow | live.
+
+    `shadow` computes the per-symbol blend and records it beside the decision
+    WITHOUT changing a single outcome — the blend has no vendor history to
+    backtest (news/social snapshots are retention-pruned local tables), so the
+    only honest evidence is live-forward disagreement, the same reason
+    factor_snapshots exists. Flip to `live` on that evidence, not before.
+
+    An unrecognized value falls back to `off`: never trade on a typo.
+    """
+    mode = os.environ.get("SWING_SENTIMENT_BLEND", "shadow").strip().lower()
+    return mode if mode in SENTIMENT_BLEND_MODES else "off"
+
+
+def fetch_news_sentiment(symbol: str) -> dict[str, Any]:
+    """Per-symbol news tilt from snapshots market_intel already stores."""
+    import market_intel
+    return market_intel.news_sentiment_for(symbol)
+
+
+def fetch_social_sentiment(symbol: str) -> dict[str, Any]:
+    """Per-symbol social tilt from the social_feed snapshot (-1..1 -> -100..100)."""
+    import social_feed
+    read = social_feed.social_sentiment_for(symbol) or {}
+    tilt = read.get("tilt")
+    return {
+        "score": round(float(tilt) * 100.0, 2) if tilt is not None else None,
+        "posts": int(read.get("posts") or 0),
+    }
+
+
 def fetch_catalyst(symbol: str) -> dict[str, Any]:
     if not catalyst_feed.enabled():
         return {"score": None, "hours_to_next_earnings": None, "disabled": True}
@@ -333,6 +392,31 @@ def evaluate_symbol(symbol: str, market: str = "us-stock") -> dict[str, Any]:
     filings = _safe(FEED_FILINGS, lambda: fetch_filings(symbol), {}) or {}
     event_hours = _safe(FEED_CALENDAR, fetch_macro_event_hours)
 
+    market_sentiment = swing_stack.psych_sentiment_score(
+        (gauge or {}).get("value"), (gauge or {}).get("avg_7d")
+    )
+    mode = sentiment_blend_mode()
+    news: dict[str, Any] = {}
+    social: dict[str, Any] = {}
+    blended: Optional[float] = None
+    if mode != "off":
+        news = _safe(FEED_NEWS, lambda: fetch_news_sentiment(symbol), {}) or {}
+        social = _safe(FEED_SOCIAL, lambda: fetch_social_sentiment(symbol), {}) or {}
+        blended = swing_stack.blended_sentiment_score(
+            market_sentiment,
+            news=news.get("score"), social=social.get("score"),
+            news_n=int(news.get("articles") or 0),
+            social_n=int(social.get("posts") or 0),
+        )
+    # shadow measures without deciding; live decides on the blend and shadows
+    # the gauge, so the comparison stays available in both directions.
+    if mode == "live" and blended is not None:
+        sentiment_used, sentiment_shadow = blended, market_sentiment
+    elif mode == "shadow":
+        sentiment_used, sentiment_shadow = market_sentiment, blended
+    else:
+        sentiment_used, sentiment_shadow = market_sentiment, None
+
     scores: dict[str, Optional[float]] = {
         "technical": swing_stack.technical_score(candles, benchmark or None),
         "macro": swing_stack.macro_score(
@@ -340,9 +424,7 @@ def evaluate_symbol(symbol: str, market: str = "us-stock") -> dict[str, Any]:
             macro.get("y10"), macro.get("y10_5d_ago"),
             macro.get("dxy"), macro.get("dxy_5d_ago"),
         ),
-        "sentiment": swing_stack.psych_sentiment_score(
-            (gauge or {}).get("value"), (gauge or {}).get("avg_7d")
-        ),
+        "sentiment": sentiment_used,
         "thesis": catalyst.get("score"),
         "smart_money": filings.get("score"),
     }
@@ -364,10 +446,20 @@ def evaluate_symbol(symbol: str, market: str = "us-stock") -> dict[str, Any]:
         "reason": decision["reason"],
         "coverage": sum(1 for v in scores.values() if v is not None),
         "hours_to_binary_event": hours_to_event,
+        "sentiment_shadow": sentiment_shadow,
         "detail": {
             "candles": len(candles),
             "macro": macro,
             "fear_greed": gauge,
+            "sentiment": {
+                "mode": mode,
+                "market": market_sentiment,
+                "blended": blended,
+                "news": news.get("score"),
+                "news_articles": int(news.get("articles") or 0),
+                "social": social.get("score"),
+                "social_posts": int(social.get("posts") or 0),
+            },
             "catalyst": {k: catalyst.get(k) for k in
                          ("quarters", "beats", "latest_surprise_pct",
                           "next_earnings_date", "error")},
@@ -391,8 +483,8 @@ def _persist(row: dict[str, Any]) -> None:
             INSERT INTO swing_decisions
                 (symbol, market, computed_at, sentiment, macro, thesis,
                  smart_money, technical, composite, axis, action, veto,
-                 reason, coverage, hours_to_event, detail)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 reason, coverage, hours_to_event, sentiment_shadow, detail)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 row["symbol"], row.get("market"), _utc_now_iso(),
@@ -401,6 +493,7 @@ def _persist(row: dict[str, Any]) -> None:
                 row.get("composite"), row.get("axis"), row.get("action"),
                 row.get("veto"), row.get("reason"), int(row.get("coverage") or 0),
                 row.get("hours_to_binary_event"),
+                row.get("sentiment_shadow"),
                 json.dumps(row.get("detail") or {}, default=str)[:4000],
             ),
         )
@@ -427,6 +520,7 @@ def _decision_row(row: Any) -> dict[str, Any]:
         "reason": row["reason"],
         "coverage": row["coverage"],
         "hours_to_event": row["hours_to_event"],
+        "sentiment_shadow": row["sentiment_shadow"],
         "detail": detail,
     }
 

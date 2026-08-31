@@ -69,13 +69,46 @@ def _node_health(key: str, summary: dict[str, dict[str, Any]]) -> dict[str, Any]
     }
 
 
+def _blend_readout(decisions: list[dict[str, Any]]) -> dict[str, Any]:
+    """How often would the shadow sentiment have produced a different call?
+
+    This is the evidence that decides whether the per-symbol blend is promoted
+    to `live`. It cannot be backtested — news/social snapshots are
+    retention-pruned with no vendor history — so the disagreement rate has to
+    accumulate live-forward.
+    """
+    measured = 0
+    action_flips = 0
+    flipped: list[str] = []
+    for row in decisions:
+        shadow = row.get("sentiment_shadow")
+        if shadow is None:
+            continue
+        measured += 1
+        alt_scores = dict(row.get("scores") or {})
+        alt_scores["sentiment"] = shadow
+        alt = swing_stack.decide(
+            alt_scores, hours_to_binary_event=row.get("hours_to_event")
+        )
+        if alt["action"] != row.get("action"):
+            action_flips += 1
+            flipped.append(row["symbol"])
+    return {
+        "mode": swing_pipeline.sentiment_blend_mode(),
+        "measured": measured,
+        "action_flips": action_flips,
+        "flip_rate": round(action_flips / measured, 4) if measured else None,
+        "flipped_symbols": flipped[:20],
+    }
+
+
 def _build_overview() -> dict[str, Any]:
     summary = crawl_monitor.feed_summary()
     decisions = swing_pipeline.latest_decisions()
 
     collect = [
         {**node, **_node_health(node["key"], summary)}
-        for node in swing_pipeline.COLLECT_NODES
+        for node in swing_pipeline.collect_nodes()
     ]
 
     score = []
@@ -101,6 +134,7 @@ def _build_overview() -> dict[str, Any]:
 
     composites = [d["composite"] for d in decisions if d.get("composite") is not None]
     vetoed = sum(1 for d in decisions if d.get("veto"))
+    blend = _blend_readout(decisions)
 
     return {
         "collect": collect,
@@ -128,6 +162,7 @@ def _build_overview() -> dict[str, Any]:
         "configured_symbols": swing_pipeline.configured_symbols(),
         "interval_seconds": swing_pipeline.interval_seconds(),
         "pipeline_health": _node_health(swing_pipeline.FEED_PIPELINE, summary),
+        "blend": blend,
     }
 
 

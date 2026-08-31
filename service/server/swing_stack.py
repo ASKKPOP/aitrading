@@ -200,6 +200,66 @@ def psych_sentiment_score(
 # Combine + decide
 # ---------------------------------------------------------------------------
 
+# --- per-symbol sentiment blend --------------------------------------------
+# The sentiment processor above reads a MARKET-level gauge, so every symbol
+# scores identically on a given day. These weights fold the per-symbol
+# readings (news, social) in on top of it, so the qualitative axis can differ
+# between two tickers on the same date — which is what the two-axis rule needs.
+#
+# Starting points to calibrate, like the doc's own weights. What is NOT a
+# preference and must survive recalibration:
+#   * the market gauge is REQUIRED (doc §1: sentiment alone is noisy and
+#     manipulable, so a crowd reading never becomes the score on its own)
+#   * per-symbol components are capped at half the blend, structurally, so no
+#     weight edit can let the crowd lead
+#   * a thin sample is no coverage (None), never a neutral 0
+SENTIMENT_W_MARKET = 0.50
+SENTIMENT_W_NEWS = 0.30
+SENTIMENT_W_SOCIAL = 0.20
+SENTIMENT_SYMBOL_WEIGHT_MAX = 0.50
+MIN_NEWS_ARTICLES = 3
+MIN_SOCIAL_POSTS = 5
+
+
+def blended_sentiment_score(
+    market: Optional[float],
+    news: Optional[float] = None,
+    social: Optional[float] = None,
+    news_n: int = 0,
+    social_n: int = 0,
+) -> Optional[float]:
+    """Market gauge blended with per-symbol news/social readings.
+
+    All inputs are on the -100..+100 processor scale. Returns None when the
+    market gauge is absent — identical to today's behaviour, since
+    psych_sentiment_score also returns None without a gauge."""
+    if market is None:
+        return None
+
+    symbol_parts: list[tuple[float, float]] = []
+    if news is not None and news_n >= MIN_NEWS_ARTICLES:
+        symbol_parts.append((SENTIMENT_W_NEWS, clamp(float(news))))
+    if social is not None and social_n >= MIN_SOCIAL_POSTS:
+        symbol_parts.append((SENTIMENT_W_SOCIAL, clamp(float(social))))
+    if not symbol_parts:
+        return clamp(float(market))
+
+    market_w = SENTIMENT_W_MARKET
+    symbol_w = sum(w for w, _ in symbol_parts)
+    total = market_w + symbol_w
+    # Structural cap: rescale the per-symbol side if it would take more than
+    # its permitted share of the blend.
+    if symbol_w / total > SENTIMENT_SYMBOL_WEIGHT_MAX:
+        target = market_w * SENTIMENT_SYMBOL_WEIGHT_MAX / (1.0 - SENTIMENT_SYMBOL_WEIGHT_MAX)
+        scale = target / symbol_w
+        symbol_parts = [(w * scale, v) for w, v in symbol_parts]
+        symbol_w = target
+        total = market_w + symbol_w
+
+    acc = market_w * clamp(float(market)) + sum(w * v for w, v in symbol_parts)
+    return clamp(acc / total)
+
+
 def composite_score(scores: dict[str, Optional[float]]) -> Optional[float]:
     """Weighted sum, renormalized over feeds that have coverage (non-None).
     With all five present this reproduces the doc's worked example exactly."""

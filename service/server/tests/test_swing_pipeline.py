@@ -246,6 +246,94 @@ class SwingPipelineTest(unittest.TestCase):
         self.assertEqual(row["items"], 1)
         self.assertFalse(row["detail"].get("disabled"))
 
+    # -- sentiment blend (shadow / live) ---------------------------------
+    def _evaluate_blend(self, mode, news=None, social=None, **kw):
+        news = news if news is not None else {"score": -100.0, "articles": 10}
+        social = social if social is not None else {"score": -100.0, "posts": 20}
+        with patch.dict(os.environ, {"SWING_SENTIMENT_BLEND": mode}), \
+             patch.object(swing_pipeline, "fetch_news_sentiment", lambda s: news), \
+             patch.object(swing_pipeline, "fetch_social_sentiment", lambda s: social):
+            return self._evaluate(**kw)
+
+    def test_off_keeps_the_market_gauge_and_records_no_shadow(self):
+        row = self._evaluate_blend("off")
+        self.assertEqual(row["scores"]["sentiment"], row["detail"]["sentiment"]["market"])
+        self.assertIsNone(row["sentiment_shadow"])
+
+    def test_shadow_decides_on_the_market_gauge_but_records_the_blend(self):
+        """Shadow must not change a single decision — it only measures."""
+        control = self._evaluate_blend("off")
+        shadow = self._evaluate_blend("shadow")
+        self.assertEqual(shadow["scores"]["sentiment"], control["scores"]["sentiment"])
+        self.assertEqual(shadow["action"], control["action"])
+        self.assertIsNotNone(shadow["sentiment_shadow"])
+        # bearish news+social pull the blend below the market-only gauge
+        self.assertLess(shadow["sentiment_shadow"], shadow["scores"]["sentiment"])
+
+    def test_live_uses_the_blend_and_shadows_the_market_gauge(self):
+        row = self._evaluate_blend("live")
+        self.assertLess(row["scores"]["sentiment"], row["sentiment_shadow"])
+
+    def test_live_blend_can_actually_flip_the_decision(self):
+        """If it could never change an outcome it would not be worth wiring.
+
+        The thesis score is dialled down so the composite sits just above the
+        +40 line: with the default fixture every other feed is near maximum,
+        so a -71pt sentiment swing still lands at 44.75 and the assertion
+        would prove nothing.
+        """
+        near_threshold = {"catalyst": {"score": 20.0, "hours_to_next_earnings": None}}
+        control = self._evaluate_blend("off", **near_threshold)
+        live = self._evaluate_blend("live", **near_threshold)
+        self.assertEqual(control["action"], "BUY")
+        self.assertEqual(control["axis"], "AGREE_BULL")
+        self.assertEqual(live["action"], "WAIT")
+        # the qualitative axis itself goes flat — the doc's two-axis rule
+        self.assertEqual(live["axis"], "NEUTRAL")
+        self.assertLess(live["composite"], control["composite"])
+
+    def test_a_thin_sample_leaves_the_blend_equal_to_the_gauge(self):
+        row = self._evaluate_blend("shadow",
+                                   news={"score": -100.0, "articles": 1},
+                                   social={"score": -100.0, "posts": 2})
+        self.assertEqual(row["sentiment_shadow"], row["scores"]["sentiment"])
+
+    def test_blend_components_are_recorded_for_diagnosis(self):
+        row = self._evaluate_blend("shadow")
+        detail = row["detail"]["sentiment"]
+        self.assertEqual(detail["mode"], "shadow")
+        self.assertEqual(detail["news_articles"], 10)
+        self.assertEqual(detail["social_posts"], 20)
+        self.assertEqual(detail["news"], -100.0)
+
+    def test_off_does_not_pay_for_reads_it_will_not_use(self):
+        calls = {"n": 0}
+
+        def counted(_symbol):
+            calls["n"] += 1
+            return {"score": 0.0, "articles": 9}
+
+        with patch.dict(os.environ, {"SWING_SENTIMENT_BLEND": "off"}), \
+             patch.object(swing_pipeline, "fetch_news_sentiment", counted), \
+             patch.object(swing_pipeline, "fetch_social_sentiment", counted):
+            self._evaluate()
+        self.assertEqual(calls["n"], 0)
+
+    def test_shadow_is_persisted_with_the_decision(self):
+        swing_pipeline._persist({
+            "symbol": "AAA", "market": "us-stock",
+            "scores": {"sentiment": 20.0, "macro": None, "thesis": None,
+                       "smart_money": None, "technical": 30.0},
+            "composite": 25.0, "axis": "NEUTRAL", "action": "WAIT",
+            "veto": None, "reason": "", "coverage": 2,
+            "hours_to_binary_event": None, "sentiment_shadow": -12.5, "detail": {},
+        })
+        self.assertEqual(swing_pipeline.latest_decisions()[0]["sentiment_shadow"], -12.5)
+
+    def test_an_unknown_mode_falls_back_to_off_rather_than_trading_on_it(self):
+        with patch.dict(os.environ, {"SWING_SENTIMENT_BLEND": "nonsense"}):
+            self.assertEqual(swing_pipeline.sentiment_blend_mode(), "off")
+
     # -- loop housekeeping -----------------------------------------------
     def test_retention_prune_runs_even_while_the_pipeline_is_disabled(self):
         """social_feed and market_news write crawl_runs regardless of this

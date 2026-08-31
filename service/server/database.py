@@ -2900,6 +2900,7 @@ def init_database():
             reason         TEXT,
             coverage       INTEGER,
             hours_to_event REAL,
+            sentiment_shadow REAL,
             detail         TEXT
         )
     """)
