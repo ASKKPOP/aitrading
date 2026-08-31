@@ -43,45 +43,10 @@ type Entitlements = {
   plan: string | null; max_fleet_size: number; default_budget_usd: number
 }
 
-// The three profit-oriented risk tiers (2026-07-23). Keys map to backend
-// FLEET_BOUNDS; leverage stays 1× — the lever here is position size + gate +
-// stop width + cycle speed, not borrowed margin.
-const RISK_TIERS: { key: string; label: any; desc: any }[] = [
-  { key: 'balanced',
-    label: { ko: '안정 · Balance', en: 'Balance', ja: '安定', th: 'สมดุล', vi: 'Cân bằng', id: 'Seimbang' },
-    desc: { ko: '작은 포지션(예산의 30%)·표준 게이트·좁은 손절. 변동성 낮고 꾸준함.',
-            en: 'Small positions (30% of budget), standard gate, tight stop. Steady, low swing.',
-            ja: '小さめのポジション(予算の30%)・標準ゲート・浅い損切り。', th: 'สถานะเล็ก (30%) เกตมาตรฐาน ตัดขาดทุนแคบ',
-            vi: 'Vị thế nhỏ (30% ngân sách), cổng chuẩn, cắt lỗ hẹp.',
-            id: 'Posisi kecil (30% dari anggaran), gerbang standar, stop ketat. Stabil, ayunan rendah.' } },
-  { key: 'aggressive',
-    label: { ko: '수익 · High Profit', en: 'High Profit', ja: '収益', th: 'กำไรสูง', vi: 'Lợi nhuận cao', id: 'Profit tinggi' },
-    desc: { ko: '큰 포지션(예산의 45%)·낮은 게이트(더 자주 거래)·넓은 손절·1.5× 익절 목표·자동 2배 레버리지. 수익·변동성 모두 상승.',
-            en: 'Bigger positions (45%), looser gate, wider stop, 1.5× profit target, auto 2× leverage. More profit and more swing.',
-            ja: '大きめのポジション(45%)・低いゲート・広い損切り・1.5倍利確・自動2倍レバレッジ。', th: 'สถานะใหญ่ (45%) เกตต่ำ ตัดขาดทุนกว้าง เป้ากำไร 1.5× เลเวอเรจอัตโนมัติ 2×',
-            vi: 'Vị thế lớn hơn (45%), cổng thấp hơn, cắt lỗ rộng, mục tiêu 1.5×, đòn bẩy tự động 2×.',
-            id: 'Posisi lebih besar (45%), gerbang lebih longgar, stop lebih lebar, target profit 1,5×, leverage otomatis 2×. Lebih banyak untung dan lebih besar ayunannya.' } },
-  { key: 'extreme',
-    label: { ko: '고위험 고수익 · Risk & High Profit', en: 'Risk & High Profit', ja: '高リスク高収益', th: 'เสี่ยงสูง กำไรสูง', vi: 'Rủi ro & Lợi nhuận cao', id: 'Risiko & profit tinggi' },
-    desc: { ko: '최대 포지션(예산의 70%)·최저 게이트·아주 넓은 손절(30%)·2× 익절 목표·자동 3배 레버리지. 최고 수익 잠재력이자 최대 낙폭 — 3배는 진입가에서 33% 역행 시 청산됩니다.',
-            en: 'Largest positions (70% of budget), lowest gate, very wide 30% stop, 2× profit target, auto 3× leverage. Highest upside AND deepest drawdown — 3× liquidates on a 33% adverse move.',
-            ja: '最大ポジション(70%)・最低ゲート・非常に広い損切り(30%)・2倍利確・自動3倍レバレッジ。33%逆行で清算。', th: 'สถานะใหญ่สุด (70%) เกตต่ำสุด ตัดขาดทุนกว้างมาก (30%) เป้ากำไร 2× เลเวอเรจอัตโนมัติ 3× (ล้างพอร์ตเมื่อราคาสวน 33%)',
-            vi: 'Vị thế lớn nhất (70%), cổng thấp nhất, cắt lỗ rất rộng (30%), mục tiêu 2×, đòn bẩy tự động 3×. Thanh lý khi giá đi ngược 33%.',
-            id: 'Posisi terbesar (70% dari anggaran), gerbang terendah, stop sangat lebar 30%, target profit 2×, leverage otomatis 3×. Potensi tertinggi SEKALIGUS penurunan terdalam — 3× terlikuidasi pada pergerakan berlawanan 33%.' } },
-]
-
-// Leverage choices for the fleet. 'auto' = the tier's default (1/2/3×);
-// a number overrides it for every run the fleet builds. 'auto' carries a
-// TrMap (it was a hardcoded '자동 · Auto' in every language); the numeric
-// labels stay plain strings.
-const LEV_CHOICES: { key: string; val: number | null; label: any }[] = [
-  { key: 'auto', val: null, label: { ko: '자동', en: 'Auto', ja: '自動', th: 'อัตโนมัติ', vi: 'Tự động', id: 'Otomatis' } },
-  { key: '1', val: 1, label: '1×' },
-  { key: '2', val: 2, label: '2×' },
-  { key: '3', val: 3, label: '3×' },
-  { key: '5', val: 5, label: '5×' },
-  { key: '10', val: 10, label: '10×' },
-]
+// Owner (2026-08-31): the risk tier, strategy archetype, and leverage
+// choosers were removed from the form — those are the Desk's decisions.
+// The create request omits them; the server applies its desk-managed
+// defaults (standard tier, short archetype, tier-auto leverage).
 
 // Markets a fleet may be scoped to. Mirrors markets.automatable_markets() on
 // the server, which validates the request — an empty selection sends null and
@@ -101,7 +66,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     desc: tr(language, { ko: 'TRADING 개수만 정하세요 — AI가 전 시장을 리서치해 종목을 고르고, TRADING을 만들어 등록하고, 결과를 다음 판단에 반영하며, 멈출 때까지 개수를 유지합니다. 정지 버튼은 항상 당신에게 있습니다.', en: 'Set only how many TRADINGs — the AI researches the markets, picks the symbols, registers the TRADINGs, feeds every result into the next step, and keeps the count until you stop. You always keep the stop button.', ja: 'TRADING の数だけ設定 — AIが全市場をリサーチして銘柄を選び、TRADING を登録し、結果を次の判断に反映し、停止するまで数を維持します。', th: 'ตั้งแค่จำนวน TRADING — AI รีเสิร์ชตลาด เลือกเหรียญ สร้าง TRADING และรักษาจำนวนจนกว่าคุณจะหยุด', vi: 'Chỉ đặt số lượng TRADING — AI nghiên cứu thị trường, chọn mã, đăng ký TRADING và giữ số lượng cho đến khi bạn dừng.', id: 'Cukup tentukan berapa banyak TRADING — AI meriset pasar, memilih simbol, mendaftarkan TRADING, mengalirkan setiap hasil ke langkah berikutnya, dan menjaga jumlahnya sampai Anda menghentikannya. Tombol stop selalu ada di tangan Anda.' }),
     nRuns: tr(language, { ko: 'TRADING 개수', en: 'Number of TRADINGs', ja: 'TRADING 数', th: 'จำนวน TRADING', vi: 'Số TRADING', id: 'Jumlah TRADING' }),
     budget: tr(language, { ko: '총 예산 ($) — 자동 제안됨', en: 'Total budget ($) — pre-filled', ja: '総予算 ($) — 自動提案', th: 'งบรวม ($) — เติมให้อัตโนมัติ', vi: 'Tổng ngân sách ($) — điền sẵn', id: 'Total anggaran ($) — sudah terisi' }),
-    profitLevel: tr(language, { ko: '수익 단계 (위험 성향)', en: 'Profit level (risk appetite)', ja: '収益レベル（リスク）', th: 'ระดับกำไร (ความเสี่ยง)', vi: 'Mức lợi nhuận (khẩu vị rủi ro)', id: 'Tingkat profit (selera risiko)' }),
+    deskDecides: tr(language, { ko: '위험 수준 · 전략 유형 · 레버리지는 Sooppiy AI 데스크가 스스로 정합니다.', en: 'Risk level, strategy type, and leverage are decided by the Sooppiy AI desk.', ja: 'リスク水準・戦略タイプ・レバレッジは Sooppiy AI デスクが自ら決定します。', th: 'ระดับความเสี่ยง · ประเภทกลยุทธ์ · เลเวอเรจ ตัดสินโดยเดสก์ Sooppiy AI', vi: 'Mức rủi ro, loại chiến lược và đòn bẩy do bàn Sooppiy AI tự quyết định.', id: 'Tingkat risiko, jenis strategi, dan leverage diputuskan oleh desk Sooppiy AI.' }),
     launch: tr(language, { ko: '🚀 플릿 시작', en: '🚀 Launch fleet', ja: '🚀 フリート開始', th: '🚀 เริ่มฟลีต', vi: '🚀 Khởi chạy', id: '🚀 Luncurkan fleet' }),
     stopAll: tr(language, { ko: '⏹ 전체 정지 (청산)', en: '⏹ Stop all (flatten)', ja: '⏹ 全停止（清算）', th: '⏹ หยุดทั้งหมด (ปิดสถานะ)', vi: '⏹ Dừng tất cả (đóng lệnh)', id: '⏹ Hentikan semua (tutup posisi)' }),
     editFleet: tr(language, { ko: '플릿 수정', en: 'Edit fleet', ja: 'フリート編集', th: 'แก้ไขฟลีต', vi: 'Sửa fleet', id: 'Edit fleet' }),
@@ -204,9 +169,6 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   const [equity, setEquity] = useState<number | null>(null)
   const [n, setN] = useState(3)
   const [budget, setBudget] = useState<number>(0)
-  const [risk, setRisk] = useState('balanced')
-  const [archetype, setArchetype] = useState<'short' | 'swing'>('short')
-  const [levKey, setLevKey] = useState('auto')
   // Empty = every market, which is what the API means by a null market_scope.
   const [mkts, setMkts] = useState<string[]>([])
   const [sizeN, setSizeN] = useState<number>(0)       // 0 = untouched; use fleet.n_runs
@@ -313,7 +275,10 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     try {
       const r = await fetch(`${API_BASE}/fleets`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, risk_appetite: risk, archetype, markets: archetype === 'swing' ? null : (mkts.length ? mkts : null), leverage: (LEV_CHOICES.find(l => l.key === levKey) || LEV_CHOICES[0]).val, idempotency_key: `ui-${Date.now()}` }),
+        // risk_appetite / archetype / leverage are intentionally absent —
+        // the Desk decides them (owner 2026-08-31); the server applies its
+        // desk-managed defaults.
+        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, markets: mkts.length ? mkts : null, idempotency_key: `ui-${Date.now()}` }),
       })
       const body = await r.json()
       if (!r.ok) { setError(body.detail || 'error'); return }
@@ -424,42 +389,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}
           </div>
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12.5, marginBottom: 6, fontWeight: 600 }}>
-              {tr(language, { ko: '전략 유형', en: 'Strategy type', ja: '戦略タイプ', th: 'ประเภทกลยุทธ์', vi: 'Loại chiến lược', id: 'Jenis strategi' })}
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button style={chip(archetype === 'short')} onClick={() => setArchetype('short')}>
-                {tr(language, { ko: '단기 (기존 방식)', en: 'Intraday (current)', ja: '短期（従来方式）', th: 'ระยะสั้น (แบบเดิม)', vi: 'Ngắn hạn (hiện tại)', id: 'Intraday (saat ini)' })}
-              </button>
-              <button style={chip(archetype === 'swing')} onClick={() => setArchetype('swing')}>
-                {tr(language, { ko: '미국 주식 스윙 (1–2일 보유)', en: 'US-stock swing (1–2 day holds)', ja: '米国株スイング（1–2日保有）', th: 'สวิงหุ้นสหรัฐ (ถือ 1–2 วัน)', vi: 'Swing cổ phiếu Mỹ (giữ 1–2 ngày)', id: 'Swing saham AS (tahan 1–2 hari)' })}
-              </button>
-            </div>
-            {archetype === 'swing' && (
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
-                {tr(language, { ko: '미국 주식 전용 · 4시간 판단 주기 · 오버나이트 보유가 설계 · 레버리지 1배 고정 · 갭 리스크에 맞춰 자동 사이징 · 실적 발표 직전 종목은 진입하지 않습니다. 페이퍼 검증 단계의 전략입니다.', en: 'US equities only · 4-hour decision cadence · overnight holds by design · leverage pinned 1× · positions auto-sized to gap risk · never enters right before an earnings print. This strategy is in its paper-validation stage.', ja: '米国株専用・4時間の判断サイクル・オーバーナイト保有が設計・レバレッジ1倍固定・ギャップリスクに応じた自動サイジング・決算直前の銘柄には入りません。ペーパー検証段階の戦略です。', th: 'เฉพาะหุ้นสหรัฐ · รอบตัดสินใจ 4 ชม. · ถือข้ามคืนโดยการออกแบบ · เลเวอเรจคงที่ 1 เท่า · ปรับขนาดตามความเสี่ยงแก๊ป · ไม่เข้าก่อนงบ อยู่ในขั้นทดสอบเปเปอร์', vi: 'Chỉ cổ phiếu Mỹ · chu kỳ quyết định 4 giờ · giữ qua đêm theo thiết kế · đòn bẩy cố định 1× · tự định cỡ theo rủi ro gap · không vào lệnh ngay trước báo cáo lợi nhuận. Chiến lược đang ở giai đoạn kiểm chứng paper.', id: 'Khusus saham AS · siklus keputusan 4 jam · tahan semalam sesuai desain · leverage tetap 1× · ukuran posisi otomatis sesuai risiko gap · tidak masuk tepat sebelum laporan laba. Strategi ini dalam tahap validasi paper.' })}
-              </div>
-            )}
-            <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>{T.profitLevel}</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {RISK_TIERS.map(t => (
-                <button key={t.key} style={chip(risk === t.key)} onClick={() => setRisk(t.key)}>
-                  {tr(language, t.label)}
-                </button>
-              ))}
-            </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
-              {tr(language, (RISK_TIERS.find(t => t.key === risk) || RISK_TIERS[0]).desc)}
-            </div>
-            <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
+            <div style={{ fontSize: 12.5, margin: '0 0 6px', fontWeight: 600 }}>
               {tr(language, { ko: '시장', en: 'Markets', ja: '市場', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' })}
             </div>
-            {archetype === 'swing' && (
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', lineHeight: 1.45 }}>
-                {tr(language, { ko: '미국 주식으로 고정됩니다 (스윙 전략의 설계).', en: 'Pinned to US stocks (by the swing design).', ja: '米国株に固定されます（スイング設計）。', th: 'ตรึงเป็นหุ้นสหรัฐ (ตามการออกแบบสวิง)', vi: 'Cố định vào cổ phiếu Mỹ (theo thiết kế swing).', id: 'Dikunci ke saham AS (sesuai desain swing).' })}
-              </div>
-            )}
-            {archetype !== 'swing' && (<>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button style={chip(mkts.length === 0)} onClick={() => setMkts([])}>
                 {tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' })}
@@ -476,21 +408,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
                 ? tr(language, { ko: '전체 — AI가 지금 열려 있는 시장 중에서 고릅니다.', en: 'All — the AI picks from whichever markets are open right now.', ja: '全市場 — AIが現在開いている市場から選びます。', th: 'ทั้งหมด — AI เลือกจากตลาดที่เปิดอยู่', vi: 'Tất cả — AI chọn trong các thị trường đang mở.', id: 'Semua — AI memilih dari pasar yang sedang buka.' })
                 : tr(language, { ko: '선택한 시장에서만 종목을 고릅니다. 모두 닫혀 있으면 열릴 때까지 기다립니다.', en: 'Symbols are picked only from the markets you chose. If they are all shut, the fleet waits for a session.', ja: '選択した市場からのみ選びます。全て閉場なら開くまで待機します。', th: 'เลือกเฉพาะตลาดที่คุณเลือก หากปิดทั้งหมดจะรอจนเปิด', vi: 'Chỉ chọn trong các thị trường bạn đã chọn. Nếu đều đóng cửa, hạm đội sẽ chờ.', id: 'Simbol hanya dipilih dari pasar yang Anda pilih. Jika semuanya tutup, armada menunggu sesi berikutnya.' })}
             </div>
-            </>)}
-            <div style={{ fontSize: 12.5, margin: '14px 0 6px', fontWeight: 600 }}>
-              {tr(language, { ko: '레버리지', en: 'Leverage', ja: 'レバレッジ', th: 'เลเวอเรจ', vi: 'Đòn bẩy', id: 'Leverage' })}
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {LEV_CHOICES.map(l => (
-                <button key={l.key} style={chip(levKey === l.key)} onClick={() => setLevKey(l.key)}>
-                  {typeof l.label === 'string' ? l.label : tr(language, l.label)}
-                </button>
-              ))}
-            </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 6, lineHeight: 1.45 }}>
-              {levKey === 'auto'
-                ? tr(language, { ko: '자동: 티어 기준(안정 1× · 수익 2× · 고위험 3×). 격리 마진 — 3배는 33% 역행 시 청산.', en: 'Auto: by tier (Balance 1× · High Profit 2× · Risk&High 3×). Isolated margin — 3× liquidates on a 33% adverse move.', ja: '自動: ティア基準(安定1×・収益2×・高リスク3×)。分離マージン。', th: 'อัตโนมัติ: ตามระดับ (1×/2×/3×) มาร์จินแยก', vi: 'Tự động: theo mức (1×/2×/3×). Ký quỹ tách biệt.', id: 'Otomatis: menurut tingkatan (Seimbang 1× · Profit tinggi 2× · Risiko&Tinggi 3×). Margin terisolasi — 3× terlikuidasi pada pergerakan berlawanan 33%.' })
-                : tr(language, { ko: `${levKey}배 고정 — 격리 마진, 진입가에서 ${(100 / Number(levKey)).toFixed(0)}% 역행 시 청산. 같은 증거금으로 ${levKey}배 포지션.`, en: `Fixed ${levKey}× — isolated margin, liquidates at a ${(100 / Number(levKey)).toFixed(0)}% adverse move. ${levKey}× the position for the same margin.`, ja: `${levKey}倍固定 — 分離マージン、${(100 / Number(levKey)).toFixed(0)}%逆行で清算。`, th: `${levKey}× คงที่ — ล้างพอร์ตเมื่อสวน ${(100 / Number(levKey)).toFixed(0)}%`, vi: `Cố định ${levKey}× — thanh lý khi giá đi ngược ${(100 / Number(levKey)).toFixed(0)}%.`, id: `Tetap ${levKey}× — margin terisolasi, terlikuidasi pada pergerakan berlawanan ${(100 / Number(levKey)).toFixed(0)}%. Posisi ${levKey}× lipat dengan margin yang sama.` })}
+            <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 12, lineHeight: 1.45 }}>
+              🤖 {T.deskDecides}
             </div>
           </div>
           {fleet && fleet.status === 'stopped' && fleet.status_reason && (
