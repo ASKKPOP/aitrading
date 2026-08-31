@@ -380,17 +380,30 @@ def _safe(feed: str, fn, default=None):
         return default
 
 
-def evaluate_symbol(symbol: str, market: str = "us-stock") -> dict[str, Any]:
-    """Collect -> score -> combine -> decide for one symbol."""
+def evaluate_symbol(symbol: str, market: str = "us-stock",
+                    shared: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    """Collect -> score -> combine -> decide for one symbol.
+
+    `shared` carries the four symbol-INDEPENDENT feeds pre-fetched once per
+    pass by run_pipeline (measured 2026-08-31: fetching them per symbol put
+    ~8 requests/hour on faireconomy's weekly calendar and the host answered
+    429 with retry-after — a full-time feed down for 2+ monitoring cycles).
+    Absent keys fall back to fetching here, so standalone calls behave
+    exactly as before."""
     symbol = (symbol or "").strip().upper()
+    shared = shared or {}
 
     candles = _safe(FEED_PRICE, lambda: fetch_candles(symbol, market), []) or []
-    benchmark = _safe(FEED_PRICE, lambda: fetch_benchmark_candles(market), []) or []
-    macro = _safe(FEED_MACRO, fetch_macro, {}) or {}
-    gauge = _safe(FEED_GAUGE, lambda: fetch_fear_greed(market))
+    benchmark = (shared["benchmark"] if "benchmark" in shared else
+                 _safe(FEED_PRICE, lambda: fetch_benchmark_candles(market), [])) or []
+    macro = (shared["macro"] if "macro" in shared else
+             _safe(FEED_MACRO, fetch_macro, {})) or {}
+    gauge = (shared["gauge"] if "gauge" in shared else
+             _safe(FEED_GAUGE, lambda: fetch_fear_greed(market)))
     catalyst = _safe(FEED_CATALYST, lambda: fetch_catalyst(symbol), {}) or {}
     filings = _safe(FEED_FILINGS, lambda: fetch_filings(symbol), {}) or {}
-    event_hours = _safe(FEED_CALENDAR, fetch_macro_event_hours)
+    event_hours = (shared["event_hours"] if "event_hours" in shared else
+                   _safe(FEED_CALENDAR, fetch_macro_event_hours))
 
     market_sentiment = swing_stack.psych_sentiment_score(
         (gauge or {}).get("value"), (gauge or {}).get("avg_7d")
@@ -574,9 +587,21 @@ def run_pipeline(symbols: Optional[list[str]] = None,
     failed = 0
     actions: dict[str, int] = {}
     with crawl_monitor.track(FEED_PIPELINE) as run:
+        # Symbol-independent feeds: ONE fetch per pass, not one per symbol
+        # (the per-symbol version tripped faireconomy's rate limit — 429 on
+        # the macro calendar after ~112 fetches in a day).
+        shared: dict[str, Any] = {}
+        if symbols:
+            shared = {
+                "benchmark": _safe(FEED_PRICE,
+                                   lambda: fetch_benchmark_candles(market), []),
+                "macro": _safe(FEED_MACRO, fetch_macro, {}),
+                "gauge": _safe(FEED_GAUGE, lambda: fetch_fear_greed(market)),
+                "event_hours": _safe(FEED_CALENDAR, fetch_macro_event_hours),
+            }
         for symbol in symbols:
             try:
-                row = evaluate_symbol(symbol, market=market)
+                row = evaluate_symbol(symbol, market=market, shared=shared)
                 _persist(row)
                 evaluated += 1
                 actions[row["action"]] = actions.get(row["action"], 0) + 1

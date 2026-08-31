@@ -159,10 +159,45 @@ class SwingPipelineTest(unittest.TestCase):
         self.assertEqual(row["hours_to_binary_event"], 100)
         self.assertIsNone(row["veto"])
 
+    # -- request economy (2026-08-31: faireconomy answered 429 after the
+    #    calendar was fetched once PER SYMBOL — ~112 requests in a day) ----
+    def test_market_level_feeds_fetch_once_per_pass_not_per_symbol(self):
+        calls = {"calendar": 0, "macro": 0, "gauge": 0, "benchmark": 0}
+
+        def count(key, value):
+            def _fn(*a, **k):
+                calls[key] += 1
+                return value
+            return _fn
+
+        with patch.object(swing_pipeline, "fetch_candles",
+                          lambda symbol, market: _rising_candles()), \
+             patch.object(swing_pipeline, "fetch_benchmark_candles",
+                          count("benchmark", _rising_candles())), \
+             patch.object(swing_pipeline, "fetch_macro",
+                          count("macro", {"vix": 14.0, "vix_5d_ago": 16.0,
+                                          "y10": 4.0, "y10_5d_ago": 4.2,
+                                          "dxy": 99.0, "dxy_5d_ago": 100.0})), \
+             patch.object(swing_pipeline, "fetch_fear_greed",
+                          count("gauge", {"value": 20.0, "avg_7d": 15.0})), \
+             patch.object(swing_pipeline, "fetch_catalyst",
+                          lambda symbol: {"score": 60.0,
+                                          "hours_to_next_earnings": None}), \
+             patch.object(swing_pipeline, "fetch_filings",
+                          lambda symbol: {"score": 40.0}), \
+             patch.object(swing_pipeline, "fetch_macro_event_hours",
+                          count("calendar", None)):
+            result = swing_pipeline.run_pipeline(
+                ["NVDA", "AMD", "MSFT"], market="us-stock")
+        self.assertEqual(result["evaluated"], 3)
+        # one fetch per PASS for every symbol-independent feed
+        self.assertEqual(calls, {"calendar": 1, "macro": 1,
+                                 "gauge": 1, "benchmark": 1})
+
     # -- persistence -----------------------------------------------------
     def test_run_persists_one_decision_row_per_symbol(self):
         with patch.object(swing_pipeline, "evaluate_symbol",
-                          lambda symbol, market: {
+                          lambda symbol, market, **kw: {
                               "symbol": symbol, "market": market,
                               "scores": {"sentiment": 1.0, "macro": None, "thesis": None,
                                          "smart_money": None, "technical": 2.0},
@@ -192,7 +227,7 @@ class SwingPipelineTest(unittest.TestCase):
         self.assertEqual(len(swing_pipeline.decision_history("AAA")), 2)
 
     def test_a_symbol_that_explodes_does_not_abort_the_pass(self):
-        def flaky(symbol, market):
+        def flaky(symbol, market, **kw):
             if symbol == "BAD":
                 raise RuntimeError("upstream down")
             return {
@@ -212,7 +247,7 @@ class SwingPipelineTest(unittest.TestCase):
 
     def test_the_pass_is_recorded_for_the_console(self):
         with patch.object(swing_pipeline, "evaluate_symbol",
-                          lambda symbol, market: {
+                          lambda symbol, market, **kw: {
                               "symbol": symbol, "market": market,
                               "scores": {"sentiment": None, "macro": None, "thesis": None,
                                          "smart_money": None, "technical": 5.0},
