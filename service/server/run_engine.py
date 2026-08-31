@@ -1241,25 +1241,6 @@ def _evaluate_stop(run: dict) -> Optional[str]:
         if strikes and _unactionable_streak(run["id"]) >= strikes:
             return "thesis_invalidated"
 
-    # No-prospect switch (owner 2026-08-31): "each slot do not keep when
-    # make decession there is no profit future then switch every ( a hour ~
-    # 5 hours )". A FLAT run — whether it traded earlier or never — whose
-    # desk keeps answering `hold` is the desk itself saying "no profitable
-    # entry here". After >= 3 such verdicts spanning the configured window
-    # (1–5h band, default 3h) the slot is handed back so the fleet builds a
-    # different symbol (the supervisor's vary-cooldown makes the replacement
-    # an actual switch, not a rebuild). Flat books only: an open position is
-    # exited by the desk or the stop system, never by this rail — and the
-    # trade-ts bound inside _flat_hold_span keeps position-managing holds
-    # from ever counting. Same in-flight guard as idle-retire (a desk
-    # deciding RIGHT NOW is not prospectless by definition).
-    if not has_position and _no_prospect_switch_enabled() \
-            and not _cycle_in_flight(run):
-        span_h, holds = _flat_hold_span(run["id"])
-        if holds >= _NO_PROSPECT_MIN_DECISIONS and span_h is not None \
-                and span_h >= _no_prospect_switch_hours():
-            return "no_prospect_switched"
-
     # Thesis decay (2026-07-28). Unlike the two rails above this one applies to
     # a run HOLDING a position — that is the whole point. A flat run with a
     # dead thesis merely wastes a slot; a run still holding on a thesis its own
@@ -1272,6 +1253,27 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             and decay_strikes \
             and _thesis_decay_streak(run_id) >= decay_strikes:
         return "thesis_decayed"
+
+    # No-prospect switch (owner 2026-08-31): "each slot do not keep when
+    # make decession there is no profit future then switch every ( a hour ~
+    # 5 hours )". A FLAT run — whether it traded earlier or never — whose
+    # desk keeps answering `hold` is the desk itself saying "no profitable
+    # entry here". After >= 3 such verdicts spanning the configured window
+    # (1–5h band, default 3h) the slot is handed back so the fleet builds a
+    # different symbol (the supervisor's vary-cooldown makes the replacement
+    # an actual switch, not a rebuild). Deliberately evaluated AFTER thesis
+    # decay: decay reads the desk's own scores and is the sharper diagnosis,
+    # so a flat run that both decayed and idled reports decay. Flat books
+    # only: an open position is exited by the desk or the stop system, never
+    # by this rail — and the trade-ts bound inside _flat_hold_span keeps
+    # position-managing holds from ever counting. Same in-flight guard as
+    # idle-retire (a desk deciding RIGHT NOW is not prospectless).
+    if not has_position and _no_prospect_switch_enabled() \
+            and not _cycle_in_flight(run):
+        span_h, holds = _flat_hold_span(run["id"])
+        if holds >= _NO_PROSPECT_MIN_DECISIONS and span_h is not None \
+                and span_h >= _no_prospect_switch_hours():
+            return "no_prospect_switched"
 
     # Synthetic liquidation: a position's loss can wipe 100% of its escrowed
     # margin. Isolated-margin liq price from leverage L: long at

@@ -215,8 +215,11 @@ class SeededCandidatesStillGatedTests(unittest.TestCase):
 
 class EndToEndRefreshTests(_DbBase):
     """A live swing fleet pulls a seed-only symbol all the way through the
-    normal pipeline: universe → screen → persisted thesis → select_targets.
-    No bypass anywhere — it is a research_theses row like any other."""
+    normal pipeline: universe → screen → persisted thesis. Under R20-MUST
+    (owner 2026-08-31) SELECTION is restricted to the hot-5 tech names, so
+    the seed-only name is researched but no longer selectable while the
+    must-rule is on; with it off, the pre-existing end-to-end guarantee
+    still holds."""
 
     def test_seed_symbol_reaches_selectable_theses(self):
         self._fleet(25)
@@ -236,11 +239,29 @@ class EndToEndRefreshTests(_DbBase):
         conn = database.get_db_connection()
         try:
             cur = conn.cursor()
+            # The seed symbol IS a research_theses row like any other.
+            cur.execute(
+                "SELECT COUNT(*) AS n FROM research_theses WHERE symbol = ?",
+                (SEED_ONLY,))
+            self.assertGreater(cur.fetchone()["n"], 0)
+            # R20-MUST on (the default): selection is tech-roster only.
             picked = sr.select_targets(cur, 6, 25,
                                        markets_scope=["us-stock"])
+            roster = set(sr.US_TECH_HOT_UNIVERSE)
+            self.assertTrue(picked)
+            self.assertTrue(all(t["symbol"] in roster for t in picked))
+            self.assertNotIn(SEED_ONLY, [t["symbol"] for t in picked])
+            # R20-MUST off: the original guarantee — the seed-only name is
+            # selectable end to end.
+            os.environ["US_TECH_HOT_MUST"] = "0"
+            try:
+                picked = sr.select_targets(cur, 6, 25,
+                                           markets_scope=["us-stock"])
+            finally:
+                os.environ.pop("US_TECH_HOT_MUST", None)
+            self.assertIn(SEED_ONLY, [t["symbol"] for t in picked])
         finally:
             conn.close()
-        self.assertIn(SEED_ONLY, [t["symbol"] for t in picked])
 
 
 if __name__ == "__main__":
