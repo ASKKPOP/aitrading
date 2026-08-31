@@ -442,6 +442,8 @@ def main() -> None:
             "sentiment = market-level Fear&Greed proxy, not per-ticker social flow",
             "macro calendar is the approximate structural schedule, not a fetched one",
             "long-only; SELL closes but never shorts",
+            "book equity for sizing accrues symbol-sequentially, not "
+            "chronologically (few-% qty effect; R metrics unaffected)",
         ],
         "coverage": coverage,
         "stack": stack,

@@ -151,6 +151,10 @@ def test_psych_mid_band_follows_tone_not_zero():
     assert rising > ss.AXIS_DEAD_ZONE
     assert falling < -ss.AXIS_DEAD_ZONE
     assert ss.psych_sentiment_score(66, 63) > 0
+    # level term alone (zero turn) must be non-zero in the mid-band:
+    # (fg - 50) * 0.8 — a survived mutant (level = 0) exposed this gap
+    assert ss.psych_sentiment_score(66, 66) == pytest.approx(12.8)
+    assert ss.psych_sentiment_score(40, 40) == pytest.approx(-8.0)
 
 
 # --- risk gate + playbook exits -------------------------------------------

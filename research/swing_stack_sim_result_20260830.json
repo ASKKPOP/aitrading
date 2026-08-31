@@ -73,7 +73,8 @@
     "thesis + smart_money feeds: no free historical source (None; weights renormalized)",
     "sentiment = market-level Fear&Greed proxy, not per-ticker social flow",
     "macro calendar is the approximate structural schedule, not a fetched one",
-    "long-only; SELL closes but never shorts"
+    "long-only; SELL closes but never shorts",
+    "book equity for sizing accrues symbol-sequentially, not chronologically (few-% qty effect; R metrics unaffected)"
   ],
   "coverage": {
     "stocks": {
