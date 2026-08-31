@@ -15,7 +15,7 @@ const ADMIN_TOKEN_KEY = 'sooppiy_admin_token'
 
 type Tab =
   | 'dashboard' | 'members' | 'subscriptions' | 'assets' | 'positions'
-  | 'automation' | 'skills' | 'support' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
+  | 'automation' | 'feeds' | 'skills' | 'support' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
 
 // Prompt sites a trading skill can ride (mirror of trading_skills.PROMPT_SITES).
 const SKILL_SITES = ['light', 'trader', 'verifier', 'planner'] as const
@@ -148,6 +148,10 @@ export function AdminPage() {
   const [autoStats, setAutoStats] = useState<any | null>(null)
   const [autoRules, setAutoRules] = useState<any | null>(null)
   const [regimeRead, setRegimeRead] = useState<any | null>(null)
+  // Swing signal stack (research/SWING_SIGNAL_STACK.md): live crawl status of
+  // the six data feeds, probed server-side and cached 60s.
+  const [feedStatus, setFeedStatus] = useState<any | null>(null)
+  const [feedProbing, setFeedProbing] = useState(false)
   const [llmSettings, setLlmSettings] = useState<any | null>(null)
   const [llmForm, setLlmForm] = useState({ local_base_url: '', local_model: '',
     brief_provider: '', brief_model: '', decision_provider: '', decision_model: '' })
@@ -191,6 +195,18 @@ export function AdminPage() {
     tabAssets: tr(language, { ko: '자산 통계', en: 'Assets', ja: '資産統計', th: 'สถิติสินทรัพย์', vi: 'Tài sản', id: 'Aset' }),
     tabPositions: tr(language, { ko: '포지션 통계', en: 'Positions', ja: 'ポジション統計', th: 'สถิติสถานะ', vi: 'Vị thế', id: 'Posisi' }),
     tabAutomation: tr(language, { ko: '자동화 통계', en: 'Automation', ja: '自動化統計', th: 'สถิติระบบอัตโนมัติ', vi: 'Tự động hóa', id: 'Otomatisasi' }),
+    tabFeeds: tr(language, { ko: '피드 상태', en: 'Feed status', ja: 'フィード状態', th: 'สถานะฟีด', vi: 'Trạng thái feed', id: 'Status feed' }),
+    feedsTitle: tr(language, { ko: '📡 스윙 시그널 스택 — 6개 피드 크롤링 상태', en: '📡 Swing signal stack — 6 feed crawl status', ja: '📡 スイングシグナルスタック — 6フィードのクロール状態', th: '📡 สแต็กสัญญาณสวิง — สถานะการรวบรวม 6 ฟีด', vi: '📡 Ngăn xếp tín hiệu swing — trạng thái thu thập 6 feed', id: '📡 Tumpukan sinyal swing — status perayapan 6 feed' }),
+    feedsHint: tr(language, { ko: '각 피드의 공개 소스를 서버에서 직접 프로브합니다 (60초 캐시). 실패한 피드는 스택의 해당 점수 커버리지가 줄어듭니다.', en: 'Each feed\'s public source is probed server-side (60s cache). A failed feed shrinks that score\'s coverage in the stack.', ja: '各フィードの公開ソースをサーバー側で直接プローブします（60秒キャッシュ）。失敗したフィードはスタック内の該当スコアのカバレッジが縮小します。', th: 'ตรวจสอบแหล่งข้อมูลสาธารณะของแต่ละฟีดฝั่งเซิร์ฟเวอร์ (แคช 60 วินาที) ฟีดที่ล้มเหลวจะลดความครอบคลุมของคะแนนนั้นในสแต็ก', vi: 'Nguồn công khai của từng feed được thăm dò phía máy chủ (bộ đệm 60 giây). Feed hỏng làm giảm độ phủ của điểm đó trong ngăn xếp.', id: 'Sumber publik tiap feed diperiksa dari sisi server (cache 60 detik). Feed yang gagal mengecilkan cakupan skor itu dalam tumpukan.' }),
+    feedCol: tr(language, { ko: '피드', en: 'Feed', ja: 'フィード', th: 'ฟีด', vi: 'Feed', id: 'Feed' }),
+    feedDocCol: tr(language, { ko: '문서상 피드', en: 'Doc feed', ja: 'ドキュメント上のフィード', th: 'ฟีดตามเอกสาร', vi: 'Feed theo tài liệu', id: 'Feed dokumen' }),
+    feedSourceCol: tr(language, { ko: '소스', en: 'Source', ja: 'ソース', th: 'แหล่งข้อมูล', vi: 'Nguồn', id: 'Sumber' }),
+    feedStatusCol: tr(language, { ko: '상태', en: 'Status', ja: '状態', th: 'สถานะ', vi: 'Trạng thái', id: 'Status' }),
+    feedLatencyCol: tr(language, { ko: '지연', en: 'Latency', ja: '遅延', th: 'ความหน่วง', vi: 'Độ trễ', id: 'Latensi' }),
+    feedDetailCol: tr(language, { ko: '상세', en: 'Detail', ja: '詳細', th: 'รายละเอียด', vi: 'Chi tiết', id: 'Detail' }),
+    feedReprobe: tr(language, { ko: '지금 다시 프로브', en: 'Re-probe now', ja: '今すぐ再プローブ', th: 'ตรวจสอบใหม่ตอนนี้', vi: 'Thăm dò lại ngay', id: 'Periksa ulang sekarang' }),
+    feedCached: tr(language, { ko: '캐시됨', en: 'cached', ja: 'キャッシュ済み', th: 'จากแคช', vi: 'đã lưu đệm', id: 'dari cache' }),
+    feedCheckedAt: tr(language, { ko: '확인 시각', en: 'checked', ja: '確認時刻', th: 'ตรวจเมื่อ', vi: 'kiểm tra lúc', id: 'diperiksa' }),
     tabSupport: tr(language, { ko: '문의 · 알림', en: 'Support & alerts', ja: '問い合わせ・通知', th: 'ซัพพอร์ต · การแจ้งเตือน', vi: 'Hỗ trợ · Thông báo', id: 'Dukungan & peringatan' }),
     tabDiscussions: tr(language, { ko: '토론 관리', en: 'Discussions', ja: '議論管理', th: 'จัดการกระทู้', vi: 'Thảo luận', id: 'Diskusi' }),
     tabLeaderboard: tr(language, { ko: '리더보드 관리', en: 'Leaderboard', ja: 'リーダーボード管理', th: 'จัดการลีดเดอร์บอร์ด', vi: 'Bảng xếp hạng', id: 'Papan peringkat' }),
@@ -459,6 +475,7 @@ export function AdminPage() {
           decision_model: s.llm_decision_model?.value || '',
         })
       }
+      if (which === 'feeds') setFeedStatus(await call('swing-feeds/status'))
       if (which === 'skills') setSkills((await call('skills')).skills || [])
       if (which === 'support') setThreads(await call('support/threads?limit=200'))
       if (which === 'discussions') setDiscussions(await call(`discussions?q=${encodeURIComponent(dq)}&limit=100`))
@@ -509,7 +526,7 @@ export function AdminPage() {
   const tabs: [Tab, string][] = [
     ['dashboard', T.tabDashboard], ['members', T.tabMembers], ['subscriptions', T.tabSubs],
     ['assets', T.tabAssets], ['positions', T.tabPositions], ['automation', T.tabAutomation],
-    ['skills', T.tabSkills], ['support', T.tabSupport],
+    ['feeds', T.tabFeeds], ['skills', T.tabSkills], ['support', T.tabSupport],
     ['discussions', T.tabDiscussions], ['leaderboard', T.tabLeaderboard],
     ...(me?.role === 'superadmin' ? [['admins', T.tabAdmins] as [Tab, string]] : []),
     ['audit', T.tabAudit],
@@ -1409,6 +1426,65 @@ export function AdminPage() {
       )}
 
       {/* ── Support conversations + announcements ── */}
+      {/* ── Swing signal stack feed crawl status ── */}
+      {tab === 'feeds' && (
+        <div style={{ ...card }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>{T.feedsTitle}</div>
+            {feedStatus && (
+              <span style={{ fontSize: 12, color: feedStatus.ok_count === 6 ? '#22c55e' : '#ef4444', fontWeight: 700 }}>
+                {feedStatus.ok_count}/6
+              </span>
+            )}
+            {feedStatus?.checked_at && (
+              <span style={{ fontSize: 11.5, color: 'var(--text-muted,#8a8073)' }}>
+                {T.feedCheckedAt} {new Date(feedStatus.checked_at).toLocaleTimeString()}
+                {feedStatus.cached ? ` · ${T.feedCached}` : ''}
+              </span>
+            )}
+            <button
+              style={{ ...actionBtn, marginLeft: 'auto', opacity: feedProbing ? 0.5 : 1 }}
+              disabled={feedProbing}
+              onClick={async () => {
+                setFeedProbing(true)
+                try { setFeedStatus(await call('swing-feeds/status?refresh=true')) }
+                catch (e: any) { if (e?.message !== '401') setError(String(e?.message || e)) }
+                finally { setFeedProbing(false) }
+              }}>
+              {feedProbing ? '⏳…' : `🔄 ${T.feedReprobe}`}
+            </button>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)', marginBottom: 12 }}>{T.feedsHint}</div>
+          {!feedStatus && <div style={{ fontSize: 13 }}>⏳…</div>}
+          {feedStatus && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr>
+                  <th style={th}>{T.feedStatusCol}</th>
+                  <th style={th}>{T.feedCol}</th>
+                  <th style={th}>{T.feedDocCol}</th>
+                  <th style={th}>{T.feedSourceCol}</th>
+                  <th style={th}>{T.feedLatencyCol}</th>
+                  <th style={th}>{T.feedDetailCol}</th>
+                </tr></thead>
+                <tbody>
+                  {(feedStatus.feeds || []).map((f: any) => (
+                    <tr key={f.feed}>
+                      <td style={td}>{f.ok ? '🟢' : '🔴'}</td>
+                      <td style={{ ...td, fontWeight: 600 }}>{f.label}</td>
+                      <td style={td}>{f.doc_feed}</td>
+                      <td style={td}>{f.source}</td>
+                      <td style={td}>{f.latency_ms != null ? `${f.latency_ms} ms` : '—'}</td>
+                      <td style={{ ...td, color: f.ok ? 'inherit' : '#ef4444' }}>{f.ok ? f.detail : f.error}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {tab === 'skills' && (
         <>
           <div style={{ ...card, marginBottom: 16 }}>
