@@ -1,0 +1,677 @@
+<title>Swing Signal Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper: #f9fafb;
+    --ink: #12161b;
+    --ink-2: #4e5763;
+    --ink-3: #75808d;
+    --hairline: #e2e6ea;
+    --card: #ffffff;
+    --card-edge: #e7ebef;
+    --blue: #2a78d6;        /* series: stack */
+    --orange: #eb6834;      /* series: control */
+    --red: #d03b3b;         /* polarity: negative */
+    --good: #0ca30c;
+    --blue-soft: rgba(42,120,214,0.10);
+    --red-soft: rgba(208,59,59,0.09);
+    --kill: #8a5a00;
+    --kill-bg: #fdf3dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17191c;
+      --ink: #f1f3f5;
+      --ink-2: #b3bcc6;
+      --ink-3: #7f8994;
+      --hairline: #2c3036;
+      --card: #1e2126;
+      --card-edge: #31363d;
+      --blue: #3987e5;
+      --orange: #d95926;
+      --red: #e66767;
+      --good: #0ca30c;
+      --blue-soft: rgba(57,135,229,0.16);
+      --red-soft: rgba(230,103,103,0.13);
+      --kill: #e8b45a;
+      --kill-bg: #2a2417;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17191c;
+    --ink: #f1f3f5;
+    --ink-2: #b3bcc6;
+    --ink-3: #7f8994;
+    --hairline: #2c3036;
+    --card: #1e2126;
+    --card-edge: #31363d;
+    --blue: #3987e5;
+    --orange: #d95926;
+    --red: #e66767;
+    --good: #0ca30c;
+    --blue-soft: rgba(57,135,229,0.16);
+    --red-soft: rgba(230,103,103,0.13);
+    --kill: #e8b45a;
+    --kill-bg: #2a2417;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-size: 16px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 20px 80px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; text-wrap: balance; }
+  h1 { font-size: clamp(34px, 6vw, 52px); font-weight: 800; letter-spacing: -0.015em; line-height: 1.04; margin: 10px 0 14px; }
+  h2 { font-size: 25px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 14px; }
+  h3 { font-size: 17px; font-weight: 600; margin: 26px 0 8px; }
+  p { max-width: 68ch; margin: 0 0 14px; }
+  a { color: var(--blue); }
+  .mono, code { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  code { font-size: 0.86em; background: var(--blue-soft); padding: 1px 5px; border-radius: 4px; }
+
+  header.masthead { padding: 56px 0 8px; }
+  .kicker {
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--blue); margin-bottom: 6px;
+  }
+  .deck { font-size: 18.5px; color: var(--ink-2); max-width: 62ch; }
+  .deck-ko { font-size: 14.5px; color: var(--ink-3); margin-top: 4px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
+  .chip {
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-2);
+    border: 1px solid var(--hairline); border-radius: 999px; padding: 4px 11px; white-space: nowrap;
+  }
+  .chip b { color: var(--ink); font-weight: 600; }
+
+  section { border-top: 1px solid var(--hairline); margin-top: 46px; padding-top: 34px; }
+  .secnum {
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
+  }
+  .secnum b { color: var(--blue); }
+
+  figure { margin: 22px 0; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  .scrollfig { overflow-x: auto; }
+  figcaption { font-size: 13px; color: var(--ink-3); margin-top: 8px; max-width: 74ch; font-style: italic; }
+
+  /* stat tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
+  .tile { background: var(--card); border: 1px solid var(--card-edge); border-radius: 10px; padding: 13px 14px 11px; }
+  .tile .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .tile .val { font-family: "Archivo", sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .tile .sub { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-3); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .tile.stack .val { color: var(--blue); }
+  .tile.ctrl .val { color: var(--orange); }
+
+  .legend { display: flex; gap: 18px; align-items: center; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-2); margin: 6px 0 2px; }
+  .legend .sw { display: inline-block; width: 14px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+
+  table.data { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table.data th {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-3); text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--hairline); white-space: nowrap;
+  }
+  table.data td { padding: 6.5px 10px; border-bottom: 1px solid var(--hairline); font-variant-numeric: tabular-nums; }
+  table.data td.num { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; text-align: right; }
+  .pos { color: var(--blue); } .neg { color: var(--red); }
+  .tablewrap { overflow-x: auto; margin: 16px 0; }
+
+  .verdict { display: inline-flex; align-items: center; gap: 7px; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
+  .verdict.ok { color: var(--good); background: rgba(12,163,12,0.1); }
+  .verdict.mix { color: var(--kill); background: var(--kill-bg); }
+
+  .killcard { background: var(--kill-bg); border: 1px solid transparent; border-left: 3px solid var(--kill); border-radius: 8px; padding: 16px 18px; margin: 20px 0; }
+  .killcard .tag { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--kill); }
+  .killcard p { margin: 8px 0 0; font-size: 14.5px; }
+
+  .note { font-size: 14px; color: var(--ink-2); border-left: 2px solid var(--hairline); padding-left: 14px; margin: 16px 0; max-width: 66ch; }
+
+  ul.tight { padding-left: 20px; margin: 0 0 14px; max-width: 68ch; }
+  ul.tight li { margin-bottom: 6px; }
+
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: baseline; }
+  .dot.up { background: var(--good); }
+
+  /* tooltip */
+  #tip {
+    position: fixed; pointer-events: none; z-index: 50; display: none;
+    background: var(--ink); color: var(--paper); font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px; line-height: 1.5; padding: 7px 10px; border-radius: 6px; max-width: 260px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .hoverable { cursor: default; }
+  svg text { user-select: none; }
+  .axis { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; fill: var(--ink-3); }
+  .gridline { stroke: var(--hairline); stroke-width: 1; }
+  .zero { stroke: var(--ink-3); stroke-width: 1.2; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .tile { transition: transform 0.15s ease; }
+  }
+  footer { border-top: 1px solid var(--hairline); margin-top: 56px; padding-top: 20px; font-size: 12.5px; color: var(--ink-3); }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">Ship report · Sooppiy research · 2026-08-31</div>
+  <h1>Swing Signal Stack</h1>
+  <p class="deck">The blueprint in <span class="mono">research/SWING_SIGNAL_STACK.md</span> became a scoring engine, was tested against one month of real market history with a control arm, and shipped to production with a live six-feed monitor on the manager console.</p>
+  <p class="deck-ko">설계 문서를 스코어링 엔진으로 구현하고, 지난 한 달 실데이터로 대조군과 함께 검증한 뒤, 관리 콘솔의 6-피드 모니터와 함께 프로덕션에 배포한 기록입니다.</p>
+  <div class="meta-row">
+    <span class="chip">window <b>2026-07-30 → 08-30</b></span>
+    <span class="chip">merged <b>2805dc4a</b> (#668)</span>
+    <span class="chip">image <b>20260831-swing-stack</b></span>
+    <span class="chip">tests <b>4,864 + 1,349 · 0 fail</b></span>
+  </div>
+</header>
+
+<!-- ─────────────────────────── 1 · pipeline ─────────────────────────── -->
+<section>
+  <div class="secnum"><b>01</b> · The blueprint, as built</div>
+  <h2>Six feeds, five scores, one gate</h2>
+  <p>Every score runs −100…+100. The composite is the weighted sum, renormalized over feeds that actually have coverage — a missing feed gives up its weight instead of silently dragging the total toward zero. Nothing trades unless the <em>quantitative</em> axis (technicals) and the <em>qualitative</em> axis (sentiment + thesis) agree; everything else is a WAIT with a written reason.</p>
+
+  <figure class="scrollfig">
+  <svg viewBox="0 0 880 320" role="img" aria-label="Pipeline: six feeds produce five processor scores which combine into a renormalized composite; the two-axis agreement matrix and the ±40 threshold decide BUY, SELL or WAIT; a risk gate can veto with an event blackout and sizes positions at 1% risk; playbook exits manage the trade.">
+    <defs>
+      <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L8,4 L0,8 z" fill="currentColor"/>
+      </marker>
+    </defs>
+    <g fill="none" stroke="currentColor" stroke-width="1.1" color="var(--ink-2)">
+      <!-- feed boxes -->
+      <g font-family="IBM Plex Mono, monospace" font-size="11">
+        <rect x="8"  y="12"  width="150" height="30" rx="6"/>
+        <rect x="8"  y="56"  width="150" height="30" rx="6"/>
+        <rect x="8"  y="100" width="150" height="30" rx="6"/>
+        <rect x="8"  y="144" width="150" height="30" rx="6"/>
+        <rect x="8"  y="188" width="150" height="30" rx="6"/>
+        <rect x="8"  y="232" width="150" height="30" rx="6"/>
+        <g fill="currentColor" stroke="none">
+          <text x="18" y="31">Yahoo stock OHLCV</text>
+          <text x="18" y="75">OKX crypto candles</text>
+          <text x="18" y="119">VIX · 10Y · DXY</text>
+          <text x="18" y="163">CNN Fear &amp; Greed</text>
+          <text x="18" y="207">alt.me Fear &amp; Greed</text>
+          <text x="18" y="251">Macro calendar</text>
+        </g>
+      </g>
+      <!-- score boxes -->
+      <g font-family="IBM Plex Mono, monospace" font-size="11">
+        <rect x="250" y="34"  width="180" height="30" rx="6"/>
+        <rect x="250" y="78"  width="180" height="30" rx="6"/>
+        <rect x="250" y="122" width="180" height="30" rx="6"/>
+        <rect x="250" y="166" width="180" height="30" rx="6" stroke-dasharray="4 3"/>
+        <rect x="250" y="210" width="180" height="30" rx="6" stroke-dasharray="4 3"/>
+        <g fill="currentColor" stroke="none">
+          <text x="260" y="53">technical · w .20</text>
+          <text x="260" y="97">macro · w .20</text>
+          <text x="260" y="141">sentiment · w .25</text>
+          <text x="260" y="185">thesis · w .20 = ∅</text>
+          <text x="260" y="229">smart money · .15 = ∅</text>
+        </g>
+      </g>
+      <!-- feed→score arrows -->
+      <path d="M158,27 C210,27 200,49 250,49" marker-end="url(#arr)"/>
+      <path d="M158,71 C210,71 200,52 250,52" marker-end="url(#arr)"/>
+      <path d="M158,115 C205,115 205,93 250,93" marker-end="url(#arr)"/>
+      <path d="M158,159 C205,159 205,137 250,137" marker-end="url(#arr)"/>
+      <path d="M158,203 C205,203 205,140 250,140" marker-end="url(#arr)"/>
+      <path d="M158,247 C215,247 220,99 250,96" marker-end="url(#arr)"/>
+      <!-- composite -->
+      <rect x="512" y="100" width="140" height="64" rx="8" stroke="var(--blue)" stroke-width="1.6"/>
+      <g fill="var(--blue)" stroke="none" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="600">
+        <text x="527" y="126">composite</text>
+        <text x="527" y="143">Σw·s / Σw</text>
+      </g>
+      <path d="M430,49  C480,49  480,116 512,118" marker-end="url(#arr)"/>
+      <path d="M430,93  C475,93  475,124 512,126" marker-end="url(#arr)"/>
+      <path d="M430,137 C475,137 475,133 512,133" marker-end="url(#arr)"/>
+      <!-- decide -->
+      <rect x="722" y="88" width="148" height="88" rx="8"/>
+      <g fill="currentColor" stroke="none" font-family="IBM Plex Mono, monospace" font-size="11">
+        <text x="736" y="110">≥ +40 → BUY</text>
+        <text x="736" y="128">≤ −40 → SELL</text>
+        <text x="736" y="146">else → WAIT</text>
+        <text x="736" y="164">axes must agree</text>
+      </g>
+      <path d="M652,132 L722,132" marker-end="url(#arr)"/>
+      <!-- risk gate -->
+      <rect x="540" y="228" width="200" height="58" rx="8" stroke-dasharray="0"/>
+      <g fill="currentColor" stroke="none" font-family="IBM Plex Mono, monospace" font-size="11">
+        <text x="554" y="250">risk gate · veto</text>
+        <text x="554" y="268">24h blackout · 1% sizing</text>
+      </g>
+      <path d="M796,176 C796,210 760,240 740,246" marker-end="url(#arr)"/>
+      <!-- exits -->
+      <g fill="currentColor" stroke="none" font-family="IBM Plex Mono, monospace" font-size="11">
+        <text x="296" y="308">exits: stop below flush low · 2R target · D+5 time stop · euphoria · shock</text>
+      </g>
+      <path d="M540,260 C440,272 330,290 292,302" marker-end="url(#arr)"/>
+      <!-- label for two-axis -->
+      <g fill="currentColor" stroke="none" font-family="IBM Plex Mono, monospace" font-size="10.5" opacity="0.75">
+        <text x="452" y="90">renormalized</text>
+        <text x="452" y="104">over coverage</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption>The pipeline as implemented in <span class="mono">swing_stack.py</span>. Dashed boxes are declared but empty this month — no free historical source exists for estimate revisions or 13F flow, so their weight renormalizes away rather than counting as neutral zero.</figcaption>
+  </figure>
+
+  <p>The engine is pure — no I/O, no environment flags — so the same code is unit-tested (25 tests; a 4-mutant injection pass all caught), driven by the simulator, and importable by the live platform later. The doc's own worked example lands at exactly <span class="mono">46.1</span>, pinned by test.</p>
+</section>
+
+<!-- ─────────────────────────── 2 · experiment ─────────────────────────── -->
+<section>
+  <div class="secnum"><b>02</b> · The experiment</div>
+  <h2>Hypotheses first, then the data</h2>
+  <p>Per the house rule, the falsifiers were written before any candle was fetched. Universe: ten US stocks, five crypto majors. All history real — Yahoo and OKX daily bars, VIX/10Y/DXY, CNN and alternative.me Fear&nbsp;&amp;&nbsp;Greed. A <strong>control arm</strong> trades the same exits on technicals alone (≥&nbsp;+40, no agreement rule, no blackout), so the stack's judgment layer is what gets measured, not the playbook.</p>
+  <ul class="tight">
+    <li><strong>H1</strong> — stack BUY entries have positive net expectancy. <em>Falsifier: ≤ 0R, or n &lt; 5 → inconclusive.</em></li>
+    <li><strong>H2</strong> — the two-axis WAIT rule beats quant-only per trade. <em>Falsifier: control expectancy ≥ stack expectancy.</em></li>
+    <li><strong>H3</strong> — the 24h event blackout actually fires in a month containing NFP, CPI, Jackson Hole and PCE. <em>Falsifier: zero vetoes.</em></li>
+  </ul>
+</section>
+
+<!-- ─────────────────────────── 3 · the kill ─────────────────────────── -->
+<section>
+  <div class="secnum"><b>03</b> · What the data killed</div>
+  <h2>v1 never traded — and that was the finding</h2>
+
+  <div class="killcard">
+    <span class="tag">Killed hypothesis · recorded 2026-08-30</span>
+    <p>The first sentiment mapping scored only the <em>extremes</em> of Fear &amp; Greed (contrarian at ≤25 and ≥75, zero everywhere between). CNN F&amp;G spent the entire month between 40.7 and 66.6 — so sentiment read 0.0 on 100% of days, the qualitative axis stayed flat, the two-axis rule could never agree, and the stack sat in cash for a month while the control took 30 trades.</p>
+  </div>
+
+  <figure class="scrollfig">
+  <svg viewBox="0 0 880 170" role="img" aria-label="Fear and Greed scale 0 to 100. The observed August range, 40.7 to 66.6, sits entirely inside the band that the v1 mapping scored as zero. The v2 mapping scores tone level and rate of change across the mid-band, with contrarian override kept at the extremes.">
+    <g font-family="IBM Plex Mono, monospace" font-size="10.5">
+      <!-- scale -->
+      <line x1="60" y1="60" x2="820" y2="60" stroke="currentColor" stroke-width="1.4" color="var(--ink-2)"/>
+      <g fill="var(--ink-3)">
+        <text x="55" y="46" text-anchor="middle">0</text>
+        <text x="250" y="46" text-anchor="middle">25</text>
+        <text x="440" y="46" text-anchor="middle">50</text>
+        <text x="630" y="46" text-anchor="middle">75</text>
+        <text x="820" y="46" text-anchor="middle">100</text>
+      </g>
+      <g stroke="var(--ink-3)"><line x1="60" y1="55" x2="60" y2="65"/><line x1="250" y1="55" x2="250" y2="65"/><line x1="440" y1="55" x2="440" y2="65"/><line x1="630" y1="55" x2="630" y2="65"/><line x1="820" y1="55" x2="820" y2="65"/></g>
+      <!-- v1 dead zone -->
+      <rect x="250" y="72" width="380" height="24" fill="var(--red-soft)"/>
+      <text x="440" y="88" text-anchor="middle" fill="var(--red)">v1: scored 0 across this whole band</text>
+      <!-- observed range -->
+      <rect x="369" y="108" width="197" height="24" rx="4" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="1.2"/>
+      <text x="467" y="124" text-anchor="middle" fill="var(--blue)" font-weight="600">August lived here: 40.7–66.6</text>
+      <!-- extremes -->
+      <g fill="var(--ink-3)">
+        <text x="150" y="88" text-anchor="middle">fear → contrarian buy</text>
+        <text x="722" y="88" text-anchor="middle">greed → contrarian sell</text>
+      </g>
+      <text x="60" y="156" fill="var(--ink-2)">v2 fix: mid-band scores crowd tone (level − 50) plus rate of change — the doc's own pillar-1 reading. Extremes stay contrarian.</text>
+    </g>
+  </svg>
+  <figcaption>Why zero trades happened: the market's psychology never left the band that v1 treated as silence. The doc's worked example scores bullish sentiment +62 — pillar 1 is a tone reading, not an extremes-only table. The fix is faithful to the doc, not a fitted knob; the dead mapping is named in the result file so no session re-runs it.</figcaption>
+  </figure>
+</section>
+
+<!-- ─────────────────────────── 4 · results ─────────────────────────── -->
+<section>
+  <div class="secnum"><b>04</b> · Results — stated in profit-or-loss terms first</div>
+  <h2>Better per trade; the control still banked $326 more</h2>
+
+  <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Stack (two-axis + composite)</span><span><span class="sw" style="background:var(--orange)"></span>Control (technicals-only)</span></div>
+  <div class="tiles">
+    <div class="tile stack"><div class="lbl">Stack · expectancy</div><div class="val">+0.398R</div><div class="sub">17 trades · 58.8% win</div></div>
+    <div class="tile ctrl"><div class="lbl">Control · expectancy</div><div class="val">+0.239R</div><div class="sub">30 trades · 43.3% win</div></div>
+    <div class="tile stack"><div class="lbl">Stack · net P&amp;L</div><div class="val">+$6,929</div><div class="sub">payoff 4.77 · avg loss −$170</div></div>
+    <div class="tile ctrl"><div class="lbl">Control · net P&amp;L</div><div class="val">+$7,255</div><div class="sub">payoff 2.55 · avg loss −$449</div></div>
+  </div>
+
+  <p>The honest sentence: the stack made <em>more per trade with far shallower losses</em>, and still finished <strong>$326 behind</strong> the control on total profit, because the control simply traded more. One month, 17 versus 30 trades — this is direction, not proof. The sign survives stripping the largest winner from each arm (stack +$4,858 ex-DOGE; control +$5,177).</p>
+
+  <h3>Every stack trade, in R</h3>
+  <figure class="scrollfig">
+  <svg id="rchart" viewBox="0 0 880 300" role="img" aria-label="Bar chart of the 17 stack trades' R multiples in entry order. Ten wins, seven losses. Two trades reach nearly 2R at the target; the worst loss is minus 0.56R. Losses cluster near zero because they exit on the D plus 5 time stop, not at the full stop."></svg>
+  <figcaption>All 17 entries in order. Zero stop-outs occurred: losers drift out at the D+5 time stop near flat (that is where the −$170 average loss comes from), while the two ~2R prints are target fills (XRP, DOGE on the Aug-21 move). Hover any bar for the trade.</figcaption>
+  </figure>
+
+  <h3>The month, cumulatively</h3>
+  <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Stack</span><span><span class="sw" style="background:var(--orange)"></span>Control</span></div>
+  <figure class="scrollfig">
+  <svg id="cchart" viewBox="0 0 880 300" role="img" aria-label="Cumulative realized profit by exit date for both arms. Both arms are near flat until August 21, jump on the August 21 crypto move, and finish at 6,929 dollars for the stack and 7,255 dollars for the control. The control draws down to minus 1,085 dollars mid-month; the stack never goes below minus 232."></svg>
+  <figcaption>Realized P&amp;L by exit date. The judgment layer's real product is the path: the control visits −$1,085 mid-month; the stack never dips below −$232. Both arms are carried by the Aug-21 crypto move — the stack caught it with less bleed beforehand.</figcaption>
+  </figure>
+
+  <h3>What WAIT filtered out</h3>
+  <p>The 19 control trades the stack refused averaged <span class="mono">+0.092R</span> — and with their single largest winner removed, the whole filtered set is <span class="mono neg">−$312</span>. The agreement rule was not skipping profit; it was skipping noise that one lucky SOL trade happened to redeem.</p>
+
+  <h3>Verdicts</h3>
+  <p style="display:flex; gap:10px; flex-wrap:wrap;">
+    <span class="verdict ok">H1 supported · +0.398R, n=17</span>
+    <span class="verdict ok">H2 supported per trade · 0.398 &gt; 0.239</span>
+    <span class="verdict ok">H3 supported · 1 blackout veto (CPI)</span>
+    <span class="verdict mix">total-net view: control +$326 — one month, not proof</span>
+  </p>
+
+  <div class="note"><strong>Named limitations.</strong> Thesis and smart-money feeds have no free historical source (weights renormalized away); sentiment is a market-level proxy, not per-ticker social flow; the macro calendar is the approximate structural schedule; long-only; sim book equity accrues symbol-sequentially (±few&nbsp;% on qty, R metrics unaffected). All 17 trades were hand-audited against refetched raw candles — entries, stops, targets, time stops, fees and sizing exact; the rerun is byte-identical.</div>
+
+  <details>
+    <summary style="cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-2);">Table view — all 17 stack trades</summary>
+    <div class="tablewrap"><table class="data" id="ttable">
+      <thead><tr><th>Symbol</th><th>Market</th><th>Entry</th><th>Exit</th><th>Exit reason</th><th style="text-align:right">Net P&amp;L</th><th style="text-align:right">R</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </details>
+</section>
+
+<!-- ─────────────────────────── 5 · monitor ─────────────────────────── -->
+<section>
+  <div class="secnum"><b>05</b> · Live on the manager console</div>
+  <h2>Six feeds, one glance</h2>
+  <p><span class="mono">GET /api/admin/swing-feeds/status</span> probes all six sources concurrently (6s timeout each, 60s cache) and renders as the <strong>Feed status</strong> tab on <span class="mono">administr.sooppiy.com</span>, in all six console languages. A dead upstream is a red row with its error — never a 500. The snapshot below is the state at ship verification, run from inside the production container:</p>
+
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Status</th><th>Feed</th><th>Doc feed</th><th>Source</th><th style="text-align:right">Latency</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot up"></span>OK</td><td>US stock OHLCV</td><td>price &amp; volume</td><td>Yahoo v8 chart</td><td class="num">156 ms</td><td>last bar 2026-08-28</td></tr>
+      <tr><td><span class="dot up"></span>OK</td><td>Crypto OHLCV</td><td>price &amp; volume</td><td>OKX candles</td><td class="num">244 ms</td><td>last bar 2026-08-31 · BTC 77,696</td></tr>
+      <tr><td><span class="dot up"></span>OK</td><td>Macro regime</td><td>macro regime</td><td>Yahoo v8 (VIX/10Y/DXY)</td><td class="num">145 ms</td><td>VIX 14.4</td></tr>
+      <tr><td><span class="dot up"></span>OK</td><td>Stock psychology</td><td>sentiment</td><td>CNN Fear &amp; Greed</td><td class="num">124 ms</td><td>F&amp;G 54 (neutral)</td></tr>
+      <tr><td><span class="dot up"></span>OK</td><td>Crypto psychology</td><td>sentiment</td><td>alternative.me F&amp;G</td><td class="num">256 ms</td><td>F&amp;G 62 (Greed)</td></tr>
+      <tr><td><span class="dot up"></span>OK</td><td>Macro calendar</td><td>macro calendar</td><td>faireconomy</td><td class="num">150 ms</td><td>4 high-impact USD events this week</td></tr>
+    </tbody>
+  </table></div>
+
+  <p class="note">During browser verification a rapid re-probe drew a genuine <span class="mono">HTTP 429</span> from faireconomy — the failure row rendered exactly as designed, and it is precisely why the 60-second cache exists.</p>
+</section>
+
+<!-- ─────────────────────────── 6 · crawl operations ─────────────────────────── -->
+<section>
+  <div class="secnum"><b>06</b> · The crawl, operationally</div>
+  <h2>What service runs the six crawls — how, when, from where</h2>
+  <p><strong>The service</strong> is <span class="mono">routes_admin_swing_feeds.py</span>, running inside the <span class="mono">sooppiy-backend</span> FastAPI container on production. It is a <em>pull-on-demand</em> crawler, not a daemon: <strong>there is no cron loop and no background schedule yet.</strong> A crawl happens in exactly three situations, and nowhere else:</p>
+  <ul class="tight">
+    <li><strong>An admin opens the Feed status tab</strong> → <span class="mono">GET /api/admin/swing-feeds/status</span> fires all six probes <em>concurrently</em> (one thread each, 6-second timeout per source). The result is cached in-process for <strong>60 seconds</strong>, so console refreshes within a minute serve the cache and never touch the upstreams.</li>
+    <li><strong>An admin clicks “Re-probe now”</strong> → <span class="mono">?refresh=true</span> bypasses the cache and probes live. This is the path that drew the real faireconomy 429 during verification — the cache is the rate-limit protection.</li>
+    <li><strong>The research simulation runs</strong> → <span class="mono">research/swing_stack_sim_20260830.py</span> pulls the deep history (up to 1 year of daily bars, full F&amp;G history) <em>once per invocation</em>, from the workstation, not the server.</li>
+  </ul>
+
+  <figure class="scrollfig">
+  <svg viewBox="0 0 880 250" role="img" aria-label="Two crawl paths. On-demand path: the admin console calls GET slash api slash admin slash swing-feeds slash status on the sooppiy-backend container; if the in-process cache is younger than 60 seconds the cached result is returned; otherwise six probes run concurrently with a six second timeout each against Yahoo, OKX, CNN, alternative.me and faireconomy, and a failed source becomes a red row, never a 500. One-shot path: the simulation script backfills up to one year of history directly from the same sources.">
+    <defs>
+      <marker id="arr3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L8,4 L0,8 z" fill="currentColor"/>
+      </marker>
+    </defs>
+    <g fill="none" stroke="currentColor" stroke-width="1.1" color="var(--ink-2)" font-family="IBM Plex Mono, monospace" font-size="10.5">
+      <!-- on-demand lane -->
+      <rect x="6" y="30" width="128" height="46" rx="7"/>
+      <rect x="196" y="30" width="196" height="46" rx="7" stroke="var(--blue)" stroke-width="1.5"/>
+      <rect x="452" y="14" width="128" height="34" rx="7"/>
+      <rect x="452" y="60" width="128" height="34" rx="7"/>
+      <rect x="648" y="30" width="224" height="46" rx="7"/>
+      <g fill="currentColor" stroke="none">
+        <text x="18" y="49">admin console</text><text x="18" y="63">Feed status tab</text>
+        <text x="208" y="49" fill="var(--blue)">sooppiy-backend</text><text x="208" y="63" fill="var(--blue)">swing-feeds/status</text>
+        <text x="464" y="35">cache &lt; 60s →</text>
+        <text x="464" y="81">else: 6 probes</text>
+        <text x="660" y="49">Yahoo · OKX · CNN</text><text x="660" y="63">alt.me · faireconomy</text>
+      </g>
+      <path d="M134,53 L196,53" marker-end="url(#arr3)"/>
+      <path d="M392,45 L452,33" marker-end="url(#arr3)"/>
+      <path d="M392,62 L452,74" marker-end="url(#arr3)"/>
+      <path d="M580,77 L648,60" marker-end="url(#arr3)"/>
+      <g fill="currentColor" stroke="none" opacity="0.8">
+        <text x="452" y="118">concurrent · 6s timeout each · dead source = red row, never a 500</text>
+        <text x="196" y="118">serve cached ↩</text>
+      </g>
+      <!-- one-shot lane -->
+      <line x1="6" y1="150" x2="872" y2="150" class="gridline"/>
+      <rect x="6" y="170" width="180" height="46" rx="7"/>
+      <rect x="452" y="170" width="196" height="46" rx="7"/>
+      <g fill="currentColor" stroke="none">
+        <text x="18" y="189">swing_stack_sim.py</text><text x="18" y="203">(workstation, one-shot)</text>
+        <text x="464" y="189">same 5 upstreams</text><text x="464" y="203">up to 1y daily history</text>
+      </g>
+      <path d="M186,193 L452,193" marker-end="url(#arr3)"/>
+      <g fill="currentColor" stroke="none" opacity="0.8">
+        <text x="680" y="196">→ sim result JSON</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption>Two crawl paths, one codebase of sources. On-demand (top): the console triggers the backend, the 60-second cache absorbs refreshes, six probes run in parallel when it misses. One-shot (bottom): the simulation backfills history from the workstation.</figcaption>
+  </figure>
+
+  <h3>Source registry — from where, exactly</h3>
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Feed</th><th>Endpoint (all keyless)</th><th>Probe fetch</th><th>Sim backfill</th><th>Quirk to know</th></tr></thead>
+    <tbody>
+      <tr><td>US stock OHLCV</td><td class="mono">query1.finance.yahoo.com/v8/finance/chart/{sym}</td><td class="mono">NVDA · 5d</td><td class="mono">1y daily · 10 syms + SPY</td><td>needs a browser UA header</td></tr>
+      <tr><td>Crypto OHLCV</td><td class="mono">okx.com/api/v5/market/candles</td><td class="mono">BTC-USDT-SWAP · 2 bars</td><td class="mono">1Dutc · 300 bars · 5 syms</td><td>300 rows/page cap</td></tr>
+      <tr><td>Macro regime</td><td class="mono">query1.finance.yahoo.com/v8/finance/chart/^VIX</td><td class="mono">VIX · 5d</td><td class="mono">+ ^TNX, DX-Y.NYB · 1y</td><td>same Yahoo UA rule</td></tr>
+      <tr><td>Stock psychology</td><td class="mono">production.dataviz.cnn.io/index/fearandgreed/graphdata</td><td class="mono">latest score</td><td class="mono">~1y history in same payload</td><td>history rides the one call</td></tr>
+      <tr><td>Crypto psychology</td><td class="mono">api.alternative.me/fng/</td><td class="mono">limit=1</td><td class="mono">limit=250 daily</td><td>slowest source (~0.3–1.3s)</td></tr>
+      <tr><td>Macro calendar</td><td class="mono">nfs.faireconomy.media/ff_calendar_thisweek.json</td><td class="mono">this week · USD+High</td><td class="mono">— (approx. structural dates)</td><td>429 on rapid re-hits</td></tr>
+    </tbody>
+  </table></div>
+
+  <p class="note"><strong>Schedule, stated plainly:</strong> today the six feeds are crawled only when someone looks (console view, ≤1 upstream hit per feed per minute) or when the sim runs. A standing schedule — a worker loop persisting snapshots so the desk can consume them without an admin watching — is the natural next ship, and it is <em>not built yet</em>. The advisory feed set from the 08-30 session (vol-regime, funding, sector-RS, etc.) is a separate, still-unmerged branch and is not what this page describes.</p>
+</section>
+
+<!-- ─────────────────────────── 7 · ship ─────────────────────────── -->
+<section>
+  <div class="secnum"><b>07</b> · How it shipped</div>
+  <h2>The whole gate ran locally</h2>
+  <p>GitHub Actions was billing-blocked (every check dead in 3 seconds with an explicit payment annotation — an account setting only the owner can fix). Under the standing rule — now written into <span class="mono">CLAUDE.md</span> as owner law — the merge evidence was every CI job reproduced in a fresh clean worktree, and from 2026-08-31 onward the process skips GitHub PRs entirely: local CI → local squash merge → direct push → deploy.</p>
+
+  <figure class="scrollfig">
+  <svg viewBox="0 0 880 96" role="img" aria-label="Ship flow: feature branch, then five local CI jobs, then local squash merge to main with the evidence in the commit message, then direct push to origin main, then deploy dot sh to production, then verification on production.">
+    <defs>
+      <marker id="arr2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L8,4 L0,8 z" fill="currentColor"/>
+      </marker>
+    </defs>
+    <g fill="none" stroke="currentColor" stroke-width="1.1" color="var(--ink-2)" font-family="IBM Plex Mono, monospace" font-size="10.5">
+      <rect x="4"   y="26" width="112" height="40" rx="7"/>
+      <rect x="152" y="26" width="140" height="40" rx="7" stroke="var(--blue)" stroke-width="1.5"/>
+      <rect x="328" y="26" width="140" height="40" rx="7"/>
+      <rect x="504" y="26" width="112" height="40" rx="7"/>
+      <rect x="652" y="26" width="100" height="40" rx="7"/>
+      <rect x="788" y="26" width="88"  height="40" rx="7"/>
+      <g fill="currentColor" stroke="none">
+        <text x="16"  y="44">feature</text><text x="16" y="58">branch</text>
+        <text x="164" y="44" fill="var(--blue)">5 local CI jobs</text><text x="164" y="58" fill="var(--blue)">clean worktree</text>
+        <text x="340" y="44">local squash</text><text x="340" y="58">evidence in msg</text>
+        <text x="516" y="44">push origin</text><text x="516" y="58">main direct</text>
+        <text x="664" y="44">deploy.sh</text><text x="664" y="58">lock+guard</text>
+        <text x="800" y="44">verify</text><text x="800" y="58">on prod</text>
+      </g>
+      <path d="M116,46 L152,46" marker-end="url(#arr2)"/>
+      <path d="M292,46 L328,46" marker-end="url(#arr2)"/>
+      <path d="M468,46 L504,46" marker-end="url(#arr2)"/>
+      <path d="M616,46 L652,46" marker-end="url(#arr2)"/>
+      <path d="M752,46 L788,46" marker-end="url(#arr2)"/>
+    </g>
+  </svg>
+  <figcaption>The owner's 2026-08-31 process: no GitHub CI, no GitHub PRs. The evidence table travels in the merge commit instead of a PR comment.</figcaption>
+  </figure>
+
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>CI job (exact workflow command)</th><th>Local result</th></tr></thead>
+    <tbody>
+      <tr><td>Backend pytest, clean checkout</td><td class="mono">4,864 passed + 1,349 subtests · 0 failures</td></tr>
+      <tr><td>ruff — F401 F811 F821 F841</td><td class="mono">clean</td></tr>
+      <tr><td>Frontend tsc + vite build</td><td class="mono">clean</td></tr>
+      <tr><td>pip-audit (frozen resolved env, 109 pkgs)</td><td class="mono">0 known vulnerabilities</td></tr>
+      <tr><td>npm audit — high gate, prod deps</td><td class="mono">2 moderate · below gate</td></tr>
+      <tr><td>gitleaks — this ship's commit range</td><td class="mono">no leaks (5 full-history hits are old commits)</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Deploy: <span class="mono">scripts/deploy.sh swing-stack</span> from exactly <span class="mono">origin/main</span> — image built, migrations at head, three static roots plus marketing published, smoke checks 200. Prod verification twice over: the endpoint answers 401 unauthenticated, and the probe collector run <em>inside the production container</em> came back 6/6 green with live data. Rollback tag on file: <span class="mono">20260830-20260830-shockfix</span>.</p>
+</section>
+
+<footer>
+  Research aid, not financial advice. Simulation over one month, n=17 — signals are probabilistic and the doc's weights remain calibration starting points. Sources: <span class="mono">research/swing_stack_sim_result_20260830.json</span> · engine <span class="mono">service/server/swing_stack.py</span> · authority <span class="mono">research/SWING_SIGNAL_STACK.md</span>.
+</footer>
+
+</div>
+<div id="tip"></div>
+
+<script>
+(function () {
+  var css = getComputedStyle(document.documentElement);
+  function v(name) { return css.getPropertyValue(name).trim(); }
+
+  var trades = [
+    {s:"MSFT",m:"stock",e:"08-03",x:"08-10",p:337.54,r:0.337,why:"time stop"},
+    {s:"AMZN",m:"stock",e:"08-03",x:"08-10",p:-5.99,r:-0.006,why:"time stop"},
+    {s:"GOOGL",m:"stock",e:"08-04",x:"08-11",p:-563.22,r:-0.561,why:"time stop"},
+    {s:"AMD",m:"stock",e:"08-05",x:"08-12",p:-29.11,r:-0.029,why:"time stop"},
+    {s:"PLTR",m:"stock",e:"08-05",x:"08-12",p:211.31,r:0.212,why:"time stop"},
+    {s:"NVDA",m:"stock",e:"08-10",x:"08-17",p:57.26,r:0.057,why:"time stop"},
+    {s:"PLTR",m:"stock",e:"08-14",x:"08-21",p:19.88,r:0.020,why:"time stop"},
+    {s:"BTC",m:"crypto",e:"08-20",x:"08-25",p:1366.91,r:1.367,why:"time stop"},
+    {s:"ETH",m:"crypto",e:"08-20",x:"08-25",p:487.74,r:0.482,why:"time stop"},
+    {s:"SOL",m:"crypto",e:"08-20",x:"08-25",p:971.61,r:0.958,why:"time stop"},
+    {s:"XRP",m:"crypto",e:"08-20",x:"08-21",p:2037.87,r:1.979,why:"target"},
+    {s:"DOGE",m:"crypto",e:"08-20",x:"08-21",p:2071.29,r:1.973,why:"target"},
+    {s:"XRP",m:"crypto",e:"08-22",x:"08-27",p:-9.91,r:-0.009,why:"time stop"},
+    {s:"DOGE",m:"crypto",e:"08-22",x:"08-27",p:-128.66,r:-0.120,why:"time stop"},
+    {s:"BTC",m:"crypto",e:"08-26",x:"08-30",p:-187.68,r:-0.185,why:"window end"},
+    {s:"ETH",m:"crypto",e:"08-26",x:"08-30",p:-268.57,r:-0.264,why:"window end"},
+    {s:"SOL",m:"crypto",e:"08-26",x:"08-30",p:561.00,r:0.548,why:"window end"}
+  ];
+
+  /* cumulative realized P&L by exit date (day of Aug, cumulative $) */
+  var stackCum = [[0,0],[10,331.55],[11,-231.67],[12,-49.47],[17,7.79],[21,4136.83],[25,6963.09],[27,6824.52],[30,6929.27]];
+  var ctrlCum  = [[0,0],[7,708.75],[10,504.80],[12,951.79],[16,-270.98],[17,-1084.92],[19,-173.54],[20,811.78],[21,4954.71],[25,6830.12],[26,6890.86],[27,6751.76],[28,8850.55],[30,7254.83]];
+
+  var tip = document.getElementById("tip");
+  function showTip(html, ev) {
+    tip.innerHTML = html; tip.style.display = "block";
+    var x = Math.min(ev.clientX + 14, window.innerWidth - 280);
+    tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px";
+  }
+  function hideTip() { tip.style.display = "none"; }
+
+  var NS = "http://www.w3.org/2000/svg";
+  function el(name, attrs, parent) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function fmt$(x) { return (x < 0 ? "−$" : "+$") + Math.abs(x).toLocaleString("en-US", {maximumFractionDigits: 0}); }
+
+  /* ── R-multiple bars ── */
+  (function () {
+    var svg = document.getElementById("rchart");
+    if (!svg) return;
+    var W = 880, H = 300, L = 56, R = 12, T = 16, B = 44;
+    var pw = W - L - R, ph = H - T - B;
+    var yMin = -0.8, yMax = 2.2;
+    function Y(val) { return T + (yMax - val) / (yMax - yMin) * ph; }
+    var n = trades.length, slot = pw / n, bw = Math.min(34, slot - 8);
+
+    [-0.5, 0.5, 1, 1.5, 2].forEach(function (g) {
+      el("line", {x1: L, x2: W - R, y1: Y(g), y2: Y(g), class: "gridline"}, svg);
+      var t = el("text", {x: L - 8, y: Y(g) + 3.5, "text-anchor": "end", class: "axis"}, svg);
+      t.textContent = (g > 0 ? "+" : "") + g + "R";
+    });
+    el("line", {x1: L, x2: W - R, y1: Y(0), y2: Y(0), class: "zero"}, svg);
+
+    trades.forEach(function (d, i) {
+      var x = L + i * slot + (slot - bw) / 2;
+      var y0 = Y(Math.max(0, d.r)), y1 = Y(Math.min(0, d.r));
+      var h = Math.max(2, y1 - y0);
+      var col = d.r >= 0 ? v("--blue") : v("--red");
+      var rTop = d.r >= 0 ? 4 : 0, rBot = d.r >= 0 ? 0 : 4;
+      var path = "M" + x + "," + (y0 + rTop) +
+        " a" + rTop + "," + rTop + " 0 0 1 " + rTop + ",-" + rTop + " h" + (bw - 2 * rTop) +
+        " a" + rTop + "," + rTop + " 0 0 1 " + rTop + "," + rTop + " v" + (h - rTop - rBot) +
+        " a" + rBot + "," + rBot + " 0 0 1 -" + rBot + "," + rBot + " h-" + (bw - 2 * rBot) +
+        " a" + rBot + "," + rBot + " 0 0 1 -" + rBot + ",-" + rBot + " z";
+      var bar = el("path", {d: path, fill: col, class: "hoverable"}, svg);
+      bar.addEventListener("mousemove", function (ev) {
+        showTip("<b>" + d.s + "</b> · " + d.m + "<br>" + d.e + " → " + d.x + " · " + d.why +
+          "<br>" + fmt$(d.p) + " · " + (d.r >= 0 ? "+" : "") + d.r.toFixed(2) + "R", ev);
+      });
+      bar.addEventListener("mouseleave", hideTip);
+      var lab = el("text", {x: x + bw / 2, y: H - B + 16, "text-anchor": "middle", class: "axis"}, svg);
+      lab.textContent = d.s;
+      if (Math.abs(d.r) > 1.3 || d.r < -0.4) {
+        var dl = el("text", {x: x + bw / 2, y: d.r >= 0 ? y0 - 6 : y1 + 14, "text-anchor": "middle",
+          class: "axis", "font-weight": "600", fill: col}, svg);
+        dl.textContent = (d.r >= 0 ? "+" : "") + d.r.toFixed(2);
+      }
+    });
+    var xt = el("text", {x: L + pw / 2, y: H - 6, "text-anchor": "middle", class: "axis"}, svg);
+    xt.textContent = "entries in chronological order · Aug 2026";
+  })();
+
+  /* ── cumulative lines ── */
+  (function () {
+    var svg = document.getElementById("cchart");
+    if (!svg) return;
+    var W = 880, H = 300, L = 64, R = 132, T = 14, B = 40;
+    var pw = W - L - R, ph = H - T - B;
+    var yMin = -2000, yMax = 9500, xMin = 0, xMax = 30;
+    function X(d) { return L + (d - xMin) / (xMax - xMin) * pw; }
+    function Y(val) { return T + (yMax - val) / (yMax - yMin) * ph; }
+
+    [-2000, 0, 2000, 4000, 6000, 8000].forEach(function (g) {
+      el("line", {x1: L, x2: W - R, y1: Y(g), y2: Y(g), class: g === 0 ? "zero" : "gridline"}, svg);
+      var t = el("text", {x: L - 8, y: Y(g) + 3.5, "text-anchor": "end", class: "axis"}, svg);
+      t.textContent = g === 0 ? "$0" : (g < 0 ? "−$" : "$") + Math.abs(g) / 1000 + "k";
+    });
+    [1, 7, 14, 21, 28].forEach(function (d) {
+      var t = el("text", {x: X(d), y: H - B + 18, "text-anchor": "middle", class: "axis"}, svg);
+      t.textContent = "Aug " + d;
+    });
+
+    function draw(series, color, name, endLabelDy) {
+      var pts = series.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" ");
+      el("polyline", {points: pts, fill: "none", stroke: color, "stroke-width": 2,
+        "stroke-linejoin": "round", "stroke-linecap": "round"}, svg);
+      series.forEach(function (p, i) {
+        var dot = el("circle", {cx: X(p[0]), cy: Y(p[1]), r: i === series.length - 1 ? 4.5 : 3,
+          fill: color, stroke: v("--paper"), "stroke-width": 2, class: "hoverable"}, svg);
+        dot.addEventListener("mousemove", function (ev) {
+          showTip("<b>" + name + "</b> · Aug " + p[0] + "<br>cumulative " + fmt$(p[1]), ev);
+        });
+        dot.addEventListener("mouseleave", hideTip);
+      });
+      var last = series[series.length - 1];
+      var lab = el("text", {x: X(last[0]) + 10, y: Y(last[1]) + endLabelDy, class: "axis",
+        "font-weight": "600", fill: color}, svg);
+      lab.textContent = name + " " + fmt$(last[1]);
+    }
+    draw(ctrlCum, v("--orange"), "control", 14);
+    draw(stackCum, v("--blue"), "stack", -6);
+  })();
+
+  /* ── table view ── */
+  (function () {
+    var tb = document.querySelector("#ttable tbody");
+    if (!tb) return;
+    trades.forEach(function (d) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + d.s + "</td><td>" + d.m + "</td><td class='mono'>" + d.e +
+        "</td><td class='mono'>" + d.x + "</td><td>" + d.why +
+        "</td><td class='num " + (d.p >= 0 ? "pos" : "neg") + "'>" + fmt$(d.p) +
+        "</td><td class='num " + (d.r >= 0 ? "pos" : "neg") + "'>" + (d.r >= 0 ? "+" : "") + d.r.toFixed(3) + "</td>";
+      tb.appendChild(tr);
+    });
+  })();
+})();
+</script>
