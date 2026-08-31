@@ -106,6 +106,16 @@ class AdminCrawlConsoleTest(unittest.TestCase):
         self.assertEqual(body["ok_count"], 1)
         self.assertEqual(body["failing_count"], 1)
 
+    def test_a_disabled_feed_is_its_own_status_never_ok(self):
+        with crawl_monitor.track("filings") as run:
+            run.items = 0
+            run.detail = {"disabled": True}
+        body = self.client.get("/api/admin/crawl/overview", headers=self.admin).json()
+        node = next(n for n in body["collect"] if n["key"] == "filings")
+        self.assertEqual(node["status"], "disabled")
+        self.assertEqual(body["ok_count"], 0)
+        self.assertEqual(body["disabled_count"], 1)
+
     def test_processor_coverage_comes_from_the_latest_decisions(self):
         swing_pipeline._persist(_decision())
         swing_pipeline._persist({**_decision(symbol="AAPL"),

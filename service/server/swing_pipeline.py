@@ -300,10 +300,20 @@ def fetch_macro_event_hours() -> Optional[float]:
 # ---------------------------------------------------------------------------
 
 def _safe(feed: str, fn, default=None):
-    """Run one collector inside crawl bookkeeping; a failure is no coverage."""
+    """Run one collector inside crawl bookkeeping; a failure is no coverage.
+
+    A feed that is switched off produces nothing, so it is recorded as
+    `disabled` with 0 items rather than as a healthy pass — otherwise the
+    console paints a non-producing collector green, which is the exact
+    failure this monitoring exists to catch.
+    """
     try:
         with crawl_monitor.track(feed) as run:
             value = fn()
+            if isinstance(value, dict) and value.get("disabled"):
+                run.items = 0
+                run.detail = {"disabled": True}
+                return value
             run.items = 1 if value not in (None, [], {}) else 0
             return value
     except Exception as exc:  # noqa: BLE001 — recorded by track, then absorbed

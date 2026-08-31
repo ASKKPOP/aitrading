@@ -15,7 +15,7 @@ const ADMIN_TOKEN_KEY = 'sooppiy_admin_token'
 
 type Tab =
   | 'dashboard' | 'members' | 'subscriptions' | 'assets' | 'positions'
-  | 'automation' | 'feeds' | 'skills' | 'support' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
+  | 'automation' | 'feeds' | 'crawl' | 'skills' | 'support' | 'discussions' | 'leaderboard' | 'admins' | 'audit'
 
 // Prompt sites a trading skill can ride (mirror of trading_skills.PROMPT_SITES).
 const SKILL_SITES = ['light', 'trader', 'verifier', 'planner'] as const
@@ -95,6 +95,141 @@ function TrendChart({ data, xKey, series, kind }: { data: any[]; xKey: string; s
   )
 }
 
+// Live status colours for a pipeline node. `idle` is grey, never green — a
+// feed that has never run has proven nothing.
+const NODE_COLORS: Record<string, string> = {
+  ok: '#22c55e', failing: '#ef4444', stale: '#eab308', idle: '#6b7280',
+  // a switched-off collector ran cleanly and produced nothing — not health
+  disabled: '#6b7280',
+}
+const nodeColor = (status: string) => NODE_COLORS[status] || NODE_COLORS.idle
+
+// The blueprint's pipeline (collect -> score -> combine -> decide), drawn with
+// live health on every node. Purely presentational: every value comes from
+// /api/admin/crawl/overview.
+function PipelineDiagram({ overview, onPick }: { overview: any; onPick: (feed: string) => void }) {
+  const collect: any[] = overview?.collect || []
+  const score: any[] = overview?.score || []
+  if (!collect.length) return null
+
+  const ROW = 46, TOP = 26, BOX_H = 34
+  const cx1 = 8, cw = 232                    // collect column
+  const px1 = 322, pw = 210                  // processor column
+  const height = Math.max(collect.length, score.length) * ROW + TOP + 30
+  const collectY = (i: number) => TOP + i * ROW
+  const scoreSpan = height - TOP - 40
+  const scoreY = (i: number) => TOP + 6 + (scoreSpan / score.length) * i
+  const procIndex: Record<string, number> = {}
+  score.forEach((s, i) => { procIndex[s.key] = i })
+
+  const midY = height / 2 - 20
+  const compX = 596, compW = 150
+  const decX = 792, decW = 176
+
+  const link = (x1: number, y1: number, x2: number, y2: number) =>
+    `M ${x1} ${y1} C ${x1 + 44} ${y1}, ${x2 - 44} ${y2}, ${x2} ${y2}`
+
+  const muted = 'var(--text-muted,#8a8073)'
+  const border = 'var(--border-color,#2a2a28)'
+  const text = 'var(--text-primary,#ece7dd)'
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <svg viewBox={`0 0 990 ${height}`} style={{ width: '100%', minWidth: 860, height: 'auto' }}
+           role="img" aria-label="Swing signal stack pipeline status">
+        {/* collect -> processor links */}
+        {collect.map((c, i) => {
+          const target = c.feeds === 'risk_gate' ? null : procIndex[c.feeds]
+          const y1 = collectY(i) + BOX_H / 2
+          const y2 = target != null ? scoreY(target) + BOX_H / 2 : midY + 96
+          const x2 = target != null ? px1 : decX
+          return (
+            <path key={`l-${c.key}`} d={link(cx1 + cw, y1, x2, y2)} fill="none"
+                  stroke={c.wired ? nodeColor(c.status) : muted}
+                  strokeWidth={c.wired ? 1.6 : 1}
+                  strokeDasharray={c.wired ? undefined : '4 4'}
+                  opacity={c.wired ? 0.75 : 0.45} />
+          )
+        })}
+        {/* processor -> composite links */}
+        {score.map((s, i) => (
+          <path key={`c-${s.key}`} d={link(px1 + pw, scoreY(i) + BOX_H / 2, compX, midY + 22)}
+                fill="none" stroke={muted} strokeWidth={1.4} opacity={0.6} />
+        ))}
+        <path d={link(compX + compW, midY + 22, decX, midY - 26)} fill="none"
+              stroke="var(--accent-primary,#d8a95e)" strokeWidth={1.8} opacity={0.8} />
+        <path d={link(compX + compW, midY + 22, decX, midY + 96)} fill="none"
+              stroke={muted} strokeWidth={1.4} opacity={0.5} strokeDasharray="4 4" />
+
+        {/* collect nodes */}
+        {collect.map((c, i) => (
+          <g key={c.key} onClick={() => onPick(c.key)} style={{ cursor: 'pointer' }}>
+            <rect x={cx1} y={collectY(i)} width={cw} height={BOX_H} rx={8}
+                  fill="var(--bg-secondary,#161615)" stroke={nodeColor(c.status)} strokeWidth={1.4} />
+            <circle cx={cx1 + 15} cy={collectY(i) + BOX_H / 2} r={4.5} fill={nodeColor(c.status)} />
+            <text x={cx1 + 27} y={collectY(i) + 15} fontSize={11.5} fontWeight={600} fill={text}>
+              {`${c.doc_feed} · ${c.label}`.slice(0, 30)}
+            </text>
+            <text x={cx1 + 27} y={collectY(i) + 27} fontSize={9.5} fill={muted}>
+              {c.status === 'idle' ? 'never run'
+                : c.status === 'disabled' ? 'disabled — produces nothing'
+                : `${c.status}${c.last_items != null ? ` · ${c.last_items} items` : ''}`}
+              {c.wired ? '' : ' · not wired'}
+            </text>
+          </g>
+        ))}
+
+        {/* processor nodes */}
+        {score.map((s, i) => (
+          <g key={s.key}>
+            <rect x={px1} y={scoreY(i)} width={pw} height={BOX_H} rx={8}
+                  fill="var(--bg-secondary,#161615)" stroke={border} strokeWidth={1.2} />
+            <text x={px1 + 12} y={scoreY(i) + 15} fontSize={11.5} fontWeight={600} fill={text}>
+              {`${s.key} · w ${s.weight.toFixed(2)}`}
+            </text>
+            <text x={px1 + 12} y={scoreY(i) + 27} fontSize={9.5} fill={muted}>
+              {s.symbols
+                ? `${s.covered_symbols}/${s.symbols} covered${s.mean_score != null ? ` · mean ${s.mean_score}` : ''}`
+                : 'no decisions yet'}
+            </text>
+          </g>
+        ))}
+
+        {/* composite */}
+        <rect x={compX} y={midY - 4} width={compW} height={52} rx={9}
+              fill="var(--bg-secondary,#161615)" stroke="var(--accent-primary,#d8a95e)" strokeWidth={1.6} />
+        <text x={compX + 14} y={midY + 16} fontSize={12} fontWeight={700} fill="var(--accent-primary,#d8a95e)">composite</text>
+        <text x={compX + 14} y={midY + 33} fontSize={10} fill={muted}>
+          {overview?.combine?.mean_composite != null
+            ? `mean ${overview.combine.mean_composite} · ${overview.combine.symbols_scored} sym`
+            : '−100 … +100'}
+        </text>
+
+        {/* decide */}
+        <rect x={decX} y={midY - 60} width={decW} height={74} rx={9}
+              fill="var(--bg-secondary,#161615)" stroke={border} strokeWidth={1.2} />
+        <text x={decX + 12} y={midY - 42} fontSize={10.5} fill={text}>
+          {`≥ +${overview?.decide?.buy_threshold ?? 40} → BUY (${overview?.decide?.actions?.BUY || 0})`}
+        </text>
+        <text x={decX + 12} y={midY - 26} fontSize={10.5} fill={text}>
+          {`between → WAIT (${overview?.decide?.actions?.WAIT || 0})`}
+        </text>
+        <text x={decX + 12} y={midY - 10} fontSize={10.5} fill={text}>
+          {`≤ ${overview?.decide?.sell_threshold ?? -40} → SELL (${overview?.decide?.actions?.SELL || 0})`}
+        </text>
+
+        {/* risk gate */}
+        <rect x={decX} y={midY + 70} width={decW} height={52} rx={9}
+              fill="var(--bg-secondary,#161615)" stroke={border} strokeWidth={1.2} strokeDasharray="5 4" />
+        <text x={decX + 12} y={midY + 90} fontSize={11} fontWeight={600} fill={text}>risk gate (veto)</text>
+        <text x={decX + 12} y={midY + 106} fontSize={9.5} fill={muted}>
+          {`event blackout ${overview?.decide?.event_blackout_hours ?? 24}h · vetoed ${overview?.decide?.vetoed || 0}`}
+        </text>
+      </svg>
+    </div>
+  )
+}
+
 export function AdminPage() {
   const { language } = useLanguage()
   const [token, setToken] = useState<string>(() => localStorage.getItem(ADMIN_TOKEN_KEY) || '')
@@ -152,6 +287,15 @@ export function AdminPage() {
   // the six data feeds, probed server-side and cached 60s.
   const [feedStatus, setFeedStatus] = useState<any | null>(null)
   const [feedProbing, setFeedProbing] = useState(false)
+  // Crawling & monitoring console: the pipeline overview (per-node health),
+  // the crawl history behind it, and the decisions it produced.
+  const [crawlOverview, setCrawlOverview] = useState<any | null>(null)
+  const [crawlRuns, setCrawlRuns] = useState<any[]>([])
+  const [crawlDecisions, setCrawlDecisions] = useState<any[]>([])
+  const [crawlFeed, setCrawlFeed] = useState<string>('')
+  const [crawlSymbols, setCrawlSymbols] = useState('')
+  const [crawlBusy, setCrawlBusy] = useState(false)
+  const [crawlResult, setCrawlResult] = useState<any | null>(null)
   const [llmSettings, setLlmSettings] = useState<any | null>(null)
   const [llmForm, setLlmForm] = useState({ local_base_url: '', local_model: '',
     brief_provider: '', brief_model: '', decision_provider: '', decision_model: '' })
@@ -207,6 +351,16 @@ export function AdminPage() {
     feedReprobe: tr(language, { ko: '지금 다시 프로브', en: 'Re-probe now', ja: '今すぐ再プローブ', th: 'ตรวจสอบใหม่ตอนนี้', vi: 'Thăm dò lại ngay', id: 'Periksa ulang sekarang' }),
     feedCached: tr(language, { ko: '캐시됨', en: 'cached', ja: 'キャッシュ済み', th: 'จากแคช', vi: 'đã lưu đệm', id: 'dari cache' }),
     feedCheckedAt: tr(language, { ko: '확인 시각', en: 'checked', ja: '確認時刻', th: 'ตรวจเมื่อ', vi: 'kiểm tra lúc', id: 'diperiksa' }),
+    tabCrawl: tr(language, { ko: '크롤링 · 모니터링', en: 'Crawl & monitor', ja: 'クロール・監視', th: 'รวบรวม · ตรวจสอบ', vi: 'Thu thập · Giám sát', id: 'Perayapan & pemantauan' }),
+    crawlTitle: tr(language, { ko: '🕸 크롤링 & 모니터링 — 수집 → 점수 → 합성 → 결정', en: '🕸 Crawling & monitoring — collect → score → combine → decide', ja: '🕸 クロール＆監視 — 収集 → スコア → 合成 → 判断', th: '🕸 การรวบรวมและตรวจสอบ — เก็บ → ให้คะแนน → รวม → ตัดสิน', vi: '🕸 Thu thập & giám sát — thu thập → chấm điểm → tổng hợp → quyết định', id: '🕸 Perayapan & pemantauan — kumpulkan → skor → gabungkan → putuskan' }),
+    crawlHint: tr(language, { ko: '업스트림 URL 프로브가 아니라 우리 크롤러가 실제로 한 일(crawl_runs)을 보여줍니다. 한 번도 실행되지 않은 피드는 회색(idle)이며 정상이 아닙니다.', en: 'Shows what our crawlers actually did (crawl_runs), not a one-shot probe of an upstream URL. A feed that never ran is grey (idle) — not healthy.', ja: 'アップストリームURLの単発プローブではなく、当社のクローラーが実際に行ったこと（crawl_runs）を表示します。一度も実行されていないフィードはグレー（idle）であり、正常ではありません。', th: 'แสดงสิ่งที่ตัวรวบรวมของเราทำจริง (crawl_runs) ไม่ใช่การตรวจสอบ URL ต้นทางครั้งเดียว ฟีดที่ไม่เคยทำงานจะเป็นสีเทา (idle) ไม่ใช่ปกติ', vi: 'Hiển thị những gì trình thu thập của chúng tôi thực sự đã làm (crawl_runs), không phải một lần thăm dò URL nguồn. Feed chưa từng chạy có màu xám (idle) — không phải khỏe mạnh.', id: 'Menampilkan apa yang benar-benar dilakukan perayap kami (crawl_runs), bukan pemeriksaan sekali jalan atas URL hulu. Feed yang belum pernah berjalan berwarna abu-abu (idle) — bukan sehat.' }),
+    crawlRunNow: tr(language, { ko: '지금 실행', en: 'Run a pass now', ja: '今すぐ実行', th: 'รันตอนนี้', vi: 'Chạy ngay', id: 'Jalankan sekarang' }),
+    crawlSymbolsPh: tr(language, { ko: '심볼 (쉼표 구분, 비우면 설정값)', en: 'symbols, comma separated (blank = configured)', ja: 'シンボル（カンマ区切り、空欄で設定値）', th: 'สัญลักษณ์ คั่นด้วยจุลภาค (เว้นว่าง = ค่าที่ตั้งไว้)', vi: 'mã, phân tách bằng dấu phẩy (để trống = cấu hình)', id: 'simbol, dipisah koma (kosong = terkonfigurasi)' }),
+    crawlHistory: tr(language, { ko: '크롤 이력', en: 'Crawl history', ja: 'クロール履歴', th: 'ประวัติการรวบรวม', vi: 'Lịch sử thu thập', id: 'Riwayat perayapan' }),
+    crawlDecisionsTitle: tr(language, { ko: '심볼별 최신 결정', en: 'Latest decision per symbol', ja: 'シンボル別の最新判断', th: 'การตัดสินล่าสุดต่อสัญลักษณ์', vi: 'Quyết định mới nhất theo mã', id: 'Keputusan terbaru per simbol' }),
+    crawlDisabled: tr(language, { ko: '파이프라인 비활성 (SWING_PIPELINE_ENABLED)', en: 'pipeline disabled (SWING_PIPELINE_ENABLED)', ja: 'パイプライン無効 (SWING_PIPELINE_ENABLED)', th: 'ไปป์ไลน์ปิดอยู่ (SWING_PIPELINE_ENABLED)', vi: 'pipeline đã tắt (SWING_PIPELINE_ENABLED)', id: 'pipeline nonaktif (SWING_PIPELINE_ENABLED)' }),
+    crawlAll: tr(language, { ko: '전체', en: 'all feeds', ja: '全フィード', th: 'ทุกฟีด', vi: 'tất cả feed', id: 'semua feed' }),
+    crawlNoRuns: tr(language, { ko: '아직 크롤 기록이 없습니다.', en: 'No crawl recorded yet.', ja: 'クロール記録はまだありません。', th: 'ยังไม่มีบันทึกการรวบรวม', vi: 'Chưa có bản ghi thu thập nào.', id: 'Belum ada perayapan tercatat.' }),
     tabSupport: tr(language, { ko: '문의 · 알림', en: 'Support & alerts', ja: '問い合わせ・通知', th: 'ซัพพอร์ต · การแจ้งเตือน', vi: 'Hỗ trợ · Thông báo', id: 'Dukungan & peringatan' }),
     tabDiscussions: tr(language, { ko: '토론 관리', en: 'Discussions', ja: '議論管理', th: 'จัดการกระทู้', vi: 'Thảo luận', id: 'Diskusi' }),
     tabLeaderboard: tr(language, { ko: '리더보드 관리', en: 'Leaderboard', ja: 'リーダーボード管理', th: 'จัดการลีดเดอร์บอร์ด', vi: 'Bảng xếp hạng', id: 'Papan peringkat' }),
@@ -480,6 +634,11 @@ export function AdminPage() {
         })
       }
       if (which === 'feeds') setFeedStatus(await call('swing-feeds/status'))
+      if (which === 'crawl') {
+        setCrawlOverview(await call('crawl/overview'))
+        setCrawlRuns((await call(`crawl/runs?limit=80${crawlFeed ? `&feed=${encodeURIComponent(crawlFeed)}` : ''}`)).runs || [])
+        setCrawlDecisions((await call('crawl/decisions')).decisions || [])
+      }
       if (which === 'skills') setSkills((await call('skills')).skills || [])
       if (which === 'support') setThreads(await call('support/threads?limit=200'))
       if (which === 'discussions') setDiscussions(await call(`discussions?q=${encodeURIComponent(dq)}&limit=100`))
@@ -491,7 +650,7 @@ export function AdminPage() {
     }
   }
 
-  useEffect(() => { refresh(tab) }, [tab, token, subFilter, lbMetric])
+  useEffect(() => { refresh(tab) }, [tab, token, subFilter, lbMetric, crawlFeed])
 
   // Paint the whole viewport (not just the centered column) in the design-doc
   // background; restore on unmount.
@@ -530,7 +689,7 @@ export function AdminPage() {
   const tabs: [Tab, string][] = [
     ['dashboard', T.tabDashboard], ['members', T.tabMembers], ['subscriptions', T.tabSubs],
     ['assets', T.tabAssets], ['positions', T.tabPositions], ['automation', T.tabAutomation],
-    ['feeds', T.tabFeeds], ['skills', T.tabSkills], ['support', T.tabSupport],
+    ['feeds', T.tabFeeds], ['crawl', T.tabCrawl], ['skills', T.tabSkills], ['support', T.tabSupport],
     ['discussions', T.tabDiscussions], ['leaderboard', T.tabLeaderboard],
     ...(me?.role === 'superadmin' ? [['admins', T.tabAdmins] as [Tab, string]] : []),
     ['audit', T.tabAudit],
@@ -1494,6 +1653,153 @@ export function AdminPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'crawl' && (
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div style={{ ...card }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{T.crawlTitle}</div>
+              {crawlOverview && (
+                <span style={{ fontSize: 12, fontWeight: 700, color: crawlOverview.failing_count ? '#ef4444' : '#22c55e' }}>
+                  {crawlOverview.ok_count}/{(crawlOverview.collect || []).length}
+                </span>
+              )}
+              {crawlOverview && !crawlOverview.pipeline_enabled && (
+                <span style={{ fontSize: 11.5, color: '#eab308' }}>⚠ {T.crawlDisabled}</span>
+              )}
+              <button style={{ ...actionBtn, marginLeft: 'auto' }} onClick={() => refresh('crawl')}>🔄</button>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)', margin: '6px 0 10px' }}>{T.crawlHint}</div>
+            {!crawlOverview && <div style={{ fontSize: 13 }}>⏳…</div>}
+            {crawlOverview && <PipelineDiagram overview={crawlOverview} onPick={(f) => setCrawlFeed(f)} />}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 12 }}>
+              <input
+                value={crawlSymbols}
+                onChange={e => setCrawlSymbols(e.target.value)}
+                placeholder={T.crawlSymbolsPh}
+                style={{ flex: '1 1 260px', minWidth: 200, padding: '7px 10px', fontSize: 12.5, borderRadius: 8,
+                  border: '1px solid var(--border-color,#2a2a28)', background: 'transparent', color: 'inherit' }} />
+              <button
+                style={{ ...actionBtn, opacity: crawlBusy ? 0.5 : 1 }}
+                disabled={crawlBusy}
+                onClick={async () => {
+                  setCrawlBusy(true); setCrawlResult(null)
+                  try {
+                    const symbols = crawlSymbols.split(',').map(s => s.trim()).filter(Boolean)
+                    // `hdr` already carries Content-Type; passing headers here
+                    // would replace it and drop the Authorization token.
+                    const res = await call('crawl/run', {
+                      method: 'POST',
+                      body: JSON.stringify(symbols.length ? { symbols } : {}),
+                    })
+                    setCrawlResult(res)
+                    await refresh('crawl')
+                  } catch (e: any) { if (e?.message !== '401') setError(String(e?.message || e)) }
+                  finally { setCrawlBusy(false) }
+                }}>
+                {crawlBusy ? '⏳…' : `▶ ${T.crawlRunNow}`}
+              </button>
+              {crawlResult && (
+                <span style={{ fontSize: 11.5, color: crawlResult.ok === false ? '#ef4444' : 'var(--text-muted,#8a8073)' }}>
+                  {crawlResult.ok === false
+                    ? crawlResult.error
+                    : `evaluated ${crawlResult.evaluated} · failed ${crawlResult.failed}`}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={{ ...card }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{T.crawlHistory}</div>
+              <select
+                value={crawlFeed}
+                onChange={e => setCrawlFeed(e.target.value)}
+                style={{ padding: '5px 8px', fontSize: 12, borderRadius: 7, background: 'transparent',
+                  color: 'inherit', border: '1px solid var(--border-color,#2a2a28)' }}>
+                <option value="">{T.crawlAll}</option>
+                {(crawlOverview?.collect || []).map((c: any) => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+                <option value="pipeline">pipeline</option>
+              </select>
+            </div>
+            {!crawlRuns.length && <div style={{ fontSize: 12.5, color: 'var(--text-muted,#8a8073)' }}>{T.crawlNoRuns}</div>}
+            {!!crawlRuns.length && (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>
+                    <th style={th}>{T.feedStatusCol}</th>
+                    <th style={th}>{T.feedCol}</th>
+                    <th style={th}>{T.feedCheckedAt}</th>
+                    <th style={th}>{T.feedLatencyCol}</th>
+                    <th style={th}>items</th>
+                    <th style={th}>{T.feedDetailCol}</th>
+                  </tr></thead>
+                  <tbody>
+                    {crawlRuns.map((r: any) => (
+                      <tr key={r.id}>
+                        <td style={td}>{r.ok ? '🟢' : '🔴'}</td>
+                        <td style={{ ...td, fontWeight: 600 }}>{r.feed}</td>
+                        <td style={td}>{r.started_at ? new Date(r.started_at).toLocaleString() : '—'}</td>
+                        <td style={td}>{r.duration_ms != null ? `${r.duration_ms} ms` : '—'}</td>
+                        <td style={td}>{r.items ?? '—'}</td>
+                        <td style={{ ...td, color: r.ok ? 'var(--text-muted,#8a8073)' : '#ef4444', maxWidth: 380 }}>
+                          {r.ok ? JSON.stringify(r.detail || {}) : r.error}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div style={{ ...card }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{T.crawlDecisionsTitle}</div>
+            {!crawlDecisions.length && <div style={{ fontSize: 12.5, color: 'var(--text-muted,#8a8073)' }}>—</div>}
+            {!!crawlDecisions.length && (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>
+                    <th style={th}>symbol</th>
+                    <th style={th}>action</th>
+                    <th style={th}>composite</th>
+                    <th style={th}>axis</th>
+                    {['sentiment', 'macro', 'thesis', 'smart_money', 'technical'].map(k => (
+                      <th key={k} style={th}>{k}</th>
+                    ))}
+                    <th style={th}>veto</th>
+                    <th style={th}>{T.feedCheckedAt}</th>
+                  </tr></thead>
+                  <tbody>
+                    {crawlDecisions.map((d: any) => (
+                      <tr key={d.id}>
+                        <td style={{ ...td, fontWeight: 700 }}>{d.symbol}</td>
+                        <td style={{ ...td, fontWeight: 700,
+                          color: d.action === 'BUY' ? '#22c55e' : d.action === 'SELL' ? '#ef4444' : 'var(--text-muted,#8a8073)' }}>
+                          {d.action}
+                        </td>
+                        <td style={td}>{d.composite != null ? d.composite.toFixed(1) : '—'}</td>
+                        <td style={{ ...td, fontSize: 11.5 }}>{d.axis}</td>
+                        {['sentiment', 'macro', 'thesis', 'smart_money', 'technical'].map(k => (
+                          <td key={k} style={{ ...td, color: (d.scores || {})[k] == null ? 'var(--text-muted,#8a8073)' : 'inherit' }}>
+                            {(d.scores || {})[k] == null ? '—' : (d.scores || {})[k].toFixed(0)}
+                          </td>
+                        ))}
+                        <td style={{ ...td, color: d.veto ? '#eab308' : 'inherit' }}>{d.veto || '—'}</td>
+                        <td style={{ ...td, fontSize: 11.5 }}>
+                          {d.computed_at ? new Date(d.computed_at).toLocaleString() : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

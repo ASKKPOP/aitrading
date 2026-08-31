@@ -44,6 +44,10 @@ def _status_for(health: Optional[dict[str, Any]]) -> str:
         return "idle"
     if not health.get("last_ok"):
         return "failing"
+    # A switched-off collector ran cleanly and produced nothing. That is not
+    # health, and must never be counted as ok.
+    if (health.get("last_detail") or {}).get("disabled"):
+        return "disabled"
     age = health.get("age_seconds")
     if age is not None and age > STALE_AFTER_SECONDS:
         return "stale"
@@ -118,6 +122,7 @@ def _build_overview() -> dict[str, Any]:
         "ok_count": sum(1 for n in collect if n["status"] == "ok"),
         "failing_count": sum(1 for n in collect if n["status"] == "failing"),
         "idle_count": sum(1 for n in collect if n["status"] == "idle"),
+        "disabled_count": sum(1 for n in collect if n["status"] == "disabled"),
         "stale_count": sum(1 for n in collect if n["status"] == "stale"),
         "pipeline_enabled": swing_pipeline.enabled(),
         "configured_symbols": swing_pipeline.configured_symbols(),

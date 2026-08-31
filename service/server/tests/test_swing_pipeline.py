@@ -222,6 +222,26 @@ class SwingPipelineTest(unittest.TestCase):
         self.assertTrue(rows[0]["ok"])
         self.assertEqual(rows[0]["items"], 1)
 
+    # -- disabled feeds --------------------------------------------------
+    def test_a_disabled_feed_is_not_recorded_as_a_healthy_pass(self):
+        """An env-gated-off collector produces nothing; recording it as
+        `ok, 1 item` paints a non-producing feed green — the exact failure
+        this monitoring exists to catch (reproduced in the console 2026-08-30).
+        """
+        self._evaluate(catalyst={"score": None, "hours_to_next_earnings": None,
+                                 "disabled": True},
+                       filings={"score": None, "disabled": True})
+        for feed in (swing_pipeline.FEED_CATALYST, swing_pipeline.FEED_FILINGS):
+            row = crawl_monitor.recent_runs(feed=feed)[0]
+            self.assertEqual(row["items"], 0, feed)
+            self.assertTrue(row["detail"].get("disabled"), feed)
+
+    def test_an_enabled_feed_with_data_still_counts_an_item(self):
+        self._evaluate()
+        row = crawl_monitor.recent_runs(feed=swing_pipeline.FEED_CATALYST)[0]
+        self.assertEqual(row["items"], 1)
+        self.assertFalse(row["detail"].get("disabled"))
+
     # -- config ----------------------------------------------------------
     def test_disabled_by_default(self):
         with patch.dict(os.environ, {}, clear=False):
