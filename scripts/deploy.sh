@@ -175,7 +175,19 @@ $SSH "
 "
 
 say "building and publishing the marketing pages"
-( cd marketing && npm run build --silent >/dev/null )
+# The ship process deploys from a CLEAN scratch clone (the main checkout is
+# often dirty on a feature branch and must not be switched). A fresh clone has
+# no marketing/node_modules, so this step died with `astro: command not found`
+# — and because `set -e` aborts here, step 7's backup prune never ran either.
+# Observed 2026-08-31: the crawl-monitor deploy left three app.prev-* on the
+# box where the prune keeps two. Install the deps when they are missing; a
+# checkout that already has them is untouched and pays nothing.
+if [ ! -x marketing/node_modules/.bin/astro ]; then
+  say "marketing deps missing (fresh clone) — installing"
+  ( cd marketing && npm ci --silent ) || die "marketing npm ci failed"
+fi
+( cd marketing && npm run build --silent >/dev/null ) \
+  || die "marketing build failed — refusing to publish a stale marketing tree"
 MKT="$WORKDIR/mkt.tgz"
 tar czf "$MKT" -C marketing/dist .
 scp -q -i "$SSH_KEY" "$MKT" "$SSH_HOST:/tmp/sooppiy-mkt.tgz"
