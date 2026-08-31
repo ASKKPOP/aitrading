@@ -1,0 +1,237 @@
+"""swing_pipeline.py — the live wiring of research/SWING_SIGNAL_STACK.md.
+
+swing_stack.py has always been a pure engine with no caller. This module is
+the caller: it collects the six feeds, turns them into the five processor
+scores, combines them, decides, and persists the result per symbol.
+
+Every source is patched here — the pipeline must be provable without network.
+"""
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+SERVER_DIR = Path(__file__).resolve().parents[1]
+if str(SERVER_DIR) not in sys.path:
+    sys.path.insert(0, str(SERVER_DIR))
+
+import crawl_monitor
+import database
+import swing_pipeline
+
+
+def _rising_candles(n=30, start=100.0, step=1.0, volume=1_000_000):
+    return [
+        {
+            "open": start + i * step, "high": start + i * step + 1.0,
+            "low": start + i * step - 1.0, "close": start + i * step,
+            "volume": volume,
+        }
+        for i in range(n)
+    ]
+
+
+def _falling_candles(n=30, start=200.0, step=-1.5):
+    return _rising_candles(n=n, start=start, step=step)
+
+
+class SwingPipelineTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _evaluate(self, **overrides):
+        defaults = {
+            "candles": _rising_candles(),
+            "benchmark": _rising_candles(),
+            "macro": {"vix": 14.0, "vix_5d_ago": 16.0, "y10": 4.0,
+                      "y10_5d_ago": 4.2, "dxy": 99.0, "dxy_5d_ago": 100.0},
+            "fear_greed": {"value": 20.0, "avg_7d": 15.0},
+            "catalyst": {"score": 60.0, "hours_to_next_earnings": None},
+            "filings": {"score": 40.0},
+            "event_hours": None,
+        }
+        defaults.update(overrides)
+
+        with patch.object(swing_pipeline, "fetch_candles",
+                          lambda symbol, market: defaults["candles"]), \
+             patch.object(swing_pipeline, "fetch_benchmark_candles",
+                          lambda market: defaults["benchmark"]), \
+             patch.object(swing_pipeline, "fetch_macro", lambda: defaults["macro"]), \
+             patch.object(swing_pipeline, "fetch_fear_greed",
+                          lambda market: defaults["fear_greed"]), \
+             patch.object(swing_pipeline, "fetch_catalyst",
+                          lambda symbol: defaults["catalyst"]), \
+             patch.object(swing_pipeline, "fetch_filings",
+                          lambda symbol: defaults["filings"]), \
+             patch.object(swing_pipeline, "fetch_macro_event_hours",
+                          lambda: defaults["event_hours"]):
+            return swing_pipeline.evaluate_symbol("NVDA", market="us-stock")
+
+    # -- composition -----------------------------------------------------
+    def test_all_feeds_present_produces_five_scores_and_a_composite(self):
+        row = self._evaluate()
+        for feed in ("sentiment", "macro", "thesis", "smart_money", "technical"):
+            self.assertIsNotNone(row["scores"][feed], feed)
+        self.assertIsNotNone(row["composite"])
+        self.assertIn(row["action"], ("BUY", "SELL", "WAIT"))
+
+    def test_agreeing_bullish_axes_above_threshold_buy(self):
+        row = self._evaluate()
+        self.assertEqual(row["action"], "BUY")
+        self.assertEqual(row["axis"], "AGREE_BULL")
+        self.assertGreaterEqual(row["composite"], 40.0)
+
+    def test_agreeing_bearish_axes_below_threshold_sell(self):
+        row = self._evaluate(
+            candles=_falling_candles(),
+            benchmark=_rising_candles(),
+            macro={"vix": 34.0, "vix_5d_ago": 20.0, "y10": 4.6,
+                   "y10_5d_ago": 4.2, "dxy": 102.0, "dxy_5d_ago": 99.0},
+            fear_greed={"value": 92.0, "avg_7d": 95.0},
+            catalyst={"score": -70.0, "hours_to_next_earnings": None},
+            filings={"score": -80.0},
+        )
+        self.assertEqual(row["action"], "SELL")
+        self.assertEqual(row["axis"], "AGREE_BEAR")
+
+    def test_conflicting_axes_wait_even_with_a_strong_composite(self):
+        """Price firm, crowd euphoric -> the doc's trap row, never a BUY."""
+        row = self._evaluate(
+            candles=_falling_candles(),
+            fear_greed={"value": 20.0, "avg_7d": 15.0},
+            catalyst={"score": 90.0, "hours_to_next_earnings": None},
+            filings={"score": 90.0},
+        )
+        self.assertEqual(row["action"], "WAIT")
+        self.assertTrue(row["axis"].startswith("CONFLICT"))
+
+    # -- coverage --------------------------------------------------------
+    def test_a_dead_feed_is_none_and_its_weight_renormalizes_away(self):
+        row = self._evaluate(filings={"score": None}, catalyst={"score": None,
+                                                               "hours_to_next_earnings": None})
+        self.assertIsNone(row["scores"]["smart_money"])
+        self.assertIsNone(row["scores"]["thesis"])
+        self.assertIsNotNone(row["composite"])
+        self.assertEqual(row["coverage"], 3)
+
+    def test_no_coverage_at_all_waits_and_says_why(self):
+        row = self._evaluate(
+            candles=[], macro={}, fear_greed=None,
+            catalyst={"score": None, "hours_to_next_earnings": None},
+            filings={"score": None},
+        )
+        self.assertIsNone(row["composite"])
+        self.assertEqual(row["action"], "WAIT")
+        self.assertEqual(row["coverage"], 0)
+        self.assertIn("coverage", row["reason"])
+
+    def test_too_few_candles_is_no_technical_score(self):
+        row = self._evaluate(candles=_rising_candles(n=10))
+        self.assertIsNone(row["scores"]["technical"])
+
+    # -- risk gate -------------------------------------------------------
+    def test_earnings_inside_24h_vetoes_a_fresh_buy(self):
+        row = self._evaluate(catalyst={"score": 60.0, "hours_to_next_earnings": 12})
+        self.assertEqual(row["action"], "WAIT")
+        self.assertEqual(row["veto"], "event_blackout")
+
+    def test_macro_event_inside_24h_also_vetoes(self):
+        row = self._evaluate(event_hours=6.0)
+        self.assertEqual(row["veto"], "event_blackout")
+
+    def test_the_nearest_binary_event_is_the_one_that_gates(self):
+        row = self._evaluate(catalyst={"score": 60.0, "hours_to_next_earnings": 100},
+                             event_hours=200.0)
+        self.assertEqual(row["hours_to_binary_event"], 100)
+        self.assertIsNone(row["veto"])
+
+    # -- persistence -----------------------------------------------------
+    def test_run_persists_one_decision_row_per_symbol(self):
+        with patch.object(swing_pipeline, "evaluate_symbol",
+                          lambda symbol, market: {
+                              "symbol": symbol, "market": market,
+                              "scores": {"sentiment": 1.0, "macro": None, "thesis": None,
+                                         "smart_money": None, "technical": 2.0},
+                              "composite": 12.0, "axis": "NEUTRAL", "action": "WAIT",
+                              "veto": None, "reason": "test", "coverage": 2,
+                              "hours_to_binary_event": None, "detail": {},
+                          }):
+            result = swing_pipeline.run_pipeline(["AAA", "BBB"], market="us-stock")
+        self.assertEqual(result["evaluated"], 2)
+        latest = swing_pipeline.latest_decisions()
+        self.assertEqual({r["symbol"] for r in latest}, {"AAA", "BBB"})
+        self.assertEqual(latest[0]["action"], "WAIT")
+
+    def test_latest_decisions_returns_only_the_newest_row_per_symbol(self):
+        for composite in (10.0, 50.0):
+            swing_pipeline._persist({
+                "symbol": "AAA", "market": "us-stock",
+                "scores": {"sentiment": None, "macro": None, "thesis": None,
+                           "smart_money": None, "technical": composite},
+                "composite": composite, "axis": "NEUTRAL", "action": "WAIT",
+                "veto": None, "reason": "", "coverage": 1,
+                "hours_to_binary_event": None, "detail": {},
+            })
+        latest = swing_pipeline.latest_decisions()
+        self.assertEqual(len(latest), 1)
+        self.assertEqual(latest[0]["composite"], 50.0)
+        self.assertEqual(len(swing_pipeline.decision_history("AAA")), 2)
+
+    def test_a_symbol_that_explodes_does_not_abort_the_pass(self):
+        def flaky(symbol, market):
+            if symbol == "BAD":
+                raise RuntimeError("upstream down")
+            return {
+                "symbol": symbol, "market": market,
+                "scores": {"sentiment": None, "macro": None, "thesis": None,
+                           "smart_money": None, "technical": 5.0},
+                "composite": 5.0, "axis": "NEUTRAL", "action": "WAIT",
+                "veto": None, "reason": "", "coverage": 1,
+                "hours_to_binary_event": None, "detail": {},
+            }
+
+        with patch.object(swing_pipeline, "evaluate_symbol", flaky):
+            result = swing_pipeline.run_pipeline(["BAD", "GOOD"], market="us-stock")
+        self.assertEqual(result["evaluated"], 1)
+        self.assertEqual(result["failed"], 1)
+        self.assertEqual([r["symbol"] for r in swing_pipeline.latest_decisions()], ["GOOD"])
+
+    def test_the_pass_is_recorded_for_the_console(self):
+        with patch.object(swing_pipeline, "evaluate_symbol",
+                          lambda symbol, market: {
+                              "symbol": symbol, "market": market,
+                              "scores": {"sentiment": None, "macro": None, "thesis": None,
+                                         "smart_money": None, "technical": 5.0},
+                              "composite": 5.0, "axis": "NEUTRAL", "action": "WAIT",
+                              "veto": None, "reason": "", "coverage": 1,
+                              "hours_to_binary_event": None, "detail": {},
+                          }):
+            swing_pipeline.run_pipeline(["AAA"], market="us-stock")
+        rows = crawl_monitor.recent_runs(feed="pipeline")
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["ok"])
+        self.assertEqual(rows[0]["items"], 1)
+
+    # -- config ----------------------------------------------------------
+    def test_disabled_by_default(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("SWING_PIPELINE_ENABLED", None)
+            self.assertFalse(swing_pipeline.enabled())
+
+    def test_symbol_list_comes_from_env(self):
+        with patch.dict(os.environ, {"SWING_PIPELINE_SYMBOLS": "NVDA, aapl ,, MSFT"}):
+            self.assertEqual(swing_pipeline.configured_symbols(), ["NVDA", "AAPL", "MSFT"])
+
+
+if __name__ == "__main__":
+    unittest.main()

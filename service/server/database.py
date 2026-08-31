@@ -2878,6 +2878,40 @@ def init_database():
         ON crawl_runs(started_at)
     """)
 
+    # Swing signal stack decisions (swing_pipeline.py): one row per symbol per
+    # pass — the five processor scores, the composite, the two-axis state and
+    # the decision the risk gate allowed. A NULL score means the feed had no
+    # coverage (its weight renormalized away), NOT a neutral zero reading.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS swing_decisions (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol         VARCHAR(32) NOT NULL,
+            market         VARCHAR(24),
+            computed_at    VARCHAR(32) NOT NULL,
+            sentiment      REAL,
+            macro          REAL,
+            thesis         REAL,
+            smart_money    REAL,
+            technical      REAL,
+            composite      REAL,
+            axis           VARCHAR(32),
+            action         VARCHAR(8),
+            veto           VARCHAR(32),
+            reason         TEXT,
+            coverage       INTEGER,
+            hours_to_event REAL,
+            detail         TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_swing_decisions_symbol
+        ON swing_decisions(symbol, id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_swing_decisions_computed
+        ON swing_decisions(computed_at)
+    """)
+
     # Durable tier of the market_i18n translation cache. Prod is Redis-less
     # and two-process (worker journals, backend serves), so an in-memory or
     # KV cache cannot carry a warmed translation from the write side to the
