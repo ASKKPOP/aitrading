@@ -154,14 +154,24 @@ class AutoTuneFleetsTestCase(unittest.TestCase):
                          "auto-tune raised a fleet above the size the user "
                          "explicitly chose")
 
-    def test_auto_tune_may_still_lower_below_the_pin(self):
-        """The pin is a cap, not a floor — the fee-viability shrink is a
-        safety behaviour and keeps working."""
+    def test_auto_tune_never_changes_a_pinned_size(self):
+        """OWNER 2026-08-31 ('when user make trading count, must be keep
+        that'): a user-chosen size is pinned in BOTH directions — the old
+        fee-viability shrink becomes an advisory event, not a resize."""
         import fleet_planner
-        # budget $300 => rec 3; the user pinned 10. Lowering must proceed.
+        # budget $300 => rec 3; the user pinned 8. The count must stay 8.
         fleet_planner.set_fleet_size(28, 8, user_set=True)
         fleet_auto_tune.auto_tune_fleets()
-        self.assertEqual(self._fleet()["n_runs"], 3)
+        self.assertEqual(self._fleet()["n_runs"], 8)
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT event_type FROM fleet_events WHERE fleet_id = 28")
+            kinds = [r["event_type"] for r in cur.fetchall()]
+        finally:
+            conn.close()
+        self.assertIn("auto_tune_slots_advisory", kinds)
+        self.assertNotIn("auto_tune_slots", kinds)
 
     def test_an_unpinned_fleet_keeps_the_old_behaviour(self):
         """NULL cap = every fleet created before this change: auto-tune may

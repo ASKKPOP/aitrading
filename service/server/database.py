@@ -3226,6 +3226,16 @@ def init_database():
             cursor.execute(_ddl)
         except Exception:
             pass
+    # OWNER 2026-08-31 ("when user make trading count, must be keep that"):
+    # pin every existing fleet at its CURRENT n_runs. Idempotent. Fleets a
+    # machine path already shrank (H-CONSOL) are pinned at the shrunk count —
+    # the original choice is not recoverable from the row; the user's next
+    # resize re-pins their number.
+    try:
+        cursor.execute(
+            "UPDATE fleets SET user_size_cap = n_runs WHERE user_size_cap IS NULL")
+    except Exception:
+        pass
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_trading_runs_fleet ON trading_runs(fleet_id)
     """)

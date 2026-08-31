@@ -76,12 +76,35 @@ class ConsolidationPassTests(SupervisionBase):
         os.environ.pop("FLEET_TARGET_SLOTS", None)
         super().tearDown()
 
+    def _unpin(self, fleet_id: int) -> None:
+        """Creation pins user_size_cap (owner 2026-08-31); consolidation now
+        applies only to machine-sized fleets, so tests of the machine path
+        clear the pin explicitly."""
+        import database
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE fleets SET user_size_cap = NULL WHERE id = ?",
+                        (fleet_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
     def test_supervise_lowers_n_runs_to_target(self):
         fleet_id = self._built_fleet(n=5, budget=5_000.0)
+        self._unpin(fleet_id)
         os.environ["FLEET_TARGET_SLOTS"] = "2"
         fs.supervise_fleet(fp.get_fleet(fleet_id))
         fleet = fp.get_fleet(fleet_id)
         self.assertEqual(int(fleet["n_runs"]), 2)
+
+    def test_user_pinned_fleet_is_never_consolidated(self):
+        """OWNER 2026-08-31: 'when user make trading count, must be keep
+        that' — a creation-pinned fleet keeps its count with the env armed."""
+        fleet_id = self._built_fleet(n=5, budget=5_000.0)
+        os.environ["FLEET_TARGET_SLOTS"] = "2"
+        fs.supervise_fleet(fp.get_fleet(fleet_id))
+        self.assertEqual(int(fp.get_fleet(fleet_id)["n_runs"]), 5)
 
     def test_supervise_never_raises_n_runs(self):
         fleet_id = self._built_fleet(n=2, budget=2_000.0)
@@ -100,6 +123,7 @@ class ConsolidationPassTests(SupervisionBase):
 
     def test_size_changed_event_emitted(self):
         fleet_id = self._built_fleet(n=5, budget=5_000.0)
+        self._unpin(fleet_id)
         os.environ["FLEET_TARGET_SLOTS"] = "2"
         fs.supervise_fleet(fp.get_fleet(fleet_id))
         import database

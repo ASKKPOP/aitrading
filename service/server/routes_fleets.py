@@ -130,11 +130,28 @@ def _fleet_or_404(fleet_id: int, agent: dict) -> dict:
 
 
 def _default_budget(agent: dict) -> float:
-    """Tier-defaulted budget (requirement d: the user sets only N; budget is
-    pre-filled and editable): half the agent's cash, clamped to bounds."""
+    """Suggested budget (requirement d: the user sets only N; budget is
+    pre-filled and editable). OWNER 2026-08-31: the suggestion is the user's
+    FULL money, fresh on every read — the account's realized equity
+    (starting_capital + Σ realized run P&L), the same definition
+    fleet_budget_daily compounds active fleets to each UTC day. Falls back
+    to cash when the agent has no seed on the row."""
     lo, hi = fleet_planner.FLEET_BOUNDS["total_budget_usd"]
-    cash = float(agent.get("cash") or 0)
-    return max(lo, min(hi, round(cash * 0.5, 2)))
+    seed = agent.get("starting_capital")
+    if seed is None:
+        full = float(agent.get("cash") or 0)
+    else:
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT COALESCE(SUM(realized_pnl_usd), 0) AS realized "
+                "FROM trading_runs WHERE agent_id = ?", (agent["id"],))
+            row = cur.fetchone()
+        finally:
+            conn.close()
+        full = float(seed) + float(row["realized"] if row else 0)
+    return max(lo, min(hi, round(full, 2)))
 
 
 def _public_fleet(fleet: dict) -> dict:

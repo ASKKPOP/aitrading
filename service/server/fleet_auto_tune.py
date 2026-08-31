@@ -162,12 +162,17 @@ def auto_tune_fleets() -> list[dict[str, Any]]:
                 rec_slots = cur_slots
             # The user's own hand outranks the recommendation (owner decision
             # 2026-08-15, after auto-tune undid a user's 25->10 within 27
-            # minutes, twice in one day). A resize-API size is a CAP: never
-            # raise above it; lowering (the fee-viability shrink) still runs.
+            # minutes, twice in one day; hardened 2026-08-31: "when user make
+            # trading count, must be keep that"). A user-chosen size — set at
+            # creation or via the resize API — is PINNED: auto-tune neither
+            # raises nor lowers it. The fee-viability signal survives as an
+            # advisory event so the user sees it without losing their count.
             user_cap = row.get("user_size_cap")
-            if user_cap is not None and rec_slots > int(user_cap):
-                rec_slots = int(user_cap)
-            if rec_slots != cur_slots:
+            if user_cap is not None:
+                if rec_slots < cur_slots:
+                    emit_fleet_event(fleet_id, "auto_tune_slots_advisory",
+                                     {"kept": cur_slots, "recommended": rec_slots})
+            elif rec_slots != cur_slots:
                 set_fleet_size(fleet_id, rec_slots)
                 emit_fleet_event(fleet_id, "auto_tune_slots",
                                  {"from": cur_slots, "to": rec_slots})

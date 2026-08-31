@@ -761,15 +761,17 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                    (agent_id, name, status, active_fleet_key, idempotency_key,
                     n_runs, total_budget_usd, risk_appetite, market_scope_json,
                     warn_loss_frac, stop_loss_frac, provider, lang, created_at,
-                    leverage, profit_target_frac, archetype)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    leverage, profit_target_frac, archetype, user_size_cap)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent_id, name, STATUS_DRAFT, f"user:{user_id}", idempotency_key,
                  int(n_runs), float(total_budget_usd), risk_appetite,
                  json.dumps(market_scope) if market_scope else None,
                  float(warn_loss_frac), float(stop_loss_frac),
                  provider, lang, _now_iso(), lev,
                  float(profit_target_frac) if profit_target_frac else None,
-                 archetype))
+                 # OWNER 2026-08-31: the count the user chose at creation is
+                 # pinned — no machine path (auto-tune, H-CONSOL) may change it.
+                 archetype, int(n_runs)))
         except trading_runs.EntitlementDenied:
             raise
         except Exception as exc:  # noqa: BLE001 — UNIQUE(active_fleet_key)

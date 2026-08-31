@@ -145,10 +145,14 @@ def supervise_fleet(fleet: dict) -> dict:
 
     # ── H-CONSOL (owner 2026-08-27): consolidate toward FLEET_TARGET_SLOTS.
     # Machine lowering only — the existing drain semantics (excess slots
-    # retire as they empty, a live position is never touched) and #437's
-    # user_size_cap rules are unchanged. Kill switch: unset the env.
+    # retire as they empty, a live position is never touched) are unchanged.
+    # OWNER 2026-08-31 ("when user make trading count, must be keep that"):
+    # a fleet whose size the user chose (user_size_cap set — every fleet,
+    # since creation now pins it) is NEVER consolidated. Kill switch: unset
+    # the env.
     tgt = _target_slots()
-    if tgt > 0 and int(fleet["n_runs"]) > tgt:
+    if (tgt > 0 and int(fleet["n_runs"]) > tgt
+            and fleet.get("user_size_cap") is None):
         try:
             fp.set_fleet_size(fleet["id"], tgt)
             fleet = fp.get_fleet(fleet["id"]) or fleet
