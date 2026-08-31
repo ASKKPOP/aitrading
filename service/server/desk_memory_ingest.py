@@ -108,6 +108,9 @@ _EXIT_PHRASE: dict[str, str] = {
                       " — not the desk's own call"),
     "idle_retired": ("the idle rail retired it for never trading"
                      " — not the desk's own call"),
+    "no_prospect_switched": ("switched out after the desk saw no profitable"
+                             " entry for hours — driven by the desk's own"
+                             " flat holds"),
     "fleet_stop_all": "the user stopped the whole fleet — not the desk's own call",
     "stop_event:at_time": "the time stop closed it — not the desk's own call",
     "stop_event:trailing_lock": ("the trailing lock closed it"

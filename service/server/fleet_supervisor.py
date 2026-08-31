@@ -806,6 +806,12 @@ def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
         if reason == "idle_retired":
             _ensure_cooldown(member, hours=fp.IDLE_SYMBOL_COOLDOWN_HOURS)
 
+        # vary-on-no-prospect (owner 2026-08-31): the whole point of the
+        # switch rail is a DIFFERENT symbol — rebuilding the same name would
+        # restart the same prospectless wait. Same bench as vary-on-idle.
+        if reason == "no_prospect_switched":
+            _ensure_cooldown(member, hours=fp.IDLE_SYMBOL_COOLDOWN_HOURS)
+
         # vary-on-refusal (2026-08-13): a desk that retires a run it NEVER
         # traded refused the THESIS, not the timing. Live, 11:30Z shoulder:
         # UBER was rebuilt 20 seconds after its desk retired it as

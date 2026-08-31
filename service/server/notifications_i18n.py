@@ -58,6 +58,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
     'reason': {
         'en': {
             'idle_retired': 'the no-trade retire rail',
+            'no_prospect_switched': 'the no-prospect switch (no profitable entry seen)',
             'fee_infeasible_retired': 'the fee-infeasible retire rail',
             'adapt_retired': 'the adaptive retire rail',
             'thesis_invalidated': 'thesis invalidation',
@@ -82,6 +83,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
         },
         'ko': {
             'idle_retired': '무거래 회수',
+            'no_prospect_switched': '무전망 교체(수익 기회 없음 판단)',
             'fee_infeasible_retired': '수수료 대비 수익 불가 회수',
             'adapt_retired': '적응형 회수',
             'thesis_invalidated': '논제 무효화',
@@ -106,6 +108,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
         },
         'ja': {
             'idle_retired': '無取引リタイア',
+            'no_prospect_switched': '見込みなし切替（収益機会なしと判断）',
             'fee_infeasible_retired': '手数料割れリタイア',
             'adapt_retired': 'アダプティブ・リタイア',
             'thesis_invalidated': '論拠の無効化',
@@ -130,6 +133,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
         },
         'th': {
             'idle_retired': 'การปลดระวางเพราะไม่มีการเทรด',
+            'no_prospect_switched': 'การสลับเพราะไม่เห็นโอกาสทำกำไร',
             'fee_infeasible_retired': 'การปลดระวางเพราะค่าธรรมเนียมสูงเกินกำไร',
             'adapt_retired': 'การปลดระวางแบบปรับตัว',
             'thesis_invalidated': 'การยกเลิกสมมติฐาน',
@@ -154,6 +158,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
         },
         'vi': {
             'idle_retired': 'việc thu hồi do không giao dịch',
+            'no_prospect_switched': 'việc hoán đổi do không thấy cơ hội lợi nhuận',
             'fee_infeasible_retired': 'việc thu hồi do phí vượt lợi nhuận',
             'adapt_retired': 'việc thu hồi thích ứng',
             'thesis_invalidated': 'việc luận điểm bị bác bỏ',
@@ -178,6 +183,7 @@ TOKENS: dict[str, dict[str, dict[str, str]]] = {
         },
         'id': {
             'idle_retired': 'penarikan karena tidak ada transaksi',
+            'no_prospect_switched': 'pergantian karena tidak ada peluang profit',
             'fee_infeasible_retired': 'penarikan karena biaya melebihi potensi untung',
             'adapt_retired': 'penarikan adaptif',
             'thesis_invalidated': 'pembatalan tesis',

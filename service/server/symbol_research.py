@@ -297,6 +297,19 @@ def _tech_hot_seed_enabled() -> bool:
         "1", "true", "yes", "on"}
 
 
+def _tech_hot_must_enabled() -> bool:
+    """R20-MUST (owner 2026-08-31, verbatim: "must be choose hot issed tech
+    stock for usa stock ( high issued 5 stock , must be selection )"): the
+    us-stock slice of selection is RESTRICTED to the top-5 hottest US tech
+    theses, not merely led by them. Non-tech us-stock theses are dropped
+    from selection entirely; other markets are untouched. Build gates still
+    veto downstream, so a pass where no hot-tech thesis survives fills no
+    us-stock slot rather than falling back to a non-tech name. Off reverts
+    to the R20 lead-only ordering."""
+    return os.getenv("US_TECH_HOT_MUST", "true").strip().lower() in {
+        "1", "true", "yes", "on"}
+
+
 def _swing_fleet_demand() -> int:
     """Σ n_runs of non-terminal swing-archetype fleets. Fail-soft: any error
     means 0 and the seed stays out — organic research is untouched."""
@@ -1557,8 +1570,56 @@ def select_targets(cursor, agent_id: int, n: int,
                 if (t["market"], t["symbol"]) not in busy
                 and (not markets_scope or t["market"] in markets_scope)]
     _mover_rank_us_stock(eligible)
-    _ensure_hot_tech_lead(eligible)
+    if _tech_hot_seed_enabled() and _tech_hot_must_enabled():
+        eligible = _restrict_us_stock_to_hot_tech(eligible)
+    else:
+        _ensure_hot_tech_lead(eligible)
     return _select_from_eligible(eligible, n, _dir_balance_enabled())
+
+
+def _hot_tech_score(t: dict[str, Any]) -> float:
+    """The owner's hotness algorithm (|mom_2d| x volume confirmation) read
+    off a thesis row — shared by the R20 lead ordering and the R20-MUST
+    restriction so the two can never rank differently."""
+    try:
+        fs = json.loads(t.get("factor_scores_json") or "{}")
+        f = fs.get("factors") or {}
+        m2 = f.get("mom_2d")
+        if m2 is None:
+            return 0.0
+        vr = f.get("vol_ratio")
+        conf = max(0.5, min(float(vr), 3.0)) if vr else 0.5
+        return abs(float(m2)) * conf
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def _restrict_us_stock_to_hot_tech(eligible: list[dict[str, Any]],
+                                   k: int | None = None) -> list[dict[str, Any]]:
+    """R20-MUST: return a new eligible list whose us-stock slice is EXACTLY
+    the top-k hottest US tech theses (hottest first) — every other us-stock
+    thesis is dropped. Non-us-stock rows keep their positions and order; the
+    surviving tech theses occupy the first us-stock positions and the rest
+    of the us-stock positions collapse away. Fewer than k eligible tech
+    theses keeps them all; zero keeps none (that IS the must-rule — no
+    fallback to non-tech names)."""
+    k = US_TECH_HOT_K if k is None else k
+    roster = set(US_TECH_HOT_UNIVERSE)
+    us_rows = [t for t in eligible if t.get("market") == "us-stock"]
+    if not us_rows:
+        return eligible
+    tech = sorted((t for t in us_rows if (t.get("symbol") or "") in roster),
+                  key=_hot_tech_score, reverse=True)[:k]
+    keep = iter(tech)
+    out: list[dict[str, Any]] = []
+    for t in eligible:
+        if t.get("market") != "us-stock":
+            out.append(t)
+            continue
+        nxt = next(keep, None)
+        if nxt is not None:
+            out.append(nxt)
+    return out
 
 
 def _ensure_hot_tech_lead(eligible: list[dict[str, Any]], k: int | None = None) -> None:
@@ -1581,20 +1642,7 @@ def _ensure_hot_tech_lead(eligible: list[dict[str, Any]], k: int | None = None) 
     if not tech:
         return
 
-    def _hot(t: dict[str, Any]) -> float:
-        try:
-            fs = json.loads(t.get("factor_scores_json") or "{}")
-            f = fs.get("factors") or {}
-            m2 = f.get("mom_2d")
-            if m2 is None:
-                return 0.0
-            vr = f.get("vol_ratio")
-            conf = max(0.5, min(float(vr), 3.0)) if vr else 0.5
-            return abs(float(m2)) * conf
-        except (ValueError, TypeError):
-            return 0.0
-
-    lead = sorted(tech, key=_hot, reverse=True)[:k]
+    lead = sorted(tech, key=_hot_tech_score, reverse=True)[:k]
     lead_ids = {id(t) for t in lead}
     rest = [t for t in rows if id(t) not in lead_ids]
     reordered = lead + rest

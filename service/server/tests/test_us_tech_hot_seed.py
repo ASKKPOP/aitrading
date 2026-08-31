@@ -104,6 +104,98 @@ class EnsureHotTechLeadTests(unittest.TestCase):
         self.assertEqual([t["symbol"] for t in eligible], before)
 
 
+class RestrictHotTechMustTests(unittest.TestCase):
+    """R20-MUST (owner 2026-08-31): the us-stock slice of selection is
+    RESTRICTED to the top-5 hottest tech theses — non-tech us-stock names
+    are dropped entirely, never merely outranked."""
+
+    def tearDown(self):
+        os.environ.pop("US_TECH_HOT_MUST", None)
+        os.environ.pop("US_TECH_HOT_SEED", None)
+
+    def test_default_on(self):
+        self.assertTrue(sr._tech_hot_must_enabled())
+        os.environ["US_TECH_HOT_MUST"] = "0"
+        self.assertFalse(sr._tech_hot_must_enabled())
+
+    def test_non_tech_us_stock_dropped_and_top5_kept_hot_first(self):
+        eligible = [
+            _thesis("BTCUSDT", market="crypto", final=0.9),
+            _thesis("KO", mom_2d=9.0, vol_ratio=3.0, final=0.99),   # non-tech
+            _thesis("NVDA", mom_2d=3.0, vol_ratio=1.0),   # hot 3.0
+            _thesis("WMT", mom_2d=8.0, vol_ratio=3.0),    # non-tech
+            _thesis("AMD", mom_2d=5.0, vol_ratio=1.0),    # hot 5.0
+            _thesis("GC", market="futures", final=0.4),
+            _thesis("MSFT", mom_2d=1.0, vol_ratio=1.0),   # hot 1.0
+            _thesis("META", mom_2d=2.0, vol_ratio=1.0),   # hot 2.0
+            _thesis("INTC", mom_2d=0.5, vol_ratio=1.0),   # hot 0.5
+            _thesis("ORCL", mom_2d=4.0, vol_ratio=1.0),   # hot 4.0
+        ]
+        out = sr._restrict_us_stock_to_hot_tech(eligible)
+        us = [t["symbol"] for t in out if t["market"] == "us-stock"]
+        # exactly 5, hottest first, no non-tech survivor
+        self.assertEqual(us, ["AMD", "ORCL", "NVDA", "META", "MSFT"])
+        self.assertNotIn("KO", [t["symbol"] for t in out])
+        self.assertNotIn("WMT", [t["symbol"] for t in out])
+        self.assertNotIn("INTC", us)      # 6th-hottest tech is cut too
+        # other markets survive untouched and in order
+        others = [t["symbol"] for t in out if t["market"] != "us-stock"]
+        self.assertEqual(others, ["BTCUSDT", "GC"])
+
+    def test_fewer_than_five_tech_keeps_them_all(self):
+        eligible = [_thesis("KO", mom_2d=9.0, vol_ratio=3.0),
+                    _thesis("NVDA", mom_2d=1.0), _thesis("AMD", mom_2d=2.0)]
+        out = sr._restrict_us_stock_to_hot_tech(eligible)
+        self.assertEqual([t["symbol"] for t in out], ["AMD", "NVDA"])
+
+    def test_zero_tech_means_no_us_stock_at_all(self):
+        eligible = [_thesis("KO", mom_2d=9.0, vol_ratio=3.0),
+                    _thesis("BTCUSDT", market="crypto")]
+        out = sr._restrict_us_stock_to_hot_tech(eligible)
+        self.assertEqual([t["symbol"] for t in out], ["BTCUSDT"])
+
+    def test_select_targets_wiring(self):
+        # The brief-line lesson: prove the restriction actually runs inside
+        # select_targets, not only as a helper. Patch the batch plumbing to
+        # hand select_targets a mixed eligible set via the theses query.
+        import database
+        import tempfile
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(tmp.name, "t.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (email, password_hash) VALUES ('x@x', 'x')")
+        cur.execute("INSERT INTO agents (name, user_id) VALUES ('a', 1)")
+        agent_id = cur.lastrowid
+        cur.execute(
+            "INSERT INTO research_batches (batch_id, created_at) VALUES (1, ?)",
+            ("2026-08-31T00:00:00Z",))
+        far = "2099-01-01T00:00:00Z"
+        rows = [("KO", 0.99, 9.0), ("NVDA", 0.5, 3.0), ("AMD", 0.5, 5.0)]
+        for sym, final, mom in rows:
+            cur.execute(
+                """INSERT INTO research_theses
+                   (batch_id, market, symbol, market_type, direction, thesis,
+                    risks, invalidation, expected_move_pct, horizon_hours,
+                    confidence, ev_per_day_pct, final_score, selectable,
+                    planner, factor_scores_json, created_at, expires_at)
+                   VALUES (1, 'us-stock', ?, 'spot', 'long', 't', 'r', 'i',
+                           5.0, 24, 0.7, 1.0, ?, 1, 'llm', ?, ?, ?)""",
+                (sym, final,
+                 json.dumps({"factors": {"mom_2d": mom, "vol_ratio": 1.0}}),
+                 "2026-08-31T00:00:00Z", far))
+        conn.commit()
+        picked = sr.select_targets(cur, agent_id, 3)
+        syms = [t["symbol"] for t in picked]
+        self.assertNotIn("KO", syms)               # must-rule wired
+        self.assertEqual(syms[0], "AMD")           # hottest tech leads
+        self.assertIn("NVDA", syms)
+        conn.close()
+
+
 class HotTechPromptTests(unittest.TestCase):
     """The prompt clause and row flag ship WIRED (the brief-line lesson:
     a rendered-but-unwired line passes every helper test)."""

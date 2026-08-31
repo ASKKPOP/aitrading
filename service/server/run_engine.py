@@ -528,6 +528,93 @@ def _infeasible_retire_enabled() -> bool:
         "1", "true", "yes", "on")
 
 
+def _no_prospect_switch_enabled() -> bool:
+    """Default-on kill switch for the no-prospect switch rail (owner
+    2026-08-31: "each slot do not keep when make decession there is no
+    profit future then switch every ( a hour ~ 5 hours )")."""
+    return os.getenv("RUN_NO_PROSPECT_SWITCH", "true").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _no_prospect_switch_hours() -> float:
+    """Hours of sustained flat `hold` verdicts before the switch fires.
+    The owner's band is 1–5 hours; the default sits mid-band and the env
+    is clamped to the band rather than trusted."""
+    try:
+        val = float(os.getenv("RUN_NO_PROSPECT_SWITCH_HOURS", "3") or 3)
+    except ValueError:
+        val = 3.0
+    return min(5.0, max(1.0, val))
+
+
+# A single stale cycle must not switch a slot — the desk has to say "no
+# entry" at least this many consecutive times before the span even counts.
+_NO_PROSPECT_MIN_DECISIONS = 3
+
+
+def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
+    """(hours spanned, count) of the run's trailing streak of flat `hold`
+    decisions: counted back from the latest decision, broken by any other
+    action (a buy/short — even a gated one — means the desk DOES see a
+    prospect), and bounded to decisions AFTER the run's last executed trade
+    so holds that managed a live position never count. Span runs from the
+    oldest hold in the streak to now. Timestamps are parsed, not compared
+    lexically — signals and run_events may disagree on 'T' vs space format.
+    Fail-soft: an unreadable journal reports (None, 0) and the rail stays
+    quiet."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT MAX(COALESCE(executed_at, created_at)) AS ts "
+            "FROM signals WHERE run_id = ?", (run_id,))
+        row = cursor.fetchone()
+        last_trade_raw = str(row["ts"]) if row and row["ts"] else ""
+        cursor.execute(
+            """SELECT ts, payload FROM run_events
+               WHERE run_id = ? AND event_type = 'decision'
+               ORDER BY id DESC LIMIT 40""", (run_id,))
+        rows = cursor.fetchall()
+    except Exception:  # noqa: BLE001
+        return None, 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _parse(raw: str) -> "datetime | None":
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return None
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+    last_trade = _parse(last_trade_raw) if last_trade_raw else None
+    oldest: "datetime | None" = None
+    count = 0
+    for row in rows:
+        ts = _parse(str(row["ts"] or ""))
+        if ts is None:
+            break
+        if last_trade and ts <= last_trade:
+            break
+        try:
+            action = json.loads(row["payload"] or "{}").get("action")
+        except (ValueError, TypeError):
+            break
+        if action != "hold":
+            break
+        oldest = ts
+        count += 1
+    if oldest is None or not count:
+        return None, 0
+    span = (datetime.now(timezone.utc) - oldest).total_seconds() / 3600.0
+    return max(0.0, span), count
+
+
 def run_thesis_expected_move(run: dict) -> "float | None":
     """The run's frozen thesis expected_move_pct, or None when it carries no
     thesis (manual runs) or the snapshot is unreadable."""
@@ -1153,6 +1240,25 @@ def _evaluate_stop(run: dict) -> Optional[str]:
         strikes = _thesis_invalidation_strikes()
         if strikes and _unactionable_streak(run["id"]) >= strikes:
             return "thesis_invalidated"
+
+    # No-prospect switch (owner 2026-08-31): "each slot do not keep when
+    # make decession there is no profit future then switch every ( a hour ~
+    # 5 hours )". A FLAT run — whether it traded earlier or never — whose
+    # desk keeps answering `hold` is the desk itself saying "no profitable
+    # entry here". After >= 3 such verdicts spanning the configured window
+    # (1–5h band, default 3h) the slot is handed back so the fleet builds a
+    # different symbol (the supervisor's vary-cooldown makes the replacement
+    # an actual switch, not a rebuild). Flat books only: an open position is
+    # exited by the desk or the stop system, never by this rail — and the
+    # trade-ts bound inside _flat_hold_span keeps position-managing holds
+    # from ever counting. Same in-flight guard as idle-retire (a desk
+    # deciding RIGHT NOW is not prospectless by definition).
+    if not has_position and _no_prospect_switch_enabled() \
+            and not _cycle_in_flight(run):
+        span_h, holds = _flat_hold_span(run["id"])
+        if holds >= _NO_PROSPECT_MIN_DECISIONS and span_h is not None \
+                and span_h >= _no_prospect_switch_hours():
+            return "no_prospect_switched"
 
     # Thesis decay (2026-07-28). Unlike the two rails above this one applies to
     # a run HOLDING a position — that is the whole point. A flat run with a

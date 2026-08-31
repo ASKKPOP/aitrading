@@ -532,6 +532,10 @@ REPLACE_IMMEDIATE = frozenset({
     # The desk marked its own thesis down for three straight cycles. The slot
     # is fine, the reason for holding is not — replace it at once.
     "thesis_decayed",
+    # Owner 2026-08-31: a flat slot whose desk saw no profitable entry for
+    # the 1–5h window is SWITCHED — replaced at once with a different symbol
+    # (the supervisor's vary-cooldown benches the old one).
+    "no_prospect_switched",
     # The desk read conviction below the floor on a HELD position for N
     # straight cycles (I5). Same disposition as thesis_decayed: the slot is
     # good, the thesis the position rode is gone — replace it at once.
