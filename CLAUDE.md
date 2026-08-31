@@ -298,6 +298,31 @@ These guidelines are working if you see:
 - Clarifying questions appearing before implementation instead of after mistakes
 
 
+## Ship Process — LOCAL ONLY (OWNER, 2026-08-31 — non-negotiable)
+
+Owner rule, verbatim: "do not use github CI, PR , all process use local
+Claude CI,PR".
+
+**No GitHub Actions CI. No GitHub PRs. The entire merge gate runs locally.**
+
+1. Work on a feature branch as usual.
+2. Run every job from `.github/workflows/*.yml` locally, exact commands and
+   working directories, in a **fresh clean worktree** of the branch:
+   ruff (`--select F401,F811,F821,F841`, cwd `service`), backend pytest
+   (cwd `service/server`), frontend `npm ci && npm run build`,
+   `npm audit --audit-level=high --omit=dev`, gitleaks scoped to
+   `origin/main..HEAD`, and pip-audit (on this machine: freeze the resolved
+   env with `uv pip freeze`, then `pip-audit -r frozen.txt --no-deps
+   --disable-pip` — `-r requirements.txt` cannot bootstrap here).
+3. Merge locally (squash into main), putting the local-CI evidence table in
+   the merge commit message, and push `origin main` directly. Do NOT
+   `gh pr create` / `gh pr merge` and do not wait on GitHub checks.
+4. Deploy to prod per the deploy rule (`scripts/deploy.sh <tag>`), then
+   verify on prod.
+
+Always state what a local run does not give: a clean-room runner, the hosted
+audit trail, and any check needing provider secrets.
+
 ## Monitoring Rules (OWNER, 2026-08-13 — non-negotiable)
 
 For every sooppiy monitoring session (verbatim owner law):
