@@ -501,7 +501,10 @@ async def swing_pipeline_loop() -> None:
         try:
             if enabled() and configured_symbols():
                 await asyncio.to_thread(run_pipeline)
-                await asyncio.to_thread(crawl_monitor.prune)
+            # Unconditional: social_feed and market_intel write crawl_runs
+            # whether or not THIS feature is on, so retention cannot be gated
+            # behind the pipeline flag or the table grows without bound.
+            await asyncio.to_thread(crawl_monitor.prune)
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001 — a loop must not die

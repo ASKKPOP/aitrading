@@ -24,6 +24,10 @@ import database
 import swing_pipeline
 
 
+class _StopLoop(Exception):
+    """Breaks the infinite loop under test."""
+
+
 def _rising_candles(n=30, start=100.0, step=1.0, volume=1_000_000):
     return [
         {
@@ -241,6 +245,29 @@ class SwingPipelineTest(unittest.TestCase):
         row = crawl_monitor.recent_runs(feed=swing_pipeline.FEED_CATALYST)[0]
         self.assertEqual(row["items"], 1)
         self.assertFalse(row["detail"].get("disabled"))
+
+    # -- loop housekeeping -----------------------------------------------
+    def test_retention_prune_runs_even_while_the_pipeline_is_disabled(self):
+        """social_feed and market_news write crawl_runs regardless of this
+        feature flag, so pruning must not be gated behind it or the table
+        grows forever whenever the pipeline is off."""
+        import asyncio
+        calls = {"pruned": 0, "ran": 0}
+
+        async def fake_sleep(_):
+            raise _StopLoop()
+
+        with patch.object(swing_pipeline, "enabled", lambda: False), \
+             patch.object(swing_pipeline.crawl_monitor, "prune",
+                          lambda *a, **k: calls.__setitem__("pruned", calls["pruned"] + 1)), \
+             patch.object(swing_pipeline, "run_pipeline",
+                          lambda *a, **k: calls.__setitem__("ran", calls["ran"] + 1)), \
+             patch.object(swing_pipeline.asyncio, "sleep", fake_sleep):
+            with self.assertRaises(_StopLoop):
+                asyncio.run(swing_pipeline.swing_pipeline_loop())
+
+        self.assertEqual(calls["pruned"], 1)
+        self.assertEqual(calls["ran"], 0)
 
     # -- config ----------------------------------------------------------
     def test_disabled_by_default(self):
