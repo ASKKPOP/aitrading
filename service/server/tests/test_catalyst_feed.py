@@ -126,6 +126,28 @@ class ThesisScoreTest(unittest.TestCase):
         self.assertIsNone(read["next_earnings_date"])
         self.assertIsNone(read["hours_to_next_earnings"])
 
+    def test_an_already_passed_earnings_date_is_not_a_future_event(self):
+        """A stale date would make hours_to_next_earnings negative, and the
+        risk gate vetoes anything inside 24h — a past print would blackout
+        the symbol forever."""
+        read = self._read(
+            _surprise([_row("Jul 2026", "8/26/2026", 2.22, "2.09", "6.22")]),
+            _announcement("Earnings announcement* for NVDA: Aug 26, 2026"),
+            today="2026-08-30",
+        )
+        self.assertIsNone(read["next_earnings_date"])
+        self.assertIsNone(read["days_to_next_earnings"])
+        self.assertIsNone(read["hours_to_next_earnings"])
+
+    def test_todays_earnings_date_still_counts_as_upcoming(self):
+        read = self._read(
+            _surprise([_row("Jul 2026", "8/26/2026", 2.22, "2.09", "6.22")]),
+            _announcement("Earnings announcement* for NVDA: Aug 30, 2026"),
+            today="2026-08-30",
+        )
+        self.assertEqual(read["next_earnings_date"], "2026-08-30")
+        self.assertEqual(read["hours_to_next_earnings"], 0)
+
     def test_days_since_last_report_is_tracked(self):
         read = self._read(_surprise([_row("Jul 2026", "8/26/2026", 2.22, "2.09", "6.22")]))
         self.assertEqual(read["days_since_report"], 4)

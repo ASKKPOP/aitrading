@@ -93,6 +93,8 @@ class CrawlMonitorTest(unittest.TestCase):
         self.assertEqual(rows[0]["items"], 2)
 
     def test_prune_deletes_only_rows_older_than_retention(self):
+        """Asserting the COUNT alone cannot tell `started_at < cutoff` from
+        `> cutoff` — both delete exactly one row here. Identify the survivor."""
         with crawl_monitor.track("filings") as run:
             run.items = 1
         with database.get_db_connection() as conn:
@@ -104,7 +106,18 @@ class CrawlMonitorTest(unittest.TestCase):
             run.items = 2
         deleted = crawl_monitor.prune(retention_days=7)
         self.assertEqual(deleted, 1)
-        self.assertEqual(len(crawl_monitor.recent_runs(feed="filings")), 1)
+        survivors = crawl_monitor.recent_runs(feed="filings")
+        self.assertEqual(len(survivors), 1)
+        # the RECENT row must be the one left standing, not the 2020 one
+        self.assertEqual(survivors[0]["items"], 2)
+        self.assertNotEqual(survivors[0]["started_at"], "2020-01-01T00:00:00Z")
+
+    def test_prune_keeps_everything_inside_the_window(self):
+        for i in range(3):
+            with crawl_monitor.track("filings") as run:
+                run.items = i
+        self.assertEqual(crawl_monitor.prune(retention_days=7), 0)
+        self.assertEqual(len(crawl_monitor.recent_runs(feed="filings")), 3)
 
 
 if __name__ == "__main__":
