@@ -1296,6 +1296,9 @@ async def social_feed_loop():
     """
     from social_feed import refresh_social_snapshot, social_feed_enabled
 
+    import crawl_monitor
+    import swing_pipeline
+
     refresh_interval = _env_int("SOCIAL_REFRESH_INTERVAL", 1800, minimum=300)
 
     await asyncio.sleep(30)
@@ -1303,7 +1306,14 @@ async def social_feed_loop():
     while True:
         try:
             if social_feed_enabled():
-                result = await asyncio.to_thread(refresh_social_snapshot)
+                with crawl_monitor.track(swing_pipeline.FEED_SOCIAL) as run:
+                    result = await asyncio.to_thread(refresh_social_snapshot)
+                    run.items = int(result.get("posts_stored") or 0)
+                    run.detail = {
+                        "symbols": len(result.get("symbols") or {}),
+                        "fetched": result.get("posts_fetched", 0),
+                        "errors": result.get("errors") or None,
+                    }
                 print(
                     "[Social Feed] snapshot stored: "
                     f"symbols={len(result.get('symbols') or {})} "
@@ -1358,6 +1368,9 @@ async def refresh_market_news_snapshots_loop():
     """Background task to refresh market-news snapshots on a fixed interval."""
     from market_intel import refresh_market_news_snapshots
 
+    import crawl_monitor
+    import swing_pipeline
+
     # Plan 14 §4.2: 4h default makes the Alpha Vantage budget deterministic —
     # 4 categories × 6 passes/day = 24 calls against the 25/day free cap.
     # The old hourly default demanded 96/day and starved to first-25-wins.
@@ -1368,7 +1381,10 @@ async def refresh_market_news_snapshots_loop():
 
     while True:
         try:
-            result = await asyncio.to_thread(refresh_market_news_snapshots)
+            with crawl_monitor.track(swing_pipeline.FEED_NEWS) as run:
+                result = await asyncio.to_thread(refresh_market_news_snapshots)
+                run.items = int(result.get("inserted_categories") or 0)
+                run.detail = {"errors": result.get("errors") or None}
             print(
                 "[Market Intel] Refreshed market news snapshots: "
                 f"inserted={result.get('inserted_categories', 0)} "
@@ -1989,6 +2005,13 @@ async def _hot_issue_daemon_loop():
     await hot_issue_daemon_loop()
 
 
+async def _swing_pipeline_loop():
+    """Swing signal stack: collect the six feeds, score the five processors,
+    combine and decide per symbol (SWING_PIPELINE_ENABLED gates each pass)."""
+    from swing_pipeline import swing_pipeline_loop
+    await swing_pipeline_loop()
+
+
 async def _orphan_reclaim_loop():
     """Positions no run owns — attach the missing stop so the SL/TP watcher
     can see them (ORPHAN_RECLAIM_ENABLED gates each pass)."""
@@ -2039,6 +2062,7 @@ BACKGROUND_TASK_REGISTRY = {
     "outlook_refresher": outlook_refresher_loop,
     "ledger_invariant": ledger_invariant_loop,
     "trend_module": trend_module_loop,
+    "swing_pipeline": _swing_pipeline_loop,
 }
 
 
@@ -2112,6 +2136,9 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     # Plan 14 — symbol_research is pinned to settlement so it shares a process
     # (and the process-local Yahoo cooldown dict) with run cycles + the watcher.
     "symbol_research":         "settlement",
+    # swing signal stack — collect/score/combine/decide per symbol, and the
+    # crawl bookkeeping the admin console reads (SWING_PIPELINE_ENABLED)
+    "swing_pipeline":          "research",
     # Plan 14 F7 — Federal Register policy watchlists (attention factor)
     "policy_feed":             "research",
     # Plan 14 — fleet orchestrator lives with the runs engine (it creates

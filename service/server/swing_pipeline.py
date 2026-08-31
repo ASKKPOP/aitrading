@@ -58,16 +58,56 @@ CRYPTO_MARKETS = ("crypto",)
 STOCK_BENCHMARK = "%5EGSPC"   # ^GSPC
 CRYPTO_BENCHMARK = "BTC-USDT-SWAP"
 
-# Feed keys recorded in crawl_runs — these are the diagram's COLLECT nodes.
+# Feed keys recorded in crawl_runs — the diagram's COLLECT nodes.
 FEED_PRICE = "price_volume"
 FEED_MACRO = "macro_regime"
-FEED_SENTIMENT = "sentiment_crawl"
+FEED_GAUGE = "sentiment_gauge"
 FEED_CATALYST = "earnings_catalysts"
 FEED_FILINGS = "filings"
 FEED_CALENDAR = "macro_calendar"
+FEED_SOCIAL = "social_crawl"
+FEED_NEWS = "news"
 FEED_PIPELINE = "pipeline"
 
 PROCESSORS = ("sentiment", "macro", "thesis", "smart_money", "technical")
+
+# The pipeline as the admin console draws it. `wired` is the honest bit: a
+# collector can be running and healthy while feeding NOTHING into a score.
+# social_crawl and news are in that state today — social_feed.py and
+# market_intel.py collect them for other consumers, but the sentiment
+# processor is driven by the Fear & Greed gauge (the doc's §4 psychology
+# mapping, recalibrated by the 2026-08-30 mid-band experiment). Painting them
+# as feeding the score would be a drawing, not the system.
+COLLECT_NODES: tuple[dict[str, Any], ...] = (
+    {"key": FEED_SOCIAL, "doc_feed": 1, "label": "Social crawl",
+     "feeds": "sentiment", "wired": False,
+     "note": "collected by social_feed.py; not an input to the sentiment score yet"},
+    {"key": FEED_NEWS, "doc_feed": 2, "label": "News feeds",
+     "feeds": "sentiment", "wired": False,
+     "note": "collected by market_intel.py; not an input to the sentiment score yet"},
+    {"key": FEED_GAUGE, "doc_feed": 1, "label": "Crowd gauge (F&G)",
+     "feeds": "sentiment", "wired": True,
+     "note": "CNN F&G for stocks, alternative.me for crypto"},
+    {"key": FEED_MACRO, "doc_feed": 3, "label": "Macro regime (VIX/10Y/DXY)",
+     "feeds": "macro", "wired": True, "note": None},
+    {"key": FEED_CALENDAR, "doc_feed": 3, "label": "Macro calendar",
+     "feeds": "risk_gate", "wired": True,
+     "note": "high-impact USD releases -> event blackout"},
+    {"key": FEED_CATALYST, "doc_feed": 4, "label": "Earnings & catalysts",
+     "feeds": "thesis", "wired": True, "note": None},
+    {"key": FEED_FILINGS, "doc_feed": 5, "label": "Filings (Form 4)",
+     "feeds": "smart_money", "wired": True,
+     "note": "open-market P/S only; 13F is out of scope in v1"},
+    {"key": FEED_PRICE, "doc_feed": 6, "label": "Price & volume",
+     "feeds": "technical", "wired": True, "note": None},
+)
+
+PROCESSOR_NODES: tuple[dict[str, Any], ...] = tuple(
+    {"key": name, "weight": swing_stack.WEIGHTS[name],
+     "axis": "qualitative" if name in swing_stack.QUAL_FEEDS
+             else ("quantitative" if name == "technical" else "tide")}
+    for name in PROCESSORS
+)
 
 
 def enabled() -> bool:
@@ -278,7 +318,7 @@ def evaluate_symbol(symbol: str, market: str = "us-stock") -> dict[str, Any]:
     candles = _safe(FEED_PRICE, lambda: fetch_candles(symbol, market), []) or []
     benchmark = _safe(FEED_PRICE, lambda: fetch_benchmark_candles(market), []) or []
     macro = _safe(FEED_MACRO, fetch_macro, {}) or {}
-    gauge = _safe(FEED_SENTIMENT, lambda: fetch_fear_greed(market))
+    gauge = _safe(FEED_GAUGE, lambda: fetch_fear_greed(market))
     catalyst = _safe(FEED_CATALYST, lambda: fetch_catalyst(symbol), {}) or {}
     filings = _safe(FEED_FILINGS, lambda: fetch_filings(symbol), {}) or {}
     event_hours = _safe(FEED_CALENDAR, fetch_macro_event_hours)

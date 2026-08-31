@@ -19,6 +19,7 @@ from routes_admin_auth import register_admin_auth_routes
 from routes_admin_manage import register_admin_manage_routes
 from routes_admin_skills import register_admin_skill_routes
 from routes_admin_swing_feeds import register_admin_swing_feed_routes
+from routes_admin_crawl import register_admin_crawl_routes
 from routes_subscriptions import register_subscription_routes
 from routes_billing import register_billing_routes
 from routes_agent import register_agent_routes
@@ -117,6 +118,7 @@ def create_app() -> FastAPI:
     register_admin_manage_routes(app, ctx)
     register_admin_skill_routes(app, ctx)
     register_admin_swing_feed_routes(app, ctx)
+    register_admin_crawl_routes(app, ctx)
     register_subscription_routes(app, ctx)
     register_billing_routes(app, ctx)
     register_support_routes(app, ctx)
