@@ -81,6 +81,13 @@ type RiskKey = keyof typeof RISK_PRESETS
 // until the fetch lands (or when it fails).
 const SIMPLE_COINS_FALLBACK = ['BTC', 'ETH', 'SOL']
 
+// Simple-mode US-stock universe (owner 2026-08-31: "make simple slot block
+// need USA stock" + the hot-5 tech MUST rule): the chips are the 5 hottest
+// US tech names from /api/markets/top-us-tech — the SAME hotness ranking the
+// Full-Auto fleet's us-stock selection is restricted to. Static mega-cap
+// fallback until the fetch lands (or when it fails).
+const SIMPLE_US_TECH_FALLBACK = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META']
+
 export function AutomationPage({ planCode = null }: { planCode?: string | null }) {
   const [token] = useState<string | null>(localStorage.getItem('claw_token'))
   const { language } = useLanguage()
@@ -98,6 +105,13 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         if (coins.length) setTopCoins(coins.slice(0, 5))
       })
       .catch(() => { /* keep fallback */ })
+    fetch(`${API_BASE}/markets/top-us-tech`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const stocks = (d?.symbols || []).map((s: any) => String(s)).filter(Boolean)
+        if (stocks.length) setTopUsTech(stocks.slice(0, 5))
+      })
+      .catch(() => { /* keep fallback */ })
   }, [])
 
   const [rules, setRules] = useState<Rule[]>([])
@@ -113,6 +127,10 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   }, [planCode, ruleMode])
   const [simpleCoin, setSimpleCoin] = useState<string>('BTC')
   const [simpleRisk, setSimpleRisk] = useState<RiskKey>('balanced')
+  // ① Simple market: crypto (24/7) or USA stock (hot-5 tech chips; spot-only
+  // long book, so the futures/leverage picker is hidden in us-stock mode).
+  const [simpleMarket, setSimpleMarket] = useState<'crypto' | 'us-stock'>('crypto')
+  const [topUsTech, setTopUsTech] = useState<string[]>(SIMPLE_US_TECH_FALLBACK)
   const [runLev, setRunLev] = useState(1)   // leverage for ⓪/① single-run modes
   // Book type for ⓪/① single-run modes. A spot book is long-only cash — the
   // backend refuses leveraged spot with no stop (routes_runs
@@ -373,7 +391,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     modeAgent: tr(language, { ko: '1종목 위임', en: 'Agent (1 symbol)', ja: '1銘柄委任', th: 'มอบหมาย 1 เหรียญ', vi: 'Ủy quyền 1 mã', id: 'Agen (1 simbol)' }),
     modeFleet: tr(language, { ko: 'N종목 자동 편성', en: 'Full Auto', ja: '完全自動編成', th: 'อัตโนมัติเต็มรูปแบบ', vi: 'Tự động hoàn toàn', id: 'Full Auto' }),
     modeAgentDesc: tr(language, { ko: '예산만 정하세요 — AI가 종목을 골라 TRADING을 만들고, 매 사이클 매매 결정을 기록합니다', en: 'Set only a budget — the AI picks a symbol, creates the TRADING, and journals every cycle decision', ja: '予算だけ設定 — AIが銘柄を選んで TRADING を作成し、毎サイクルの判断を記録します', th: 'ตั้งแค่งบประมาณ — AI เลือกเหรียญ สร้าง TRADING และบันทึกการตัดสินใจทุกรอบ', vi: 'Chỉ đặt ngân sách — AI chọn mã, tạo TRADING và ghi lại quyết định mỗi chu kỳ', id: 'Cukup tetapkan anggaran — AI memilih simbol, membuat TRADING, dan mencatat setiap keputusan siklus' }),
-    modeSimpleDesc: tr(language, { ko: '코인과 위험 성향만 고르세요 — 나머지는 AI가 알아서 합니다', en: 'Pick a coin and a risk level — AI handles the rest', ja: 'コインとリスクを選ぶだけ — あとはAIにおまかせ', th: 'เลือกเหรียญและระดับความเสี่ยง — ที่เหลือ AI จัดการ', vi: 'Chọn coin và mức rủi ro — AI lo phần còn lại', id: 'Pilih koin dan tingkat risiko — sisanya ditangani AI' }),
+    modeSimpleDesc: tr(language, { ko: '코인이나 미국 주식과 위험 성향만 고르세요 — 나머지는 AI가 알아서 합니다', en: 'Pick a coin or a US stock and a risk level — AI handles the rest', ja: 'コインか米国株とリスクを選ぶだけ — あとはAIにおまかせ', th: 'เลือกเหรียญหรือหุ้นสหรัฐและระดับความเสี่ยง — ที่เหลือ AI จัดการ', vi: 'Chọn coin hoặc cổ phiếu Mỹ và mức rủi ro — AI lo phần còn lại', id: 'Pilih koin atau saham AS dan tingkat risiko — sisanya ditangani AI' }),
     budgetLabel: tr(language, { ko: '총 예산 ($)', en: 'Total budget ($)', ja: '総予算 ($)', th: 'งบประมาณรวม ($)', vi: 'Tổng ngân sách ($)', id: 'Total anggaran ($)' }),
     budgetHint: tr(language, { ko: 'AI가 배치할 수 있는 총 노출 한도 — 한 포지션은 예산의 25% 이하', en: 'Total exposure the AI may deploy — one position stays ≤ 25% of budget', ja: 'AIが展開できる総エクスポージャー上限 — 1ポジションは予算の25%以下', th: 'วงเงินรวมที่ AI ใช้ได้ — หนึ่งสถานะ ≤ 25% ของงบ', vi: 'Tổng mức AI được triển khai — một vị thế ≤ 25% ngân sách', id: 'Total eksposur yang boleh dipakai AI — satu posisi tetap ≤ 25% dari anggaran' }),
     startAgent: tr(language, { ko: 'AI에게 위임 시작', en: 'Start delegation', ja: '委任を開始', th: 'เริ่มมอบหมาย', vi: 'Bắt đầu ủy quyền', id: 'Mulai pendelegasian' }),
@@ -381,6 +399,10 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     coinAuto: tr(language, { ko: 'AI 자동 선택', en: 'AI auto-pick', ja: 'AI自動選択', th: 'AI เลือกให้', vi: 'AI tự chọn', id: 'Pilihan otomatis AI' }),
     coinAutoHint: tr(language, { ko: '스캐너가 거래량 급증·신규 상장에서 후보를 고릅니다', en: 'The scanner picks candidates from volume surges & new listings', ja: 'スキャナーが出来高急増・新規上場から選択', th: 'สแกนเนอร์เลือกจากปริมาณพุ่งและเหรียญใหม่', vi: 'Máy quét chọn từ khối lượng tăng vọt & niêm yết mới', id: 'Pemindai memilih kandidat dari lonjakan volume & pencatatan baru' }),
     topFiveHint: tr(language, { ko: '지금 거래량·관심도 상위 5개 종목입니다', en: 'The current top-5 symbols by volume & popularity', ja: '現在の出来高・注目度トップ5銘柄です', th: '5 อันดับเหรียญยอดนิยมตามปริมาณซื้อขายตอนนี้', vi: '5 mã hàng đầu theo khối lượng & mức quan tâm hiện tại', id: 'Lima simbol teratas saat ini berdasarkan volume & popularitas' }),
+    simpleMarketLabel: tr(language, { ko: '시장', en: 'Market', ja: '市場', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' }),
+    marketCrypto: tr(language, { ko: '크립토', en: 'Crypto', ja: '暗号資産', th: 'คริปโต', vi: 'Crypto', id: 'Kripto' }),
+    marketUsStock: tr(language, { ko: '미국 주식', en: 'US Stock', ja: '米国株', th: 'หุ้นสหรัฐ', vi: 'Cổ phiếu Mỹ', id: 'Saham AS' }),
+    usTechHint: tr(language, { ko: '지금 가장 이슈가 뜨거운 미국 테크 5종목 (2일 변동 × 거래량 기준) — 현물 매수 전용, 정규장에서만 거래합니다', en: 'The 5 hottest US tech stocks right now (2-day move × volume) — spot long-only, trades during market hours', ja: '今最も話題の米国テック5銘柄（2日変動×出来高基準）— 現物買いのみ、取引時間中のみ売買', th: 'หุ้นเทคสหรัฐที่ร้อนแรงสุด 5 ตัวตอนนี้ (การเคลื่อนไหว 2 วัน × ปริมาณ) — ซื้อสปอตเท่านั้น เทรดเฉพาะเวลาทำการ', vi: '5 cổ phiếu công nghệ Mỹ nóng nhất hiện tại (biến động 2 ngày × khối lượng) — chỉ mua giao ngay, giao dịch trong giờ thị trường', id: '5 saham teknologi AS terpanas saat ini (pergerakan 2 hari × volume) — hanya beli spot, berdagang selama jam pasar' }),
     riskLabel: tr(language, { ko: '위험 성향', en: 'Risk level', ja: 'リスク', th: 'ระดับความเสี่ยง', vi: 'Mức rủi ro', id: 'Tingkat risiko' }),
     riskStable: tr(language, { ko: '안정', en: 'Stable', ja: '安定', th: 'มั่นคง', vi: 'Ổn định', id: 'Stabil' }),
     riskBalanced: tr(language, { ko: '균형', en: 'Balanced', ja: 'バランス', th: 'สมดุล', vi: 'Cân bằng', id: 'Seimbang' }),
@@ -568,16 +590,19 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
 
   async function addSimple() {
     const preset = RISK_PRESETS[simpleRisk]
+    const isUs = simpleMarket === 'us-stock'
     try {
       const symbol = simpleCoin === 'SCANNER' ? await pickSymbol() : simpleCoin
       await createAndStartRun({
         symbol,
+        market: simpleMarket,
         max_bet_usd: preset.size_usd,
         interval_minutes: preset.interval_minutes,
         min_confidence: preset.min_confidence,
         risk_level: simpleRisk,
-        market_type: runType,
-        leverage: runType === 'futures' ? runLev : 1,
+        // US stock is a cash long-only book — never futures, never levered.
+        market_type: isUs ? 'spot' : runType,
+        leverage: !isUs && runType === 'futures' ? runLev : 1,
       })
     } catch (e: any) { setError(e.message) }
   }
@@ -719,16 +744,29 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
 
       {ruleMode === 'simple' && (
         <>
+          <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>{T.simpleMarketLabel}</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+            <button style={chip(simpleMarket === 'crypto')}
+              onClick={() => { setSimpleMarket('crypto'); setSimpleCoin(topCoins[0] || 'BTC') }}>
+              {T.marketCrypto}
+            </button>
+            <button style={chip(simpleMarket === 'us-stock')}
+              onClick={() => { setSimpleMarket('us-stock'); setSimpleCoin(topUsTech[0] || 'NVDA') }}>
+              {T.marketUsStock}
+            </button>
+          </div>
           <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>{T.symbol}</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-            {[...topCoins, 'SCANNER'].map(c => (
+            {(simpleMarket === 'us-stock' ? topUsTech : [...topCoins, 'SCANNER']).map(c => (
               <button key={c} style={chip(simpleCoin === c)} onClick={() => setSimpleCoin(c)}>
                 {c === 'SCANNER' ? `🔍 ${T.coinAuto}` : c}
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 16 }}>{T.topFiveHint}</div>
-          {simpleCoin === 'SCANNER' && (
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 16 }}>
+            {simpleMarket === 'us-stock' ? T.usTechHint : T.topFiveHint}
+          </div>
+          {simpleCoin === 'SCANNER' && simpleMarket === 'crypto' && (
             <div style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)', marginBottom: 12 }}>💡 {T.coinAutoHint}</div>
           )}
           <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 8 }}>{T.riskLabel}</div>
@@ -750,7 +788,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
               </button>
             ))}
           </div>
-          {features.leverage && leveragePicker}
+          {features.leverage && simpleMarket !== 'us-stock' && leveragePicker}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted,#a89f92)' }}>{T.simpleNote}</span>
             {error && <span style={{ color: '#f0663f', fontSize: 12.5 }}>⚠️ {error}</span>}

@@ -422,6 +422,64 @@ def register_market_routes(app: FastAPI, ctx: RouteContext) -> None:
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc))
 
+    @app.get('/api/markets/top-us-tech')
+    async def market_top_us_tech(limit: int = 5):
+        """The hottest US TECH stocks (owner 2026-08-31: the simple slot
+        block needs USA stock). Same universe and hotness algorithm as the
+        fleet's R20-MUST selection — |mom_2d| x volume confirmation over the
+        US_TECH_HOT_UNIVERSE roster, read off the newest research batch —
+        so the chips a user sees and the names a fleet may build never
+        disagree. Fail-soft: with no live theses the mega-cap head of the
+        roster is returned (source: 'fallback')."""
+        safe_limit = max(1, min(limit, 10))
+
+        def _build():
+            import symbol_research as sr
+            from database import get_db_connection
+            fallback = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META']
+            symbols: list[str] = []
+            source = 'fallback'
+            try:
+                conn = get_db_connection()
+                try:
+                    cur = conn.cursor()
+                    cur.execute(
+                        "SELECT batch_id FROM research_theses "
+                        "WHERE selectable = 1 AND market = 'us-stock' "
+                        "ORDER BY batch_id DESC LIMIT 1")
+                    row = cur.fetchone()
+                    if row:
+                        cur.execute(
+                            "SELECT symbol, factor_scores_json "
+                            "FROM research_theses "
+                            "WHERE batch_id = ? AND market = 'us-stock' "
+                            "AND selectable = 1", (row['batch_id'],))
+                        roster = set(sr.US_TECH_HOT_UNIVERSE)
+                        rows = [dict(r) for r in cur.fetchall()
+                                if r['symbol'] in roster]
+                        ranked = sorted(rows, key=sr._hot_tech_score,
+                                        reverse=True)
+                        seen: set[str] = set()
+                        for t in ranked:
+                            if t['symbol'] not in seen:
+                                seen.add(t['symbol'])
+                                symbols.append(t['symbol'])
+                        if symbols:
+                            source = 'research'
+                finally:
+                    conn.close()
+            except Exception:  # noqa: BLE001 — chips must always render
+                symbols = []
+            if not symbols:
+                symbols = list(fallback)
+            return {'symbols': symbols[:safe_limit], 'source': source}
+
+        try:
+            return await run_in_threadpool(
+                _cached_market_payload, f'top-us-tech:limit={safe_limit}', _build)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+
     @app.post('/api/markets/suggest-symbol')
     async def suggest_symbol(authorization: str = Header(None)):
         """Let the AI choose which symbol to trade from the ranked candidates.
