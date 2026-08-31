@@ -99,6 +99,42 @@ class BlendedSentimentTest(unittest.TestCase):
                                                 news_n=9, social_n=9), -100.0)
 
 
+class ExistingDatabaseGetsTheShadowColumnTest(unittest.TestCase):
+    """CREATE TABLE IF NOT EXISTS never adds a column to a table that already
+    exists, so a SQLite database created before this change would keep the old
+    swing_decisions shape and every insert would fail. Prod MySQL is covered by
+    alembic 0056; dev SQLite needs the ALTER in init_database."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "old.db")
+        database.init_database()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _columns(self):
+        with database.get_db_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM swing_decisions LIMIT 0")
+            return {d[0] for d in cur.description}
+
+    def test_an_older_table_is_upgraded_in_place(self):
+        with database.get_db_connection() as conn:
+            conn.cursor().execute(
+                "ALTER TABLE swing_decisions DROP COLUMN sentiment_shadow")
+            conn.commit()
+        self.assertNotIn("sentiment_shadow", self._columns())
+
+        database.init_database()
+        self.assertIn("sentiment_shadow", self._columns())
+
+    def test_reinitialising_a_current_database_is_a_no_op(self):
+        database.init_database()
+        self.assertIn("sentiment_shadow", self._columns())
+
+
 class NewsSentimentForTest(unittest.TestCase):
     """market_intel.news_sentiment_for — reads snapshots we already store."""
 

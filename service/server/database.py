@@ -2912,6 +2912,14 @@ def init_database():
         CREATE INDEX IF NOT EXISTS ix_swing_decisions_computed
         ON swing_decisions(computed_at)
     """)
+    # CREATE TABLE IF NOT EXISTS above cannot widen a table that already
+    # exists, so databases created before the sentiment blend keep the old
+    # shape and every insert fails. Prod MySQL is owned by alembic 0056; this
+    # is the SQLite dev path (same idiom as breaker_state.expires_at).
+    try:
+        cursor.execute("ALTER TABLE swing_decisions ADD COLUMN sentiment_shadow REAL")
+    except Exception:
+        pass
 
     # Durable tier of the market_i18n translation cache. Prod is Redis-less
     # and two-process (worker journals, backend serves), so an in-memory or
