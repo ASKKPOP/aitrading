@@ -53,10 +53,14 @@ class MoverRankTests(unittest.TestCase):
         cur = conn.cursor()
         cur.execute("INSERT INTO agents (id, name, token, starting_capital)"
                     " VALUES (9, 'mv', 't', 1000.0)")
+        # Roster names (R20-MUST, owner 2026-08-31): us-stock selection
+        # only admits US_TECH_HOT_UNIVERSE members, so the trend name and
+        # the mover must both be real tech-roster symbols for the ranking
+        # behavior under the DEFAULT config to be observable at all.
         rows = [
             # symbol, market, final, mom_2d, vol_ratio
-            ("SLEEPY", "us-stock", 0.90, 0.4, 1.0),   # trend name, tops final
-            ("MOVER", "us-stock", 0.60, 6.2, 2.0),    # the 2-day mover
+            ("IBM", "us-stock", 0.90, 0.4, 1.0),      # trend name, tops final
+            ("NVDA", "us-stock", 0.60, 6.2, 2.0),     # the 2-day mover
             ("BTCUSDT", "crypto", 0.95, 8.0, 3.0),    # crypto ignores mover rank
         ]
         for sym, market, final, m2, vr in rows:
@@ -87,16 +91,16 @@ class MoverRankTests(unittest.TestCase):
 
     def test_us_stock_mover_outranks_the_trend_name(self):
         picks = [t["symbol"] for t in self._select(scope=["us-stock"])]
-        self.assertEqual(picks[0], "MOVER",
+        self.assertEqual(picks[0], "NVDA",
                          "the 2-day mover must lead the us-stock ranking")
-        self.assertIn("SLEEPY", picks)
+        self.assertIn("IBM", picks)
 
     def test_cross_market_ordering_is_untouched(self):
         """Mover ranking reorders us-stock among its own slots only — the
         crypto thesis keeps its final_score position at the top."""
         picks = [t["symbol"] for t in self._select()]
         self.assertEqual(picks[0], "BTCUSDT")
-        self.assertLess(picks.index("MOVER"), picks.index("SLEEPY"))
+        self.assertLess(picks.index("NVDA"), picks.index("IBM"))
 
     def test_old_batches_without_mom_2d_keep_final_order(self):
         conn = database.get_db_connection()
@@ -106,7 +110,7 @@ class MoverRankTests(unittest.TestCase):
         conn.commit()
         conn.close()
         picks = [t["symbol"] for t in self._select(scope=["us-stock"])]
-        self.assertEqual(picks[0], "SLEEPY",
+        self.assertEqual(picks[0], "IBM",
                          "no mover data ⇒ final_score order stands")
 
 
