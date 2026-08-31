@@ -217,6 +217,10 @@ export function AdminPage() {
     del: tr(language, { ko: '삭제', en: 'Delete', ja: '削除', th: 'ลบ', vi: 'Xóa', id: 'Hapus' }),
     delConfirm: tr(language, { ko: '정말 삭제할까요? 이 계정의 모든 데이터가 함께 삭제됩니다.', en: 'Really delete? All of this account\'s data is deleted with it.', ja: '本当に削除しますか？このアカウントの全データも一緒に削除されます。', th: 'ลบจริงหรือไม่ ข้อมูลทั้งหมดของบัญชีนี้จะถูกลบไปด้วย', vi: 'Xóa thật chứ? Toàn bộ dữ liệu của tài khoản này sẽ bị xóa theo.', id: 'Yakin ingin menghapus? Seluruh data akun ini ikut terhapus.' }),
     suspend: tr(language, { ko: '정지', en: 'Suspend', ja: '停止', th: 'ระงับ', vi: 'Tạm ngưng', id: 'Tangguhkan' }),
+    resetCap: tr(language, { ko: '자본 리셋', en: 'Reset $', ja: '資本リセット', th: 'รีเซ็ตทุน', vi: 'Đặt lại vốn', id: 'Reset modal' }),
+    resetCapPrompt: tr(language, { ko: '리셋할 자본 금액(USD) — 모든 에이전트의 현금·시작자본이 이 값이 되고, 보유 포지션과 수익 이력이 삭제되어 수익이 0이 됩니다', en: 'Capital amount (USD) — every agent of this member is set to this cash & starting capital; open positions and the profit history are wiped so profit reads zero', ja: 'リセットする資本額 (USD) — この会員の全エージェントの現金・開始資本がこの値になり、保有ポジションと損益履歴が削除され、利益は0になります', th: 'จำนวนทุน (USD) — เอเจนต์ทั้งหมดของสมาชิกจะถูกตั้งเงินสด·ทุนเริ่มต้นเป็นค่านี้ ลบสถานะที่ถืออยู่และประวัติกำไรให้กำไรเป็นศูนย์', vi: 'Số vốn (USD) — mọi agent của thành viên được đặt tiền mặt & vốn khởi điểm bằng giá trị này; vị thế mở và lịch sử lợi nhuận bị xóa nên lợi nhuận về 0', id: 'Jumlah modal (USD) — semua agen anggota ini disetel ke kas & modal awal ini; posisi terbuka dan riwayat laba dihapus sehingga laba menjadi nol' }),
+    resetCapBad: tr(language, { ko: '금액이 올바르지 않습니다', en: 'Invalid amount', ja: '金額が正しくありません', th: 'จำนวนไม่ถูกต้อง', vi: 'Số tiền không hợp lệ', id: 'Jumlah tidak valid' }),
+    resetCapConfirm: (email: string, v: number) => tr(language, { ko: `${email} 계정을 $${v.toLocaleString()}로 리셋할까요? 포지션·수익 이력이 삭제됩니다 (되돌릴 수 없음)`, en: `Reset ${email} to $${v.toLocaleString()}? Open positions and profit history are deleted (cannot be undone)`, ja: `${email} を $${v.toLocaleString()} にリセットしますか？ポジションと損益履歴が削除されます（元に戻せません）`, th: `รีเซ็ต ${email} เป็น $${v.toLocaleString()} หรือไม่ สถานะและประวัติกำไรจะถูกลบ (ย้อนกลับไม่ได้)`, vi: `Đặt lại ${email} về $${v.toLocaleString()}? Vị thế mở và lịch sử lợi nhuận sẽ bị xóa (không hoàn tác được)`, id: `Reset ${email} ke $${v.toLocaleString()}? Posisi terbuka dan riwayat laba dihapus (tidak bisa dibatalkan)` }),
     activate: tr(language, { ko: '해제', en: 'Activate', ja: '解除', th: 'ปลดระงับ', vi: 'Kích hoạt', id: 'Aktifkan' }),
     detail: tr(language, { ko: '상세', en: 'Detail', ja: '詳細', th: 'รายละเอียด', vi: 'Chi tiết', id: 'Detail' }),
     close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
@@ -729,7 +733,15 @@ export function AdminPage() {
                         {u.status === 'suspended'
                           ? <button style={actionBtn} onClick={() => act(`members/${u.id}/status`, { method: 'POST', body: JSON.stringify({ status: 'active' }) }, 'members')}>{T.activate}</button>
                           : <button style={dangerBtn} onClick={() => act(`members/${u.id}/status`, { method: 'POST', body: JSON.stringify({ status: 'suspended' }) }, 'members')}>{T.suspend}</button>}{' '}
-                        <button style={dangerBtn} onClick={() => window.confirm(T.delConfirm) && act(`users/${u.id}`, { method: 'DELETE' }, 'members')}>{T.del}</button>
+                        <button style={dangerBtn} onClick={() => window.confirm(T.delConfirm) && act(`users/${u.id}`, { method: 'DELETE' }, 'members')}>{T.del}</button>{' '}
+                        <button style={dangerBtn} onClick={() => {
+                          const amt = window.prompt(T.resetCapPrompt, '10000')
+                          if (amt === null) return
+                          const v = Number(amt)
+                          if (!Number.isFinite(v) || v <= 0) { setError(T.resetCapBad); return }
+                          if (window.confirm(T.resetCapConfirm(u.email, v)))
+                            act(`members/${u.id}/reset-capital`, { method: 'POST', body: JSON.stringify({ amount: v }) }, 'members')
+                        }}>{T.resetCap}</button>
                       </td>
                     </tr>
                     {openAgents[u.id] && (

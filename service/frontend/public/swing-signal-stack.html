@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swing Signal Stack — Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper: #f9fafb; --ink: #12161b; --ink-2: #4e5763; --ink-3: #75808d;
+    --hairline: #e2e6ea; --card: #ffffff; --card-edge: #e7ebef;
+    --blue: #2a78d6; --orange: #eb6834; --red: #d03b3b; --good: #0ca30c;
+    --blue-soft: rgba(42,120,214,0.10); --red-soft: rgba(208,59,59,0.09);
+    --amber: #8a5a00; --amber-bg: #fdf3dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17191c; --ink: #f1f3f5; --ink-2: #b3bcc6; --ink-3: #7f8994;
+      --hairline: #2c3036; --card: #1e2126; --card-edge: #31363d;
+      --blue: #3987e5; --orange: #d95926; --red: #e66767; --good: #0ca30c;
+      --blue-soft: rgba(57,135,229,0.16); --red-soft: rgba(230,103,103,0.13);
+      --amber: #e8b45a; --amber-bg: #2a2417;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17191c; --ink: #f1f3f5; --ink-2: #b3bcc6; --ink-3: #7f8994;
+    --hairline: #2c3036; --card: #1e2126; --card-edge: #31363d;
+    --blue: #3987e5; --orange: #d95926; --red: #e66767; --good: #0ca30c;
+    --blue-soft: rgba(57,135,229,0.16); --red-soft: rgba(230,103,103,0.13);
+    --amber: #e8b45a; --amber-bg: #2a2417;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: "IBM Plex Serif", Georgia, serif; font-size: 16px; line-height: 1.62;
+    margin: 0; padding: 0 20px 80px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; text-wrap: balance; }
+  h1 { font-size: clamp(32px, 6vw, 48px); font-weight: 800; letter-spacing: -0.015em; line-height: 1.06; margin: 10px 0 14px; }
+  h2 { font-size: 24px; font-weight: 700; margin: 0 0 12px; }
+  h3 { font-size: 16.5px; font-weight: 600; margin: 24px 0 8px; }
+  p { max-width: 68ch; margin: 0 0 14px; }
+  a { color: var(--blue); }
+  .mono, code { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  code { font-size: 0.86em; background: var(--blue-soft); padding: 1px 5px; border-radius: 4px; }
+  .kicker { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--blue); margin-bottom: 6px; }
+  .deck { font-size: 18px; color: var(--ink-2); max-width: 62ch; }
+  header.masthead { padding: 52px 0 6px; }
+  section { border-top: 1px solid var(--hairline); margin-top: 42px; padding-top: 30px; }
+  .secnum { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+  .secnum b { color: var(--blue); }
+  figure { margin: 20px 0; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  .scrollfig { overflow-x: auto; }
+  figcaption { font-size: 13px; color: var(--ink-3); margin-top: 8px; font-style: italic; max-width: 74ch; }
+  table.data { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table.data th { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--hairline); }
+  table.data td { padding: 7px 10px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  .tablewrap { overflow-x: auto; margin: 16px 0; }
+  ul.tight { padding-left: 20px; margin: 0 0 14px; max-width: 68ch; }
+  ul.tight li { margin-bottom: 6px; }
+  ol.tight { padding-left: 22px; margin: 0 0 14px; max-width: 68ch; }
+  ol.tight li { margin-bottom: 8px; }
+  .callout { background: var(--card); border: 1px solid var(--card-edge); border-left: 3px solid var(--blue); border-radius: 8px; padding: 14px 18px; margin: 18px 0; max-width: 74ch; }
+  .callout.warn { border-left-color: var(--amber); background: var(--amber-bg); }
+  .callout p { margin: 0; font-size: 14.5px; }
+  .matrix td.buy { background: var(--blue-soft); font-weight: 600; color: var(--blue); }
+  .matrix td.sell { background: var(--red-soft); font-weight: 600; color: var(--red); }
+  .pill { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; border: 1px solid var(--hairline); border-radius: 999px; padding: 2px 10px; color: var(--ink-2); margin-right: 6px; }
+  .emotion { font-family: "Archivo", sans-serif; font-weight: 700; }
+  footer { border-top: 1px solid var(--hairline); margin-top: 52px; padding-top: 18px; font-size: 12.5px; color: var(--ink-3); }
+  .axis { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; fill: var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">Blueprint · research/SWING_SIGNAL_STACK.md · HTML edition</div>
+  <h1>Swing Signal Stack</h1>
+  <p class="deck">Finding 3–5 day (extendable to ~2 weeks) buy and sell points in US stocks and crypto by combining crowd psychology, the macro tide, changes in a company's fundamental story, and what informed money is doing.</p>
+  <p class="deck" style="font-size:13.5px; color:var(--ink-3);">⚠️ Research framework, not financial advice — see the disclaimer at the end. Implementation and last-month test: <span class="mono">docs/reports/swing-signal-stack-ship-20260831.html</span>.</p>
+</header>
+
+<section>
+  <div class="secnum"><b>01</b> · Core rule</div>
+  <h2>Two axes must agree</h2>
+  <p>Every reliable signal needs agreement between two <em>independent</em> axes: the <strong>quantitative</strong> (price, volume, technicals — RSI, trend structure, relative strength) and the <strong>qualitative</strong> (sentiment, news, fundamentals/expectations, crowd psychology). Sentiment alone is noisy and manipulable; price alone tells you <em>what</em> happened, not <em>why</em>. <strong>When they agree → act. When they conflict → WAIT</strong> — on that ticker, at that moment.</p>
+
+  <div class="tablewrap"><table class="data matrix">
+    <thead><tr><th></th><th>Sentiment bearish</th><th>Sentiment bullish</th></tr></thead>
+    <tbody>
+      <tr><th>Price bullish</th><td>WAIT — price firm, crowd fearful → watch for contrarian entry</td><td class="buy">BUY zone</td></tr>
+      <tr><th>Price bearish</th><td class="sell">SELL / avoid</td><td>WAIT — crowd euphoric, price weak → possible trap / top</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>What “WAIT” actually means</h3>
+  <ul class="tight">
+    <li>It applies <strong>per ticker, per moment</strong> — across a 10–20 name watchlist, some names agree on most days.</li>
+    <li>Conflict is temporary: write the <strong>resolving condition</strong> (“price reclaims the 5-day high on volume”), set an alert, and do nothing until it fires. That is active waiting.</li>
+    <li>Being flat is a position — and the retail trader's only structural edge (no one forces you to be invested).</li>
+    <li>If the system says WAIT on everything for two weeks, the regime is choppy and cash was the right trade.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="secnum"><b>02</b> · The pipeline</div>
+  <h2>Collect → score → combine → decide</h2>
+
+  <figure class="scrollfig">
+  <svg viewBox="0 0 880 320" role="img" aria-label="Pipeline: six feeds — social crawl, news, macro calendar, earnings and catalysts, filings, price and volume — feed five processor scores: sentiment weight 0.25, macro regime 0.20, thesis 0.20, smart money 0.15, technical 0.20. The weighted composite from minus 100 to plus 100 decides: at or above plus 40 BUY, between minus 40 and plus 40 WAIT, at or below minus 40 SELL. A risk gate can veto: event blackout and sizing.">
+    <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+    <g fill="none" stroke="currentColor" stroke-width="1.1" color="var(--ink-2)" font-family="IBM Plex Mono, monospace" font-size="11">
+      <g>
+        <rect x="8" y="12" width="158" height="30" rx="6"/><rect x="8" y="56" width="158" height="30" rx="6"/>
+        <rect x="8" y="100" width="158" height="30" rx="6"/><rect x="8" y="144" width="158" height="30" rx="6"/>
+        <rect x="8" y="188" width="158" height="30" rx="6"/><rect x="8" y="232" width="158" height="30" rx="6"/>
+        <g fill="currentColor" stroke="none">
+          <text x="18" y="31">1 · social crawl</text><text x="18" y="75">2 · news feeds</text>
+          <text x="18" y="119">3 · macro calendar</text><text x="18" y="163">4 · earnings/catalysts</text>
+          <text x="18" y="207">5 · filings 13F/Form4</text><text x="18" y="251">6 · price &amp; volume</text>
+        </g>
+      </g>
+      <g>
+        <rect x="258" y="34" width="186" height="30" rx="6"/><rect x="258" y="78" width="186" height="30" rx="6"/>
+        <rect x="258" y="122" width="186" height="30" rx="6"/><rect x="258" y="166" width="186" height="30" rx="6"/>
+        <rect x="258" y="210" width="186" height="30" rx="6"/>
+        <g fill="currentColor" stroke="none">
+          <text x="268" y="53">sentiment · w .25</text><text x="268" y="97">macro regime · w .20</text>
+          <text x="268" y="141">thesis · w .20</text><text x="268" y="185">smart money · w .15</text>
+          <text x="268" y="229">technical · w .20</text>
+        </g>
+      </g>
+      <path d="M166,27 C215,27 210,49 258,49" marker-end="url(#ar)"/>
+      <path d="M166,71 C215,71 210,52 258,52" marker-end="url(#ar)"/>
+      <path d="M166,71 C215,71 212,90 258,92" marker-end="url(#ar)"/>
+      <path d="M166,115 C212,115 212,95 258,95" marker-end="url(#ar)"/>
+      <path d="M166,159 C212,159 212,137 258,137" marker-end="url(#ar)"/>
+      <path d="M166,203 C212,203 212,181 258,181" marker-end="url(#ar)"/>
+      <path d="M166,247 C215,247 212,227 258,225" marker-end="url(#ar)"/>
+      <rect x="520" y="104" width="140" height="64" rx="8" stroke="var(--blue)" stroke-width="1.6"/>
+      <g fill="var(--blue)" stroke="none" font-weight="600">
+        <text x="536" y="130">composite</text><text x="536" y="147">−100 … +100</text>
+      </g>
+      <path d="M444,49 C490,49 488,120 520,122"  marker-end="url(#ar)"/>
+      <path d="M444,93 C488,93 486,127 520,128"  marker-end="url(#ar)"/>
+      <path d="M444,137 C486,137 486,136 520,136" marker-end="url(#ar)"/>
+      <path d="M444,181 C488,181 486,145 520,144" marker-end="url(#ar)"/>
+      <path d="M444,225 C490,225 488,152 520,150" marker-end="url(#ar)"/>
+      <rect x="724" y="92" width="148" height="88" rx="8"/>
+      <g fill="currentColor" stroke="none">
+        <text x="738" y="114">≥ +40 → BUY</text><text x="738" y="132">−40…+40 → WAIT</text>
+        <text x="738" y="150">≤ −40 → SELL</text>
+      </g>
+      <path d="M660,136 L724,136" marker-end="url(#ar)"/>
+      <rect x="560" y="228" width="220" height="52" rx="8"/>
+      <g fill="currentColor" stroke="none">
+        <text x="574" y="250">risk gate (veto)</text><text x="574" y="268">event blackout · sizing</text>
+      </g>
+      <path d="M798,180 C798,208 760,236 742,242" marker-end="url(#ar)"/>
+    </g>
+  </svg>
+  <figcaption>Each processor outputs −100 (max bearish) … +100 (max bullish). Composite = weighted sum. Weights and thresholds are <strong>starting points to calibrate by backtesting</strong>; the structure — independent scores → one composite → a veto gate — is the part that matters. TikTok / Instagram / Facebook have no practical public APIs: manual scouting, not pipeline feeds.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="secnum"><b>03</b> · The four pillars</div>
+  <h2>Engine, human factor, tide, informed money</h2>
+
+  <h3>Pillar 4 — Fundamental catalysts (the engine)</h3>
+  <p>Great traders trade a company's <strong>future</strong> — but on a swing horizon “future” only moves price when <strong>expectations change</strong>: an earnings surprise, raised or cut guidance, estimate revisions, a product event. Everyone already knows NVIDIA is a great company — that is in the price. The tradeable moment is when the market's view of the future <em>shifts</em>. Measure: EPS/revenue surprise % vs consensus · guidance direction · estimate-revision momentum · days to next catalyst. It sets the watchlist, the direction, and the trade window (3–5 days normally; 1–2 weeks when the catalyst is dated further out). Caveat: “good company” ≠ buy signal — story stocks are where crowds overpay for exciting futures, and the two-axis rule matters most there.</p>
+
+  <h3>Pillar 1 — Social &amp; news sentiment (human factor)</h3>
+  <p>The signal is not the sentiment <em>level</em> — it's the <strong>rate of change</strong>: a mention surge with a tone flip usually leads price by hours to days. Measure: mentions/hour vs the 7-day baseline · bullish/bearish ratio · headline impact. Caveat: sentiment lags fast moves, gets gamed by bots and pump rooms, and peaks at tops. Never trade it without the quant axis agreeing.</p>
+
+  <h3>Pillar 2 — Macro regime (the tide)</h3>
+  <p>Tech and growth stocks are long-duration assets: they move inversely to real yields and with liquidity. Measure: 10Y yield direction · DXY · VIX · Fed-speak tone · the event calendar (CPI, FOMC, PCE, jobs, big-tech earnings). <strong>Rule: no fresh swing position &lt; 24h before a binary macro event</strong> unless the trade <em>is</em> the event. Caveat: geopolitical headlines hit tech supply chains fastest and override technicals.</p>
+
+  <h3>Pillar 3 — Smart-money tracking</h3>
+  <p>Three tiers: institutional 13F, insider Form 4 buys, congress disclosures. The strongest signal is <strong>cluster agreement</strong> — several independent actors accumulating the same name in the same quarter. Use it for the <strong>watchlist</strong> (which tickers), <strong>not</strong> timing (when): 13F and congress data lag up to 45 days, and the position may already be exited.</p>
+</section>
+
+<section>
+  <div class="secnum"><b>04</b> · Crowd psychology</div>
+  <h2>You don't read emotions — you measure their proxies</h2>
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Emotion</th><th>Measurable proxy</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr><td class="emotion">Fear / capitulation</td><td>Fear &amp; Greed extreme low · VIX spike · put/call surge · high-volume flush</td><td><strong>BUY setup</strong> — contrarian entry once selling volume exhausts</td></tr>
+      <tr><td class="emotion">Shock</td><td>sharp negative sentiment spike + volume surge on sudden news</td><td><strong>CUT RISK</strong> — reduce size first, analyze second</td></tr>
+      <tr><td class="emotion">Anticipation</td><td>pre-event mention volume climbing · options IV rising into a known catalyst</td><td><strong>EARLY ENTRY</strong> — small size, before the confirming headline</td></tr>
+      <tr><td class="emotion">Euphoria</td><td>overbought RSI + social blow-off + parabolic price + “can't lose” tone</td><td><strong>SELL / TRIM</strong> — tops form when everyone bullish is already in</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="secnum"><b>05</b> · Scoring</div>
+  <h2>Worked example (invented numbers)</h2>
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Component</th><th>Weight</th><th>Score</th><th>Contribution</th></tr></thead>
+    <tbody style="font-variant-numeric: tabular-nums;">
+      <tr><td>Sentiment</td><td>0.25</td><td>+62</td><td>15.5</td></tr>
+      <tr><td>Macro regime</td><td>0.20</td><td>+35</td><td>7.0</td></tr>
+      <tr><td>Thesis (fundamentals)</td><td>0.20</td><td>+55</td><td>11.0</td></tr>
+      <tr><td>Smart money</td><td>0.15</td><td>+20</td><td>3.0</td></tr>
+      <tr><td>Technical confirm</td><td>0.20</td><td>+48</td><td>9.6</td></tr>
+      <tr><td><strong>Composite</strong></td><td></td><td></td><td><strong>+46.1 → BUY candidate</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>All five positive and technicals confirm → the two-axis rule is satisfied. The risk gate still checks: no binary event inside the window, position sized to a fixed max loss. <span class="pill">pinned by unit test in swing_stack.py</span></p>
+</section>
+
+<section>
+  <div class="secnum"><b>06</b> · The playbook</div>
+  <h2>The 3–5 day trade, drawn out</h2>
+
+  <figure class="scrollfig">
+  <svg viewBox="0 0 880 130" role="img" aria-label="Timeline from D minus 2 to D plus 14. D minus 2: detect — mention surge, revision, whale cluster. D0: confirm and enter when composite is at least plus 40 and the technical trigger fires. D plus 2: manage — trail stop, watch for shock or tone flip. D plus 5: exit on target, stop, euphoria, or the default time stop. D plus 10 to 14: extension zone, only with a dated catalyst inside the window, decided at entry.">
+    <g font-family="IBM Plex Mono, monospace" font-size="10.5" color="var(--ink-2)">
+      <line x1="30" y1="52" x2="850" y2="52" stroke="currentColor" stroke-width="1.4"/>
+      <g stroke="currentColor"><line x1="60" y1="46" x2="60" y2="58"/><line x1="220" y1="46" x2="220" y2="58"/><line x1="400" y1="46" x2="400" y2="58"/><line x1="560" y1="46" x2="560" y2="58"/><line x1="700" y1="46" x2="700" y2="58"/><line x1="836" y1="46" x2="836" y2="58"/></g>
+      <g fill="var(--ink)" font-weight="600" font-family="Archivo, sans-serif" font-size="12">
+        <text x="60" y="34" text-anchor="middle">D−2</text><text x="220" y="34" text-anchor="middle">D0</text>
+        <text x="400" y="34" text-anchor="middle">D+2</text><text x="560" y="34" text-anchor="middle">D+5</text>
+        <text x="768" y="34" text-anchor="middle">D+10 — D+14</text>
+      </g>
+      <g fill="currentColor">
+        <text x="60" y="76" text-anchor="middle">DETECT</text><text x="60" y="90" text-anchor="middle">surge · revision</text><text x="60" y="104" text-anchor="middle">whale cluster</text>
+        <text x="220" y="76" text-anchor="middle">CONFIRM+ENTER</text><text x="220" y="90" text-anchor="middle">composite ≥ +40</text><text x="220" y="104" text-anchor="middle">AND tech trigger</text>
+        <text x="400" y="76" text-anchor="middle">MANAGE</text><text x="400" y="90" text-anchor="middle">trail stop · watch</text><text x="400" y="104" text-anchor="middle">shock / tone flip</text>
+        <text x="560" y="76" text-anchor="middle">EXIT</text><text x="560" y="90" text-anchor="middle">target / stop /</text><text x="560" y="104" text-anchor="middle">euphoria / time stop</text>
+        <text x="768" y="76" text-anchor="middle">EXTENSION ZONE</text><text x="768" y="90" text-anchor="middle">only with a DATED catalyst,</text><text x="768" y="104" text-anchor="middle">decided at ENTRY</text>
+      </g>
+      <rect x="700" y="44" width="136" height="16" fill="var(--blue-soft)"/>
+    </g>
+  </svg>
+  <figcaption><strong>The time stop is the most ignored rule.</strong> No follow-through and no dated catalyst by D+5 = failed thesis → exit. The 1–2 week extension exists for catalyst-driven theses (feed 4) and must be decided at entry with the catalyst date written down — “hold and hope” is not an extension.</figcaption>
+  </figure>
+
+  <h3>Trigger table</h3>
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Signal</th><th>Trigger (all must hold)</th><th>Exit / invalidation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>BUY · fear reversal</strong></td><td>extreme fear + selling volume drying up + first positive sentiment turn + price reclaims a short-term level</td><td>stop below the flush low; exit on target or time stop</td></tr>
+      <tr><td><strong>BUY · anticipation</strong></td><td>rising pre-catalyst buzz + smart-money presence + uptrend intact; enter small <em>before</em> the headline</td><td>exit into the event spike (“sell the news”), or if buzz fades pre-event</td></tr>
+      <tr><td><strong>BUY · expectations shift</strong></td><td>earnings beat <strong>with raised guidance</strong> (or a wave of upward revisions) + first pullback holds + volume confirms</td><td>post-earnings drift favors 1–2 weeks; invalidated on a close below the earnings-day low</td></tr>
+      <tr><td><strong>BUY · macro tailwind</strong></td><td>dovish macro surprise + tech leading the tape + relative strength on volume</td><td>invalidated if yields reverse within 2 sessions</td></tr>
+      <tr><td><strong>SELL · euphoria top</strong></td><td>overbought RSI + social blow-off + gap-up on no news</td><td>trim into strength; full exit on first high-volume red day</td></tr>
+      <tr><td><strong>SELL · shock / broken thesis</strong></td><td>sudden negative headline, guidance cut, or sentiment spike down + volume surge</td><td>cut size immediately; re-evaluate flat, never while holding</td></tr>
+      <tr><td><strong>WAIT · conflict</strong></td><td>any disagreement between quant and sentiment axes</td><td>write the resolving condition, set an alert, do nothing until it fires</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="secnum"><b>07</b> · Feed 4, built</div>
+  <h2>Fundamentals are crawlable — the easiest feed to automate</h2>
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>What you need</th><th>Source</th><th>How to collect</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Earnings dates</strong></td><td>Finnhub / Alpha Vantage earnings-calendar API · Nasdaq &amp; Yahoo calendars</td><td>free API, daily cron — flag watchlist names reporting in the next 14 days</td></tr>
+      <tr><td><strong>Surprise vs consensus</strong></td><td>Finnhub / Alpha Vantage earnings endpoints (actual vs estimate EPS)</td><td>compute surprise % the morning after each report</td></tr>
+      <tr><td><strong>Guidance &amp; events</strong></td><td>SEC EDGAR 8-K filings &amp; press releases (official, free, RSS + full-text search)</td><td>poll per ticker; LLM classifies “guidance raised / kept / cut” → score</td></tr>
+      <tr><td><strong>Estimate revisions</strong></td><td>yfinance analyst data, Finnhub estimates (free, rough) · Zacks / paid feeds (proper)</td><td>weekly pull; direction of change matters more than level</td></tr>
+      <tr><td><strong>Product catalysts</strong></td><td>company IR pages + newsroom RSS · news feed filtered per ticker</td><td>IR pages are public and stable; LLM tags catalyst / noise</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout"><p><strong>Minimum viable script (daily):</strong> pull the earnings calendar → mark watchlist names reporting soon → after each report fetch actual-vs-estimate + the 8-K → LLM scores guidance direction → thesis score updates.</p></div>
+</section>
+
+<section>
+  <div class="secnum"><b>08</b> · Crypto adaptation</div>
+  <h2>Same stack, three feeds swapped</h2>
+  <p>Crypto is <strong>more</strong> psychology-driven than stocks (no earnings anchor). The two-axis rule, psychology table, macro score, and risk gate apply unchanged. Three feeds get replaced — one swap is a strict upgrade.</p>
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Stock feed</th><th>Crypto replacement</th><th>Sources</th></tr></thead>
+    <tbody>
+      <tr><td>Earnings &amp; catalysts</td><td><strong>Token catalyst calendar:</strong> unlock schedules (dated sell pressure), upgrades &amp; halvings, ETF/listing decisions, protocol fees &amp; TVL (closest thing to revenue). Regulatory headlines = the “geopolitics” of crypto.</td><td>Tokenomist/TokenUnlocks, DefiLlama, Token Terminal, CoinGecko events</td></tr>
+      <tr><td>Filings (13F, 45-day lag)</td><td><strong>On-chain whale tracking — real-time:</strong> whale wallet moves, exchange inflows (= preparing to sell) / outflows (= accumulation), smart-money labels. <em>This swap is the strict upgrade.</em></td><td>Glassnode, CryptoQuant, Nansen, whale-alert feeds</td></tr>
+      <tr><td>Options flow</td><td><strong>Perp derivatives:</strong> funding rate (spike = euphoria), open interest, liquidation cascades (= capitulation)</td><td>Coinglass, exchange APIs via CCXT</td></tr>
+      <tr><td>Fear &amp; Greed (CNN)</td><td>Crypto Fear &amp; Greed Index — same contrarian reading</td><td>alternative.me</td></tr>
+      <tr><td>Social / news / macro</td><td>Unchanged; add crypto Twitter, Telegram, Discord. BTC/alts trade like high-beta tech — same CPI/FOMC blackout.</td><td>same sources + CoinGecko API</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn"><p><strong>Rules that tighten for crypto:</strong> 24/7 market → time stop in clock hours (e.g. 120h), shocks land on thin-liquidity weekends; volatility several times higher → ≤1% sizing matters more; manipulation (pump groups, wash-traded volume, botted sentiment) far worse → never trade sentiment without quant confirmation; risk of total loss is real.</p></div>
+</section>
+
+<section>
+  <div class="secnum"><b>09</b> · Resources</div>
+  <h2>Source directory</h2>
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Area</th><th>Sources</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Fundamentals · earnings</strong></td><td>SEC EDGAR · Finnhub · Alpha Vantage · yfinance · Zacks · company IR pages &amp; call transcripts</td></tr>
+      <tr><td><strong>Sentiment · social &amp; news</strong></td><td>FinBERT · FinGPT · Tradestie (Reddit/WSB sentiment) · StockTwits (+ Apify scraper) · VADER</td></tr>
+      <tr><td><strong>Macro · calendar &amp; regime</strong></td><td>TradingView / Investing.com calendars · FRED · CME FedWatch · CNN Fear &amp; Greed</td></tr>
+      <tr><td><strong>Smart money</strong></td><td>Dataroma · WhaleWisdom · Quiver Quantitative (congress) · OpenInsider (Form 4 clusters)</td></tr>
+      <tr><td><strong>Price data &amp; APIs</strong></td><td>yfinance · Finnhub · Alpha Vantage · Polygon.io</td></tr>
+      <tr><td><strong>Crypto</strong></td><td>CoinGecko · Coinglass · CCXT · Glassnode · CryptoQuant · Nansen · DefiLlama · Token Terminal · TokenUnlocks · alternative.me F&amp;G</td></tr>
+      <tr><td><strong>Build &amp; backtest</strong></td><td>OpenBB · vectorbt · backtrader · Qlib · FinRL · awesome-systematic-trading</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="secnum"><b>10</b> · The minimum loop</div>
+  <h2>Manual, under an hour a day</h2>
+  <ol class="tight">
+    <li><strong>Build the watchlist weekly (Pillars 3+4).</strong> Scan Dataroma / Quiver / OpenInsider for cluster buys; add names with upward estimate revisions. 10–20 tickers max.</li>
+    <li><strong>Know every catalyst date (Pillar 4).</strong> Next earnings, next product event per name → decides the trade window and the blackout rule.</li>
+    <li><strong>Score the macro regime each morning (Pillar 2).</strong> 10Y direction, VIX, DXY, today's calendar → one number, −100…+100. No fresh entries within 24h of a binary event.</li>
+    <li><strong>Scan sentiment per watchlist name (Pillar 1).</strong> Mention surge vs baseline? Tone flip? Fear/greed extreme? Score it.</li>
+    <li><strong>Demand technical confirmation.</strong> Composite ≥ +40 means nothing until price confirms — level reclaimed, relative strength, volume behind the move.</li>
+    <li><strong>Write the exit before the entry.</strong> Stop, target, and time stop (D+5, or catalyst date + 1–2 days), on paper, before the order.</li>
+    <li><strong>Size to survive.</strong> Risk a fixed small fraction (≤1% of account) per trade. Signal quality picks direction; sizing decides survival.</li>
+    <li><strong>Log every trade, backtest every rule.</strong> The weights above are guesses until your own data says otherwise.</li>
+  </ol>
+  <p>Automate the step that hurts most first, one at a time.</p>
+</section>
+
+<footer>
+  ⚠️ <strong>Research aid, not financial advice.</strong> Signals are probabilistic and can be wrong. Sentiment indicators lag, are noisy, and are manipulable (bots, pump rooms, fake news). 13F and congress data arrive with up to a 45-day delay. Stock and crypto trading carry risk of substantial or total loss. Use hard stop-losses, position limits, and a max-drawdown circuit breaker — final decisions and outcomes are your own responsibility.
+  <br><br>Markdown source of record: <span class="mono">research/SWING_SIGNAL_STACK.md</span> · implementation &amp; test: <span class="mono">docs/reports/swing-signal-stack-ship-20260831.html</span>
+</footer>
+
+</div>
+</body>
+</html>

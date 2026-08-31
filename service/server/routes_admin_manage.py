@@ -130,6 +130,10 @@ class MemberStatusBody(BaseModel):
     status: str
 
 
+class ResetCapitalBody(BaseModel):
+    amount: float = 10000.0
+
+
 class MemberCreateBody(BaseModel):
     email: str
     lang: str = "en"
@@ -383,6 +387,78 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         audit(admin, "member.status", f"user:{user_id}",
               f"email={row['email']} status={body.status}")
         return {"ok": True, "status": body.status}
+
+    @app.post('/api/admin/members/{user_id}/reset-capital')
+    async def admin_member_reset_capital(user_id: int, body: ResetCapitalBody,
+                                         authorization: str = Header(None)):
+        """Reset every agent of a member to a clean book: cash = starting
+        capital = `amount`, deposited = 0, open positions and the equity
+        curve wiped — so displayed profit is exactly zero (profit baselines
+        everywhere are starting_capital + deposited). Audited; the response
+        carries the before-state so the action is reconstructible."""
+        admin = require_admin(authorization)
+        amount = float(body.amount)
+        if not (0 < amount <= 100_000_000):
+            raise HTTPException(status_code=400, detail="Amount must be between 0 and 100,000,000")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id, email FROM users WHERE id = ?", (user_id,))
+            user = cursor.fetchone()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            cursor.execute(
+                "SELECT id, name, cash, starting_capital, COALESCE(deposited, 0) AS deposited "
+                "FROM agents WHERE user_id = ?", (user_id,))
+            agents = [dict(r) for r in cursor.fetchall()]
+            if not agents:
+                raise HTTPException(status_code=404, detail="User has no agents")
+            results = []
+            for agent in agents:
+                cursor.execute("DELETE FROM positions WHERE agent_id = ?", (agent["id"],))
+                positions_deleted = cursor.rowcount
+                cursor.execute("DELETE FROM profit_history WHERE agent_id = ?", (agent["id"],))
+                history_deleted = cursor.rowcount
+                # The fill log IS the signals table (message_type='operation') —
+                # /positions/trades* and the automation profit tiles sum it, so
+                # a zero-profit reset must clear it (social signal types stay).
+                cursor.execute(
+                    "DELETE FROM signal_replies WHERE signal_id IN "
+                    "(SELECT id FROM signals WHERE agent_id = ? AND message_type = 'operation')",
+                    (agent["id"],))
+                # broker_orders.signal_id has an FK onto signals(signal_id) —
+                # MySQL enforces it (SQLite does not), so detach before deleting.
+                cursor.execute(
+                    "UPDATE broker_orders SET signal_id = NULL WHERE agent_id = ?",
+                    (agent["id"],))
+                cursor.execute(
+                    "DELETE FROM signals WHERE agent_id = ? AND message_type = 'operation'",
+                    (agent["id"],))
+                trades_deleted = cursor.rowcount
+                # Per-run realized/peak P&L shows on the automation run tiles.
+                cursor.execute(
+                    "UPDATE trading_runs SET realized_pnl_usd = 0, peak_pnl_usd = NULL, "
+                    "peak_realized_usd = NULL WHERE agent_id = ?", (agent["id"],))
+                runs_zeroed = cursor.rowcount
+                cursor.execute(
+                    "UPDATE agents SET cash = ?, starting_capital = ?, deposited = 0 "
+                    "WHERE id = ?", (amount, amount, agent["id"]))
+                results.append({
+                    "agent_id": agent["id"], "name": agent["name"],
+                    "before": {"cash": agent["cash"],
+                               "starting_capital": agent["starting_capital"],
+                               "deposited": agent["deposited"]},
+                    "positions_deleted": positions_deleted,
+                    "profit_history_deleted": history_deleted,
+                    "trade_fills_deleted": trades_deleted,
+                    "runs_pnl_zeroed": runs_zeroed,
+                })
+            conn.commit()
+        finally:
+            conn.close()
+        audit(admin, "member.reset_capital", f"user:{user_id}",
+              f"email={user['email']} amount={amount} agents={[r['agent_id'] for r in results]}")
+        return {"ok": True, "amount": amount, "agents": results}
 
     # ────────────────────────── paid membership ──────────────────────────
 
