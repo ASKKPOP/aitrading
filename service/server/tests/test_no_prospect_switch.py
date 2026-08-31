@@ -136,6 +136,18 @@ class NoProspectSwitchTests(unittest.TestCase):
                "leverage": 1}
         self.assertIsNone(self._evaluate(run, trades=1, position=pos))
 
+    def test_swing_archetype_is_exempt(self):
+        # Live 2026-08-31 (fleet 43): a swing slot waits flat for its entry
+        # BY DESIGN — the rail killed 8 swing builds in one session and
+        # starved the fleet to 1/8. Swing must never trip this rail.
+        run = _run(run_id=909)
+        cfg = json.loads(run["config_snapshot_json"])
+        cfg["archetype"] = "swing"
+        run["config_snapshot_json"] = json.dumps(cfg)
+        for h in (4.0, 3.0, 2.0, 1.0):
+            self._decision(run["id"], h)
+        self.assertIsNone(self._evaluate(run))
+
     def test_kill_switch(self):
         os.environ["RUN_NO_PROSPECT_SWITCH"] = "0"
         run = _run(run_id=908)

@@ -1268,7 +1268,14 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # by this rail — and the trade-ts bound inside _flat_hold_span keeps
     # position-managing holds from ever counting. Same in-flight guard as
     # idle-retire (a desk deciding RIGHT NOW is not prospectless).
+    # SWING runs are EXEMPT (measured live, fleet 43, 2026-08-31): a swing
+    # slot holds 1-2 DAYS and waits flat for its entry BY DESIGN, so the
+    # 1-5h flat-hold window read normal swing patience as "no prospect" —
+    # 8 kills in one session, each benching its symbol 12h, until the
+    # us-stock candidate pool starved and the fleet pinned at 1/8. Swing
+    # keeps its own rails (idle-retire, desk_retired, thesis gates).
     if not has_position and _no_prospect_switch_enabled() \
+            and _run_archetype(run) != "swing" \
             and not _cycle_in_flight(run):
         span_h, holds = _flat_hold_span(run["id"])
         if holds >= _NO_PROSPECT_MIN_DECISIONS and span_h is not None \
