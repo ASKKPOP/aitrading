@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swing Stack Watch</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#faf9f6; --card:#ffffff; --ink:#1d2129; --sub:#5b6472; --mut:#8b93a1;
+    --line:#e3e0d8; --blue:#2a78d6; --blue-soft:#e3edf9; --orange:#d95926;
+    --orange-soft:#fbeae2; --good:#2e9e6b; --good-soft:#e2f2ea; --bad:#c9432e;
+    --bad-soft:#f9e5e1; --warn:#b07a10; --warn-soft:#f7efdb; --chip:#f1efe9;
+  }
+  :root:not([data-theme="light"]){ }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15171c; --card:#1d2026; --ink:#e8e9ec; --sub:#a6adba; --mut:#767e8c;
+      --line:#2e323a; --blue:#5d9ce8; --blue-soft:#1c2c40; --orange:#ee7a45;
+      --orange-soft:#3a2418; --good:#4cbf8b; --good-soft:#16311f; --bad:#e0664f;
+      --bad-soft:#3a1f1a; --warn:#d9a334; --warn-soft:#332a14; --chip:#262a31;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15171c; --card:#1d2026; --ink:#e8e9ec; --sub:#a6adba; --mut:#767e8c;
+    --line:#2e323a; --blue:#5d9ce8; --blue-soft:#1c2c40; --orange:#ee7a45;
+    --orange-soft:#3a2418; --good:#4cbf8b; --good-soft:#16311f; --bad:#e0664f;
+    --bad-soft:#3a1f1a; --warn:#d9a334; --warn-soft:#332a14; --chip:#262a31;
+  }
+  body{background:var(--bg); color:var(--ink); font-family:'Archivo',system-ui,sans-serif;
+       line-height:1.55; margin:0; padding:0 20px 80px;}
+  .wrap{max-width:960px; margin:0 auto;}
+  header{padding:52px 0 28px; border-bottom:2px solid var(--ink); margin-bottom:34px;}
+  .eyebrow{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--blue);}
+  h1{font-size:clamp(30px,5vw,44px); font-weight:800; letter-spacing:-.02em; margin:8px 0 10px; text-wrap:balance;}
+  .lede{font-size:16.5px; color:var(--sub); max-width:64ch; margin:0;}
+  h2{font-size:21px; font-weight:800; letter-spacing:-.01em; margin:46px 0 6px;}
+  h2 .no{color:var(--mut); font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:16px; margin-right:8px;}
+  .sub{color:var(--sub); font-size:14px; margin:0 0 16px; max-width:70ch;}
+  .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:26px 0 8px;}
+  .tile{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+  .tile b{display:block; font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .tile span{font-size:12px; color:var(--sub);}
+  .tile.good b{color:var(--good);} .tile.bad b{color:var(--bad);} .tile.warn b{color:var(--warn);} .tile.blue b{color:var(--blue);}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:14px 0;}
+  .card.incident{border-left:4px solid var(--bad);}
+  .card.fixed{border-left:4px solid var(--good);}
+  .card.watch{border-left:4px solid var(--warn);}
+  .pill{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+        padding:3px 9px; border-radius:99px; margin-right:8px;}
+  .pill.closed{background:var(--good-soft); color:var(--good);}
+  .pill.open{background:var(--warn-soft); color:var(--warn);}
+  .pill.mine{background:var(--bad-soft); color:var(--bad);}
+  table{border-collapse:collapse; width:100%; font-size:13.5px;}
+  th{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); text-align:left;
+     padding:8px 10px 6px; border-bottom:1.5px solid var(--line);}
+  td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  td.num{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .ok{color:var(--good); font-weight:600;} .fail{color:var(--bad); font-weight:600;}
+  .tablewrap{overflow-x:auto;}
+  figure{margin:18px 0; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 18px 10px;}
+  figcaption{font-size:12.5px; color:var(--sub); padding:8px 4px 6px;}
+  svg{max-width:100%; height:auto; display:block;}
+  code{font-family:'IBM Plex Mono',monospace; font-size:.92em; background:var(--chip); border-radius:5px; padding:1px 5px;}
+  .kv{display:grid; grid-template-columns:150px 1fr; gap:4px 14px; font-size:14px; margin:10px 0;}
+  .kv dt{color:var(--mut); font-size:12.5px; padding-top:1px;} .kv dd{margin:0;}
+  ul{padding-left:20px;} li{margin:5px 0;}
+  .footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--mut);}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12px; color:var(--sub); padding:2px 4px;}
+  .sw{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Sooppiy · Swing Signal Stack · Hourly Monitoring</div>
+  <h1>Swing Stack Watch — the first 48 hours</h1>
+  <p class="lede">2026-08-31 05:02 UTC → 2026-09-01 23:26 UTC. Six feeds probed from the
+  production box every hour with US-session gating. Two incidents found, root-caused with
+  evidence, fixed, deployed, and verified recovered. One watch item remains open on purpose.</p>
+</header>
+
+<div class="tiles">
+  <div class="tile blue"><b>41</b><span>hourly cycles run</span></div>
+  <div class="tile good"><b>99.2%</b><span>feed-check pass rate (244/246)</span></div>
+  <div class="tile bad"><b>2</b><span>incidents — both closed</span></div>
+  <div class="tile warn"><b>1</b><span>watch item open</span></div>
+  <div class="tile blue"><b>2</b><span>monitoring-driven prod deploys</span></div>
+</div>
+
+<h2><span class="no">01</span>Two-day timeline</h2>
+<p class="sub">Every event that mattered, on one strip. Blue marks are process events, red are
+failures, green are fixes landing on production.</p>
+
+<figure>
+<svg viewBox="0 0 900 190" role="img" aria-label="Timeline of monitoring events across August 31 and September 1" style="color:var(--ink)">
+  <line x1="40" y1="95" x2="880" y2="95" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="460" y1="80" x2="460" y2="110" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".4"/>
+  <text x="60" y="180" font-size="12" fill="currentColor" opacity=".65" font-weight="700">Aug 31 (UTC)</text>
+  <text x="480" y="180" font-size="12" fill="currentColor" opacity=".65" font-weight="700">Sep 1 (UTC)</text>
+  <!-- events: x mapped over 48h from 05:00 D1 to 24:00 D2 -->
+  <g font-size="11" fill="currentColor">
+    <circle cx="60" cy="95" r="5" fill="var(--blue)"/>
+    <text x="60" y="70" text-anchor="middle">05:02 baseline</text>
+    <text x="60" y="83" text-anchor="middle" opacity=".6">6/6 ok</text>
+    <circle cx="240" cy="95" r="5" fill="var(--bad)"/>
+    <text x="240" y="45" text-anchor="middle">14:33 rail kills</text>
+    <text x="240" y="58" text-anchor="middle" opacity=".6">4 swing slots</text>
+    <circle cx="340" cy="95" r="5" fill="var(--blue)"/>
+    <text x="340" y="126" text-anchor="middle">13:26–20:26</text>
+    <text x="340" y="139" text-anchor="middle" opacity=".6">US window judged, all ok</text>
+    <circle cx="418" cy="95" r="5" fill="var(--bad)"/>
+    <text x="418" y="45" text-anchor="middle">22:26 calendar 429</text>
+    <text x="418" y="58" text-anchor="middle" opacity=".6">×2 cycles → escalated</text>
+    <circle cx="447" cy="95" r="6" fill="var(--good)"/>
+    <text x="447" y="70" text-anchor="middle" font-weight="700">fixes deployed</text>
+    <text x="447" y="83" text-anchor="middle" opacity=".6">swing-exempt · 429</text>
+    <circle cx="530" cy="95" r="5" fill="var(--good)"/>
+    <text x="530" y="126" text-anchor="middle">00:26 recovered</text>
+    <text x="530" y="139" text-anchor="middle" opacity=".6">6/6 · fleet 3/8</text>
+    <circle cx="640" cy="95" r="5" fill="var(--blue)"/>
+    <text x="640" y="45" text-anchor="middle">07:26 fleet 6/8</text>
+    <text x="640" y="58" text-anchor="middle" opacity=".6">recovery peak</text>
+    <circle cx="760" cy="95" r="5" fill="var(--warn)"/>
+    <text x="760" y="126" text-anchor="middle">14:45–21:26 idle drain</text>
+    <text x="760" y="139" text-anchor="middle" opacity=".6">zero entries → 0/8</text>
+    <circle cx="866" cy="95" r="5" fill="var(--blue)"/>
+    <text x="855" y="70" text-anchor="middle">23:26</text>
+    <text x="855" y="83" text-anchor="middle" opacity=".6">6/6 ok</text>
+  </g>
+</svg>
+<figcaption>The two failures cluster late on day 1; both fixes shipped within ~2 hours of
+confirmation and day 2 ran clean on the feed side.</figcaption>
+</figure>
+
+<h2><span class="no">02</span>Incident 1 — fleet 43 pinned at 1/8 <span class="pill closed">closed</span><span class="pill mine">caused by my own ship</span></h2>
+<p class="sub">Owner-reported ("why doesn't increase to 8?"). Monitoring evidence traced a
+three-stage mechanism — and the first stage was a rail I had shipped that same morning.</p>
+
+<div class="card incident">
+<dl class="kv">
+  <dt>Symptom</dt><dd>Swing fleet 43 (8 slots, us-stock) stuck at <code>replenishing:1/8</code> all day.</dd>
+  <dt>Cause chain</dt><dd>
+    ① The new <code>no_prospect_switched</code> rail (owner's 1–5h switch order) treated a swing
+    slot's designed flat waiting as "no profit future" — <b>8 swing builds killed in one
+    session</b>, each rebuild dying exactly at its 3-hour mark.<br>
+    ② Every kill benched its symbol for 12&nbsp;hours, draining the tech-only candidate pool.<br>
+    ③ The backtest expectancy gate then rightly refused the remainder on real losing history
+    (TSLA −$494/trade over 6 closed, AAPL −$426/8, PLTR −$576/5) → zero buildable candidates.
+  </dd>
+  <dt>Fix</dt><dd>Swing archetype exempted from the rail (<code>cf94b2a2</code>, image
+  <code>20260831-swing-exempt</code>); the intraday archetype keeps the owner's 1–5h switch
+  unchanged. Stages ② and ③ were left alone — both protect money and worked as designed.</dd>
+  <dt>Proof of recovery</dt><dd>QCOM survived past the 3-hour mark that killed all its
+  predecessors; slots rebuilt exactly as each bench lapsed: 1 → 3 → 5 → 6 of 8 overnight,
+  every step matching the predicted bench-expiry time.</dd>
+</dl>
+</div>
+
+<figure>
+<svg viewBox="0 0 900 260" role="img" aria-label="Fleet 43 slot count over 48 hours: built to 5, crushed to 1 by the broken rail, recovered to 6 after the fix, drained to 0 by designed idle retirements" style="color:var(--ink)">
+  <!-- axes -->
+  <line x1="50" y1="220" x2="880" y2="220" stroke="currentColor" stroke-width="1.2" opacity=".7"/>
+  <line x1="50" y1="30"  x2="50"  y2="220" stroke="currentColor" stroke-width="1.2" opacity=".7"/>
+  <g font-size="11" fill="currentColor" opacity=".6">
+    <text x="38" y="224" text-anchor="end">0</text>
+    <text x="38" y="180" text-anchor="end">2</text>
+    <text x="38" y="136" text-anchor="end">4</text>
+    <text x="38" y="92"  text-anchor="end">6</text>
+    <text x="38" y="48"  text-anchor="end">8</text>
+    <text x="90"  y="240">Aug 31 05:00</text>
+    <text x="440" y="240">Sep 1 00:00</text>
+    <text x="840" y="240" text-anchor="end">Sep 1 24:00</text>
+  </g>
+  <g stroke="currentColor" opacity=".12"><line x1="50" y1="48" x2="880" y2="48"/><line x1="50" y1="92" x2="880" y2="92"/><line x1="50" y1="136" x2="880" y2="136"/><line x1="50" y1="180" x2="880" y2="180"/></g>
+  <!-- target line 8 -->
+  <line x1="50" y1="48" x2="880" y2="48" stroke="var(--blue)" stroke-width="1" stroke-dasharray="5 4" opacity=".55"/>
+  <text x="876" y="42" font-size="11" fill="var(--blue)" text-anchor="end">target 8</text>
+  <!-- x mapping: hours since Aug31 00:00, x = 50 + h*17.29 (48h -> 830px) -->
+  <!-- step path: (4.8,5)(14.55,1)(24.4,3)(26.6,5)(31,6)(35.5,5)(38.75,4)(40.3,2)(40.5,1)(45.4,0)(48,0) -->
+  <polyline fill="none" stroke="var(--orange)" stroke-width="2.5"
+    points="133,110 302,110 302,198 472,198 472,154 510,154 510,110 586,110 586,88 664,88 664,110 720,110 720,132 747,132 747,176 750,176 750,198 835,198 835,220 880,220"/>
+  <!-- annotations -->
+  <g font-size="11" fill="currentColor">
+    <text x="150" y="102" opacity=".8">built 5/8</text>
+    <text x="250" y="192" fill="var(--bad)" font-weight="700">rail kills → 1/8</text>
+    <circle cx="455" cy="198" r="5" fill="var(--good)"/>
+    <text x="410" y="188" fill="var(--good)" font-weight="700">fix live</text>
+    <text x="590" y="80" opacity=".8">6/8 recovery peak</text>
+    <text x="700" y="160" fill="var(--warn)">idle_retired drain</text>
+    <text x="790" y="212" fill="var(--warn)">0/8 — all benched</text>
+  </g>
+</svg>
+<figcaption>Fleet 43 slot count. The orange line's collapse on Aug 31 was my broken rail; the
+overnight climb proves the fix; the Sep 1 drain is the <em>designed</em> idle rail collecting
+slots that never traded ($0 realized on every one — no losses).</figcaption>
+</figure>
+
+<h2><span class="no">03</span>Incident 2 — macro calendar rate-limited (HTTP 429) <span class="pill closed">closed</span></h2>
+<p class="sub">The only feed outage of the 48 hours, caught by the 2-consecutive-cycles rule
+at 23:26 UTC and root-caused within the same cycle.</p>
+
+<div class="card fixed">
+<dl class="kv">
+  <dt>Symptom</dt><dd><code>macro_calendar</code> (faireconomy / ForexFactory) answered
+  <code>429 Too Many Requests, retry-after 157</code> for 2 consecutive cycles.</dd>
+  <dt>Root cause</dt><dd>The new crawl pipeline (live since 08:57Z that morning) fetched the
+  <b>weekly</b> calendar once <b>per symbol</b> per hourly pass — <b>112 requests in one day</b>
+  for a dataset that changes weekly. The host rate-limited the box's IP.</dd>
+  <dt>Fix</dt><dd>The four symbol-independent feeds (calendar, macro regime, fear-greed,
+  benchmark candles) are now fetched <b>once per pass</b> and handed to every symbol's
+  evaluation (<code>21fb51c3</code>, image <code>20260831-calendar-429</code>) — an ~8×
+  traffic cut. A regression test counts fetches across a 3-symbol pass; a deliberately
+  injected bug in the fix was caught by it before shipping.</dd>
+  <dt>Proof of recovery</dt><dd>The feed answered OK one cycle after deploy and has passed
+  every one of the 24 cycles since.</dd>
+</dl>
+</div>
+
+<figure>
+<svg viewBox="0 0 900 170" role="img" aria-label="Before: eight symbols each fetch the calendar; after: one fetch per pass shared by all symbols" style="color:var(--ink)">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+  <g font-size="11.5" fill="currentColor">
+    <text x="105" y="24" font-weight="700">BEFORE — per symbol</text>
+    <g>
+      <rect x="30" y="38" width="64" height="24" rx="6" fill="none" stroke="currentColor"/>
+      <text x="62" y="54" text-anchor="middle">NVDA</text>
+      <rect x="30" y="70" width="64" height="24" rx="6" fill="none" stroke="currentColor"/>
+      <text x="62" y="86" text-anchor="middle">AMD</text>
+      <rect x="30" y="102" width="64" height="24" rx="6" fill="none" stroke="currentColor"/>
+      <text x="62" y="118" text-anchor="middle">…×8</text>
+    </g>
+    <rect x="230" y="62" width="130" height="40" rx="8" fill="var(--bad-soft)" stroke="var(--bad)"/>
+    <text x="295" y="80" text-anchor="middle" fill="var(--bad)" font-weight="700">faireconomy</text>
+    <text x="295" y="95" text-anchor="middle" fill="var(--bad)">429 · 112 req/day</text>
+    <line x1="94" y1="50" x2="228" y2="72" stroke="currentColor" marker-end="url(#arr)"/>
+    <line x1="94" y1="82" x2="228" y2="82" stroke="currentColor" marker-end="url(#arr)"/>
+    <line x1="94" y1="114" x2="228" y2="94" stroke="currentColor" marker-end="url(#arr)"/>
+
+    <text x="560" y="24" font-weight="700">AFTER — once per pass</text>
+    <rect x="470" y="62" width="120" height="40" rx="8" fill="none" stroke="currentColor"/>
+    <text x="530" y="80" text-anchor="middle">run_pipeline</text>
+    <text x="530" y="95" text-anchor="middle" opacity=".6">shared fetch ×1</text>
+    <rect x="680" y="62" width="130" height="40" rx="8" fill="var(--good-soft)" stroke="var(--good)"/>
+    <text x="745" y="80" text-anchor="middle" fill="var(--good)" font-weight="700">faireconomy</text>
+    <text x="745" y="95" text-anchor="middle" fill="var(--good)">200 · ~14 req/day</text>
+    <line x1="590" y1="82" x2="678" y2="82" stroke="currentColor" marker-end="url(#arr)"/>
+    <text x="634" y="74" text-anchor="middle" opacity=".65">1 fetch</text>
+  </g>
+</svg>
+<figcaption>The fix moves the four market-level fetches out of the per-symbol loop; each
+symbol's evaluation receives the shared result.</figcaption>
+</figure>
+
+<h2><span class="no">04</span>What the feeds actually measured</h2>
+<p class="sub">The stack's own data over the window — the sentiment divergence its two-axis
+design exists to catch is happening right now.</p>
+
+<figure>
+<svg viewBox="0 0 900 250" role="img" aria-label="CNN Fear and Greed fell from 54 into fear at 44 while crypto Fear and Greed rose to 69 greed" style="color:var(--ink)">
+  <line x1="50" y1="210" x2="880" y2="210" stroke="currentColor" stroke-width="1.2" opacity=".7"/>
+  <line x1="50" y1="30" x2="50" y2="210" stroke="currentColor" stroke-width="1.2" opacity=".7"/>
+  <g stroke="currentColor" opacity=".12"><line x1="50" y1="60" x2="880" y2="60"/><line x1="50" y1="110" x2="880" y2="110"/><line x1="50" y1="160" x2="880" y2="160"/></g>
+  <g font-size="11" fill="currentColor" opacity=".6">
+    <text x="40" y="64" text-anchor="end">70</text>
+    <text x="40" y="114" text-anchor="end">55</text>
+    <text x="40" y="164" text-anchor="end">40</text>
+    <text x="90" y="230">Aug 31 05:00</text>
+    <text x="440" y="230">Sep 1 00:00</text>
+    <text x="840" y="230" text-anchor="end">Sep 1 24:00</text>
+  </g>
+  <!-- y: v -> 210 - (v-25)*(180/50); x = 50 + h*17.29 -->
+  <!-- CNN: (5,54)(14,50)(23,50)(32,47)(38,46)(41,45)(43,44)(47,45) -->
+  <polyline fill="none" stroke="var(--blue)" stroke-width="2.5"
+    points="136,106 292,120 448,120 603,131 707,134 759,138 793,142 862,138"/>
+  <!-- crypto: (5,62)(24,62)(24.4,69)(47,69) -->
+  <polyline fill="none" stroke="var(--orange)" stroke-width="2.5"
+    points="136,77 465,77 472,52 862,52"/>
+  <circle cx="793" cy="142" r="4.5" fill="var(--blue)"/>
+  <circle cx="862" cy="52" r="4.5" fill="var(--orange)"/>
+  <text x="800" y="160" font-size="12" fill="var(--blue)" font-weight="700">stocks 44–45 · fear</text>
+  <text x="855" y="40" font-size="12" fill="var(--orange)" font-weight="700" text-anchor="end">crypto 69 · greed</text>
+</svg>
+<figcaption><span class="sw" style="background:var(--blue)"></span>CNN Fear&nbsp;&amp;&nbsp;Greed (stocks)
+&nbsp;&nbsp;<span class="sw" style="background:var(--orange)"></span>alternative.me Fear&nbsp;&amp;&nbsp;Greed (crypto).
+Stocks slid from neutral 54 into the fear band while crypto held greed — a 24-point split.
+VIX rose 14.4 → 16.4 over the same window; BTC drifted 78.8k → 77.1k.</figcaption>
+</figure>
+
+<h2><span class="no">05</span>Open watch — a swing fleet that never pulls the trigger <span class="pill open">watching</span></h2>
+<div class="card watch">
+<p style="margin-top:0">After the rail fix, fleet 43 recovered to 6/8 — then every member sat
+through its full idle window (~17h, 12 tradable cycles) without a single entry and was
+collected by the <em>designed</em> idle rail: QCOM, NFLX, NOW, MSFT, ACN, then NOW again —
+<b>all at exactly $0 realized, zero trades, zero losses</b>. By 21:26 UTC the fleet was empty
+with every tech symbol benched.</p>
+<ul>
+  <li><b>The benign reading:</b> correct selectivity. Stock sentiment sits at 44–47 (neutral→fear)
+  and the stack's two-axis agreement matrix demands ±40 composite alignment — the last-month
+  simulation produced only ~17 trades in a whole month, so entry-less days are expected.</li>
+  <li><b>The costly reading:</b> dead capital — $10,000 cycling through builds and benches
+  that can never trade.</li>
+  <li><b>The rule being applied:</b> Monday is excluded from the count (my broken rail
+  contaminated it), so Tuesday is clean zero-entry session #1. If Wednesday also closes
+  entry-less, this becomes a formal finding with a counterfactual: replay what forced entries
+  at the desk's near-miss moments would have earned or lost versus the WAITs.</li>
+</ul>
+</div>
+
+<h2><span class="no">06</span>Feed scoreboard, 41 cycles</h2>
+<div class="tablewrap"><table>
+  <tr><th>Feed</th><th>Source</th><th>Gate</th><th>Checks</th><th>Failed</th><th>Verdict</th></tr>
+  <tr><td>US stock OHLCV</td><td>Yahoo v8 chart</td><td>US session ±1h</td><td class="num">41</td><td class="num">0</td>
+      <td class="ok">100% — bar rolled to the live date at both opens, on time</td></tr>
+  <tr><td>Crypto OHLCV</td><td>OKX candles</td><td>full-time</td><td class="num">41</td><td class="num">0</td><td class="ok">100%</td></tr>
+  <tr><td>Macro regime</td><td>Yahoo ^VIX</td><td>full-time</td><td class="num">41</td><td class="num">0</td><td class="ok">100%</td></tr>
+  <tr><td>Stock psychology</td><td>CNN Fear &amp; Greed</td><td>US session ±1h</td><td class="num">41</td><td class="num">0</td><td class="ok">100% — fresh intraday</td></tr>
+  <tr><td>Crypto psychology</td><td>alternative.me</td><td>full-time</td><td class="num">41</td><td class="num">0</td><td class="ok">100%</td></tr>
+  <tr><td>Macro calendar</td><td>faireconomy</td><td>full-time</td><td class="num">41</td><td class="num">2</td>
+      <td><span class="fail">95.1%</span> — 429 incident, fixed, 24 clean cycles since</td></tr>
+</table></div>
+<p class="sub" style="margin-top:10px">Latencies stayed in the 63–314 ms band for every
+successful probe. One SSH-transport stall (&gt;90 s, 21:01 UTC day 1) affected the control
+path only — feed latencies inside it were normal — and never recurred. The engine
+(<code>swing_stack</code>) imported cleanly on the deployed image in all 41 cycles, across
+four image rollovers.</p>
+
+<h2><span class="no">07</span>Process notes — including the mistakes</h2>
+<div class="card">
+<ul style="margin:4px 0">
+  <li><b>The session-window gate worked as ordered.</b> US feeds were judged only Mon–Fri
+  08:30–17:00 ET; overnight staleness was never flagged; the first judged cycle each day
+  caught the bar rollover minutes after the open.</li>
+  <li><b>Incident 1 was self-inflicted and is reported as such.</b> The rail I shipped that
+  morning caused the fleet stall the owner reported. The fix, the proof, and the memory note
+  preventing recurrence are all in place.</li>
+  <li><b>A fake-green nearly shipped twice.</b> <code>pytest | tail</code> reports the pipe's
+  exit code, not pytest's — one red suite reached main (never production) before the recheck
+  caught it. All CI verdicts now capture the real exit code; the trap is recorded so no
+  future session repeats it.</li>
+  <li><b>One counting correction against myself:</b> an earlier note called Monday a
+  zero-entry session; it was contaminated by the rail bug and is excluded from the watch
+  threshold.</li>
+</ul>
+</div>
+
+<div class="footer">
+  Window 2026-08-31 05:02 → 2026-09-01 23:26 UTC · 41 cycles · fixes shipped:
+  <code>cf94b2a2</code> (swing exempt) and <code>21fb51c3</code> (calendar once-per-pass),
+  images <code>20260831-swing-exempt</code> / <code>20260831-calendar-429</code>, both through
+  full local CI (4,99x tests + 1,349 subtests, true exit codes) per the local-only ship
+  process. Cycle-by-cycle raw notes: docs/reports/swing-stack-monitoring-202608.md.
+</div>
+</div>
+
+</body>
+</html>
