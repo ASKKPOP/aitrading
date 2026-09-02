@@ -17,7 +17,10 @@ Implements research/SWING_SIGNAL_STACK.md:
   bars; crypto: 120 clock hours = 5 daily bars), euphoria exit, shock exit
 
 This module is deliberately pure (no I/O, no env flags): callers feed it
-candles/score inputs. The doc's weights/thresholds are starting points to
+candles/score inputs. (Range note, 2026-09-02: the smart_money input as
+produced by filings_feed is -20..+100 — its insider-sale side is capped at
+the -20 base-rate floor; the other four scores span -100..+100.) The
+doc's weights/thresholds are starting points to
 calibrate by backtesting — see research/swing_stack_sim_20260830.py.
 """
 from __future__ import annotations
