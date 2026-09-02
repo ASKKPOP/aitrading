@@ -92,12 +92,25 @@ class InsiderScoreTest(unittest.TestCase):
         self.assertEqual(read["sell_usd"], 0.0)
         self.assertEqual(read["transactions"], 1)
 
-    def test_net_selling_scores_negative(self):
+    def test_net_selling_scores_negative_but_capped(self):
+        # Base-rate cap (2026-09-02): sells-only used to score -100 and 71%
+        # of live readings pinned there — routine compensation liquidation
+        # is not a -100 signal. Sells-only now reads the -20 floor.
         read = self._run(
             [("4", "2026-08-20", "0001-26-000001", "x/f1.xml")],
             {"f1.xml": _form4_xml([("S", "1000", "100")])},
         )
-        self.assertEqual(read["score"], -100.0)
+        self.assertEqual(read["score"], -20.0)
+
+    def test_mildly_net_selling_above_the_cap_is_untouched(self):
+        # (10k-20k)/30k*100 = -33.3 raw -> capped to -20; but (10k-15k)/25k
+        # = -20 exactly sits ON the floor, and anything shallower passes
+        # through unchanged: (10k-12k)/22k*100 = -9.09.
+        read = self._run(
+            [("4", "2026-08-20", "0001-26-000001", "x/f1.xml")],
+            {"f1.xml": _form4_xml([("P", "100", "100"), ("S", "120", "100")])},
+        )
+        self.assertEqual(read["score"], -9.09)
 
     def test_score_is_value_weighted_not_count_weighted(self):
         read = self._run(

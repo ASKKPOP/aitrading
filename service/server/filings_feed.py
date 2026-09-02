@@ -188,8 +188,9 @@ def _empty_read(symbol: str, cik: Optional[int]) -> dict[str, Any]:
 def insider_read(symbol: str, today: Optional[str] = None) -> dict[str, Any]:
     """Insider open-market flow for `symbol` over the lookback window.
 
-    Returns a read dict whose `score` is -100..+100 (value-weighted net
-    buy ratio) or None when the window holds no open-market transaction."""
+    Returns a read dict whose `score` is -20..+100 (value-weighted net buy
+    ratio, sell side capped at -20 — see the base-rate note at the scoring
+    site) or None when the window holds no open-market transaction."""
     symbol = (symbol or "").strip().upper()
     cik = cik_for(symbol)
     read = _empty_read(symbol, cik)
@@ -256,7 +257,17 @@ def insider_read(symbol: str, today: Optional[str] = None) -> dict[str, Any]:
     read["skipped_codes"] = dict(skipped)
     total = buy_usd + sell_usd
     if counted and total > 0:
-        read["score"] = round((buy_usd - sell_usd) / total * 100.0, 2)
+        # Insider-sale base-rate floor (measured live 2026-09-02): with the
+        # raw net ratio, 225 of 315 pipeline readings sat at EXACTLY -100 —
+        # large-cap insiders sell almost continuously for compensation
+        # liquidity, so an unbounded negative side carries no information and
+        # anchored every composite ~13 points down. Buying is the costly,
+        # informative direction (unchanged, up to +100); the sell side is
+        # capped at -20 so routine liquidation reads as a mild negative
+        # instead of a pinned floor. Replay of the 48h of stored decisions
+        # showed the cap changes NO past outcome (0 entries either way).
+        read["score"] = round(
+            max(-20.0, (buy_usd - sell_usd) / total * 100.0), 2)
     return read
 
 
