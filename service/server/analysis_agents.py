@@ -884,7 +884,24 @@ def _chair_final(symbol: str, market: str, decision: dict[str, Any],
     action/confidence/report; every other key (order, intent, outlook,
     scores) stays the trader's. Fail-open — any trouble returns the
     decision unchanged (caller also guards)."""
-    allowed = [a for a in VALID_ACTIONS if can_sell or a != "sell"]
+    # Adversarial-review finding 2 (2026-09-02, CONFIRMED): the chair runs
+    # AFTER _apply_verification, so in enforce mode it could resurrect an
+    # action the verifier deterministically rejected — bypassing enforcement
+    # while the journal still read "rejected / applied". An enforced
+    # rejection pins the chair to hold; an enforced weakening caps any chair
+    # confidence at the verifier's adjusted ceiling.
+    ver = decision.get("verification") or {}
+    enforced = bool(ver.get("applied"))
+    if enforced and ver.get("verdict") == "rejected":
+        allowed = ["hold"]
+    else:
+        allowed = [a for a in VALID_ACTIONS if can_sell or a != "sell"]
+    conf_cap = None
+    if enforced and ver.get("verdict") in ("rejected", "weakened"):
+        try:
+            conf_cap = float(ver.get("adjusted_confidence"))
+        except (TypeError, ValueError):
+            conf_cap = None
     summary = {k: decision.get(k) for k in ("action", "confidence", "report")}
     text = generate_text(
         "You are the CHAIR of a three-agent trading-desk discussion "
@@ -912,14 +929,25 @@ def _chair_final(symbol: str, market: str, decision: dict[str, Any],
         return out
     out = dict(decision)
     amended: list = []
+    dropped: list = []
     a = str(chair.get("action") or "").strip().lower()
     if a in allowed and a != str(decision.get("action") or "").lower():
         out["action"] = a
         amended.append("action")
+        # Review finding 1b: the full trader also emits order_intent keyed
+        # to the ORIGINAL action — an amended verb kills the stale intent
+        # so it cannot compile into an order the chair never authorized.
+        for k in ("order_intent", "outlook"):
+            if k in out:
+                out.pop(k, None)
+                dropped.append(k)
     try:
         c = chair.get("confidence")
         if c is not None:
-            out["confidence"] = max(0.0, min(1.0, float(c)))
+            c = max(0.0, min(1.0, float(c)))
+            if conf_cap is not None:
+                c = min(c, conf_cap)
+            out["confidence"] = c
             amended.append("confidence")
     except (TypeError, ValueError):
         pass
@@ -927,7 +955,9 @@ def _chair_final(symbol: str, market: str, decision: dict[str, Any],
     if rep:
         out["report"] = rep[:800]
         amended.append("report")
-    out["chair"] = {"amended": amended} if amended else "adopt"
+    # Empty amend journals AS an empty amend, never as "adopt" (review 5).
+    out["chair"] = {"amended": amended, **({"dropped": dropped}
+                                           if dropped else {})}
     return out
 
 

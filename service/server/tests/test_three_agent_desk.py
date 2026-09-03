@@ -111,6 +111,59 @@ class LightTierDiscussion(unittest.TestCase):
         self.assertIn("error", rec["risk"])
         self.assertEqual(rec["chair"], "adopt")
 
+    def test_action_amendment_kills_stale_intent_and_outlook(self):
+        # Review finding 1 (CONFIRMED live-path trace): a surviving
+        # order_intent compiles to an order verb under RUN_ORDER_INTENT=
+        # apply and OVERRIDES the chair's ruling while dodging the order
+        # panel. An amended action must take the trader's intent and plan
+        # with it.
+        trader = dict(_TRADER)
+        trader["order_intent"] = {"intent": "close", "size_frac": 1.0}
+        trader["outlook"] = {"bias": "long"}
+        replies = [json.dumps({"verdict": "reject", "challenge": "trap"}),
+                   json.dumps({"final": "amend", "action": "hold"})]
+        with patch("llm_client.generate_text", _fake_llm(replies)):
+            final, rec = run_engine._three_agent_light_discussion(
+                _RUN, trader, can_sell=True, pos_qty=5.0, entry=100.0)
+        self.assertEqual(final["action"], "hold")
+        self.assertNotIn("order_intent", final)
+        self.assertNotIn("outlook", final)
+        self.assertEqual(sorted(rec["chair"]["dropped"]),
+                         ["order_intent", "outlook"])
+
+    def test_adopt_keeps_the_intent(self):
+        trader = dict(_TRADER)
+        trader["order_intent"] = {"intent": "close", "size_frac": 0.5}
+        replies = [json.dumps({"verdict": "agree", "challenge": "ok"}),
+                   json.dumps({"final": "adopt"})]
+        with patch("llm_client.generate_text", _fake_llm(replies)):
+            final, _rec = run_engine._three_agent_light_discussion(
+                _RUN, trader, can_sell=True, pos_qty=5.0, entry=100.0)
+        self.assertEqual(final["order_intent"], {"intent": "close",
+                                                 "size_frac": 0.5})
+
+    def test_empty_amend_is_journaled_as_an_empty_amend(self):
+        # Review finding 5 (cosmetic): under-counting amendments.
+        replies = [json.dumps({"verdict": "agree", "challenge": "ok"}),
+                   json.dumps({"final": "amend"})]
+        with patch("llm_client.generate_text", _fake_llm(replies)):
+            final, rec = run_engine._three_agent_light_discussion(
+                _RUN, dict(_TRADER), can_sell=False, pos_qty=0.0, entry=100.0)
+        self.assertEqual(final["action"], "buy")
+        self.assertEqual(rec["chair"], {"amended": []})
+
+    def test_discussion_record_reaches_the_decision_event(self):
+        # Review finding 4 (CONFIRMED): the first cut journaled nothing.
+        src = Path(run_engine.__file__).read_text()
+        self.assertIn('**({"discussion": _disc}', src)
+        self.assertIn('**({"chair": _chair}', src)
+
+    def test_lease_renewed_before_the_discussion(self):
+        # Review finding 7: 1->3 sequential calls can outlive the claim.
+        src = inspect.getsource(run_engine._light_analysis)
+        self.assertLess(src.index("_renew_lease(run"),
+                        src.index("_three_agent_light_discussion("))
+
     def test_light_path_is_wired(self):
         # Wiring proof (brief-line lesson): the hook must live inside
         # _light_analysis and the record must reach the decision dict.
@@ -154,6 +207,48 @@ class FullTierChair(unittest.TestCase):
                 "NVDA", "us-stock", dict(self._DECISION),
                 {"verdict": "challenge"}, "en", can_sell=True)
         self.assertEqual(out["action"], "sell")     # allowed when can_sell
+
+    def test_enforced_rejection_pins_the_chair_to_hold(self):
+        # Review finding 2 (CONFIRMED): the chair must not resurrect an
+        # action the verifier's enforce mode deterministically rejected.
+        decision = {"action": "hold", "confidence": 0.2,
+                    "report": "demoted by enforcement",
+                    "verification": {"verdict": "rejected", "applied": True,
+                                     "adjusted_confidence": 0.2}}
+        with patch.object(analysis_agents, "generate_text",
+                          _fake_llm([json.dumps({"final": "amend",
+                                                 "action": "buy",
+                                                 "confidence": 0.85})])):
+            out = analysis_agents._chair_final(
+                "NVDA", "us-stock", dict(decision),
+                decision["verification"], "en", can_sell=True)
+        self.assertEqual(out["action"], "hold")          # buy not allowed
+        self.assertEqual(out["confidence"], 0.2)         # capped at adjusted
+
+    def test_enforced_weakening_caps_chair_confidence(self):
+        decision = {"action": "buy", "confidence": 0.4,
+                    "report": "weakened",
+                    "verification": {"verdict": "weakened", "applied": True,
+                                     "adjusted_confidence": 0.4}}
+        with patch.object(analysis_agents, "generate_text",
+                          _fake_llm([json.dumps({"final": "amend",
+                                                 "confidence": 0.9})])):
+            out = analysis_agents._chair_final(
+                "NVDA", "us-stock", dict(decision),
+                decision["verification"], "en", can_sell=True)
+        self.assertEqual(out["confidence"], 0.4)
+
+    def test_full_tier_action_amendment_kills_stale_intent(self):
+        decision = {"action": "sell", "confidence": 0.7, "report": "close it",
+                    "order_intent": {"intent": "close", "size_frac": 1.0}}
+        with patch.object(analysis_agents, "generate_text",
+                          _fake_llm([json.dumps({"final": "amend",
+                                                 "action": "hold"})])):
+            out = analysis_agents._chair_final(
+                "NVDA", "us-stock", dict(decision), None, "en", can_sell=True)
+        self.assertEqual(out["action"], "hold")
+        self.assertNotIn("order_intent", out)
+        self.assertIn("order_intent", out["chair"]["dropped"])
 
     def test_unparseable_chair_leaves_decision_standing(self):
         with patch.object(analysis_agents, "generate_text",

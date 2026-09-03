@@ -6438,10 +6438,21 @@ def _three_agent_light_discussion(run: dict, trader: dict, can_sell: bool,
 
     final = dict(trader)
     amended: list = []
+    dropped: list = []
     a = str(chair.get("action") or "").strip().lower()
     if a and a in allowed and a != str(trader.get("action") or "").lower():
         final["action"] = a
         amended.append("action")
+        # Adversarial-review finding 1 (2026-09-02, CONFIRMED): the trader's
+        # order_intent/outlook are keyed to the ORIGINAL action, and under
+        # RUN_ORDER_INTENT=apply a surviving {"intent": "close"} compiles to
+        # an order verb that OVERRIDES the chair's ruling — while the amended
+        # action (e.g. hold) simultaneously dodges the order panel. When the
+        # chair changes the verb, the trader's intent and plan die with it.
+        for k in ("order_intent", "outlook"):
+            if k in final:
+                final.pop(k, None)
+                dropped.append(k)
     try:
         c = chair.get("confidence")
         if c is not None:
@@ -6458,7 +6469,10 @@ def _three_agent_light_discussion(run: dict, trader: dict, can_sell: bool,
     if rep:
         final["report"] = rep[:500]
         amended.append("report")
-    record["chair"] = {"amended": amended} if amended else "adopt"
+    # An "amend" carrying nothing usable is journaled AS an empty amend, not
+    # as "adopt" — the tape must not under-count amendments (review 5).
+    record["chair"] = {"amended": amended, **({"dropped": dropped}
+                                              if dropped else {})}
     return final, record
 
 
@@ -6714,6 +6728,14 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
                 # downstream sees it. Fail-open inside; record journals with
                 # the decision.
                 if _three_agent_enabled():
+                    # Review finding 7: two extra sequential LLM calls can
+                    # outlive the 300s claim under provider saturation and
+                    # re-open the run-1085 idle-retire race — renew the
+                    # lease before the discussion starts. Fail-soft.
+                    try:
+                        _renew_lease(run["id"])
+                    except Exception:  # noqa: BLE001
+                        pass
                     obj, _discussion = _three_agent_light_discussion(
                         run, obj, can_sell=can_sell, pos_qty=pos_qty,
                         entry=entry)
@@ -7396,6 +7418,18 @@ def run_cycle(run_id: int) -> dict:
                               # Junk/missing degrade to "revised".
                               **(_adherence_stamp(decision)
                                  if _outlook_enabled() else {}),
+                              # Three-agent desk (owner 2026-09-02): the
+                              # risk/chair record must reach the TAPE or the
+                              # amend-rate and the capacity falsifier cannot
+                              # be measured (review finding 4 — the first
+                              # cut attached it to the decision dict and
+                              # journaled nothing).
+                              **({"discussion": _disc}
+                                 if (_disc := decision.get("discussion"))
+                                 else {}),
+                              **({"chair": _chair}
+                                 if (_chair := decision.get("chair"))
+                                 else {}),
                               "report": (decision.get("report") or "")[:1000]})
 
         # Plan 26: the slot's standing plan, journaled beside the decision
