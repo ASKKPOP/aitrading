@@ -22,6 +22,7 @@ import contextvars
 import json
 import logging
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Callable, Optional
@@ -866,6 +867,70 @@ def _verify_decision(symbol: str, market: str, briefs: dict[str, str],
     return _parse_verification_json(text or "")
 
 
+def _chair_enabled() -> bool:
+    """Owner 2026-09-02: the desk always discusses with 3 agents. On the
+    full tier the three are Trader (_trader_risk_decision), Risk (the
+    verifier) and this CHAIR. Kill switch DESK_THREE_AGENT=0 (shared with
+    the light tier's discussion in run_engine)."""
+    return os.getenv("DESK_THREE_AGENT", "1").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def _chair_final(symbol: str, market: str, decision: dict[str, Any],
+                 verification: Optional[dict], lang: str,
+                 can_sell: bool = True) -> dict[str, Any]:
+    """Third agent of the full-tier discussion: reads the trader's verified
+    decision and the risk verdict, and authors the final. May amend only
+    action/confidence/report; every other key (order, intent, outlook,
+    scores) stays the trader's. Fail-open — any trouble returns the
+    decision unchanged (caller also guards)."""
+    allowed = [a for a in VALID_ACTIONS if can_sell or a != "sell"]
+    summary = {k: decision.get(k) for k in ("action", "confidence", "report")}
+    text = generate_text(
+        "You are the CHAIR of a three-agent trading-desk discussion "
+        "(trader / risk / chair) and the FINAL AUTHOR of this decision.\n"
+        f"Symbol: {symbol} ({market}).\n"
+        f"Trader (verified) decision: {json.dumps(summary, default=str)[:500]}\n"
+        f"Risk verdict: {json.dumps(verification or {}, default=str)[:400]}\n"
+        f"Allowed actions: {'|'.join(allowed)}.\n"
+        "Adopt the decision, or amend it where the risk verdict convinced "
+        "you.\n"
+        'Respond ONLY with JSON: {"final": "adopt"} OR {"final": "amend", '
+        '"action": "...", "confidence": 0.0-1.0, "report": "<one sentence '
+        'why>"}',
+        max_tokens=180, temperature=0.2, tier="decision")
+    m = re.search(r"\{.*\}", text or "", re.DOTALL)
+    chair = json.loads(m.group(0)) if m else None
+    if not isinstance(chair, dict) or chair.get("final") not in ("adopt",
+                                                                 "amend"):
+        out = dict(decision)
+        out["chair"] = "unparseable"
+        return out
+    if chair.get("final") == "adopt":
+        out = dict(decision)
+        out["chair"] = "adopt"
+        return out
+    out = dict(decision)
+    amended: list = []
+    a = str(chair.get("action") or "").strip().lower()
+    if a in allowed and a != str(decision.get("action") or "").lower():
+        out["action"] = a
+        amended.append("action")
+    try:
+        c = chair.get("confidence")
+        if c is not None:
+            out["confidence"] = max(0.0, min(1.0, float(c)))
+            amended.append("confidence")
+    except (TypeError, ValueError):
+        pass
+    rep = str(chair.get("report") or "").strip()
+    if rep:
+        out["report"] = rep[:800]
+        amended.append("report")
+    out["chair"] = {"amended": amended} if amended else "adopt"
+    return out
+
+
 def _apply_verification(decision: dict[str, Any],
                         verification: Optional[dict[str, Any]]) -> dict[str, Any]:
     """Deterministic application of the verifier's verdict (enforce mode only):
@@ -1071,6 +1136,20 @@ def _run_analysis_inner(symbol: str, market: str, lang: str,
     decision = _apply_verification(decision, verification)
     _emit(progress, "verify", "done",
           verdict=(verification or {}).get("verdict") or "skipped")
+
+    # Owner 2026-09-02 ("Sooppiy Desk always discusses with 3 agents"): the
+    # full-tier discussion is Trader (decision above) + Risk (the verifier)
+    # + CHAIR — a third agent that reads both and authors the final. Fail-
+    # open: chair trouble leaves the verified decision standing.
+    if _chair_enabled():
+        _emit(progress, "chair", "start")
+        try:
+            decision = _chair_final(symbol, market, decision, verification,
+                                    lang, can_sell=can_sell)
+            _emit(progress, "chair", "done",
+                  ruling=(decision.get("chair") or "adopt"))
+        except Exception:  # noqa: BLE001
+            _emit(progress, "chair", "error")
 
     # Write back what this run taught the desk. Fail-soft and non-blocking to
     # the result: a memory-write problem must not fail an analysis.

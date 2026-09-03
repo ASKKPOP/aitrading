@@ -6349,6 +6349,119 @@ def _outlook_algo_candidate(run: dict, cfg: dict) -> Optional[dict]:
         return None
 
 
+def _three_agent_enabled() -> bool:
+    """Owner 2026-09-02 (verbatim: "also Sooppiy Desktop always desecuss
+    with 3 agents ( <--- change to it )") — every desk decision is a
+    three-agent discussion: the TRADER proposes (the existing decision
+    call, its prompt untouched), a RISK agent challenges the proposal, and
+    a CHAIR authors the final. Default ON; kill switch DESK_THREE_AGENT=0.
+    Armed exits and protective stops stay un-escalated — they execute
+    levels the desk already authored, and delaying protective exits for a
+    fresh meeting was measured and rejected (main handoff §7)."""
+    return os.getenv("DESK_THREE_AGENT", "1").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+# Fields the chair may amend. Everything else (scores, order_intent,
+# outlook, plan_adherence) stays the trader's — the chair rules on the
+# decision, it does not re-author the whole contract.
+_CHAIR_FIELDS = ("action", "confidence", "stop_pct", "target_pct", "report")
+
+
+def _three_agent_light_discussion(run: dict, trader: dict, can_sell: bool,
+                                  pos_qty: float,
+                                  entry) -> "tuple[dict, dict]":
+    """RISK + CHAIR review of the light trader proposal (2 brief-tier
+    calls). Returns (final_obj, discussion_record).
+
+    Fail-OPEN end to end: any infrastructure trouble leaves the trader's
+    proposal standing (an LLM hiccup must not freeze the book — the same
+    rule the order-discussion panel follows), with the failure named in
+    the record. The chair may only amend _CHAIR_FIELDS, and its action
+    must come from the same verb set the trader was offered."""
+    record: dict = {}
+    allowed = {"buy", "hold"}
+    if can_sell:
+        allowed.add("sell")
+    if not pos_qty:
+        allowed.add("retire")
+    proposal = {k: trader.get(k) for k in _CHAIR_FIELDS}
+    base = (f"Symbol {run.get('symbol')} ({run.get('market')}), price now "
+            f"{entry}, position {pos_qty} units (negative = short, 0 = "
+            f"flat).\nTrader proposal: {json.dumps(proposal, default=str)[:600]}\n")
+    from llm_client import generate_text
+    risk: dict = {}
+    try:
+        text = generate_text(
+            "You are the RISK agent in a three-agent desk discussion "
+            "(trader / risk / chair).\n" + base +
+            "Name the strongest CONCRETE reason this proposal could be "
+            "wrong this cycle, then give a verdict.\n"
+            'Respond ONLY with JSON: {"verdict": "agree"|"tighten"|'
+            '"reject", "challenge": "<1-2 sentences>"}',
+            max_tokens=140, temperature=0.3, tier="brief")
+        m = re.search(r"\{.*\}", text or "", re.DOTALL)
+        risk = json.loads(m.group(0)) if m else {}
+        if not isinstance(risk, dict) or "verdict" not in risk:
+            risk = {"error": "risk reply unparseable"}
+    except Exception as exc:  # noqa: BLE001 — fail-open, named in record
+        risk = {"error": f"{type(exc).__name__}: {exc}"[:160]}
+    record["risk"] = {k: risk.get(k) for k in ("verdict", "challenge", "error")
+                      if risk.get(k) is not None}
+
+    try:
+        text = generate_text(
+            "You are the CHAIR of a three-agent desk discussion and the "
+            "FINAL AUTHOR of this cycle's decision.\n" + base +
+            f"Risk agent: {json.dumps(record['risk'], default=str)[:400]}\n"
+            f"Allowed actions: {'|'.join(sorted(allowed))}.\n"
+            "Adopt the proposal, or amend it where the risk challenge "
+            "convinced you.\n"
+            'Respond ONLY with JSON: {"final": "adopt"} OR {"final": '
+            '"amend", "action": "...", "confidence": 0.0-1.0, "stop_pct": '
+            'number|null, "target_pct": number|null, "report": "<one '
+            'sentence why>"}',
+            max_tokens=180, temperature=0.2, tier="brief")
+        m = re.search(r"\{.*\}", text or "", re.DOTALL)
+        chair = json.loads(m.group(0)) if m else None
+    except Exception as exc:  # noqa: BLE001
+        record["chair"] = {"error": f"{type(exc).__name__}: {exc}"[:160]}
+        return trader, record
+
+    if not isinstance(chair, dict) or chair.get("final") not in ("adopt",
+                                                                 "amend"):
+        record["chair"] = {"error": "chair reply unparseable"}
+        return trader, record
+    if chair.get("final") == "adopt":
+        record["chair"] = "adopt"
+        return trader, record
+
+    final = dict(trader)
+    amended: list = []
+    a = str(chair.get("action") or "").strip().lower()
+    if a and a in allowed and a != str(trader.get("action") or "").lower():
+        final["action"] = a
+        amended.append("action")
+    try:
+        c = chair.get("confidence")
+        if c is not None:
+            final["confidence"] = max(0.0, min(1.0, float(c)))
+            amended.append("confidence")
+    except (TypeError, ValueError):
+        pass
+    for k in ("stop_pct", "target_pct"):
+        v = chair.get(k)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            final[k] = float(v)
+            amended.append(k)
+    rep = str(chair.get("report") or "").strip()
+    if rep:
+        final["report"] = rep[:500]
+        amended.append("report")
+    record["chair"] = {"amended": amended} if amended else "adopt"
+    return final, record
+
+
 def _light_analysis(run: dict, cfg: dict) -> dict:
     """One decision-tier LLM call (agent_planner-style) replacing ONLY the
     analysis stage of run_cycle. Pre-gates, evaluate_execution_gates, the
@@ -6596,6 +6709,16 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         if isinstance(obj_or_none, dict):
             try:
                 obj = obj_or_none
+                # Owner 2026-09-02: the desk ALWAYS discusses with 3 agents —
+                # risk + chair review the trader's proposal before anything
+                # downstream sees it. Fail-open inside; record journals with
+                # the decision.
+                if _three_agent_enabled():
+                    obj, _discussion = _three_agent_light_discussion(
+                        run, obj, can_sell=can_sell, pos_qty=pos_qty,
+                        entry=entry)
+                else:
+                    _discussion = None
                 a = str(obj.get("action") or "").strip().lower()
                 if a in ("buy", "sell", "hold", "retire"):
                     action = a
@@ -6663,6 +6786,11 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
             pass
     decision = {"action": action, "confidence": confidence,
                 "entry": entry, "report": report, "scores": scores}
+    try:
+        if _discussion:
+            decision["discussion"] = _discussion
+    except NameError:
+        pass  # no parseable trader verdict this cycle — nothing to discuss
     if order_block:
         decision["order"] = order_block
     if intent_block:

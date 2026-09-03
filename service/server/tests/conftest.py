@@ -34,3 +34,11 @@ for _key in ("SENDGRID_API_KEY", "ALERT_FROM_EMAIL",
              "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
              "PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_WEBHOOK_ID"):
     os.environ[_key] = ""
+
+# Three-agent desk discussion (owner 2026-09-02) is ON in production by
+# default, but the suite's many light-path tests script a SINGLE trader
+# reply and assert on that one prompt/call — the risk+chair calls would
+# consume their stubs. Stage-isolation tests therefore run with the
+# discussion off; test_three_agent_desk.py re-enables it explicitly and
+# separately asserts the production default (by unsetting the variable).
+os.environ["DESK_THREE_AGENT"] = "0"
