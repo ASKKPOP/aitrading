@@ -124,3 +124,75 @@ switch. Shipped: the decision emit now journals `decided_by`/
 `fallback_reason` (they previously never reached the tape — rule holds
 were indistinguishable from desk holds), and `_flat_hold_span` breaks the
 streak on `decided_by == "rule"`, twin of the scaffold guard.
+
+---
+
+# JOINT FALSIFIER — panel context + crypto geometry (registered 2026-09-04, BEFORE deploy)
+
+Owner decision: ship both in one deploy. Registered up front, as required,
+that **this first window tests BOTH changes together and cannot attribute
+between them.** Saying so before the data arrives is the point; a window read
+after the fact would be a story, not an experiment.
+
+## What ships together
+
+| change | from | to | kill switch |
+|---|---|---|---|
+| panel is told the motion it is reviewing | blind re-decision | `proposal_context` in the trader prompt | `PANEL_PROPOSAL_CONTEXT=0` |
+| crypto stop cap | 0.5% | 2.5% | `STOP_CAP_PCT_CRYPTO` |
+| crypto target cap | 0.3% | 5.0% | `TARGET_PSYCH_CAP_MAP` |
+
+Coupled values deliberately left alone: `RR_FLOOR=0.2` (no longer binding
+under 2.5/5.0 — it permits a 0.5% target against a 2.5% stop, so it must
+be revisited if the geometry stays) and `RUN_ENTRY_MARK_DRIFT_CAP_PCT=0.5`
+(must remain <= the stop cap; 0.5 <= 2.5 is the safe direction).
+
+## What this window overrides, stated plainly
+
+- **Plan 31 D7** registered the next stop-cap window at **0.3%** (narrower).
+  This ships 2.5% — 5x the opposite direction. Justification: F31-GEOM's own
+  fail condition (">2 geometry-citing retires in 300 decisions") measured
+  **215/300**, and its 50-trip requirement measured **0 trips**. The
+  sequential-window design is unexecutable because the current window
+  produces no data at all. That is a deviation from a registered plan and
+  is recorded as one, not smuggled.
+- **Plan 30 F-TARGET-CAP** (target-exit share >= 30% over the first 30
+  fills) is retired **unfired**: it never reached 30 fills. Reported as
+  UNRESOLVED-BY-ZERO-DATA rather than passed or failed.
+
+## The falsifier
+
+**Window 1 (joint), first 50 approved-and-executed crypto entries or 7 days:**
+
+- **PASS** requires BOTH: entries actually occur (the ~0.2% baseline is
+  beaten), AND realized expectancy >= 0 net of fees, reported WITH and
+  WITHOUT the largest single contributor. If stripping the largest
+  contributor flips the sign, the window is INCONCLUSIVE, not a pass.
+- **FAIL** on either: expectancy < 0 at n>=50, or a catastrophic early
+  reading (expectancy worse than -0.5R, or >=80% panel approval with a
+  negative mean) at n>=20.
+- **Discrimination check, independent of P&L:** panel approval rate must
+  stay well below 100%. A panel approving ~everything has stopped
+  reviewing and is rubber-stamping — that fails regardless of expectancy.
+
+**Attribution is deferred, not abandoned.** Because both changes ship at
+once, Window 1 cannot say which one moved the number. Both carry
+independent kill switches, so Window 2 resolves it:
+
+- If Window 1 FAILS -> set `PANEL_PROPOSAL_CONTEXT=0`, keep the geometry,
+  run Window 2. Entries persisting and still losing => the geometry is the
+  problem. Entries collapsing back toward zero => the panel context was
+  the driver of entry rate and the geometry alone cannot lift it.
+- If Window 1 PASSES -> attribution is still owed before either value is
+  treated as settled. Run Window 2 the same way to measure the geometry
+  alone, or accept explicitly that the pair is being kept as a package.
+
+**Control that tests the anchoring hypothesis directly:** compare realized
+expectancy of panel-APPROVED entries against the proposals the panel
+REJECTED over the same window (paper-tracked). If both cohorts perform
+alike, the context added anchoring rather than information ->
+`PANEL_PROPOSAL_CONTEXT=0`, report FAILED in these terms.
+
+Switch timestamp is the container recreation time recorded at deploy; every
+`order_discussion` event now carries `proposal_context_chars`, so meetings
+before and after the switch are separable on the tape.
