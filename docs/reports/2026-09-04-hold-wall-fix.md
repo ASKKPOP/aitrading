@@ -57,6 +57,29 @@ CI 6/6 jobs green.
   (5% × $375 bet; was 7.50), DE/COP show probation-scaled extreme-tier
   math (16.08 / 45.12 = 10% × scaled bet).
 
+## Follow-up ship (same session): hourly no-prospect switch
+
+Owner order ("Desk analysis each a hour not 3 hours"), confirmed to mean
+the switch window: 67df333a → prod `20260904-one-hour-switch` (~02:56Z).
+`RUN_NO_PROSPECT_SWITCH_HOURS` 3→1, min decisions 3→2, plus the guard
+both verification agents found independently: the light-cycle
+"no LLM verdict" scaffold journals `action: hold` and counted toward the
+switch — an LLM brownout would have rotated and 12h-benched every flat
+slot hourly. Scaffolds now reset the streak (test-pinned, mutation-checked).
+Observed live at 02:57Z: all 8 crypto slots switched in lockstep on 4 real
+desk holds each (guard confirmed live — reports present), replenishment
+rebuilt immediately. Swing fleet 43 exempt from this rail as designed.
+
+## Falsifier interim (03:0xZ, 27/50 decisions on new-rail runs)
+
+0 buys yet — but the hold CHARACTER changed: confidence mode moved to 0.6
+(one 0.8) from the old sub-0.56 wall, and sampled reasons are market
+calls (F&G 74 greed, crowded longs, fragile rebound off a downtrend) not
+rail-impossibility. F&G 74 sits in the caution regime band, so a
+hold-heavy tape is at least consistent right now. Verdict stays OPEN
+until 50 decisions; if the buy rate is still ≤ baseline then, report
+FAILED per the rule below.
+
 ## Open falsifier (pre-registered — judge the fix by this)
 
 Over the **first 50 post-deploy decisions**: buy/short rate must exceed the
