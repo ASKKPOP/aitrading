@@ -51,7 +51,7 @@ class NoProspectSwitchTests(unittest.TestCase):
         for k in ("RUN_NO_PROSPECT_SWITCH", "RUN_NO_PROSPECT_SWITCH_HOURS"):
             os.environ.pop(k, None)
 
-    def _decision(self, run_id, hours_ago, action="hold"):
+    def _decision(self, run_id, hours_ago, action="hold", report=None):
         conn = database.get_db_connection()
         cur = conn.cursor()
         self._seq += 1
@@ -59,7 +59,8 @@ class NoProspectSwitchTests(unittest.TestCase):
             "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
             "VALUES (?, ?, 'decision', ?, ?)",
             (run_id, self._seq, _iso(hours_ago),
-             json.dumps({"action": action, "confidence": 0.6})))
+             json.dumps({"action": action, "confidence": 0.6,
+                         **({"report": report} if report else {})})))
         conn.commit()
         conn.close()
 
@@ -120,12 +121,41 @@ class NoProspectSwitchTests(unittest.TestCase):
 
     def test_short_span_or_few_decisions_do_not_fire(self):
         run = _run(run_id=905)
-        for h in (1.5, 1.0, 0.5):     # 3 holds but only ~1.5h span
+        for h in (0.7, 0.4, 0.2):     # 3 holds but under the 1h window
             self._decision(run["id"], h)
         self.assertIsNone(self._evaluate(run))
         run2 = _run(run_id=906)
-        self._decision(run2["id"], 4.0)   # long span but 2 decisions
-        self._decision(run2["id"], 0.5)
+        self._decision(run2["id"], 4.0)   # long span but a SINGLE decision
+        self.assertIsNone(self._evaluate(run2))
+
+    def test_two_holds_spanning_an_hour_fire(self):
+        """Owner 2026-09-04 ("Desk analysis each a hour not 3 hours"): at
+        the 60-minute cadence two consecutive no-entry verdicts an hour
+        apart are the hourly switch — the old 3-decision floor quietly
+        stretched the hour back to two."""
+        run = _run(run_id=912)
+        self._decision(run["id"], 1.1)
+        self._decision(run["id"], 0.05)
+        self.assertEqual(self._evaluate(run), "no_prospect_switched")
+
+    def test_no_verdict_scaffold_never_authors_the_switch(self):
+        """Adversarial review + independent verification 2026-09-04 (both
+        found it): the light-cycle scaffold journals `action: "hold"` on an
+        LLM failure, so two outage cycles an hour apart would rotate the
+        slot and bench its symbol 12h with the desk never having assessed
+        the prospect — the mark-blackout amplifier class. Scaffolds are not
+        the desk's word and must not count."""
+        run = _run(run_id=913)
+        for h in (1.2, 0.1):    # a pure LLM-outage hour
+            self._decision(run["id"], h,
+                           report="light cycle: no LLM verdict")
+        self.assertIsNone(self._evaluate(run))
+        # a scaffold inside a real streak resets it (only newer holds count)
+        run2 = _run(run_id=914)
+        self._decision(run2["id"], 2.2)
+        self._decision(run2["id"], 1.2,
+                       report="light cycle: no LLM verdict")
+        self._decision(run2["id"], 0.1)
         self.assertIsNone(self._evaluate(run2))
 
     def test_open_position_is_never_switched(self):
@@ -163,7 +193,10 @@ class NoProspectSwitchTests(unittest.TestCase):
         os.environ["RUN_NO_PROSPECT_SWITCH_HOURS"] = "9"
         self.assertEqual(run_engine._no_prospect_switch_hours(), 5.0)
         os.environ["RUN_NO_PROSPECT_SWITCH_HOURS"] = "junk"
-        self.assertEqual(run_engine._no_prospect_switch_hours(), 3.0)
+        self.assertEqual(run_engine._no_prospect_switch_hours(), 1.0)
+        os.environ.pop("RUN_NO_PROSPECT_SWITCH_HOURS", None)
+        # default is the owner's hour (2026-09-04), not the old mid-band 3
+        self.assertEqual(run_engine._no_prospect_switch_hours(), 1.0)
 
     def test_reason_is_classified_for_replacement_and_vary(self):
         import fleet_planner as fp

@@ -538,18 +538,24 @@ def _no_prospect_switch_enabled() -> bool:
 
 def _no_prospect_switch_hours() -> float:
     """Hours of sustained flat `hold` verdicts before the switch fires.
-    The owner's band is 1–5 hours; the default sits mid-band and the env
-    is clamped to the band rather than trusted."""
+    The owner's band is 1–5 hours; the env is clamped to the band rather
+    than trusted. Default 3 → 1 (owner 2026-09-04, verbatim: "Desk
+    analysis each a hour not 3 hours") — a prospectless slot rotates
+    after ~an hour of holds, not three."""
     try:
-        val = float(os.getenv("RUN_NO_PROSPECT_SWITCH_HOURS", "3") or 3)
+        val = float(os.getenv("RUN_NO_PROSPECT_SWITCH_HOURS", "1") or 1)
     except ValueError:
-        val = 3.0
+        val = 1.0
     return min(5.0, max(1.0, val))
 
 
 # A single stale cycle must not switch a slot — the desk has to say "no
 # entry" at least this many consecutive times before the span even counts.
-_NO_PROSPECT_MIN_DECISIONS = 3
+# 3 → 2 with the 1h window (owner 2026-09-04): at the 60-minute cycle
+# cadence a 3-decision floor would quietly stretch the owner's hour back
+# to two; two consecutive no-entry verdicts spanning the window still
+# rule out the single-stale-cycle switch this floor exists to prevent.
+_NO_PROSPECT_MIN_DECISIONS = 2
 
 
 def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
@@ -602,10 +608,18 @@ def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
         if last_trade and ts <= last_trade:
             break
         try:
-            action = json.loads(row["payload"] or "{}").get("action")
+            payload = json.loads(row["payload"] or "{}")
         except (ValueError, TypeError):
             break
-        if action != "hold":
+        if payload.get("action") != "hold":
+            break
+        # The light-cycle scaffold ("no LLM verdict") is NOT the desk's
+        # word — the desk-recall reader skips it for the same reason. An
+        # LLM brownout must never author the switch: with 2 scaffolds/1h
+        # this rail would otherwise retire and bench every flat slot
+        # fleet-wide, hourly, for the outage's duration (adversarial
+        # review 2026-09-04 — the mark-blackout amplifier class).
+        if (payload.get("report") or "") == "light cycle: no LLM verdict":
             break
         oldest = ts
         count += 1
@@ -1258,8 +1272,9 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     # make decession there is no profit future then switch every ( a hour ~
     # 5 hours )". A FLAT run — whether it traded earlier or never — whose
     # desk keeps answering `hold` is the desk itself saying "no profitable
-    # entry here". After >= 3 such verdicts spanning the configured window
-    # (1–5h band, default 3h) the slot is handed back so the fleet builds a
+    # entry here". After >= 2 such verdicts spanning the configured window
+    # (1–5h band, default 1h — owner 2026-09-04: "Desk analysis each a
+    # hour not 3 hours") the slot is handed back so the fleet builds a
     # different symbol (the supervisor's vary-cooldown makes the replacement
     # an actual switch, not a rebuild). Deliberately evaluated AFTER thesis
     # decay: decay reads the desk's own scores and is the sharper diagnosis,
