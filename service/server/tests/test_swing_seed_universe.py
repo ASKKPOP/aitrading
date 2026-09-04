@@ -248,8 +248,22 @@ class EndToEndRefreshTests(_DbBase):
             # tech roster leads as mandatory first picks, but the rest of
             # the market — the seed-only name included — still fills the
             # remaining slots (the drop-all reading starved fleet 43).
-            picked = sr.select_targets(cur, 6, 25,
-                                       markets_scope=["us-stock"])
+            #
+            # Reachability vs ranking policy (Ship A, 2026-09-04): this
+            # fixture drifts the seed name 2%/day, which puts it ~20% above
+            # its own SMA20 — by construction the MOST extended name in the
+            # pool, precisely what `_deprioritise_extended` demotes so the
+            # desk is not handed names it has already decided it will not
+            # chase. Seeding guarantees REACHABILITY (researched,
+            # selectable, never dropped from the pool); it does not promise
+            # that a 20%-extended name wins the ranking. The two are
+            # asserted separately rather than conflated.
+            os.environ["EXTENSION_SORT"] = "0"
+            try:
+                picked = sr.select_targets(cur, 6, 25,
+                                           markets_scope=["us-stock"])
+            finally:
+                os.environ.pop("EXTENSION_SORT", None)
             roster = set(sr.US_TECH_HOT_UNIVERSE)
             self.assertTrue(picked)
             syms = [t["symbol"] for t in picked]
@@ -258,14 +272,26 @@ class EndToEndRefreshTests(_DbBase):
             self.assertTrue(all(s in roster for s in syms[:n_lead]),
                             f"tech roster must lead the picks: {syms}")
             self.assertIn(SEED_ONLY, syms)
+            # With the entry-quality sort ON the seed name is DEMOTED but
+            # never dropped — a deep pick still reaches it. That is the
+            # load-bearing half: a sort that removed candidates is what
+            # starved fleet 43 to 0/8.
+            deep = sr.select_targets(cur, 6, 200, markets_scope=["us-stock"])
+            self.assertIn(SEED_ONLY, [t["symbol"] for t in deep],
+                          "the extension sort must demote, never drop")
             # R20-MUST off: the original guarantee — the seed-only name is
-            # selectable end to end.
+            # selectable end to end. Entry-quality sort held off here for
+            # the same reason as above: this pin is about the SEEDING
+            # pipeline, and the fixture's 2%/day seed name is the most
+            # extended row in the pool by construction.
             os.environ["US_TECH_HOT_MUST"] = "0"
+            os.environ["EXTENSION_SORT"] = "0"
             try:
                 picked = sr.select_targets(cur, 6, 25,
                                            markets_scope=["us-stock"])
             finally:
                 os.environ.pop("US_TECH_HOT_MUST", None)
+                os.environ.pop("EXTENSION_SORT", None)
             self.assertIn(SEED_ONLY, [t["symbol"] for t in picked])
         finally:
             conn.close()

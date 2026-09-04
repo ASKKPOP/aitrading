@@ -557,6 +557,130 @@ def _no_prospect_switch_hours() -> float:
 # rule out the single-stale-cycle switch this floor exists to prevent.
 _NO_PROSPECT_MIN_DECISIONS = 2
 
+# Top of the owner's 2026-08-31 band ("switch every ( a hour ~ 5 hours )").
+# A slot holding an authored plan never waits past it.
+_NO_PROSPECT_PLAN_MAX_HOURS = 5.0
+
+
+def _event_ts_age_hours(raw: str) -> float:
+    """Age of an event timestamp in hours, parsed TOLERANTLY.
+
+    `_age_seconds` is strict `strptime(TS_FMT)` and returns inf for a
+    space-separated, microsecond or offset-bearing stamp. `_flat_hold_span`
+    — the rail immediately beside this one — parses with `fromisoformat`
+    precisely because (its words) "signals and run_events may disagree on
+    'T' vs space format". Using the strict reader for the plan-staleness
+    bound made one format drift enough to age EVERY plan to infinity and
+    silently switch the plan-aware window off, with the whole suite still
+    green (independent verification 2026-09-04). Genuinely unparseable
+    still ages to inf, which fails closed onto the owner's hour."""
+    try:
+        dt = datetime.fromisoformat(str(raw or "").replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return float("inf")
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return (_now_dt() - dt).total_seconds() / 3600.0
+
+
+def _live_entry_plan(run_id: int) -> Optional[dict]:
+    """The desk's newest forward plan, when it names a CONCRETE entry.
+
+    Measured 2026-09-04 (no-entry equilibrium): 82% of outlooks since the
+    hold-wall fix carried a real entry plan — 123 zones with numbers and 36
+    triggers against 34 `none` — e.g. HYPE `{"kind":"zone","low":76.8,
+    "high":83.5,"trigger":"pullback into MA5/MA20 support with volume
+    confirmation"}`. The no-prospect rail counted every one of those holds
+    as "no prospect" and retired the slot after ~3 cycles: 51 runs stopped
+    `no_prospect_switched` while holding an authored prospect. The rail was
+    measuring the absence of a TRADE and calling it the absence of a PLAN.
+
+    A plan is only "live" when it is actionable: a zone needs both bounds
+    as numbers, a trigger needs its text. `none` (21% of outlooks) is the
+    desk genuinely saying there is nothing here — those still rotate on the
+    owner's hour. Fail-soft: an unreadable journal reports None and the
+    rail keeps its old behaviour."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT ts, payload FROM run_events WHERE run_id = ? "
+            "AND event_type = 'outlook' ORDER BY id DESC LIMIT 1", (run_id,))
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 — a rail must never die on a read
+        return None
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    if not row:
+        return None
+    try:
+        outlook = json.loads(row["payload"] or "{}")
+        entry = dict(outlook.get("entry") or {})
+    except (ValueError, TypeError, AttributeError):
+        return None
+    # The sweeper's ALGO FALLBACK is not the desk (adversarial review
+    # 2026-09-04). outlook_refresher._fallback_payload fires precisely when
+    # the LLM is unavailable and mechanically builds a numeric zone from
+    # the algo candidate — the same infra-authorship class as the two
+    # guards already shipped ("light cycle: no LLM verdict" and
+    # decided_by == "rule"), one door over. It self-labels, so reject it by
+    # its own verdict; the sweeper's LLM-AUTHORED standing outlook (same
+    # source, real verdict) is genuinely the desk and still counts.
+    try:
+        if (outlook.get("basis") or {}).get("verdict") == "algo_fallback":
+            return None
+    except AttributeError:
+        return None
+    # A plan the desk stopped renewing is not a live plan. Bounded by the
+    # same ceiling it would grant, so a slot whose outlooks went silent
+    # cannot keep claiming the wide window forever. Tolerant parse (see
+    # _event_ts_age_hours): a genuinely unparseable ts ages to inf and
+    # reads as "not live" — fail-closed onto the owner's hour.
+    if _event_ts_age_hours(row["ts"]) > _NO_PROSPECT_PLAN_MAX_HOURS:
+        return None
+    # horizon lives on the OUTLOOK, not inside entry — carry it along so the
+    # window function can honour a plan that states a shorter life.
+    entry["horizon_hours"] = outlook.get("horizon_hours")
+    kind = entry.get("kind")
+    if kind == "zone":
+        lo, hi = entry.get("low"), entry.get("high")
+        if isinstance(lo, (int, float)) and isinstance(hi, (int, float)):
+            return entry
+        return None
+    if kind == "trigger" and str(entry.get("trigger") or "").strip():
+        return entry
+    return None
+
+
+def _no_prospect_window_hours(run_id: int) -> float:
+    """Hours of flat holds this slot may run before the switch fires.
+
+    Owner 2026-08-31 set the band verbatim — "switch every ( a hour ~ 5
+    hours )" — and 2026-09-04 set the floor to an hour. Both readings are
+    honoured by making the window a function of whether the desk has a
+    PLAN: no plan is the owner's hour, an authored plan may wait up to the
+    top of the owner's own band (bounded by the plan's own horizon when it
+    states a shorter one). Measured why: within a slot's 1-hour life the
+    authored zone was reached 0 times out of 49, so an hourly rail retires
+    every plan before its own premise can be tested."""
+    base = _no_prospect_switch_hours()
+    plan = _live_entry_plan(run_id)
+    if not plan:
+        return base
+    try:
+        horizon = plan.get("horizon_hours")
+        horizon = float(horizon) if horizon is not None else None
+    except (TypeError, ValueError):
+        horizon = None
+    if horizon is None or horizon <= 0:
+        horizon = _NO_PROSPECT_PLAN_MAX_HOURS
+    return min(_NO_PROSPECT_PLAN_MAX_HOURS, max(base, horizon))
+
 
 def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
     """(hours spanned, count) of the run's trailing streak of flat `hold`
@@ -1299,8 +1423,18 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             and _run_archetype(run) != "swing" \
             and not _cycle_in_flight(run):
         span_h, holds = _flat_hold_span(run["id"])
+        # Plan-aware window (owner 2026-09-04, full fix): a slot holding an
+        # AUTHORED entry plan is not prospectless — it is waiting for its
+        # own stated level, and the hour it is given is shorter than the
+        # plan's own premise (0 of 49 zones were reached inside a slot's
+        # 1-hour life). Planless holds keep the owner's hour exactly.
+        # `_no_prospect_window_hours` is never SMALLER than the base window,
+        # so testing the base first is a pure short-circuit: it skips the
+        # plan read entirely in the common case (a slot that has not even
+        # reached the owner's hour) with no behaviour change.
         if holds >= _NO_PROSPECT_MIN_DECISIONS and span_h is not None \
-                and span_h >= _no_prospect_switch_hours():
+                and span_h >= _no_prospect_switch_hours() \
+                and span_h >= _no_prospect_window_hours(run["id"]):
             return "no_prospect_switched"
 
     # Synthetic liquidation: a position's loss can wipe 100% of its escrowed

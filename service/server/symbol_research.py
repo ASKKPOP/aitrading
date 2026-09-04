@@ -1528,6 +1528,67 @@ def _select_from_eligible(eligible: list[dict[str, Any]], n: int,
     return picked
 
 
+def _extension_pct(t: dict[str, Any]) -> float:
+    """How far this candidate is extended IN THE DIRECTION IT WOULD TRADE,
+    in percent. 0.0 when unreadable — unknown is never penalised.
+
+    Direction matters (adversarial review 2026-09-04): `sma20_dist` is
+    signed, `(last/sma20 - 1) x 100`, and the screen assigns
+    `direction = long if mom_5d >= 0 else short`, so every short candidate
+    carries a NEGATIVE distance and was classed "calm" by construction. A
+    short sitting 30% BELOW its mean — the mirror of the measured mistake,
+    selling an exhausted downside move into a bounce — took the lead over a
+    mildly extended long. Flipping the sign for shorts makes the screen
+    measure the same thing on both sides: how far the entry would be
+    chasing a move that already happened."""
+    try:
+        fs = json.loads(t.get("factor_scores_json") or "{}")
+        v = (fs.get("factors") or {}).get("sma20_dist")
+        dist = float(v) if v is not None else 0.0
+    except (ValueError, TypeError):
+        return 0.0
+    if str(t.get("direction") or "").strip().lower() == "short":
+        return -dist
+    return dist
+
+
+def _extension_bar_pct() -> float:
+    """Percent above SMA20 at which the desk starts refusing to chase.
+    Default 8%. EXTENSION_SORT=0 disables the reordering entirely."""
+    try:
+        return max(0.0, float(os.getenv("EXTENSION_BAR_PCT", "8") or 8))
+    except ValueError:
+        return 8.0
+
+
+def _extension_sort_enabled() -> bool:
+    return (os.getenv("EXTENSION_SORT", "true") or "true").strip().lower() in {
+        "1", "true", "yes", "on"}
+
+
+def _deprioritise_extended(eligible: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Stable-sort candidates trading far above their 20-day mean BELOW the
+    rest, without dropping anyone.
+
+    The mandate contradiction, measured 2026-09-04: selection ranks by
+    |mom_2d| x volume (owner R20 mover rule) and `technical_subscore` ADDS
+    `sma20_dist/10`, so the scorer REWARDS extension — while 53% of the
+    desk's hold reports refuse those same names as "extended above MA20,
+    wait for a pullback". The platform was handing the desk exactly the
+    names it had already decided it would not chase, ~9 times an hour.
+
+    Reordering, never dropping: shrinking the pool is what starved fleet 43
+    to 0/8 on 09-03. Extended names still fill slots when nothing calmer is
+    available; they simply stop leading. Stable within each group, so the
+    owner's mover/hot-tech ordering survives inside the groups."""
+    if not _extension_sort_enabled():
+        return eligible
+    bar = _extension_bar_pct()
+    calm = [t for t in eligible if _extension_pct(t) <= bar]
+    hot = [t for t in eligible if _extension_pct(t) > bar]
+    return calm + hot
+
+
 def _cooldown_cap(market: str) -> int:
     """Max symbols a market's VARY-NUDGE cooldowns may EXCLUDE from selection.
 
@@ -1664,6 +1725,12 @@ def select_targets(cursor, agent_id: int, n: int,
                 if (t["market"], t["symbol"]) not in busy
                 and (not markets_scope or t["market"] in markets_scope)]
     _mover_rank_us_stock(eligible)
+    # Entry quality before the owner's pinned orders are applied: names the
+    # desk demonstrably refuses to chase stop LEADING (they stay eligible).
+    # Placed here so the hot-tech MUST reorder below still wins for
+    # us-stock — the owner pinned WHICH names lead, this only orders the
+    # rest by how chaseable they are.
+    eligible = _deprioritise_extended(eligible)
     if _tech_hot_seed_enabled() and _tech_hot_must_enabled():
         eligible = _hot_tech_first_us_stock(eligible)
         # Owner clarification 2026-09-04 (supersedes the 08-31 drop-all
