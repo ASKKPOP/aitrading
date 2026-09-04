@@ -141,7 +141,8 @@ def test_run_analysis_threads_llm_tiers(monkeypatch):
     seen = {}
 
     def fake_inner(symbol, market, lang, guidelines=None, progress=None,
-                   agent_id=None, position_state="", can_sell=True):
+                   agent_id=None, position_state="", can_sell=True,
+                   **kwargs):
         ctx = llm_client.current_llm_context()
         seen["tiers"] = ctx.tier_providers if ctx else None
         return {"decision": {"action": "hold"}}
