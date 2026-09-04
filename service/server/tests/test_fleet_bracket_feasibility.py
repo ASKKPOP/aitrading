@@ -161,17 +161,20 @@ class ProbationScalingTests(unittest.TestCase):
                                  "agent_id": 1})
 
     def test_probation_scaled_rail_is_the_one_judged(self):
-        """400.21 x 0.45 x 0.33 = 59.43 max_bet -> max_loss 1.78, rail
-        1.25 < 2.38: infeasible — the prod fleet 31 build verbatim."""
-        thesis, settings = self._compose(0.33)
-        self.assertAlmostEqual(settings["max_bet_usd"], 59.43, places=2)
+        """400.21 x 0.45 x 0.20 = 36.02 max_bet -> max_loss 2.52, rail
+        1.76 < 2.38: infeasible — the prod fleet 31 shape, re-based on the
+        2026-09-03 hold-wall re-tier (0.03 -> 0.07 made the original 0.33
+        probation cut feasible, so a deeper cut pins the same defect: the
+        gate must judge the probation-SCALED rail)."""
+        thesis, settings = self._compose(0.20)
+        self.assertAlmostEqual(settings["max_bet_usd"], 36.02, places=2)
         why = fp.bracket_infeasible(thesis, settings)
         self.assertIsNotNone(why)
-        self.assertIn("loss_rail_usd=1.25", why)
+        self.assertIn("loss_rail_usd=1.76", why)
 
     def test_full_size_same_slot_is_feasible(self):
-        """Probation lifted (frac 1.0): max_bet 180.09, max_loss 5.40,
-        rail 3.78 >= 2.38 — the same symbol+budget builds. The gate keys
+        """Probation lifted (frac 1.0): max_bet 180.09, max_loss 12.61,
+        rail 8.82 >= 2.38 — the same symbol+budget builds. The gate keys
         on the scaled numbers, not the pre-probation ones."""
         thesis, settings = self._compose(1.0)
         self.assertAlmostEqual(settings["max_bet_usd"], 180.09, places=2)

@@ -189,8 +189,9 @@ class AllocationTests(unittest.TestCase):
                                             "lang": "en"})
         sc = settings["stop_conditions"]
         max_bet = float(settings["max_bet_usd"])
-        # aggressive: stop_loss_frac_of_bet 0.03
-        self.assertAlmostEqual(sc["max_loss_usd"], round(max_bet * 0.03, 2), places=2)
+        # aggressive: stop_loss_frac_of_bet 0.07 (re-tiered 2026-09-03 —
+        # hold-wall fix; see test_hold_wall_fixes)
+        self.assertAlmostEqual(sc["max_loss_usd"], round(max_bet * 0.07, 2), places=2)
         self.assertIn("trail", sc)
         # 2026-08-25: the 2026-07-26 rr=1.0 pin (activate == max_loss) is
         # SUPERSEDED by measurement — it never armed (0/13 fires, activation

@@ -87,8 +87,23 @@ FLEET_BOUNDS = {
     # winner round-trips. Scale the ACTIVE stop to the position (max_bet), and
     # add a peak-tracked trailing lock (run_engine._trailing_lock_hit) that
     # banks the small, mean-reverting moves the far profit_target never reaches.
-    "stop_loss_frac_of_bet": {"stable": 0.015, "balanced": 0.02,
-                              "aggressive": 0.03, "extreme": 0.04},
+    #
+    # Re-tiered 2026-09-03 (hold-wall investigation): at 0.02 a balanced
+    # $1,074 slot carried a $6.45 total loss budget, and the retire brake
+    # (retire_drawdown_frac 0.70) left $4.51 of room — 1.4% of the bet, at
+    # or below one ORDINARY day of noise (ETH ±1.40%, HYPE ±2.39%, WLD
+    # ±3.6%). The desk read the rail correctly ("no stop that clears noise
+    # fits the rail at meaningful size") and authored hold on 100% of the
+    # 1,076 decisions since 08-31 — zero trades platform-wide. Tiers now
+    # put brake room at 2.1–7% of the bet (total risk per run 0.6–7% of
+    # the slot); test_hold_wall_fixes pins the room-vs-noise floor per
+    # tier. Stable's 2.1% room is DELIBERATELY below the widest crypto
+    # noise quoted in the incident (WLD ±3.6%): stable is the
+    # capital-preservation tier — on a high-vol name it should refuse
+    # rather than widen, and the bracket_infeasible build gate keeps such
+    # pairings from composing at full size in the first place.
+    "stop_loss_frac_of_bet": {"stable": 0.03, "balanced": 0.05,
+                              "aggressive": 0.07, "extreme": 0.10},
     # Arm the lock at a floor of 0.3% of notional — but never below a fraction
     # of what the run is RISKING (trail_activate_rr × max_loss). The old
     # frac-only rule put activation at exactly 1/10th of the stop on every

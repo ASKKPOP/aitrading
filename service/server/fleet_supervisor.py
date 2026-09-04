@@ -662,7 +662,14 @@ def _slot_anchor(slot: dict, total: float, n: int) -> float:
 
 def _slot_pass(fleet: dict, members: list[dict], eq: dict) -> None:
     """Per-slot lifecycle: positions_held handling, dormancy re-evaluation,
-    replacement per the per-reason table with sequential funding."""
+    replacement per the per-reason table with sequential funding.
+
+    NOTE (hold-wall investigation 2026-09-03/04): an earlier draft clamped
+    a us-stock-only fleet's target to the hot-5 universe here. The owner's
+    2026-09-04 clarification removed the premise — hot-5-MUST now means
+    "the 5 hot tech names are the mandatory FIRST picks", not "the
+    universe is 5 names" (symbol_research._hot_tech_first_us_stock), so an
+    8-slot us-stock fleet is fillable again and n_runs is used verbatim."""
     by_id = {m["id"]: m for m in members}
     total = float(fleet["total_budget_usd"])
     n = max(int(fleet["n_runs"]), 1)

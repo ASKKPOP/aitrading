@@ -244,13 +244,20 @@ class EndToEndRefreshTests(_DbBase):
                 "SELECT COUNT(*) AS n FROM research_theses WHERE symbol = ?",
                 (SEED_ONLY,))
             self.assertGreater(cur.fetchone()["n"], 0)
-            # R20-MUST on (the default): selection is tech-roster only.
+            # R20-MUST on (the default), clarified 2026-09-04: the hot
+            # tech roster leads as mandatory first picks, but the rest of
+            # the market — the seed-only name included — still fills the
+            # remaining slots (the drop-all reading starved fleet 43).
             picked = sr.select_targets(cur, 6, 25,
                                        markets_scope=["us-stock"])
             roster = set(sr.US_TECH_HOT_UNIVERSE)
             self.assertTrue(picked)
-            self.assertTrue(all(t["symbol"] in roster for t in picked))
-            self.assertNotIn(SEED_ONLY, [t["symbol"] for t in picked])
+            syms = [t["symbol"] for t in picked]
+            n_lead = min(sr.US_TECH_HOT_K,
+                         sum(1 for s in syms if s in roster))
+            self.assertTrue(all(s in roster for s in syms[:n_lead]),
+                            f"tech roster must lead the picks: {syms}")
+            self.assertIn(SEED_ONLY, syms)
             # R20-MUST off: the original guarantee — the seed-only name is
             # selectable end to end.
             os.environ["US_TECH_HOT_MUST"] = "0"

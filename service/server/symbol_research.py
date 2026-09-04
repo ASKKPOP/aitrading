@@ -286,6 +286,11 @@ US_TECH_HOT_UNIVERSE: tuple[str, ...] = (
     'AAPL', 'ACN', 'ADBE', 'AMD', 'AVGO', 'CRM', 'CSCO', 'GOOG', 'GOOGL',
     'IBM', 'INTC', 'INTU', 'META', 'MSFT', 'NFLX', 'NOW', 'NVDA', 'ORCL',
     'PLTR', 'PYPL', 'QCOM', 'TSLA', 'TXN',
+    # Owner 2026-09-04 ("space x, ASTS, nvidia, pltr, tsla, SMR …"): the
+    # hot-ISSUE tech names belong on the roster too — space, nuclear and
+    # quantum buzz stocks, not only mega-caps. The hotness algorithm
+    # (|mom_2d| × volume confirmation) still decides which 5 lead.
+    'ASTS', 'IONQ', 'OKLO', 'RKLB', 'SMR', 'SPCX',
 )
 
 US_TECH_HOT_K = 5
@@ -1523,12 +1528,89 @@ def _select_from_eligible(eligible: list[dict[str, Any]], n: int,
     return picked
 
 
+def _cooldown_cap(market: str) -> int:
+    """Max symbols a market's VARY-NUDGE cooldowns may EXCLUDE from selection.
+
+    Hold-wall incident (2026-09-03): with the desk holding every cycle, the
+    no-prospect switch benched one symbol per slot every ~3h for 12h each —
+    18 concurrent cooldowns collapsed the crypto pool to a single candidate
+    (which the expectancy gate then rejected forever), and 4 of the 5
+    hot-tech names benched froze the us-stock fleet at 0/8. Vary cooldowns
+    are a pick-a-different-name nudge, not a universe eraser: beyond the
+    cap the OLDEST benches (soonest until_ts) are released early; the
+    newest stay excluded so a just-switched symbol is still replaced with
+    a different name. One default across markets: the owner's 2026-09-04
+    hot-5 clarification widened the us-stock universe to the whole market
+    (tech leads, others fill), so a low us-stock cap would only re-release
+    hot roster names into the forced lead ~3h after their no-prospect
+    switch — a build/LLM-burning loop, not starvation protection
+    (adversarial re-review 2026-09-04). The per-market env stays for
+    tuning.
+
+    Only the vary class (_VARY_BENCH_REASONS) is releasable — a bench that
+    encodes a LOSS, an adapt/liquidation retire, or a durable block
+    (source_run_id NULL) always excludes, whatever the flood looks like
+    (adversarial review 2026-09-03: until_ts-ordering alone released a
+    one-minute-old 6h loss bench before hour-old 12h idle benches,
+    reinstating the three-consecutive-ADBE repeated-loss churn)."""
+    env = ("FLEET_SYMBOL_COOLDOWN_CAP_US_STOCK" if market == "us-stock"
+           else "FLEET_SYMBOL_COOLDOWN_CAP")
+    default = 8
+    try:
+        return max(1, int(os.getenv(env, str(default)) or default))
+    except ValueError:
+        return default
+
+
+# Stop reasons whose cooldown is a vary-the-name nudge (all share the same
+# 12h window, so until_ts order IS bench-creation order within the class).
+# Everything else — loss stops (6h), adapt/liquidation (24h), durable
+# NULL-source blocks — is protective and never released early.
+_VARY_BENCH_REASONS = frozenset(
+    {"idle_retired", "no_prospect_switched", "desk_retired"})
+
+
+def _capped_cooldown_exclusions(
+        rows, run_reasons: dict[int, str]) -> set[tuple[str, str]]:
+    """(market, symbol) pairs a selection pass must exclude.
+
+    Protective benches (see _VARY_BENCH_REASONS) always exclude. Vary
+    benches exclude at most _cooldown_cap per market — newest until_ts
+    first, duplicates collapsed to their newest row. A symbol carrying
+    both kinds stays excluded (protection wins)."""
+    protected: set[tuple[str, str]] = set()
+    newest: dict[tuple[str, str], str] = {}
+    for r in rows:
+        key = (r["market"], r["symbol"])
+        src = r["source_run_id"]
+        reason = run_reasons.get(src) if src is not None else None
+        if reason not in _VARY_BENCH_REASONS:
+            protected.add(key)
+            continue
+        ts = r["until_ts"] or ""
+        if ts > newest.get(key, ""):
+            newest[key] = ts
+    by_market: dict[str, list[tuple[str, str]]] = {}
+    for (market, symbol), ts in newest.items():
+        if (market, symbol) in protected:
+            continue
+        by_market.setdefault(market, []).append((ts, symbol))
+    out = set(protected)
+    for market, entries in by_market.items():
+        entries.sort(reverse=True)
+        for _, symbol in entries[:_cooldown_cap(market)]:
+            out.add((market, symbol))
+    return out
+
+
 def select_targets(cursor, agent_id: int, n: int,
                    exclude: Optional[set[tuple[str, str]]] = None,
                    markets_scope: Optional[list[str]] = None) -> list[dict[str, Any]]:
     """Top-n selectable theses from the latest non-expired batch, minus:
     (a) symbols with any non-terminal run for this agent (exclusivity),
     (b) fleet_symbol_cooldowns rows (the feedback loop's retire list),
+        capped per market by _cooldown_cap so a bench flood can never
+        starve selection (hold-wall incident 2026-09-03),
     (c) caller-supplied exclusions; with per-market diversity ceil(n/2)."""
     now = _now_iso()
     # Newest batch that actually HAS live theses — an empty refresh (LLM or
@@ -1556,9 +1638,21 @@ def select_targets(cursor, agent_id: int, n: int,
         (agent_id,))
     busy = {(r["market"], r["symbol"]) for r in cursor.fetchall()}
     cursor.execute(
-        "SELECT market, symbol FROM fleet_symbol_cooldowns WHERE agent_id = ? AND until_ts > ?",
+        "SELECT market, symbol, until_ts, source_run_id "
+        "FROM fleet_symbol_cooldowns WHERE agent_id = ? AND until_ts > ?",
         (agent_id, now))
-    busy |= {(r["market"], r["symbol"]) for r in cursor.fetchall()}
+    cd_rows = cursor.fetchall()
+    run_reasons: dict[int, str] = {}
+    src_ids = sorted({int(r["source_run_id"]) for r in cd_rows
+                      if r["source_run_id"] is not None})
+    if src_ids:
+        marks = ",".join("?" for _ in src_ids)
+        cursor.execute(
+            f"SELECT id, status_reason FROM trading_runs WHERE id IN ({marks})",
+            tuple(src_ids))
+        run_reasons = {int(r["id"]): (r["status_reason"] or "")
+                       for r in cursor.fetchall()}
+    busy |= _capped_cooldown_exclusions(cd_rows, run_reasons)
     if exclude:
         busy |= set(exclude)
 
@@ -1571,7 +1665,26 @@ def select_targets(cursor, agent_id: int, n: int,
                 and (not markets_scope or t["market"] in markets_scope)]
     _mover_rank_us_stock(eligible)
     if _tech_hot_seed_enabled() and _tech_hot_must_enabled():
-        eligible = _restrict_us_stock_to_hot_tech(eligible)
+        eligible = _hot_tech_first_us_stock(eligible)
+        # Owner clarification 2026-09-04 (supersedes the 08-31 drop-all
+        # reading, verbatim: "not limit 5 usa stock … ex slot 10 then 5
+        # must be tech stock, and then other 5"): for a us-stock-only pool
+        # the hot-tech lead is a GUARANTEE, not a preference — the top-K
+        # hot tech picks are forced ahead of the diversity/balance passes,
+        # and the remaining slots fill from the rest of the universe.
+        if eligible and all(t.get("market") == "us-stock" for t in eligible):
+            roster = set(US_TECH_HOT_UNIVERSE)
+            lead = [t for t in eligible[:US_TECH_HOT_K]
+                    if (t.get("symbol") or "") in roster]
+            forced = lead[:max(0, min(len(lead), n))]
+            if forced:
+                remaining = n - len(forced)
+                if remaining <= 0:
+                    return forced
+                forced_ids = {id(t) for t in forced}
+                rest = [t for t in eligible if id(t) not in forced_ids]
+                return forced + _select_from_eligible(
+                    rest, remaining, _dir_balance_enabled())
     else:
         _ensure_hot_tech_lead(eligible)
     return _select_from_eligible(eligible, n, _dir_balance_enabled())
@@ -1594,15 +1707,20 @@ def _hot_tech_score(t: dict[str, Any]) -> float:
         return 0.0
 
 
-def _restrict_us_stock_to_hot_tech(eligible: list[dict[str, Any]],
-                                   k: int | None = None) -> list[dict[str, Any]]:
-    """R20-MUST: return a new eligible list whose us-stock slice is EXACTLY
-    the top-k hottest US tech theses (hottest first) — every other us-stock
-    thesis is dropped. Non-us-stock rows keep their positions and order; the
-    surviving tech theses occupy the first us-stock positions and the rest
-    of the us-stock positions collapse away. Fewer than k eligible tech
-    theses keeps them all; zero keeps none (that IS the must-rule — no
-    fallback to non-tech names)."""
+def _hot_tech_first_us_stock(eligible: list[dict[str, Any]],
+                             k: int | None = None) -> list[dict[str, Any]]:
+    """R20-MUST, clarified: return a new eligible list whose us-stock slice
+    LEADS with the top-k hottest US tech theses (hottest first) and keeps
+    every other us-stock thesis BELOW them in its existing order.
+
+    History: the 08-31 reading dropped non-tech us-stock names entirely,
+    which shrank the whole us-stock universe to k names — with per-symbol
+    run exclusivity plus cooldowns that starved an 8-slot fleet to 0/8
+    (hold-wall incident 2026-09-03). Owner clarification 2026-09-04
+    ("not limit 5 usa stock … ex slot 10 then 5 must be tech stock, and
+    then other 5"): the k hot tech names are the mandatory FIRST picks,
+    the remaining slots choose from the rest of the market. Non-us-stock
+    rows keep their positions and order."""
     k = US_TECH_HOT_K if k is None else k
     roster = set(US_TECH_HOT_UNIVERSE)
     us_rows = [t for t in eligible if t.get("market") == "us-stock"]
@@ -1610,15 +1728,12 @@ def _restrict_us_stock_to_hot_tech(eligible: list[dict[str, Any]],
         return eligible
     tech = sorted((t for t in us_rows if (t.get("symbol") or "") in roster),
                   key=_hot_tech_score, reverse=True)[:k]
-    keep = iter(tech)
+    tech_ids = {id(t) for t in tech}
+    new_slice = tech + [t for t in us_rows if id(t) not in tech_ids]
+    keep = iter(new_slice)
     out: list[dict[str, Any]] = []
     for t in eligible:
-        if t.get("market") != "us-stock":
-            out.append(t)
-            continue
-        nxt = next(keep, None)
-        if nxt is not None:
-            out.append(nxt)
+        out.append(next(keep) if t.get("market") == "us-stock" else t)
     return out
 
 

@@ -105,9 +105,11 @@ class EnsureHotTechLeadTests(unittest.TestCase):
 
 
 class RestrictHotTechMustTests(unittest.TestCase):
-    """R20-MUST (owner 2026-08-31): the us-stock slice of selection is
-    RESTRICTED to the top-5 hottest tech theses — non-tech us-stock names
-    are dropped entirely, never merely outranked."""
+    """R20-MUST, clarified (owner 2026-09-04, superseding the 08-31
+    drop-all reading: "not limit 5 usa stock … ex slot 10 then 5 must be
+    tech stock, and then other 5"): the top-5 hottest tech theses LEAD the
+    us-stock slice as mandatory first picks; every other us-stock thesis
+    stays eligible BELOW them for the remaining slots."""
 
     def tearDown(self):
         os.environ.pop("US_TECH_HOT_MUST", None)
@@ -118,7 +120,7 @@ class RestrictHotTechMustTests(unittest.TestCase):
         os.environ["US_TECH_HOT_MUST"] = "0"
         self.assertFalse(sr._tech_hot_must_enabled())
 
-    def test_non_tech_us_stock_dropped_and_top5_kept_hot_first(self):
+    def test_top5_tech_lead_and_non_tech_stays_below(self):
         eligible = [
             _thesis("BTCUSDT", market="crypto", final=0.9),
             _thesis("KO", mom_2d=9.0, vol_ratio=3.0, final=0.99),   # non-tech
@@ -131,28 +133,33 @@ class RestrictHotTechMustTests(unittest.TestCase):
             _thesis("INTC", mom_2d=0.5, vol_ratio=1.0),   # hot 0.5
             _thesis("ORCL", mom_2d=4.0, vol_ratio=1.0),   # hot 4.0
         ]
-        out = sr._restrict_us_stock_to_hot_tech(eligible)
+        out = sr._hot_tech_first_us_stock(eligible)
         us = [t["symbol"] for t in out if t["market"] == "us-stock"]
-        # exactly 5, hottest first, no non-tech survivor
-        self.assertEqual(us, ["AMD", "ORCL", "NVDA", "META", "MSFT"])
-        self.assertNotIn("KO", [t["symbol"] for t in out])
-        self.assertNotIn("WMT", [t["symbol"] for t in out])
-        self.assertNotIn("INTC", us)      # 6th-hottest tech is cut too
+        # top-5 hottest tech lead; everything else follows in its order
+        self.assertEqual(us, ["AMD", "ORCL", "NVDA", "META", "MSFT",
+                              "KO", "WMT", "INTC"])
         # other markets survive untouched and in order
         others = [t["symbol"] for t in out if t["market"] != "us-stock"]
         self.assertEqual(others, ["BTCUSDT", "GC"])
 
-    def test_fewer_than_five_tech_keeps_them_all(self):
+    def test_fewer_than_five_tech_leads_them_all(self):
         eligible = [_thesis("KO", mom_2d=9.0, vol_ratio=3.0),
                     _thesis("NVDA", mom_2d=1.0), _thesis("AMD", mom_2d=2.0)]
-        out = sr._restrict_us_stock_to_hot_tech(eligible)
-        self.assertEqual([t["symbol"] for t in out], ["AMD", "NVDA"])
+        out = sr._hot_tech_first_us_stock(eligible)
+        self.assertEqual([t["symbol"] for t in out], ["AMD", "NVDA", "KO"])
 
-    def test_zero_tech_means_no_us_stock_at_all(self):
+    def test_zero_tech_keeps_the_rest_of_the_market(self):
+        """2026-09-04: zero eligible tech no longer blanks the us-stock
+        slice — the rest of the market still fills slots."""
         eligible = [_thesis("KO", mom_2d=9.0, vol_ratio=3.0),
                     _thesis("BTCUSDT", market="crypto")]
-        out = sr._restrict_us_stock_to_hot_tech(eligible)
-        self.assertEqual([t["symbol"] for t in out], ["BTCUSDT"])
+        out = sr._hot_tech_first_us_stock(eligible)
+        self.assertEqual([t["symbol"] for t in out], ["KO", "BTCUSDT"])
+
+    def test_owner_hot_issue_names_are_on_the_roster(self):
+        """Owner 2026-09-04: 'space x, ASTS, nvidia, pltr, tsla, SMR …'"""
+        for sym in ("ASTS", "SMR", "SPCX", "NVDA", "PLTR", "TSLA"):
+            self.assertIn(sym, sr.US_TECH_HOT_UNIVERSE)
 
     def test_select_targets_wiring(self):
         # The brief-line lesson: prove the restriction actually runs inside
@@ -190,9 +197,11 @@ class RestrictHotTechMustTests(unittest.TestCase):
         conn.commit()
         picked = sr.select_targets(cur, agent_id, 3)
         syms = [t["symbol"] for t in picked]
-        self.assertNotIn("KO", syms)               # must-rule wired
-        self.assertEqual(syms[0], "AMD")           # hottest tech leads
-        self.assertIn("NVDA", syms)
+        # must-rule wired: both tech names are forced ahead of the
+        # higher-scored non-tech KO, which still fills the remaining slot
+        # (owner 2026-09-04: tech first, then others — never tech-only).
+        self.assertEqual(syms[:2], ["AMD", "NVDA"])
+        self.assertEqual(syms[2], "KO")
         conn.close()
 
 
