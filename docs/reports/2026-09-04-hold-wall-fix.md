@@ -80,12 +80,47 @@ hold-heavy tape is at least consistent right now. Verdict stays OPEN
 until 50 decisions; if the buy rate is still ≤ baseline then, report
 FAILED per the rule below.
 
-## Open falsifier (pre-registered — judge the fix by this)
+## Falsifier v1: FAILED as registered (2026-09-04 ~03:45Z)
 
-Over the **first 50 post-deploy decisions**: buy/short rate must exceed the
-0.1% two-week baseline AND slots must stay replenished. If the desk still
-holds 100% with the honest rail in place, the tier change FAILED — report
-it as failed in these terms and revert `stop_loss_frac_of_bet`. Second
-watch: with real stops now reachable, loss benches must engage (repeated
-same-symbol losses would indict the cap ordering, though loss benches are
-protected by design). P&L verdict comes only after closed trades exist.
+The original registration — "first 50 post-deploy decisions must beat the
+0.1% buy-rate baseline, else FAILED and revert" — triggered: **52
+decisions, 0 buy/short.** Reported plainly, no reframing. The slot-refill
+half passed (44: 8/8, 43: 0→4/8, zero starvation loops). Confounds named
+by the 5-agent verification: the US market was closed for the entire
+window (fleet 43's swing desk cannot enter off-session by design) and
+crypto sat in an F&G-74 caution regime; hold reasons shifted from
+rail-impossibility to market judgment and confidence rose (mode 0.4→0.6).
+
+**Owner decision (2026-09-04): keep the tiers, re-register (option B).**
+
+## Falsifier v2 (re-registered — same revert consequence)
+
+By **2026-09-05 04:00Z** (24h wall-clock spanning at least one full US
+session 13:30–20:00Z and a full crypto day): the desk must author **≥1
+buy/short decision** on any fleet run (executed or gate-demoted both count
+as "authored"). If not: report FAILED again and revert
+`stop_loss_frac_of_bet` to 0.015/0.02/0.03/0.04 without further debate.
+P&L verdict still comes only after closed trades exist.
+
+## 5-agent verification (2026-09-04, owner-ordered)
+
+Five independent agents (logic ×17k property trials / risk rails / MySQL+
+concurrency / test-mutation 9-of-9 killed / live prod read-only): **5/5
+VERIFIED, zero blockers.** Follow-ups it produced: the rule-hold guard
+(shipped next, below), a watch on one unexplained 1-in-21 flake of
+`test_tech_lead_survives_directional_balance`, expired-cooldown-row purge
+(backlog), and two deliberate-design notices for the owner — the fleet
+warn/stop rails re-arm daily via budget compounding (extreme tier can now
+reach the −30% day-pause in ~4 correlated full-fleet stop-out rounds of
+~$700), and the forced hot-5 lead bypasses the directional-balance brake
+(a 7-long/1-short us-stock book is possible).
+
+## Follow-up ship: rule-hold guard (full-path outage twin)
+
+Verifier 1 found the scaffold guard covers only the LIGHT path: a
+full-pipeline LLM failure journals a rule-engine hold
+(`decided_by="rule"`, ordinary report) that still counted toward the
+switch. Shipped: the decision emit now journals `decided_by`/
+`fallback_reason` (they previously never reached the tape — rule holds
+were indistinguishable from desk holds), and `_flat_hold_span` breaks the
+streak on `decided_by == "rule"`, twin of the scaffold guard.

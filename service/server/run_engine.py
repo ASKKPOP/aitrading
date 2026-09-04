@@ -621,6 +621,12 @@ def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
         # review 2026-09-04 — the mark-blackout amplifier class).
         if (payload.get("report") or "") == "light cycle: no LLM verdict":
             break
+        # Full-path twin of the scaffold (5-agent verify 2026-09-04): an
+        # LLM failure on the FULL pipeline journals a rule-engine hold
+        # (analysis_agents fallback, decided_by="rule") — also not the
+        # desk's word, also must not author the switch.
+        if payload.get("decided_by") == "rule":
+            break
         oldest = ts
         count += 1
     if oldest is None or not count:
@@ -7390,6 +7396,20 @@ def run_cycle(run_id: int) -> dict:
         emit_telemetry_event(run_id, "decision",
                              {"cycle": seq, "llm": _llm_stamp(),
                               "action": action, "confidence": confidence,
+                              # Rule-fallback authorship must reach the TAPE
+                              # (2026-09-04, 5-agent verify finding): the
+                              # full-path LLM-failure fallback labels its
+                              # dict decided_by="rule" but the label never
+                              # journaled, so a rule hold was
+                              # indistinguishable from a desk hold — and
+                              # counted toward the no-prospect switch. The
+                              # streak reader breaks on it now.
+                              **({"decided_by": _db}
+                                 if (_db := decision.get("decided_by"))
+                                 else {}),
+                              **({"fallback_reason": _fr}
+                                 if (_fr := decision.get("fallback_reason"))
+                                 else {}),
                               "conviction": conviction, "scores": scores,
                               "gate_source": "conviction" if use_conviction else "confidence",
                               "size_scale": size_scale,

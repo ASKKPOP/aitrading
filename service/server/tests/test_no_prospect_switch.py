@@ -51,7 +51,8 @@ class NoProspectSwitchTests(unittest.TestCase):
         for k in ("RUN_NO_PROSPECT_SWITCH", "RUN_NO_PROSPECT_SWITCH_HOURS"):
             os.environ.pop(k, None)
 
-    def _decision(self, run_id, hours_ago, action="hold", report=None):
+    def _decision(self, run_id, hours_ago, action="hold", report=None,
+                  decided_by=None):
         conn = database.get_db_connection()
         cur = conn.cursor()
         self._seq += 1
@@ -60,7 +61,9 @@ class NoProspectSwitchTests(unittest.TestCase):
             "VALUES (?, ?, 'decision', ?, ?)",
             (run_id, self._seq, _iso(hours_ago),
              json.dumps({"action": action, "confidence": 0.6,
-                         **({"report": report} if report else {})})))
+                         **({"report": report} if report else {}),
+                         **({"decided_by": decided_by}
+                            if decided_by else {})})))
         conn.commit()
         conn.close()
 
@@ -157,6 +160,33 @@ class NoProspectSwitchTests(unittest.TestCase):
                        report="light cycle: no LLM verdict")
         self._decision(run2["id"], 0.1)
         self.assertIsNone(self._evaluate(run2))
+
+    def test_rule_fallback_holds_never_author_the_switch(self):
+        """5-agent verification 2026-09-04: the FULL-path LLM failure
+        journals a rule-engine hold (decided_by="rule") with an ordinary
+        report — the light-path scaffold guard alone missed it, so a
+        sustained outage plus full routing could still rotate slots the
+        desk never judged. Rule holds are not the desk's word either."""
+        run = _run(run_id=915)
+        for h in (1.3, 0.1):
+            self._decision(run["id"], h, decided_by="rule")
+        self.assertIsNone(self._evaluate(run))
+        # mid-streak rule hold resets, exactly like the scaffold
+        run2 = _run(run_id=916)
+        self._decision(run2["id"], 2.4)
+        self._decision(run2["id"], 1.3, decided_by="rule")
+        self._decision(run2["id"], 0.1)
+        self.assertIsNone(self._evaluate(run2))
+
+    def test_rule_fallback_label_reaches_the_journal(self):
+        """Wiring pin (brief-line lesson): the guard reads decided_by from
+        the TAPE, so the decision emit must journal it — before this ship
+        the label lived only on the in-memory dict and every rule hold was
+        indistinguishable from a desk hold."""
+        import inspect
+        src = inspect.getsource(run_engine.run_cycle)
+        self.assertIn('"decided_by"', src)
+        self.assertIn('"fallback_reason"', src)
 
     def test_open_position_is_never_switched(self):
         run = _run(run_id=907)
