@@ -202,6 +202,34 @@ of authored zone widths is registered as a follow-up; if the median is under
 is ~12× finer, and paying a systemic feed risk to chase sub-5-minute wicks
 is a bad trade.
 
+## Deployed
+
+`sooppiy-backend:20260905-20260905-entry-zone-wake` from `6d61df7`, backend
+and worker recreated 2026-09-05 01:58Z. Rollback: set `SOOPPIY_IMAGE=`
+`sooppiy-backend:20260904-panel-reviews-proposal` and re-run compose up.
+
+Local CI on `6d61df7b`, all six jobs: ruff PASS, pytest PASS (5143 passed,
+1349 subtests), frontend-build PASS, npm-audit PASS, gitleaks PASS, pip-audit
+PASS. What a local run does NOT give: a clean-room runner, a hosted audit
+trail, and any check needing provider secrets.
+
+Verified live in the worker: `ENTRY_ZONE_WAKE` on, poll 300s, renote 30 min,
+all three seams present.
+
+**Pre-deploy baseline** (01:47Z): 0 `entry_zone_touch` ever, 34/34 hold over
+two hours, 0 trades in 24h, 9 running runs.
+
+### First wake — the diagnosis case, 56 seconds after deploy
+
+    run 2734  LITUSDT  mark 4.74815  zone 4.678-4.761  @ 01:59:02Z
+
+That is the exact zone from the sentence this whole ship was built on:
+"Hold until price retraces into the 4.678-4.761 zone; current price is above
+entry range." Price returned to the level the desk named, and for the first
+time the platform was looking. **F-WAKE clause 1 (the mechanism is dead) is
+refuted.** Clauses 2-4 remain open and are the ones that decide whether the
+ship was right.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
