@@ -620,6 +620,76 @@ market — carries exactly ONE numeric zone (HYPE, 6.29% away), which is why no
 wake has fired since 01:59Z. The wake cannot act on a `trigger` plan by
 design, and 6 of 8 crypto runs are trigger-only right now.
 
+## THE HOLD WALL, LOCATED — and removed (owner 2026-09-05)
+
+Owner: "if continue hold then we will be remove desk hold logic."
+
+Four ships yesterday fixed four real rails and the trade count stayed at
+zero, because none of them was the wall. Measured on the live tape since
+2026-09-04:
+
+| | n |
+|---|---|
+| desk proposed an entry | **435** (367 buy, 67 sell) |
+| escalation panel answered `hold` | **434** |
+| survived | **1** |
+| orders refused by the risk gates | **1 in 625 decisions** |
+
+The cheap-tier desk wants to trade every cycle. The panel kills 99.8% of
+what it proposes. Every no-trade day since 2026-08-16 was authored there.
+This also explains why the earlier fixes changed nothing: they were all
+upstream or downstream of the only step that mattered.
+
+Hold reasons, 90 reports since 00:00Z (multi-label): macro/regime caution
+83%, entry/price wrong 59%, overbought/exhaustion 53%, risk arithmetic 53%.
+Verbatim: *"The proposal to 'buy now instead of waiting' is a chase, not a
+thesis"*. The panel is reviewing genuine motions and refusing nearly all.
+
+**Shipped (f528b691):** a `hold` verdict on a PROPOSED ENTRY is journaled
+(`panel_verdict`, `veto_overridden`, `panel_reason`) and then overridden —
+the desk's order stands. The panel keeps everything else: it meets, it
+reviews, it may substitute its OWN order (buy -> sell is honoured untouched,
+because substituting an order is not vetoing one) and it may hand back a
+tighter bracket, which is adopted. Kill switch `PANEL_ENTRY_VETO=1`.
+
+**Owner rule 2026-08-13 holds.** The order is authored by the sooppiy AI
+either way. Code does not invent an order and does not arbitrate on trading
+grounds — it decides which AI voice is final when two disagree, and that was
+always a code decision. It used to be the panel; it is now the desk that
+moved first.
+
+### Will the confidence gate just become the new wall?
+
+Measured before deploying, because if so the ship is theatre. The 439
+proposed entries carry median confidence **0.600**, mean 0.621:
+
+    clear a 0.55 gate:  419/439  (95.4%)
+    histogram: 0.4->1  0.5->19  0.6->237  0.7->169  0.8->13
+
+No. The proposals sit well above the gate — which is also why carrying the
+DESK's confidence rather than the panel's matters: the panel's confidence on
+a hold is a hold's confidence, and using it would have moved the veto one
+door down and changed nothing.
+
+### Registered falsifier — F-VETO
+
+1. **The panel was the wall** (supported) if >=1 order EXECUTES within 2h of
+   the switch. Slots are the natural bound: 12 runs, one position each, so
+   this cannot become unbounded churn — a filled slot stops proposing.
+2. **REFUTED — the wall is downstream** if entry proposals continue and 0
+   orders execute after 2h. Then the panel was never the binding constraint,
+   this ship must be reported as FAILED in those words, and the next
+   suspects are the expectancy gate, fee-edge, and bracket feasibility.
+3. **The panel was RIGHT to veto** if trades execute and realized P&L is
+   materially negative over the first 20 closed legs. Report P&L first, with
+   and without the largest contributor; if stripping the largest flips the
+   sign, INCONCLUSIVE. This is the outcome I am least able to predict and it
+   must not be spun: a 99.8% veto rate could have been protecting the book.
+4. **Churn check:** if executed trades exceed ~4 per slot per day, the
+   spacing/fee rails are not holding and that is its own defect.
+
+Reporting obligation either way: profit or loss first, process second.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
