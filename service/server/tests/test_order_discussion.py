@@ -618,3 +618,64 @@ class ShortBookReductionTests(unittest.TestCase):
         out = run_engine._tighter_order({"target_pct": 6.0},
                                         {"target_pct": 0.5}, reducing=True)
         self.assertEqual(out["target_pct"], 6.0)
+
+
+class RoutedStopHitExemption(unittest.TestCase):
+    """A desk ruling on its OWN breached stop is never vetoable.
+
+    `stop_router` dispatches a run precisely so the desk rules on a stop hit
+    in a normal cycle. Letting the panel veto that is the SOL 1274 family and
+    worse than the original: there the ruling died at a gate, no decision
+    landed, and the 180s fail-safe still dumped the book. Here a `hold` LANDS,
+    so run_cycle calls `stop_router.clear(run_id)` — "a desk decision cycle
+    ran, its verdict governs" — cancelling the fail-safe and suppressing
+    re-noting for 30 minutes. The position rides past its own price stop with
+    the watcher switched off.
+
+    Costs the exit-veto revert nothing: none of LTC/ASTER/FIL was a stop hit;
+    all three were discretionary exits."""
+
+    def setUp(self):
+        self.events = []
+        self.emit = patch.object(
+            run_engine, "emit_telemetry_event",
+            side_effect=lambda rid, et, p: self.events.append((et, p)))
+        self.emit.start()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=4.0)
+        self.held.start()
+
+    def tearDown(self):
+        self.emit.stop()
+        self.held.stop()
+
+    def _drive(self, stop_pending):
+        import stop_router
+        panel = {"decision": {"action": "hold", "confidence": 0.5},
+                 "analysts": {}}
+        with patch.object(stop_router, "enabled", lambda: True), \
+             patch.object(stop_router, "pending",
+                          lambda rid: {"reason": "stop"} if stop_pending else None), \
+             patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        return out["decision"]["action"]
+
+    def test_a_stop_hit_ruling_survives_the_panel(self):
+        self.assertEqual(self._drive(stop_pending=True), "sell",
+                         "the panel vetoed the desk's ruling on its own "
+                         "breached stop, cancelling the fail-safe with it")
+
+    def test_a_DISCRETIONARY_exit_is_still_vetoable(self):
+        """The three losses that justified the revert were all this shape."""
+        self.assertEqual(self._drive(stop_pending=False), "hold")
+
+    def test_a_broken_router_fails_toward_the_desks_ruling(self):
+        import stop_router
+        panel = {"decision": {"action": "hold", "confidence": 0.5},
+                 "analysts": {}}
+        def boom(rid):
+            raise RuntimeError("router down")
+        with patch.object(stop_router, "pending", boom), \
+             patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(out["decision"]["action"], "sell")

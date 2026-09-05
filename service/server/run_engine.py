@@ -7485,7 +7485,34 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
             # 19 days. Remove the veto where it blocks; keep it where it
             # catches false premises.
             _entry_side = not _reducing_now(run, action, held)
-            if (not _panel_order_veto_enabled() and _entry_side
+            # ROUTED STOP HITS ARE EXEMPT from the exit-side veto.
+            #
+            # `stop_router` dispatches a run precisely so the desk rules on
+            # its OWN breached stop in a normal cycle. Letting the panel veto
+            # that ruling is the SOL 1274 family and is worse than the
+            # original: there the ruling died at a gate, no decision landed,
+            # and the 180s fail-safe still dumped the book. Here a `hold`
+            # LANDS, so `run_cycle` calls `stop_router.clear(run_id)` — whose
+            # contract is "a desk decision cycle ran, its verdict governs" —
+            # which CANCELS the fail-safe and suppresses re-noting for 30
+            # minutes. The position then rides past its own price stop with
+            # the watcher switched off.
+            #
+            # The dollar rails (max_loss, at_time, liq cushion) still fire on
+            # the control pass, so the book is not trapped indefinitely — but
+            # the run's own, tighter, price stop is defeated.
+            #
+            # This costs the exit-veto revert nothing: none of the three
+            # losses that justified it (LTC, ASTER, FIL) was a stop hit. All
+            # three were DISCRETIONARY exits, which is exactly the population
+            # where the panel's factual check earns its keep.
+            _stop_hit = False
+            try:
+                import stop_router as _sr
+                _stop_hit = bool(_sr.enabled() and _sr.pending(run["id"]))
+            except Exception:  # noqa: BLE001 — fail toward the desk's ruling
+                _stop_hit = True
+            if (not _panel_order_veto_enabled() and (_entry_side or _stop_hit)
                     and str(final.get("action") or "").lower() == "hold"):
                 payload["panel_verdict"] = "hold"
                 payload["veto_overridden"] = True

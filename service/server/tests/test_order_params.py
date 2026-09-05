@@ -522,3 +522,40 @@ class BracketPromptWording(unittest.TestCase):
     def test_no_literal_double_percent_reaches_the_desk(self):
         """Pre-existing: the desk was reading 'stop_pct = %% from entry'."""
         self.assertNotIn("%%", self._prompt())
+
+
+class FullPathBracketPrompt(unittest.TestCase):
+    """The sign/unit defect was fixed on the LIGHT path first; the FULL
+    (panel) path carried both for another cycle (review 2026-09-05).
+
+    That matters more than it looks: since the veto removal the panel is the
+    voice that can hand a bracket back through `_tighter_order`, so its
+    prompt governs real stops.
+
+    This inspects the prompt SOURCE rather than a rendered call — building
+    the full panel prompt needs four analyst briefs and a live provider. The
+    limitation is stated rather than hidden: it pins the text, not its
+    reachability. `_trader_risk_decision` has exactly one prompt, so the
+    text is the artifact."""
+
+    def _src(self):
+        import inspect
+        import analysis_agents
+        return inspect.getsource(analysis_agents._trader_risk_decision)
+
+    def test_no_literal_double_percent_reaches_the_panel(self):
+        """This prompt is concatenated, never %-formatted, so '%%' was read
+        verbatim by the model as '2.5%%'."""
+        body = "\n".join(ln for ln in self._src().splitlines()
+                         if not ln.strip().startswith("#"))
+        self.assertNotIn("%%", body)
+
+    def test_it_demands_a_positive_magnitude(self):
+        src = self._src()
+        self.assertIn("NEVER negative", src)
+        self.assertIn("is 5, not -5", src)
+
+    def test_target_and_trail_are_positive_too(self):
+        src = self._src()
+        self.assertIn('"target_pct":number (POSITIVE', src)
+        self.assertIn('"trail_arm_pct":number (POSITIVE', src)

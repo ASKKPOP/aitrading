@@ -692,11 +692,17 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         '"size_frac":0.05-1.0 (fraction of the max bet; on a small slot an '
         'ask below the $10-margin minimum is raised to it, never discarded),'
         '"leverage":number,'
-        '"stop_pct":number (PERCENT from entry — 2.5 means 2.5%%, NOT a '
-        'fraction; size it to THIS instrument\'s volatility, not a house '
-        'default),'
-        f'"target_pct":number (%% from entry — must be at least {RR_FLOOR:g}x stop_pct),'
-        '"trail_arm_pct":number (%% profit before the trailing lock arms),'
+        # NB single % — this prompt is CONCATENATED, never %-formatted, so
+        # the previous "%%" reached the model literally (it read "2.5%%").
+        # Same defect fixed on the light path 2026-09-05.
+        '"stop_pct":number (POSITIVE PERCENT from entry — 2.5 means 2.5%, '
+        'NOT a fraction and NEVER negative: a long whose invalidation sits '
+        '5% BELOW entry is 5, not -5; size it to THIS instrument\'s '
+        'volatility, not a house default),'
+        f'"target_pct":number (POSITIVE % from entry — must be at least '
+        f'{RR_FLOOR:g}x stop_pct),'
+        '"trail_arm_pct":number (POSITIVE % profit before the trailing lock '
+        'arms),'
         '"trail_give":0.05-0.40 (fraction of peak profit you will surrender),'
         '"horizon_hours":number,"max_adds":0-3,'
         '"why":"one sentence tying these numbers to the evidence above"},'
