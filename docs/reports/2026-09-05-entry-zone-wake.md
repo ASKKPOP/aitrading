@@ -372,6 +372,37 @@ often enough to act on; watch it.
 
 **F-WAKE: 1 wake, 0 entries.** Refutation threshold is 20.
 
+## Deployed — authorship label (5077adeb, 02:52Z)
+
+`sooppiy-backend:20260905-20260905-authorship-label`, backend and worker
+recreated. Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20260905-20260905-entry-zone-wake`.
+
+Local CI: ruff PASS, pytest PASS (5148 tests, 1349 subtests), frontend-build
+PASS, npm-audit PASS, gitleaks PASS, pip-audit PASS. The full-suite job ran on
+the identical code commit `5dac4093`; the only delta to `5077adeb` is a test
+file, verified separately (20/20 on the rail suite, 736 adjacent tests, ruff
+clean). What a local run does NOT give: a clean-room runner, a hosted audit
+trail, any check needing provider secrets.
+
+Adversarial review certified it with no BLOCKER, MAJOR or MINOR — seven
+mutations attempted, seven killed, including both halves of the
+belt-and-braces guard independently.
+
+**Verified on prod after restart:** decisions carrying the three-agent
+`discussion` now arrive labelled `decided_by="ai"`. That combination was
+0 of 62 before the ship. Zero unlabelled decisions post-restart.
+
+**Measurement trap hit and corrected in the act.** The first verification
+window used a space-format cutoff (`2026-09-05 02:52:50`) against
+`run_events.ts`, which is `T`-format. `'T'` sorts above `' '`, so the
+comparison matched every row for that date and reported 50 "post-restart"
+decisions in 46 seconds — including the 9 unlabelled rows the fix was
+supposed to eliminate, which would have read as the fix failing. Re-run with
+a `T`-format cutoff. This is the trap recorded in
+[[mysql-timestamp-comparison-traps]], walked into anyway; it is the second
+time this session a bad instrument nearly produced a false conclusion, after
+the `entry` field that made 13.8% of decisions look in-zone.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
