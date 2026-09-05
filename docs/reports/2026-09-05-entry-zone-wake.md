@@ -310,6 +310,68 @@ authored entry in 572 decisions, which never became a trade because a gate
 refused it, is not evidence that the tier change works. It clears the bar
 that was registered, and nothing more.
 
+## Hourly monitoring cycle — 2026-09-05 02:14Z
+
+**P&L first.** Both owner accounts: 0 executed trades all-time, $0 realized,
+$0 unrealized, 0 open positions, cash exactly $10,000.00 each (the 08-31
+reset baseline). Platform-wide the last executed trade was
+**2026-08-16T21:00:04Z** — 19 days ago. Note this corrects the standing
+memory line "zero trades since 08-29": 08-29 was the last buy DECISION; the
+last FILL was 08-16.
+
+No trades closed since the previous cycle, so the two-subagent outcome
+analysis does not apply this cycle (there are no outcomes to attribute).
+
+**Falsifier v2: PASSES.** One authored buy exists in the window (run 2630,
+DE, conf 0.38, 2026-09-04T15:56:03Z). The risk tiers are NOT reverted.
+
+**Process health.** Fleet 44 (crypto) 8/8 running. Fleet 43 (us-stock) 1/8,
+`replenishing:1/8` — the US session is shut until 13:30Z and 40 symbol
+cooldowns are active, so this is expected, not a stall; it should climb after
+the open. Twelve `no_prospect_switched` in 6h across 8 crypto slots ≈ hourly
+per slot, matching the 1h window shipped on 09-04.
+
+### Last-fix verification — a false alarm I had to chase down
+
+The raw check said 11 of 12 no-prospect switches were backed by decisions
+with `decided_by=None`, which would mean scaffold/rule-authored switches and
+a violated fix. **It is a false positive.** Inspecting those payloads: all 25
+`decided_by=None` decisions in the 6h window carry a real report, none
+contains the scaffold text "no LLM verdict", all carry conviction, and the
+sampled report is a reasoned desk hold ("Bearish bias and lack of support
+make a buy entry risky; better to hold"). Zero are `decided_by="rule"`.
+
+So the fix HOLDS: **0 scaffold/rule-authored switches.** What is actually
+broken is the instrument.
+
+**INSTRUMENT GAP (reproduced, 62/62).** Cross-tab over 12h:
+
+| | `decided_by` present | absent |
+|---|---|---|
+| payload carries `discussion` | 0 | **62** |
+| no `discussion` | 198 | 2 |
+
+`decided_by` is stamped in `analysis_agents.py` (the escalated panel path).
+The non-escalated light-cycle builder at `run_engine.py:7106` constructs
+`decision = {action, confidence, entry, report, scores}` and never sets it.
+Those are the cycles that carry the three-agent `discussion`, so ~24% of the
+tape cannot be checked for authorship — precisely the check the owner ordered
+every cycle.
+
+**Designed fix (NOT shipped this cycle):** label the light-path builder's
+verdict, "ai" only when a trader verdict actually parsed, so the existing
+scaffold/no-verdict path keeps its own label and the rule-hold guard is not
+weakened by mislabelling a fallback as desk-authored. Held back because this
+cycle's instruction was monitor-don't-redesign and the gap is a blind spot in
+measurement, not a money path. It should ship next cycle.
+
+Also seen: `confidence == 0.0` on 5 of 262 decisions in 12h, all in the
+unlabelled group. Confidence is what the 0.55 risk gate reads, so a spurious
+0.0 would veto an entry regardless of the desk's view. Not yet reproduced
+often enough to act on; watch it.
+
+**F-WAKE: 1 wake, 0 entries.** Refutation threshold is 20.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
