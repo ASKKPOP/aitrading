@@ -727,6 +727,44 @@ simulator accounts that costs paper, which is exactly why it is worth doing
 
 Reporting obligation either way: profit or loss first, process second.
 
+### Four review rounds before this touched prod
+
+The first version of this change was not safe. Adversarial review found, in
+order: a 16x dollar-risk hole (the panel's order block adopted wholesale —
+`# tighten, never cancel` was a comment, not code); a wrong safety argument
+(the "1 in 625" statistic counts DECISIONS, and holds never reach the gates,
+so the gate stack had been asked roughly ONCE); an undocumented exit scope;
+`size_frac 0` adopted as "smaller", which would have cancelled orders
+through sizing — the veto through the back door, invisible, with the ship
+appearing to work while trading nothing; the exit inversion (`smaller` means
+a smaller EXIT on a reduction — a hold-voting panel could retain 70% of a
+book the desk wanted out of); and its mirror, `buy` closing a SHORT, which
+`run_cycle` maps to `cover` only AFTER the panel runs, so a verb-only
+predicate called it risk-increasing.
+
+Final state: 10 mutations attempted, 10 killed; 16 quadrant cases verified
+independently on both spot and futures books; 1033 adjacent tests; CI green
+on all six jobs (5176 tests).
+
+I also caught one of my own: the first exit fix was pinned ONLY by a direct
+`_tighter_order(reducing=True)` unit test, so hardcoding the call site's flag
+to False passed all 56 tests. That is the fifth instance in two days of the
+unit-vs-wiring gap.
+
+**Registered MINOR (shipped knowingly, not fixed).** `held` is read before
+the meeting and feeds only the keep/narrow classification — action and
+sizing basis both re-read the position, so staleness cannot corrupt either.
+Two transitions are reachable if a stop fires mid-meeting: a flattened long
+with a proposed `sell` sizes to $0 and dust-skips (wasteful, harmless); a
+covered short with a proposed `buy` stays a long ENTRY sized off max_bet —
+$10,000 where narrowing would have made it $3,000, so an unintended long is
+3.3x larger. The underlying "buy-to-cover whose short vanished becomes a
+long entry" hazard is pre-existing and independent of this change; only the
+size is affected, and every downstream gate still applies. Fix if it ever
+reproduces: re-read `_position_quantity` after the panel returns and fall
+back to the narrowing branch when the sign changed or went to zero (~3
+lines, fails safe).
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
