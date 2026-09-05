@@ -295,6 +295,19 @@ class LightPathAuthorshipLabel(unittest.TestCase):
         self.assertEqual(d.get("report"), "light cycle: no LLM verdict")
         self.assertEqual(d.get("decided_by"), "scaffold")
 
+    def test_a_salvaged_truncated_verdict_is_still_the_desk(self):
+        """The salvage branch rewrites `report` when a verdict is cut off,
+        and its own comment is explicit: "the verdict itself is the desk's
+        own". Labelling it "scaffold" would stop genuine desk holds from
+        ever authoring a switch — the opposite regression to the one this
+        ship fixes, so it is pinned in its own right."""
+        d = self._light('{"action": "buy", "confidence": 0.7, '
+                        '"report": "partial reasoning')
+        self.assertEqual(d.get("action"), "buy")
+        self.assertIn("recovered from a truncated verdict", str(d.get("report")))
+        self.assertEqual(d.get("decided_by"), "ai",
+                         "a salvaged desk verdict was demoted to scaffold")
+
     def test_the_label_is_never_missing(self):
         for resp in ('{"action": "buy", "confidence": 0.7, "report": "go"}',
                      '{"action": "hold", "confidence": 0.1, "report": ""}',
