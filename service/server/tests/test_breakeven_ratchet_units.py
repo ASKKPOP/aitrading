@@ -406,21 +406,33 @@ class TargetAwareArm(unittest.TestCase):
         """0.30 by default — chosen by replay. Asserted against the module's
         own default rather than a hardcoded 0.5, so the test tracks the
         shipped value instead of a number I picked first and had to revise."""
-        frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0.3"))
-        arm = self._arm(1.75, 53.6, 53.574, 56.2527)
-        self.assertAlmostEqual(arm, 1.75 * abs(56.2527 - 53.574) * frac,
-                               places=6)
-        self.assertEqual(frac, 0.3, "the shipped default moved without a "
-                                    "replay to justify it")
+        frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0"))
+        self.assertEqual(frac, 0.0,
+                         "the target-aware arm is DISABLED by default: "
+                         "F-ARM was refuted on live tape 2026-09-05 (FIL "
+                         "2814 would have armed at the old 0.160% and ran "
+                         "to -$1.90 instead). Re-enable only with a replay "
+                         "on a window containing losers.")
+        # With frac 0 the arm must be exactly the legacy fee arm.
+        self.assertAlmostEqual(self._arm(1.75, 53.6, 53.574, 56.2527),
+                               self._arm(1.75, 53.6, 53.574, 0), places=9)
 
     def test_a_WIDER_target_arms_LATER(self):
-        """The defect in one assertion: the old arm was identical for both."""
+        """The defect in one assertion: the old arm was identical for both.
+
+        Exercised with the mechanism explicitly ENABLED — it is disabled by
+        default since F-ARM was refuted, but the code path must stay correct
+        for the next attempt."""
+        os.environ["RATCHET_ARM_TARGET_FRAC"] = "0.5"
+        self.addCleanup(os.environ.pop, "RATCHET_ARM_TARGET_FRAC", None)
         near = self._arm(1.114, 84.1, 84.105, 84.8619)     # 0.90% target
         far = self._arm(1.114, 84.1, 84.105, 88.310)       # 5.00% target
         self.assertGreater(far, near * 3,
                            "the arm still ignores the authored target")
 
     def test_the_fee_floor_still_applies_underneath(self):
+        os.environ["RATCHET_ARM_TARGET_FRAC"] = "0.5"
+        self.addCleanup(os.environ.pop, "RATCHET_ARM_TARGET_FRAC", None)
         """A peak that has not paid for its own round trip is never worth
         protecting — that part of the original design is kept.
 
@@ -433,6 +445,8 @@ class TargetAwareArm(unittest.TestCase):
         self.assertGreater(fee_only, 0.0)
 
     def test_no_take_profit_leaves_the_arm_unchanged(self):
+        os.environ["RATCHET_ARM_TARGET_FRAC"] = "0.5"
+        self.addCleanup(os.environ.pop, "RATCHET_ARM_TARGET_FRAC", None)
         with_tp = self._arm(1.0, 100.0, 100.0, 105.0)
         without = self._arm(1.0, 100.0, 100.0, 0)
         self.assertGreater(with_tp, without)
@@ -522,12 +536,16 @@ class ShortArmSymmetry(unittest.TestCase):
             market="crypto")
 
     def test_a_short_arms_the_same_as_the_mirror_long(self):
+        os.environ["RATCHET_ARM_TARGET_FRAC"] = "0.3"
+        self.addCleanup(os.environ.pop, "RATCHET_ARM_TARGET_FRAC", None)
         short = self._arm(100.0, 90.0)    # tp BELOW entry
         long_ = self._arm(100.0, 110.0)   # tp ABOVE entry
         self.assertAlmostEqual(short, long_, places=9)
 
     def test_a_short_arm_is_not_the_bare_fee_arm(self):
         """The exact shape the missing abs() produced."""
+        os.environ["RATCHET_ARM_TARGET_FRAC"] = "0.3"
+        self.addCleanup(os.environ.pop, "RATCHET_ARM_TARGET_FRAC", None)
         short = self._arm(100.0, 90.0)
         fee_only = self._arm(100.0, 0)
         self.assertGreater(short, fee_only,

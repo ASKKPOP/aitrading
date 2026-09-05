@@ -1253,13 +1253,40 @@ def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None,
         # tier order for ordinary targets — 0.9% target -> 0.270% arm, still
         # below the legacy trail's 0.400% activate.
         #
-        # The two windows genuinely disagree about larger fractions. That
-        # disagreement is why this ships at the fraction where BOTH are
-        # neutral-or-better rather than at the one only one of them supports.
+        # DEFAULT 0 — F-ARM was REFUTED on live tape and this is the
+        # registered remedy, not a retreat.
+        #
+        # Shipped at 0.30 on 2026-09-05 11:08Z. Within two hours the
+        # pre-registered refutation condition fired, and it fired through
+        # the exact mechanism adversarial replay had predicted:
+        #
+        #   FIL run 2814, SHORT, $93.73 notional
+        #     peak unrealized      +$0.31060
+        #     OLD arm (0.160%)      $0.1500  -> WOULD have armed
+        #     NEW arm (0.30 x 5%)   $1.4060  -> did NOT arm
+        #     realized                        -$1.90163
+        #
+        # The position was protected under the old rule, never armed under
+        # the new one, and ran to a $1.90 loss — essentially the whole
+        # -$2.03 the window gave up. Zero ratchet fires in those two hours
+        # against eight in the two hours before.
+        #
+        # The DEFECT the change was built on is still real: the arm is a
+        # constant in notional terms and does not scale with the authored
+        # bracket, which is why it banked ~+0.035% while losers ran the full
+        # stop. But "the arm is too low" and "raising it is an improvement"
+        # are different claims, and only the first is supported. Raising it
+        # removes protection from positions that never reach the higher bar,
+        # and on this tape those positions ran to their stops.
+        #
+        # The code path and its tests stay so the next attempt starts from a
+        # measured position rather than a blank page. Re-enable ONLY with a
+        # replay showing a fraction that is neutral-or-better on a window
+        # containing losers, not just on one containing winners.
         try:
-            frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0.3"))
+            frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0"))
         except ValueError:
-            frac = 0.3
+            frac = 0.0
         if frac > 0:
             try:
                 tp = float(pos.get("take_profit") or 0)
