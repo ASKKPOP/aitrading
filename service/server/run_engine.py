@@ -7148,7 +7148,8 @@ def _order_discussion_enabled() -> bool:
 
 
 def _tighter_order(proposed: "dict | None",
-                   panel: "dict | None") -> "dict | None":
+                   panel: "dict | None",
+                   reducing: bool = False) -> "dict | None":
     """The desk's order block, with any STRICTLY TIGHTER panel value taken.
 
     A panel that voted `hold` still gets a risk voice, but only downward.
@@ -7170,7 +7171,17 @@ def _tighter_order(proposed: "dict | None",
     base = dict(proposed) if isinstance(proposed, dict) else {}
     if not isinstance(panel, dict):
         return base or None
-    for k in ("size_frac", "leverage", "stop_pct"):
+    # "Smaller is tighter" INVERTS on a reduction. For a sell/cover/retire
+    # against a held book, size_frac is a fraction OF WHAT IS HELD, so a
+    # smaller value is not less risk — it is a smaller EXIT. Measured
+    # end-to-end 2026-09-05: desk proposes `sell size_frac 1.0` ("thesis
+    # broken, get out"), a panel that voted hold returns 0.3, and the order
+    # ships 30% exited / 70% RETAINED. That is the veto reinstated through
+    # sizing, on the very path kept open so a panel could not trap a losing
+    # book. Risk-reducing actions therefore keep the desk's own size.
+    keys = ("leverage", "stop_pct") if reducing else (
+        "size_frac", "leverage", "stop_pct")
+    for k in keys:
         pv, qv = base.get(k), panel.get(k)
         if pv is None or qv is None:
             continue
@@ -7437,8 +7448,11 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
                 payload["panel_reason"] = str(final.get("report") or "")[:200]
                 kept = dict(proposal)     # COPY: never mutate the caller's
                 kept["panel_review"] = str(final.get("report") or "")[:500]
+                _reducing = bool(held) and str(action or "").lower() in (
+                    "sell", "cover", "retire")
                 tightened = _tighter_order(proposal.get("order"),
-                                           final.get("order"))
+                                           final.get("order"),
+                                           reducing=_reducing)
                 if tightened is not None:
                     kept["order"] = tightened
                 final = kept

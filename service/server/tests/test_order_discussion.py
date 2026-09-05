@@ -203,6 +203,40 @@ class OrderDiscussionTests(unittest.TestCase):
         _, payload = self.events[0]
         self.assertIn("chase", payload["panel_reason"])
 
+    def test_an_overridden_EXIT_keeps_the_desks_full_size(self):
+        """End-to-end wiring pin. `reducing` is computed at the CALL SITE
+        from the action and the held book; a unit test on _tighter_order
+        alone passes even when the call site always says False (that
+        mutation survived on 2026-09-05). This drives the real
+        _order_discussion with a held position."""
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=4.0)
+        self.held.start()
+        panel = {"decision": {"action": "hold", "confidence": 0.5,
+                              "order": {"size_frac": 0.3, "stop_pct": 1.0}},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(
+                _RUN, {}, self._with_order("sell", {"size_frac": 1.0,
+                                                    "stop_pct": 2.0}))
+        self.assertEqual(out["decision"]["action"], "sell")
+        self.assertEqual(out["decision"]["order"]["size_frac"], 1.0,
+                         "the panel shrank the desk's exit — 70% of the "
+                         "book stays in a position the desk wanted out of")
+        self.assertEqual(out["decision"]["order"]["stop_pct"], 1.0,
+                         "stop_pct does not invert and must still tighten")
+
+    def test_an_overridden_ENTRY_still_takes_the_smaller_size(self):
+        """The other half of the same wiring: on a flat book a sell is a
+        SHORT ENTRY, so narrowing is correct there."""
+        panel = {"decision": {"action": "hold",
+                              "order": {"size_frac": 0.3}}, "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(
+                _RUN, {}, self._with_order("sell", {"size_frac": 1.0}))
+        self.assertEqual(out["decision"]["order"]["size_frac"], 0.3)
+
     def test_a_panel_hold_on_an_EXIT_is_also_overridden(self):
         """SCOPE, previously unstated (adversarial review 2026-09-05): the
         condition is on the VERDICT, not the proposal, so desk sells on a
@@ -462,3 +496,44 @@ class TighterOrderJunkTests(unittest.TestCase):
         self.assertEqual(run_engine._tighter_order(dict(self.DESK), None),
                          self.DESK)
         self.assertIsNone(run_engine._tighter_order(None, None))
+
+
+class ReductionSizingTests(unittest.TestCase):
+    """"Smaller is tighter" INVERTS on an exit.
+
+    On a sell/cover/retire against a held book, size_frac is a fraction OF
+    WHAT IS HELD. Measured 2026-09-05: desk proposes `sell size_frac 1.0`
+    ("thesis broken, get out"), a panel that voted hold returns 0.3, and the
+    order shipped 30% exited / 70% RETAINED — the veto reinstated through
+    sizing, on the very path kept open so a panel could not trap a losing
+    book."""
+
+    def test_a_hold_cannot_shrink_an_exit(self):
+        out = run_engine._tighter_order({"size_frac": 1.0, "stop_pct": 2.0},
+                                        {"size_frac": 0.3, "stop_pct": 1.0},
+                                        reducing=True)
+        self.assertEqual(out["size_frac"], 1.0,
+                         "the panel kept 70% of a book the desk exited")
+        self.assertEqual(out["stop_pct"], 1.0,
+                         "stop_pct does not invert and must still tighten")
+
+    def test_but_it_still_shrinks_an_ENTRY(self):
+        out = run_engine._tighter_order({"size_frac": 1.0},
+                                        {"size_frac": 0.3}, reducing=False)
+        self.assertEqual(out["size_frac"], 0.3)
+
+    def test_target_is_never_taken_from_a_hold(self):
+        """Stated invariant with nothing enforcing it (review 2026-09-05):
+        a smaller target is not less risk, it is less reward, and the R:R
+        ceiling already re-derives it downstream."""
+        out = run_engine._tighter_order({"target_pct": 6.0},
+                                        {"target_pct": 0.5})
+        self.assertEqual(out["target_pct"], 6.0)
+
+    def test_a_panel_block_cannot_be_adopted_when_the_desk_named_none(self):
+        """The `{"defer": true}` hole in another shape."""
+        out = run_engine._tighter_order(None, {"size_frac": 0.9,
+                                               "stop_pct": 1.0})
+        self.assertIsNone(out)
+        out2 = run_engine._tighter_order({}, {"size_frac": 0.9})
+        self.assertIsNone(out2)
