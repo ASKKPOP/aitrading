@@ -1156,6 +1156,53 @@ percentage; and the evidence says the desk's early bails were noise-driven
 and lost money 3 of 3. If per-trade losses grow beyond the loss budget's
 intent, ship 1 is the suspect, not ship 2.
 
+## Deployed — stop-sign + exit-veto stack (87894db, 07:4xZ)
+
+`sooppiy-backend:20260905-20260905-stop-sign-and-exit-veto`. Rollback:
+`SOOPPIY_IMAGE=sooppiy-backend:20260905-20260905-panel-no-veto`.
+
+Local CI all six jobs, 5196 tests. Four adversarial rounds on this stack;
+final battery 8 mutations, 8 killed after closing the reviewer's two
+survivors (stop-hit substitution, `enabled()`).
+
+**Verified live in the worker, not assumed:**
+
+    sign recovery : {-5, 12} -> stop 5.0 / target 12.0   (was 0.30 / 0.90)
+    override      : entry-only = True
+    stop hits     : exemption = True, substitution refused = True
+    full path     : literal %% gone = True, POSITIVE present = True
+
+### What is now true that was not this morning
+
+1. A desk-authored 5% stop reaches the book as 5%, not 0.30%.
+2. The panel can no longer veto an entry — the 19-day wall stays down.
+3. The panel CAN veto a discretionary exit again — the three losses.
+4. It can veto neither the ruling nor the shape of a ROUTED STOP HIT.
+5. Both prompts ask for a positive magnitude, and neither renders `%%`.
+
+### Registered falsifier — F-STOP / F-EXIT
+
+- **F-STOP refuted** if any NEW position opens with a stop clamped to the
+  0.30% floor from a negative authored value. The recovery is deterministic,
+  so a single occurrence means the fix does not reach the live path.
+- **F-STOP supported** if `order_params` notes show `sign recovered` where
+  they previously showed `stop_pct -N raised to floor 0.3`.
+- **F-EXIT refuted** if a discretionary exit is still overridden
+  (`veto_overridden` on a proposed sell/cover/retire with no stop hit
+  pending). Expected count: zero.
+- **The P&L question stays open and is now ANSWERABLE.** F-VETO clause 3 was
+  unreadable while stops were being clamped 16.7x; with the desk's own
+  brackets reaching the book, a loss can finally be attributed to the entry
+  rather than to the clamp. That is the whole point of shipping this before
+  judging the veto removal.
+
+**Cost of the ships so far, stated plainly:** realized since the 06:00Z
+switch is dominated by one winner (ENA) and three overridden-exit losers
+(-$0.6887). Stripping the largest contributor flips the sign, so the
+aggregate is INCONCLUSIVE and I am not claiming otherwise. The two positions
+still open carry 0.30% stops the fix cannot repair — stops are write-once at
+open.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
