@@ -749,7 +749,11 @@ def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
         # LLM failure on the FULL pipeline journals a rule-engine hold
         # (analysis_agents fallback, decided_by="rule") — also not the
         # desk's word, also must not author the switch.
-        if payload.get("decided_by") == "rule":
+        # "scaffold" is the light path's own label for the same condition.
+        # The string check above still catches it; this is the durable
+        # check, so the rail no longer rests solely on an exact English
+        # sentence that a prompt edit could change out from under it.
+        if payload.get("decided_by") in ("rule", "scaffold"):
             break
         oldest = ts
         count += 1
@@ -7105,6 +7109,21 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
             pass
     decision = {"action": action, "confidence": confidence,
                 "entry": entry, "report": report, "scores": scores}
+    # Authorship label. Until now this was stamped ONLY on the escalated
+    # panel path (analysis_agents), so every non-escalated light cycle
+    # reached the tape unlabelled. Measured on prod 2026-09-05: 62/62
+    # decisions carrying a three-agent `discussion` had no decided_by
+    # against 198/200 without one — about a quarter of the tape could not
+    # be checked for the single thing the monitoring cycle must check, that
+    # no LLM brownout authored a no-prospect switch. Those verdicts were
+    # real desk holds; only the label was missing, and a monitoring run that
+    # cannot tell the difference reports a false alarm (it did).
+    #
+    # "scaffold" is the placeholder this path emits when the model returned
+    # no usable verdict — not the desk's word, and named so that ABSENCE of
+    # the field never has to be interpreted again.
+    decision["decided_by"] = (
+        "scaffold" if report == "light cycle: no LLM verdict" else "ai")
     try:
         if _discussion:
             decision["discussion"] = _discussion

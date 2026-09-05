@@ -178,6 +178,26 @@ class NoProspectSwitchTests(unittest.TestCase):
         self._decision(run2["id"], 0.1)
         self.assertIsNone(self._evaluate(run2))
 
+    def test_scaffold_label_also_never_authors_the_switch(self):
+        """The light path now labels its own placeholder `decided_by:
+        "scaffold"`. The rail must honour that label directly, not only the
+        exact English report sentence — a prompt edit could change the
+        sentence and silently un-guard the rail."""
+        run = _run(run_id=931)
+        for h in (1.3, 0.1):
+            self._decision(run["id"], h, decided_by="scaffold",
+                           report="some other placeholder wording")
+        self.assertIsNone(self._evaluate(run),
+                          "a scaffold-labelled outage authored the switch")
+
+    def test_a_real_desk_hold_still_fires_the_switch(self):
+        """The guard must not become a blanket off-switch: an `ai`-labelled
+        hold is the desk's word and still counts."""
+        run = _run(run_id=932)
+        for h in (1.3, 0.1):
+            self._decision(run["id"], h, decided_by="ai")
+        self.assertEqual(self._evaluate(run), "no_prospect_switched")
+
     def test_rule_fallback_label_reaches_the_journal(self):
         """Wiring pin (brief-line lesson): the guard reads decided_by from
         the TAPE, so the decision emit must journal it — before this ship
@@ -235,3 +255,50 @@ class NoProspectSwitchTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LightPathAuthorshipLabel(unittest.TestCase):
+    """The light path must label its own verdicts (2026-09-05).
+
+    `decided_by` was stamped only on the escalated panel path
+    (analysis_agents), so every NON-escalated light cycle reached the tape
+    unlabelled. Measured on prod: 62/62 decisions carrying a three-agent
+    `discussion` had no decided_by, against 198/200 without one — about a
+    quarter of the tape could not be checked for the one thing the hourly
+    monitoring cycle must check, that no LLM brownout authored a
+    no-prospect switch. The verdicts were real desk holds; only the label
+    was missing, and the monitoring run consequently reported a false alarm
+    ("11/12 switches scaffold-authored") that took a payload inspection to
+    put down.
+    """
+
+    def _light(self, response):
+        run = {"id": 1, "agent_id": 999999, "symbol": "ETHUSDT",
+               "market": "crypto", "market_type": "spot"}
+        with patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]), \
+             patch("llm_client.generate_text", return_value=response):
+            return run_engine._light_analysis(run, {}).get("decision") or {}
+
+    def test_a_real_verdict_is_labelled_ai(self):
+        d = self._light('{"action": "hold", "confidence": 0.55, '
+                        '"report": "no edge here"}')
+        self.assertEqual(d.get("action"), "hold")
+        self.assertEqual(d.get("decided_by"), "ai",
+                         "a genuine light-path desk verdict reached the "
+                         "tape unlabelled")
+
+    def test_a_no_verdict_placeholder_is_labelled_scaffold(self):
+        """An LLM brownout is NOT the desk's word and must say so, so that
+        ABSENCE of the field never has to be interpreted again."""
+        d = self._light("this is not json at all")
+        self.assertEqual(d.get("report"), "light cycle: no LLM verdict")
+        self.assertEqual(d.get("decided_by"), "scaffold")
+
+    def test_the_label_is_never_missing(self):
+        for resp in ('{"action": "buy", "confidence": 0.7, "report": "go"}',
+                     '{"action": "hold", "confidence": 0.1, "report": ""}',
+                     "garbage"):
+            self.assertIn(self._light(resp).get("decided_by"),
+                          ("ai", "scaffold"),
+                          f"unlabelled decision for response {resp!r}")
