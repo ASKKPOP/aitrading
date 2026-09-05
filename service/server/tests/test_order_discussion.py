@@ -418,3 +418,47 @@ class PanelLocalFallbackTests(unittest.TestCase):
                 _RUN, {"provider": "local"}, _analysis("buy"))
         self.assertEqual(ra.call_count, 1)
         self.assertEqual(out["decision"]["action"], "buy")
+
+
+class TighterOrderJunkTests(unittest.TestCase):
+    """`_tighter_order` is fed an LLM's JSON. Measured 2026-09-05: before
+    the positivity guard, 0, -1 and -5 were all adopted as "smaller".
+
+    The zero case is the dangerous one and it is not a typo hazard, it is
+    a correctness hazard: a panel that voted `hold` returning
+    `size_frac: 0` cancels the order through its sizing — the veto
+    reinstated through the back door, and INVISIBLE, because the ship would
+    look like it worked while trading nothing."""
+
+    DESK = {"size_frac": 0.25, "leverage": 1, "stop_pct": 2.0}
+
+    def _t(self, panel):
+        return run_engine._tighter_order(dict(self.DESK), panel)
+
+    def test_zero_size_cannot_cancel_the_order(self):
+        self.assertEqual(self._t({"size_frac": 0})["size_frac"], 0.25)
+
+    def test_zero_leverage_is_refused(self):
+        self.assertEqual(self._t({"leverage": 0})["leverage"], 1)
+
+    def test_negative_values_are_refused(self):
+        self.assertEqual(self._t({"stop_pct": -5})["stop_pct"], 2.0)
+        self.assertEqual(self._t({"size_frac": -1})["size_frac"], 0.25)
+
+    def test_junk_types_are_ignored_not_crashed(self):
+        for junk in ({"size_frac": "lots"}, {"size_frac": {"a": 1}},
+                     {"size_frac": None}, {"size_frac": float("nan")}):
+            self.assertEqual(self._t(junk)["size_frac"], 0.25)
+
+    def test_a_numeric_string_still_tightens(self):
+        self.assertEqual(self._t({"size_frac": "0.10"})["size_frac"], 0.10)
+
+    def test_a_genuine_tighten_still_applies(self):
+        out = self._t({"size_frac": 0.10, "stop_pct": 1.2})
+        self.assertEqual(out["size_frac"], 0.10)
+        self.assertEqual(out["stop_pct"], 1.2)
+
+    def test_no_panel_block_is_a_passthrough(self):
+        self.assertEqual(run_engine._tighter_order(dict(self.DESK), None),
+                         self.DESK)
+        self.assertIsNone(run_engine._tighter_order(None, None))

@@ -7175,10 +7175,20 @@ def _tighter_order(proposed: "dict | None",
         if pv is None or qv is None:
             continue
         try:
-            if float(qv) < float(pv):
-                base[k] = float(qv)
+            qf, pf = float(qv), float(pv)
         except (TypeError, ValueError):
+            continue                      # strings, dicts, junk: ignored
+        # STRICTLY POSITIVE and finite, not merely "smaller". A panel that
+        # voted hold and returns `size_frac: 0` would otherwise cancel the
+        # order through its sizing — the veto reinstated through the back
+        # door, and invisible, because the ship would look like it worked
+        # while trading nothing. Negatives are the same hole with a worse
+        # tail (a negative stop is not a stop). Measured 2026-09-05: 0, -1
+        # and -5 were all adopted before this guard. NaN fails every
+        # comparison and so was already inert.
+        if not (0.0 < qf < pf):
             continue
+        base[k] = qf
     return base or None
 
 
