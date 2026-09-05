@@ -825,6 +825,67 @@ would confound the F-VETO window that just opened — two changes, one window,
 no attribution, which is the exact error the joint-window note records from
 yesterday. It is registered as the next ship.
 
+## Hourly monitoring cycle — 2026-09-05 06:18Z (first cycle with a book)
+
+**P&L first.** Two fills, both still open, **zero closed legs** — so the
+two-subagent outcome rule does not apply this cycle either.
+
+    agent 6  : 2 fills, realized +0.00, unrealized +0.02, cash 9,825.71
+    agent 60 : 0 fills, flat, cash 10,000.00
+
+    HYPEUSDT run 2740  1.11436 @ 84.1050  mark 84.000  uPNL -0.117  stop 0.30%
+    LITUSDT  run 2749 17.20765 @ 4.67720  mark 4.6850  uPNL +0.134  stop 1.00%
+
+Deployed capital $174.21 = 1.74% of the account. **Fees already paid $0.078
+against +$0.02 unrealized, so the book is net -$0.06 all-in.** No verdict is
+available and none is claimed.
+
+Authored entries: **4** since the tier ship (1 before the veto removal, 3
+after, in 15 minutes). Falsifier v2 PASSES on four now rather than one.
+
+**Process health.** Fleet 44 8/8, fleet 43 4/8, cooldowns 34. Last-fix
+verification **10/10 switches desk-authored, 0 scaffold/rule**.
+
+### Both fills bought ABOVE the zone the desk itself named
+
+| run | its own zone | filled at | above the zone top |
+|---|---|---|---|
+| 2740 HYPE | 77.5 – 79.0 | 84.105 | **+6.5%** |
+| 2749 LIT | 4.20 – 4.35 | 4.6772 | **+7.5%** |
+
+2 of 2. The desk names a pullback level in its outlook and then buys at
+market when asked. This is the exact behaviour `entry_router` was built to
+serve — and it shows the wake is not the binding constraint on entry
+QUALITY: the desk does not wait for its level, it just was not previously
+allowed to buy at all. Removing the veto produced trades; it did not produce
+patience.
+
+**`plan_adherence` is not a trustworthy audit field.** Run 2749 filled 7.5%
+above its own zone and self-reported `plan_adherence: "followed"`. Run 2740
+correctly said `"deviated"`. The field is self-declared by the model, not
+computed against the authored zone, and it was wrong on the larger of the
+two deviations — in the permissive direction. Distribution on buy decisions
+since 09-04: followed 4, deviated 1. Do not use it as evidence of plan
+discipline without recomputing against the zone.
+
+### A SECOND bracket convention defect
+
+Alongside the sign slip recorded last cycle, run 2749 shows a unit slip:
+
+    "bracket interpreted as percent fractions (unit slip: every authored
+     pct field sub-floor — stop_pct 0.01 -> 1, target_pct 0.03 -> 3)"
+
+Counts since 09-04: **stop raised to floor 12** (the sign slip, which
+DESTROYS the desk's intent — 5% became 0.30%), **unit slip 2** (which the
+rail CORRECTS to 1%/3%). Two different conventions arriving from the desk,
+one recovered and one not. LIT got a 1.00% stop because its slip was the
+recoverable kind; HYPE got 0.30% because its slip was not.
+
+**Still not fixed, still deliberately.** F-VETO opened 18 minutes ago with
+two live positions; changing stop handling now would put two changes in one
+window with no attribution. It remains the next ship, and F-VETO clause 3
+remains unreadable until it lands.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
