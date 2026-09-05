@@ -272,9 +272,24 @@ class PanelActuallyReceivesItTests(unittest.TestCase):
         """Holds author no order, so the meeting must not convene."""
         self.assertIsNone(self._drive({"action": "hold", "confidence": 0.5}))
 
-    def test_the_panel_verdict_still_replaces_the_proposal(self):
-        """Owner rule 2026-08-13 must survive this fix: whatever the panel
-        concludes stands, including overruling the entry."""
+    def test_the_panel_no_longer_overrules_the_entry(self):
+        """SUPERSEDED 2026-09-05 by owner decision ("if continue hold then
+        we will be remove desk hold logic").
+
+        This test previously asserted the opposite — that a panel `hold`
+        replaces a proposed buy, on the reading that owner rule 2026-08-13
+        made the panel the final author. The tape settled which reading was
+        right: 435 entry proposals since 09-04, 434 answered `hold`, one
+        survivor, against exactly ONE order refused by the risk gates in
+        625 decisions. "Final author" had become "never trades".
+
+        Rule 2026-08-13 is still satisfied and this is worth being precise
+        about, because it is the load-bearing claim: the order is authored
+        by the sooppiy AI either way. Code does not invent an order and does
+        not arbitrate on trading grounds — it only decides WHICH AI voice is
+        final when two disagree, and that was always a code decision. It
+        used to be the panel; it is now the desk that moved first.
+        PANEL_ENTRY_VETO=1 restores the old arrangement."""
         from unittest.mock import patch
         run = {"id": 1, "agent_id": 6, "symbol": "NVDA", "market": "us-stock",
                "market_type": "spot"}
@@ -287,8 +302,10 @@ class PanelActuallyReceivesItTests(unittest.TestCase):
                 run, {"provider": None, "lang": "en"},
                 {"decision": {"action": "buy", "confidence": 0.8},
                  "position_state": ""})
-        self.assertEqual((out.get("decision") or {}).get("action"), "hold",
-                         "code must not force the proposal through")
+        self.assertEqual((out.get("decision") or {}).get("action"), "buy",
+                         "the panel vetoed an entry it may only review")
+        self.assertEqual((out.get("decision") or {}).get("confidence"), 0.8,
+                         "the proposer's confidence must carry the order")
 
 
 if __name__ == "__main__":

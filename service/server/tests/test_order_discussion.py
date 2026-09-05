@@ -53,23 +53,78 @@ class OrderDiscussionTests(unittest.TestCase):
         self.emit.stop()
         self.held.stop()
 
-    def test_panel_is_the_final_author_not_a_veto(self):
-        # The panel DISAGREES (hold vs buy): its verdict simply replaces the
-        # proposal — there is no code arbitration to "block" anything.
-        panel = {"decision": {"action": "hold", "confidence": 0.55},
+    def test_the_panel_reviews_the_motion_but_cannot_veto_it(self):
+        """Owner 2026-09-05: "if continue hold then we will be remove desk
+        hold logic".
+
+        Measured on the live tape since 2026-09-04: the desk proposed an
+        entry 435 times (367 buys, 67 sells) and the panel answered `hold`
+        on 434 of them. One survived. Meanwhile the risk gates refused
+        exactly ONE order in 625 decisions. The wall was here, and nowhere
+        else. The panel still meets, still reviews, still may substitute
+        its own order or tighten the bracket — it may no longer answer a
+        motion to trade with "no trade"."""
+        panel = {"decision": {"action": "hold", "confidence": 0.55,
+                              "report": "a chase, not a thesis"},
                  "analysts": {"news": {"data": {}}}}
         with patch("analysis_agents.run_analysis",
                    return_value=panel) as ra:
             out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
-        self.assertEqual(out["decision"]["action"], "hold")
+        self.assertEqual(out["decision"]["action"], "buy",
+                         "the panel vetoed an entry it was only meant to "
+                         "review")
+        self.assertEqual(out["decision"]["confidence"], 0.7,
+                         "the desk's own confidence must carry the order — "
+                         "taking the panel's just moves the veto into the "
+                         "confidence gate")
         self.assertEqual(out["decision"]["escalated_from"],
                          {"action": "buy", "confidence": 0.7})
+        self.assertIn("chase", out["decision"]["panel_review"],
+                      "the panel's reasoning must survive on the record")
         self.assertEqual(ra.call_count, 1)
         self.assertEqual(ra.call_args.kwargs.get("position_state"),
                          "BRIEF_TEXT\n")
         et, payload = self.events[0]
         self.assertEqual(et, "order_discussion")
-        self.assertEqual(payload["final"]["action"], "hold")
+        self.assertEqual(payload["panel_verdict"], "hold")
+        self.assertTrue(payload["veto_overridden"])
+        self.assertEqual(payload["final"]["action"], "buy")
+
+    def test_the_old_veto_is_one_env_flag_away(self):
+        """PANEL_ENTRY_VETO=1 restores the pre-2026-09-05 behaviour
+        exactly, so the change is reversible without a deploy."""
+        import os
+        panel = {"decision": {"action": "hold", "confidence": 0.55},
+                 "analysts": {}}
+        os.environ["PANEL_ENTRY_VETO"] = "1"
+        try:
+            with patch("analysis_agents.run_analysis", return_value=panel):
+                out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        finally:
+            os.environ.pop("PANEL_ENTRY_VETO", None)
+        self.assertEqual(out["decision"]["action"], "hold")
+
+    def test_a_panel_that_authors_a_DIFFERENT_order_is_honoured(self):
+        """Substituting an order is not vetoing one. Only `hold` is
+        overridden — a panel that turns a buy into a sell has authored its
+        own order and that verdict stands untouched."""
+        panel = {"decision": {"action": "sell", "confidence": 0.66},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "sell")
+        self.assertEqual(out["decision"]["confidence"], 0.66)
+
+    def test_the_panel_may_still_tighten_the_bracket(self):
+        """It loses the veto, not its risk voice."""
+        panel = {"decision": {"action": "hold", "confidence": 0.4,
+                              "stop_pct": 1.2, "target_pct": 3.0},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "buy")
+        self.assertEqual(out["decision"]["stop_pct"], 1.2)
+        self.assertEqual(out["decision"]["target_pct"], 3.0)
 
     def test_agreeing_panel_still_authors_the_final_decision(self):
         panel = {"decision": {"action": "buy", "confidence": 0.81},
@@ -204,10 +259,15 @@ class PanelLocalFallbackTests(unittest.TestCase):
         with patch("analysis_agents.run_analysis", side_effect=fake):
             out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
         self.assertEqual(calls, [None, "local"])
-        self.assertEqual(out["decision"]["action"], "hold",
-                         "the local panel's verdict governs")
+        # The local panel IS a panel, so it reviews and it does NOT veto
+        # (owner 2026-09-05). The escalation still happened and is still
+        # attributed — only the cancellation is gone.
+        self.assertEqual(out["decision"]["action"], "buy",
+                         "the local fallback panel vetoed an entry")
         et, payload = self.events[0]
         self.assertEqual(payload["reviewed_by"], "local-fallback")
+        self.assertEqual(payload["panel_verdict"], "hold")
+        self.assertTrue(payload["veto_overridden"])
 
     def test_exception_failure_also_convenes_the_local_panel(self):
         calls = []

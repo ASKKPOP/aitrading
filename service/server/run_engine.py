@@ -7147,6 +7147,31 @@ def _order_discussion_enabled() -> bool:
             not in ("0", "false", "no"))
 
 
+def _panel_entry_veto_enabled() -> bool:
+    """May the escalation panel cancel an entry the desk proposed?
+
+    Default NO (owner decision 2026-09-05, "if continue hold then we will
+    be remove desk hold logic").
+
+    Measured on the live tape since 2026-09-04: the cheap-tier desk
+    proposed an entry 435 times — 367 buys and 67 sells — and the panel
+    returned `hold` on 434 of them. One survived. That is not a filter, it
+    is a wall, and it is where every no-trade day since 2026-08-16 was
+    authored: the risk gates refused exactly ONE order in 625 decisions,
+    and the light desk wanted to trade every single cycle.
+
+    With the veto gone the panel still does everything else it was built
+    for — it reviews, it can substitute its OWN order, and it can tighten
+    the bracket it hands back. It simply cannot answer a motion to trade
+    with "no trade". Owner rule 2026-08-13 is untouched: the order is still
+    authored by the sooppiy AI (the desk that proposed it), and every risk
+    gate downstream is unchanged.
+
+    Set PANEL_ENTRY_VETO=1 to restore the old behaviour."""
+    return (os.environ.get("PANEL_ENTRY_VETO", "0").strip().lower()
+            in ("1", "true", "yes", "on"))
+
+
 def _produces_order(action: "str | None", held: float) -> bool:
     """buy/sell always produce an order; retire only flattens a held book."""
     if action in ("buy", "sell"):
@@ -7338,6 +7363,25 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
                 if reason in _INFRA_RULE_REASONS:
                     _want_local()
                 continue
+            # The panel REVIEWS the motion; it does not veto it (owner
+            # 2026-09-05). A `hold` verdict on a proposed ENTRY is recorded
+            # and then overridden: the desk's order stands, carrying the
+            # desk's own confidence — taking the panel's would simply move
+            # the veto one door down into the confidence gate and change
+            # nothing. The panel may still hand back a tighter bracket, and
+            # a panel that authors a DIFFERENT order (buy -> sell) is not
+            # vetoing, so that verdict is honoured untouched.
+            if (not _panel_entry_veto_enabled()
+                    and str(final.get("action") or "").lower() == "hold"):
+                payload["panel_verdict"] = "hold"
+                payload["veto_overridden"] = True
+                payload["panel_reason"] = str(final.get("report") or "")[:200]
+                kept = dict(proposal)
+                kept["panel_review"] = str(final.get("report") or "")[:500]
+                for _k in ("order", "stop_pct", "target_pct"):
+                    if final.get(_k) is not None:
+                        kept[_k] = final[_k]     # tighten, never cancel
+                final = kept
             final["escalated_from"] = payload["proposed"]
             payload["final"] = {"action": final.get("action"),
                                 "confidence": final.get("confidence")}
