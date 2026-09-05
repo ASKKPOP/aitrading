@@ -402,10 +402,16 @@ class TargetAwareArm(unittest.TestCase):
                           "entry_price": entry, "take_profit": tp}},
             market=market)
 
-    def test_the_arm_is_half_the_distance_to_the_authored_target(self):
-        # 5% target on a $93.8 book: half of $4.69 is $2.34
+    def test_the_arm_is_a_FRACTION_of_the_distance_to_the_authored_target(self):
+        """0.30 by default — chosen by replay. Asserted against the module's
+        own default rather than a hardcoded 0.5, so the test tracks the
+        shipped value instead of a number I picked first and had to revise."""
+        frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0.3"))
         arm = self._arm(1.75, 53.6, 53.574, 56.2527)
-        self.assertAlmostEqual(arm, 1.75 * abs(56.2527 - 53.574) * 0.5, places=6)
+        self.assertAlmostEqual(arm, 1.75 * abs(56.2527 - 53.574) * frac,
+                               places=6)
+        self.assertEqual(frac, 0.3, "the shipped default moved without a "
+                                    "replay to justify it")
 
     def test_a_WIDER_target_arms_LATER(self):
         """The defect in one assertion: the old arm was identical for both."""
@@ -496,3 +502,42 @@ class TakeProfitReachesTheArm(unittest.TestCase):
                              "target-aware ratchet is inert in production")
         finally:
             tmp.cleanup()
+
+
+class ShortArmSymmetry(unittest.TestCase):
+    """A SHORT's take-profit sits BELOW entry, so the arm must use the
+    absolute distance.
+
+    Unpinned until 2026-09-05: dropping `abs()` made `tp - entry` negative
+    for a short, `max(fee_arm, negative)` returned the fee arm, and every
+    short silently reverted to the old behaviour with no test failing. That
+    matters disproportionately — 7 of the 9 archived ratchet fires were
+    shorts."""
+
+    def _arm(self, entry, tp):
+        import run_engine
+        return run_engine._breakeven_arm_usd(
+            {"position": {"quantity": 10.0, "current_price": entry,
+                          "entry_price": entry, "take_profit": tp}},
+            market="crypto")
+
+    def test_a_short_arms_the_same_as_the_mirror_long(self):
+        short = self._arm(100.0, 90.0)    # tp BELOW entry
+        long_ = self._arm(100.0, 110.0)   # tp ABOVE entry
+        self.assertAlmostEqual(short, long_, places=9)
+
+    def test_a_short_arm_is_not_the_bare_fee_arm(self):
+        """The exact shape the missing abs() produced."""
+        short = self._arm(100.0, 90.0)
+        fee_only = self._arm(100.0, 0)
+        self.assertGreater(short, fee_only,
+                           "a short fell back to the fee arm — abs() lost")
+
+    def test_the_scale_is_the_configured_fraction(self):
+        import os
+        os.environ["RATCHET_ARM_TARGET_FRAC"] = "0.3"
+        try:
+            self.assertAlmostEqual(self._arm(100.0, 90.0),
+                                   0.3 * 10.0 * 10.0, places=6)
+        finally:
+            os.environ.pop("RATCHET_ARM_TARGET_FRAC", None)

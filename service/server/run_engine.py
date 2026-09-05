@@ -1235,10 +1235,31 @@ def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None,
         #
         # No take_profit (older rows, desk authored none) -> unchanged.
         # RATCHET_ARM_TARGET_FRAC=0 restores the previous behaviour exactly.
+        # 0.30, NOT 0.50 — chosen by replay, not by taste.
+        #
+        # Two independent counterfactuals on two different windows both say
+        # 0.50 is too aggressive. My own replay of the 8 fires on 2026-09-05:
+        # NONE would still arm (peaks 0.098-0.547 against arms 0.65-4.35), so
+        # 0.50 does not re-scale the ratchet, it switches it off. Adversarial
+        # replay of 9 archived fires from 2026-08-17..23: 5 lose their arm and
+        # the window goes from -$1.51 to -$3.93, WORSE by $2.42, with three of
+        # the five running straight into the stop. There the ratchet was doing
+        # its job — exiting small before the stop — which is the opposite of
+        # the loss-engine reading that motivated this change.
+        #
+        # At 0.30 the archived window is untouched (0 fires lose their arm),
+        # and the fix still does what it was for: a 5% target arms at 1.50%
+        # of notional instead of a flat 0.160%. It also keeps the documented
+        # tier order for ordinary targets — 0.9% target -> 0.270% arm, still
+        # below the legacy trail's 0.400% activate.
+        #
+        # The two windows genuinely disagree about larger fractions. That
+        # disagreement is why this ships at the fraction where BOTH are
+        # neutral-or-better rather than at the one only one of them supports.
         try:
-            frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0.5"))
+            frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0.3"))
         except ValueError:
-            frac = 0.5
+            frac = 0.3
         if frac > 0:
             try:
                 tp = float(pos.get("take_profit") or 0)
