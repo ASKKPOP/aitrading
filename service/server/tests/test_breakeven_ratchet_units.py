@@ -377,3 +377,122 @@ class RatchetClampTests(unittest.TestCase):
                 run_engine._breakeven_floor_hit(peak, 0.035, arm,
                                                 exit_fee_usd=exit_fee),
                 "floor fell below the position's own round trip")
+
+
+class TargetAwareArm(unittest.TestCase):
+    """The arm must scale with the bracket the desk authored (2026-09-05).
+
+    Measured over 8 fires on 2026-09-05: the arm is a constant in NOTIONAL
+    terms (0.160% on crypto) and knows nothing about the target. It armed at
+    53% of a 0.30% stop and 5.6x closer than a 0.90% target, so it banked
+    ~+0.035% of notional while a loser still ran the full stop. Observed
+    geometry needed a 68.0% win rate and delivered 50.0%; $1.313 of intended
+    lock was destroyed by 63s mark sampling. On a correctly-authored 2.5%/5%
+    bracket it was worse (breakeven 98.7%) precisely because the arm does not
+    scale.
+
+    A trailing lock that fires before a position is meaningfully on its way
+    is not protecting a winner, it is capping one.
+    """
+
+    def _arm(self, qty, mark, entry, tp, market="crypto"):
+        import run_engine
+        return run_engine._breakeven_arm_usd(
+            {"position": {"quantity": qty, "current_price": mark,
+                          "entry_price": entry, "take_profit": tp}},
+            market=market)
+
+    def test_the_arm_is_half_the_distance_to_the_authored_target(self):
+        # 5% target on a $93.8 book: half of $4.69 is $2.34
+        arm = self._arm(1.75, 53.6, 53.574, 56.2527)
+        self.assertAlmostEqual(arm, 1.75 * abs(56.2527 - 53.574) * 0.5, places=6)
+
+    def test_a_WIDER_target_arms_LATER(self):
+        """The defect in one assertion: the old arm was identical for both."""
+        near = self._arm(1.114, 84.1, 84.105, 84.8619)     # 0.90% target
+        far = self._arm(1.114, 84.1, 84.105, 88.310)       # 5.00% target
+        self.assertGreater(far, near * 3,
+                           "the arm still ignores the authored target")
+
+    def test_the_fee_floor_still_applies_underneath(self):
+        """A peak that has not paid for its own round trip is never worth
+        protecting — that part of the original design is kept.
+
+        Asserts the arm EQUALS the fee arm when half the target is smaller
+        than it. An earlier version only asserted `> 0`, which passed even
+        with the fee floor removed."""
+        fee_only = self._arm(1.0, 100.0, 100.0, 0)          # no target
+        tiny_tgt = self._arm(1.0, 100.0, 100.0, 100.0001)   # half-target ~ 0
+        self.assertAlmostEqual(tiny_tgt, fee_only, places=9)
+        self.assertGreater(fee_only, 0.0)
+
+    def test_no_take_profit_leaves_the_arm_unchanged(self):
+        with_tp = self._arm(1.0, 100.0, 100.0, 105.0)
+        without = self._arm(1.0, 100.0, 100.0, 0)
+        self.assertGreater(with_tp, without)
+        self.assertAlmostEqual(without, self._arm(1.0, 100.0, 100.0, None),
+                               places=9)
+
+    def test_the_kill_switch_restores_the_old_arm_exactly(self):
+        os.environ["RATCHET_ARM_TARGET_FRAC"] = "0"
+        try:
+            with_tp = self._arm(1.0, 100.0, 100.0, 105.0)
+            without = self._arm(1.0, 100.0, 100.0, 0)
+            self.assertAlmostEqual(with_tp, without, places=9)
+        finally:
+            os.environ.pop("RATCHET_ARM_TARGET_FRAC", None)
+
+    def test_a_flat_book_still_never_arms(self):
+        self.assertEqual(self._arm(0.0, 100.0, 100.0, 105.0), 0.0)
+
+    def test_junk_take_profit_falls_back_to_the_fee_arm(self):
+        base = self._arm(1.0, 100.0, 100.0, 0)
+        for junk in ("x", None, -5, float("nan")):
+            self.assertAlmostEqual(self._arm(1.0, 100.0, 100.0, junk), base,
+                                   places=9)
+
+
+class TakeProfitReachesTheArm(unittest.TestCase):
+    """WIRING pin. The arm reads `take_profit` off `pnl["position"]`, which
+    is built by compute_run_pnl's SELECT. Unit tests that hand the dict in
+    directly pass even when the column is dropped from that query — that
+    mutation survived on 2026-09-05, the same unit-vs-wiring gap that has
+    produced several defects this week."""
+
+    def test_compute_run_pnl_carries_the_take_profit(self):
+        import os
+        import tempfile
+        import database
+        import run_engine
+        tmp = tempfile.TemporaryDirectory()
+        try:
+            database.DATABASE_URL = ""
+            database._SQLITE_DB_PATH = os.path.join(tmp.name, "t.db")
+            database.init_database()
+            conn = database.get_db_connection()
+            cur = conn.cursor()
+            cur.execute("INSERT INTO agents (name, cash) VALUES ('c', 10000)")
+            aid = cur.lastrowid
+            cur.execute(
+                "INSERT INTO trading_runs (agent_id, symbol, market, market_type,"
+                " status, config_snapshot_json, start_condition_json,"
+                " stop_conditions_json, created_at) VALUES "
+                "(?,'ETHUSDT','crypto','spot','running','{}','{}','{}',?)",
+                (aid, "2026-01-01T00:00:00Z"))
+            rid = cur.lastrowid
+            cur.execute(
+                "INSERT INTO positions (agent_id, symbol, market, side,"
+                " quantity, entry_price, current_price, take_profit, run_id,"
+                " opened_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (aid, "ETHUSDT", "crypto", "long", 1.0, 100.0, 101.0,
+                 105.0, rid, "2026-09-05T06:00:00Z"))
+            conn.commit(); conn.close()
+            run = {"id": rid, "agent_id": aid, "symbol": "ETHUSDT",
+                   "market": "crypto"}
+            pnl = run_engine.compute_run_pnl(run)
+            self.assertIsNotNone(pnl.get("position"))
+            self.assertEqual(float(pnl["position"]["take_profit"]), 105.0,
+                             "take_profit never reaches the arm — the "
+                             "target-aware ratchet is inert in production")
+        finally:
+            tmp.cleanup()

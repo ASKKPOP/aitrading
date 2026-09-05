@@ -1042,7 +1042,8 @@ def compute_run_pnl(run: dict) -> dict:
             (run["id"],))
         legs = [dict(r) for r in cursor.fetchall()]
         cursor.execute(
-            """SELECT quantity, entry_price, current_price, price_updated_at, leverage
+            """SELECT quantity, entry_price, current_price, price_updated_at,
+                      leverage, take_profit
                FROM positions
                WHERE agent_id = ? AND market = ? AND symbol = ? AND run_id = ?""",
             (run["agent_id"], run["market"], run["symbol"], run["id"]))
@@ -1215,7 +1216,40 @@ def _breakeven_arm_usd(pnl: dict, floor_qty: "float | None" = None,
             # applying it here would RAISE these arms 78% unmeasured.
             rate = 0.001
             mult = 1.0
-        return qty * mark * rate * 2.0 * max(0.0, mult)
+        fee_arm = qty * mark * rate * 2.0 * max(0.0, mult)
+        # TARGET-AWARE FLOOR (2026-09-05). The fee arm above is a constant
+        # in NOTIONAL terms — 0.160% on crypto — and knows nothing about the
+        # bracket the desk authored. Measured over 8 fires that day: it
+        # armed at 53% of a 0.30% stop and 5.6x closer than a 0.90% target,
+        # so it banked ~+0.035% of notional while a loser still ran the full
+        # stop. Observed geometry needed a 68.0% win rate and delivered
+        # 50.0%; $1.313 of intended lock was destroyed by 63s mark sampling.
+        # On a correctly-authored 2.5%/5% bracket it was worse still
+        # (breakeven 98.7%), because the arm does not scale with the target.
+        #
+        # A trailing lock that fires before a position is meaningfully on
+        # its way is not protecting a winner, it is capping one. So the arm
+        # is now at least a FRACTION OF THE DISTANCE TO THE DESK'S OWN
+        # TAKE-PROFIT. Fee-anchored floor kept underneath: a peak that has
+        # not paid for its own round trip is still never worth protecting.
+        #
+        # No take_profit (older rows, desk authored none) -> unchanged.
+        # RATCHET_ARM_TARGET_FRAC=0 restores the previous behaviour exactly.
+        try:
+            frac = float(os.getenv("RATCHET_ARM_TARGET_FRAC", "0.5"))
+        except ValueError:
+            frac = 0.5
+        if frac > 0:
+            try:
+                tp = float(pos.get("take_profit") or 0)
+                entry = float(pos.get("entry_price") or 0)
+                if tp > 0 and entry > 0:
+                    target_usd = qty * abs(tp - entry)
+                    if target_usd > 0:
+                        return max(fee_arm, frac * target_usd)
+            except (TypeError, ValueError):
+                pass
+        return fee_arm
     except (TypeError, ValueError):
         return 0.0
 
