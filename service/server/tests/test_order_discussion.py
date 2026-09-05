@@ -537,3 +537,63 @@ class ReductionSizingTests(unittest.TestCase):
         self.assertIsNone(out)
         out2 = run_engine._tighter_order({}, {"size_frac": 0.9})
         self.assertIsNone(out2)
+
+
+class ShortBookReductionTests(unittest.TestCase):
+    """The mirror of the long-exit defect (review 2026-09-05).
+
+    `run_cycle` maps the desk's verb for futures books — buy -> cover when
+    the position is short — but that mapping runs AFTER the panel. So a
+    proposal to CLOSE a short still reads `buy` at panel time, and a
+    verb-only predicate classified it as risk-increasing. Measured
+    end-to-end on a crypto futures short: desk size_frac 1.0 (close the
+    whole short) shipped 0.3 — 70% of the short retained by a panel that
+    voted hold."""
+
+    def setUp(self):
+        self.events = []
+        self.emit = patch.object(
+            run_engine, "emit_telemetry_event",
+            side_effect=lambda rid, et, p: self.events.append((et, p)))
+        self.emit.start()
+
+    def tearDown(self):
+        self.emit.stop()
+
+    def _drive(self, action, held, desk_size=1.0, panel_size=0.3):
+        run = {"id": 9, "agent_id": 1, "symbol": "ETHUSDT",
+               "market": "crypto", "market_type": "futures"}
+        a = {"decision": {"action": action, "confidence": 0.7,
+                          "entry": 100.0,
+                          "order": {"size_frac": desk_size}},
+             "analysts": {}, "position_state": ""}
+        panel = {"decision": {"action": "hold", "confidence": 0.4,
+                              "order": {"size_frac": panel_size}},
+                 "analysts": {}}
+        with patch.object(run_engine, "_position_quantity", return_value=held), \
+             patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(run, {}, a)
+        return (out.get("decision") or {}).get("order", {})
+
+    def test_a_buy_that_CLOSES_a_short_keeps_full_size(self):
+        self.assertEqual(self._drive("buy", -100.0)["size_frac"], 1.0,
+                         "the panel retained 70% of a short the desk was "
+                         "closing")
+
+    def test_a_sell_that_ADDS_to_a_short_is_still_narrowed(self):
+        """The opposite mis-classification from the same root: selling
+        into a short increases exposure, so the panel keeps its voice."""
+        self.assertEqual(self._drive("sell", -100.0)["size_frac"], 0.3)
+
+    def test_a_sell_that_CLOSES_a_long_keeps_full_size(self):
+        self.assertEqual(self._drive("sell", 100.0)["size_frac"], 1.0)
+
+    def test_a_buy_that_ADDS_to_a_long_is_still_narrowed(self):
+        self.assertEqual(self._drive("buy", 100.0)["size_frac"], 0.3)
+
+    def test_target_is_never_taken_on_a_REDUCTION_either(self):
+        """The docstring states it unconditionally; it was pinned only on
+        the entry path (the reducing-path mutation survived)."""
+        out = run_engine._tighter_order({"target_pct": 6.0},
+                                        {"target_pct": 0.5}, reducing=True)
+        self.assertEqual(out["target_pct"], 6.0)

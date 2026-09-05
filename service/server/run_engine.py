@@ -7448,8 +7448,20 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
                 payload["panel_reason"] = str(final.get("report") or "")[:200]
                 kept = dict(proposal)     # COPY: never mutate the caller's
                 kept["panel_review"] = str(final.get("report") or "")[:500]
-                _reducing = bool(held) and str(action or "").lower() in (
-                    "sell", "cover", "retire")
+                # "Reducing" means moves |position| toward zero, which
+                # needs the position SIGN, not just the verb. run_cycle
+                # maps buy -> cover on a short book, but that mapping runs
+                # AFTER this meeting, so a proposal to close a short still
+                # reads `buy` here. Verb-only classification called that
+                # risk-increasing and let a hold-voting panel shrink it:
+                # measured end-to-end on a crypto futures short, desk
+                # size_frac 1.0 (close the whole short) shipped 0.3 — 70%
+                # of the short retained. Same defect as the long-exit one,
+                # reached through the other side of the book.
+                _act = str(action or "").lower()
+                _reducing = ((held > 0 and _act in ("sell", "retire"))
+                             or (held < 0 and _act in ("buy", "cover",
+                                                       "retire")))
                 tightened = _tighter_order(proposal.get("order"),
                                            final.get("order"),
                                            reducing=_reducing)
