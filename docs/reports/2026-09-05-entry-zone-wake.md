@@ -1203,6 +1203,109 @@ aggregate is INCONCLUSIVE and I am not claiming otherwise. The two positions
 still open carry 0.30% stops the fix cannot repair — stops are write-once at
 open.
 
+## Two-agent outcome analysis — 07:52Z, 11 closed legs
+
+### P&L first, and it is INCONCLUSIVE
+
+    gross (price only)  +$1.2179
+    fees                -$0.8979      (73.7% of gross)
+    NET                 +$0.3200      over 11 closed round trips
+
+**Owner rule 6, computed independently by both agents and by me — all three
+agree to the cent:** strip the largest contributor (ENA 2750, +$1.21348) and
+the window becomes **-$0.89345. The sign flips, so this is INCONCLUSIVE and
+must not be reported as a profitable window.** Strip both extremes and the
+remaining 9 still lose (-$0.3335).
+
+Attribution: algorithm-authored **+$0.79509** over 9 legs, desk-authored
+**-$0.47506** over 2. But the algorithm's positive number is ONE legacy-trail
+fire; its dominant rail — the breakeven ratchet, 8 of 9 algorithm exits —
+lost **-$0.41839**.
+
+### Where the agents DISAGREED, which is the finding
+
+- **Agent A**: the entries are the defect — 12 of 13 fills were taken
+  outside or against the desk's own standing entry condition, and 4-6 cited
+  an external catalyst (a "listing", an "upgrade") appearing in no brief.
+- **Agent B**: the ratchet is the defect — it needed a 68.0% win rate on its
+  own observed geometry and delivered 50.0%, and $1.313 of intended lock was
+  destroyed by 63-second mark sampling.
+
+**Both are right and neither excuses the other.** The desk went 0-for-2 on
+the exits it authored (-$0.475); the ratchet went -$0.418 over 8. The only
+profitable component in the entire window is a single legacy-trail fire.
+
+### Findings I REJECTED after checking them myself
+
+**Agent A's mechanism for the false `plan_adherence` is REFUTED.** A claimed
+the chair "amended the action and dropped the outlook in the same step" in 12
+of 13 fills. Measured directly: `chair` is **null on all 16** filled-entry
+decisions in this window — these are light-path decisions carrying
+`discussion` and no chair verdict at all. The OBSERVATION stands (10 of 16
+self-report `followed`, and A refuted 7 of 7 it examined); the EXPLANATION
+does not. A asserted a mechanism it had not verified.
+
+A also self-corrected its own brief: "every fill entered ABOVE its zone" is
+false — FIL entered 9.31% BELOW its own "long only above 0.85" gate. The
+correct, stronger claim is *outside or against* its own condition.
+
+### Corrections to MY OWN prior reporting, both from Agent B
+
+1. **"Both ratchet fires landed below their fee floor" does not generalise.**
+   At n=8 it is **4 of 8**, not 100%. My earlier n=2 claim overstated it.
+2. **My clamp-cost hypothesis is REFUTED. The clamps cost $0.00 this
+   window.** Not one clamped stop was breached at any sampled mark — because
+   the ratchet arms at 0.160% of notional while the floored stop sits at
+   0.300%, so **the ratchet structurally resolves every position before the
+   clamped stop is ever consulted.** I had been treating the 0.30% stops as
+   the loss engine. They were not. The ratchet was, and it fires first by
+   construction. That reorders what to fix.
+   (The exposure is real but unrealized: run 2741 missed its clamped stop by
+   **0.010 percentage points**.)
+3. **My stop-sign fix is UNVERIFIED on live tape, n=0** — exactly as I said
+   from the vacuous window. The only position opened after the 07:42Z deploy
+   authored no stop at all (`order_params.outcome: absent`), so the recovery
+   was never exercised.
+
+### NEW: a rule fallback cancelled a stop fail-safe (verified myself)
+
+Run 2750, 06:35:10Z — dispatched BY a stop hit:
+
+    route    : {"route":"full","triggers":["stop_hit"],"route_by":"rule"}
+    decision : hold, confidence 0.0, decided_by='rule',
+               fallback_reason='decision json unparseable'
+
+An unparseable JSON produced a rule-engine hold, which this codebase already
+states in as many words is NOT the desk's word — `_flat_hold_span` breaks on
+`decided_by == "rule"` for exactly that reason. But `stop_router.clear` is
+**not guarded by any `decided_by` check**, so that non-decision consumed the
+stop-hit ruling and cancelled the 180s fail-safe.
+
+This is the SOL 1274 family through a THIRD door. The first was a gate
+returning above the clear site (fixed today). The second was a panel veto
+(fixed today). This one is a fallback landing AS a decision. It happened to
+be worth +$0.51 here, which is luck, not a working control.
+
+**NOT SHIPPED — this cycle is monitor-don't-redesign.** Recommended fix, for
+the record: `stop_router.clear` should refuse a verdict whose `decided_by`
+is `rule` or `scaffold`, exactly as `_flat_hold_span` already does.
+
+### NEW: a mixed sign+unit slip still floors (run 2755, live)
+
+The desk authored `stop_pct 0.03` with `target_pct -0.05`. The unit-slip
+recovery requires EVERY present pct field to be sub-floor, and -0.05 fails
+that test, so 0.03 was floored to 0.30% instead of recovered to 3.0% — a
+**10x tighter stop than authored**, on a position still open. The adversarial
+reviewer predicted this exact residual before deploy; it is now observed live.
+
+### Process: every trade burns a slot
+
+8 of 9 run stops since 06:00Z were `stop_event:trailing_lock` — a ratchet
+close STOPS the run. Agent 6 built **20 runs** in ~100 minutes, stopped 9,
+and sits at 6/8 with 30 cooldowns. Each fill consumes a slot and forces a
+rebuild, carrying research + compose LLM cost on a budget already measured as
+oversubscribed.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
