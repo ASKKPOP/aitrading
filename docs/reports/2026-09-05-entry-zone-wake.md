@@ -886,6 +886,83 @@ two live positions; changing stop handling now would put two changes in one
 window with no attribution. It remains the next ship, and F-VETO clause 3
 remains unreadable until it lands.
 
+## Outcome analysis — first trades (two-agent rule, 2026-09-05 06:33Z)
+
+### THE PLATFORM REPORTS A WIN ON A TRADE THAT LOST MONEY
+
+Verified independently, twice, from the raw ledger:
+
+    LIT round trip:  gross move      +0.067110
+                     fees BOTH sides  0.072465
+                     TRUE all-in     -0.005356
+                     signals.pnl says +0.030862
+                     difference       0.036218  == exactly the ENTRY fee
+
+`signals.pnl` nets **only the exit-side fee**. Every realized figure taken
+from it is biased favourable by one entry fee per round trip. My own earlier
+report of "gross +$0.0309" used this number and was WRONG — that is the
+exit-netted figure, not gross.
+
+This extends the standing rule (`realized-pnl-misses-forced-flattens`) with a
+second, sharper reason: raw `signals.pnl` is wrong on ORDINARY closes too,
+not only forced flattens. Use `pnl_audit.replay_realized`.
+
+### The entries, measured (Agent A, spot-checked by me)
+
+Seven AI-authored entries, six filled, one closed. **7 of 7 were panel holds
+that the veto removal overrode.** Six of six contradicted the desk's own
+last written plan; five of six were placed against its own **flat** bias.
+Two claimed an exchange listing that appears in **none** of the four analyst
+briefs. Verified by me directly:
+
+- **LTC** — outlook 05:51 said bias FLAT, trigger "hold above 51.58 with
+  volume >1.0x AND crowding below ~2.0", **take-profit 53.5**. It filled at
+  **53.574 — above its own take-profit**, 29 minutes later, with neither
+  trigger condition cited as met.
+- **FIL** — outlook said bias FLAT, "long ONLY on decisive close above 0.85".
+  It filled at **0.77088, 9.3% BELOW that**, inside the range it had just
+  called "no confirmed edge either direction".
+
+`plan_adherence` self-reported `"followed"` on five of six. It is
+self-declared, not computed against the plan, and it is wrong in the
+permissive direction.
+
+**A correction to my own framing.** I called these "chases". Agent A measured
+position in the 24h range and refuted it for HYPE: 17.7%, the bottom fifth —
+not a chase at all. LTC (93.9%) and FIL (87.9%) are. And HYPE/ENA/FIL's own
+levels were never touched in 24h; HYPE re-published the identical 77.5-79.0
+zone six cycles running while price never came within 5.5%. So a large part
+of the gap is the desk **naming stale, unreachable levels it never
+re-anchors** — a different defect from chasing, and it points at the outlook
+refresher rather than at entry timing.
+
+### ROOT CAUSE of the -5 stop — it is the PROMPT, not the model
+
+Agent A could not determine this; the prompt text settles it
+(`run_engine.py:6902`):
+
+    "stop_pct = % from entry to your invalidation level"
+
+Nothing states that this is a POSITIVE MAGNITUDE. For a long, the
+invalidation IS below entry, so a model reasoning "5% below" writes `-5`
+correctly under a signed reading. The rail then refuses the negative and
+floors it to 0.30%, and the R:R ceiling drags the target from 12% to 0.9%.
+
+That makes the fix a one-line prompt clarification, not a parser change:
+state that stop_pct/target_pct are positive distances regardless of
+direction. **Registered as the next ship.** Counts since 09-04: 12
+stop-raised-to-floor, 2 unit slips.
+
+### Expectancy: INCONCLUSIVE, and stated as such
+
+ENA is the only winner (+0.447). Per owner rule 6, stripping the largest
+contributor flips the gross to **-0.430**. The sign flips, therefore the
+result is INCONCLUSIVE. What is NOT inconclusive is the fee: **$0.4156 of
+round-trip cost is already spent** on $542.26 of deployed capital (0.0900%).
+
+n=1 closed leg over 33 minutes. No expectancy verdict is available and none
+is claimed.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
