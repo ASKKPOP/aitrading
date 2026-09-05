@@ -230,6 +230,59 @@ time the platform was looking. **F-WAKE clause 1 (the mechanism is dead) is
 refuted.** Clauses 2-4 remain open and are the ones that decide whether the
 ship was right.
 
+## The attribution, measured — and it corrects my own emphasis
+
+Every risk-stage refusal since 2026-09-03 (n=820):
+
+| refusal | n |
+|---|---|
+| `decision is 'hold'` — the desk's own choice | **819** |
+| `confidence 0.38 below threshold 0.55` — a gate vetoing the desk | 1 |
+
+So the zero-trade state is overwhelmingly **the desk choosing to hold**, not
+code blocking it. That is worth stating plainly because it bounds what
+`entry_router` can achieve: the wake changes WHEN the desk is asked, which is
+a hypothesis about why it holds, not a way around holding.
+
+Confidence distribution over 828 decisions since 09-03: median 0.500, mean
+0.493; 36.6% reach the 0.55 gate. Histogram (rounded): 0.3 -> 58, 0.4 -> 260,
+0.5 -> 199, 0.6 -> 263, 0.7+ -> 40.
+
+### The one authored buy, and what happened to it
+
+    run 2630  DE (us-stock)  2026-09-04T15:56:03Z
+    chair AMENDED action, confidence and report:
+      "Bullish technical and sentiment signals outweigh the trader's weak
+       hold rationale, prompting a low-confidence buy."
+    -> gate_skip  risk: confidence 0.38 below threshold 0.55
+
+In 828 decisions the desk authored exactly ONE entry, and a threshold refused
+it. That is 100% of authored entries vetoed — but n=1, so it is registered,
+not acted on. The experimental-mindset rule is explicit that one data point
+is not a result, and this session has already killed one theory that rested
+on a bad instrument.
+
+**Registered watch, F-CONF:** if a SECOND authored entry is refused by the
+confidence gate, that is reproduction and the gate is then a money path worth
+changing. Note the tension is genuine and not obviously a defect: the chair
+itself set confidence 0.38 while overriding to buy, so the gate is refusing a
+shot the desk itself called low-conviction. The fix, if it comes, is more
+likely "the chair must restate confidence when it overrides the trader" than
+"lower the threshold".
+
+## Falsifier v2 (owner-registered 2026-09-04, due 2026-09-05 04:00Z)
+
+Terms: at least one authored buy/short decision by 04:00Z, else FAILED and
+revert the risk tiers to 0.015/0.02/0.03/0.04 without debate.
+
+**PASSES on its literal terms** — the DE buy above is an authored entry
+inside the window. The tiers are NOT reverted.
+
+Stated without varnish: it passes on a technicality worth naming. One
+authored entry in 572 decisions, which never became a trade because a gate
+refused it, is not evidence that the tier change works. It clears the bar
+that was registered, and nothing more.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
