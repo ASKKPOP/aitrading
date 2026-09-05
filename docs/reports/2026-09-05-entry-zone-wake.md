@@ -1048,6 +1048,63 @@ Under the desk's authored 5% stop it was never remotely at risk.
 **Neither shipped.** This cycle is monitor-don't-redesign, and I have changed
 nothing on prod.
 
+## 06:49Z — F-VETO clause 3 has its first real evidence, and it is AGAINST the ship
+
+**Realized, ledger replay, since the switch: −$0.414006.** Closed round
+trips only: LIT −0.005356, LTC +0.031062, **ASTER −0.274156** = −$0.248450.
+The rest is entry fees already booked on four still-open positions. Ten
+fills, **$0.4068 of fees paid**.
+
+Owner rule 6: ASTER is the largest contributor and stripping it flips the
+closed-trip sum to +0.025706. **Sign flips, so the aggregate remains
+INCONCLUSIVE** — but the ASTER trade itself is not inconclusive at all.
+
+### Two corrections to my own reading, made before drawing conclusions
+
+**1. ASTER was NOT stopped out.** I assumed my own prediction had come true.
+It had not. Agent B had flagged ASTER's 0.0102% near-miss on its clamped
+0.30% stop, and I read the close as that stop firing. It was not: the DESK
+sold it (`decided_by: ai`, confidence 0.8) at 06:48:54.
+
+**2. Agent B's "no realized loss is attributable to the desk's entries" was
+true at 06:36 and is false at 06:49.** The largest realized loss is now
+AI-authored. Findings expire; this one expired in thirteen minutes.
+
+### The ASTER exit is a loss my own change caused
+
+    desk   : sell, confidence 0.80 — "Close the long position immediately to
+             avoid potential losses from a volatile market and breached
+             support levels."
+    panel  : HOLD — "The 0.80 sell proposal claims 'breached support levels,'
+             but the tape contradicts it: price 0.7298 holds cleanly above
+             MA5/MA20/MA60/MA200, and the loss of MA20 at 0.6865 that would
+             actually invalidate..."
+    result : veto_overridden = true. Exit filled. −$0.274156 all-in.
+
+**The desk exited on a premise the panel demonstrated was factually false,
+and the panel had the tape on its side.** The veto would have prevented this
+loss. This is the exit path I kept open DELIBERATELY, on the reasoning that
+"a panel able to veto an exit could trap a losing book" — that reasoning
+produced its first bill within 49 minutes.
+
+Whether holding ASTER would have been profitable is unknown and I am not
+claiming it. What is established: the decision was made on a false stated
+premise, the reviewer that catches false premises was disabled by my change,
+and the trade lost money.
+
+**n=1. Not enough to revert on, and I am not reverting on it.** Registered as
+the leading candidate: if a SECOND override produces a loss whose stated
+premise the panel refuted on the tape, the exit-side override goes back
+(`PANEL_ORDER_VETO=1` restores it without a deploy) and this ship is reported
+FAILED on the exit path in those words.
+
+Note the asymmetry this exposes in my own design: on ENTRIES the panel was
+wrong 434 times out of 435 by the only test that matters — it produced zero
+trades for 19 days. On EXITS it may be right, because an exit has a concrete
+factual premise the panel can check against the tape, while an entry is a
+forecast it cannot. That distinction was not in the original reasoning and it
+should have been.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
