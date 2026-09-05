@@ -403,6 +403,76 @@ a `T`-format cutoff. This is the trap recorded in
 time this session a bad instrument nearly produced a false conclusion, after
 the `entry` field that made 13.8% of decisions look in-zone.
 
+## Hourly monitoring cycle — 2026-09-05 03:06Z
+
+**P&L first.** Unchanged and still zero: both accounts 0 executed trades
+all-time, $0 realized, $0 unrealized, 0 open positions, cash $10,000.00 each.
+Zero trades in the v2 window. No trades have closed, so the two-subagent
+outcome-analysis rule does not apply again this cycle.
+
+Authored entries: **0 in the last hour** (20 decisions, all hold), 1 in 24h,
+1 since the tier ship.
+
+**FALSIFIER v2: PASSES — verified against every registered term.** The terms
+are "by 2026-09-05 04:00Z … ≥1 buy/short decision on any fleet run (executed
+or gate-demoted both count as authored)". Run 2630 (DE) is `fleet_id=43`,
+`created_via='fleet'`, authored 2026-09-04T15:56:03Z — inside the 24h window
+— and was gate-demoted, which the terms admit explicitly and in advance. The
+risk tiers are NOT reverted. The pass rests on that one decision and no new
+one has appeared since; it clears the registered bar and nothing more.
+
+**Process health.** Fleet 44 8/8, fleet 43 1/8 (`replenishing:1/8`) with the
+US session shut until 13:30Z and 39 cooldowns active — expected, not a stall.
+Fourteen `no_prospect_switched` in 6h across 8 crypto slots ≈ hourly per slot.
+
+**LAST-FIX VERIFICATION — now clean, and the false alarm is structurally
+impossible.** Scoped to the labelled era (after 02:52:50Z):
+
+    switches authored by real desk holds: 1/1   scaffold/rule-authored: 0
+    decisions since deploy: 5 labelled, 0 unlabelled
+    decisions carrying `discussion` now arrive labelled "ai" (was 0/62)
+
+The 13 older switches are unlabelled *by construction* — `_light_analysis`
+did not write the field before this morning — so counting them as
+scaffold-authored is precisely the error that produced the 02:14Z false
+alarm. The sweep is now scoped so it cannot repeat it.
+
+### The wake and the switch rail work against each other (n=1, registered)
+
+Run 2734, the woken LIT run, in order:
+
+    01:29:46  hold  conf 0.62  (desk)
+    01:59:02  ENTRY_ZONE_TOUCH  mark 4.74815 in its own zone 4.678-4.761
+    02:05:42  hold             (the woken cycle — the desk, at its level)
+    02:29:09  hold  conf 0.59
+    02:29:16  no_prospect_switched -> symbol benched
+
+The desk named a level, price reached it, the desk was asked there for the
+first time and declined — and 24 minutes later the no-prospect rail retired
+that symbol for having no prospect and benched it for 12h. The switch itself
+was well-founded (every cycle from 00:00 was a hold, so the span and count
+were met independently of the wake), so this is not a defect in either
+mechanism. It is a conflict between them: price sitting AT the desk's own
+authored entry zone is close to the definition of a prospect, and the rail
+cannot see that.
+
+Consequence for F-WAKE: if woken symbols are routinely rotated out shortly
+after, the falsifier accumulates evidence very slowly and may never reach its
+n=20. Registered as an observation on n=1. NOT acted on — this cycle is
+monitor-don't-redesign, and one occurrence is not a result.
+
+**F-WAKE: 1 wake, 0 entries** (threshold 20).
+
+### Instrument discipline
+
+The `T`-format comparison trap was hit TWICE more this cycle — once verifying
+the deploy, once auditing post-deploy switches. `run_events.ts` and
+`stopped_at` are `YYYY-MM-DDTHH:MM:SSZ`; `'T'` sorts above `' '`, so a
+space-format cutoff matches every row of that date and makes the window
+vacuous while looking like a large healthy sample. Both were caught by the
+result being implausible (50 decisions in 46 seconds), not by care. The sweep
+now carries the warning inline.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
