@@ -230,6 +230,33 @@ time the platform was looking. **F-WAKE clause 1 (the mechanism is dead) is
 refuted.** Clauses 2-4 remain open and are the ones that decide whether the
 ship was right.
 
+### First wake, ruled — F-WAKE count 1 of 20
+
+The wake survived a stale lease (run 2734 was claimed 01:58:04 and the worker
+was killed at 01:58:45 by this very deploy, leaving `claimed_by` held until
+02:03:04). It was PRESERVED, not consumed — the `run is not None` guard doing
+in production exactly what its unit test asserts — and the run was claimed at
+02:03:33, the first tick after expiry.
+
+    cycle 7  02:05:42Z  action=hold  conviction=0.64  order_params: parsed
+
+A real cycle, not a scaffold: the model answered and the order params parsed.
+The desk was asked at its own level for the first time and said no.
+
+**Its reason is not the entry price.** From its own report one cycle earlier:
+"RSI 79.5 and a collapsing volume ratio of 0.22 — thinning participation, the
+classic exhaustion tell this desk has repeatedly refused to chase." If that
+reason holds across the next 19 wakes, F-WAKE clause 2 refutes the timing
+theory and this ship gets reported as FAILED in those words.
+
+**Anomaly to watch:** this decision recorded `confidence: 0.0` alongside
+`conviction: 0.64`, and no `decided_by`. Cycle 5 on the same run recorded
+confidence 0.62 normally. A confidence of exactly 0.0 on a parsed cycle looks
+like a field that failed to populate rather than a desk with zero confidence
+— and confidence is what the 0.55 risk gate reads, so a spurious 0.0 would
+veto any entry regardless of the desk's view. Not yet reproduced; recorded
+here so the next session checks it rather than rediscovering it.
+
 ## The attribution, measured — and it corrects my own emphasis
 
 Every risk-stage refusal since 2026-09-03 (n=820):
