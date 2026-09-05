@@ -49,6 +49,8 @@ import time
 _PENDING: dict[int, dict] = {}
 # run_id -> unix seconds until which a fresh note is suppressed
 _SUPPRESS_UNTIL: dict[int, float] = {}
+# run_id -> monotonic stamp of the last live price probe
+_LAST_POLL: dict[int, float] = {}
 
 
 def _now() -> float:
@@ -72,6 +74,41 @@ def renote_min() -> float:
         return max(1.0, float(os.getenv("ENTRY_ZONE_RENOTE_MIN", "30") or 30))
     except ValueError:
         return 30.0
+
+
+def poll_seconds() -> float:
+    """Minimum seconds between live price probes for one run.
+
+    The probe runs inside the ~60s control pass, which is a SERIAL loop and
+    also the loop that evaluates stops. `price_fetcher` has no price cache
+    (its caches hold symbol lists and token metadata), so an unthrottled
+    watch is one live HTTP call per flat run per pass — ~480-780/hour at
+    fleet scale — each carrying a 10s timeout and retry backoff. Two ways
+    that hurts beyond cost: a slow feed on an early run delays STOP
+    evaluation for every run behind it in the same pass, and a 429 trips
+    the provider-wide cooldown that starves the marks the stop system
+    reads. An entry convenience must not sit on the exit path.
+
+    Default 300s is deliberately the platform's existing mark-refresh
+    cadence, so an entry watch costs no more feed than an open position
+    already costs. The price is granularity: a touch shorter than five
+    minutes can be missed. Against a status quo of sampling once an HOUR
+    that is still ~12x finer, and paying a systemic feed risk to chase
+    sub-five-minute wicks is a bad trade."""
+    try:
+        return max(0.0, float(os.getenv("ENTRY_ZONE_POLL_SEC", "300") or 300))
+    except ValueError:
+        return 300.0
+
+
+def should_poll(run_id: int) -> bool:
+    """True when this run is due a live probe; stamps the clock when it is."""
+    last = _LAST_POLL.get(run_id)
+    now = _now()
+    if last is not None and now - last < poll_seconds():
+        return False
+    _LAST_POLL[run_id] = now
+    return True
 
 
 def note_zone_hit(run_id: int, symbol: str, low: float, high: float,
@@ -117,3 +154,4 @@ def _reset() -> None:
     """Test hook."""
     _PENDING.clear()
     _SUPPRESS_UNTIL.clear()
+    _LAST_POLL.clear()

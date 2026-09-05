@@ -839,6 +839,49 @@ def _closed_market_cycles(run_id: int) -> int:
         return 0
 
 
+def _entry_wake_cycles(run_id: int) -> int:
+    """Extra cycles this run ran because its own entry level was reached.
+
+    Same correction as _closed_market_cycles, for the same rail, against a
+    different distortion. `_claim` increments cycle_seq and stamps
+    last_cycle_at on EVERY claimed cycle, so an entry wake both counts as a
+    cycle and resets the interval clock. A run parked in its zone therefore
+    runs ~2 cycles/hour instead of 1, and since idle-retire is count-based
+    (worked >= 12) its time-to-retire halves from ~12h to ~6h.
+
+    That inverts the rail: the run being retired fastest is the one waiting
+    patiently at the level it named, which is exactly the behaviour this
+    module exists to enable. It is also a category error — `idle_retired`
+    means "never got a chance to trade", while a wake cycle is the desk
+    actively ruling at its own level, which is the opposite of idle.
+
+    Counting the `entry_zone_touch` note is a 1:1 proxy for the wake cycle
+    it causes (one note dispatches exactly one cycle, then `clear` suppresses
+    further notes for a think-window). Fail-soft to 0, so an unreadable
+    journal leaves the rail behaving exactly as it did before."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM run_events
+               WHERE run_id = ? AND event_type = 'entry_zone_touch'""",
+            (run_id,))
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 — including the connect itself
+        return 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        return int((row["n"] if row else 0) or 0)
+    except (KeyError, TypeError, ValueError):
+        return 0
+
+
 def _thesis_decay_enabled() -> bool:
     """Ship gate, default OFF.
 
@@ -1370,7 +1413,9 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             # closed-market tick costs nothing and proves nothing — see
             # _closed_market_cycles for the two runs this rail wrongly
             # collected.
-            worked = int(run.get("cycle_seq") or 0) - _closed_market_cycles(run["id"])
+            worked = int(run.get("cycle_seq") or 0) \
+                - _closed_market_cycles(run["id"]) \
+                - _entry_wake_cycles(run["id"])
             if worked >= limit and not _cycle_in_flight(run):
                 return "idle_retired"
         # Thesis invalidation (2026-07-27), a sharper rail than the idle timer.
@@ -2196,6 +2241,19 @@ def _note_entry_zone_touch(run: dict, pnl: dict) -> None:
         return
     if entry_router.pending(run["id"]):
         return                                       # already waiting
+    # A shut market cannot fill, and the feed does not say so: measured on
+    # prod 2026-09-05 with the NYSE closed, get_price_from_market returned
+    # NVDA 230.36 and PLTR 174.33 — the last close, not None. A zone holding
+    # that close would otherwise sit "touched" all night and re-wake the
+    # desk every think-window for a session that refuses every order.
+    try:
+        import markets as _mkts
+        if not _mkts.is_market_open(run.get("market")):
+            return
+    except Exception:  # noqa: BLE001 — a broken calendar must not wake it
+        return
+    if not entry_router.should_poll(run["id"]):
+        return                                       # feed budget, see module
     plan = _live_entry_plan(run["id"])
     if not plan or plan.get("kind") != "zone":
         return
@@ -2670,17 +2728,6 @@ def due_run_ids() -> list[int]:
                     and stop_router.pending(row["id"])):
                 due.append(row["id"])
                 continue
-            # Entry-zone touch: the desk's OWN level was reached, so it
-            # rules now rather than at the next interval. Same precedence
-            # logic as a stop hit; the resulting ORDER still obeys every
-            # gate, including session rules.
-            try:
-                import entry_router
-                if entry_router.pending(row["id"]):
-                    due.append(row["id"])
-                    continue
-            except Exception:  # noqa: BLE001
-                pass
             cfg = json.loads(row.get("config_snapshot_json") or "{}")
             # Swing dormancy (owner spec 2026-08-12): a run stamped with an
             # analysis_window cycles only from pre_open before the open to
@@ -2700,6 +2747,24 @@ def due_run_ids() -> list[int]:
                         continue
                 except Exception:  # noqa: BLE001
                     pass
+            # Entry-zone touch: the desk's OWN level was reached, so it
+            # rules now rather than waiting out the interval.
+            #
+            # Placed BELOW swing dormancy on purpose, unlike the stop hit
+            # above. A stop earns its bypass because it races a fail-safe
+            # clock — the watcher dumps the book if the desk stays silent.
+            # An entry has no such clock, and `_order_gate_skip` refuses
+            # every order while the session is shut, so a wake inside
+            # dormancy could never produce a fill: it would only spend an
+            # LLM cycle and break the window's "zero cycles, zero journal
+            # noise" contract overnight.
+            try:
+                import entry_router
+                if entry_router.pending(row["id"]):
+                    due.append(row["id"])
+                    continue
+            except Exception:  # noqa: BLE001
+                pass
             # Owner decision 2026-08-13 (AMENDS Plan 23 Phase B): the
             # us-stock block DAY-trades — every archetype thinks on the
             # platform's 30-min clock. The 240-min swing special-case never
@@ -7562,6 +7627,24 @@ def run_cycle(run_id: int) -> dict:
             emit_telemetry_event(run_id, "gate_skip",
                                  {"cycle": seq, "stage": "pre", "reason": skip})
             _handle_infeasible_skip(run, skip)
+            # This return sits ABOVE `entry_router.clear`, so without this
+            # the wake is never consumed: `due_run_ids` would re-dispatch
+            # the run every control pass and every one of them would land
+            # right back here — a spin, not a decision. The gate refusing
+            # IS a resolution of the wake ("not now"), so consume it and
+            # let the think-window apply.
+            #
+            # This is the shape the codebase has already paid for: see
+            # `_cooldown_blocks`, where a stop ruling died at a gate whose
+            # "return sits before stop_router.clear" and the fail-safe then
+            # dumped the book at 2.00x the desk's own exit (SOL 1274,
+            # 2026-08-15). The remedy differs because the hazard does: a
+            # stop hit OUTRANKS its gate, an entry wake must never do so.
+            try:
+                import entry_router
+                entry_router.clear(run_id)
+            except Exception:  # noqa: BLE001
+                pass
             return result
 
         is_fleet_run = bool(run.get("fleet_id")) or \
