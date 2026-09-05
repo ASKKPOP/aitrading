@@ -467,6 +467,44 @@ class SkippedCycleClearsTheWakeTests(DispatchTests):
                           "the skipped cycle left the wake pending — "
                           "due_run_ids will spin on it every pass")
 
+    def test_the_adapt_loss_cooldown_also_consumes_the_wake(self):
+        """The worst of the family, and it is the PRODUCTION path.
+
+        `compose_run_settings` sets feedback:True on every fleet run, so this
+        gate is live. Each spun cycle bumps cycle_seq while
+        `_entry_wake_cycles` stays at 1 (the pending flag blocks new notes),
+        so the spin also defeats the idle-retire discount: ~60 spins against
+        a 3600s cooldown, versus a limit of 12 — the slot is retired in
+        about twelve minutes."""
+        rid = self._mk_run({"interval_minutes": 60}, self._fresh())
+        entry_router.note_zone_hit(rid, "ETHUSDT", 4.0, 6.0, 5.0)
+        with patch.object(run_engine, "_cooldown_blocks", lambda *a, **k: True), \
+             patch.object(run_engine, "_pre_gate_skip", lambda run, cfg: None):
+            run_engine.run_cycle(rid)
+        self.assertIsNone(entry_router.pending(rid))
+
+    def test_an_exception_mid_cycle_still_consumes_the_wake(self):
+        """The catch-all covers the widest surface: a persistently failing
+        symbol would otherwise spin forever."""
+        rid = self._mk_run({"interval_minutes": 60}, self._fresh())
+        entry_router.note_zone_hit(rid, "ETHUSDT", 4.0, 6.0, 5.0)
+        def boom(*a, **k):
+            raise RuntimeError("boom")
+        with patch.object(run_engine, "_pre_gate_skip", boom):
+            run_engine.run_cycle(rid)
+        self.assertIsNone(entry_router.pending(rid))
+
+    def test_a_failed_claim_PRESERVES_the_wake(self):
+        """The one case that must NOT clear: no cycle ran, so the wake has
+        to survive for whoever does claim it. This is what the
+        `run is not None` guard buys."""
+        rid = self._mk_run({"interval_minutes": 60}, self._fresh())
+        entry_router.note_zone_hit(rid, "ETHUSDT", 4.0, 6.0, 5.0)
+        with patch.object(run_engine, "_claim", lambda rid_: None):
+            run_engine.run_cycle(rid)
+        self.assertIsNotNone(entry_router.pending(rid),
+                             "a cycle that never ran consumed the wake")
+
     def test_the_horizon_gate_also_consumes_the_wake(self):
         """The same spin hazard, one gate over. Dormant today only because
         _horizon_gate_enabled() defaults False — arming it would wake the

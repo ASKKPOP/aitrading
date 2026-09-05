@@ -184,7 +184,7 @@ class EntryWakeDiscount(ClosedMarketCounting):
         permanently un-retirable, holding its slot and allocation forever.
         1 wake must not buy more than 1 cycle of life."""
         self._wakes(127, 1)
-        self.assertEqual(self._evaluate(_run(14)), "idle_retired",
+        self.assertEqual(self._evaluate(_run(13)), "idle_retired",
                          "one wake bought more than one cycle of life")
 
     def test_wakes_and_closed_cycles_both_discount(self):

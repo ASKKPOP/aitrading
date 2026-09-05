@@ -7641,24 +7641,6 @@ def run_cycle(run_id: int) -> dict:
             emit_telemetry_event(run_id, "gate_skip",
                                  {"cycle": seq, "stage": "pre", "reason": skip})
             _handle_infeasible_skip(run, skip)
-            # This return sits ABOVE `entry_router.clear`, so without this
-            # the wake is never consumed: `due_run_ids` would re-dispatch
-            # the run every control pass and every one of them would land
-            # right back here — a spin, not a decision. The gate refusing
-            # IS a resolution of the wake ("not now"), so consume it and
-            # let the think-window apply.
-            #
-            # This is the shape the codebase has already paid for: see
-            # `_cooldown_blocks`, where a stop ruling died at a gate whose
-            # "return sits before stop_router.clear" and the fail-safe then
-            # dumped the book at 2.00x the desk's own exit (SOL 1274,
-            # 2026-08-15). The remedy differs because the hazard does: a
-            # stop hit OUTRANKS its gate, an entry wake must never do so.
-            try:
-                import entry_router
-                entry_router.clear(run_id)
-            except Exception:  # noqa: BLE001
-                pass
             return result
 
         is_fleet_run = bool(run.get("fleet_id")) or \
@@ -7691,17 +7673,6 @@ def run_cycle(run_id: int) -> dict:
             emit_telemetry_event(run_id, "gate_skip",
                                  {"cycle": seq, "stage": "horizon",
                                   "reason": hz_state})
-            # Same spin hazard as the pre-gate skip above: this return sits
-            # ABOVE the `entry_router.clear` site, so an uncleared wake would
-            # be re-dispatched every control pass and land right back here,
-            # bumping cycle_seq each time. Dormant today only because
-            # _horizon_gate_enabled() defaults False — arming it would wake
-            # the bug, which is exactly how the SOL 1274 shape got shipped.
-            try:
-                import entry_router
-                entry_router.clear(run_id)
-            except Exception:  # noqa: BLE001
-                pass
             return result
         if hz_state:
             # Gate disarmed: record what it WOULD have suppressed so the
@@ -7911,15 +7882,6 @@ def run_cycle(run_id: int) -> dict:
             import stop_router
             if stop_router.enabled():
                 stop_router.clear(run_id)
-        except Exception:  # noqa: BLE001
-            pass
-        # Same contract for an entry-zone wake: this decision IS the desk's
-        # ruling on its own level being reached, whichever way it went, so
-        # clear it and let that verdict stand for one think-window instead
-        # of re-waking every control pass while price sits in the zone.
-        try:
-            import entry_router
-            entry_router.clear(run_id)
         except Exception:  # noqa: BLE001
             pass
 
@@ -8739,6 +8701,34 @@ def run_cycle(run_id: int) -> dict:
             reset_llm_context(ctx_token)
         if run is not None:
             _release(run_id)
+            # Entry-zone wake, consumed HERE rather than at each exit.
+            #
+            # A cycle ran for this run, so the wake is resolved whichever way
+            # it ended — the desk ruled, or a gate said "not now". Either is
+            # an answer; leaving it pending means due_run_ids re-dispatches
+            # every control pass and lands back on the same outcome, and each
+            # spin bumps cycle_seq while _entry_wake_cycles stays put (the
+            # pending flag blocks new notes), so the spin also defeats the
+            # idle-retire discount. Measured worst case: a wake during a
+            # 3600s adapt loss cooldown spins ~60 cycles against a limit of
+            # 12 — the slot is idle-retired in ~12 minutes.
+            #
+            # This is deliberately in `finally` and not at the returns.
+            # run_cycle has FIVE early exits above the old clear site
+            # (pre-gate skip, horizon gate, adapt loss cooldown, execute
+            # skip, and the catch-all except); three of them were patched one
+            # at a time before it became clear the gate-by-gate approach just
+            # waits for the sixth. `_cooldown_blocks` records the same shape
+            # costing real money on stop_router (SOL 1274, 2026-08-15).
+            #
+            # Guarded on `run is not None`, which preserves the one case that
+            # must NOT clear: a failed _claim means no cycle ran at all, so
+            # the wake has to survive for whoever does claim it.
+            try:
+                import entry_router
+                entry_router.clear(run_id)
+            except Exception:  # noqa: BLE001
+                pass
 
 
 def _infeasible_limit() -> int:

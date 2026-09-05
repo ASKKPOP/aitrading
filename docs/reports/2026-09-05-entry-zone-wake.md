@@ -1,4 +1,4 @@
-# Entry-zone wake — the desk is asked at the wrong price 98.4% of the time
+# Entry-zone wake — in measured crypto decisions the desk is asked at the wrong price 98.4% of the time
 
 Cycle note, 2026-09-05. Ships `entry_router` (951b0ae5) plus six bounding
 fixes (69555ebc). **Registered before deploy.**
@@ -61,12 +61,17 @@ simply is not looking when price gets there.
 
 ## The contrary evidence, stated plainly
 
-All **4** of the in-zone asks were holds. n=4 is far too small to conclude
-anything, and one of the four (LIT, minute 4.7345-4.8211 vs zone
-4.678-4.761) only clipped the zone with its low. But it is the only direct
-evidence we have about what the desk does when asked at its own level, and
-it is not encouraging. It is recorded here so that no later session can
-claim this ship was justified without it.
+All **4** of the in-zone asks were holds. This is weak evidence AGAINST
+the ship, not neutral: under a uniform prior, 0 entries in 4 asks puts the
+posterior mean entry rate near 17%. One of the four (LIT, minute
+4.7345-4.8211 vs zone 4.678-4.761) only clipped the zone with its low, so
+the honest n is closer to 3. It remains the only direct evidence about what
+the desk does when asked at its own level, and it does not favour the ship.
+Recorded here so no later session can claim this was justified without it.
+
+The registered threshold below is calibrated against exactly that prior: at
+a true 20% entry rate, P(0 entries in 20 wakes) is about 1.2%, so >=20
+wakes with zero entries is a real refutation and not bad luck.
 
 ## What this ship actually claims
 
@@ -129,11 +134,15 @@ Three from adversarial review, three from my own reading of the live path.
    return None. Measured with the NYSE shut: NVDA 230.36, PLTR 174.33
    (provider: yahoo). Now guarded on `is_market_open`, fail-closed.
 3. **Unbounded feed load on the stop path** — `price_fetcher` has no price
-   cache; unthrottled this was ~480-780 live fetches/hour inside the SERIAL
-   control pass that also evaluates stops, each with a 10s timeout, and a 429
-   trips the provider-wide cooldown that starves the marks the stop system
-   reads. `ENTRY_ZONE_POLL_SEC` default 300 = the platform's existing mark
-   cadence.
+   cache; unthrottled this was **120 live fetches/hour per flat run**
+   (`RUN_TICK_INTERVAL` is 30s, not the 60s first assumed), ~960-1560/hour at
+   fleet scale, inside the SERIAL control pass that also evaluates stops and
+   fires armed exits, each with a 10s timeout, and a 429 trips the
+   provider-wide cooldown that starves the marks the stop system reads. It
+   was entirely net-new: `compute_run_pnl` reads `positions.current_price`
+   from the DB, so the control pass previously fetched nothing.
+   `ENTRY_ZONE_POLL_SEC` default 300 = the platform's existing mark cadence.
+   Independently measured after the fix: **12 fetches/hour per run.**
 4. **The wake bypassed swing dormancy** — pending check sat above the
    `analysis_window` block. Moved below it.
 5. **The wake accelerated idle-retire** — `_claim` bumps `cycle_seq` every
@@ -148,13 +157,48 @@ Three from adversarial review, three from my own reading of the live path.
 Tests 20 → 39, all six mutation-checked behaviourally; files verified
 byte-identical to their pre-mutation copies afterwards.
 
+### Then two more of the same bug, and the structural fix (b3d13cbc + follow-up)
+
+A second adversarial pass found that two of those six were not actually
+pinned: multiplying the idle-retire discount by 100 (which makes a run
+permanently un-retirable, holding its slot forever) and flipping its SIGN
+(which inverts the fix) both passed all 39 tests. The test had
+re-implemented the rail's arithmetic in its own body instead of driving
+`_evaluate_stop`, so the sign was never exercised — a RE-IMPLEMENTATION pin,
+the fourth variant in two days of a test that looks like it checks behaviour
+and does not.
+
+A third pass then found the spin bug at two more gates, including the adapt
+loss cooldown — which is the PRODUCTION path, since `compose_run_settings`
+sets `feedback:True` on every fleet run. That one is the worst of the family:
+each spun cycle bumps `cycle_seq` while `_entry_wake_cycles` stays at 1 (the
+pending flag blocks new notes), so the spin also defeats fix #5 above. Roughly
+60 spins against a 3600s cooldown, versus an idle limit of 12, retires the
+slot in about twelve minutes — the exact inversion fix #5 exists to prevent.
+
+**The lesson is the shape, not the count.** `run_cycle` has five early exits
+above the old clear site, and they were being patched one at a time; the
+third pass would have been followed by a fourth. The clear now lives in
+`run_cycle`'s `finally`, guarded on `run is not None` — which ends the class
+and still preserves the one case that must NOT clear, a failed `_claim`,
+where no cycle ran at all. This is the same shape `_cooldown_blocks` records
+costing real money on `stop_router` (SOL 1274, 2026-08-15); it has now cost
+four separate defects in one feature.
+
 ### Does a 300s probe defeat the purpose?
 
-No, and it was measured rather than assumed. All 6 touched symbols had at
-least one in-zone episode of 36-117 minutes, so a 5-minute grid is
-guaranteed to land inside each. The 36/62 episodes shorter than 5 minutes
-that a probe can miss are redundant — they are re-touches of zones already
-caught by a long episode. Against a status quo of sampling once an HOUR this
+No, and it was measured rather than assumed — but the finding is scoped to
+the 6 symbols observed, not a general property. Each of those 6 had at least
+one in-zone episode of 36-117 minutes, so a 5-minute grid is guaranteed to
+land inside each, and for THIS set the 36/62 episodes shorter than 5 minutes
+are redundant re-touches of zones already caught by a long episode. A miss
+requires price to enter AND fully exit the band inside one 300s gap: the
+worked LIT band is 1.76% wide against a typical ~0.24% five-minute move on a
+4%/day name, so traversing it in one gap is a spike, and a market entry into
+a spike is a bad fill anyway. TIGHT bands are the real exposure — at ~0.5%
+width the band is only ~2x the five-minute step. Measuring the distribution
+of authored zone widths is registered as a follow-up; if the median is under
+~0.5%, lower the interval for crypto. Against a status quo of sampling once an HOUR this
 is ~12× finer, and paying a systemic feed risk to chase sub-5-minute wicks
 is a bad trade.
 
@@ -166,5 +210,10 @@ is a bad trade.
   shipped.
 - `_PENDING` is in-process: a worker restart drops pending wakes (fail-safe)
   but also drops suppression, so a crash-looping worker becomes a wake loop.
+  Deliberately left as a comment rather than a mechanism: persisting it would
+  cost a DB write per wake to save at most one LLM cycle per restart.
+- `_PENDING` / `_SUPPRESS_UNTIL` / `_LAST_POLL` are never evicted for
+  terminated runs, so a long-lived worker leaks one entry per retired run.
+  `stop_router` has the same shape, so this is pre-existing, not new.
 - Fence strip in the panel proposal context is case-sensitive.
 - `RR_FLOOR=0.2` is no longer binding under the 2.5/5.0 geometry.

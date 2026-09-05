@@ -79,11 +79,14 @@ def renote_min() -> float:
 def poll_seconds() -> float:
     """Minimum seconds between live price probes for one run.
 
-    The probe runs inside the ~60s control pass, which is a SERIAL loop and
-    also the loop that evaluates stops. `price_fetcher` has no price cache
-    (its caches hold symbol lists and token metadata), so an unthrottled
-    watch is one live HTTP call per flat run per pass — ~480-780/hour at
-    fleet scale — each carrying a 10s timeout and retry backoff. Two ways
+    The probe runs inside the control pass, which fires every
+    RUN_TICK_INTERVAL seconds (default 30, not 60) and is a SERIAL loop that
+    also evaluates stops. `price_fetcher` has no price cache (its caches hold
+    symbol lists, tokens and daily candles), so an unthrottled watch is one
+    live HTTP call per flat run per pass — 120/hour per run, ~960-1560/hour
+    at fleet scale — each carrying a 10s timeout and retry backoff. It is
+    entirely net-new load: `compute_run_pnl` reads `positions.current_price`
+    from the DB, so the control pass previously fetched nothing. Two ways
     that hurts beyond cost: a slow feed on an early run delays STOP
     evaluation for every run behind it in the same pass, and a 429 trips
     the provider-wide cooldown that starves the marks the stop system
