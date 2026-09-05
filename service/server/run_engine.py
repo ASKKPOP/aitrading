@@ -7147,8 +7147,43 @@ def _order_discussion_enabled() -> bool:
             not in ("0", "false", "no"))
 
 
-def _panel_entry_veto_enabled() -> bool:
-    """May the escalation panel cancel an entry the desk proposed?
+def _tighter_order(proposed: "dict | None",
+                   panel: "dict | None") -> "dict | None":
+    """The desk's order block, with any STRICTLY TIGHTER panel value taken.
+
+    A panel that voted `hold` still gets a risk voice, but only downward.
+    Adopting its block wholesale was measured as a 16x dollar-risk hole
+    (adversarial review 2026-09-05): the desk proposing
+    `{size_frac 0.25, stop_pct 2.0}` against a hold-voting panel returning
+    `{size_frac 1.0, stop_pct 25.0}` shipped `size_frac 1.0, stop_pct 8.0`
+    — leverage and stop are clamped downstream but SIZE is not, so it was
+    4x the size at 4x the stop distance, with the numbers authored by the
+    voice that said don't trade. Those numbers were written in the context
+    of not trading; they are decorative from that voice's own point of view.
+
+    Only `size_frac`, `leverage` and `stop_pct` are considered, and only
+    when BOTH sides named a value and the panel's is smaller — so a missing
+    desk value can never be filled in from a hold verdict, and a
+    `{"defer": true}` hold can no longer discard the desk's sizing. `target`
+    is never taken: reshaping the payoff is not tightening risk, and the
+    RR floor already governs it."""
+    base = dict(proposed) if isinstance(proposed, dict) else {}
+    if not isinstance(panel, dict):
+        return base or None
+    for k in ("size_frac", "leverage", "stop_pct"):
+        pv, qv = base.get(k), panel.get(k)
+        if pv is None or qv is None:
+            continue
+        try:
+            if float(qv) < float(pv):
+                base[k] = float(qv)
+        except (TypeError, ValueError):
+            continue
+    return base or None
+
+
+def _panel_order_veto_enabled() -> bool:
+    """May the escalation panel cancel an order the desk proposed?
 
     Default NO (owner decision 2026-09-05, "if continue hold then we will
     be remove desk hold logic").
@@ -7163,12 +7198,26 @@ def _panel_entry_veto_enabled() -> bool:
     With the veto gone the panel still does everything else it was built
     for — it reviews, it can substitute its OWN order, and it can tighten
     the bracket it hands back. It simply cannot answer a motion to trade
-    with "no trade". Owner rule 2026-08-13 is untouched: the order is still
-    authored by the sooppiy AI (the desk that proposed it), and every risk
-    gate downstream is unchanged.
+    with "no trade".
 
-    Set PANEL_ENTRY_VETO=1 to restore the old behaviour."""
-    return (os.environ.get("PANEL_ENTRY_VETO", "0").strip().lower()
+    SCOPE — this governs EVERY order verdict, not only entries, which is
+    why it is not called PANEL_ENTRY_VETO. `_produces_order` escalates desk
+    SELLS on a held book and RETIREs (flattens) as well, and a panel hold on
+    those is overridden too. That is deliberate and it is the protective
+    direction: the platform does not second-guess a reduction, and a panel
+    that could veto an exit could trap a losing book. Pinned by test.
+
+    OWNER RULE 2026-08-13 — state this precisely, because a capability WAS
+    removed. The order is still authored by the sooppiy AI either way: code
+    invents no order, and both the proposing desk and the panel are that AI.
+    Which voice is final when the two disagree was always a code decision —
+    it was the panel by construction, not by anyone's ruling — and it has
+    moved to the desk that spoke first. What genuinely changed is that the
+    deliberation can no longer reach one particular conclusion. Given
+    434 of 435, the owner chose to remove exactly that.
+
+    Set PANEL_ORDER_VETO=1 to restore the old behaviour."""
+    return (os.environ.get("PANEL_ORDER_VETO", "0").strip().lower()
             in ("1", "true", "yes", "on"))
 
 
@@ -7371,16 +7420,17 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
             # nothing. The panel may still hand back a tighter bracket, and
             # a panel that authors a DIFFERENT order (buy -> sell) is not
             # vetoing, so that verdict is honoured untouched.
-            if (not _panel_entry_veto_enabled()
+            if (not _panel_order_veto_enabled()
                     and str(final.get("action") or "").lower() == "hold"):
                 payload["panel_verdict"] = "hold"
                 payload["veto_overridden"] = True
                 payload["panel_reason"] = str(final.get("report") or "")[:200]
-                kept = dict(proposal)
+                kept = dict(proposal)     # COPY: never mutate the caller's
                 kept["panel_review"] = str(final.get("report") or "")[:500]
-                for _k in ("order", "stop_pct", "target_pct"):
-                    if final.get(_k) is not None:
-                        kept[_k] = final[_k]     # tighten, never cancel
+                tightened = _tighter_order(proposal.get("order"),
+                                           final.get("order"))
+                if tightened is not None:
+                    kept["order"] = tightened
                 final = kept
             final["escalated_from"] = payload["proposed"]
             payload["final"] = {"action": final.get("action"),

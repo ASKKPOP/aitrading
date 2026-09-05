@@ -91,17 +91,17 @@ class OrderDiscussionTests(unittest.TestCase):
         self.assertEqual(payload["final"]["action"], "buy")
 
     def test_the_old_veto_is_one_env_flag_away(self):
-        """PANEL_ENTRY_VETO=1 restores the pre-2026-09-05 behaviour
+        """PANEL_ORDER_VETO=1 restores the pre-2026-09-05 behaviour
         exactly, so the change is reversible without a deploy."""
         import os
         panel = {"decision": {"action": "hold", "confidence": 0.55},
                  "analysts": {}}
-        os.environ["PANEL_ENTRY_VETO"] = "1"
+        os.environ["PANEL_ORDER_VETO"] = "1"
         try:
             with patch("analysis_agents.run_analysis", return_value=panel):
                 out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
         finally:
-            os.environ.pop("PANEL_ENTRY_VETO", None)
+            os.environ.pop("PANEL_ORDER_VETO", None)
         self.assertEqual(out["decision"]["action"], "hold")
 
     def test_a_panel_that_authors_a_DIFFERENT_order_is_honoured(self):
@@ -115,16 +115,111 @@ class OrderDiscussionTests(unittest.TestCase):
         self.assertEqual(out["decision"]["action"], "sell")
         self.assertEqual(out["decision"]["confidence"], 0.66)
 
-    def test_the_panel_may_still_tighten_the_bracket(self):
-        """It loses the veto, not its risk voice."""
+    def _with_order(self, action, order, confidence=0.7):
+        a = _analysis(action, confidence)
+        a["decision"]["order"] = dict(order)
+        return a
+
+    def test_the_panel_may_still_TIGHTEN_the_bracket(self):
+        """It loses the veto, not its risk voice.
+
+        Uses the `order` block, which is the shape production actually
+        emits — `_parse_decision_json` keeps stop_pct/target_pct only in
+        there. An earlier version of this test asserted top-level keys that
+        can never occur, so it certified the tighten path while exercising
+        nothing (adversarial review 2026-09-05)."""
         panel = {"decision": {"action": "hold", "confidence": 0.4,
-                              "stop_pct": 1.2, "target_pct": 3.0},
+                              "order": {"size_frac": 0.10, "stop_pct": 1.2}},
                  "analysts": {}}
         with patch("analysis_agents.run_analysis", return_value=panel):
-            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+            out = run_engine._order_discussion(
+                _RUN, {}, self._with_order("buy", {"size_frac": 0.25,
+                                                   "stop_pct": 2.0}))
         self.assertEqual(out["decision"]["action"], "buy")
-        self.assertEqual(out["decision"]["stop_pct"], 1.2)
-        self.assertEqual(out["decision"]["target_pct"], 3.0)
+        self.assertEqual(out["decision"]["order"]["size_frac"], 0.10)
+        self.assertEqual(out["decision"]["order"]["stop_pct"], 1.2)
+
+    def test_the_panel_may_NOT_loosen_the_bracket(self):
+        """The 16x hole. A hold-voting panel returning a bigger size and a
+        wider stop was adopted wholesale — 4x size at 4x stop distance, with
+        numbers authored by the voice that said don't trade. Only strictly
+        smaller values are taken now."""
+        panel = {"decision": {"action": "hold", "confidence": 0.4,
+                              "order": {"size_frac": 1.0, "leverage": 10,
+                                        "stop_pct": 25.0}},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(
+                _RUN, {}, self._with_order("buy", {"size_frac": 0.25,
+                                                   "leverage": 1,
+                                                   "stop_pct": 2.0}))
+        o = out["decision"]["order"]
+        self.assertEqual(o["size_frac"], 0.25, "the panel upsized the order")
+        self.assertEqual(o["leverage"], 1, "the panel raised leverage")
+        self.assertEqual(o["stop_pct"], 2.0, "the panel widened the stop")
+
+    def test_a_defer_hold_cannot_discard_the_desks_sizing(self):
+        """`{"defer": true}` is not a bracket. It used to pass the
+        `is not None` check and replace the desk's whole block with house
+        defaults."""
+        panel = {"decision": {"action": "hold", "order": {"defer": True}},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(
+                _RUN, {}, self._with_order("buy", {"size_frac": 0.25,
+                                                   "stop_pct": 2.0}))
+        self.assertEqual(out["decision"]["order"]["size_frac"], 0.25)
+        self.assertEqual(out["decision"]["order"]["stop_pct"], 2.0)
+
+    def test_a_missing_desk_value_is_never_filled_in_by_a_hold(self):
+        panel = {"decision": {"action": "hold",
+                              "order": {"size_frac": 0.9}}, "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(
+                _RUN, {}, self._with_order("buy", {"stop_pct": 2.0}))
+        self.assertNotIn("size_frac", out["decision"]["order"])
+
+    def test_the_override_does_not_mutate_the_callers_decision(self):
+        """Defensive copy. `kept = proposal` (alias) survived a mutation
+        run — it would edit the caller's dict in place."""
+        a = self._with_order("buy", {"size_frac": 0.25})
+        original = dict(a["decision"])
+        panel = {"decision": {"action": "hold", "report": "no"},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            run_engine._order_discussion(_RUN, {}, a)
+        self.assertNotIn("panel_review", a["decision"],
+                         "the override mutated the caller's decision dict")
+        self.assertEqual(a["decision"]["action"], original["action"])
+
+    def test_the_panels_objection_is_kept_on_the_tape(self):
+        """`panel_reason` is the audit record F-VETO is judged on. It
+        survived a mutation run unpinned."""
+        panel = {"decision": {"action": "hold",
+                              "report": "a chase, not a thesis"},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        _, payload = self.events[0]
+        self.assertIn("chase", payload["panel_reason"])
+
+    def test_a_panel_hold_on_an_EXIT_is_also_overridden(self):
+        """SCOPE, previously unstated (adversarial review 2026-09-05): the
+        condition is on the VERDICT, not the proposal, so desk sells on a
+        held book and retires are overridden too. That is the protective
+        direction — the platform does not second-guess a reduction, and a
+        panel able to veto an exit could trap a losing book — but it must
+        be pinned, and it is why the flag is PANEL_ORDER_VETO."""
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=4.0)
+        self.held.start()
+        panel = {"decision": {"action": "hold", "confidence": 0.5},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(out["decision"]["action"], "sell",
+                         "the panel vetoed the desk's own exit")
 
     def test_agreeing_panel_still_authors_the_final_decision(self):
         panel = {"decision": {"action": "buy", "confidence": 0.81},

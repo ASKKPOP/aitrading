@@ -289,7 +289,7 @@ class PanelActuallyReceivesItTests(unittest.TestCase):
         not arbitrate on trading grounds — it only decides WHICH AI voice is
         final when two disagree, and that was always a code decision. It
         used to be the panel; it is now the desk that moved first.
-        PANEL_ENTRY_VETO=1 restores the old arrangement."""
+        PANEL_ORDER_VETO=1 restores the old arrangement."""
         from unittest.mock import patch
         run = {"id": 1, "agent_id": 6, "symbol": "NVDA", "market": "us-stock",
                "market_type": "spot"}

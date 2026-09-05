@@ -652,11 +652,33 @@ reviews, it may substitute its OWN order (buy -> sell is honoured untouched,
 because substituting an order is not vetoing one) and it may hand back a
 tighter bracket, which is adopted. Kill switch `PANEL_ENTRY_VETO=1`.
 
-**Owner rule 2026-08-13 holds.** The order is authored by the sooppiy AI
-either way. Code does not invent an order and does not arbitrate on trading
-grounds — it decides which AI voice is final when two disagree, and that was
-always a code decision. It used to be the panel; it is now the desk that
-moved first.
+**Owner rule 2026-08-13 — stated precisely, because a capability WAS
+removed.** The order is still authored by the sooppiy AI either way: code
+invents no order, and both the proposing desk and the panel are that AI.
+Which voice is final when the two disagree was always a code decision — it
+was the panel by construction, not by anyone's ruling — and it has moved to
+the desk that spoke first. What genuinely changed is that the deliberation
+can no longer reach one particular conclusion. Saying "the rule is
+untouched" would let a future session miss that. Given 434 of 435, the
+owner chose to remove exactly that capability.
+
+**SCOPE, wider than the name suggests.** The override keys off the VERDICT,
+not the proposal, so a panel hold on a desk SELL of a held book, or on a
+RETIRE (flatten), is overridden too. That is deliberate and protective — the
+platform does not second-guess a reduction, and a panel able to veto an exit
+could trap a losing book. The flag is `PANEL_ORDER_VETO`, not
+`PANEL_ENTRY_VETO`, for that reason, and the exit case is pinned by test.
+
+**A 16x dollar-risk hole, caught in review before deploy.** The first
+version adopted the panel's whole order block with a `# tighten, never
+cancel` comment and no comparison. Measured through the real clamps: desk
+`{size_frac 0.25, stop_pct 2.0}` against a hold-voting panel returning
+`{size_frac 1.0, stop_pct 25.0}` shipped `size_frac 1.0, stop_pct 8.0` —
+leverage and stop are clamped downstream, size is NOT — 4x the size at 4x
+the stop distance, using numbers authored by the voice that said don't
+trade. Now only strictly smaller `size_frac`/`leverage`/`stop_pct` are
+taken, only when both sides named a value; `target` is never taken, because
+reshaping the payoff is not tightening risk.
 
 ### Will the confidence gate just become the new wall?
 
@@ -670,6 +692,21 @@ No. The proposals sit well above the gate — which is also why carrying the
 DESK's confidence rather than the panel's matters: the panel's confidence on
 a hold is a hold's confidence, and using it would have moved the veto one
 door down and changed nothing.
+
+### Correction: the "1 in 625" argument was wrong
+
+The commit first argued this change was low-risk because the risk gates
+refused only 1 order in 625 decisions. That reasoning does not hold, and
+adversarial review killed it: the denominator counts DECISIONS, and holds
+never reach the gates at all. With the panel killing 434 of 435 proposals,
+**the gate stack was asked roughly once.** The same statistic is equally
+consistent with "the gates refused the only order they ever saw".
+
+So the gates are untested at volume, and this change routes hundreds of
+orders into them for the first time in 19 days. The honest framing is that
+the first window is a **test of the gate stack**, not of the desk. On
+simulator accounts that costs paper, which is exactly why it is worth doing
+— but it must be watched as a stress test, not reported as a safe change.
 
 ### Registered falsifier — F-VETO
 
