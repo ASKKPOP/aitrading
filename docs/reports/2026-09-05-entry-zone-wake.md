@@ -963,6 +963,91 @@ round-trip cost is already spent** on $542.26 of deployed capital (0.0900%).
 n=1 closed leg over 33 minutes. No expectancy verdict is available and none
 is claimed.
 
+## Two-agent cross-check — where they DISAGREE is the finding
+
+**Realized, ledger replay (`trading_runs.realized_pnl_usd`, three agreeing paths):**
+
+    LTC  +0.031062   closed by trailing_lock after 14m22s
+    LIT  -0.005356   closed by trailing_lock after  3m36s
+    NET  +0.025707   100% ALGORITHM-authored; the desk authored zero exits
+
+**INCONCLUSIVE per owner rule 6**: n=2, and stripping the largest contributor
+(LTC) leaves a loss. Fees consumed **86% of the gross realized edge**
+($0.1826 gross move against $0.1569 of fees). $0.3225 of fees paid in total.
+
+### The disagreement
+
+- **Agent A**: the entries are bad — 6/6 against the desk's own written plan,
+  5/6 against its own flat bias, 2/6 on a catalyst in no brief.
+- **Agent B**: "No realized loss is attributable to the desk's entries in
+  this window" — the algorithm authored every dollar.
+
+**Both are right, and the resolution matters.** A characterised trades using
+gross mark-to-market on OPEN positions; B refused to, correctly — an
+unresolved mark is not a loss. On *realized money* B is right and I side with
+it. On *forward risk* A is right: entries placed against the desk's own plan
+are a real hazard that simply has not been paid for yet. A finding that
+reads an open mark as a result is exactly what the owner's law forbids.
+
+### My own fee argument was REFUTED, and I am recording that
+
+I argued the 0.30% clamped stops are negative-expectancy because fees
+(0.090%) are 30% of the stop distance, giving a 32.5% breakeven hit rate
+against a 25% random-walk rate. **Agent B refuted it with better arithmetic**:
+that geometry is net R:R 2.08:1, which is survivable on its own. My
+random-walk model assumed the stop or target resolves the trade. **Neither
+does — the ratchet fires first.**
+
+### The actual loss engine: the ratchet arms at fee scale, not at bracket scale
+
+`_breakeven_arm_usd` arms at `0.045% x 2 x 1.78` = **0.160% of notional**,
+a constant that knows nothing about the authored stop or target. Verified by
+my own cross-check:
+
+| authored stop | arm vs the target | worst case: ratchet-at-arm vs stop | breakeven hit rate |
+|---|---|---|---|
+| 0.30% (clamped) | 5.6x closer | +0.035% vs -0.390% = **1:11.1** | **91.7%** |
+| 2.50% (as authored) | 31.2x closer | +0.035% vs -2.590% = **1:73.8** | **98.7%** |
+
+**The correctly-bracketed trades have WORSE geometry than the clamped ones.**
+The floor is anchored to the FEE, so wins are capped at fee scale while
+losses stay at stop scale — and the wider the desk's authored stop, the worse
+the ratio. This is the 10:1 shape `order_params` exists to make
+inexpressible, reintroduced downstream by a component that never sees the
+target.
+
+Caveat stated honestly: those are worst-case (peak exactly at the arm). At
+the platform's own measured median peak/arm of 1.18x the 2.50% case is still
+about 1:52. And n=2 fires, so the ratchet's net contribution is INCONCLUSIVE
+— it must not be reported as positive either.
+
+### The ratchet's own fee-floor guarantee is fictional under polling
+
+The code promises "round trip in, best case exactly $0 net". Both fires
+landed BELOW their own floor because marks are polled ~63s apart and the
+check is `current <= floor`:
+
+    LIT  slipped $0.0362 below floor (a FULL fee leg) — band was $0.0309 -> LOSS
+    LTC  slipped $0.0125 below floor                  — band was $0.0435 -> profit
+
+One rule predicts both, 2/2: **slip > half the net peak => net loss.** The
+difference between the two trades was poll timing, not analysis.
+
+**ASTER near-miss:** low 0.729610 against a clamped stop of 0.729535 — it
+survived by 0.0102% of entry, 3.4% of its stop distance, seven minutes in.
+Under the desk's authored 5% stop it was never remotely at risk.
+
+### Two changes now meet the reproduced-evidence bar
+
+1. **Prompt sign fix** (root cause found this cycle): `stop_pct = % from entry
+   to your invalidation level` never says POSITIVE MAGNITUDE. 3/3 sign-slip
+   positions, 12 floor-hits since 09-04. One line.
+2. **Ratchet arm scale**: 2/2 fires slipped below their own floor; the arm is
+   a fee-scaled constant against a bracket-scaled stop.
+
+**Neither shipped.** This cycle is monitor-don't-redesign, and I have changed
+nothing on prod.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
