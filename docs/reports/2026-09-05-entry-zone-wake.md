@@ -765,6 +765,66 @@ reproduces: re-read `_position_quantity` after the panel returns and fall
 back to the narrowing branch when the sign changed or went to zero (~3
 lines, fails safe).
 
+## THE FIRST TRADE IN 20 DAYS — and why it must not be called a success
+
+Deployed `20260905-panel-no-veto` (`181da98`) at 06:00Z. **13 minutes later
+an order executed.** The last previous fill was 2026-08-16.
+
+    signal 1566  run 2740  HYPEUSDT  BUY  1.11436 @ 84.105
+    notional $93.72 = 0.94% of the $10,000 account
+    stop 83.8527 (0.30%)   target 84.8619 (0.90%)   R:R 3.00
+    risk at the stop: $0.28      unrealized at the time of writing: -$0.08
+
+**F-VETO clause 1: SUPPORTED.** Two overrides fired, both `buy -> buy`, one
+executed and one was refused by the confidence gate (0.45 below 0.57). The
+panel WAS the wall. Four ships that fixed real rails did nothing; removing
+the veto produced a trade in thirteen minutes.
+
+**And now the honest part, which is more important than the trade.**
+
+**1. The desk bought the chase its own outlook forbade.** Thirty minutes
+earlier, run 2740's own outlook read: *"Uptrend intact but stretched into
+resistance on thin volume; wait for a dip into 78-79 rather than chase 6%
+above entry."* It then bought at 84.105 — 6.5% above the top of the zone it
+had named. The panel's objection was the same one: *"RSI ~70 into resistance
+on volume"*. Removing the veto did not make the desk trade well; it made the
+desk's FIRST voice final, and that voice contradicted its own standing plan.
+
+**2. The trade that executed is not the trade the desk authored.** Its
+report asked for *"a 5% stop and 12% target"*. What shipped was a 0.30% stop
+and a 0.90% target. The order_params notes give the mechanism:
+
+    "stop_pct -5 raised to floor 0.3"
+    "target_pct 12 pulled to R:R ceiling 0.9 (3x stop 0.3)"
+
+The desk emitted **-5**, meaning "5% below entry". The rail correctly refuses
+a negative stop and raised it to the floor; the R:R ceiling then pulled the
+target down to 3x that floor. A 5% stop became 0.30% — **16.7x tighter** —
+and the target collapsed from 12% to 0.9%.
+
+**REPRODUCED, not a single data point:** across 654 order_params events since
+09-04, the stop was raised to the floor 15 times, and in **9** of those the
+desk's authored value was negative. This is a sign-convention loss between
+the desk's prose and the parser, not an outlier.
+
+**3. This CONFOUNDS F-VETO clause 3, and I am flagging it before the result
+exists rather than after.** Clause 3 says: if trades execute and P&L is
+materially negative over the first 20 closed legs, the panel was right to
+veto. That reading is not available while the stop bug is live. A 0.30% stop
+on a crypto name at RSI 70 will be taken out by ordinary noise, so a loss
+would attribute to the CLAMPED STOP, not to a bad entry. This codebase has
+already measured that too-tight stops are themselves a loss engine.
+
+Any P&L verdict on the veto removal must therefore either wait until the
+stop convention is fixed, or explicitly separate legs stopped out inside
+0.5% from legs that reached a genuine invalidation. I will not report a loss
+from a 0.30% stop as evidence that the panel was right.
+
+**Not fixed this cycle, deliberately.** Shipping a stop-handling change now
+would confound the F-VETO window that just opened — two changes, one window,
+no attribution, which is the exact error the joint-window note records from
+yesterday. It is registered as the next ship.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
