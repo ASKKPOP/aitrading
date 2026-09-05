@@ -2175,6 +2175,47 @@ def _control_armed(run: dict, out: dict) -> None:
             conn.close()
 
 
+def _note_entry_zone_touch(run: dict, pnl: dict) -> None:
+    """Wake the desk when price reaches the entry zone the desk authored.
+
+    Flat books only: a run holding a position is managed by its stops and
+    its own cycle, and an entry level means nothing while exposed. Reads
+    the plan through `_live_entry_plan`, so the staleness bound and the
+    algo-fallback rejection already applied there govern here too — an
+    infra-authored plan can no more wake the desk than it can hold a slot.
+
+    Notes only. The desk still decides, at market, through every gate."""
+    import entry_router
+    if not entry_router.enabled():
+        return
+    try:
+        pos = pnl.get("position") or {}
+        if float(pos.get("quantity") or 0):
+            return                                   # not flat
+    except (TypeError, ValueError):
+        return
+    if entry_router.pending(run["id"]):
+        return                                       # already waiting
+    plan = _live_entry_plan(run["id"])
+    if not plan or plan.get("kind") != "zone":
+        return
+    lo, hi = plan.get("low"), plan.get("high")
+    if not isinstance(lo, (int, float)) or not isinstance(hi, (int, float)):
+        return
+    try:
+        from price_fetcher import get_price_from_market
+        mark = get_price_from_market(run["symbol"], None, run["market"])
+    except Exception:  # noqa: BLE001 — a dead feed never wakes anything
+        return
+    if mark is None or not entry_router.in_zone(mark, lo, hi):
+        return
+    if entry_router.note_zone_hit(run["id"], run["symbol"], float(lo),
+                                  float(hi), float(mark)):
+        emit_telemetry_event(run["id"], "entry_zone_touch",
+                             {"symbol": run["symbol"], "mark": float(mark),
+                              "low": float(lo), "high": float(hi)})
+
+
 def _control_active(run: dict, out: dict) -> None:
     """Stop-condition evaluation for running AND paused runs."""
     try:
@@ -2191,6 +2232,17 @@ def _control_active(run: dict, out: dict) -> None:
         except Exception:  # noqa: BLE001
             logger.warning("armed exit failed for run %s", run["id"],
                            exc_info=True)
+        # Entry-zone wake (owner 2026-09-04, "it's not trading software"):
+        # the desk names a level it would enter at in 82% of outlooks and
+        # then only looks again on its own interval, by which time the
+        # level is behind it (0 of 49 authored zones were reached inside a
+        # slot's life). Noting the touch makes the run due NOW so the desk
+        # decides AT its own level — it does not place the order.
+        try:
+            _note_entry_zone_touch(run, pnl)
+        except Exception:  # noqa: BLE001 — never break the control pass
+            logger.debug("entry-zone wake failed (run %s)", run["id"],
+                         exc_info=True)
         try:
             from run_reports import evaluate_thresholds
             evaluate_thresholds(run, pnl)
@@ -2618,6 +2670,17 @@ def due_run_ids() -> list[int]:
                     and stop_router.pending(row["id"])):
                 due.append(row["id"])
                 continue
+            # Entry-zone touch: the desk's OWN level was reached, so it
+            # rules now rather than at the next interval. Same precedence
+            # logic as a stop hit; the resulting ORDER still obeys every
+            # gate, including session rules.
+            try:
+                import entry_router
+                if entry_router.pending(row["id"]):
+                    due.append(row["id"])
+                    continue
+            except Exception:  # noqa: BLE001
+                pass
             cfg = json.loads(row.get("config_snapshot_json") or "{}")
             # Swing dormancy (owner spec 2026-08-12): a run stamped with an
             # analysis_window cycles only from pre_open before the open to
@@ -7740,6 +7803,15 @@ def run_cycle(run_id: int) -> dict:
             import stop_router
             if stop_router.enabled():
                 stop_router.clear(run_id)
+        except Exception:  # noqa: BLE001
+            pass
+        # Same contract for an entry-zone wake: this decision IS the desk's
+        # ruling on its own level being reached, whichever way it went, so
+        # clear it and let that verdict stand for one think-window instead
+        # of re-waking every control pass while price sits in the zone.
+        try:
+            import entry_router
+            entry_router.clear(run_id)
         except Exception:  # noqa: BLE001
             pass
 
