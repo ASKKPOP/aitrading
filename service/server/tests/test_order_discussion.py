@@ -203,29 +203,21 @@ class OrderDiscussionTests(unittest.TestCase):
         _, payload = self.events[0]
         self.assertIn("chase", payload["panel_reason"])
 
-    def test_an_overridden_EXIT_keeps_the_desks_full_size(self):
-        """End-to-end wiring pin. `reducing` is computed at the CALL SITE
-        from the action and the held book; a unit test on _tighter_order
-        alone passes even when the call site always says False (that
-        mutation survived on 2026-09-05). This drives the real
-        _order_discussion with a held position."""
+    def test_an_EXIT_is_not_overridden_at_all_now(self):
+        """Supersedes the size-preservation pin: exits no longer reach the
+        override, so there is no sizing to preserve. `_tighter_order`'s
+        reducing branch stays as defence against re-widening and keeps its
+        own unit tests."""
         self.held.stop()
         self.held = patch.object(run_engine, "_position_quantity",
                                  return_value=4.0)
         self.held.start()
         panel = {"decision": {"action": "hold", "confidence": 0.5,
-                              "order": {"size_frac": 0.3, "stop_pct": 1.0}},
-                 "analysts": {}}
+                              "order": {"size_frac": 0.3}}, "analysts": {}}
         with patch("analysis_agents.run_analysis", return_value=panel):
             out = run_engine._order_discussion(
-                _RUN, {}, self._with_order("sell", {"size_frac": 1.0,
-                                                    "stop_pct": 2.0}))
-        self.assertEqual(out["decision"]["action"], "sell")
-        self.assertEqual(out["decision"]["order"]["size_frac"], 1.0,
-                         "the panel shrank the desk's exit — 70% of the "
-                         "book stays in a position the desk wanted out of")
-        self.assertEqual(out["decision"]["order"]["stop_pct"], 1.0,
-                         "stop_pct does not invert and must still tighten")
+                _RUN, {}, self._with_order("sell", {"size_frac": 1.0}))
+        self.assertEqual(out["decision"]["action"], "hold")
 
     def test_an_overridden_ENTRY_still_takes_the_smaller_size(self):
         """The other half of the same wiring: on a flat book a sell is a
@@ -237,13 +229,23 @@ class OrderDiscussionTests(unittest.TestCase):
                 _RUN, {}, self._with_order("sell", {"size_frac": 1.0}))
         self.assertEqual(out["decision"]["order"]["size_frac"], 0.3)
 
-    def test_a_panel_hold_on_an_EXIT_is_also_overridden(self):
-        """SCOPE, previously unstated (adversarial review 2026-09-05): the
-        condition is on the VERDICT, not the proposal, so desk sells on a
-        held book and retires are overridden too. That is the protective
-        direction — the platform does not second-guess a reduction, and a
-        panel able to veto an exit could trap a losing book — but it must
-        be pinned, and it is why the flag is PANEL_ORDER_VETO."""
+    def test_a_panel_hold_on_an_EXIT_now_STANDS(self):
+        """REVERSED 2026-09-05 07:00Z by the tape.
+
+        The exit-side override was kept deliberately at 06:00Z, reasoning
+        that a panel able to veto an exit could trap a losing book. A revert
+        condition was registered the same hour and the tape met it three
+        times in fifty minutes — every overridden EXIT lost, and in each the
+        panel had refuted the desk's stated premise against the tape:
+
+            LTC   -0.2136  "LTC is technically stacked above MA20/50/200"
+            ASTER -0.2742  "price 0.7298 holds cleanly above MA5/.../MA200"
+            FIL   -0.2009  "closing the fresh long at a -0.17% wiggle"
+
+        -$0.6887 over 3 of 3. An EXIT has a concrete factual premise the
+        panel can check against the tape; an ENTRY is a forecast it cannot.
+        Keep the veto where it catches false premises, remove it where it
+        blocks."""
         self.held.stop()
         self.held = patch.object(run_engine, "_position_quantity",
                                  return_value=4.0)
@@ -252,8 +254,21 @@ class OrderDiscussionTests(unittest.TestCase):
                  "analysts": {}}
         with patch("analysis_agents.run_analysis", return_value=panel):
             out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
-        self.assertEqual(out["decision"]["action"], "sell",
-                         "the panel vetoed the desk's own exit")
+        self.assertEqual(out["decision"]["action"], "hold",
+                         "the panel's exit veto was overridden again")
+        _, payload = self.events[0]
+        self.assertNotIn("veto_overridden", payload)
+
+    def test_an_ENTRY_is_still_overridden(self):
+        """The wall that mattered stays down: 434 of 435 entry proposals
+        became hold and the platform did not trade for 19 days."""
+        panel = {"decision": {"action": "hold", "confidence": 0.5},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "buy")
+        _, payload = self.events[0]
+        self.assertTrue(payload["veto_overridden"])
 
     def test_agreeing_panel_still_authors_the_final_decision(self):
         panel = {"decision": {"action": "buy", "confidence": 0.81},
@@ -573,23 +588,29 @@ class ShortBookReductionTests(unittest.TestCase):
         with patch.object(run_engine, "_position_quantity", return_value=held), \
              patch("analysis_agents.run_analysis", return_value=panel):
             out = run_engine._order_discussion(run, {}, a)
-        return (out.get("decision") or {}).get("order", {})
+        return out.get("decision") or {}
 
-    def test_a_buy_that_CLOSES_a_short_keeps_full_size(self):
-        self.assertEqual(self._drive("buy", -100.0)["size_frac"], 1.0,
-                         "the panel retained 70% of a short the desk was "
-                         "closing")
+    def test_a_buy_that_CLOSES_a_short_is_not_overridden(self):
+        """The sign-aware predicate now decides WHETHER the override
+        applies, not how the order is sized."""
+        self.assertEqual(self._drive("buy", -100.0)["action"], "hold",
+                         "the panel's exit veto was overridden again")
 
     def test_a_sell_that_ADDS_to_a_short_is_still_narrowed(self):
         """The opposite mis-classification from the same root: selling
         into a short increases exposure, so the panel keeps its voice."""
-        self.assertEqual(self._drive("sell", -100.0)["size_frac"], 0.3)
+        d = self._drive("sell", -100.0)
+        self.assertEqual(d["action"], "sell", "an ADD is an entry and must "
+                         "still override")
+        self.assertEqual(d["order"]["size_frac"], 0.3)
 
-    def test_a_sell_that_CLOSES_a_long_keeps_full_size(self):
-        self.assertEqual(self._drive("sell", 100.0)["size_frac"], 1.0)
+    def test_a_sell_that_CLOSES_a_long_is_not_overridden(self):
+        self.assertEqual(self._drive("sell", 100.0)["action"], "hold")
 
     def test_a_buy_that_ADDS_to_a_long_is_still_narrowed(self):
-        self.assertEqual(self._drive("buy", 100.0)["size_frac"], 0.3)
+        d = self._drive("buy", 100.0)
+        self.assertEqual(d["action"], "buy")
+        self.assertEqual(d["order"]["size_frac"], 0.3)
 
     def test_target_is_never_taken_on_a_REDUCTION_either(self):
         """The docstring states it unconditionally; it was pinned only on

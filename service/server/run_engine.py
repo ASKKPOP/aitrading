@@ -7154,6 +7154,22 @@ def _order_discussion_enabled() -> bool:
             not in ("0", "false", "no"))
 
 
+def _reducing_now(run: dict, action: "str | None", held: float) -> bool:
+    """Does this order move |position| toward zero?
+
+    Needs the position SIGN, not just the verb: run_cycle maps buy -> cover
+    on a short book, but that mapping runs AFTER the panel meets, so a
+    proposal to close a short still reads `buy` here.
+    """
+    act = str(action or "").lower()
+    try:
+        q = float(held or 0)
+    except (TypeError, ValueError):
+        return False
+    return ((q > 0 and act in ("sell", "retire"))
+            or (q < 0 and act in ("buy", "cover", "retire")))
+
+
 def _tighter_order(proposed: "dict | None",
                    panel: "dict | None",
                    reducing: bool = False) -> "dict | None":
@@ -7448,7 +7464,28 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
             # nothing. The panel may still hand back a tighter bracket, and
             # a panel that authors a DIFFERENT order (buy -> sell) is not
             # vetoing, so that verdict is honoured untouched.
-            if (not _panel_order_veto_enabled()
+            # ENTRIES ONLY, as of 2026-09-05 07:00Z. The exit-side override
+            # was kept open deliberately at 06:00Z on the reasoning that a
+            # panel able to veto an exit could trap a losing book. I
+            # registered a revert condition the same hour and the tape met
+            # it three times in fifty minutes — every overridden EXIT lost,
+            # and in each the panel had refuted the desk's stated premise
+            # against the tape:
+            #
+            #   LTC   -0.2136  "LTC is technically stacked above MA20/50/200"
+            #   ASTER -0.2742  "price 0.7298 holds cleanly above MA5/.../MA200"
+            #   FIL   -0.2009  "closing the fresh long at a -0.17% wiggle —
+            #                   noise-sized against a ~3.5% ordinary day"
+            #
+            # -$0.6887 over 3 of 3. The asymmetry the original design missed:
+            # an EXIT has a concrete factual premise the panel can check
+            # against the tape, so its veto carries information. An ENTRY is
+            # a forecast it cannot check — and there the panel was wrong 434
+            # times out of 435 by the only test that matters, zero trades in
+            # 19 days. Remove the veto where it blocks; keep it where it
+            # catches false premises.
+            _entry_side = not _reducing_now(run, action, held)
+            if (not _panel_order_veto_enabled() and _entry_side
                     and str(final.get("action") or "").lower() == "hold"):
                 payload["panel_verdict"] = "hold"
                 payload["veto_overridden"] = True
@@ -7465,13 +7502,9 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
                 # size_frac 1.0 (close the whole short) shipped 0.3 — 70%
                 # of the short retained. Same defect as the long-exit one,
                 # reached through the other side of the book.
-                _act = str(action or "").lower()
-                _reducing = ((held > 0 and _act in ("sell", "retire"))
-                             or (held < 0 and _act in ("buy", "cover",
-                                                       "retire")))
-                tightened = _tighter_order(proposal.get("order"),
-                                           final.get("order"),
-                                           reducing=_reducing)
+                tightened = _tighter_order(
+                    proposal.get("order"), final.get("order"),
+                    reducing=_reducing_now(run, action, held))
                 if tightened is not None:
                     kept["order"] = tightened
                 final = kept
