@@ -1306,6 +1306,87 @@ and sits at 6/8 with 30 cooldowns. Each fill consumes a slot and forces a
 rebuild, carrying research + compose LLM cost on a budget already measured as
 oversubscribed.
 
+## Ratchet arm made bracket-aware (17d48636) — and the gate that changed it
+
+Owner picked this as the next fix after the hold wall came down. It is the
+component two outcome agents and my own cross-check identified as the loss
+engine — NOT the entries, and NOT the stop clamps.
+
+**The defect:** `_breakeven_arm_usd` returned a constant in NOTIONAL terms
+(fee x 2 x 1.78 = 0.160% on crypto) and knew nothing about the authored
+target. Over 8 fires it armed at 53% of a 0.30% stop and 5.6x closer than a
+0.90% target — banking ~+0.035% while losers ran the full stop. Observed
+breakeven 68.0%, delivered 50.0%, realized **-$0.41839**.
+
+**The gate that changed the ship.** I said I would not deploy if the
+counterfactual showed the window would have been worse. At the fraction I
+first wrote (0.50) it did, on BOTH windows:
+
+    mine,   8 fires 2026-09-05 : NONE would still arm (peaks 0.098-0.547
+                                 vs arms 0.65-4.35) -> 0.50 does not
+                                 re-scale the ratchet, it switches it OFF
+    review, 9 fires 2026-08-17..23 (archived OKX candles):
+                                 5 lose their arm; -$1.51 -> -$3.93,
+                                 WORSE by $2.42, monotone and robust to
+                                 stripping two outliers; 3 of the 5 ran
+                                 straight into the stop
+
+So the FRACTION changed, not the gate. **Shipped at 0.30**, the value where
+both windows are neutral-or-better: the archived window is untouched (0 of 9
+lose their arm, re-verified directly) and a 5% target still arms at 1.50% of
+notional instead of a flat 0.160%.
+
+**The residual, measured rather than assumed.** Raising the arm also delays
+WHEN the floor engages, so a position that still arms can exit later and
+worse. Simulated on the same series: **-$0.3906** across 9, four changed,
+three worse. But it is single-episode dominated — drop the largest and it is
+-$0.0874, drop two and it is -$0.0246. By this project's own rule 6 that is
+noise on n=9, which is exactly the test that killed 0.50 (where the effect
+survived both strips).
+
+Method caveat carried from review: absolute simulated nets do NOT reproduce
+live nets (prod fills sit outside the archive range), so only the DIFFERENCE
+between two arm values on an identical series is valid. The -$0.39 is
+defensible; the absolute figures behind it are not.
+
+### Two things this ship does NOT fix, and their different status
+
+1. **Tier inversion above a ~1.33% target — incomplete, not a regression.**
+   The legacy trail sat at 0.400% before and still does. At 0.30 a 5% target
+   arms at 1.500%, so the TRAIL now binds instead of the ratchet. The trail
+   carries the identical scale-blindness just removed from the ratchet, so
+   for large brackets the constraint MOVES rather than disappears. Nothing
+   is worse than before.
+2. **Re-anchor disarm — a hazard this ship INTRODUCES.** The arm is now a
+   function of a mutable field (`take_profit`) with no latch, so a widening
+   `bracket_reanchor` can silently remove a floor a position had already
+   earned. Previously the arm was a constant and no re-anchor could touch
+   it. Smaller at 0.30, but the coupling is NEW. Remedy: latch at open, or
+   `min(arm_at_open, arm_now)`.
+
+Also pinned: the SHORT path, which survived a mutation — without `abs()` a
+short's `tp - entry` is negative, `max(fee_arm, negative)` returns the fee
+arm, and every short silently reverted with nothing failing. **7 of the 9
+archived fires were shorts.** And the default-value test asserts against the
+module default, so the number cannot move without a replay behind it.
+
+### Registered falsifier — F-ARM
+
+- **Supported** if the ratchet's realized contribution improves on the
+  measured **-$0.41839** over a comparable number of fires, and fires land
+  closer to their own trigger (overshoot below the $1.313 measured).
+- **REFUTED** if realized worsens, or if fires that previously banked now
+  run to their stop. Then `RATCHET_ARM_TARGET_FRAC=0` reverts instantly
+  without a deploy and this is reported FAILED in those words.
+- **Read the right component.** For runs with targets above ~1.33% the
+  binding rail is now the TRAIL, so a "no improvement" reading there is
+  evidence about the trail, not about this change.
+- **If a floor vanishes on a live position, look at `bracket_reanchor`
+  first** — that is the new coupling above.
+
+CI: six jobs, 5207 tests. Adversarial review: 6 mutations, 6 killed, both
+prior survivors dead.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
