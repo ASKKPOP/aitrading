@@ -6899,9 +6899,16 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         f"{reach}"
         "Then place THIS instrument's bracket. A 5% stop is a hair-trigger on "
         "a currency pair and unreachable on a volatile crypto name, so size "
-        "both to the symbol's own recent range shown above: stop_pct = %% from "
-        "entry to your invalidation level, target_pct = %% to a level the move "
-        f"can realistically reach. target_pct MUST be at least {RR_FLOOR:g}x stop_pct. If "
+        # NB single % on purpose. This prompt is built by CONCATENATION and
+        # is never %-formatted, so the pre-existing "%%" rendered literally:
+        # the desk has been reading "stop_pct = %% from entry" verbatim.
+        "both to the symbol's own recent range shown above: stop_pct = % from "
+        "entry to your invalidation level, target_pct = % to a level the move "
+        "can realistically reach. BOTH ARE POSITIVE DISTANCES — write the "
+        "magnitude, never a direction: a long whose invalidation sits 5% "
+        "BELOW entry is stop_pct 5, not -5, and both fields are percent "
+        "numbers (5 means 5%, not 0.05). "
+        f"target_pct MUST be at least {RR_FLOOR:g}x stop_pct. If "
         "you have no concrete basis, omit them and the house defaults apply.\n"
         # Plan 26: the outlook — the slot's standing plan, published beside
         # the decision and quoted back on the next cycle (standing_plan brief

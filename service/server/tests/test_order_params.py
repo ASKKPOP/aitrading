@@ -419,3 +419,106 @@ class UnitSlipTests(unittest.TestCase):
         p = op.parse_order_block({"stop_pct": 0.09, "target_pct": 0.2})
         self.assertEqual(p.stop_pct, 8.0)
         self.assertTrue(any("cut to cap" in n for n in p.notes))
+
+
+class SignSlipRecovery(unittest.TestCase):
+    """A negative pct is a DIRECTION, not a magnitude (2026-09-05).
+
+    Every RAILS floor is positive, so a negative pct is never a legal value —
+    it is the model expressing a signed offset. For a long the invalidation
+    sits below entry, and the prompt asked for "% from entry to your
+    invalidation level" without ever saying positive magnitude, so writing
+    -5 for "5% below" was the model being consistent.
+
+    The old behaviour was the damaging one: -5 failed the `0 < v` unit-slip
+    guard, fell through to _clamp, and `-5 < 0.30` raised it to the FLOOR.
+    A 5% stop silently became 0.30% — 16.7x tighter — and the R:R ceiling
+    then dragged a 12% target to 0.9%. Measured on prod 2026-09-05: 3 of the
+    6 positions opened carried a stop the desk never authored, and 12
+    floor-hits since 09-04 carried a negative authored value.
+    """
+
+    FEE = 0.00045
+
+    def test_the_exact_prod_case(self):
+        """HYPE/ASTER/ENA: the desk wrote -5 and got a 0.30% stop."""
+        out = op.parse_order_block({"stop_pct": -5, "target_pct": 12},
+                                fee_rate=self.FEE)
+        self.assertEqual(out.stop_pct, 5.0,
+                         "a 5% stop was floored to 0.30% again")
+        self.assertEqual(out.target_pct, 12.0,
+                         "the R:R ceiling collapsed the target again")
+        self.assertTrue(any("sign recovered" in n for n in out.notes))
+
+    def test_signed_AND_fractional_recovers_twice(self):
+        """Ordered before the unit slip on purpose: -0.05 is both."""
+        out = op.parse_order_block({"stop_pct": -0.05, "target_pct": 0.12},
+                                fee_rate=self.FEE)
+        self.assertEqual(out.stop_pct, 5.0)
+        self.assertEqual(out.target_pct, 12.0)
+        self.assertTrue(any("sign recovered" in n for n in out.notes))
+        self.assertTrue(any("unit slip" in n for n in out.notes))
+
+    def test_a_legitimate_bracket_is_untouched(self):
+        out = op.parse_order_block({"stop_pct": 2.5, "target_pct": 7.5},
+                                fee_rate=self.FEE)
+        self.assertEqual(out.stop_pct, 2.5)
+        self.assertEqual(out.target_pct, 7.5)
+        self.assertEqual(out.notes, [])
+
+    def test_a_genuinely_tiny_stop_still_floors(self):
+        """The recovery must not swallow the floor rail: 0.1 is positive and
+        really is below the floor, so it clamps as before."""
+        out = op.parse_order_block({"stop_pct": 0.1, "target_pct": 50.0},
+                                fee_rate=self.FEE)
+        self.assertEqual(out.stop_pct, 0.30)
+        self.assertFalse(any("sign recovered" in n for n in out.notes))
+
+    def test_the_recovery_is_journaled_with_both_values(self):
+        out = op.parse_order_block({"stop_pct": -5}, fee_rate=self.FEE)
+        note = next(n for n in out.notes if "sign recovered" in n)
+        self.assertIn("-5", note)
+        self.assertIn("5", note)
+
+    def test_negative_target_and_trail_recover_too(self):
+        """trail_arm is chosen ABOVE the stop so the unrelated
+        `trail_arm >= stop` rail does not mask the recovery."""
+        out = op.parse_order_block({"stop_pct": 2.0, "target_pct": -6.0,
+                                    "trail_arm_pct": -3.0}, fee_rate=self.FEE)
+        self.assertEqual(out.target_pct, 6.0)
+        self.assertEqual(out.trail_arm_pct, 3.0)
+        note = next(n for n in out.notes if "sign recovered" in n)
+        self.assertIn("target_pct", note)
+        self.assertIn("trail_arm_pct", note)
+
+
+class BracketPromptWording(unittest.TestCase):
+    """The prompt is the ROOT CAUSE of the sign slip, and it also rendered a
+    literal '%%' because this string is concatenated, never %-formatted."""
+
+    def _prompt(self):
+        from unittest.mock import patch
+        import run_engine
+        cap = []
+        with patch("price_fetcher.get_price_from_market", return_value=100.0), \
+             patch("price_fetcher.get_daily_candles", return_value=[]), \
+             patch("llm_client.generate_text",
+                   side_effect=lambda pr, **k: (cap.append(pr),
+                       '{"action":"hold","confidence":0.5,"report":"r"}')[1]):
+            run_engine._light_analysis(
+                {"id": 1, "agent_id": 999999, "symbol": "ETHUSDT",
+                 "market": "crypto", "market_type": "spot"}, {})
+        return next((p for p in cap if "POSITIVE DISTANCES" in p), "")
+
+    def test_it_demands_a_positive_magnitude(self):
+        p = self._prompt()
+        self.assertIn("BOTH ARE POSITIVE DISTANCES", p)
+        self.assertIn("stop_pct 5, not -5", p)
+
+    def test_it_states_the_percent_unit(self):
+        """The other half of the same defect: 0.01 vs 1."""
+        self.assertIn("5 means 5%, not 0.05", self._prompt())
+
+    def test_no_literal_double_percent_reaches_the_desk(self):
+        """Pre-existing: the desk was reading 'stop_pct = %% from entry'."""
+        self.assertNotIn("%%", self._prompt())

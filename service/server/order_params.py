@@ -230,6 +230,37 @@ def parse_order_block(raw: Any, *, leverage_cap: float = 10.0,
     # an authored stop nothing pins the units.
     raw = dict(raw)
     _pct_fields = ("stop_pct", "target_pct", "trail_arm_pct")
+
+    # SIGN slip, recovered BEFORE the unit slip below (2026-09-05).
+    #
+    # Every RAILS floor here is positive, so a negative pct is never a legal
+    # value — it is the model expressing a signed OFFSET. For a long the
+    # invalidation sits below entry, so "5% below" is written -5, and the
+    # prompt asked for "% from entry to your invalidation level" without ever
+    # saying positive magnitude. That is the model being consistent, not
+    # wrong.
+    #
+    # The old behaviour was the damaging one: -5 failed the `0 < v` guard
+    # below, fell through to _clamp, and `-5 < 0.30` raised it to the FLOOR.
+    # A 5% stop silently became 0.30% — 16.7x tighter — and the R:R ceiling
+    # then dragged a 12% target down to 0.9%. Measured on prod: 3 of the 6
+    # positions opened on 2026-09-05 carried a stop the desk never authored,
+    # and 12 floor-hits since 09-04 carried a negative authored value.
+    #
+    # Recovering the magnitude is the same class of fix as the unit slip
+    # already handled below — intent is unambiguous, so recover it and
+    # journal it rather than silently substituting a floor. Ordered first so
+    # a value that is BOTH signed and fractional (-0.05) recovers twice.
+    _neg = {n: v for n in _pct_fields
+            if (v := _num(raw.get(n))) is not None and v < 0}
+    if _neg:
+        for n, v in _neg.items():
+            raw[n] = -v
+        notes.append(
+            "bracket sign recovered (signed offset: "
+            + ", ".join(f"{n} {v:g} -> {-v:g}" for n, v in _neg.items())
+            + ") — a negative pct is a direction, not a magnitude")
+
     _authored = {n: _num(raw.get(n)) for n in _pct_fields}
     _present = {n: v for n, v in _authored.items() if v is not None}
     if _present.get("stop_pct") is not None and \
