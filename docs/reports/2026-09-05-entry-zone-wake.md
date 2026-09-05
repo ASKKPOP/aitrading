@@ -473,6 +473,73 @@ vacuous while looking like a large healthy sample. Both were caught by the
 result being implausible (50 decisions in 46 seconds), not by care. The sweep
 now carries the warning inline.
 
+## Hourly monitoring cycle — 2026-09-05 03:44Z
+
+**P&L first.** Zero again: both accounts 0 executed trades all-time, $0
+realized, $0 unrealized, 0 open positions, cash $10,000.00 each. No trades
+have closed, so the two-subagent outcome rule does not apply.
+
+Authored entries: **0 in the last hour** (22 decisions, all hold), 1 in 24h,
+1 since the tier ship.
+
+**FALSIFIER v2: PASSES** (run 2630 DE, verified against every term last
+cycle). Tiers NOT reverted. The deadline is 04:00Z and no new authored entry
+has appeared, so it closes on that single gate-demoted decision.
+
+**Process health.** Fleet 44 8/8, fleet 43 1/8 with the US session shut until
+13:30Z, 41 cooldowns. Fifteen switches in 6h.
+
+**LAST-FIX VERIFICATION — clean and now accumulating.** In the labelled era:
+**4/4 switches desk-authored, 0 scaffold/rule** (was 1/1 last cycle). The 11
+older switches are correctly excluded as unlabelled-by-construction.
+
+### Why F-WAKE is still 1 — measured, not guessed
+
+The wake has been live ~1h45m with one touch. Two candidate explanations
+were on the table: rotation starving it, or the mechanism being broken.
+Measured both.
+
+**Rotation is NOT the constraint.** Median run lifetime before the
+no-prospect rail rotates a symbol is **302 minutes (~5h)**, n=8, range
+79-303. That is ample time for a wake. Last cycle's worry that woken symbols
+get rotated away too fast is not supported at this n — run 2734 (79 min) was
+the short outlier, not the norm.
+
+**The constraint is the addressable population.** Snapshot of all 9 live runs:
+
+| run | symbol | plan | distance to zone |
+|---|---|---|---|
+| 2732 | AAVEUSDT | zone | +6.29% away |
+| 2736 | ACN | zone | **IN ZONE** (us-stock, market shut) |
+| 2740 | HYPEUSDT | zone | +6.45% away |
+| 2741 | ASTERUSDT | zone | +1.73% away |
+| 2737, 2738, 2742, 2743 | LTC, SOL, FIL, ZEC | `trigger` | no numeric zone |
+| 2739 | DOTUSDT | `none` | no plan |
+
+So **only 4 of 9 runs (44%) carry a numeric zone the wake can act on at
+all** — four outlooks express their entry as a text `trigger` ("breakout
+above…") which `_live_entry_plan` deliberately refuses, and one has no plan.
+Of the four zones, three are 1.7-6.5% away and untouched; the one that IS in
+zone is `ACN`, a us-stock, with the NYSE shut — so the market-open guard is
+correctly suppressing it, because a wake there could never produce a fill.
+
+F-WAKE = 1 is therefore fully explained by the population, not by a broken
+mechanism: 4 inapplicable plans, 1 correctly suppressed, 3 simply not
+reached yet.
+
+**Note against my own earlier claim.** The `entry_router` docstring says 82%
+of outlooks carry a concrete zone. This snapshot says 44%. n=9 is far too
+small to overturn the earlier figure, and the two measure different things (a
+population of outlooks over time versus live runs at one instant) — but the
+gap is large enough that the 82% should be re-measured before it is relied on
+again. Recorded rather than quietly reconciled.
+
+**Registered prediction (falsifiable, cheap):** run 2736 ACN is sitting in
+its authored zone with the market shut. If price is still in that zone after
+13:30Z, a wake must fire for it within one poll interval. If it does not, the
+market-open guard or the us-stock path is broken and F-WAKE clause 1 gets
+re-opened for that market.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
