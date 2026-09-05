@@ -118,7 +118,7 @@ class ControlPassTests(unittest.TestCase):
 
     def _run(self):
         return {"id": 77, "agent_id": 6, "symbol": "LITUSDT",
-                "market": "crypto"}
+                "market": "crypto", "status": "running"}
 
     def _touch(self, qty=0.0, plan=None, mark=4.70):
         plan = plan if plan is not None else {"kind": "zone", "low": 4.678,
@@ -245,7 +245,8 @@ class ClosedMarketTests(unittest.TestCase):
     tearDown = setUp
 
     def _touch(self, is_open):
-        run = {"id": 55, "agent_id": 6, "symbol": "NVDA", "market": "us-stock"}
+        run = {"id": 55, "agent_id": 6, "symbol": "NVDA", "market": "us-stock",
+               "status": "running"}
         pnl = {"position": {"quantity": 0.0}}
         with patch("markets.is_market_open", return_value=is_open), \
              patch.object(run_engine, "_live_entry_plan",
@@ -266,7 +267,8 @@ class ClosedMarketTests(unittest.TestCase):
         self.assertIsNotNone(self._touch(is_open=True))
 
     def test_a_broken_calendar_fails_closed(self):
-        run = {"id": 56, "agent_id": 6, "symbol": "NVDA", "market": "us-stock"}
+        run = {"id": 56, "agent_id": 6, "symbol": "NVDA", "market": "us-stock",
+               "status": "running"}
         def boom(*a, **k):
             raise RuntimeError("calendar down")
         with patch("markets.is_market_open", boom), \
@@ -279,6 +281,41 @@ class ClosedMarketTests(unittest.TestCase):
                           lambda *a, **k: None):
             run_engine._note_entry_zone_touch(run, {"position": {"quantity": 0.0}})
         self.assertIsNone(entry_router.pending(56))
+
+
+class PausedRunTests(unittest.TestCase):
+    """A paused run can be woken but never dispatched.
+
+    control_pass hands _control_active both running AND paused runs, while
+    due_run_ids selects status='running'. So a wake noted on a paused run
+    is never consumed: a wasted poll every window, a misleading journal row,
+    and a permanent -1 on the idle-retire discount for a cycle that never
+    ran. Pause blocks entries anyway."""
+
+    def setUp(self):
+        entry_router._reset()
+
+    tearDown = setUp
+
+    def _touch(self, status):
+        run = {"id": 70, "agent_id": 6, "symbol": "ETH", "market": "crypto",
+               "status": status}
+        with patch("markets.is_market_open", return_value=True), \
+             patch.object(run_engine, "_live_entry_plan",
+                          lambda rid: {"kind": "zone", "low": 4.0, "high": 6.0}), \
+             patch("price_fetcher.get_price_from_market", lambda *a, **k: 5.0), \
+             patch.object(run_engine, "emit_telemetry_event", lambda *a, **k: None):
+            run_engine._note_entry_zone_touch(run, {"position": {"quantity": 0.0}})
+        return entry_router.pending(70)
+
+    def test_a_paused_run_is_never_woken(self):
+        self.assertIsNone(self._touch("paused"))
+
+    def test_a_running_run_still_is(self):
+        self.assertIsNotNone(self._touch("running"))
+
+    def test_a_stopping_run_is_never_woken(self):
+        self.assertIsNone(self._touch("stopping"))
 
 
 class PollBudgetTests(unittest.TestCase):
@@ -311,7 +348,8 @@ class PollBudgetTests(unittest.TestCase):
     def test_the_throttle_actually_suppresses_the_fetch(self):
         """Behavioural: count real calls into the price feed."""
         calls = []
-        run = {"id": 60, "agent_id": 6, "symbol": "ETH", "market": "crypto"}
+        run = {"id": 60, "agent_id": 6, "symbol": "ETH", "market": "crypto",
+               "status": "running"}
         pnl = {"position": {"quantity": 0.0}}
 
         def feed(*a, **k):
@@ -429,6 +467,22 @@ class SkippedCycleClearsTheWakeTests(DispatchTests):
                           "the skipped cycle left the wake pending — "
                           "due_run_ids will spin on it every pass")
 
+    def test_the_horizon_gate_also_consumes_the_wake(self):
+        """The same spin hazard, one gate over. Dormant today only because
+        _horizon_gate_enabled() defaults False — arming it would wake the
+        bug, which is exactly how the SOL 1274 shape got shipped."""
+        rid = self._mk_run({"interval_minutes": 60}, self._fresh())
+        entry_router.note_zone_hit(rid, "ETHUSDT", 4.0, 6.0, 5.0)
+        with patch.object(run_engine, "_horizon_gate_enabled",
+                          lambda: True), \
+             patch.object(run_engine, "_horizon_state",
+                          lambda *a, **k: "horizon: hold"), \
+             patch.object(run_engine, "_pre_gate_skip", lambda run, cfg: None):
+            run_engine.run_cycle(rid)
+        self.assertIsNone(entry_router.pending(rid),
+                          "a horizon-gated cycle left the wake pending — "
+                          "due_run_ids will spin on it every pass")
+
     def test_and_the_run_stops_being_due(self):
         """The consequence that actually matters: no re-dispatch loop."""
         rid = self._mk_run({"interval_minutes": 60}, self._fresh())
@@ -498,17 +552,12 @@ class IdleRetireDiscountTests(unittest.TestCase):
                                         {"stage": "pre", "reason": "x"})
         self.assertEqual(run_engine._entry_wake_cycles(self.run_id), 0)
 
-    def test_wakes_are_discounted_from_the_idle_count(self):
-        """End-to-end: same cycle_seq, but the woken run must NOT retire."""
-        limit = run_engine._idle_retire_cycles()
-        if not limit:
-            self.skipTest("idle retire disabled in this environment")
-        self._note(self.run_id, 2)
-        worked = (limit + 1) \
-            - run_engine._closed_market_cycles(self.run_id) \
-            - run_engine._entry_wake_cycles(self.run_id)
-        self.assertLess(worked, limit,
-                        "wake cycles still count toward idle-retire")
+    # The end-to-end assertion that the discount actually spares a run from
+    # idle-retire lives in test_idle_retire_closed_market.EntryWakeDiscount,
+    # beside the rail it protects. It is NOT duplicated here: the version
+    # that used to sit in this class re-implemented the rail's arithmetic in
+    # the test body, which let a x100 discount and a flipped SIGN both pass.
+    # Counting is pinned here; behaviour is pinned where the behaviour is.
 
 
 if __name__ == "__main__":

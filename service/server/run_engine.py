@@ -2233,6 +2233,15 @@ def _note_entry_zone_touch(run: dict, pnl: dict) -> None:
     import entry_router
     if not entry_router.enabled():
         return
+    # RUNNING only. control_pass hands _control_active both running AND
+    # paused runs (its docstring says so), but due_run_ids selects
+    # status='running' — so a wake noted on a paused run can never be
+    # dispatched or cleared: it would burn a price poll every window, write
+    # a misleading entry_zone_touch row, and take a permanent -1 on the
+    # idle-retire discount for a cycle that never ran. Pause blocks entries
+    # anyway, so there is nothing for the wake to say there.
+    if (run.get("status") or "") != STATUS_RUNNING:
+        return
     try:
         pos = pnl.get("position") or {}
         if float(pos.get("quantity") or 0):
@@ -2251,6 +2260,11 @@ def _note_entry_zone_touch(run: dict, pnl: dict) -> None:
         if not _mkts.is_market_open(run.get("market")):
             return
     except Exception:  # noqa: BLE001 — a broken calendar must not wake it
+        # Fail-closed is right (never wake into a session that refuses every
+        # order), but silence here would disable the whole feature invisibly.
+        logger.warning("entry-zone wake: market calendar unavailable "
+                       "(run %s, market %s)", run.get("id"),
+                       run.get("market"), exc_info=True)
         return
     if not entry_router.should_poll(run["id"]):
         return                                       # feed budget, see module
@@ -7677,6 +7691,17 @@ def run_cycle(run_id: int) -> dict:
             emit_telemetry_event(run_id, "gate_skip",
                                  {"cycle": seq, "stage": "horizon",
                                   "reason": hz_state})
+            # Same spin hazard as the pre-gate skip above: this return sits
+            # ABOVE the `entry_router.clear` site, so an uncleared wake would
+            # be re-dispatched every control pass and land right back here,
+            # bumping cycle_seq each time. Dormant today only because
+            # _horizon_gate_enabled() defaults False — arming it would wake
+            # the bug, which is exactly how the SOL 1274 shape got shipped.
+            try:
+                import entry_router
+                entry_router.clear(run_id)
+            except Exception:  # noqa: BLE001
+                pass
             return result
         if hz_state:
             # Gate disarmed: record what it WOULD have suppressed so the

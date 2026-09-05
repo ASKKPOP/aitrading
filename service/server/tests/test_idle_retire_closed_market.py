@@ -130,3 +130,70 @@ class ClosedMarketCounting(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EntryWakeDiscount(ClosedMarketCounting):
+    """A wake must not accelerate the rail it exists to satisfy (2026-09-05).
+
+    `_claim` bumps cycle_seq on EVERY claimed cycle, so a run parked in the
+    entry zone it named runs ~2 cycles/hour instead of 1 and the count-based
+    rail collects it in ~6h instead of ~12h — retiring fastest exactly the
+    run waiting patiently at its own level, and calling "idle" a desk that is
+    actively ruling.
+
+    These drive the REAL rail through _evaluate_stop. The first version of
+    this test re-implemented the arithmetic in the test body instead, which
+    let two mutations live: multiplying the discount by 100 (run becomes
+    permanently un-retirable, holding its slot and budget forever) and
+    flipping its sign (accelerates to ~4h — the fix inverted). Adversarial
+    review caught both. A re-implementation pin is a subtler cousin of the
+    source-text pin that hid three behaviour kills the day before.
+    """
+
+    def _wakes(self, run_id, n):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for i in range(n):
+            ClosedMarketCounting._seq += 1
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'entry_zone_touch', ?, ?)",
+                (run_id, ClosedMarketCounting._seq,
+                 f"2026-09-0{(i % 5) + 1}T00:00:00Z",
+                 json.dumps({"symbol": "ORCL", "mark": 1.0,
+                             "low": 0.9, "high": 1.1})))
+        conn.commit()
+        conn.close()
+
+    def test_wake_cycles_do_not_retire_the_run(self):
+        """13 cycles, 2 of them wakes -> 11 workable, under the limit."""
+        self._wakes(127, 2)
+        self.assertIsNone(self._evaluate(_run(13)),
+                          "a run woken at its own entry level was retired "
+                          "for being idle")
+
+    def test_the_same_run_without_wakes_is_retired(self):
+        """Guards the SIGN: if the discount were added instead of
+        subtracted, this control would still retire but the case above
+        would too — so both directions are needed to pin it."""
+        self._wakes(127, 0)
+        self.assertEqual(self._evaluate(_run(13)), "idle_retired")
+
+    def test_the_discount_cannot_exceed_the_wakes(self):
+        """Guards the MAGNITUDE: an inflated discount makes a run
+        permanently un-retirable, holding its slot and allocation forever.
+        1 wake must not buy more than 1 cycle of life."""
+        self._wakes(127, 1)
+        self.assertEqual(self._evaluate(_run(14)), "idle_retired",
+                         "one wake bought more than one cycle of life")
+
+    def test_wakes_and_closed_cycles_both_discount(self):
+        self._wakes(127, 2)
+        self._skips(127, 3)
+        self.assertIsNone(self._evaluate(_run(16)))     # 16-3-2 = 11
+        self.assertEqual(self._evaluate(_run(17)), "idle_retired")  # 12
+
+    def test_a_genuinely_idle_run_is_still_collected(self):
+        """The rail must keep working — this fix must not disable it."""
+        self._wakes(127, 1)
+        self.assertEqual(self._evaluate(_run(30)), "idle_retired")
