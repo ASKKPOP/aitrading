@@ -540,6 +540,86 @@ its authored zone with the market shut. If price is still in that zone after
 market-open guard or the us-stock path is broken and F-WAKE clause 1 gets
 re-opened for that market.
 
+## Hourly monitoring cycle — 2026-09-05 04:44Z
+
+**P&L first.** Zero: both accounts 0 executed trades all-time, $0 realized,
+$0 unrealized, 0 open positions, cash $10,000.00 each. No closed trades, so
+the two-subagent outcome rule does not apply.
+
+Authored entries: **0 in the last hour** (18 decisions, all hold), 1 in 24h,
+1 since the tier ship.
+
+**FALSIFIER v2: CLOSED — PASSED.** The 04:00Z deadline has passed (now
+04:44Z) with one authored entry on the tape (run 2630 DE, fleet run,
+gate-demoted, which the terms admit explicitly). `stop_loss_frac_of_bet`
+stays at 0.03/0.05/0.07/0.10; **no revert**. It passed on one decision that
+never became a trade — the registered bar, and nothing more.
+
+**Process health — the first genuine improvement in days.** Fleet 43 climbed
+**1/8 → 4/8** as benches expired (cooldowns 41 → 35); fleet 44 holds 8/8;
+12 runs total. Thirteen switches in 6h.
+
+**LAST-FIX VERIFICATION — accumulating clean:** **6/6 switches desk-authored,
+0 scaffold/rule** in the labelled era (1/1 → 4/4 → 6/6 over three cycles).
+
+### A validity defect in MY OWN falsifier, caught before it fired
+
+Four us-stock runs read "IN ZONE" this cycle — ACN, CVX, META, DE. Every one
+has `mark` exactly equal to the zone's HIGH. That is the same artifact shape
+that produced the 13.8% false positive earlier today, so I tested it:
+
+| run | zone | low / high | width |
+|---|---|---|---|
+| ACN | 185.3196 – 186.72 | 0.992500 | **0.7500%** |
+| CVX | 207.29625 – 208.6 | 0.993750 | **0.6250%** |
+| META | 612.144225 – 616.77 | 0.992500 | **0.7500%** |
+| DE | 688.328525 – 693.53 | 0.992500 | **0.7500%** |
+
+The low reconstructs from the high to six decimal places. These zones are
+`[last_close × 0.9925, last_close]` — mechanically anchored to the frozen
+close (the NYSE has been shut since 20:00Z), not judged levels. A support
+level does not land on exactly 0.7500% of the close four times.
+
+Contrast the one crypto zone, authored while its market was OPEN:
+
+> HYPE: "the only high-expectancy long is a pullback into 77.5-79.0 with
+> volume confirmation, not a chase at 83.92" — round numbers, 6.29% below
+> price, and a stated reason.
+
+**Two different behaviours are being counted as one thing.** A close-anchored
+band is "reached" the instant it is written; a pullback level has to actually
+be traded to. When the NYSE opens at 13:30Z, if price opens anywhere near
+yesterday's close, four wakes fire immediately — and they would test nothing,
+because no level was reached in any meaningful sense.
+
+**F-WAKE amended (registered now, before those wakes exist).** Wakes are
+counted in two classes and BOTH are always reported:
+
+- **Class A, pullback wakes** — the zone's high sat meaningfully below the
+  mark at the time the outlook was authored. These test the timing theory.
+  Clause 2's refutation threshold (≥20 with 0 entries) applies to Class A
+  ONLY.
+- **Class B, close-anchored wakes** — `zone_high ≈ mark_at_authoring`. These
+  are reported but excluded from the threshold.
+
+**Stating the obvious objection against myself:** excluding Class B makes
+n=20 SLOWER to reach, which delays the refutation of my own ship. That looks
+self-serving and I am not going to hide it. The defence is that a criterion
+which counts a band drawn around the current price as "price reached the
+desk's level" does not measure the hypothesis at all — and the mitigation is
+that both counts are reported every cycle, so nothing is buried. If Class A
+never accumulates, that is itself the answer, and clause 4 (selection is the
+real constraint) takes over.
+
+**F-WAKE: Class A = 1, Class B = 0** (threshold 20 on Class A).
+
+### Population snapshot (12 live runs)
+
+numeric zones 5 · trigger-only 6 · none/no-outlook 1. Crypto — the only open
+market — carries exactly ONE numeric zone (HYPE, 6.29% away), which is why no
+wake has fired since 01:59Z. The wake cannot act on a `trigger` plan by
+design, and 6 of 8 crypto runs are trigger-only right now.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
