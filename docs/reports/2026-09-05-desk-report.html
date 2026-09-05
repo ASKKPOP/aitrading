@@ -1,0 +1,445 @@
+<title>The Day The Desk Traded</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#F5F6F2; --paper-2:#EDEFE8; --ink:#1A2230; --ink-2:#4A5566; --ink-3:#78808C;
+  --rule:#D9DCD2; --rule-2:#C4C8BC;
+  --accent:#A8651C; --accent-soft:#F0E4D2;
+  --good:#2F6F4E; --good-soft:#DFEBE2;
+  --bad:#A33A32; --bad-soft:#F3E0DD;
+  --warn:#8A6A14; --warn-soft:#F0E8CE;
+  --shadow:rgba(26,34,48,.07);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141820; --paper-2:#1C222C; --ink:#E7E9E3; --ink-2:#AEB6C0; --ink-3:#828B96;
+    --rule:#2A313C; --rule-2:#3A424E;
+    --accent:#D69A4E; --accent-soft:#33291C;
+    --good:#6FC195; --good-soft:#1B2A22;
+    --bad:#E0796D; --bad-soft:#2E1E1C;
+    --warn:#D2B155; --warn-soft:#2B2515;
+    --shadow:rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141820; --paper-2:#1C222C; --ink:#E7E9E3; --ink-2:#AEB6C0; --ink-3:#828B96;
+  --rule:#2A313C; --rule-2:#3A424E;
+  --accent:#D69A4E; --accent-soft:#33291C;
+  --good:#6FC195; --good-soft:#1B2A22;
+  --bad:#E0796D; --bad-soft:#2E1E1C;
+  --warn:#D2B155; --warn-soft:#2B2515;
+  --shadow:rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem}
+.col{max-width:44rem}
+
+h1,h2,h3{font-family:Newsreader,Georgia,serif; font-weight:600; text-wrap:balance; margin:0}
+h1{font-size:clamp(2.1rem,5vw,3rem); line-height:1.1; letter-spacing:-.015em}
+h2{font-size:1.5rem; line-height:1.25; margin-bottom:.35rem}
+h3{font-size:1.075rem; line-height:1.3}
+p{margin:0}
+
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; font-weight:500;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3);
+}
+.mono{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+.dim{color:var(--ink-2)}
+.small{font-size:.875rem}
+
+header{border-bottom:2px solid var(--ink); padding-bottom:1.75rem; margin-bottom:2.5rem}
+.head-top{display:flex; flex-wrap:wrap; gap:.75rem; align-items:baseline; justify-content:space-between; margin-bottom:1.1rem}
+.lede{font-family:Newsreader,Georgia,serif; font-size:1.2rem; line-height:1.45; color:var(--ink-2); margin-top:1rem; max-width:38rem}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.5rem; margin-top:1.4rem}
+.meta div{display:flex; gap:.5rem; align-items:baseline}
+
+section{margin-top:3.25rem}
+.sec-head{display:flex; gap:.9rem; align-items:baseline; border-bottom:1px solid var(--rule); padding-bottom:.6rem; margin-bottom:1.5rem}
+.sec-head .num{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--accent); letter-spacing:.1em; padding-top:.2rem}
+.stack{display:flex; flex-direction:column; gap:1rem}
+.stack-lg{display:flex; flex-direction:column; gap:1.75rem}
+
+/* verdict strip */
+.verdict{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule); margin-top:2rem;
+}
+.vc{background:var(--paper); padding:1.05rem 1.1rem}
+.vc .k{font-family:"IBM Plex Mono",monospace; font-size:.63rem; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3)}
+.vc .v{font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; font-variant-numeric:tabular-nums; margin-top:.3rem; line-height:1}
+.vc .n{font-size:.78rem; color:var(--ink-2); margin-top:.35rem; line-height:1.4}
+.pos{color:var(--good)} .neg{color:var(--bad)} .neu{color:var(--ink)}
+
+.callout{
+  border-left:3px solid var(--accent); background:var(--paper-2);
+  padding:1.05rem 1.2rem; display:flex; flex-direction:column; gap:.6rem;
+}
+.callout.bad{border-left-color:var(--bad)}
+.callout.good{border-left-color:var(--good)}
+
+/* chips */
+.chip{
+  display:inline-flex; align-items:center; gap:.4rem; flex:none;
+  font-family:"IBM Plex Mono",monospace; font-size:.62rem; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase;
+  padding:.24rem .5rem; border:1px solid currentColor; border-radius:2px; white-space:nowrap;
+}
+.chip.live{color:var(--good); background:var(--good-soft)}
+.chip.ref{color:var(--bad); background:var(--bad-soft)}
+.chip.open{color:var(--warn); background:var(--warn-soft)}
+.chip.hold{color:var(--ink-2); background:var(--paper-2)}
+
+/* ship chronology */
+.ship{display:grid; grid-template-columns:5.5rem 1fr; gap:1.1rem; align-items:start}
+.ship .t{font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--ink-3); padding-top:.2rem; border-right:1px solid var(--rule); padding-right:1rem; min-height:1.5rem}
+.ship .body{display:flex; flex-direction:column; gap:.45rem}
+.ship .title-row{display:flex; gap:.6rem; align-items:baseline; flex-wrap:wrap}
+.sha{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--accent)}
+
+table{width:100%; border-collapse:collapse; font-size:.9rem}
+.tbox{overflow-x:auto; border:1px solid var(--rule)}
+th,td{text-align:left; padding:.55rem .8rem; border-bottom:1px solid var(--rule)}
+th{
+  font-family:"IBM Plex Mono",monospace; font-size:.63rem; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:500; background:var(--paper-2);
+}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+
+.open-item{display:grid; grid-template-columns:auto 1fr; gap:.9rem; align-items:start; padding-bottom:1.1rem; border-bottom:1px solid var(--rule)}
+.open-item:last-child{border-bottom:none; padding-bottom:0}
+.open-item .body{display:flex; flex-direction:column; gap:.4rem}
+
+code{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--paper-2); padding:.1em .32em; border-radius:2px}
+pre{
+  font-family:"IBM Plex Mono",monospace; font-size:.8rem; line-height:1.55;
+  background:var(--paper-2); border:1px solid var(--rule); padding:.9rem 1rem;
+  overflow-x:auto; margin:0; font-variant-numeric:tabular-nums;
+}
+footer{margin-top:4rem; padding-top:1.25rem; border-top:1px solid var(--rule)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="head-top">
+    <span class="eyebrow">Sooppiy &middot; engineering record</span>
+    <span class="eyebrow">2026&ndash;09&ndash;05</span>
+  </div>
+  <h1>The Day The Desk Traded</h1>
+  <p class="lede">After twenty days of zero fills, the platform placed 104 orders. The wall was
+  never the risk gates &mdash; it was a review panel converting 453 of 454 entry proposals into
+  &ldquo;hold&rdquo;. Removing it worked. Making it <em>profitable</em> did not follow.</p>
+  <div class="meta small mono">
+    <div><span class="dim">prod</span> <span>94a7e66</span></div>
+    <div><span class="dim">image</span> <span>20260905-farm-refuted-revert</span></div>
+    <div><span class="dim">ships</span> <span>12 code &middot; 27 commits</span></div>
+    <div><span class="dim">as of</span> <span>22:31Z</span></div>
+  </div>
+</header>
+
+<section style="margin-top:0">
+  <div class="sec-head"><span class="num">01</span><h2>The bottom line</h2></div>
+  <div class="col stack">
+    <p>The hold problem is solved. The profit problem is not, and the honest reading is
+    <strong>inconclusive tilting negative</strong> &mdash; not a win.</p>
+  </div>
+
+  <div class="verdict">
+    <div class="vc">
+      <div class="k">Realized</div>
+      <div class="v pos">+$0.87</div>
+      <div class="n">47 closed runs, 40.4% win rate</div>
+    </div>
+    <div class="vc">
+      <div class="k">Unrealized, 7 open</div>
+      <div class="v neg">&minus;$3.70</div>
+      <div class="n">mark-to-market on the live book</div>
+    </div>
+    <div class="vc">
+      <div class="k">Fees paid</div>
+      <div class="v neg">$4.40</div>
+      <div class="n">5&times; realized profit</div>
+    </div>
+    <div class="vc">
+      <div class="k">All-in mark</div>
+      <div class="v neg">&minus;$2.83</div>
+      <div class="n">realized + unrealized</div>
+    </div>
+  </div>
+
+  <div class="callout bad" style="margin-top:1.5rem">
+    <p class="small"><strong>Owner rule 6 applied, and it bites.</strong> Realized is
+    <span class="mono">+$0.8687</span>. Strip the single best trade
+    (<span class="mono">+$1.932</span>) and it becomes <span class="mono neg">&minus;$1.063</span>.
+    <strong>The sign flips, so the result is INCONCLUSIVE</strong> and is not reported as a
+    profitable day. Both accounts are simulator books; the cost is paper, the lesson is not.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">02</span><h2>What changed on the tape</h2></div>
+  <div class="col stack" style="margin-bottom:1.25rem">
+    <p>One number carries the whole day: entry proposals that survived review.</p>
+  </div>
+  <div class="tbox">
+    <table>
+      <thead><tr>
+        <th>Measure</th><th style="text-align:right">Before</th><th style="text-align:right">After</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Entry proposals reaching an order</td><td class="num">1 of 454</td><td class="num">63 buy &middot; 19 sell</td></tr>
+        <tr><td>Decisions that are orders</td><td class="num">&lt;1%</td><td class="num">44%</td></tr>
+        <tr><td>Executed fills</td><td class="num">0 in 20 days</td><td class="num">104</td></tr>
+        <tr><td>Closed round trips</td><td class="num">0</td><td class="num">50</td></tr>
+        <tr><td>Last fill before the fix</td><td class="num" colspan="2">2026&ndash;08&ndash;16</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col stack" style="margin-top:1.25rem">
+    <p class="small dim">Fleet 44 (crypto) sits at 7/8 slots, fleet 43 (us-stock) at 4/8 with the
+    NYSE shut. Agent 60 has not traded &mdash; its market was closed for the whole window.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">03</span><h2>What shipped</h2></div>
+  <div class="col stack" style="margin-bottom:1.5rem">
+    <p>In chronological order, because each ship was a response to what the previous one revealed.
+    Every one passed local CI on all six jobs and four rounds of adversarial review.</p>
+  </div>
+
+  <div class="stack-lg">
+    <div class="ship">
+      <div class="t">06:00Z</div>
+      <div class="body">
+        <div class="title-row">
+          <h3>The panel can no longer veto an entry</h3>
+          <span class="chip live">live</span><span class="sha">f528b69</span>
+        </div>
+        <p>Measured: the escalation panel answered <code>hold</code> to 453 of 454 entry proposals.
+        The desk wanted to trade every cycle; the review killed it. Entries now stand.
+        <strong>First fill 13 minutes later.</strong></p>
+      </div>
+    </div>
+
+    <div class="ship">
+      <div class="t">06:00Z</div>
+      <div class="body">
+        <div class="title-row">
+          <h3>Four guards on the same change</h3>
+          <span class="chip live">live</span><span class="sha">377ff25 &middot; c95efaa &middot; b62e698 &middot; 7c869ef</span>
+        </div>
+        <p>Review found the panel could still cancel an order sideways: adopting its whole
+        bracket wholesale (<strong>16&times; dollar risk</strong>), returning
+        <code>size_frac: 0</code> to zero the trade out, shrinking an <em>exit</em> where
+        &ldquo;smaller&rdquo; inverts, and the same on a short via a verb-only test.</p>
+      </div>
+    </div>
+
+    <div class="ship">
+      <div class="t">07:42Z</div>
+      <div class="body">
+        <div class="title-row">
+          <h3>A negative stop is a direction, not a magnitude</h3>
+          <span class="chip live">live</span><span class="sha">4e4319a</span>
+        </div>
+        <p>The prompt asked for &ldquo;% from entry to your invalidation level&rdquo; and never said
+        <em>positive</em>. For a long the invalidation sits below entry, so the desk wrote
+        <code>-5</code> &mdash; and the rail floored it to <strong>0.30%, 16.7&times; tighter</strong>,
+        then the R:R ceiling dragged a 12% target to 0.9%. Prompt and parser both fixed.
+        A pre-existing bug surfaced with it: the prompt was rendering a literal <code>%%</code>
+        to the model.</p>
+      </div>
+    </div>
+
+    <div class="ship">
+      <div class="t">07:42Z</div>
+      <div class="body">
+        <div class="title-row">
+          <h3>The exit veto restored &mdash; my own registered revert</h3>
+          <span class="chip live">live</span><span class="sha">763dc36 &middot; 2bf54b9 &middot; 87894db</span>
+        </div>
+        <p>Removing the veto on <em>exits</em> cost <span class="mono neg">&minus;$0.69</span> across
+        3 of 3 trades, each on a premise the panel had refuted against the tape. Reverted within
+        the hour. The asymmetry the first design missed: an exit has a checkable factual premise;
+        an entry is a forecast. A routed stop hit is exempt from the veto entirely.</p>
+      </div>
+    </div>
+
+    <div class="ship">
+      <div class="t">11:08Z</div>
+      <div class="body">
+        <div class="title-row">
+          <h3>Ratchet arm scaled to the bracket</h3>
+          <span class="chip ref">refuted &rarr; reverted</span><span class="sha">17d4863 &rarr; 94a7e66</span>
+        </div>
+        <p>Shipped, then killed by its own falsifier two hours later. See below.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">04</span><h2>What was refuted</h2></div>
+  <div class="col stack" style="margin-bottom:1.5rem">
+    <p>Every change carried a pre-registered condition that could kill it. One did.</p>
+  </div>
+
+  <div class="callout bad">
+    <div class="title-row"><h3 style="font-size:1rem">F&ndash;ARM &mdash; refuted in two hours</h3></div>
+    <p class="small">Two outcome agents identified the breakeven ratchet as the loss engine: it arms
+    at a flat 0.160% of notional regardless of the bracket the desk authored, so it banked ~+0.035%
+    while losers ran the full stop. The fix scaled the arm to the target. Then:</p>
+<pre>FIL run 2814, SHORT, $93.73 notional
+  peak unrealized      +$0.31060
+  OLD arm (0.160%)      $0.1500  -&gt; WOULD have armed
+  NEW arm (0.30 x 5%)   $1.4060  -&gt; did NOT arm
+  realized                        -$1.90163</pre>
+    <p class="small">One trade, essentially the entire <span class="mono">&minus;$2.03</span> the window
+    gave up. <strong>Zero ratchet fires in those two hours against eight in the two before</strong> —
+    the higher arm did not make the ratchet fire better, it stopped it firing. Reverted.</p>
+  </div>
+
+  <div class="callout" style="margin-top:1.25rem">
+    <p class="small"><strong>The methodological error, named so it is not repeated.</strong> My
+    counterfactual sampled ratchet fires that had <em>already banked</em> &mdash; a population that
+    structurally cannot contain the failure &ldquo;position never arms and runs to its stop.&rdquo;
+    Adversarial review replayed a window containing <em>losers</em> and predicted this exact outcome
+    before deploy. <strong>A counterfactual validated only on winners is not a counterfactual.</strong>
+    &ldquo;The arm is too low&rdquo; and &ldquo;raising it helps&rdquo; are different claims; only the
+    first had evidence.</p>
+  </div>
+
+  <div style="margin-top:1.5rem" class="tbox">
+    <table>
+      <thead><tr><th>Falsifier</th><th>Verdict</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">F&ndash;ARM</td><td><span class="chip ref">refuted</span></td><td class="small">Reverted; reported failed in its registered words</td></tr>
+        <tr><td class="mono">F&ndash;STOP</td><td><span class="chip live">holding</span></td><td class="small">2 sign recoveries on tape, 0 floored from a negative</td></tr>
+        <tr><td class="mono">F&ndash;EXIT</td><td><span class="chip live">holding</span></td><td class="small">0 genuine exit overrides &mdash; <em>my check was wrong, not the code</em></td></tr>
+        <tr><td class="mono">F&ndash;VETO</td><td><span class="chip live">supported</span></td><td class="small">Orders executed within 13 minutes of the switch</td></tr>
+        <tr><td class="mono">v2 (tiers)</td><td><span class="chip live">passed</span></td><td class="small">16 authored entries; tiers not reverted</td></tr>
+        <tr><td class="mono">F&ndash;WAKE</td><td><span class="chip hold">open</span></td><td class="small">1 wake, 0 entries &mdash; threshold is 20, nowhere near a verdict</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col stack" style="margin-top:1.25rem">
+    <p class="small dim"><strong>Four of my own measurements were wrong today</strong> and each was caught
+    before it drove a decision: a vacuous 1-minute window reported as &ldquo;holding&rdquo;; a
+    <code>T</code>-vs-space timestamp comparison that silently matched every row of the day; an
+    <code>entry</code> field mistaken for the live mark, which made 13.8% of decisions look in-zone;
+    and an F&ndash;EXIT check that counted any proposed sell as an exit without checking the position sign.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">05</span><h2>What is left</h2></div>
+  <div class="col stack" style="margin-bottom:1.5rem">
+    <p>Ordered by what the evidence says costs money, not by how easy it is to fix.</p>
+  </div>
+
+  <div class="stack-lg">
+    <div class="open-item">
+      <span class="chip open">P&amp;L</span>
+      <div class="body">
+        <h3>The ratchet is still scale-blind</h3>
+        <p class="small">The defect is real and unfixed: a flat 0.160% arm that ignores the authored
+        bracket, banking fee-scale gains against stop-scale losses. My fix for it was refuted.
+        <strong>Re-enable only with a replay on a window containing losers.</strong> The code path and
+        its tests remain; <code>RATCHET_ARM_TARGET_FRAC</code> is the knob.</p>
+      </div>
+    </div>
+
+    <div class="open-item">
+      <span class="chip open">P&amp;L</span>
+      <div class="body">
+        <h3>Fees exceed profit by 5&times;</h3>
+        <p class="small">$4.40 paid against $0.87 realized. The median trade moves about 1.45&times; the
+        fee wall, so the edge is roughly nothing. Three re-entries within minutes of an exit all lost.
+        A trailing-lock close also <em>stops the run</em>, so every trade burns a slot and forces a
+        rebuild &mdash; 20 runs rebuilt in 100 minutes at one point.</p>
+      </div>
+    </div>
+
+    <div class="open-item">
+      <span class="chip open">quality</span>
+      <div class="body">
+        <h3>The desk trades against its own written plan</h3>
+        <p class="small">12 of 13 early fills were taken outside or against the entry condition the desk
+        itself had just published; several cited a &ldquo;listing&rdquo; or &ldquo;upgrade&rdquo; appearing
+        in no analyst brief. The <code>plan_adherence</code> field self-reported
+        &ldquo;followed&rdquo; and was wrong every time it did.</p>
+      </div>
+    </div>
+
+    <div class="open-item">
+      <span class="chip open">safety</span>
+      <div class="body">
+        <h3>A rule fallback can cancel a stop fail-safe</h3>
+        <p class="small">Verified: a run dispatched <em>by</em> a stop hit answered with
+        <code>decided_by: rule</code> and <code>&ldquo;decision json unparseable&rdquo;</code>, and
+        <code>stop_router.clear</code> has no <code>decided_by</code> guard &mdash; so a non-decision
+        consumed the ruling and cancelled the 180-second fail-safe. Third door into a family that has
+        already cost real money twice. <strong>Not shipped; fix recorded.</strong></p>
+      </div>
+    </div>
+
+    <div class="open-item">
+      <span class="chip open">safety</span>
+      <div class="body">
+        <h3>A mixed sign-and-unit slip still floors the stop</h3>
+        <p class="small">The unit-slip recovery requires <em>every</em> percentage field to be
+        sub-floor. One live run authored <code>stop_pct 0.03</code> with <code>target_pct -0.05</code>,
+        failed that test, and got 0.30% instead of 3.0% &mdash; <strong>10&times; tighter</strong> than
+        authored. Predicted by review before deploy, then observed live.</p>
+      </div>
+    </div>
+
+    <div class="open-item">
+      <span class="chip hold">watch</span>
+      <div class="body">
+        <h3>The legacy trail carries the same blindness</h3>
+        <p class="small">It activates at a flat 0.400% of notional. Whatever replaces the ratchet fix
+        must account for it, or the binding constraint simply moves rather than disappears.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">06</span><h2>How this was worked</h2></div>
+  <div class="col stack">
+    <p>Every change carried a falsifier registered <em>before</em> deploy, stating what result would
+    kill it. Every ship went through adversarial review plus an independent verifier, and every test
+    was mutation-checked &mdash; a pin that survives its own mutation is not a pin.</p>
+    <p>That process earned its keep repeatedly. Review caught a 16&times; sizing hole, a
+    <code>size_frac: 0</code> back-door veto that would have made a ship look successful while trading
+    nothing, an exit-sizing inversion and its mirror on the short side, and a re-armed fail-safe hazard
+    &mdash; all before production. Two mutations survived a first pass and were closed.</p>
+    <p>The recurring failure worth carrying forward: <strong>tests that look behavioural and are not</strong>
+    &mdash; source-text pins, re-implementation pins, and unit tests that never exercise the wiring.
+    Five instances in two days. Dropping one column from a SQL query would have made an entire fix inert
+    in production with no test failing.</p>
+  </div>
+</section>
+
+<footer>
+  <p class="small dim">Simulator accounts, $10,000 each. All figures from ledger replay
+  (<code>trading_runs.realized_pnl_usd</code>) &mdash; the raw <code>signals.pnl</code> column nets only
+  the exit-side fee and reported a losing trade as a winner. Local CI only: no clean-room runner, no
+  hosted audit trail, no checks requiring provider secrets.</p>
+</footer>
+
+</div>
