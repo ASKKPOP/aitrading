@@ -8696,11 +8696,13 @@ def run_cycle(run_id: int) -> dict:
             pass
         return result
     finally:
-        if ctx_token is not None:
-            from llm_client import reset_llm_context
-            reset_llm_context(ctx_token)
         if run is not None:
-            _release(run_id)
+            # FIRST in the finally, deliberately. Everything below it here
+            # (reset_llm_context, _release) can raise, and a raise inside a
+            # finally abandons the rest of the block — which would skip the
+            # clear and put the run straight back into the spin this fix
+            # exists to end. Nothing may sit above it.
+            #
             # Entry-zone wake, consumed HERE rather than at each exit.
             #
             # A cycle ran for this run, so the wake is resolved whichever way
@@ -8729,6 +8731,11 @@ def run_cycle(run_id: int) -> dict:
                 entry_router.clear(run_id)
             except Exception:  # noqa: BLE001
                 pass
+        if ctx_token is not None:
+            from llm_client import reset_llm_context
+            reset_llm_context(ctx_token)
+        if run is not None:
+            _release(run_id)
 
 
 def _infeasible_limit() -> int:

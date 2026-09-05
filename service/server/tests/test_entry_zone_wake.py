@@ -494,6 +494,27 @@ class SkippedCycleClearsTheWakeTests(DispatchTests):
             run_engine.run_cycle(rid)
         self.assertIsNone(entry_router.pending(rid))
 
+    def test_a_throw_in_cleanup_still_consumes_the_wake(self):
+        """Ordering pin. A raise inside `finally` abandons the rest of the
+        block, so anything placed above the clear can skip it and put the
+        run back into the spin. `_release` runs after the clear for exactly
+        this reason; if someone reorders that block, this fails."""
+        rid = self._mk_run({"interval_minutes": 60}, self._fresh())
+        entry_router.note_zone_hit(rid, "ETHUSDT", 4.0, 6.0, 5.0)
+        def boom(*a, **k):
+            raise RuntimeError("release exploded")
+        with patch.object(run_engine, "_release", boom), \
+             patch.object(run_engine, "_pre_gate_skip",
+                          lambda run, cfg: "pre: market closed"):
+            try:
+                run_engine.run_cycle(rid)
+            except RuntimeError:
+                pass                      # the cleanup throw itself is not
+                                          # what this test is about
+        self.assertIsNone(entry_router.pending(rid),
+                          "a throw during cleanup skipped the clear — "
+                          "the run is back in the spin")
+
     def test_a_failed_claim_PRESERVES_the_wake(self):
         """The one case that must NOT clear: no cycle ran, so the wake has
         to survive for whoever does claim it. This is what the
