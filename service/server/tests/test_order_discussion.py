@@ -679,3 +679,64 @@ class RoutedStopHitExemption(unittest.TestCase):
              patch("analysis_agents.run_analysis", return_value=panel):
             out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
         self.assertEqual(out["decision"]["action"], "sell")
+
+
+class StopHitSubstitutionRefused(unittest.TestCase):
+    """On a routed stop hit the desk's ruling stands against a panel
+    SUBSTITUTION too, not only against a veto.
+
+    Desk `sell` -> panel `buy` would ADD to a position that just breached its
+    own stop, and `stop_router.clear` would then cancel the fail-safe on it.
+    Substituting an order is normally not vetoing one and is honoured — but
+    on a stop hit the desk is ruling on its own breached level under a
+    fail-safe clock, the one population where this codebase has already paid
+    2x for letting anything but the desk's ruling govern (SOL 1274)."""
+
+    def setUp(self):
+        self.events = []
+        self.emit = patch.object(
+            run_engine, "emit_telemetry_event",
+            side_effect=lambda rid, et, p: self.events.append((et, p)))
+        self.emit.start()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=4.0)
+        self.held.start()
+
+    def tearDown(self):
+        self.emit.stop()
+        self.held.stop()
+
+    def _drive(self, panel_action, stop_pending=True, enabled=True):
+        import stop_router
+        panel = {"decision": {"action": panel_action, "confidence": 0.6},
+                 "analysts": {}}
+        with patch.object(stop_router, "enabled", lambda: enabled), \
+             patch.object(stop_router, "pending",
+                          lambda rid: {"r": 1} if stop_pending else None), \
+             patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        return out["decision"]
+
+    def test_a_panel_buy_cannot_replace_the_desks_stop_exit(self):
+        d = self._drive("buy")
+        self.assertEqual(d["action"], "sell",
+                         "the panel added to a position that had just "
+                         "breached its own stop")
+        _, payload = self.events[0]
+        self.assertEqual(payload["panel_substitution_refused"], "buy")
+
+    def test_an_AGREEING_panel_is_untouched(self):
+        self.assertEqual(self._drive("sell")["action"], "sell")
+
+    def test_substitution_is_still_honoured_WITHOUT_a_stop_hit(self):
+        """Only the stop-hit population is protected; ordinary substitution
+        remains the panel's prerogative."""
+        d = self._drive("buy", stop_pending=False)
+        self.assertEqual(d["action"], "buy")
+
+    def test_a_DISABLED_router_does_not_grant_the_exemption(self):
+        """A stale _PENDING left over from when the router was enabled must
+        not exempt anything once STOP_ROUTER is off (review survivor)."""
+        d = self._drive("hold", stop_pending=True, enabled=False)
+        self.assertEqual(d["action"], "hold",
+                         "a disabled router still granted the exemption")

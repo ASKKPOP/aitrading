@@ -7535,6 +7535,19 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
                 if tightened is not None:
                     kept["order"] = tightened
                 final = kept
+            # A panel SUBSTITUTION on a routed stop hit is as dangerous as a
+            # veto there: desk `sell` -> panel `buy` would ADD to a position
+            # that just breached its own stop, and `stop_router.clear` would
+            # then cancel the fail-safe on it. On a stop hit the desk is
+            # ruling on its own breached level under a fail-safe clock —
+            # the one population where this codebase has already paid 2x for
+            # letting anything but the desk's ruling govern (SOL 1274).
+            if _stop_hit and not _panel_order_veto_enabled():
+                if str(final.get("action") or "").lower() != str(
+                        action or "").lower():
+                    payload["panel_substitution_refused"] = str(
+                        final.get("action"))
+                    final = dict(proposal)
             final["escalated_from"] = payload["proposed"]
             payload["final"] = {"action": final.get("action"),
                                 "confidence": final.get("confidence")}

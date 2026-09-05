@@ -539,9 +539,38 @@ class FullPathBracketPrompt(unittest.TestCase):
     text is the artifact."""
 
     def _src(self):
-        import inspect
-        import analysis_agents
-        return inspect.getsource(analysis_agents._trader_risk_decision)
+        """RENDERS the prompt rather than reading the source. A source pin
+        cannot catch a formatting seam, which is exactly the class the '%%'
+        defect belonged to (adversarial review 2026-09-05 demonstrated this
+        seam)."""
+        from unittest.mock import patch
+        import analysis_agents as aa
+        cap = []
+
+        def fake(prompt, **kw):
+            cap.append(prompt)
+            return '{"action":"hold","confidence":0.5,"report":"r"}'
+
+        # Defaulting dict: the panel reads a brief set that changes over
+        # time, and a fixed stub breaks whenever an analyst is added. The
+        # point of this test is the BRACKET wording, not the brief roster.
+        from collections import defaultdict
+        briefs = defaultdict(lambda: {"summary": "s", "data": {}})
+        with patch.object(aa, "generate_text", side_effect=fake), \
+             patch.object(aa, "llm_configured", lambda: True):
+            try:
+                aa._trader_risk_decision("ETHUSDT", "crypto", briefs,
+                                         briefs["technical"], briefs["news"],
+                                         "en")
+            except Exception:
+                pass
+        prompt = next((p for p in cap if "stop_pct" in p), "")
+        # Guard: an empty capture would make every assertion below pass
+        # vacuously — which it did on the first attempt, because
+        # llm_configured() returns False in the test env and the function
+        # returns before building the prompt.
+        assert prompt, "no prompt captured — the render seam is broken"
+        return prompt
 
     def test_no_literal_double_percent_reaches_the_panel(self):
         """This prompt is concatenated, never %-formatted, so '%%' was read
@@ -554,6 +583,10 @@ class FullPathBracketPrompt(unittest.TestCase):
         src = self._src()
         self.assertIn("NEVER negative", src)
         self.assertIn("is 5, not -5", src)
+        # The marker on the field this whole ship is about. Review found the
+        # pins asserted only ADJACENT substrings, so removing POSITIVE from
+        # stop_pct itself passed 160 tests.
+        self.assertIn('"stop_pct":number (POSITIVE', src)
 
     def test_target_and_trail_are_positive_too(self):
         src = self._src()
