@@ -1105,6 +1105,57 @@ factual premise the panel can check against the tape, while an entry is a
 forecast it cannot. That distinction was not in the original reasoning and it
 should have been.
 
+## 07:00Z — the revert condition fired, and I honoured it
+
+**Every overridden EXIT lost, 3 of 3, each on a premise the panel had
+refuted with the tape in hand:**
+
+| exit | realized | the panel's refutation |
+|---|---|---|
+| LTC 2753 | **-0.2136** | "LTC is technically stacked above MA20/50/200 with RSI 65.7" |
+| ASTER 2741 | **-0.2742** | "the tape contradicts it: price 0.7298 holds cleanly above MA5/MA20/MA60/MA200" |
+| FIL 2742 | **-0.2009** | "closing the fresh long at a **-0.17% wiggle** — noise-sized against this symbol's ~3.5% ordinary day" |
+
+**-$0.6887.** I registered this exact condition at 06:00Z ("if a SECOND
+override loses on a premise the panel refuted on the tape, the exit-side
+override goes back") and it was met three times in fifty minutes.
+
+**Shipped (763dc367): the override is now ENTRY-side only.**
+
+The asymmetry the original design missed, stated so it is not missed again:
+an **EXIT** carries a concrete factual premise — "support broke" — that the
+panel can check against the tape, so its veto carries information. An
+**ENTRY** is a forecast it cannot check, and there the panel was wrong 434
+times out of 435 by the only test that matters: zero trades in 19 days.
+Remove the veto where it blocks; keep it where it catches false premises.
+
+This partially reverses advice the adversarial reviewer gave and I accepted
+("a panel able to veto an exit could trap a losing book"). The reasoning was
+sound; the tape refuted it in under an hour.
+
+### Verified before shipping: the restored veto CANNOT trap a losing book
+
+`_order_discussion` has exactly ONE call site, inside `run_cycle`'s decision
+path. Every protective exit fires from `_evaluate_stop` on the ~30s control
+pass and never meets the panel: `stop_event:*`, `at_time`,
+**`max_loss_usd`**, `liq_cushion`, `synthetic_liquidation`. A vetoed
+discretionary exit delays the desk's own bail; it cannot stop a rail.
+
+### The one real interaction between the two ships, stated before deploy
+
+Ship 1 restores wide stops (a 5% authored stop stops being floored to
+0.30%). Ship 2 restores the panel's veto over discretionary exits. Together
+a position the desk wants out of can now ride to a **5% stop instead of
+0.30%** — a materially larger per-trade loss ceiling than anything seen
+today.
+
+I am shipping both anyway, for reasons that should be checkable later:
+the 5% stop is the one the DESK authored and the 0.30% was never authored by
+anyone; `max_loss_usd` still caps the position in dollars regardless of the
+percentage; and the evidence says the desk's early bails were noise-driven
+and lost money 3 of 3. If per-trade losses grow beyond the loss budget's
+intent, ship 1 is the suspect, not ship 2.
+
 ## Still open
 
 - **9 of 15 zones were never touched at all in 24h.** No wake mechanism can
