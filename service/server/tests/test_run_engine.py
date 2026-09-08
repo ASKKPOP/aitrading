@@ -1624,6 +1624,7 @@ class ArmExecutorTests(unittest.TestCase):
         run_engine._fire_armed_order(
             self._row(run_id), {"mark_age_ok": True,
                                 "position": {"quantity": held,
+                                             "entry_price": 100.0,
                                              "current_price": 45.0}}, out)
         self.assertEqual(out.get("armed_exits_fired"), 1)
         self.assertAlmostEqual(self._pos_qty(run_id), 0.0, places=6)
@@ -1681,6 +1682,44 @@ class ArmExecutorTests(unittest.TestCase):
             self._row(run_id), {"mark_age_ok": True,
                                 "position": {"quantity": held,
                                              "current_price": 100.0}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), 1)
+
+    def test_a_stop_rearmed_near_the_mark_after_a_crash_STILL_fires(self):
+        # Verification round 2: the round-1 failure class surviving one step
+        # out. A book down 92% (entry 100, mark 8) whose desk re-arms a
+        # sensible stop just under the mark (level 7) is 14.3x from ENTRY, so
+        # an entry-ONLY test refuses it and deletes it. A decimal slip is far
+        # from BOTH entry and mark; a legitimate near-mark arm is not.
+        # Mark 6.5 is BELOW the level, i.e. the stop has actually been
+        # crossed — an uncrossed stop correctly does nothing and would make
+        # this test vacuous.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_below", "then": "close", "level": 7.0}, 10)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "entry_price": 100.0,
+                                             "current_price": 6.5}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), 1)
+        self.assertAlmostEqual(self._pos_qty(run_id), 0.0, places=6)
+
+    def test_the_10x_threshold_itself_is_pinned(self):
+        # Nothing in this class detected max_ratio moving 10 -> 1.5, and that
+        # knob IS the guard's whole risk surface — mis-setting it is exactly
+        # what made round 1 delete live stops. Both ratios here sit between
+        # 1.5 and 10 (level 20 vs entry 100 = 5.0x, vs mark 5 = 4.0x), so this
+        # fires at the shipped threshold and is refused at any tighter one.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_below", "then": "close", "level": 20.0}, 11)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "entry_price": 100.0,
+                                             "current_price": 5.0}}, out)
         self.assertEqual(out.get("armed_exits_fired"), 1)
 
     def test_the_executor_is_WIRED_into_the_control_pass(self):

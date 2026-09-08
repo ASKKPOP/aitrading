@@ -826,6 +826,18 @@ class ReentryCooldownFloorTests(unittest.TestCase):
             run_engine._reentry_cooldown_minutes(
                 {"leverage": 1.0, "interval_minutes": 30}), 0.0)
 
+    def test_a_finite_but_absurd_floor_is_capped(self):
+        # 1e308 is FINITE, so isfinite waves it through and
+        # timedelta(minutes=1e308) still raises OverflowError downstream.
+        # Only the cap covers this one.
+        os.environ["RUN_REENTRY_BASE_MIN"] = "1e308"
+        self.assertEqual(
+            run_engine._reentry_cooldown_minutes(
+                {"leverage": 1.0, "interval_minutes": 30}), 7 * 24 * 60.0)
+        self.assertIsNotNone(run_engine._reentry_cooldown_reason(
+            "2026-09-08T12:00:00", {"leverage": 1.0, "interval_minutes": 30},
+            datetime(2026, 9, 8, 12, 5, tzinfo=timezone.utc)))
+
     def test_a_non_finite_floor_cannot_reach_timedelta(self):
         # `inf` parses as a valid float and slips past `except ValueError`;
         # timedelta(minutes=inf) then raises OverflowError in

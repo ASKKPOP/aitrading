@@ -286,9 +286,15 @@ def _reentry_cooldown_minutes(cfg: dict) -> float:
     # OverflowError inside _reentry_cooldown_reason, which has no guard — every
     # flat run would then error on every cycle. nan is equally hostile: it
     # poisons the max() below. Both collapse to "no floor".
-    if not math.isfinite(base) or base <= 0:
+    # inf and nan must never reach timedelta(minutes=…) in
+    # _reentry_cooldown_reason, which has no guard — every flat run would then
+    # error on every cycle. 1e308 is FINITE and slips past isfinite, so it
+    # needs the cap as well; a week is already absurd for a re-entry cooldown
+    # and anything past it is a typo. A negative needs neither: max() below
+    # already floors at lev_component, which is >= 0 by construction.
+    if not math.isfinite(base):
         base = 0.0
-    return max(lev_component, base)
+    return max(lev_component, min(base, 7 * 24 * 60.0))
 
 
 def _reentry_cooldown_reason(last_close_iso: Optional[str], cfg: dict,
@@ -2070,13 +2076,25 @@ def _fire_armed_order(run: dict, pnl: dict, out: dict) -> None:
     # is scale only, at the helper's loose 10x. Clear the arm so the desk
     # re-authors next cycle; leaving it would re-fire on every tick, because a
     # slipped level is permanently true.
+    #
+    # Implausible against ENTRY **and** MARK, never just one. Verification
+    # round 2 found the round-1 failure class surviving at a further extreme:
+    # a position down 92% (entry 100, mark 8) whose desk re-arms a sensible
+    # stop just under the mark (level 7) is 14.3x from ENTRY, so an
+    # entry-only test refuses it and deletes it — the same "guard against a
+    # crash" bug one step out. A decimal slip is far from BOTH (run 2880:
+    # 975x from entry 7.1157, 1001x from mark 6.9296); a legitimate near-mark
+    # arm on a crashed book is close to the mark. Requiring both is strictly
+    # narrower and closes the class.
     try:
         _arm_ref = float(pos.get("entry_price") or 0)
     except (TypeError, ValueError):
         _arm_ref = 0.0
     if _arm_ref > 0 and isinstance(arm, dict) and \
             order_intent.arm_level_implausible(arm.get("level"),
-                                               entry=_arm_ref):
+                                               entry=_arm_ref) and \
+            order_intent.arm_level_implausible(arm.get("level"),
+                                               entry=mark):
         emit_telemetry_event(run["id"], "armed_exit_rejected", {
             "armed_seq": armed_seq, "reason": "level_implausible",
             "if": arm.get("if"), "then": arm.get("then"),
