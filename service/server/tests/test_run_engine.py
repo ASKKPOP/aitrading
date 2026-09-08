@@ -1581,12 +1581,15 @@ class ArmExecutorTests(unittest.TestCase):
         self.assertAlmostEqual(payload["slippage_pct"], -50.0, places=2)
 
     def test_a_decimal_slipped_level_is_refused_and_the_arm_is_cleared(self):
-        # Run 2880 (2026-09-06, live): the desk armed `price_below 6938.0`
-        # on a $6.93 coin — a 1000x decimal slip. `6.9296 < 6938` is
-        # trivially true, so the whole book was dumped at market for
-        # -$2.451 with a journalled -99.9% slippage. `arm_level_implausible`
-        # was written for exactly this (run 1297, ~1000x out) and had NO
-        # callers. This pins the wiring.
+        # Run 2880 (2026-09-06, live, UNIUSDT): the desk armed
+        # `price_below 6938.0` on a $6.93 coin — 1001x out. `6.9296 < 6938` is
+        # trivially true, so the whole book was dumped at market with a
+        # journalled -99.9% slippage. `arm_level_implausible` was written for
+        # this class of failure and had NO callers. This pins the wiring.
+        # Cost of the defect at the moment it fired: ~$0.04 (the exit fee) —
+        # the -$2.45 often quoted was pre-existing unrealised loss. What the
+        # guard prevents is the unauthorised dump, which is only cheap here
+        # because the book was already under water.
         run_id, held = self._run_with_position()
         run_engine._store_armed_order(
             run_id, {"if": "price_below", "then": "close", "level": 100000.0}, 5)

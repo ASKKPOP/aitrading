@@ -267,10 +267,13 @@ def _reentry_cooldown_minutes(cfg: dict) -> float:
     except ValueError:
         mult = 1.0
     lev_component = interval * (lev - 1.0) * max(0.0, mult)  # 3×/30m → 60m
-    # `lev - 1.0` is EXACTLY ZERO at 1x, and the whole live fleet runs at 1x
-    # (measured 2026-09-08: leverage=1.0000 on every open position). So
-    # RUN_REENTRY_COOLDOWN=true has been an enabled control that does nothing
-    # for every position it governs — D-REENTRY-1X, pre-registered 08-30.
+    # `lev - 1.0` is EXACTLY ZERO at 1x, and the fleet runs at 1x today
+    # (verified 2026-09-08: leverage=1.0000 on all 7 open positions and all 10
+    # running runs). So RUN_REENTRY_COOLDOWN=true is an enabled control that
+    # does nothing for anything it currently governs — D-REENTRY-1X,
+    # pre-registered 08-30. DORMANT, not dead: 764 runs at 2x, 292 at 3x, 101
+    # at 5x and 6 at 10x exist historically, the most recent created
+    # 2026-08-31, and the leverage component wakes up for any of them.
     # The floor makes it settable. The DEFAULT IS 0 on purpose: cutting churn
     # also cuts the ratchet, which is the only net-positive exit path
     # (+$37.95 over 243 closes), so the value is an experiment, not a guess.
@@ -2025,11 +2028,28 @@ def _fire_armed_order(run: dict, pnl: dict, out: dict) -> None:
     if not pnl.get("mark_age_ok", True) or mark is None:
         return                                       # never act on a stale mark
     # A level an order of magnitude off the position's OWN ENTRY is a DECIMAL
-    # SLIP, not a plan. Run 2880 (2026-09-06, live) armed `price_below 6938.0`
-    # on a $6.93 coin: `6.9296 < 6938` is trivially true, so the whole book was
-    # dumped at market for -$2.451 while the emit below dutifully journalled
-    # -99.9% slippage. `arm_level_implausible` was written for this exact
-    # failure (run 1297, ~1000x out) and shipped with NO CALLERS.
+    # SLIP, not a plan. Run 2880 (2026-09-06, live, UNIUSDT) armed
+    # `price_below 6938.0` on a $6.93 coin — 1001x out: `6.9296 < 6938` is
+    # trivially true, so the whole book was dumped at market while the emit
+    # below dutifully journalled -99.9% slippage and fired anyway.
+    # `arm_level_implausible` was written for this class of failure and
+    # shipped with NO CALLERS (the run 1297 case in its docstring is recorded
+    # in docs/reports/2026-08-17-automation-monitoring.md, not re-verified on
+    # live telemetry here).
+    #
+    # SIZE IT HONESTLY. Independent verification corrected my first figure by
+    # ~60x. The equity tape either side of the fire reads
+    # 07:31:15Z total -2.492811 / unrealized -2.450645, then
+    # 07:32:18Z total -2.533874 / unrealized 0. The -$2.45 was ALREADY sitting
+    # in the position; firing moved equity by -$0.041063, which is the exit fee
+    # to the cent. So the measured cost of the defect AT THE MOMENT IT FIRED is
+    # ~$0.04, not $2.45, and this guard recovers that, not the loss. What it
+    # actually prevents is an unauthorised full-book market dump on a slipped
+    # level — harmless here only because the book was already under water. On a
+    # position in profit the same dump destroys real gains. The counterfactual
+    # is genuinely unknowable: the run went flat and all 111 following equity
+    # samples read unrealized 0, so there is no mark path to replay. Do not let
+    # anyone attach a number to it.
     #
     # ENTRY, never the mark. Adversarial review caught the first version of
     # this using `entry=mark`: a legitimate -10% stop (entry 100, level 90) is
