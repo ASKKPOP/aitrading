@@ -1580,6 +1580,50 @@ class ArmExecutorTests(unittest.TestCase):
         self.assertTrue(payload["executed"])
         self.assertAlmostEqual(payload["slippage_pct"], -50.0, places=2)
 
+    def test_a_decimal_slipped_level_is_refused_and_the_arm_is_cleared(self):
+        # Run 2880 (2026-09-06, live): the desk armed `price_below 6938.0`
+        # on a $6.93 coin — a 1000x decimal slip. `6.9296 < 6938` is
+        # trivially true, so the whole book was dumped at market for
+        # -$2.451 with a journalled -99.9% slippage. `arm_level_implausible`
+        # was written for exactly this (run 1297, ~1000x out) and had NO
+        # callers. This pins the wiring.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_below", "then": "close", "level": 100000.0}, 5)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "current_price": 100.0}}, out)
+        self.assertIsNone(out.get("armed_exits_fired"))
+        self.assertAlmostEqual(self._pos_qty(run_id), held, places=6)
+        # cleared, so the desk re-authors instead of re-firing every tick
+        self.assertIsNone(self._row(run_id)["armed_order_json"])
+        evs = self.client.get(
+            f"/api/runs/{run_id}/events?limit=500",
+            headers={"Authorization": f"Bearer {self.token}"}).json()["events"]
+        self.assertEqual([e for e in evs if e["event_type"] == "armed_exit"], [])
+        rej = [e for e in evs if e["event_type"] == "armed_exit_rejected"]
+        self.assertEqual(len(rej), 1)
+        payload = json.loads(rej[0]["payload"]) \
+            if isinstance(rej[0]["payload"], str) else rej[0]["payload"]
+        self.assertEqual(payload["reason"], "level_implausible")
+
+    def test_a_real_gap_still_fires_the_veto_is_scale_only(self):
+        # The guard above must NOT become a slippage veto. ARM_THEN is
+        # exits-only and an arm may always shed risk; a 2x gap is a market
+        # move, not a decimal slip, and must still execute.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_below", "then": "close", "level": 90.0}, 6)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "current_price": 45.0}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), 1)
+        self.assertAlmostEqual(self._pos_qty(run_id), 0.0, places=6)
+
     def test_the_executor_is_WIRED_into_the_control_pass(self):
         # An executor nothing calls is the exact bug this feature fixes.
         import inspect

@@ -767,3 +767,56 @@ class PsychShockPresenceTests(unittest.TestCase):
         window = src[idx:idx + 400]
         self.assertIn("and _shock_now", window)
         self.assertIn("not _shock_now", window)
+
+
+class ReentryCooldownFloorTests(unittest.TestCase):
+    """`interval x (leverage - 1.0)` is EXACTLY ZERO at leverage 1.0, and the
+    entire live fleet runs at 1.0 — so RUN_REENTRY_COOLDOWN=true has been a
+    no-op control for every position it governs (measured 2026-09-08:
+    leverage=1.0000 on all open positions). D-REENTRY-1X, pre-registered
+    2026-08-30. The floor makes the control settable; its VALUE is a separate
+    experiment and the default deliberately preserves today's behaviour."""
+
+    def setUp(self):
+        for k in ("RUN_REENTRY_BASE_MIN", "RUN_REENTRY_LEV_MULT"):
+            os.environ.pop(k, None)
+
+    tearDown = setUp
+
+    def test_leverage_one_is_zero_without_the_floor_the_defect(self):
+        self.assertEqual(
+            run_engine._reentry_cooldown_minutes(
+                {"leverage": 1.0, "interval_minutes": 30}), 0.0)
+
+    def test_the_floor_makes_the_control_real_at_leverage_one(self):
+        os.environ["RUN_REENTRY_BASE_MIN"] = "45"
+        self.assertEqual(
+            run_engine._reentry_cooldown_minutes(
+                {"leverage": 1.0, "interval_minutes": 30}), 45.0)
+
+    def test_the_floor_never_shortens_an_existing_leverage_cooldown(self):
+        os.environ["RUN_REENTRY_BASE_MIN"] = "10"
+        # 3x on a 30m interval is 60m and must survive a 10m floor
+        self.assertEqual(
+            run_engine._reentry_cooldown_minutes(
+                {"leverage": 3.0, "interval_minutes": 30}), 60.0)
+
+    def test_default_is_behaviour_neutral(self):
+        # Shipping the knob must not itself change live behaviour — the
+        # F-ARM revert (2026-09-05) is the precedent: a plausible improvement
+        # deployed without its counterfactual was refuted within two hours.
+        self.assertEqual(
+            run_engine._reentry_cooldown_minutes(
+                {"leverage": 1.0, "interval_minutes": 60}), 0.0)
+
+    def test_a_garbage_floor_does_not_break_the_control(self):
+        os.environ["RUN_REENTRY_BASE_MIN"] = "not-a-number"
+        self.assertEqual(
+            run_engine._reentry_cooldown_minutes(
+                {"leverage": 1.0, "interval_minutes": 30}), 0.0)
+
+    def test_a_negative_floor_cannot_produce_a_negative_cooldown(self):
+        os.environ["RUN_REENTRY_BASE_MIN"] = "-30"
+        self.assertEqual(
+            run_engine._reentry_cooldown_minutes(
+                {"leverage": 1.0, "interval_minutes": 30}), 0.0)

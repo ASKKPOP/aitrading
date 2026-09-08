@@ -266,7 +266,20 @@ def _reentry_cooldown_minutes(cfg: dict) -> float:
         mult = float(os.getenv("RUN_REENTRY_LEV_MULT", "1.0") or 1.0)
     except ValueError:
         mult = 1.0
-    return interval * (lev - 1.0) * max(0.0, mult)   # 1× → 0; 3×/30m → 60m
+    lev_component = interval * (lev - 1.0) * max(0.0, mult)  # 3×/30m → 60m
+    # `lev - 1.0` is EXACTLY ZERO at 1x, and the whole live fleet runs at 1x
+    # (measured 2026-09-08: leverage=1.0000 on every open position). So
+    # RUN_REENTRY_COOLDOWN=true has been an enabled control that does nothing
+    # for every position it governs — D-REENTRY-1X, pre-registered 08-30.
+    # The floor makes it settable. The DEFAULT IS 0 on purpose: cutting churn
+    # also cuts the ratchet, which is the only net-positive exit path
+    # (+$37.95 over 243 closes), so the value is an experiment, not a guess.
+    # F-ARM (2026-09-05) is the precedent for shipping the guess instead.
+    try:
+        base = float(os.getenv("RUN_REENTRY_BASE_MIN", "0") or 0)
+    except ValueError:
+        base = 0.0
+    return max(lev_component, max(0.0, base))
 
 
 def _reentry_cooldown_reason(last_close_iso: Optional[str], cfg: dict,
@@ -2006,6 +2019,25 @@ def _fire_armed_order(run: dict, pnl: dict, out: dict) -> None:
     if not pnl.get("mark_age_ok", True) or mark is None:
         return                                       # never act on a stale mark
     if not order_intent.arm_fires(arm, mark=mark):
+        return
+    # A level an order of magnitude off the live price is a DECIMAL SLIP, not
+    # a plan. Run 2880 (2026-09-06, live) armed `price_below 6938.0` on a
+    # $6.93 coin: `6.9296 < 6938` is trivially true, so the whole book was
+    # dumped at market for -$2.451 while the emit below dutifully journalled
+    # -99.9% slippage. `arm_level_implausible` was written for this exact
+    # failure (run 1297, ~1000x out) and shipped with NO CALLERS.
+    #
+    # This is deliberately NOT a slippage veto — the module's doctrine that an
+    # arm may always shed risk stands, and a real 2x gap still fires. The test
+    # is scale only, at the helper's loose 10x. Clear the arm so the desk
+    # re-authors next cycle; leaving it would re-fire on every tick, because a
+    # slipped level is permanently true.
+    if order_intent.arm_level_implausible(arm.get("level"), entry=mark):
+        emit_telemetry_event(run["id"], "armed_exit_rejected", {
+            "armed_seq": armed_seq, "reason": "level_implausible",
+            "if": arm.get("if"), "then": arm.get("then"),
+            "level": arm.get("level"), "mark": mark})
+        _store_armed_order(run["id"], None, 0)
         return
 
     frac = order_intent.arm_exit_fraction(arm)
