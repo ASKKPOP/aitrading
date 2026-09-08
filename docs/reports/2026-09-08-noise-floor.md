@@ -309,3 +309,69 @@ because the panel dissents on ALL 202 clean entries and is overridden every
 time — a risk check that objects to everything carries no information.
 
 The open question is entry SELECTION, and nothing in four days answers it.
+
+---
+
+# H-CONVICTION — INCONCLUSIVE (12:20Z). Do not re-run at this n.
+
+Pre-registered: "`stop_event:conviction_collapse` destroys value by flattening
+into reversion." It fires at roughly -0.65% of notional, inside the band where
+positions were thought to revert.
+
+All 7 fires in the window, priced against cached Hyperliquid 1m candles.
+Signed in the position's OWN direction, so positive means holding would have
+been better, i.e. the flatten destroyed value:
+
+    run   symbol     dir     pnl      +30m     +1h      +2h      +4h
+    2755  HYPEUSDT   short  -0.5047  -0.006  +0.083   -0.463   -0.475
+    2846  HYPEUSDT   short  -0.1324  +0.272  +0.360   +0.102   +0.146
+    2842  ARUSDT     long   -0.0139  +2.924  +2.699   +2.105   +1.138
+    2895  ZENUSDT    long   -0.1753  -1.178  -0.218   +2.012   +4.942
+    2939  INJUSDT    long   -1.4156  +1.213  +1.089   +1.269   +1.689
+    2986  UNIUSDT    long   -0.0363  -0.014  -0.337   -1.306   -3.706
+    3060  ICPUSDT    long   -1.8454     n/a     n/a      n/a      n/a
+
+    horizon   n   mean     positive   mean ex-largest
+    +30m      6  +0.535%     3/6         +0.057%
+    +1h       6  +0.613%     4/6         +0.195%
+    +2h       6  +0.620%     4/6         +0.323%
+    +4h       6  +0.622%     4/6         -0.242%   <- SIGN FLIPS
+
+**INCONCLUSIVE by rule 6.** The 4h mean flips sign on dropping one trade, the
+hit rate is a coin flip, and n=6 (ICP had no forward data at measurement).
+The direction weakly favours the hypothesis — ZEN reverted +4.94% at 4h, AR
++2.92% at 30m — but UNI ran -3.71% the other way, where the flatten genuinely
+saved money. Not acted on. Do not re-run until n is materially larger.
+
+Bookkeeping: conviction_collapse is 0-for-7 on realised P&L (-$4.12), but a
+0% hit rate on a rail that fires ONLY on deteriorating theses is expected and
+is NOT by itself evidence of a defect. That is the selection trap named above.
+
+# Tape through 2026-09-08 13:25Z
+
+    day     legs  closes    net        note
+    09-05    116     56    -1.4856
+    09-06    198    107    +7.0578     the only positive day
+    09-07    236    128   -20.2121     left-tail day, no code/config change
+    09-08    115     63   -10.2837     partial, 13h
+
+    window net -24.92 over 665 legs
+
+09-08 repeats 09-07's shape: concentrated, not diffuse. Hour 11 alone is
+-$6.71 of the day's -$10.28, and both of that hour's losing closes are ONE
+multi-leg run (UNI 3059 exited twice: cyc:7 -1.845 then flatten -1.278).
+Consistent with the leg-count attribution already recorded; not a new finding.
+
+# Standing methodological note for the next session
+
+Five hypotheses tested this week: F-ARM, H-STOP, H-LEAK, H-HORIZON refuted;
+H-CONVICTION inconclusive; H-VETO untestable (the panel dissents on ALL 202
+clean entries and is overridden every time). Six further claims were retracted
+in one cycle, all from one error class.
+
+**The binding constraint is now sample size, not ideas.** A window whose own
+net is not distinguishable from zero at 95% by day-blocks cannot support
+another mechanism-level claim, and running three verification agents against
+the same four days every hour is precisely how the six retracted artifacts
+were generated. Continue hourly READINGS; hold further hypothesis testing
+until the tape can answer something.
