@@ -1594,6 +1594,7 @@ class ArmExecutorTests(unittest.TestCase):
         run_engine._fire_armed_order(
             self._row(run_id), {"mark_age_ok": True,
                                 "position": {"quantity": held,
+                                             "entry_price": 100.0,
                                              "current_price": 100.0}}, out)
         self.assertIsNone(out.get("armed_exits_fired"))
         self.assertAlmostEqual(self._pos_qty(run_id), held, places=6)
@@ -1623,6 +1624,61 @@ class ArmExecutorTests(unittest.TestCase):
                                              "current_price": 45.0}}, out)
         self.assertEqual(out.get("armed_exits_fired"), 1)
         self.assertAlmostEqual(self._pos_qty(run_id), 0.0, places=6)
+
+    def test_a_crash_through_a_real_stop_STILL_fires_entry_not_mark(self):
+        # Adversarial review, round 1: the first version referenced the MARK.
+        # A textbook -10% stop (entry 100, level 90) was then REFUSED once the
+        # mark crashed below 9 — ratio(90/8) > 10 — and the guard deleted the
+        # stop. That is the change CAUSING a loss on the one path where the
+        # position most needs out. Entry is stable; the mark is what moves.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_below", "then": "close", "level": 90.0}, 7)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "entry_price": 100.0,
+                                             "current_price": 8.0}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), 1)
+        self.assertAlmostEqual(self._pos_qty(run_id), 0.0, places=6)
+
+    def test_an_unfireable_slipped_arm_is_cleared_guard_precedes_arm_fires(self):
+        # Run 1297 armed `price_above 44700.00` against an entry of 44.09. That
+        # never fires, so a guard placed AFTER arm_fires cannot reach it — the
+        # arm sits in force for the life of the run while _standing_arm_line
+        # tells the desk every cycle that it is armed. Pins the ordering.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_above", "then": "close", "level": 44700.0}, 8)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "entry_price": 44.09,
+                                             "current_price": 44.09}}, out)
+        self.assertIsNone(out.get("armed_exits_fired"))
+        self.assertAlmostEqual(self._pos_qty(run_id), held, places=6)
+        self.assertIsNone(self._row(run_id)["armed_order_json"])
+        evs = self.client.get(
+            f"/api/runs/{run_id}/events?limit=500",
+            headers={"Authorization": f"Bearer {self.token}"}).json()["events"]
+        self.assertEqual(
+            len([e for e in evs if e["event_type"] == "armed_exit_rejected"]), 1)
+
+    def test_no_entry_price_means_the_guard_FAILS_OPEN(self):
+        # The guard can only ever REFUSE an exit, so with no trustworthy
+        # reference it must not run at all. Deliberate: a missed decimal slip
+        # costs one bad fill; a refused-and-deleted stop costs the whole book.
+        run_id, held = self._run_with_position()
+        run_engine._store_armed_order(
+            run_id, {"if": "price_below", "then": "close", "level": 100000.0}, 9)
+        out = {}
+        run_engine._fire_armed_order(
+            self._row(run_id), {"mark_age_ok": True,
+                                "position": {"quantity": held,
+                                             "current_price": 100.0}}, out)
+        self.assertEqual(out.get("armed_exits_fired"), 1)
 
     def test_the_executor_is_WIRED_into_the_control_pass(self):
         # An executor nothing calls is the exact bug this feature fixes.

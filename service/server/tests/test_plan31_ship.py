@@ -15,6 +15,7 @@ import json
 import os
 import sys
 import tempfile
+from datetime import datetime, timezone
 import time
 import unittest
 from pathlib import Path
@@ -815,8 +816,27 @@ class ReentryCooldownFloorTests(unittest.TestCase):
             run_engine._reentry_cooldown_minutes(
                 {"leverage": 1.0, "interval_minutes": 30}), 0.0)
 
-    def test_a_negative_floor_cannot_produce_a_negative_cooldown(self):
+    def test_a_negative_floor_is_ignored(self):
+        # Renamed after adversarial review: the old name claimed to pin a
+        # `max(0.0, base)` clamp that was provably DEAD — lev_component is
+        # always >= 0, so the outer max already floors at zero. The clamp is
+        # gone; this pins the behaviour that actually exists.
         os.environ["RUN_REENTRY_BASE_MIN"] = "-30"
         self.assertEqual(
             run_engine._reentry_cooldown_minutes(
                 {"leverage": 1.0, "interval_minutes": 30}), 0.0)
+
+    def test_a_non_finite_floor_cannot_reach_timedelta(self):
+        # `inf` parses as a valid float and slips past `except ValueError`;
+        # timedelta(minutes=inf) then raises OverflowError in
+        # _reentry_cooldown_reason, which has no guard — every flat run would
+        # error every cycle. nan poisons max(). Both must collapse to no floor.
+        for bad in ("inf", "-inf", "nan"):
+            os.environ["RUN_REENTRY_BASE_MIN"] = bad
+            cd = run_engine._reentry_cooldown_minutes(
+                {"leverage": 1.0, "interval_minutes": 30})
+            self.assertEqual(cd, 0.0, bad)
+            self.assertIsNone(run_engine._reentry_cooldown_reason(
+                "2026-09-08T12:00:00", {"leverage": 1.0,
+                                        "interval_minutes": 30},
+                datetime(2026, 9, 8, 12, 5, tzinfo=timezone.utc)), bad)

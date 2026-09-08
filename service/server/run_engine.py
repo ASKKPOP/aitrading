@@ -279,7 +279,13 @@ def _reentry_cooldown_minutes(cfg: dict) -> float:
         base = float(os.getenv("RUN_REENTRY_BASE_MIN", "0") or 0)
     except ValueError:
         base = 0.0
-    return max(lev_component, max(0.0, base))
+    # `inf` parses as a valid float, and `timedelta(minutes=inf)` raises
+    # OverflowError inside _reentry_cooldown_reason, which has no guard — every
+    # flat run would then error on every cycle. nan is equally hostile: it
+    # poisons the max() below. Both collapse to "no floor".
+    if not math.isfinite(base) or base <= 0:
+        base = 0.0
+    return max(lev_component, base)
 
 
 def _reentry_cooldown_reason(last_close_iso: Optional[str], cfg: dict,
@@ -2018,26 +2024,46 @@ def _fire_armed_order(run: dict, pnl: dict, out: dict) -> None:
         return
     if not pnl.get("mark_age_ok", True) or mark is None:
         return                                       # never act on a stale mark
-    if not order_intent.arm_fires(arm, mark=mark):
-        return
-    # A level an order of magnitude off the live price is a DECIMAL SLIP, not
-    # a plan. Run 2880 (2026-09-06, live) armed `price_below 6938.0` on a
-    # $6.93 coin: `6.9296 < 6938` is trivially true, so the whole book was
+    # A level an order of magnitude off the position's OWN ENTRY is a DECIMAL
+    # SLIP, not a plan. Run 2880 (2026-09-06, live) armed `price_below 6938.0`
+    # on a $6.93 coin: `6.9296 < 6938` is trivially true, so the whole book was
     # dumped at market for -$2.451 while the emit below dutifully journalled
     # -99.9% slippage. `arm_level_implausible` was written for this exact
     # failure (run 1297, ~1000x out) and shipped with NO CALLERS.
+    #
+    # ENTRY, never the mark. Adversarial review caught the first version of
+    # this using `entry=mark`: a legitimate -10% stop (entry 100, level 90) is
+    # then REFUSED once the mark crashes below 9, because ratio(90/8) > 10 —
+    # and the remedy below deletes the stop. That turns a guard against a
+    # decimal slip into a guard against a crash, on the one path where the
+    # position most needs to exit. Entry is stable; the mark is the thing
+    # moving. If there is no usable entry price the guard does not run at all:
+    # it can only ever REFUSE an exit, so it must fail open.
+    #
+    # BEFORE `arm_fires`, not after: run 1297's own case (`price_above 44700`
+    # against a mark of 44.09) never fires, so a check placed after the fire
+    # test cannot reach it, and the arm sits in force for the life of the run
+    # with `_standing_arm_line` telling the desk every cycle that it is armed.
     #
     # This is deliberately NOT a slippage veto — the module's doctrine that an
     # arm may always shed risk stands, and a real 2x gap still fires. The test
     # is scale only, at the helper's loose 10x. Clear the arm so the desk
     # re-authors next cycle; leaving it would re-fire on every tick, because a
     # slipped level is permanently true.
-    if order_intent.arm_level_implausible(arm.get("level"), entry=mark):
+    try:
+        _arm_ref = float(pos.get("entry_price") or 0)
+    except (TypeError, ValueError):
+        _arm_ref = 0.0
+    if _arm_ref > 0 and isinstance(arm, dict) and \
+            order_intent.arm_level_implausible(arm.get("level"),
+                                               entry=_arm_ref):
         emit_telemetry_event(run["id"], "armed_exit_rejected", {
             "armed_seq": armed_seq, "reason": "level_implausible",
             "if": arm.get("if"), "then": arm.get("then"),
-            "level": arm.get("level"), "mark": mark})
+            "level": arm.get("level"), "entry": _arm_ref, "mark": mark})
         _store_armed_order(run["id"], None, 0)
+        return
+    if not order_intent.arm_fires(arm, mark=mark):
         return
 
     frac = order_intent.arm_exit_fraction(arm)
