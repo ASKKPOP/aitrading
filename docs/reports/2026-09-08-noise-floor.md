@@ -375,3 +375,75 @@ another mechanism-level claim, and running three verification agents against
 the same four days every hour is precisely how the six retracted artifacts
 were generated. Continue hourly READINGS; hold further hypothesis testing
 until the tape can answer something.
+
+---
+
+# STOP — owner order, 2026-09-08 ~19:30Z
+
+Monitoring stopped on owner instruction. Hourly job deleted and verified
+("No scheduled jobs"). Do not re-arm without an explicit request.
+
+## State at the stop
+
+    prod   sooppiy-backend:20260905-farm-refuted-revert, up 3 days, restarts 0
+    window -26.13 over 743 legs (2026-09-05 00:00Z -> 09-08 19:25Z)
+    open   7 positions, -5.92 unrealized, worst single position -1.50%
+
+    day     legs    net
+    09-05    116   -1.4856
+    09-06    198   +7.0578    the only positive day
+    09-07    236  -20.2121
+    09-08    193  -11.4857
+
+Nothing was shipped to prod during this run. No code or config changed on the
+server for its entire duration — the same image ran throughout, so every
+figure above is one uninterrupted regime.
+
+## What this run established
+
+**H-HORIZON, REFUTED — the load-bearing result.** 306 entries against
+Hyperliquid 1m candles, permutation null holding symbol and side fixed with
+the entry MINUTE randomised, 5000 shuffles. The desk's entry timing is WORSE
+than a random entry minute at every horizon it actually trades (5m -0.039,
+30m -0.075, 2h -0.193 percentage points against the null). The only arguable
+horizon, 8h, is market beta plus ARB alone at 133% of the excess, four of its
+nine trades inside one 3.3h band before a +33% run. The shorts lost while the
+market rose. **There is no entry edge to protect, so every exit-rail
+hypothesis was optimising the exit of a coin flip.**
+
+**Six hypotheses, no supported improvement.** F-ARM (prior), H-STOP, H-LEAK,
+H-HORIZON refuted; H-CONVICTION inconclusive at n=6; H-VETO untestable
+because the panel dissents on ALL 202 clean entries and is overridden every
+time.
+
+**Attribution, verified twice and by two independent agents.** `:flatten` is
+a run-stop marker, not a mechanism — four mechanisms share it. Split by the
+run's true stop reason: trailing_lock 243 closes / 79.4% / +$37.95 / avg loss
+-$0.150 / worst -$0.950; conviction_collapse 7 / 0% / -$4.12; adapt_retired
+1 / -$0.78; at_time 1 / -$0.25. And by run shape: 2-leg runs +$28.28 in closes
+with ZERO armed exits, 4+-leg runs -$44.17 with all 20 losing armed exits.
+Both are CONDITIONED and neither is causal.
+
+**The error class that dominated this run**, and the reason six claims were
+retracted in a single cycle: **a quantity measured under a selection, then
+read as if it were unconditional.** Before any number becomes a premise,
+state what had to be true for that sample to exist.
+
+## Defects recorded, deliberately NOT shipped
+
+- armed exit has no plausibility bound (run 2880 armed `price_below 6938.0`
+  on a $6.93 coin; -99.9% slippage computed, journalled, fired anyway)
+- re-entry cooldown is exactly zero: `interval x (leverage - 1.0)` with every
+  position at leverage 1.0 (D-REENTRY-1X, pre-registered 08-30, confirmed)
+- `RR_FLOOR=0.2` in prod against a module default of 2.0
+- rail asymmetry 125:1 — `max_loss_usd` sized off max_bet, not notional; it
+  fired 0 times
+- the price stop is routed to the desk then suppressed 30 minutes: 1258 hits
+  routed in 168h, 0 fail-safe fires, 1 watcher close. **Measured to be worth
+  +$5.79 as-is** — enforcing it makes the window worse at every distance.
+
+## The open question
+
+Entry SELECTION, not exits and not horizon. Four days whose own net is not
+distinguishable from zero at 95% by day-blocks cannot answer it. The binding
+constraint is sample size.
