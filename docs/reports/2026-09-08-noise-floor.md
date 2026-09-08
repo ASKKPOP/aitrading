@@ -447,3 +447,100 @@ state what had to be true for that sample to exist.
 Entry SELECTION, not exits and not horizon. Four days whose own net is not
 distinguishable from zero at 95% by day-blocks cannot answer it. The binding
 constraint is sample size.
+
+---
+
+# DEPLOYED 2026-09-08 23:47Z — 2 of the 5 recorded defects, and why not the other 3
+
+Owner instruction: deploy the recorded defects. Shipped TWO. Held three, with
+reasons, because shipping them would contradict measurements in this document.
+
+    image     sooppiy-backend:20260908-armguard   from main 78fc690
+    rollback  sooppiy-backend:20260905-20260905-farm-refuted-revert
+    verified  worker+backend restarts 0; guard present in the running
+              container; RUN_REENTRY_BASE_MIN unset; 0 tracebacks;
+              worker actively cycling; armed_exit_rejected = 0
+
+## Shipped
+
+**1. The armed exit had no plausibility bound.** `arm_level_implausible`
+already existed, already had tests, and shipped with ZERO CALLERS. Now wired
+into `_fire_armed_order`, BEFORE `arm_fires`, requiring the level to be
+implausible against **entry AND mark**, failing open without a usable entry.
+
+**2. The re-entry cooldown was exactly zero at 1x.** `interval x (leverage -
+1.0)` governs nothing while the fleet runs at 1x. Floor added via
+`RUN_REENTRY_BASE_MIN`, **default 0 so the ship is behaviour-neutral** —
+cutting churn also cuts the ratchet, the only net-positive exit path, so the
+VALUE is an experiment, not a guess. F-ARM is the precedent.
+
+## Held, and I argued against shipping them
+
+- **The suppressed price stop.** Measured: enforcing it is WORSE at every
+  distance 0.25%-4%, and leaving it suppressed is worth +$5.79 on this tape.
+- **`max_loss_usd` sized off max_bet.** Same class — loss truncation, refuted
+  across that whole range.
+- **`RR_FLOOR=0.2`.** A prod env value, not a code defect, and near
+  non-binding since the desk already authors ~2:1 brackets.
+
+## Honest size of the fix
+
+**1 of 36** historical `armed_exit` events would have been rejected (run 2880,
+1001x). Next-largest ratio in the entire history: **1.0411x**. All 6 live
+standing arms sit at **1.0036-1.0223**. Deploying cleared nothing.
+
+And the damage figure was corrected 60x downward mid-review. The equity tape
+reads 07:31:15Z total -2.492811 / unrealized -2.450645, then 07:32:18Z total
+-2.533874 / unrealized 0 — the -$2.45 was ALREADY in the position, and firing
+moved equity by **-$0.041063, the exit fee to the cent**. The defect cost ~$0.04
+at the moment it fired. What the guard prevents is an unauthorised full-book
+market dump on a slipped level, which was cheap here only because the book was
+already under water. The counterfactual is unknowable (111/111 following equity
+samples read unrealized 0) — attach no number to it.
+
+## Three review rounds, three real findings — the reason the gate exists
+
+**Round 1 (adversarial): BLOCKER.** My guard referenced the MARK. A legitimate
+-10% stop (entry 100, level 90) is then REFUSED once the mark crashes below 9,
+**and the guard deletes the stop**. A long stop is refused whenever
+mark < level/10 — far more reachable than a +900% overshoot. My "fix" fired
+most readily on protective stops in a crash: the change CAUSING a loss.
+
+**Round 2 (verifier): the damage figure, 60x overstated.** Plus: the leverage
+claim is a current-config fact, not structural (764 runs at 2x, 292 at 3x, 101
+at 5x, 6 at 10x exist historically, most recent 2026-08-31) — the component is
+DORMANT, not dead.
+
+**Round 3 (verifier): the same failure class one step out, and toothless
+tests.** Entry-only still refused a book down 92% re-arming near the mark
+(14.3x from entry). Fixed by requiring entry AND mark. And two of twelve tests
+pinned NOTHING — one passed with the guard deleted entirely (no entry_price, so
+the guard failed open and the ratio was never evaluated), and the cooldown had
+two dead clauses. Worst: **nothing pinned max_ratio itself**, the guard's whole
+risk surface and the exact knob whose mis-setting deleted live stops in round 1.
+
+All four new pins mutation-verified: revert the AND, move the threshold to 1.5,
+remove the cap, remove isfinite — each kills its test.
+
+## Residual, NOT fixed (scope)
+
+- `armed_exit_rejected` has no consumer — no brief line, no frontend label, no
+  adapt signal. A desk that authored a genuine slip gets no corrective feedback
+  and may re-author it, one LLM cycle per loop. Better than dumping the book.
+- `RUN_REENTRY_LEV_MULT=inf` reaches the same `timedelta` OverflowError, on
+  origin/main too. Pre-existing; wants its own change.
+
+## The process lesson, third instance this week
+
+Both my errors here are the SAME error already named in this document:
+**a quantity read outside the condition that makes it meaningful.** `mark` is
+only a scale reference while the position has not moved; the moment it moves,
+which is exactly when exits matter, it stops being one. And a verifier reported
+its own version of it: its empirical method would have PASSED round 1, because
+the historical tape contained no crash where the mark diverges 10x from the
+level, so it could not surface the defect. Empirical-only verification is blind
+to failure modes absent from the sample.
+
+CI at ship: ruff exit 0; 5222 passed + 1349 subtests exit 0 (5207 baseline +
+15 new); gitleaks clean. Frontend build not re-run — zero frontend files in the
+diff.
