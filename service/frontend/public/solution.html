@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sooppiy AI — 풀 솔루션 &amp; 로컬 AI 플릿 제안</title>
+<meta name="description" content="Sooppiy AI 트레이딩 플랫폼 전체 솔루션 소개와 Mac Studio 10대 로컬 AI 플릿 확장 제안">
+<style>
+:root{
+  --page:#faf9f5; --card:#ffffff; --card2:#f5f3ec;
+  --ink:#1a1915; --ink2:#4a463c; --muted:#8a8578;
+  --line:#e8e5dd; --line2:#d9d5c9;
+  --clay:#c96442; --clay2:#d97757; --clay-soft:#f9ece5;
+  --green:#4a7c59; --green-soft:#e9f2ec;
+  --blue:#4a6b8a; --blue-soft:#e9eff5;
+  --gold:#a3803c; --gold-soft:#f6f0e0;
+  --red:#a44a3f; --red-soft:#f7e9e7;
+  --violet:#6b5b8a; --violet-soft:#eeebf5;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--page);color:var(--ink);font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+.serif{font-family:'Nanum Myeongjo',Georgia,'Times New Roman',serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+section{padding:72px 0}
+h2{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:-.02em;line-height:1.25;margin-bottom:14px}
+h3{font-size:20px;font-weight:700;margin-bottom:10px}
+p.lead{font-size:17px;color:var(--ink2);max-width:760px}
+.eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--clay);margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:860px){.g2,.g3,.g4,.g5{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.02em}
+.tag.clay{background:var(--clay-soft);color:var(--clay)}
+.tag.green{background:var(--green-soft);color:var(--green)}
+.tag.blue{background:var(--blue-soft);color:var(--blue)}
+.tag.gold{background:var(--gold-soft);color:var(--gold)}
+.tag.red{background:var(--red-soft);color:var(--red)}
+.tag.violet{background:var(--violet-soft);color:var(--violet)}
+.num{font-variant-numeric:tabular-nums}
+svg{width:100%;max-width:100%;height:auto;display:block}
+.grid>*{min-width:0}
+.flow>*{min-width:0}
+.scrollx{overflow-x:auto;padding-bottom:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:var(--card2);text-align:left;padding:10px 14px;font-weight:700;border-bottom:2px solid var(--line2);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.divider{height:1px;background:var(--line);margin:0}
+footer{padding:48px 0 64px;color:var(--muted);font-size:13px}
+.small{font-size:13px;color:var(--muted)}
+.strong-clay{color:var(--clay);font-weight:700}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+
+/* hero */
+.hero{padding:88px 0 64px;background:linear-gradient(180deg,#f6f2e9 0%,var(--page) 100%);border-bottom:1px solid var(--line)}
+.hero h1{font-size:clamp(34px,5.6vw,56px);font-weight:800;letter-spacing:-.03em;line-height:1.15;margin:18px 0 20px}
+.hero h1 .accent{color:var(--clay)}
+.hero p.sub{font-size:clamp(16px,2.2vw,19px);color:var(--ink2);max-width:820px;margin-bottom:8px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:44px}
+@media(max-width:960px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px;text-align:center}
+.kpi .v{font-size:clamp(20px,2.6vw,27px);font-weight:800;color:var(--clay);letter-spacing:-.02em}
+.kpi .l{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35}
+
+/* toc pills */
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:34px}
+.toc a{font-size:13px;font-weight:600;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 15px;text-decoration:none;transition:.15s}
+.toc a:hover{border-color:var(--clay);color:var(--clay)}
+
+/* flow steps */
+.flow{display:flex;flex-wrap:wrap;gap:0;align-items:stretch}
+.fstep{flex:1 1 150px;min-width:150px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px;margin:6px}
+.fstep .n{font-size:11px;font-weight:800;color:var(--clay);letter-spacing:.08em}
+.fstep .t{font-size:14.5px;font-weight:700;margin:2px 0 4px}
+.fstep .d{font-size:12.5px;color:var(--muted);line-height:1.5}
+
+/* stat bars */
+.bar-row{display:grid;grid-template-columns:150px 1fr 56px;align-items:center;gap:12px;margin-bottom:10px}
+@media(max-width:560px){.bar-row{grid-template-columns:110px 1fr 48px}}
+.bar-label{font-size:13.5px;font-weight:600;text-align:right;color:var(--ink2)}
+.bar-track{background:var(--card2);border-radius:6px;height:22px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px}
+.bar-val{font-size:13px;font-weight:700;color:var(--ink2)}
+
+.note{background:var(--gold-soft);border:1px solid #e5d9b8;border-radius:12px;padding:14px 18px;font-size:13.5px;color:#6b5a2a;margin-top:18px}
+.callout{background:var(--clay-soft);border:1px solid #ecd0c2;border-radius:14px;padding:20px 24px;margin:22px 0}
+.callout .t{font-weight:800;color:var(--clay);margin-bottom:6px;font-size:16px}
+.check li{margin:7px 0;padding-left:26px;position:relative;font-size:14.5px;color:var(--ink2)}
+.check li::before{content:"✓";position:absolute;left:0;top:0;color:var(--green);font-weight:800}
+.x li::before{content:"✕";color:var(--red)}
+ul.plain{list-style:none}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<div class="hero">
+  <div class="wrap">
+    <span class="tag clay">SOOPPIY.COM · 전체 솔루션 브리핑 &amp; 확장 제안 · 2026.09</span>
+    <h1>AI가 판단하고, 안전장치가 지키고,<br><span class="accent">로컬 AI 플릿이 수익을 만듭니다</span></h1>
+    <p class="sub"><b>Sooppiy</b>는 데이터 수집부터 실거래 체결까지 전 과정이 자동화된 AI 트레이딩 플랫폼입니다.
+    이 문서는 현재 운영 중인 전체 솔루션 5개 축 — 파이프라인 · 게이트웨이 · AI 파라미터 · 하이브리드 전략 · 의사결정 구조 — 를 한눈에 보여드리고,
+    다음 단계인 <b>Mac Studio 10대 로컬 AI 플릿</b>으로 수익 엔진을 완성하는 로드맵을 제안합니다.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="v num">1,386+</div><div class="l">자동화 테스트 통과</div></div>
+      <div class="kpi"><div class="v num">292</div><div class="l">API 엔드포인트</div></div>
+      <div class="kpi"><div class="v num">28</div><div class="l">백그라운드 데몬</div></div>
+      <div class="kpi"><div class="v num">8+로컬</div><div class="l">LLM 프로바이더 지원</div></div>
+      <div class="kpi"><div class="v num">11</div><div class="l">무료 데이터 소스</div></div>
+      <div class="kpi"><div class="v num">5개국어</div><div class="l">글로벌 서비스</div></div>
+    </div>
+    <div class="toc">
+      <a href="#pipeline">① 풀 파이프라인</a>
+      <a href="#params">② AI 파라미터 TOP 10</a>
+      <a href="#strategy">③ 하이브리드 전략</a>
+      <a href="#decisions">④ AI 의사결정 구조</a>
+      <a href="#gateway">⑤ 실거래 게이트웨이</a>
+      <a href="#arch">⑥ 시스템 아키텍처</a>
+      <a href="#fleet">★ 로컬 AI 플릿 제안</a>
+      <a href="#roadmap">로드맵</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ① PIPELINE ═══════════════ -->
+<section id="pipeline">
+  <div class="wrap">
+    <span class="eyebrow">01 · Full Pipeline — docs/guide</span>
+    <h2>데이터 수집부터 매매일지까지, 10단계 완전 자동화</h2>
+    <p class="lead">사람의 감이 아니라 <b>파이프라인</b>이 거래합니다. 11개 무료 데이터 소스에서 시작해
+    퀀트·심리·AI 분석을 거쳐 3중 리스크 게이트를 통과한 신호만 체결됩니다. 왜 거래했는지 — 그리고 <b>왜 거래하지 않았는지</b>까지 전부 기록됩니다.</p>
+
+    <div class="flow" style="margin-top:28px">
+      <div class="fstep"><div class="n">STEP 1</div><div class="t">데이터 수집</div><div class="d">OKX 시세 · Fear&amp;Greed · StockTwits · Polymarket · ETF 자금흐름 · 김치 프리미엄 · FRED 거시 · 고래 추적</div></div>
+      <div class="fstep"><div class="n">STEP 2</div><div class="t">종목 발굴 스캐너</div><div class="d">거래량 ×2.0 급증, 언급량 +100% 트리거 — 실제 BSB ×3.52 포착 사례</div></div>
+      <div class="fstep"><div class="n">STEP 3</div><div class="t">퀀트 스코어</div><div class="d">모멘텀·기술지표·변동성 기반 정량 점수 (LLM 미사용)</div></div>
+      <div class="fstep"><div class="n">STEP 4</div><div class="t">시장 심리 분석</div><div class="d">공포·탐욕 + 군중 심리 지표화 (LLM 미사용)</div></div>
+      <div class="fstep"><div class="n">STEP 5</div><div class="t">신호 융합</div><div class="d">퀀트 0.5 + 감성 0.3 + 심리 0.2 가중 합산</div></div>
+    </div>
+    <div class="flow">
+      <div class="fstep"><div class="n">STEP 6</div><div class="t">AI 애널리스트 데스크</div><div class="d">뉴스·감성·펀더멘털·기술 4명 분석 → 트레이더+리스크 토론 → 검증자</div></div>
+      <div class="fstep"><div class="n">STEP 7</div><div class="t">자동화 룰 평가</div><div class="d">60초 틱 — auto-execute ∧ BUY/SELL ∧ 확신도 ≥ 0.65</div></div>
+      <div class="fstep"><div class="n">STEP 8</div><div class="t">3중 리스크 게이트</div><div class="d">켈리 사이징 → 한도 검사 → 서킷 브레이커 (축소·거부만 가능)</div></div>
+      <div class="fstep"><div class="n">STEP 9</div><div class="t">체결 + SL/TP 등록</div><div class="d">손절 −5% · 익절 +10% 자동 등록, 30초 감시 워처</div></div>
+      <div class="fstep"><div class="n">STEP 10</div><div class="t">매매일지</div><div class="d">체결·거부 사유 전건 기록 — 감사 가능한 완전한 이력</div></div>
+    </div>
+
+    <div class="grid g2" style="margin-top:26px">
+      <div class="card">
+        <h3>신호 융합 공식 — 심리는 절대 주도할 수 없습니다</h3>
+        <p class="small" style="margin-bottom:16px">세 계열 점수를 가중 합산하고, 임계값을 넘어야만 방향이 결정됩니다.</p>
+        <svg viewBox="0 0 460 210" role="img" aria-label="신호 융합 가중치">
+          <rect x="10" y="18" width="200" height="34" rx="8" fill="#4a6b8a"/>
+          <text x="110" y="40" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">퀀트 신호 × 0.5</text>
+          <rect x="10" y="62" width="132" height="34" rx="8" fill="#a3803c"/>
+          <text x="76" y="84" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">감성 × 0.3</text>
+          <rect x="10" y="106" width="96" height="34" rx="8" fill="#6b5b8a"/>
+          <text x="58" y="128" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">심리 × 0.2</text>
+          <path d="M225 35 L268 79 M155 79 L268 79 M120 123 L268 89" stroke="#c9c4b6" stroke-width="2" fill="none"/>
+          <circle cx="290" cy="80" r="26" fill="#c96442"/>
+          <text x="290" y="87" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">Σ</text>
+          <path d="M316 80 L344 80" stroke="#c9c4b6" stroke-width="2"/>
+          <rect x="348" y="24" width="102" height="30" rx="8" fill="#e9f2ec" stroke="#4a7c59"/>
+          <text x="399" y="44" text-anchor="middle" fill="#4a7c59" font-size="12.5" font-weight="700">≥ +0.25 매수</text>
+          <rect x="348" y="64" width="102" height="30" rx="8" fill="#f5f3ec" stroke="#c9c4b6"/>
+          <text x="399" y="84" text-anchor="middle" fill="#8a8578" font-size="12.5" font-weight="700">중립 = 보류</text>
+          <rect x="348" y="104" width="102" height="30" rx="8" fill="#f7e9e7" stroke="#a44a3f"/>
+          <text x="399" y="124" text-anchor="middle" fill="#a44a3f" font-size="12.5" font-weight="700">≤ −0.25 매도</text>
+          <text x="10" y="172" font-size="12" fill="#8a8578">· 심리 가중치는 0.3을 넘지 못하도록 하드캡 — "심리만으로 매매"는 구조적으로 불가능</text>
+          <text x="10" y="192" font-size="12" fill="#8a8578">· 심리 단독 신호는 강제 HOLD, 상한 초과 AI 판정은 폐기</text>
+        </svg>
+      </div>
+      <div class="card">
+        <h3>2중 손실 방어 — 락아웃도 포지션을 가두지 못합니다</h3>
+        <ul class="plain check" style="margin-top:8px">
+          <li><b>포지션 단위</b> — 진입과 동시에 손절 −5% / 익절 +10% 자동 등록</li>
+          <li><b>30초 감시 워처</b> — 게이트·락아웃을 의도적으로 우회해 손절만은 반드시 실행</li>
+          <li><b>일일 한도</b> — 일 손실 $1,000 · 종목당 $10,000 · 포트폴리오 60% · 최대 8포지션</li>
+          <li><b>켈리 사이징</b> — f* = W−(1−W)/R, 안전하게 ½켈리 적용 · 최소 10거래 데이터 필요</li>
+          <li><b>손절 실행은 산수</b> — AI 장애 중에도 작동하도록 exit 로직은 LLM 없이 설계</li>
+        </ul>
+        <div class="note" style="margin-top:16px">모든 게이트는 포지션을 <b>줄이거나 거부</b>만 할 수 있습니다. 키우는 방향의 개입은 설계상 존재하지 않습니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+<!-- ═══════════════ ② PARAMETERS TOP 10 ═══════════════ -->
+<section id="params" style="background:var(--card2)">
+  <div class="wrap">
+    <span class="eyebrow">02 · AI Trading Parameters — docs/ai-trading-parameters</span>
+    <h2>학술 연구로 검증된 TOP 10 파라미터만 사용합니다</h2>
+    <p class="lead">유튜브 속설이 아니라 <b>머신러닝 실증 연구(Gu–Kelly–Xiu, RFS 2020 외 138편)</b>에서 예측력이 입증된 순서 그대로입니다.
+    1–4위는 측정된 특성 중요도, 5–10위는 문헌 사용 빈도 기준입니다.</p>
+
+    <div class="grid g2" style="margin-top:28px">
+      <div class="card">
+        <h3>파라미터 중요도 랭킹</h3>
+        <p class="small" style="margin-bottom:16px">막대 = 상대 가중치 (100 → 37)</p>
+        <div class="bar-row"><div class="bar-label">① 가격 모멘텀·추세</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#4a6b8a"></div></div><div class="bar-val num">100</div></div>
+        <div class="bar-row"><div class="bar-label">② 기술적 지표</div><div class="bar-track"><div class="bar-fill" style="width:93%;background:#4a6b8a"></div></div><div class="bar-val num">93</div></div>
+        <div class="bar-row"><div class="bar-label">③ 거래량·유동성</div><div class="bar-track"><div class="bar-fill" style="width:86%;background:#4a6b8a"></div></div><div class="bar-val num">86</div></div>
+        <div class="bar-row"><div class="bar-label">④ 변동성·리스크</div><div class="bar-track"><div class="bar-fill" style="width:79%;background:#a3803c"></div></div><div class="bar-val num">79</div></div>
+        <div class="bar-row"><div class="bar-label">⑤ 원시 OHLCV</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:#a3803c"></div></div><div class="bar-val num">72</div></div>
+        <div class="bar-row"><div class="bar-label">⑥ 호가창 심도</div><div class="bar-track"><div class="bar-fill" style="width:65%;background:#a3803c"></div></div><div class="bar-val num">65</div></div>
+        <div class="bar-row"><div class="bar-label">⑦ 뉴스·소셜 감성</div><div class="bar-track"><div class="bar-fill" style="width:58%;background:#6b5b8a"></div></div><div class="bar-val num">58</div></div>
+        <div class="bar-row"><div class="bar-label">⑧ 거시경제</div><div class="bar-track"><div class="bar-fill" style="width:51%;background:#6b5b8a"></div></div><div class="bar-val num">51</div></div>
+        <div class="bar-row"><div class="bar-label">⑨ 펀더멘털</div><div class="bar-track"><div class="bar-fill" style="width:44%;background:#4a7c59"></div></div><div class="bar-val num">44</div></div>
+        <div class="bar-row"><div class="bar-label">⑩ 평균회귀</div><div class="bar-track"><div class="bar-fill" style="width:37%;background:#4a7c59"></div></div><div class="bar-val num">37</div></div>
+        <div class="badge-row">
+          <span class="tag blue">추세·기술 (1–3)</span><span class="tag gold">가격·미시구조 (4–6)</span><span class="tag violet">감성·거시 (7–8)</span><span class="tag green">가치·회귀 (9–10)</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>속설 vs 검증된 정확도 — 정직한 숫자만 씁니다</h3>
+        <p class="small" style="margin-bottom:16px">"승률 80%" 같은 마케팅은 하지 않습니다. 검증된 목표는 55–58%이며, 이 차이를 리스크 관리가 수익으로 바꿉니다.</p>
+        <div class="bar-row"><div class="bar-label">동전 던지기</div><div class="bar-track"><div class="bar-fill" style="width:50%;background:#c9c4b6"></div></div><div class="bar-val num">50%</div></div>
+        <div class="bar-row"><div class="bar-label">감성 단독</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:#c9c4b6"></div></div><div class="bar-val num">50–55%</div></div>
+        <div class="bar-row"><div class="bar-label">이동평균 룰</div><div class="bar-track"><div class="bar-fill" style="width:54%;background:#c9c4b6"></div></div><div class="bar-val num">53–54%</div></div>
+        <div class="bar-row"><div class="bar-label"><b>프레임워크 목표</b></div><div class="bar-track"><div class="bar-fill" style="width:58%;background:#c96442"></div></div><div class="bar-val num"><b>55–58%</b></div></div>
+        <div class="bar-row"><div class="bar-label" style="text-decoration:line-through;color:var(--muted)">"패턴 승률 80%+"</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:#f0d5cc"></div></div><div class="bar-val num" style="color:var(--red)">근거 없음</div></div>
+        <div class="note">비선형 ML 전략 샤프 지수 <b>1.35</b> vs 선형 모델 <b>0.61</b> — 같은 데이터에서 방법론만으로 2배 차이 (Gu–Kelly–Xiu). Sooppiy는 비선형·다신호 융합 진영에 서 있습니다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>투자 기간별 파라미터 지배력 히트맵</h3>
+      <p class="small" style="margin-bottom:14px">어떤 파라미터가 언제 힘을 쓰는지도 설계에 반영되어 있습니다. 색이 진할수록 해당 구간에서 지배적입니다.</p>
+      <div class="scrollx">
+      <table>
+        <tr><th>파라미터</th><th style="text-align:center">초단타 (분)</th><th style="text-align:center">데일리 스윙</th><th style="text-align:center">주–개월</th></tr>
+        <tr><td>모멘텀·추세</td><td style="text-align:center;background:#f3e0d7">●●</td><td style="text-align:center;background:#e5b8a3">●●●</td><td style="text-align:center;background:#d98d6d">●●●●</td></tr>
+        <tr><td>기술적 지표</td><td style="text-align:center;background:#e5b8a3">●●●</td><td style="text-align:center;background:#d98d6d">●●●●</td><td style="text-align:center;background:#f3e0d7">●●</td></tr>
+        <tr><td>거래량·유동성</td><td style="text-align:center;background:#d98d6d">●●●●</td><td style="text-align:center;background:#e5b8a3">●●●</td><td style="text-align:center;background:#f3e0d7">●●</td></tr>
+        <tr><td>호가창(LOB) 심도</td><td style="text-align:center;background:#d98d6d">●●●●</td><td style="text-align:center;background:#faf3ef">●</td><td style="text-align:center;background:#faf3ef">●</td></tr>
+        <tr><td>뉴스·소셜 감성</td><td style="text-align:center;background:#e5b8a3">●●●</td><td style="text-align:center;background:#e5b8a3">●●●</td><td style="text-align:center;background:#faf3ef">●</td></tr>
+        <tr><td>거시·펀더멘털</td><td style="text-align:center;background:#faf3ef">●</td><td style="text-align:center;background:#f3e0d7">●●</td><td style="text-align:center;background:#d98d6d">●●●●</td></tr>
+      </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ ③ STRATEGY ═══════════════ -->
+<section id="strategy">
+  <div class="wrap">
+    <span class="eyebrow">03 · Hybrid Strategy — docs/strategy</span>
+    <h2>4계층 하이브리드 전략 — 어느 한 층이라도 반대하면 거래는 없습니다</h2>
+    <p class="lead">차트 · 심리 · 촉발 신호 · 리스크 관리가 계층으로 쌓여 있고, <b>각 계층이 거부권</b>을 가집니다.
+    6개 체크리스트 중 4개 이상 충족(≥4/6 컨플루언스 게이트)해야만 실제 주문이 설계됩니다.</p>
+
+    <div class="card" style="margin-top:28px">
+      <svg viewBox="0 0 900 330" role="img" aria-label="4계층 전략 흐름도">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c9c4b6"/></marker></defs>
+        <!-- L1 -->
+        <rect x="10" y="20" width="200" height="86" rx="12" fill="#eeebf5" stroke="#6b5b8a" stroke-width="1.5"/>
+        <text x="110" y="44" text-anchor="middle" font-size="13.5" font-weight="800" fill="#6b5b8a">L1 · 심리 레짐 판독</text>
+        <text x="110" y="64" text-anchor="middle" font-size="11.5" fill="#4a463c">공포·탐욕 &lt; 20 → 역발상 모드</text>
+        <text x="110" y="80" text-anchor="middle" font-size="11.5" fill="#4a463c">FOMC·CPI ±1일 → 신규 진입 금지</text>
+        <text x="110" y="96" text-anchor="middle" font-size="11.5" fill="#4a463c">전쟁·정책 쇼크 → 1–3일 대기</text>
+        <!-- L2 -->
+        <rect x="240" y="20" width="200" height="86" rx="12" fill="#e9eff5" stroke="#4a6b8a" stroke-width="1.5"/>
+        <text x="340" y="44" text-anchor="middle" font-size="13.5" font-weight="800" fill="#4a6b8a">L2 · 방향 (차트)</text>
+        <text x="340" y="64" text-anchor="middle" font-size="11.5" fill="#4a463c">12-1 모멘텀 + 200일선 위 → 롱</text>
+        <text x="340" y="80" text-anchor="middle" font-size="11.5" fill="#4a463c">둘 다 음(−) → 숏/회피</text>
+        <text x="340" y="96" text-anchor="middle" font-size="11.5" fill="#4a463c">혼조 → 건너뜀</text>
+        <!-- L3 -->
+        <rect x="470" y="20" width="200" height="86" rx="12" fill="#f6f0e0" stroke="#a3803c" stroke-width="1.5"/>
+        <text x="570" y="44" text-anchor="middle" font-size="13.5" font-weight="800" fill="#a3803c">L3 · 촉발 + 확인</text>
+        <text x="570" y="64" text-anchor="middle" font-size="11.5" fill="#4a463c">기술 종합점수 ∧ 거래량 급증</text>
+        <text x="570" y="80" text-anchor="middle" font-size="11.5" fill="#4a463c">거래량 없는 돌파 = 함정, 스킵</text>
+        <text x="570" y="96" text-anchor="middle" font-size="11.5" fill="#4a463c">악재 감성 붕괴 = 거부권 발동</text>
+        <!-- L4 -->
+        <rect x="700" y="20" width="190" height="86" rx="12" fill="#e9f2ec" stroke="#4a7c59" stroke-width="1.5"/>
+        <text x="795" y="44" text-anchor="middle" font-size="13.5" font-weight="800" fill="#4a7c59">L4 · 사이징 &amp; 청산</text>
+        <text x="795" y="64" text-anchor="middle" font-size="11.5" fill="#4a463c">크기 = 리스크 예산 ÷ 변동성</text>
+        <text x="795" y="80" text-anchor="middle" font-size="11.5" fill="#4a463c">무효화 지점 아래 하드 스톱</text>
+        <text x="795" y="96" text-anchor="middle" font-size="11.5" fill="#4a463c">이평 트레일링 + 시간 스톱</text>
+        <path d="M212 63 L236 63" stroke="#c9c4b6" stroke-width="2.5" marker-end="url(#arr)"/>
+        <path d="M442 63 L466 63" stroke="#c9c4b6" stroke-width="2.5" marker-end="url(#arr)"/>
+        <path d="M672 63 L696 63" stroke="#c9c4b6" stroke-width="2.5" marker-end="url(#arr)"/>
+        <!-- gate -->
+        <path d="M795 110 L795 140" stroke="#c9c4b6" stroke-width="2.5" marker-end="url(#arr)"/>
+        <rect x="285" y="148" width="330" height="58" rx="12" fill="#c96442"/>
+        <text x="450" y="173" text-anchor="middle" font-size="14.5" font-weight="800" fill="#fff">컨플루언스 게이트 : 6개 조건 중 ≥ 4개 충족 시에만 실행</text>
+        <text x="450" y="193" text-anchor="middle" font-size="11.5" fill="#f9ece5">매수 B1–B6 · 매도 S1–S6 체크리스트 (S6 손절 신호는 전부에 우선)</text>
+        <path d="M700 177 L620 177" stroke="#c9c4b6" stroke-width="2.5"/>
+        <path d="M795 140 L795 177 L700 177" stroke="#c9c4b6" stroke-width="2.5" fill="none"/>
+        <!-- feedback -->
+        <path d="M285 177 L160 177 L160 240" stroke="#c9c4b6" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+        <rect x="60" y="246" width="200" height="52" rx="12" fill="#fff" stroke="#c9c4b6"/>
+        <text x="160" y="268" text-anchor="middle" font-size="12.5" font-weight="700" fill="#4a463c">주문 설계 · 체결 · 일지 기록</text>
+        <text x="160" y="286" text-anchor="middle" font-size="11.5" fill="#8a8578">결과 로깅 → 재학습 → 워크포워드</text>
+        <path d="M262 272 C450 272 620 260 700 220" stroke="#e0dcd0" stroke-width="2" stroke-dasharray="5 5" fill="none"/>
+        <text x="500" y="252" text-anchor="middle" font-size="11" fill="#8a8578">피드백 루프 (지속 개선)</text>
+      </svg>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card">
+        <h3 style="font-size:16px">암호화폐 맞춤 적응</h3>
+        <p class="small">VIX → <b>크립토 공포·탐욕 지수</b>로 치환 (공포 &lt; 20 · 안정 &gt; 30), 캔들 패턴 대신 RSI·이평·펀딩비·롱숏비 <b>종합 기술 점수</b>, 야간 감성은 StockTwits 군중 심리로 대체 — 주식 이론을 코인 시장에 그대로 이식하지 않았습니다.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:16px">패닉 국면 역발상 매수</h3>
+        <p class="small">극단적 공포에서만, 그것도 <b>절반 크기</b>로만 진입합니다. 공포·탐욕 지수가 바닥권일 때 반등 첫 캔들을 사지 않고 1–3일 안정화를 기다리는 규칙이 코드에 박혀 있습니다.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:16px">이벤트 블랙아웃</h3>
+        <p class="small">FOMC · CPI · 대선 등 <b>이벤트 ±1일</b>은 신규 진입이 자동 차단됩니다. 발표 직후 변동성 스파이크에 휩쓸리는 개인 투자자의 전형적 손실 패턴을 시스템이 원천 봉쇄합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+<!-- ═══════════════ ④ DECISIONS ═══════════════ -->
+<section id="decisions" style="background:var(--card2)">
+  <div class="wrap">
+    <span class="eyebrow">04 · AI Decision Structure — docs/decisions</span>
+    <h2>21단계 중 AI는 6단계만 — 나머지 14단계는 안전장치입니다</h2>
+    <p class="lead">AI에게 전권을 주지 않습니다. AI는 <b>제안</b>하고, 14겹의 안전장치는 <b>거부·축소·강화만</b> 할 수 있으며,
+    거래를 만들어내거나 방향을 정하는 권한은 어디에도 없습니다. 모든 거부는 사유와 함께 기록됩니다.</p>
+
+    <div class="card" style="margin-top:28px">
+      <h3>한 사이클의 권한 배분</h3>
+      <div style="display:flex;height:44px;border-radius:10px;overflow:hidden;margin:16px 0 10px;font-weight:800;color:#fff;font-size:14px">
+        <div style="width:28.5%;background:#c96442;display:flex;align-items:center;justify-content:center">AI 판단 6단계</div>
+        <div style="width:66.7%;background:#4a7c59;display:flex;align-items:center;justify-content:center">안전장치 14단계</div>
+        <div style="width:4.8%;background:#4a6b8a;display:flex;align-items:center;justify-content:center">1</div>
+      </div>
+      <p class="small">주황 = AI (상황판별·분석·판단·주문설계) · 초록 = 안전장치 (11게이트 체인 + 리스크 엔진) · 파랑 = 실행 1단계</p>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h3>AI 애널리스트 데스크 구조</h3>
+        <svg viewBox="0 0 440 300" role="img" aria-label="AI 데스크 구조">
+          <rect x="130" y="8" width="180" height="36" rx="10" fill="#eeebf5" stroke="#6b5b8a"/>
+          <text x="220" y="31" text-anchor="middle" font-size="12.5" font-weight="700" fill="#6b5b8a">상황 판별 (경량 분류기)</text>
+          <path d="M175 44 L110 74 M265 44 L330 74" stroke="#c9c4b6" stroke-width="2"/>
+          <rect x="20" y="78" width="180" height="34" rx="10" fill="#fff" stroke="#c9c4b6"/>
+          <text x="110" y="100" text-anchor="middle" font-size="12" font-weight="700" fill="#4a463c">평상시 : 라이트 경로 (1콜)</text>
+          <rect x="240" y="78" width="180" height="34" rx="10" fill="#f9ece5" stroke="#c96442"/>
+          <text x="330" y="100" text-anchor="middle" font-size="12" font-weight="700" fill="#c96442">중요 국면 : 풀 데스크 (6콜)</text>
+          <path d="M330 112 L330 130" stroke="#c9c4b6" stroke-width="2"/>
+          <g font-size="10.5" font-weight="700">
+            <rect x="212" y="134" width="70" height="30" rx="8" fill="#e9eff5" stroke="#4a6b8a"/><text x="247" y="153" text-anchor="middle" fill="#4a6b8a">기술 분석</text>
+            <rect x="288" y="134" width="70" height="30" rx="8" fill="#e9eff5" stroke="#4a6b8a"/><text x="323" y="153" text-anchor="middle" fill="#4a6b8a">뉴스</text>
+            <rect x="364" y="134" width="70" height="30" rx="8" fill="#e9eff5" stroke="#4a6b8a"/><text x="399" y="153" text-anchor="middle" fill="#4a6b8a">감성</text>
+            <rect x="250" y="170" width="70" height="30" rx="8" fill="#e9eff5" stroke="#4a6b8a"/><text x="285" y="189" text-anchor="middle" fill="#4a6b8a">거시·펀더</text>
+            <rect x="326" y="170" width="108" height="30" rx="8" fill="#f6f0e0" stroke="#a3803c"/><text x="380" y="189" text-anchor="middle" fill="#a3803c">트레이더+리스크 토론</text>
+          </g>
+          <path d="M330 204 L330 218" stroke="#c9c4b6" stroke-width="2"/>
+          <rect x="240" y="222" width="180" height="32" rx="10" fill="#eeebf5" stroke="#6b5b8a"/>
+          <text x="330" y="243" text-anchor="middle" font-size="11.5" font-weight="700" fill="#6b5b8a">검증자 — 확신도 하향·HOLD 전환만 가능</text>
+          <path d="M110 112 L110 268 L200 268 M330 254 L330 268 L240 268" stroke="#c9c4b6" stroke-width="2" fill="none"/>
+          <rect x="150" y="256" width="140" height="26" rx="8" fill="#c96442"/>
+          <text x="220" y="274" text-anchor="middle" font-size="11.5" font-weight="800" fill="#fff">BUY / SELL / HOLD + 확신도</text>
+        </svg>
+        <p class="small" style="margin-top:10px">라이트 경로가 거래를 원하면 자동으로 풀 데스크(1+6콜)로 승격 — 돈이 움직이는 판단은 반드시 위원회를 거칩니다.</p>
+      </div>
+      <div class="card">
+        <h3>11게이트 안전 체인 — 하나라도 막히면 거래 없음</h3>
+        <ol style="font-size:13.5px;color:var(--ink2);margin:8px 0 0 20px;line-height:2">
+          <li>자동실행 스위치 ON 확인</li>
+          <li>게이트웨이 준비 (라이브는 fail-closed)</li>
+          <li>이용 권한(플랜) 확인</li>
+          <li>확신도 ≥ 임계값 (기본 0.65)</li>
+          <li>시장 개장 여부</li>
+          <li>이벤트 가드 (FOMC·CPI ±1시간)</li>
+          <li>쿨다운 (과매매 방지)</li>
+          <li>레짐 필터</li>
+          <li>시세 신선도 (오래된 가격 거부)</li>
+          <li>예산 한도</li>
+          <li>리스크 엔진 : 브레이커 → 한도 → 변동성 사이징 → 켈리</li>
+        </ol>
+        <div class="note">거부된 사이클도 <b>skip_reason</b>이 한 건씩 기록됩니다 — "왜 안 샀는지"까지 감사 가능한 시스템은 흔치 않습니다.</div>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card"><h3 style="font-size:16px">정확히 한 번 실행</h3><p class="small">리스(lease) · 단조 증가 사이클 번호 · 결정적 주문 ID · 트랜잭션 펜스로 중복 체결을 구조적으로 차단합니다.</p></div>
+      <div class="card"><h3 style="font-size:16px">포지션 맞춤 주문 설계</h3><p class="small">고정 5%/10%가 아니라 종목별로 — 같은 날 ETH 손절 2.8%/목표 6.5%, 소형 알트 5.5%/15%처럼 변동성에 맞춰 AI가 설계합니다.</p></div>
+      <div class="card"><h3 style="font-size:16px">~15개 킬 스위치</h3><p class="small">원버튼 전체 정지를 포함해 운영자가 즉시 개입할 수 있는 차단 스위치가 계층별로 준비되어 있습니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ ⑤ GATEWAY ═══════════════ -->
+<section id="gateway">
+  <div class="wrap">
+    <span class="eyebrow">05 · Live Trading Gateway — docs/gateway</span>
+    <h2>모의 → 섀도우 → 실거래, 신뢰의 3단 사다리</h2>
+    <p class="lead">실계좌는 검증된 다음의 이야기입니다. 같은 파이프라인이 3개 모드를 오가며,
+    <b>account_type 필드 하나</b>로 라우팅됩니다 — 모의에서 통한 전략이 그대로 실거래로 갑니다.</p>
+
+    <div class="grid g3" style="margin-top:28px">
+      <div class="card" style="border-top:4px solid var(--blue)">
+        <span class="tag blue">MODE 1</span>
+        <h3 style="margin-top:10px">Simulator (모의)</h3>
+        <p class="small">내부 원장만 사용. 리스크 0으로 전략을 검증하고 매매일지를 쌓습니다. 10건의 일지가 쌓이면 켈리 사이징이 활성화됩니다.</p>
+      </div>
+      <div class="card" style="border-top:4px solid var(--gold)">
+        <span class="tag gold">MODE 2</span>
+        <h3 style="margin-top:10px">Shadow (섀도우)</h3>
+        <p class="small">모의 원장이 기준, 브로커 샌드박스에 <b>동일 주문을 미러링</b>. 실제 시장 체결과의 괴리(드리프트)를 기록해 실전 투입 전 마지막 검증을 합니다.</p>
+      </div>
+      <div class="card" style="border-top:4px solid var(--clay)">
+        <span class="tag clay">MODE 3</span>
+        <h3 style="margin-top:10px">Live (실거래)</h3>
+        <p class="small"><b>브로커 우선</b> — 브로커가 FILLED를 확인해야만 포지션이 생성됩니다. 원장이 브로커가 확인 안 한 체결을 주장하는 일은 불가능합니다.</p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h3>실거래까지 7단계 온보딩</h3>
+        <div class="flow" style="margin:8px -6px 0">
+          <div class="fstep" style="min-width:120px"><div class="n">1</div><div class="t">브로커 키 등록</div><div class="d">AES-GCM 암호화 저장</div></div>
+          <div class="fstep" style="min-width:120px"><div class="n">2</div><div class="t">게이트웨이 연결</div><div class="d">Alpaca · Binance · IBKR</div></div>
+          <div class="fstep" style="min-width:120px"><div class="n">3</div><div class="t">약관 동의</div><div class="d">IP·UA·버전 불변 기록</div></div>
+        </div>
+        <div class="flow" style="margin:0 -6px">
+          <div class="fstep" style="min-width:120px"><div class="n">4</div><div class="t">헬스 체크</div><div class="d">연결·권한 자동 점검</div></div>
+          <div class="fstep" style="min-width:120px"><div class="n">5</div><div class="t">섀도우 검증</div><div class="d">드리프트 확인</div></div>
+          <div class="fstep" style="min-width:120px"><div class="n">6</div><div class="t">라이브 전환</div><div class="d">rule 단위 opt-in</div></div>
+        </div>
+        <div class="flow" style="margin:0 -6px">
+          <div class="fstep" style="min-width:120px;background:var(--clay-soft);border-color:#ecd0c2"><div class="n">7</div><div class="t">모니터링</div><div class="d">2분 주기 리컨실러 + 드리프트 알림</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>보안 &amp; 무결성 원칙</h3>
+        <ul class="plain check" style="margin-top:8px">
+          <li>브로커 키는 <b>AES-GCM 암호화</b> — 저장 후 재표시·클라이언트 반환 절대 없음</li>
+          <li>바이낸스 <b>출금 권한 금지</b> — 거래 권한만 허용</li>
+          <li>라이브 조건 미충족 시 <b>몰래 모의로 강등하지 않고</b> 사유와 함께 명시적 거부</li>
+          <li>유령 포지션 없음 — 브로커 수락 후에만 원장 기록</li>
+          <li>리컨실러는 <b>탐지만</b> — 백그라운드가 돈을 임의 수정하지 않고 사람에게 보고</li>
+          <li>7개 안전 불변식이 테스트로 고정 — 총 <b>1,386개 테스트</b>, 3-에이전트 QA</li>
+          <li>사용자 가이드라인은 AI 규칙을 <b>조이는 방향으로만</b> 덮어쓸 수 있음</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ ⑥ ARCHITECTURE ═══════════════ -->
+<section id="arch" style="background:var(--card2)">
+  <div class="wrap">
+    <span class="eyebrow">06 · System Architecture — docs/architecture</span>
+    <h2>스타트업 속도와 기관급 구조를 동시에</h2>
+    <p class="lead">백엔드 6.9만 라인 · 프론트 3만 라인, 87개 테이블, 28개 비동기 데몬이 세 역할(시세·정산·리서치)로 분리되어 돌아갑니다.
+    "돈이 움직이는 코드"는 싱글턴 워커에 격리되어 이중 실행이 불가능합니다.</p>
+
+    <div class="card" style="margin-top:28px">
+      <svg viewBox="0 0 920 400" role="img" aria-label="시스템 아키텍처">
+        <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b8b3a4"/></marker></defs>
+        <!-- clients -->
+        <g font-size="12" font-weight="700">
+          <rect x="20" y="20" width="150" height="40" rx="10" fill="#fff" stroke="#c9c4b6"/><text x="95" y="45" text-anchor="middle" fill="#4a463c">사용자 (React SPA)</text>
+          <rect x="20" y="70" width="150" height="40" rx="10" fill="#fff" stroke="#c9c4b6"/><text x="95" y="95" text-anchor="middle" fill="#4a463c">AI 에이전트 API</text>
+          <rect x="20" y="120" width="150" height="40" rx="10" fill="#fff" stroke="#c9c4b6"/><text x="95" y="145" text-anchor="middle" fill="#4a463c">관리자 콘솔</text>
+        </g>
+        <path d="M172 40 L230 84 M172 90 L230 90 M172 140 L230 96" stroke="#b8b3a4" stroke-width="2"/>
+        <rect x="234" y="66" width="110" height="48" rx="10" fill="#f5f3ec" stroke="#a3803c"/>
+        <text x="289" y="87" text-anchor="middle" font-size="12.5" font-weight="700" fill="#a3803c">nginx</text>
+        <text x="289" y="103" text-anchor="middle" font-size="10.5" fill="#8a8578">TLS · 라우팅</text>
+        <path d="M346 90 L400 90" stroke="#b8b3a4" stroke-width="2.5" marker-end="url(#arr2)"/>
+        <!-- api -->
+        <rect x="404" y="40" width="190" height="100" rx="12" fill="#e9eff5" stroke="#4a6b8a" stroke-width="1.5"/>
+        <text x="499" y="66" text-anchor="middle" font-size="13.5" font-weight="800" fill="#4a6b8a">FastAPI 서버</text>
+        <text x="499" y="88" text-anchor="middle" font-size="11" fill="#4a463c">Python 3.12 · 292 엔드포인트</text>
+        <text x="499" y="105" text-anchor="middle" font-size="11" fill="#4a463c">32개 모듈 · HTTP 전용</text>
+        <text x="499" y="122" text-anchor="middle" font-size="11" fill="#4a463c">수평 확장 가능</text>
+        <!-- worker -->
+        <rect x="404" y="170" width="190" height="130" rx="12" fill="#f9ece5" stroke="#c96442" stroke-width="1.5"/>
+        <text x="499" y="196" text-anchor="middle" font-size="13.5" font-weight="800" fill="#c96442">싱글턴 워커</text>
+        <text x="499" y="218" text-anchor="middle" font-size="11" fill="#4a463c">28개 asyncio 데몬</text>
+        <text x="499" y="236" text-anchor="middle" font-size="11" fill="#4a463c">시세 : 900초 평가 + 실시간 WS</text>
+        <text x="499" y="254" text-anchor="middle" font-size="11" fill="#4a463c">정산 : 60초 자동화 틱 · 30초 SL/TP</text>
+        <text x="499" y="272" text-anchor="middle" font-size="11" fill="#4a463c">리서치 : 뉴스·거시·ETF·심리</text>
+        <text x="499" y="290" text-anchor="middle" font-size="10.5" fill="#8a8578">락 상실 = 즉시 종료 (이중 실행 불가)</text>
+        <!-- db -->
+        <rect x="640" y="40" width="120" height="56" rx="12" fill="#e9f2ec" stroke="#4a7c59"/>
+        <text x="700" y="64" text-anchor="middle" font-size="12.5" font-weight="800" fill="#4a7c59">MySQL 8</text>
+        <text x="700" y="82" text-anchor="middle" font-size="10.5" fill="#4a463c">87 테이블 · alembic</text>
+        <rect x="640" y="108" width="120" height="42" rx="12" fill="#fff" stroke="#c9c4b6"/>
+        <text x="700" y="127" text-anchor="middle" font-size="12" font-weight="700" fill="#4a463c">Redis (선택)</text>
+        <text x="700" y="143" text-anchor="middle" font-size="10.5" fill="#8a8578">무중단 성능 저하 설계</text>
+        <path d="M596 76 L636 68 M596 110 L636 126 M596 210 L636 84 M596 240 L636 132" stroke="#b8b3a4" stroke-width="2"/>
+        <!-- external -->
+        <rect x="800" y="20" width="110" height="130" rx="12" fill="#fff" stroke="#c9c4b6"/>
+        <text x="855" y="42" text-anchor="middle" font-size="11.5" font-weight="800" fill="#4a463c">시장 데이터</text>
+        <text x="855" y="62" text-anchor="middle" font-size="10.5" fill="#8a8578">Alpha Vantage</text>
+        <text x="855" y="79" text-anchor="middle" font-size="10.5" fill="#8a8578">Hyperliquid WS</text>
+        <text x="855" y="96" text-anchor="middle" font-size="10.5" fill="#8a8578">Polymarket</text>
+        <text x="855" y="113" text-anchor="middle" font-size="10.5" fill="#8a8578">+ 무료 소스 11종</text>
+        <rect x="800" y="170" width="110" height="70" rx="12" fill="#eeebf5" stroke="#6b5b8a"/>
+        <text x="855" y="192" text-anchor="middle" font-size="11.5" font-weight="800" fill="#6b5b8a">LLM 레이어</text>
+        <text x="855" y="210" text-anchor="middle" font-size="10.5" fill="#4a463c">로컬 Ollama (현행)</text>
+        <text x="855" y="227" text-anchor="middle" font-size="10.5" fill="#4a463c">+ 클라우드 8사 지원</text>
+        <rect x="800" y="260" width="110" height="70" rx="12" fill="#f6f0e0" stroke="#a3803c"/>
+        <text x="855" y="282" text-anchor="middle" font-size="11.5" font-weight="800" fill="#a3803c">브로커</text>
+        <text x="855" y="300" text-anchor="middle" font-size="10.5" fill="#4a463c">Alpaca · Binance</text>
+        <text x="855" y="317" text-anchor="middle" font-size="10.5" fill="#4a463c">IBKR</text>
+        <path d="M598 200 L796 90 M598 220 L796 205 M598 260 L796 292" stroke="#b8b3a4" stroke-width="2" stroke-dasharray="4 4"/>
+        <text x="240" y="380" font-size="11.5" fill="#8a8578">실행 라우팅 : simulator (기본) → shadow (샌드박스 미러) → live (브로커 우선, fail-closed) · ECS Fargate 확장 경로 문서화 완료</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+<!-- ═══════════════ ★ LOCAL AI FLEET ═══════════════ -->
+<section id="fleet">
+  <div class="wrap">
+    <span class="eyebrow">★ Next Step Proposal — Local AI Fleet</span>
+    <h2>Mac Studio 10대 로컬 AI 플릿 —<br>목표는 단 하나, <span style="color:var(--clay)">수익 창출</span>입니다</h2>
+    <p class="lead">Sooppiy는 <b>이미 로컬 AI로 운영 중</b>입니다 (Ollama 단일 호스트, gpt-oss 20b/120b).
+    문제는 그 "1대"가 병목이자 단일 장애점(SPOF)이라는 것. 10대 플릿은 비용 절감 프로젝트가 아니라
+    <b>더 많은 신호 · 더 빠른 판단 · 무중단 운영으로 수익을 만드는 엔진</b>입니다.</p>
+
+    <div class="callout">
+      <div class="t">현재 1대 운영의 실측 한계 (2026-08 운영 리포트 기준)</div>
+      <div class="grid g4" style="margin-top:12px">
+        <div><div style="font-size:24px;font-weight:800;color:var(--red)" class="num">20%</div><div class="small">지연 에피소드 최악 시간대<br>"AI 응답 없음 → 강제 보류" 비율</div></div>
+        <div><div style="font-size:24px;font-weight:800;color:var(--red)" class="num">15–20%</div><div class="small">풀 데스크 분석이 허용되는<br>사이클 비율 (용량 부족으로 제한)</div></div>
+        <div><div style="font-size:24px;font-weight:800;color:var(--red)" class="num">78–150초</div><div class="small">과부하 시 호출 지연<br>(평시 ~5.5초의 최대 27배)</div></div>
+        <div><div style="font-size:24px;font-weight:800;color:var(--red)" class="num">1대</div><div class="small">전체 AI 데스크가 의존하는<br>단일 장애점 — 장애 시 포지션 방치</div></div>
+      </div>
+      <p class="small" style="margin-top:12px">시간당 178–189 LLM 호출 · 의사결정 1건당 약 6콜 — 용량이 곧 의사결정 품질을 제한하고 있습니다.</p>
+    </div>
+
+    <h3 style="margin-top:34px;font-size:22px">수익을 만드는 3개의 지렛대</h3>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="card" style="border-top:4px solid var(--clay)">
+        <span class="tag clay">지렛대 1 · 기회 확대</span>
+        <h3 style="margin-top:10px;font-size:17px">10배 분석 용량 = 더 많은 수익 신호</h3>
+        <p class="small">모든 사이클에 풀 데스크 가동(현행 15–20% → 100%), 검증자 상시 가동, 30분 분석 클램프 해제,
+        플릿 슬롯 10→25개 확대, 스캔 종목 수 확대 — 한계비용 0원으로 <b>거래 가능한 신호 자체가 늘어납니다.</b></p>
+      </div>
+      <div class="card" style="border-top:4px solid var(--green)">
+        <span class="tag green">지렛대 2 · 손실 차단</span>
+        <h3 style="margin-top:10px;font-size:17px">무중단 = 방치되는 포지션 제로</h3>
+        <p class="small">단일 호스트 장애로 손실 포지션이 수 시간 방치된 실사례가 있었습니다.
+        N+1 이중화 + 클라우드 버스트 폴백으로 <b>"AI 응답 없음" 시간대를 0으로</b> — 막은 손실이 곧 수익입니다.</p>
+      </div>
+      <div class="card" style="border-top:4px solid var(--blue)">
+        <span class="tag blue">지렛대 3 · 비용 제로화</span>
+        <h3 style="margin-top:10px;font-size:17px">클라우드 API 대비 월 ~800만원 회피</h3>
+        <p class="small">동일 호출량을 클라우드(Claude 티어)로 돌리면 <b>월 약 $6,000</b> [추정].
+        로컬 플릿의 한계비용은 전기요금 월 9–23만원뿐 — 회피 비용이 그대로 순이익에 쌓입니다.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:26px">
+      <h3>10노드 플릿 토폴로지</h3>
+      <p class="small" style="margin-bottom:14px">역할별 3개 티어 — 어느 노드가 죽어도 라우터가 우회하고, 최후엔 클라우드로 버스트합니다.</p>
+      <svg viewBox="0 0 920 330" role="img" aria-label="Mac Studio 10대 토폴로지">
+        <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b8b3a4"/></marker></defs>
+        <rect x="20" y="120" width="170" height="70" rx="12" fill="#e9eff5" stroke="#4a6b8a" stroke-width="1.5"/>
+        <text x="105" y="147" text-anchor="middle" font-size="13" font-weight="800" fill="#4a6b8a">Sooppiy 트레이딩 엔진</text>
+        <text x="105" y="166" text-anchor="middle" font-size="10.5" fill="#4a463c">기존 코드 그대로</text>
+        <text x="105" y="181" text-anchor="middle" font-size="10.5" fill="#4a463c">base_url만 변경</text>
+        <path d="M192 155 L248 155" stroke="#b8b3a4" stroke-width="2.5" marker-end="url(#arr3)"/>
+        <rect x="252" y="110" width="160" height="90" rx="12" fill="#f9ece5" stroke="#c96442" stroke-width="1.5"/>
+        <text x="332" y="137" text-anchor="middle" font-size="13" font-weight="800" fill="#c96442">라우터 노드 ×1</text>
+        <text x="332" y="156" text-anchor="middle" font-size="10.5" fill="#4a463c">M4 Max 64GB</text>
+        <text x="332" y="171" text-anchor="middle" font-size="10.5" fill="#4a463c">OpenAI 호환 게이트웨이</text>
+        <text x="332" y="186" text-anchor="middle" font-size="10.5" fill="#4a463c">30초 헬스체크 · 큐 관리</text>
+        <path d="M414 130 L470 70 M414 155 L470 155 M414 180 L470 250" stroke="#b8b3a4" stroke-width="2.5" marker-end="url(#arr3)"/>
+        <rect x="474" y="30" width="250" height="82" rx="12" fill="#e9f2ec" stroke="#4a7c59" stroke-width="1.5"/>
+        <text x="599" y="55" text-anchor="middle" font-size="13" font-weight="800" fill="#4a7c59">신호 티어 ×5 — M4 Max 128GB</text>
+        <text x="599" y="76" text-anchor="middle" font-size="10.5" fill="#4a463c">32B급 모델 · 초당 ~38토큰 [추정]</text>
+        <text x="599" y="92" text-anchor="middle" font-size="10.5" fill="#4a463c">틱 단위 매매 신호 · 1초 미만 첫 응답</text>
+        <rect x="474" y="126" width="250" height="82" rx="12" fill="#eeebf5" stroke="#6b5b8a" stroke-width="1.5"/>
+        <text x="599" y="151" text-anchor="middle" font-size="13" font-weight="800" fill="#6b5b8a">분석 티어 ×4 — M3 Ultra 256GB</text>
+        <text x="599" y="172" text-anchor="middle" font-size="10.5" fill="#4a463c">70B급 초당 ~25토큰 [실측] · 235B MoE 탑재 가능</text>
+        <text x="599" y="188" text-anchor="middle" font-size="10.5" fill="#4a463c">2대는 Thunderbolt 5 페어링 → 대형 모델 분산 추론</text>
+        <rect x="474" y="222" width="250" height="76" rx="12" fill="#fff" stroke="#c9c4b6" stroke-dasharray="6 4" stroke-width="1.5"/>
+        <text x="599" y="247" text-anchor="middle" font-size="13" font-weight="800" fill="#8a8578">클라우드 버스트 (보험)</text>
+        <text x="599" y="268" text-anchor="middle" font-size="10.5" fill="#8a8578">피크 초과·노드 전멸 시에만 Claude/GPT 호출</text>
+        <text x="599" y="284" text-anchor="middle" font-size="10.5" fill="#8a8578">고정비 → 피크 전용 변동비로 전환</text>
+        <rect x="760" y="110" width="146" height="90" rx="12" fill="#f6f0e0" stroke="#a3803c"/>
+        <text x="833" y="137" text-anchor="middle" font-size="12" font-weight="800" fill="#a3803c">네트워크</text>
+        <text x="833" y="157" text-anchor="middle" font-size="10.5" fill="#4a463c">10GbE 데이터 플레인</text>
+        <text x="833" y="173" text-anchor="middle" font-size="10.5" fill="#4a463c">TB5 120Gb/s 모델 플레인</text>
+        <text x="833" y="189" text-anchor="middle" font-size="10.5" fill="#4a463c">UPS 이중 전원</text>
+        <text x="20" y="318" font-size="11.5" fill="#8a8578">타임아웃 예산 원칙 : 로컬이 N초 내 미응답 → 클라우드 또는 룰 기반 기본값으로 즉시 폴백 — 아픈 노드를 기다리는 거래는 없습니다.</text>
+      </svg>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h3>월 운영비 비교 — 손익분기 약 8개월 [추정]</h3>
+        <p class="small" style="margin-bottom:12px">동일 호출량(월 50만 요청) 기준. 클라우드 회피 비용만으로도 하드웨어 투자가 8개월이면 회수됩니다.</p>
+        <svg viewBox="0 0 460 250" role="img" aria-label="누적 비용 비교 차트">
+          <line x1="50" y1="20" x2="50" y2="200" stroke="#d9d5c9"/>
+          <line x1="50" y1="200" x2="440" y2="200" stroke="#d9d5c9"/>
+          <text x="18" y="30" font-size="10" fill="#8a8578">억원</text>
+          <text x="30" y="55" font-size="10" fill="#8a8578" text-anchor="end">1.5</text>
+          <text x="30" y="105" font-size="10" fill="#8a8578" text-anchor="end">1.0</text>
+          <text x="30" y="155" font-size="10" fill="#8a8578" text-anchor="end">0.5</text>
+          <line x1="50" y1="50" x2="440" y2="50" stroke="#efece4"/>
+          <line x1="50" y1="100" x2="440" y2="100" stroke="#efece4"/>
+          <line x1="50" y1="150" x2="440" y2="150" stroke="#efece4"/>
+          <!-- cloud cumulative: 830만/mo → 18mo = 1.494억. x: 50+21.7/mo, y:200-100/억 -->
+          <path d="M50 200 L440 50.6" stroke="#a44a3f" stroke-width="3" fill="none"/>
+          <!-- local: 0.70억 capex + 20만/mo → 18mo=0.736억 -->
+          <path d="M50 130 L440 126.4" stroke="#4a7c59" stroke-width="3" fill="none"/>
+          <circle cx="237" cy="128.3" r="6" fill="#c96442"/>
+          <text x="237" y="115" text-anchor="middle" font-size="11.5" font-weight="800" fill="#c96442">손익분기 ~8개월</text>
+          <text x="120" y="188" font-size="11" fill="#a44a3f" font-weight="700">클라우드 누적 (월 830만원)</text>
+          <text x="435" y="145" text-anchor="end" font-size="10.5" fill="#4a7c59" font-weight="700">로컬 플릿 (CAPEX 0.7억 + 월 20만원)</text>
+          <text x="50" y="218" font-size="10" fill="#8a8578">0</text>
+          <text x="180" y="218" font-size="10" fill="#8a8578">6개월</text>
+          <text x="310" y="218" font-size="10" fill="#8a8578">12개월</text>
+          <text x="425" y="218" font-size="10" fill="#8a8578">18개월</text>
+          <text x="50" y="242" font-size="10.5" fill="#8a8578">호출량 2배(월 100만 요청) 시 손익분기 ~4개월로 단축 [추정]</text>
+        </svg>
+      </div>
+      <div class="card">
+        <h3>투자 내역 (CAPEX) — 총 약 7,000만원</h3>
+        <div class="scrollx">
+        <table>
+          <tr><th>구성</th><th>수량</th><th>단가 [출처: apple.com/kr 기준]</th><th>소계</th></tr>
+          <tr><td>M3 Ultra 256GB / 2TB — 분석 티어</td><td class="num">4</td><td class="num">~940만원</td><td class="num">~3,760만원</td></tr>
+          <tr><td>M4 Max 128GB / 1TB — 신호 티어</td><td class="num">5</td><td class="num">~535만원</td><td class="num">~2,675만원</td></tr>
+          <tr><td>M4 Max 64GB — 라우터·관제</td><td class="num">1</td><td class="num">~360만원</td><td class="num">~360만원</td></tr>
+          <tr><td>10GbE 스위치 · UPS · 케이블</td><td class="num">1식</td><td class="num">~215만원</td><td class="num">~215만원</td></tr>
+          <tr><td style="font-weight:800">합계</td><td></td><td></td><td class="num" style="font-weight:800;color:var(--clay)">~7,010만원</td></tr>
+        </table>
+        </div>
+        <ul class="plain check" style="margin-top:14px">
+          <li>총 통합 메모리 <b>1.7TB</b> — GPU 서버 없이 235B급 모델까지 구동</li>
+          <li>전력 소비 클러스터 전체 <b>1.5–2kW</b> — 8-GPU 서버 1대(10kW+)의 1/5 이하</li>
+          <li>월 전기요금 <b>약 9–23만원</b> (산업용 156–163원/kWh 기준) [추정]</li>
+          <li>소음·발열 최소 — 사무 공간에 그대로 설치 가능, 별도 서버룸 불필요</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;border:2px solid var(--clay)">
+      <h3 style="color:var(--clay)">수익 목표 시나리오 [추정 — 성과 보장 아님]</h3>
+      <p class="small" style="margin-bottom:14px">운용자금 3억원 · 프레임워크 검증 목표 승률 55–58% · R:R ≥ 2 리스크 게이트 전제.
+      아래 수치는 개발 목표 설정용 시나리오이며 수익을 보장하지 않습니다.</p>
+      <div class="scrollx">
+      <table>
+        <tr><th>시나리오</th><th>월 수익률 가정</th><th>월 트레이딩 수익</th><th>+ 클라우드 비용 회피</th><th>월 합계 효과</th><th>CAPEX 회수</th></tr>
+        <tr><td><span class="tag blue">보수</span></td><td class="num">+1.5%</td><td class="num">450만원</td><td class="num">830만원</td><td class="num" style="font-weight:700">1,280만원</td><td class="num">~5.5개월</td></tr>
+        <tr><td><span class="tag gold">기본</span></td><td class="num">+3.0%</td><td class="num">900만원</td><td class="num">830만원</td><td class="num" style="font-weight:700">1,730만원</td><td class="num">~4개월</td></tr>
+        <tr><td><span class="tag clay">공격</span></td><td class="num">+5.0%</td><td class="num">1,500만원</td><td class="num">830만원</td><td class="num" style="font-weight:700">2,330만원</td><td class="num">~3개월</td></tr>
+        <tr><td><span class="tag red">하방</span></td><td class="num">0% (트레이딩 손익 없음)</td><td class="num">0원</td><td class="num">830만원</td><td class="num" style="font-weight:700">830만원</td><td class="num">~8.4개월</td></tr>
+      </table>
+      </div>
+      <p class="small" style="margin-top:12px">핵심 : <b>트레이딩이 본전이어도 클라우드 비용 회피만으로 8개월 내 회수</b>됩니다.
+      트레이딩 수익은 그 위에 얹히는 업사이드이며, 10배 분석 용량·무중단이 그 확률을 끌어올리는 구조입니다.</p>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h3>노드별 추론 성능 (초당 토큰)</h3>
+        <div class="bar-row" style="grid-template-columns:190px 1fr 70px"><div class="bar-label">32B · M4 Max</div><div class="bar-track"><div class="bar-fill" style="width:95%;background:#4a7c59"></div></div><div class="bar-val num">~38 [추정]</div></div>
+        <div class="bar-row" style="grid-template-columns:190px 1fr 70px"><div class="bar-label">70B · M3 Ultra</div><div class="bar-track"><div class="bar-fill" style="width:63%;background:#6b5b8a"></div></div><div class="bar-val num">~25 [실측]</div></div>
+        <div class="bar-row" style="grid-template-columns:190px 1fr 70px"><div class="bar-label">671B MoE · Ultra 1대</div><div class="bar-track"><div class="bar-fill" style="width:45%;background:#6b5b8a"></div></div><div class="bar-val num">17–20 [실측]</div></div>
+        <div class="bar-row" style="grid-template-columns:190px 1fr 70px"><div class="bar-label">대형 MoE · TB5 2대 분산</div><div class="bar-track"><div class="bar-fill" style="width:33%;background:#c9c4b6"></div></div><div class="bar-val num">10–15 [추정]</div></div>
+        <p class="small" style="margin-top:10px">신호 티어는 2–4K 프롬프트에서 1초 미만 첫 토큰 — 틱 단위 판단에 충분. 대형 분산 추론은 일일 전략 개정 등 저빈도 작업 전용.</p>
+      </div>
+      <div class="card">
+        <h3>1대 → 10대 : 무엇이 달라지나</h3>
+        <div class="scrollx">
+        <table>
+          <tr><th></th><th>현행 1대</th><th style="color:var(--clay)">10대 플릿</th></tr>
+          <tr><td>풀 데스크 분석 비율</td><td class="num">15–20% 사이클</td><td class="num" style="font-weight:700">100% 사이클</td></tr>
+          <tr><td>AI 응답 없음(최악 시간)</td><td class="num">20%</td><td class="num" style="font-weight:700">0% 목표 (버스트 폴백)</td></tr>
+          <tr><td>플릿 슬롯</td><td class="num">10 (요금제 상한)</td><td class="num" style="font-weight:700">25 (최대 티어 해제)</td></tr>
+          <tr><td>분석 주기 클램프</td><td class="num">30분</td><td class="num" style="font-weight:700">해제 가능</td></tr>
+          <tr><td>장애 시</td><td>전체 데스크 정지</td><td style="font-weight:700">N+1 자동 우회</td></tr>
+          <tr><td>전략·데이터 보관</td><td>자체 서버 1대</td><td style="font-weight:700">100% 사내 — 외부 유출 0</td></tr>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:18px">
+      <b>정직한 리스크 고지</b> — ① Apple이 2026년 중반 512GB 옵션을 단종, 현행 최대 256GB (구매 시점 재확인 필요, M5 Ultra 출시설 있음 → 계약에 구매 시점 조항 권장) ·
+      ② Apple Silicon은 긴 컨텍스트(16–32K) 프리필이 느림 — 트레이딩 프롬프트(2–4K)는 영향 미미 ·
+      ③ 다중 노드 분산 추론(exo/MLX-distributed)은 커뮤니티 성숙도 단계 — 페어링은 2대로 한정 설계 ·
+      ④ [추정] 표기 수치는 도입 PoC에서 실측 검증 후 확정합니다.
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ ROADMAP ═══════════════ -->
+<section id="roadmap" style="background:var(--card2)">
+  <div class="wrap">
+    <span class="eyebrow">Roadmap · 3-Phase 도입 계획</span>
+    <h2>PoC 2대로 검증하고, 수익으로 증설합니다</h2>
+    <div class="grid g3" style="margin-top:26px">
+      <div class="card" style="border-top:4px solid var(--blue)">
+        <span class="tag blue">PHASE 1 · 4주</span>
+        <h3 style="margin-top:10px">PoC — 2대 검증</h3>
+        <ul class="plain check" style="margin-top:6px">
+          <li>M3 Ultra 1대 + M4 Max 1대 (~1,475만원)</li>
+          <li>기존 Ollama 트래픽 이중화 → SPOF 즉시 해소</li>
+          <li>토큰/초 · 지연 · no-verdict 비율 실측</li>
+          <li>[추정] 수치 전부 실데이터로 확정</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:4px solid var(--gold)">
+        <span class="tag gold">PHASE 2 · 6주</span>
+        <h3 style="margin-top:10px">확장 — 6대 + 라우터</h3>
+        <ul class="plain check" style="margin-top:6px">
+          <li>신호 티어 완성, OpenAI 호환 라우터 가동</li>
+          <li>풀 데스크 100% 사이클 전환</li>
+          <li>클라우드 버스트 폴백 + 관제 대시보드</li>
+          <li>플릿 슬롯 확대 · 스캔 종목 확대</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:4px solid var(--clay)">
+        <span class="tag clay">PHASE 3 · 8주</span>
+        <h3 style="margin-top:10px">완성 — 10대 수익 플릿</h3>
+        <ul class="plain check" style="margin-top:6px">
+          <li>분산 추론 페어 가동 (일일 전략 개정)</li>
+          <li>수익 시나리오 대비 실적 리포트 자동화</li>
+          <li>운용자금 단계적 증액 게이트</li>
+          <li>24/7 무인 운영 + 월간 성과 보고</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:26px">
+      <div class="t">이 제안의 한 줄 요약</div>
+      <p style="font-size:16.5px;color:var(--ink2)">검증된 트레이딩 파이프라인은 이미 돌아가고 있습니다.
+      지금 병목은 전략이 아니라 <b>추론 용량</b>입니다. 약 7,000만원의 하드웨어로 그 병목을 제거하면 —
+      트레이딩이 본전이어도 8개월 내 회수되고, 목표 시나리오에서는 <b>3–5개월 회수 후 월 1,200만원 이상의 효과</b>가 계속 쌓입니다.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p style="font-weight:700;color:var(--ink2);margin-bottom:8px">Sooppiy AI — sooppiy.com</p>
+    <p>본 문서는 sooppiy.com 회원 문서(가이드 · 게이트웨이 · AI 파라미터 · 전략 · 의사결정)와 2026-08 운영 리포트를 기반으로 작성된 소개·제안 자료입니다.</p>
+    <p style="margin-top:6px">모든 전략·파라미터 설명은 교육 목적이며 투자 조언이 아닙니다. 과거 성과와 시나리오 수치는 미래 수익을 보장하지 않습니다.
+    [추정] 표기 수치는 PoC 단계에서 실측으로 검증됩니다. 손절 실효 반응 시간 등 시스템 한계는 회원 문서에 투명하게 공개되어 있습니다.</p>
+    <p style="margin-top:10px">© 2026 Sooppiy. All rights reserved.</p>
+  </div>
+</footer>
+
+</body>
+</html>
