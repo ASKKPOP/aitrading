@@ -57,22 +57,23 @@ from llm_client import (
 )
 from market_i18n_data import MARKET_PHRASES
 
-# Tier C translation is pinned to a dedicated provider/model — deliberately NOT
-# the platform's live gpt-oss, which is both slow (~16s/call) and the SPOF for
-# every trading decision. Claude Sonnet answers in ~5s over the Anthropic API,
-# a separate resource that never competes with the trading daemon. Overridable
-# by env for ops (an empty MARKET_I18N_PROVIDER falls back to default resolution).
-_XLATE_PROVIDER = os.getenv("MARKET_I18N_PROVIDER", "anthropic").strip().lower()
-_XLATE_MODEL = os.getenv("MARKET_I18N_MODEL", "claude-sonnet-5").strip()
+# Tier C translation is pinned to the local AI server (owner, 2026-09-10:
+# "all AI API point local AI"). It previously rode a dedicated Claude Sonnet so
+# it never competed with the trading gpt-oss; that separation is gone, so
+# translation now shares the local tier with the desk. The model is left empty
+# on purpose: the local brief-tier model applies, and a stale paid model name
+# sent to Ollama would fail every translation. Overridable by env for ops (an
+# empty MARKET_I18N_PROVIDER falls back to default resolution).
+_XLATE_PROVIDER = os.getenv("MARKET_I18N_PROVIDER", "local").strip().lower()
+_XLATE_MODEL = os.getenv("MARKET_I18N_MODEL", "").strip()
 
 
 def _warm_enabled() -> bool:
     """Whether cache-miss external strings (Tier C) get LLM-translated at all.
 
-    ON by default now that translation runs on a dedicated model (Claude Sonnet,
-    see _XLATE_PROVIDER) rather than the trading gpt-oss — so it no longer risks
-    the SPOF, only Anthropic API tokens. MARKET_I18N_LLM_WARM=0 is the cost
-    kill-switch. Tiers A (enum labels, frontend) and B (our own catalogue) need
+    ON by default. Translation runs on the local AI server (see
+    _XLATE_PROVIDER), so it shares the trading tier's capacity; MARKET_I18N_LLM_WARM=0
+    is the kill-switch if that load ever taxes the desk. Tiers A (enum labels, frontend) and B (our own catalogue) need
     no model and are always on; only external, model-authored free text
     (Alpha Vantage headlines, the AI stock summary) is gated here and degrades
     to its English original when off or on a translation failure."""
@@ -279,8 +280,8 @@ def _llm_translate_batch(texts: list[str], lang: str) -> dict[str, str]:
     # first few lines and dropped the rest, so those summaries never localized.
     # ~1.2x the input character count leaves headroom for CJK expansion.
     max_tokens = min(4096, 200 + int(sum(len(t) for t in texts) * 1.2))
-    # Pin to the dedicated translation provider (Sonnet) so this never routes to
-    # the trading gpt-oss. source='rule' with no user/agent meters it to the
+    # Pin to the translation provider (local AI, see _XLATE_PROVIDER) regardless
+    # of any user context. source='rule' with no user/agent meters it to the
     # platform. An empty provider leaves default resolution in place.
     token = None
     if _XLATE_PROVIDER:

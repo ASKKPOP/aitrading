@@ -220,8 +220,9 @@ class CacheAndWarmTests(unittest.TestCase):
         self.assertEqual(self._store[market_i18n._cache_key(b, "ko")], "브라보 번역")
 
     def test_translate_batch_pins_dedicated_provider(self):
-        # Tier C must run on the dedicated translation model (Sonnet), never the
-        # trading gpt-oss — assert the LLM context in force during the call.
+        # Owner 2026-09-10: ALL AI runs on the local server. Tier C must pin
+        # provider=local with no model so the local brief tier model applies
+        # (a stale paid model name sent to Ollama fails every translation).
         from llm_client import current_llm_context
         seen = {}
 
@@ -235,8 +236,8 @@ class CacheAndWarmTests(unittest.TestCase):
              patch.object(market_i18n, "generate_text", side_effect=capture):
             out = market_i18n._llm_translate_batch(["A headline"], "ko")
         self.assertEqual(seen["provider"], market_i18n._XLATE_PROVIDER)
-        self.assertEqual(seen["provider"], "anthropic")
-        self.assertEqual(seen["model"], "claude-sonnet-5")
+        self.assertEqual(seen["provider"], "local")
+        self.assertIsNone(seen["model"])
         self.assertEqual(out, {"A headline": "번역"})
 
     def test_batch_token_budget_scales_with_content(self):
