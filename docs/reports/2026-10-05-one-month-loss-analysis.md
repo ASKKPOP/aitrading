@@ -267,3 +267,142 @@ Mutation testing of the shipped guards: 28 mutants, 27 killed, 1 equivalent.
   entries that have no measured edge. A positive result needs an entry rule
   that beats the random-timing null first (§5.4).
 
+
+## 8. Follow-up, same day (owner: four items)
+
+### 8.1 First readout of the §7 ship (deployed 17:25Z)
+
+| window | entry proposals | outcome |
+|---|---|---|
+| 16:25 → 17:25Z (before) | 7 buys the panel held | all 7 overridden and filled |
+| 17:25 → 17:56Z (after) | 4 buys (2 per account) | all 4 held, no fill |
+
+Only fill after the deploy: a protective (armed) partial exit on an existing
+position. No worker errors. n=4 — the F-VETO window is seven days.
+
+### 8.2 An entry the panel could not review is now held (owner: "make solution")
+
+`run_engine._order_discussion`: when every panel attempt fails, a REDUCTION
+still passes untouched (fail-open is for the book); an ENTRY becomes a hold
+labelled `decided_by: rule, fallback_reason: panel unavailable`, with
+`entry_held` on the `order_discussion` event. `PANEL_ENTRY_OVERRIDE=1` restores
+the old behaviour. Review found three side effects of making this the normal
+path during an outage, all fixed before shipping: the book is re-read after the
+meeting (a long closed during minutes of timeouts turned the desk's `sell` into
+an unreviewed short); held-entry cycles no longer count toward idle-retire (12
+of them retired the slot and benched its symbol for 12h); and the held decision
+keeps the desk's confidence (zeros diluted the agent-wide percentile gate).
+
+### 8.3 Local AI timeouts — it is an on/off state, not load
+
+Correction to §2.3 and §5.3. Successful local calls per day:
+
+| period | calls/day | large (≥2k-token) decision calls/day |
+|---|---|---|
+| 09-08 → 09-10 | 2,584 – 3,162 | 433 – 511 |
+| 09-11 → 10-04 | 103 – 154 (one day 664) | 0 – 5 |
+| 10-05 from 15:30Z | ≈300 per HOUR | 22 – 65 per hour |
+
+The change is a step, to the minute: last normal call 09-10T23:57:07Z; resumed
+10-05T15:3xZ. In between the host answered every hour of every day, but only
+~5 small requests an hour, with one two-hour window of full service
+(09-29 19:24 → 21:16Z, a large call completing about once a minute) and a
+small daily blip near 11:00Z. While "off", `/api/tags` would still have
+answered — small requests got through. Since 15:30Z today: zero timeouts in the
+new worker's log, 99 successful calls in the first 22 minutes.
+
+That is the signature of a host that sleeps and wakes briefly for network
+traffic — short requests fit inside the wake, a 60–90s generation does not —
+and is fully awake only when someone is using it. It is NOT oversubscription:
+the same host served ~3,000 calls a day through 09-10. Not proven from here
+(the host's power log is not readable from prod or from this machine). To
+prove and fix, on the AI host:
+
+    pmset -g log | grep -E " (Sleep|Wake|DarkWake) " | tail -40   # compare with the times above
+    pmset -g                                                      # look at sleep / powernap / standby
+    sudo pmset -a sleep 0 disksleep 0 standby 0 autopoweroff 0 powernap 0   # never system-sleep (display may)
+
+Nothing on the platform tells anyone when this happens: the desk ran 25 days
+with its trader silent on 79% of decisions. A timeout-rate alert is the
+software-side half of the fix and has not been built.
+
+### 8.4 A profit path — what was built, and what it is
+
+The only rule on the platform with a tested record is the trend module
+(daily Donchian breakout, ADX/200MA gate, 1.5×ATR stop, 3×ATR trail). Its
+2026-09-12 replay never reached the repo, so it was re-run independently and
+pre-registered (`research/trend_replay/`), then re-checked by a second pass
+(115 trades, fills verified against raw candles, no look-ahead).
+
+| run, 2020-2026, $25 risk a trade | n | net | payoff | years + | max DD |
+|---|---|---|---|---|---|
+| rule as written (completed bars, exits on the daily close) | 115 | +114.2R | 2.95 | 7/7 | 20.2R |
+| … without its best trade | 114 | +87.5R | | | |
+| module's own stop enforced intraday (V2) | 118 | +122.9R | 3.58 | 7/7 | 14.6R |
+| read hourly on the FORMING bar (how prod ran) | 164 | +92.9R | | 2025 negative | |
+| foreign 5% intraday stop (also how prod ran) | 115 | +71.4R | 4.79 | 7/7 | 12.3R |
+
+Permutation null p = 0.002 (0.020 against a null that preserves clustering).
+What this is: 47% winners, a median trade of −0.26R, about 19 trades a year,
+a losing streak of 11, a 20R drawdown lasting nine months, 507 days under a
+prior high. Shorts are +7R of the total. It is a strategy that is right about
+a year, not about a week. What cannot be removed: the five coins are large
+*today*; trades cluster, so 115 is far fewer independent bets; one history
+with two bull legs. A funding-cost proxy takes ~20R off.
+
+Prod was not running that rule. Four defects, all fixed in this ship:
+
+1. **Forming bar.** The hourly tick read the bar in progress as "today's
+   close". 63 of 164 replayed entries exist only because of that and net
+   −2.2R; the live BNB long of 09-21 is one the rule never takes (ADX 40.5).
+   Now: completed bars only, fetched fresh (the cached feed could serve a
+   mid-bar snapshot after the close), one ruling per completed bar, fills at
+   the live mark.
+2. **A foreign stop.** `orphan_reclaim` saw the module's run-less positions as
+   unowned and attached the account's 5% stop; the SL/TP watcher closed on it
+   intraday. That, not the module, closed the 09-18 XRP short. Cost in replay:
+   −42.7R (−15.3R without the one trade that carries most of it). Now the
+   sweep leaves the module's book alone and the row carries the module's own
+   initial stop (V2). The +122.9R assumes a fill AT the stop; the watcher
+   fills at the price it polls, and the review's bounds for that are +117.7R
+   (hour close) to +107.1R (hour extreme) — the low end is below
+   daily-close-only, so read V2 as "about the same return, smaller
+   drawdown", not as an improvement.
+3. **Phantom slots.** A position the watcher closed stayed in module state,
+   holding one of three slots, until the module's own exit was refused. Now
+   reconciled every cycle; a signal bar is entered at most once, so a
+   stopped-out signal is not re-taken an hour later; and `trend_stats` counts
+   every fill on the module's account — it had been blind to watcher closes,
+   i.e. to the stop-outs.
+
+4. **The module could not save its state.** `platform_settings.setting_value`
+   is a 65,535-byte TEXT column and the state carries its own telemetry log
+   (up to 400 rows of ~180 bytes). It stopped fitting at 366 rows: last
+   successful save 2026-09-27T06:25Z, and every hourly cycle for the eight
+   days after ran from that frozen snapshot (found by the independent
+   verifier, confirmed on prod: 65,403 bytes, strict mode). Old telemetry is
+   now trimmed so the state always fits. Checked against live completed bars:
+   no close in those eight days exceeded the saved highs, so neither open
+   position's trail was left looser than the rule's.
+
+Known remaining differences from the replayed rule, none shown harmful: a
+bar missed while the worker is down is not replayed afterwards; the two open
+positions carry `best_close` values that were forming-bar highs (805.2 and
+1.6487 against real closes of 802.6 and 1.5759), which makes their trails
+slightly tighter than the rule's and is kept because a trail never loosens; the
+30-day time stop is checked when a bar completes, so it can slip a day; a
+signal blocked by the three-position cap can still be entered later the same
+day if a slot frees; switching the module off with positions open leaves them
+on a static stop with no trail.
+
+Not done, and the owner's call: the module trades its own dedicated sim
+account (agent 63, $10k, $25 risk a trade) and by design cannot touch a user's
+book. Putting either owner account on this rule is a product decision — a new
+fleet archetype — not a fix.
+
+**Falsifier, re-registered.** Plan 31's "30 trips or 60 days, EV ≤ 0 → module
+dies" cannot be read: ~3 trips in 60 days on a rule whose median trade loses.
+Replaced by (a) process: every live entry must be one the completed-bar replay
+also takes on that date, checked monthly — any that is not means the fix
+failed; (b) outcome: stand the module down if its closed-trade drawdown passes
+30R (1.5× the worst in the replay) or 24 months end net negative.
