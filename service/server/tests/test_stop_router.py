@@ -113,6 +113,43 @@ class RouterCoreTests(unittest.TestCase):
         with self._at(1330):
             self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 57.9))
 
+    def test_a_ruling_that_lands_after_the_window_does_not_clear(self):
+        """`pending` ends at the deadline, so a desk SELL landing at +215s
+        is no longer stop-exempt and a panel hold can replace it. `clear`
+        then popped the note and armed 30 minutes of suppression: hold, no
+        fail-safe, watcher off (round 3, reproduced; prod kept the sell).
+        Past the window the note belongs to the watcher."""
+        with self._at(1000):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        with self._at(1030):
+            stop_router.begin_ruling(9)             # deadline 1210
+        with self._at(1215):
+            stop_router.clear(9)
+        with self._at(1220):
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 57.9),
+                             "a late verdict cancelled the fail-safe")
+
+    def test_a_stale_note_cannot_arm_suppression(self):
+        # Touch, bounce, nobody ruled; 25 minutes later an ordinary hold
+        # settles. It ruled on nothing, so the next breach must be noted.
+        with self._at(1000):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        with self._at(2500):
+            stop_router.clear(9)
+        with self._at(2900):
+            self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 57.0))
+            self.assertIsNotNone(stop_router.pending(9),
+                                 "the re-breach was suppressed, not noted")
+
+    def test_a_slow_watcher_still_reaches_the_failsafe(self):
+        # The new-hit gap must exceed the scan cadence, or every scan of a
+        # continuous breach looks like a fresh one and nothing ever closes.
+        with patch.dict(os.environ, {"RISK_WATCHER_INTERVAL": "600"}):
+            with self._at(1000):
+                stop_router.note_hit(9, 1, "stop_loss", 58.3)
+            with self._at(1600):
+                self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 57))
+
     def test_a_rebreach_after_the_price_left_is_a_new_hit(self):
         """Touch, bounce, nobody ruled. The stale note must not turn a
         breach a day later into an instant close with no desk window."""

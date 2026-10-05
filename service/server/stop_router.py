@@ -65,9 +65,18 @@ def enabled() -> bool:
             not in ("0", "false", "no"))
 
 
-# The watcher scans every ~30s and calls note_hit each time the level is
-# still traded through; a note unseen for this long means the price left.
-_REBREACH_GAP_S = 300.0
+def _rebreach_gap_s() -> float:
+    """How long a note may go unseen before the price is taken to have left.
+
+    The watcher calls note_hit on every scan while the level is traded
+    through. Tied to its cadence (three missed scans, never under 300s): a
+    fixed 300s under a 300s+ scan made every scan of one continuous breach
+    look like a new hit, and the fail-safe never closed."""
+    try:
+        scan = float(os.environ.get("RISK_WATCHER_INTERVAL", "30"))
+    except ValueError:
+        scan = 30.0
+    return max(300.0, 3.0 * scan)
 
 
 def _deadline(note: dict) -> float:
@@ -103,7 +112,7 @@ def note_hit(run_id: int, position_id: int, trigger: str,
             pending["seen"] = now
             return True                # meeting already convened — wait
         _PENDING.pop(run_id, None)
-        if now - seen < _REBREACH_GAP_S:
+        if now - seen < _rebreach_gap_s():
             return False               # fail-safe: programming closes
         # The note expired with nobody ruling AND the watcher stopped
         # seeing the level traded (it calls here every scan while price is
@@ -144,7 +153,14 @@ def pending(run_id: int) -> "dict | None":
 
 def clear(run_id: int) -> None:
     """A desk decision cycle ran for this run — its verdict governs.
-    Suppress re-noting for one think-window so a justified hold sticks."""
+    Suppress re-noting for one think-window so a justified hold sticks.
+
+    Only inside the desk's window. Past the deadline `pending` no longer
+    reports the hit, so the verdict was not a ruling on it (it had no
+    stop exemption and no STOP HIT line); the note stays for the watcher,
+    and a stale one cannot arm suppression against the next breach."""
+    if pending(run_id) is None:
+        return
     if _PENDING.pop(run_id, None) is not None:
         _SUPPRESS_UNTIL[run_id] = _now() + renote_min() * 60.0
 

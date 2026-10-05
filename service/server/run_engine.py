@@ -7480,9 +7480,9 @@ def _settle_stop_hit(run_id: int, decision: dict) -> None:
     re-noting for 30 minutes. A rule fallback or a no-verdict scaffold is
     not a verdict — no trader decision was read — so it must not buy the
     position 30 minutes past its own breached stop. Left uncleared, the
-    note behaves exactly as for a silent desk: the watcher closes at
-    STOP_DESK_TIMEOUT_S if the level is still traded through, and
-    `stop_router.pending` stops reporting it at that deadline either way.
+    watcher closes at STOP_DESK_TIMEOUT_S if the level is still traded
+    through, and `stop_router.pending` stops reporting the hit at that
+    deadline either way.
     (2026-10-05, adversarial review, reproduced through run_cycle; the
     chair no longer answers for a rule fallback, which made this the
     normal outcome of a stop hit during an LLM outage.)"""
