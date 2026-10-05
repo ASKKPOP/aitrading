@@ -86,7 +86,7 @@ def _agent_id(value: Any) -> int:
     if isinstance(value, bool) or not (
             isinstance(value, int)
             or (isinstance(value, str) and value.strip().isascii()
-                and value.strip().isdigit())):
+                and value.strip().isdigit() and len(value.strip()) <= 10)):
         raise AccountError("agent_id must be a whole number")
     agent_id = int(value)
     if not 0 < agent_id <= _MAX_AGENT_ID:
@@ -124,7 +124,7 @@ def normalize(entries: Any) -> list[dict[str, Any]]:
             raise AccountError("risk_usd must be a number")
         try:
             risk = float(risk_raw)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             raise AccountError("risk_usd must be a number") from None
         if not 0 < risk <= MAX_RISK_USD:      # also refuses NaN and inf
             raise AccountError(
@@ -137,6 +137,15 @@ def normalize(entries: Any) -> list[dict[str, Any]]:
         out.append({"agent_id": agent_id, "account_type": account_type,
                     "risk_usd": risk, "since_signal_id": since})
     return out
+
+
+def _parse(raw: str) -> Any:
+    """json.loads, with every way it can fail as one ValueError (a deeply
+    nested value is a RecursionError)."""
+    try:
+        return json.loads(raw)
+    except (ValueError, RecursionError) as exc:
+        raise ValueError(f"stored enrolment is not JSON: {type(exc).__name__}") from None
 
 
 def _for_update() -> str:
@@ -159,7 +168,7 @@ def _read(cursor=None, lock: bool = False) -> list[dict[str, Any]]:
         cursor.execute(sql, (ACCOUNTS_KEY,))
         rows = [dict(r) for r in cursor.fetchall()]
     raw = (rows[0]["setting_value"] or "").strip() if rows else ""
-    return normalize(json.loads(raw)) if raw else []
+    return normalize(_parse(raw)) if raw else []
 
 
 def enrolled_ids(cursor=None, lock: bool = False) -> set[int]:
@@ -180,14 +189,14 @@ def enrolled_ids(cursor=None, lock: bool = False) -> set[int]:
     raw = (rows[0]["setting_value"] or "").strip() if rows else ""
     if not raw:
         return set()
-    entries = json.loads(raw)
+    entries = _parse(raw)
     if not isinstance(entries, list):
         raise ValueError("stored enrolment is not a list")
     ids: set[int] = set()
     for entry in entries:
         try:
             ids.add(_agent_id(entry.get("agent_id")))
-        except (AccountError, AttributeError):
+        except (ValueError, AttributeError):   # AccountError is a ValueError
             continue
     return ids
 

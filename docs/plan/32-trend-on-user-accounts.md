@@ -163,7 +163,15 @@ Two more, stated because they are traps rather than gaps:
   for the lock, and a reviewer reasoned through InnoDB's behaviour, but
   nobody has run the race on MySQL. Known from that reasoning: two admins
   making the very first enrolment at the same instant can deadlock, and
-  one gets an error to retry.
+  one gets an error to retry; and an ordinary order already past its
+  (non-locking) fence read when an enrolment commits can still land on
+  the newly enrolled account — the in-lock flat check narrows that window
+  to milliseconds, it does not close it.
+- **An invalid stored enrolment cannot be repaired from the console.** If
+  an entry stops validating, the fences hold and nothing trades, but the
+  console shows only the problem banner and refuses enrol and remove until
+  the stored value is fixed by hand. Only a hand edit or a later release
+  tightening a rule can produce that state.
 
 To use it: create a separate login for the trend account (one user has one
 account), connect a broker on its Accounts page in paper/sandbox mode,

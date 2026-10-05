@@ -173,6 +173,8 @@ class Enrolment(_Base):
             [{"agent_id": 6, "account_type": 0}],
             [{"agent_id": 6, "account_type": []}],
             [{"agent_id": "²"}],                   # isdigit() says yes
+            [{"agent_id": "9" * 5000}],            # int() would not even parse it
+            [{"agent_id": 6, "risk_usd": 10 ** 400}],
             [{"agent_id": 6, "since_signal_id": -1}],
             [{"agent_id": 6, "since_signal_id": "7"}],
             [{"agent_id": 6, "since_signal_id": True}],
@@ -322,8 +324,13 @@ class Enrolment(_Base):
                 # but the account is still known and still fenced — a strict
                 # read took every fence down, the live-order guard with them.
                 (json.dumps([{"agent_id": self.U, "account_type": "live"}]), True),
-                (json.dumps([{"agent_id": self.U, "risk_usd": 9999}, "x",
-                             {"agent_id": "abc"}]), True)):
+                ("5", False), ("null", False), ('"x"', False),
+                ("[" * 100000, False),             # a RecursionError to parse
+                # ...whatever else is in the list, before it or after
+                (json.dumps([None, "x", [1], {"agent_id": "9" * 5000},
+                             {"agent_id": {"a": 1}}, {"agent_id": "abc"},
+                             {"agent_id": self.U, "risk_usd": 9999}, 7.5]),
+                 True)):
             set_setting(ta.ACCOUNTS_KEY, raw, "test")
             self.assertEqual(ta.accounts(), [], raw)
             self.assertEqual(ta.is_trend_account(self.U), fenced, raw)
@@ -457,6 +464,13 @@ class EntryFence(_Base):
             with patch.object(ta, "enrolled_ids", side_effect=ValueError("bad")):
                 self.assertEqual(sorted(r["id"] for r in orc.find_orphans()),
                                  [1, 2])
+            # an entry whose risk stopped validating is still shielded
+            from platform_settings import get_setting, set_setting
+            good = get_setting(ta.ACCOUNTS_KEY)
+            set_setting(ta.ACCOUNTS_KEY, json.dumps(
+                [{"agent_id": self.U, "risk_usd": 9999}]), "test")
+            self.assertEqual([r["id"] for r in orc.find_orphans()], [2])
+            set_setting(ta.ACCOUNTS_KEY, good, "test")
         # module off: its OWN agent's rows are orphans again; an enrolled
         # account is still fenced, and a stop left on its row would outlive
         # the pause (the module never writes that column on an account)
@@ -842,11 +856,16 @@ class LiveOrders(_Base):
         live, (signal_id, reason) = self._run(self.U)
         live.assert_not_called()
         self.assertEqual(reason, ta.FENCED)
-        # a value that cannot be parsed at all: nobody can be told apart
-        set_setting(ta.ACCOUNTS_KEY, "{not json", "test")
-        live, (signal_id, reason) = self._run(self.V)
-        live.assert_not_called()
-        self.assertIn("not sent", reason)
+        # a value that cannot be parsed at all, or is not a list: nobody
+        # can be told apart
+        for raw in ("{not json", "5", "null", '{"agent_id": 1}', "[" * 100000):
+            set_setting(ta.ACCOUNTS_KEY, raw, "test")
+            live, (signal_id, reason) = self._run(self.V)
+            live.assert_not_called()
+            self.assertIn("not sent", reason, raw[:20])
+            # ...and a simulated order is still nobody's business
+            live, (signal_id, reason) = self._run(self.V, "buy", "simulator")
+            self.assertIsNotNone(signal_id, reason)
 
     def test_no_analysis_is_bought_for_a_rule_that_cannot_trade(self):
         import automation
@@ -865,6 +884,27 @@ class LiveOrders(_Base):
             self.assertEqual(analysis.call_count, 0)
             self.assertEqual((out["executed"], out["skip_reason"]),
                              (False, ta.FENCED))
+            # recorded like any other run, so the rule is not due again at once
+            run, = self._q("SELECT skip_reason, executed FROM automation_runs "
+                           "WHERE config_id = ?", (rules[self.U],))
+            self.assertEqual((run["skip_reason"], run["executed"]), (ta.FENCED, 0))
+            self.assertIsNotNone(self._q(
+                "SELECT last_run_at FROM automation_configs WHERE id = ?",
+                (rules[self.U],))[0]["last_run_at"])
+            # the fence does not depend on the module switch...
+            with patch.dict(os.environ, {"TREND_MODULE_ENABLED": "0"}):
+                automation.run_rule(
+                    {"id": rules[self.U], "agent_id": self.U, "symbol": "BTCUSDT",
+                     "market": "crypto", "auto_execute": 1})
+            self.assertEqual(analysis.call_count, 0)
+            # ...and a check that cannot be made skips nobody here (the
+            # execution-time guard is the one that refuses)
+            with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
+                automation.run_rule(
+                    {"id": rules[self.V], "agent_id": self.V, "symbol": "BTCUSDT",
+                     "market": "crypto", "auto_execute": 1})
+            self.assertEqual(analysis.call_count, 1)
+            analysis.reset_mock()
             # an advise-only rule on the same account, and anyone else's
             # auto rule, still get their analysis
             automation.run_rule(
@@ -983,6 +1023,28 @@ class Interleavings(_Base):
                 call()
             self.assertEqual(lock.call_count, expected, name)
 
+    def test_the_lock_clause_is_part_of_the_statement(self):
+        """Asking for the lock is not the same as sending it. A clause that
+        matches no row stands in for FOR UPDATE: only a read that carries
+        it comes back empty."""
+        ta.enrol(self.U)
+        self._position(self.U, "BTCUSDT")
+        conn = database.get_db_connection()
+        try:
+            cursor = conn.cursor()
+            with patch.object(ta, "_for_update", return_value=" AND 1 = 0"):
+                self.assertEqual(ta.enrolled_ids(cursor, lock=True), set())
+                self.assertEqual(ta.enrolled_ids(cursor), {self.U})
+                self.assertEqual(ta._read(cursor, lock=True), [])
+                self.assertEqual(len(ta._read(cursor)), 1)
+                self.assertEqual(ta._open_positions(self.U, cursor), [])
+                self.assertEqual(ta._open_positions(self.U), ["BTCUSDT"])
+                self.assertEqual(ta.own_entry_fence(self.U)(cursor),
+                                 "account is no longer a trend account")
+            self.assertIsNone(ta.own_entry_fence(self.U)(cursor))
+        finally:
+            conn.close()
+
     def test_a_write_is_built_from_the_locked_read_not_an_earlier_copy(self):
         ta.enrol(self.U)
         ta.enrol(self.V)
@@ -1041,6 +1103,24 @@ class Interleavings(_Base):
         events = out["actions"] + self._account(out, self.U)["actions"]
         self.assertEqual([e for e in events if e["event"] == "qty_synced"], [])
         self.assertEqual(self._account(out, self.U)["open_positions"], 1)
+        # a real 1% reduction of that small lot IS followed
+        sid, err = execute_paper_trade(self.U, "BTCUSDT", "crypto", "sell",
+                                       qty * 0.01, bars[-1]["close"])
+        self.assertIsNotNone(sid, err)
+        out = self._cycle({"BTCUSDT": _next_bar(bars, bars[-1]["close"] + 500.0)})
+        synced, = [e for e in self._account(out, self.U)["actions"]
+                   if e["event"] == "qty_synced"]
+        self.assertAlmostEqual(synced["now"], qty * 0.99, places=7)
+
+    def test_float_noise_on_a_large_lot_is_not_a_partial_close(self):
+        ta.enrol(self.U)
+        bars = _bars_up()
+        self._cycle({"BTCUSDT": bars})
+        self.assertGreater(self._open(self.U)[0]["quantity"], 1.0)
+        self._x("UPDATE positions SET quantity = quantity - 0.0000002")
+        out = self._cycle({"BTCUSDT": _next_bar(bars, bars[-1]["close"] + 0.5)})
+        events = out["actions"] + self._account(out, self.U)["actions"]
+        self.assertEqual([e for e in events if e["event"] == "qty_synced"], [])
 
     def test_two_operations_do_not_lose_each_others_change(self):
         """Enrolment is one JSON value. Written from a copy read earlier,
@@ -1226,8 +1306,10 @@ class AdminApi(_Base):
             r = self.client.post(self.URL, headers=self.admin, json={
                 "agent_id": self.U, "account_type": bad})
             self.assertEqual(r.status_code, 400, repr(bad))
-        r = self.client.post(self.URL, headers=self.admin, json={"agent_id": "²"})
-        self.assertEqual(r.status_code, 400)
+        for bad in ({"agent_id": "²"}, {"agent_id": "9" * 5000},
+                    {"agent_id": self.U, "risk_usd": 10 ** 400}):
+            r = self.client.post(self.URL, headers=self.admin, json=bad)
+            self.assertEqual(r.status_code, 400, str(bad)[:40])
 
     def test_the_console_sees_what_is_stored_not_what_is_running(self):
         ta.enrol(self.U)
