@@ -289,11 +289,16 @@ class PanelActuallyReceivesItTests(unittest.TestCase):
         not arbitrate on trading grounds — it only decides WHICH AI voice is
         final when two disagree, and that was always a code decision. It
         used to be the panel; it is now the desk that moved first.
-        PANEL_ORDER_VETO=1 restores the old arrangement."""
+        PANEL_ORDER_VETO=1 restores the old arrangement.
+
+        2026-10-05: opt-in behind PANEL_ENTRY_OVERRIDE=1. A month of the
+        overridden entries netted -$67.26 with no timing edge; the default
+        is pinned by test_a_panel_hold_on_an_ENTRY_is_binding."""
         from unittest.mock import patch
         run = {"id": 1, "agent_id": 6, "symbol": "NVDA", "market": "us-stock",
                "market_type": "spot"}
-        with patch.object(run_engine, "_position_quantity", return_value=0.0), \
+        with patch.dict("os.environ", {"PANEL_ENTRY_OVERRIDE": "1"}), \
+             patch.object(run_engine, "_position_quantity", return_value=0.0), \
              patch.object(run_engine, "emit_telemetry_event", lambda *a, **k: None), \
              patch.object(analysis_agents, "run_analysis",
                           lambda *a, **kw: {"decision": {"action": "hold",

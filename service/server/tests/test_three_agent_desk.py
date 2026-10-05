@@ -259,6 +259,78 @@ class FullTierChair(unittest.TestCase):
         self.assertEqual(out["action"], "buy")
         self.assertEqual(out["chair"], "unparseable")
 
+    _RULE_FALLBACK = {"action": "hold", "confidence": 0.0,
+                      "decided_by": "rule",
+                      "fallback_reason": "no llm response",
+                      "rule_action_suppressed": "buy",
+                      "report": "Technical signal is 'buy' (score 4)."}
+
+    def test_a_rule_fallback_is_not_chaired(self):
+        # Tape 2026-09-11..10-05 (agent 6): the trader returned nothing on
+        # 79% of decisions, `_hold_only` held the rule fallback, and the
+        # chair — shown only the rule engine's summary, labelled "Trader
+        # (verified) decision" — amended it to a buy 187 times out of 187.
+        # 99 of those became positions: -$19.69. A rule fallback is not a
+        # trader verdict, so there is nothing to chair and no call to make.
+        calls = []
+
+        def _llm(prompt, **kw):
+            calls.append(prompt)
+            return json.dumps({"final": "amend", "action": "buy",
+                               "confidence": 0.7, "report": "chair buys"})
+
+        with patch.object(analysis_agents, "generate_text", _llm):
+            out = analysis_agents._chair_final(
+                "NVDA", "us-stock", dict(self._RULE_FALLBACK), None, "en",
+                can_sell=True)
+        self.assertEqual(out["action"], "hold",
+                         "the chair turned rule-engine text into an order")
+        self.assertEqual(out["confidence"], 0.0)
+        self.assertEqual(out["chair"], "no_trader_verdict")
+        self.assertEqual(calls, [], "no trader verdict, nothing to chair")
+
+    def test_ai_only_off_restores_the_old_chair(self):
+        # RUN_AI_ONLY_ORDERS is the policy this guard enforces; switching the
+        # policy off must not leave a second, hidden copy of it behind.
+        os.environ["RUN_AI_ONLY_ORDERS"] = "false"
+        try:
+            with patch.object(analysis_agents, "generate_text",
+                              _fake_llm([json.dumps({"final": "amend",
+                                                     "action": "buy"})])):
+                out = analysis_agents._chair_final(
+                    "NVDA", "us-stock", dict(self._RULE_FALLBACK), None,
+                    "en", can_sell=True)
+        finally:
+            os.environ.pop("RUN_AI_ONLY_ORDERS", None)
+        self.assertEqual(out["action"], "buy")
+
+    def test_silent_trader_cannot_reach_an_order_through_the_pipeline(self):
+        # The seam, not the callee: a trader that returns nothing, a chair
+        # that answers "buy". Before 2026-10-05 this returned action=buy
+        # stamped decided_by=rule.
+        def _llm(prompt, **kw):
+            if "CHAIR" in prompt:
+                return json.dumps({"final": "amend", "action": "buy",
+                                   "confidence": 0.7, "report": "chair buys"})
+            return ""
+
+        with patch.object(analysis_agents, "llm_configured",
+                          return_value=True), \
+             patch.object(analysis_agents, "generate_text", _llm), \
+             patch.object(analysis_agents, "_gather_technical",
+                          return_value={"current_price": 100.0,
+                                        "signal": "buy", "signal_score": 4}), \
+             patch.object(analysis_agents, "_gather_news",
+                          return_value={"items": [], "count": 0,
+                                        "sentiment_breakdown": {}}), \
+             patch.object(analysis_agents, "_gather_fundamentals_macro",
+                          return_value={"macro": {"verdict": "neutral"}}):
+            result = analysis_agents.run_analysis("BTC", "crypto", "en")
+        decision = result["decision"]
+        self.assertEqual(decision["decided_by"], "rule")
+        self.assertEqual(decision["action"], "hold")
+        self.assertEqual(decision["chair"], "no_trader_verdict")
+
     def test_full_pipeline_is_wired(self):
         src = inspect.getsource(analysis_agents._run_analysis_inner)
         self.assertIn("_chair_final(", src)

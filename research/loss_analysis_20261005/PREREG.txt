@@ -1,0 +1,12 @@
+PRE-REGISTERED 2026-10-05 ~16:10Z, before any candle result was viewed.
+Tape: agent 6, 633 entries 09-05..10-05, fills from signals; marks = Hyperliquid 15m candles (platform feed).
+H1 ENTRY-EDGE: side-signed forward return of desk entries at T in {1h,4h,12h,24h,48h} exceeds a same-symbol,
+   same-side random-entry-time null (2000 shuffles). FALSIFIED at T if desk-null <= 0 or one-sided p > 0.05.
+H2 HOLD-LONGER: replacing every actual exit with a fixed hold of T (no ratchet/stop), 9bp RT cost, non-overlapping
+   per symbol, yields net > 0 AND > the actual net on the same entries. FALSIFIED if net <= 0, or sign flips
+   when the largest contributing trip (or symbol) is removed -> then INCONCLUSIVE.
+H3 STRUCTURAL: the actual loss is explained by fees + exit geometry on zero-edge entries: a random-time entry
+   in the same symbol/side pushed through the SAME realised exit distribution cannot be simulated at 15m; instead
+   the testable form is: actual mean gross bp/trip is not distinguishable from 0 (symbol-clustered 95% CI contains 0)
+   while fees are 9bp/trip. FALSIFIED if CI excludes 0 on the positive side (edge exists and fees alone kill it is
+   then the statement) or on the negative side (entries are actively bad).

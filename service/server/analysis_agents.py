@@ -901,6 +901,20 @@ def _chair_final(symbol: str, market: str, decision: dict[str, Any],
     action/confidence/report; every other key (order, intent, outlook,
     scores) stays the trader's. Fail-open — any trouble returns the
     decision unchanged (caller also guards)."""
+    # A rule fallback is not a trader verdict, so there is nothing to chair
+    # (2026-10-05). `_hold_only` holds the fallback, but its report still
+    # carries the rule engine's read ("Technical signal is 'buy'"), and the
+    # prompt below presents that as the "Trader (verified) decision". Tape
+    # 09-11..10-05, agent 6, with the trader returning nothing on 79% of
+    # decisions: the chair amended that hold to a buy 187 times out of 187,
+    # and 99 became positions (-$19.69) — the rule engine originating a
+    # position through an AI voice that had seen no analysis. Same policy
+    # and same switch as `_hold_only`. Exits are not lost by this: stops,
+    # the ratchet and the SL/TP watcher never ran through the chair.
+    if ai_only_orders() and decision.get("decided_by") == "rule":
+        out = dict(decision)
+        out["chair"] = "no_trader_verdict"
+        return out
     # Adversarial-review finding 2 (2026-09-02, CONFIRMED): the chair runs
     # AFTER _apply_verification, so in enforce mode it could resurrect an
     # action the verifier deterministically rejected — bypassing enforcement

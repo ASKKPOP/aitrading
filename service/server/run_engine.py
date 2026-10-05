@@ -7438,8 +7438,37 @@ def _panel_order_veto_enabled() -> bool:
     deliberation can no longer reach one particular conclusion. Given
     434 of 435, the owner chose to remove exactly that.
 
-    Set PANEL_ORDER_VETO=1 to restore the old behaviour."""
+    Set PANEL_ORDER_VETO=1 to restore the old behaviour.
+
+    2026-10-05: the ENTRY half of this is no longer the default — see
+    `_panel_entry_override_enabled`. This flag still governs the routed
+    stop-hit exemption, which is why the entry veto was NOT restored by
+    setting it: PANEL_ORDER_VETO=1 would also let the panel veto the desk's
+    ruling on its own breached stop (the SOL 1274 family)."""
     return (os.environ.get("PANEL_ORDER_VETO", "0").strip().lower()
+            in ("1", "true", "yes", "on"))
+
+
+def _panel_entry_override_enabled() -> bool:
+    """May a desk ENTRY stand over the panel's `hold`? Default NO.
+
+    The 2026-09-05 override was shipped to buy outcome data ("EXPECT
+    TRADES"). The data, 09-05..10-05, owner accounts (agents 6 and 60):
+
+        proposed buys reviewed by the panel   590   panel said hold: 590
+        entries taken over that hold          548   net -$67.26
+        desk entry vs a random minute, same symbol and side (n=632):
+            1h -6.8bp  4h -3.1bp  12h +1.3bp  24h -24.4bp  48h -38.0bp
+
+    No horizon shows timing better than chance, so each of those entries
+    cost its 9bp round trip and nothing else distinguishes them. "Wrong 434
+    times out of 435 by the only test that matters, zero trades in 19 days"
+    measured the panel by trade count; by P&L the panel's hold was the
+    better answer. Report: docs/reports/2026-10-05-one-month-loss-analysis.md.
+
+    Set PANEL_ENTRY_OVERRIDE=1 to restore the 09-05 arrangement. Exits and
+    routed stop hits are untouched either way."""
+    return (os.environ.get("PANEL_ENTRY_OVERRIDE", "0").strip().lower()
             in ("1", "true", "yes", "on"))
 
 
@@ -7690,7 +7719,13 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
                 _stop_hit = bool(_sr.enabled() and _sr.pending(run["id"]))
             except Exception:  # noqa: BLE001 — fail toward the desk's ruling
                 _stop_hit = True
-            if (not _panel_order_veto_enabled() and (_entry_side or _stop_hit)
+            # 2026-10-05: the entry side of this override is now opt-in
+            # (`_panel_entry_override_enabled`) — the tape it was shipped
+            # to collect came back against it. The stop-hit side is
+            # unchanged.
+            if (not _panel_order_veto_enabled()
+                    and ((_entry_side and _panel_entry_override_enabled())
+                         or _stop_hit)
                     and str(final.get("action") or "").lower() == "hold"):
                 payload["panel_verdict"] = "hold"
                 payload["veto_overridden"] = True

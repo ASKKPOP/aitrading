@@ -33,6 +33,11 @@ def _analysis(action="buy", confidence=0.7):
 _RUN = {"id": 7, "agent_id": 1, "symbol": "MSFT", "market": "us-stock",
         "market_type": "spot"}
 
+# The override path (a desk entry standing over the panel's hold) is opt-in
+# since 2026-10-05. Tests of what that path does to the order — tightening,
+# sizing, the objection on the tape — exercise it under its flag.
+_ENTRY_OVERRIDE = patch.dict("os.environ", {"PANEL_ENTRY_OVERRIDE": "1"})
+
 
 class OrderDiscussionTests(unittest.TestCase):
     def _events(self):
@@ -53,8 +58,12 @@ class OrderDiscussionTests(unittest.TestCase):
         self.emit.stop()
         self.held.stop()
 
-    def test_the_panel_reviews_the_motion_but_cannot_veto_it(self):
-        """Owner 2026-09-05: "if continue hold then we will be remove desk
+    def test_the_0905_entry_override_is_one_env_flag_away(self):
+        """PANEL_ENTRY_OVERRIDE=1 restores the 2026-09-05 arrangement
+        exactly; it stopped being the default on 2026-10-05 (see
+        test_a_panel_hold_on_an_ENTRY_is_binding). Original reasoning kept:
+
+        Owner 2026-09-05: "if continue hold then we will be remove desk
         hold logic".
 
         Measured on the live tape since 2026-09-04: the desk proposed an
@@ -67,7 +76,8 @@ class OrderDiscussionTests(unittest.TestCase):
         panel = {"decision": {"action": "hold", "confidence": 0.55,
                               "report": "a chase, not a thesis"},
                  "analysts": {"news": {"data": {}}}}
-        with patch("analysis_agents.run_analysis",
+        with patch.dict("os.environ", {"PANEL_ENTRY_OVERRIDE": "1"}), \
+             patch("analysis_agents.run_analysis",
                    return_value=panel) as ra:
             out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
         self.assertEqual(out["decision"]["action"], "buy",
@@ -89,6 +99,28 @@ class OrderDiscussionTests(unittest.TestCase):
         self.assertEqual(payload["panel_verdict"], "hold")
         self.assertTrue(payload["veto_overridden"])
         self.assertEqual(payload["final"]["action"], "buy")
+
+    def test_a_panel_hold_on_an_ENTRY_is_binding(self):
+        """Supersedes the 2026-09-05 default. That ship made the panel's
+        hold on an entry advisory "to get the first real outcome data in 19
+        days". The data, 09-05..10-05 on both owner accounts: the panel
+        answered `hold` on 590 of 590 proposed buys and was overridden 590
+        times; the 548 entries that followed netted -$67.26, and their
+        timing was no better than a random minute in the same symbol at
+        any horizon from 1h to 48h (n=632). An entry with no edge costs
+        its fee. The hold is binding again."""
+        panel = {"decision": {"action": "hold", "confidence": 0.55,
+                              "report": "a chase, not a thesis"},
+                 "analysts": {}}
+        with patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "hold",
+                         "an entry stood over the panel's hold")
+        self.assertEqual(out["decision"]["confidence"], 0.55)
+        et, payload = self.events[0]
+        self.assertEqual(et, "order_discussion")
+        self.assertNotIn("veto_overridden", payload)
+        self.assertEqual(payload["final"]["action"], "hold")
 
     def test_the_old_veto_is_one_env_flag_away(self):
         """PANEL_ORDER_VETO=1 restores the pre-2026-09-05 behaviour
@@ -120,6 +152,7 @@ class OrderDiscussionTests(unittest.TestCase):
         a["decision"]["order"] = dict(order)
         return a
 
+    @_ENTRY_OVERRIDE
     def test_the_panel_may_still_TIGHTEN_the_bracket(self):
         """It loses the veto, not its risk voice.
 
@@ -139,6 +172,7 @@ class OrderDiscussionTests(unittest.TestCase):
         self.assertEqual(out["decision"]["order"]["size_frac"], 0.10)
         self.assertEqual(out["decision"]["order"]["stop_pct"], 1.2)
 
+    @_ENTRY_OVERRIDE
     def test_the_panel_may_NOT_loosen_the_bracket(self):
         """The 16x hole. A hold-voting panel returning a bigger size and a
         wider stop was adopted wholesale — 4x size at 4x stop distance, with
@@ -158,6 +192,7 @@ class OrderDiscussionTests(unittest.TestCase):
         self.assertEqual(o["leverage"], 1, "the panel raised leverage")
         self.assertEqual(o["stop_pct"], 2.0, "the panel widened the stop")
 
+    @_ENTRY_OVERRIDE
     def test_a_defer_hold_cannot_discard_the_desks_sizing(self):
         """`{"defer": true}` is not a bracket. It used to pass the
         `is not None` check and replace the desk's whole block with house
@@ -171,6 +206,7 @@ class OrderDiscussionTests(unittest.TestCase):
         self.assertEqual(out["decision"]["order"]["size_frac"], 0.25)
         self.assertEqual(out["decision"]["order"]["stop_pct"], 2.0)
 
+    @_ENTRY_OVERRIDE
     def test_a_missing_desk_value_is_never_filled_in_by_a_hold(self):
         panel = {"decision": {"action": "hold",
                               "order": {"size_frac": 0.9}}, "analysts": {}}
@@ -192,6 +228,7 @@ class OrderDiscussionTests(unittest.TestCase):
                          "the override mutated the caller's decision dict")
         self.assertEqual(a["decision"]["action"], original["action"])
 
+    @_ENTRY_OVERRIDE
     def test_the_panels_objection_is_kept_on_the_tape(self):
         """`panel_reason` is the audit record F-VETO is judged on. It
         survived a mutation run unpinned."""
@@ -259,16 +296,22 @@ class OrderDiscussionTests(unittest.TestCase):
         _, payload = self.events[0]
         self.assertNotIn("veto_overridden", payload)
 
-    def test_an_ENTRY_is_still_overridden(self):
-        """The wall that mattered stays down: 434 of 435 entry proposals
-        became hold and the platform did not trade for 19 days."""
+    def test_an_ENTRY_is_overridden_only_under_the_flag(self):
+        """Was `test_an_ENTRY_is_still_overridden` ("the wall that mattered
+        stays down"). Superseded 2026-10-05: the entries the wall had been
+        stopping lost money once they were let through."""
         panel = {"decision": {"action": "hold", "confidence": 0.5},
                  "analysts": {}}
         with patch("analysis_agents.run_analysis", return_value=panel):
             out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "hold")
+        self.assertNotIn("veto_overridden", self.events[0][1])
+        self.events.clear()
+        with patch.dict("os.environ", {"PANEL_ENTRY_OVERRIDE": "1"}), \
+             patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
         self.assertEqual(out["decision"]["action"], "buy")
-        _, payload = self.events[0]
-        self.assertTrue(payload["veto_overridden"])
+        self.assertTrue(self.events[0][1]["veto_overridden"])
 
     def test_agreeing_panel_still_authors_the_final_decision(self):
         panel = {"decision": {"action": "buy", "confidence": 0.81},
@@ -403,15 +446,14 @@ class PanelLocalFallbackTests(unittest.TestCase):
         with patch("analysis_agents.run_analysis", side_effect=fake):
             out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
         self.assertEqual(calls, [None, "local"])
-        # The local panel IS a panel, so it reviews and it does NOT veto
-        # (owner 2026-09-05). The escalation still happened and is still
-        # attributed — only the cancellation is gone.
-        self.assertEqual(out["decision"]["action"], "buy",
-                         "the local fallback panel vetoed an entry")
+        # The local panel IS a panel: its hold on an entry binds like any
+        # other panel's (2026-10-05; it was advisory from 09-05). The
+        # escalation is still attributed.
+        self.assertEqual(out["decision"]["action"], "hold",
+                         "an entry stood over the local panel's hold")
         et, payload = self.events[0]
         self.assertEqual(payload["reviewed_by"], "local-fallback")
-        self.assertEqual(payload["panel_verdict"], "hold")
-        self.assertTrue(payload["veto_overridden"])
+        self.assertNotIn("veto_overridden", payload)
 
     def test_exception_failure_also_convenes_the_local_panel(self):
         calls = []
@@ -596,6 +638,7 @@ class ShortBookReductionTests(unittest.TestCase):
         self.assertEqual(self._drive("buy", -100.0)["action"], "hold",
                          "the panel's exit veto was overridden again")
 
+    @_ENTRY_OVERRIDE
     def test_a_sell_that_ADDS_to_a_short_is_still_narrowed(self):
         """The opposite mis-classification from the same root: selling
         into a short increases exposure, so the panel keeps its voice."""
@@ -607,6 +650,7 @@ class ShortBookReductionTests(unittest.TestCase):
     def test_a_sell_that_CLOSES_a_long_is_not_overridden(self):
         self.assertEqual(self._drive("sell", 100.0)["action"], "hold")
 
+    @_ENTRY_OVERRIDE
     def test_a_buy_that_ADDS_to_a_long_is_still_narrowed(self):
         d = self._drive("buy", 100.0)
         self.assertEqual(d["action"], "buy")
