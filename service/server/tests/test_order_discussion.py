@@ -359,6 +359,7 @@ class OrderDiscussionTests(unittest.TestCase):
                               "decided_by": "rule",
                               "fallback_reason": "no llm provider configured"},
                  "analysts": {}}
+        self._hold(4.0)      # a desk EXIT is a sell on a HELD book
         with patch("analysis_agents.run_analysis", return_value=panel):
             out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
         self.assertEqual(out["decision"]["action"], "sell",
@@ -367,15 +368,113 @@ class OrderDiscussionTests(unittest.TestCase):
         self.assertEqual(et, "order_discussion")
         self.assertIn("no llm provider configured", payload["error"])
 
-    def test_panel_error_fails_open_and_journals(self):
+    def _hold(self, qty):
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=qty)
+        self.held.start()
+
+    def test_panel_error_fails_open_for_the_book_and_journals(self):
+        self._hold(4.0)
         with patch("analysis_agents.run_analysis",
                    side_effect=RuntimeError("llm down")):
-            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
-        self.assertEqual(out["decision"]["action"], "buy",
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(out["decision"]["action"], "sell",
                          "an infra error must not freeze the book")
         et, payload = self.events[0]
         self.assertEqual(et, "order_discussion")
         self.assertIn("llm down", payload["error"])
+        self.assertNotIn("entry_held", payload)
+
+    def test_a_short_cover_also_fails_open(self):
+        # `buy` on a short book is the exit; the verb alone would hold it.
+        self._hold(-4.0)
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("llm down")):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "buy")
+
+    def test_an_ENTRY_the_panel_could_not_review_is_held(self):
+        """Owner 2026-10-05. Fail-open is for the book. On an entry it is
+        the override by another door: 2026-08-25, ~15h of a dead SDK passed
+        every proposal through and all of that window's realized loss
+        entered unreviewed; 09-11..10-05, 14 of 52 meetings ended in this
+        branch, 8 of them buys."""
+        proposal = _analysis("buy")
+        proposal["decision"].update({
+            "report": "breakout over 101",
+            "order_intent": {"intent": "open", "size_frac": 0.25},
+            "outlook": {"bias": "long"}, "scores": {"entry_quality": 0.7}})
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("llm down")):
+            out = run_engine._order_discussion(_RUN, {}, proposal)
+        d = out["decision"]
+        self.assertEqual(d["action"], "hold")
+        # The desk's own confidence stays on the record. Zeroing it fed
+        # `_recent_confidences`, which samples every decision agent-wide:
+        # an outage's worth of 0.0s pulls the percentile gate to its floor
+        # and admits afterwards what it refused before (review 2026-10-05).
+        self.assertEqual(d["confidence"], 0.7)
+        # code held it, and says so: the hold-streak and the stop router
+        # both read this label as "nobody's verdict"
+        self.assertEqual(d["decided_by"], "rule")
+        self.assertEqual(d["fallback_reason"], "panel unavailable")
+        self.assertEqual(d["escalated_from"],
+                         {"action": "buy", "confidence": 0.7})
+        # the entry verb's plan must not survive to compile into an order
+        self.assertNotIn("order_intent", d)
+        self.assertNotIn("outlook", d)
+        self.assertEqual(d["scores"], {"entry_quality": 0.7})
+        self.assertIn("breakout over 101", d["report"])
+        self.assertEqual(out["position_state"], "BRIEF_TEXT\n")
+        # the caller's proposal is not mutated
+        self.assertEqual(proposal["decision"]["action"], "buy")
+        self.assertIn("order_intent", proposal["decision"])
+        _, payload = self.events[0]
+        self.assertEqual(payload["entry_held"], "panel unavailable")
+        self.assertEqual(payload["final"],
+                         {"action": "hold", "confidence": 0.7})
+        self.assertIn("llm down", payload["error"])
+
+    def test_the_book_is_read_again_after_the_meeting(self):
+        """Two panel attempts can take minutes of timeouts. A long the
+        watcher closed meanwhile turns the desk's `sell` from an exit into
+        an order on a flat book — on futures, a short nobody reviewed
+        (reproduced through run_cycle, review 2026-10-05)."""
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 side_effect=[4.0, 0.0])
+        self.held.start()
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("llm down")):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(out["decision"]["action"], "hold")
+        self.assertEqual(self.events[0][1]["entry_held"], "panel unavailable")
+        # ...and a re-read that fails is an unreadable book: not held
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 side_effect=[0.0, RuntimeError("db down")])
+        self.held.start()
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("llm down")):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "buy")
+
+    def test_the_flag_and_an_unreadable_book_keep_fail_open(self):
+        with patch.dict("os.environ", {"PANEL_ENTRY_OVERRIDE": "1"}), \
+             patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("llm down")):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
+        self.assertEqual(out["decision"]["action"], "buy")
+        # unknown is not flat: this may be an exit, and exits are not held
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 side_effect=RuntimeError("db down"))
+        self.held.start()
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("llm down")):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(out["decision"]["action"], "sell")
 
     def test_kill_switch(self):
         import os
@@ -477,18 +576,25 @@ class PanelLocalFallbackTests(unittest.TestCase):
                               "fallback_reason":
                                   "no llm provider configured"},
                  "analysts": {}}
+        self.held.stop()     # a desk exit: sell on a HELD book
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=4.0)
+        self.held.start()
         with patch("analysis_agents.run_analysis",
                    return_value=panel) as ra:
             out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
         self.assertEqual(ra.call_count, 1)
         self.assertEqual(out["decision"]["action"], "sell")
 
-    def test_local_also_failing_fails_open_with_both_errors(self):
+    def test_local_also_failing_journals_both_errors(self):
+        # Two panels tried, neither answered. The entry is held
+        # (2026-10-05; it used to stand) — see
+        # test_an_ENTRY_the_panel_could_not_review_is_held.
         with patch("analysis_agents.run_analysis",
                    side_effect=RuntimeError("llm down")) as ra:
             out = run_engine._order_discussion(_RUN, {}, _analysis("buy"))
         self.assertEqual(ra.call_count, 2)
-        self.assertEqual(out["decision"]["action"], "buy")
+        self.assertEqual(out["decision"]["action"], "hold")
         et, payload = self.events[0]
         self.assertIn("llm down", payload["error"])
 
@@ -500,7 +606,7 @@ class PanelLocalFallbackTests(unittest.TestCase):
                 out = run_engine._order_discussion(_RUN, {},
                                                    _analysis("buy"))
         self.assertEqual(ra.call_count, 1)
-        self.assertEqual(out["decision"]["action"], "buy")
+        self.assertEqual(out["decision"]["action"], "hold")
 
     def test_a_local_first_config_never_retries_itself(self):
         with patch("analysis_agents.run_analysis",
@@ -508,7 +614,7 @@ class PanelLocalFallbackTests(unittest.TestCase):
             out = run_engine._order_discussion(
                 _RUN, {"provider": "local"}, _analysis("buy"))
         self.assertEqual(ra.call_count, 1)
-        self.assertEqual(out["decision"]["action"], "buy")
+        self.assertEqual(out["decision"]["action"], "hold")
 
 
 class TighterOrderJunkTests(unittest.TestCase):

@@ -871,6 +871,41 @@ def _closed_market_cycles(run_id: int) -> int:
         return 0
 
 
+def _entry_held_cycles(run_id: int) -> int:
+    """Cycles in which this run's desk proposed an entry and the platform
+    held it because the review panel could not be reached.
+
+    Third correction to the same count-based rail (see _closed_market_cycles
+    and _entry_wake_cycles). `idle_retired` means the desk never wanted to
+    trade; these are cycles where it did. Counted, twelve of them retire the
+    slot and bench its symbol for 12h — an LLM outage authoring the
+    rotation, which `_flat_hold_span` is already guarded against.
+
+    One `order_discussion` event carrying `entry_held` per such cycle.
+    Fail-soft to 0, so an unreadable journal leaves the rail as it was."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM run_events
+               WHERE run_id = ? AND event_type = 'order_discussion'
+                 AND payload LIKE '%"entry_held"%'""", (run_id,))
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 — including the connect itself
+        return 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        return int((row["n"] if row else 0) or 0)
+    except (KeyError, TypeError, ValueError):
+        return 0
+
+
 def _entry_wake_cycles(run_id: int) -> int:
     """Extra cycles this run ran because its own entry level was reached.
 
@@ -1529,7 +1564,8 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             # collected.
             worked = int(run.get("cycle_seq") or 0) \
                 - _closed_market_cycles(run["id"]) \
-                - _entry_wake_cycles(run["id"])
+                - _entry_wake_cycles(run["id"]) \
+                - _entry_held_cycles(run["id"])
             if worked >= limit and not _cycle_in_flight(run):
                 return "idle_retired"
         # Thesis invalidation (2026-07-27), a sharper rail than the idle timer.
@@ -7601,9 +7637,10 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
     earlier decision, and delaying protective exits for a fresh meeting
     was measured and rejected (main handoff §7).
 
-    Fail-OPEN on panel infrastructure errors: an LLM hiccup must not
-    freeze the book (the no-provider-default lesson); the proposal stands
-    and the failure is journaled in the same event."""
+    Fail-OPEN on panel infrastructure errors, for the BOOK: an LLM hiccup
+    must not freeze a position (the no-provider-default lesson), so a
+    reduction stands and the failure is journaled in the same event. An
+    ENTRY the panel could not review is held instead (2026-10-05)."""
     proposal = (analysis.get("decision") or {})
     action = proposal.get("action")
     _held_unknown = False
@@ -7815,11 +7852,54 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
             continue
     # fail-open, journal every miss in one event
     payload["error"] = " | ".join(errors)[:200]
+    # ...for the BOOK. An ENTRY the panel could not review does not stand
+    # (owner 2026-10-05). Fail-open exists so an LLM hiccup cannot freeze a
+    # position; applied to entries it is the same hole as the override —
+    # 2026-08-25: ~15h of a dead SDK passed every proposal through here and
+    # 100% of that window's realized loss entered unreviewed; 09-11..10-05:
+    # 14 of 52 meetings ended here, 8 of them buys. A reduction, or any
+    # order on a book that could not be read, still passes untouched.
+    # Stamped decided_by="rule" because that is what it is — code holding an
+    # AI's order — so the no-prospect streak and the stop router treat it as
+    # nobody's verdict. PANEL_ENTRY_OVERRIDE=1 restores the old behaviour.
+    #
+    # The book is read AGAIN here: the attempts above can be minutes of
+    # timeouts, and a long the watcher closed meanwhile turns the desk's
+    # `sell` from an exit into an order on a flat book.
+    try:
+        held = _position_quantity(run["agent_id"], run["market"],
+                                  run["symbol"], run["id"])
+    except Exception:  # noqa: BLE001
+        _held_unknown = True
+    unreviewed_entry = (not _panel_entry_override_enabled()
+                        and not _held_unknown
+                        and not _reducing_now(run, action, held))
+    if unreviewed_entry:
+        payload["entry_held"] = "panel unavailable"
+        payload["final"] = {"action": "hold",
+                            "confidence": proposal.get("confidence")}
     try:
         emit_telemetry_event(run["id"], "order_discussion", payload)
     except Exception:  # noqa: BLE001
         pass
-    return analysis
+    if not unreviewed_entry:
+        return analysis
+    kept = dict(proposal)
+    # Same rule as a chair amendment: an intent or plan written alongside
+    # the order must not outlive it and compile into one.
+    for k in ("order_intent", "outlook"):
+        kept.pop(k, None)
+    # `confidence` is left as the desk's: `_recent_confidences` samples
+    # every decision agent-wide for the percentile gate, and an outage's
+    # worth of zeros would pull that gate to its floor.
+    kept.update({
+        "action": "hold",
+        "decided_by": "rule", "fallback_reason": "panel unavailable",
+        "escalated_from": payload["proposed"],
+        "report": ("Entry held: the review panel could not be reached, and "
+                   "an entry does not stand unreviewed. Desk proposed "
+                   f"{action}: " + str(proposal.get("report") or ""))[:800]})
+    return {**analysis, "decision": kept}
 
 
 def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:

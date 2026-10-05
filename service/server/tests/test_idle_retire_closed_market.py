@@ -107,6 +107,42 @@ class ClosedMarketCounting(unittest.TestCase):
                           "a run that never saw an open market must not be "
                           "retired for never trading")
 
+    def _discussions(self, run_id, n, held=True):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for i in range(n):
+            ClosedMarketCounting._seq += 1
+            payload = {"proposed": {"action": "buy", "confidence": 0.7},
+                       "error": "llm down",
+                       "final": {"action": "hold" if held else "buy"}}
+            if held:
+                payload["entry_held"] = "panel unavailable"
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'order_discussion', ?, ?)",
+                (run_id, ClosedMarketCounting._seq,
+                 f"2026-10-05T0{i % 10}:00:00Z", json.dumps(payload)))
+        conn.commit()
+        conn.close()
+
+    def test_an_outage_does_not_retire_a_slot_that_wanted_to_trade(self):
+        """A cycle whose entry was held because the panel was unreachable is
+        the opposite of idle — the desk proposed an order. Twelve of them
+        retired the slot and benched its symbol for 12h (reproduced, review
+        2026-10-05): an LLM outage authoring the rotation, the class
+        `_flat_hold_span` is already guarded against."""
+        self._discussions(127, 12)
+        self.assertEqual(run_engine._entry_held_cycles(127), 12)
+        self.assertIsNone(self._evaluate(_run(12)))
+        # eleven workable holds plus those twelve: still under the limit
+        self.assertIsNone(self._evaluate(_run(23)))
+        self.assertEqual(self._evaluate(_run(24)), "idle_retired")
+
+    def test_only_HELD_discussions_are_discounted(self):
+        self._discussions(127, 12, held=False)
+        self.assertEqual(run_engine._entry_held_cycles(127), 0)
+        self.assertEqual(self._evaluate(_run(12)), "idle_retired")
+
     def test_a_genuinely_idle_run_is_still_retired(self):
         """The rail must keep working for runs that COULD have traded."""
         self._skips(127, 0)
