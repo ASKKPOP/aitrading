@@ -474,7 +474,9 @@ def _drop_closed_outside(state: dict[str, Any], actions: list[dict[str, Any]],
         # ledger clamps an oversized sell, but a shadow order does not.
         pos = state["positions"][symbol]
         held = abs(float(ledger[symbol]["quantity"]))
-        if abs(held - float(pos["qty"])) > 1e-6 * max(held, float(pos["qty"])):
+        # (The ledger column keeps 8 places; that rounding is not a change.)
+        if abs(held - float(pos["qty"])) > max(
+                1e-8, 1e-6 * max(held, float(pos["qty"]))):
             _emit(state, actions, "qty_synced", symbol=symbol,
                   was=pos["qty"], now=held)
             pos["qty"] = held

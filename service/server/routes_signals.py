@@ -529,10 +529,14 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                     cursor.execute(f'SAVEPOINT follower_{follower_id}')
                     follower_position = None
 
+                    # Plan 32: a leader's fill is not mirrored into a
+                    # dedicated trend account — not its buys, and not its
+                    # sells either (they would sell the rule's position).
+                    if trend_accounts.copy_fence(cursor, follower_id):
+                        cursor.execute(f'ROLLBACK TO SAVEPOINT follower_{follower_id}')
+                        continue
+
                     if action_lower in ['buy', 'short']:
-                        if trend_accounts.entry_fence(cursor, follower_id, action_lower):
-                            cursor.execute(f'ROLLBACK TO SAVEPOINT follower_{follower_id}')
-                            continue
                         follower_fee = trade_value * TRADE_FEE_RATE
                         follower_total = trade_value + follower_fee
                         cursor.execute('SELECT cash FROM agents WHERE id = ?', (follower_id,))

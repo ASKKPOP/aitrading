@@ -168,6 +168,11 @@ class Enrolment(_Base):
             [{"agent_id": 6, "risk_usd": True}],
             [{"agent_id": 6, "risk_usd": float("nan")}],
             [{"agent_id": 6, "risk_usd": float("inf")}],
+            [{"agent_id": 6, "account_type": ""}],      # not "left out"
+            [{"agent_id": 6, "account_type": False}],
+            [{"agent_id": 6, "account_type": 0}],
+            [{"agent_id": 6, "account_type": []}],
+            [{"agent_id": "²"}],                   # isdigit() says yes
             [{"agent_id": 6, "since_signal_id": -1}],
             [{"agent_id": 6, "since_signal_id": "7"}],
             [{"agent_id": 6, "since_signal_id": True}],
@@ -239,6 +244,12 @@ class Enrolment(_Base):
         fresh = ta.enrol(self.V)
         self.assertEqual((fresh["account_type"], fresh["risk_usd"]),
                          ("simulator", ta.DEFAULT_RISK_USD))
+        # an empty or false type is a bad value, not an omitted one
+        ta.enrol(self.U, "shadow")
+        for bad in ("", False, 0, []):
+            with self.assertRaises(ta.AccountError, msg=repr(bad)):
+                ta.enrol(self.U, bad)
+        self.assertEqual(ta.stored()[0][0]["account_type"], "shadow")
 
     def test_an_account_with_an_auto_executing_rule_cannot_be_enrolled(self):
         rule = self._x("INSERT INTO automation_configs (agent_id, symbol, market,"
@@ -302,13 +313,23 @@ class Enrolment(_Base):
             self.assertTrue(ta.is_trend_account(self.U))
             self.assertEqual(ta.entry_fence(None, self.U, "buy"), ta.FENCED)
 
-    def test_a_stored_value_that_does_not_validate_runs_and_fences_nobody(self):
+    def test_a_stored_value_that_does_not_validate_trades_nobody(self):
         from platform_settings import set_setting
-        for raw in ("{not json", json.dumps([{"agent_id": self.U,
-                                              "account_type": "live"}])):
+        for raw, fenced in (
+                ("{not json", False), ('{"agent_id": 1}', False),
+                # One field stopped validating (a later release tightening a
+                # rule would do this to every entry at once): nobody trades,
+                # but the account is still known and still fenced — a strict
+                # read took every fence down, the live-order guard with them.
+                (json.dumps([{"agent_id": self.U, "account_type": "live"}]), True),
+                (json.dumps([{"agent_id": self.U, "risk_usd": 9999}, "x",
+                             {"agent_id": "abc"}]), True)):
             set_setting(ta.ACCOUNTS_KEY, raw, "test")
             self.assertEqual(ta.accounts(), [], raw)
-            self.assertFalse(ta.is_trend_account(self.U), raw)
+            self.assertEqual(ta.is_trend_account(self.U), fenced, raw)
+            self.assertFalse(ta.is_trend_account(self.V), raw)
+            self.assertEqual(ta.entry_fence(None, self.U, "buy"),
+                             ta.FENCED if fenced else None, raw)
             entries, problem = ta.stored()
             self.assertEqual(entries, [])
             self.assertIn("invalid", problem)
@@ -372,7 +393,7 @@ class EntryFence(_Base):
     def test_an_unreadable_enrolment_fences_nobody(self):
         """The fence sits on every simulated entry on the platform; a
         settings read that fails must not stop all of them."""
-        with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+        with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
             for agent in (self.U, self.V):
                 sid, err = execute_paper_trade(agent, "SOLUSDT", "crypto",
                                                "buy", 1.0, 100.0)
@@ -430,10 +451,10 @@ class EntryFence(_Base):
             self.assertIsNotNone(stops[2])
             self.assertIsNone(stops[3])
             # enrolment unreadable: the sweep sits the pass out
-            with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+            with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
                 self.assertEqual(orc.find_orphans(), [])
             # a stored value that enrols nobody still shields the module agent
-            with patch.object(ta, "_read", side_effect=ValueError("bad")):
+            with patch.object(ta, "enrolled_ids", side_effect=ValueError("bad")):
                 self.assertEqual(sorted(r["id"] for r in orc.find_orphans()),
                                  [1, 2])
         # module off: its OWN agent's rows are orphans again; an enrolled
@@ -446,7 +467,7 @@ class EntryFence(_Base):
             orc.sweep(blocking={})
             self.assertIsNone(self._q("SELECT stop_loss FROM positions "
                                       "WHERE id = 1")[0]["stop_loss"])
-            with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+            with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
                 self.assertEqual(orc.find_orphans(), [])
 
 
@@ -526,6 +547,21 @@ class ManualAndCopyOrders(unittest.TestCase):
         self.assertEqual(self._qty("leader"), 2.0)
         self.assertEqual(self._qty("plain"), 2.0, "fixture: copies must work")
         self.assertEqual(self._qty("trend"), 0.0)
+
+    def test_a_copied_sell_does_not_sell_the_rules_position(self):
+        """Closing is never fenced for the account's OWNER. A leader's sell
+        copied into the account is not the owner closing anything."""
+        agent_id = self.agents["trend"][0]
+        sid, err = execute_paper_trade(
+            agent_id, "AAPL", "us-stock", "buy", 3.0, 150.0,
+            client_order_id=f"trend:{agent_id}:AAPL:buy:2026-10-05")
+        self.assertIsNotNone(sid, err)
+        self.assertEqual(self._trade("leader", "buy", 3.0).status_code, 200)
+        self.assertEqual(self._trade("leader", "sell", 2.0).status_code, 200)
+        self.assertEqual(self._qty("plain"), 1.0, "fixture: copies must work")
+        self.assertEqual(self._qty("trend"), 3.0)
+        with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
+            self.assertFalse(ta.copy_fence(None, agent_id))   # fails open
 
 
 class Trading(_Base):
@@ -765,7 +801,7 @@ class LiveOrders(_Base):
     write — so the order must be stopped before the venue, or the broker
     holds a position the platform has no record of."""
 
-    def _run(self, agent_id, side="buy"):
+    def _run(self, agent_id, side="buy", account_type="live"):
         import automation
         from execution.base import OrderStatus
         order = SimpleNamespace(broker="binance", broker_order_id="b-1",
@@ -773,9 +809,71 @@ class LiveOrders(_Base):
                                 error_message=None)
         with patch("execution.gateway.submit_live", return_value=order) as live:
             out = automation._execute_for_account_type(
-                {"account_type": "live"}, agent_id, "SOLUSDT", "crypto", side,
-                1.0, 100.0, None, None, {})
+                {"account_type": account_type}, agent_id, "SOLUSDT", "crypto",
+                side, 1.0, 100.0, None, None, {})
         return live, out
+
+    def test_a_rule_does_not_sell_the_rules_position_in_any_mode(self):
+        """The ledger never fences a close — that is for the owner. A
+        simulator or shadow RULE selling is an AI closing the trend rule's
+        position, with no shadow leg on a shadow account."""
+        ta.enrol(self.U)
+        sid, err = execute_paper_trade(
+            self.U, "SOLUSDT", "crypto", "buy", 1.0, 100.0,
+            client_order_id=f"trend:{self.U}:SOLUSDT:buy:2026-10-05")
+        self.assertIsNotNone(sid, err)
+        with patch("execution.gateway.submit_shadow") as shadow:
+            for mode in ("simulator", "shadow"):
+                for side in ("sell", "buy"):
+                    live, (signal_id, reason) = self._run(self.U, side, mode)
+                    self.assertIsNone(signal_id, (mode, side))
+                    self.assertEqual(reason, ta.FENCED)
+            shadow.assert_not_called()
+        self.assertEqual(self._open(self.U)[0]["quantity"], 1.0)
+        # not knowing stops a real order, not a simulated one
+        with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
+            live, (signal_id, reason) = self._run(self.V, "buy", "simulator")
+        self.assertIsNotNone(signal_id, reason)
+
+    def test_a_field_invalid_enrolment_still_withholds_the_live_order(self):
+        from platform_settings import set_setting
+        set_setting(ta.ACCOUNTS_KEY, json.dumps(
+            [{"agent_id": self.U, "risk_usd": 9999}]), "test")
+        live, (signal_id, reason) = self._run(self.U)
+        live.assert_not_called()
+        self.assertEqual(reason, ta.FENCED)
+        # a value that cannot be parsed at all: nobody can be told apart
+        set_setting(ta.ACCOUNTS_KEY, "{not json", "test")
+        live, (signal_id, reason) = self._run(self.V)
+        live.assert_not_called()
+        self.assertIn("not sent", reason)
+
+    def test_no_analysis_is_bought_for_a_rule_that_cannot_trade(self):
+        import automation
+        ta.enrol(self.U)
+        rules = {}
+        for agent, auto in ((self.U, 1), (self.V, 1)):
+            rules[agent] = self._x(
+                "INSERT INTO automation_configs (agent_id, symbol, market, "
+                "auto_execute, enabled) VALUES (?, 'BTCUSDT', 'crypto', ?, 1)",
+                (agent, auto))
+        boom = RuntimeError("analysis was called")
+        with patch("analysis_agents.run_analysis", side_effect=boom) as analysis:
+            out = automation.run_rule(
+                {"id": rules[self.U], "agent_id": self.U, "symbol": "BTCUSDT",
+                 "market": "crypto", "auto_execute": 1})
+            self.assertEqual(analysis.call_count, 0)
+            self.assertEqual((out["executed"], out["skip_reason"]),
+                             (False, ta.FENCED))
+            # an advise-only rule on the same account, and anyone else's
+            # auto rule, still get their analysis
+            automation.run_rule(
+                {"id": rules[self.U], "agent_id": self.U, "symbol": "BTCUSDT",
+                 "market": "crypto", "auto_execute": 0})
+            automation.run_rule(
+                {"id": rules[self.V], "agent_id": self.V, "symbol": "BTCUSDT",
+                 "market": "crypto", "auto_execute": 1})
+            self.assertEqual(analysis.call_count, 2)
 
     def test_no_live_order_is_sent_for_a_trend_account(self):
         ta.enrol(self.U)
@@ -795,7 +893,7 @@ class LiveOrders(_Base):
     def test_an_unreadable_enrolment_withholds_the_live_order(self):
         """Opposite to the ledger fence on purpose: a simulated fill that
         slips through is a row; a real order that slips through is money."""
-        with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+        with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
             live, (signal_id, reason) = self._run(self.V)
         live.assert_not_called()
         self.assertIsNone(signal_id)
@@ -838,7 +936,7 @@ class Interleavings(_Base):
         self.assertIsNone(sid)
         self.assertEqual(err, "account is no longer a trend account")
         ta.enrol(self.U)
-        with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+        with patch.object(ta, "enrolled_ids", side_effect=RuntimeError("db down")):
             sid, err = execute_paper_trade(
                 self.U, "BTCUSDT", "crypto", "buy", 1.0, 100.0,
                 client_order_id=order_id, fence=fence)
@@ -859,6 +957,87 @@ class Interleavings(_Base):
         with patch.object(ta, "_open_positions", side_effect=positions):
             ta.remove(self.U)
         self.assertEqual(seen, [True])
+
+    def test_the_reads_that_decide_a_write_take_the_row_lock(self):
+        """SQLite admits one writer at a time and needs no lock clause;
+        prod is MySQL, where these reads must say FOR UPDATE or the entry
+        and the removal can each miss the other. Counted here, per path."""
+        import database
+        with patch.object(database, "using_mysql", return_value=True):
+            self.assertEqual(ta._for_update(), " FOR UPDATE")
+        self.assertEqual(ta._for_update(), "")
+        ta.enrol(self.V)
+        order_id = f"trend:{self.V}:BTCUSDT:buy:2026-10-05"
+        paths = (
+            ("an ordinary fence read", 0,
+             lambda: ta.entry_fence(None, self.V, "buy")),
+            ("enrol", 2, lambda: ta.enrol(self.U)),      # the row, positions
+            ("change", 1, lambda: ta.enrol(self.U, risk_usd=30)),
+            ("the module's entry", 1, lambda: execute_paper_trade(
+                self.V, "BTCUSDT", "crypto", "buy", 1.0, 100.0,
+                client_order_id=order_id, fence=ta.own_entry_fence(self.V))),
+            ("remove", 2, lambda: ta.remove(self.U)),    # the row, positions
+        )
+        for name, expected, call in paths:
+            with patch.object(ta, "_for_update", return_value="") as lock:
+                call()
+            self.assertEqual(lock.call_count, expected, name)
+
+    def test_a_write_is_built_from_the_locked_read_not_an_earlier_copy(self):
+        ta.enrol(self.U)
+        ta.enrol(self.V)
+        stale = ([a for a in ta.stored()[0] if a["agent_id"] == self.U], None)
+        with patch.object(ta, "stored", return_value=stale):
+            ta.remove(self.U)
+        self.assertEqual([a["agent_id"] for a in ta.stored()[0]], [self.V])
+        # ...and a change to an account removed since the console loaded it
+        # is refused, not turned into a fresh enrolment that skipped the checks
+        with patch.object(ta, "stored", return_value=stale):
+            with self.assertRaises(ta.AccountError) as ctx:
+                ta.enrol(self.U, risk_usd=30)
+        self.assertIn("removed", str(ctx.exception))
+        self.assertFalse(ta.is_trend_account(self.U))
+
+    def test_an_account_that_stopped_being_flat_during_enrolment_is_refused(self):
+        real = ta._busy
+
+        def busy(agent_id, user_id):
+            out = real(agent_id, user_id)
+            self._position(agent_id, "ETHUSDT")   # lands after the check
+            return out
+
+        with patch.object(ta, "_busy", side_effect=busy):
+            with self.assertRaises(ta.AccountError) as ctx:
+                ta.enrol(self.U)
+        self.assertIn("ETHUSDT", str(ctx.exception))
+        self.assertFalse(ta.is_trend_account(self.U))
+
+    def test_a_partly_covered_short_is_followed_too(self):
+        """The module's own account trades shorts; the ledger holds them
+        as a negative quantity and the state as a positive one."""
+        bars = _bars_down()
+        self._cycle({"BTCUSDT": bars})
+        full = abs(self._open(self.D)[0]["quantity"])
+        self.assertLess(self._open(self.D)[0]["quantity"], 0)
+        sid, err = execute_paper_trade(self.D, "BTCUSDT", "crypto", "cover",
+                                       full / 2, bars[-1]["close"])
+        self.assertIsNotNone(sid, err)
+        out = self._cycle({"BTCUSDT": _next_bar(bars, bars[-1]["close"] + 20.0)})
+        synced, = [e for e in out["actions"] if e["event"] == "qty_synced"]
+        self.assertAlmostEqual(synced["now"], full / 2)
+        self.assertEqual(out["exits"], 1)
+        self.assertEqual(self._open(self.D), [])
+
+    def test_ledger_rounding_is_not_a_partial_close(self):
+        """positions.quantity keeps 8 places on MySQL; a BTC-sized lot
+        differs from the float in state by more than a relative 1e-6."""
+        ta.enrol(self.U)
+        bars = _bars_up()
+        self._cycle({"BTCUSDT": bars})
+        self._x("UPDATE positions SET quantity = quantity + 0.000000004")
+        out = self._cycle({"BTCUSDT": _next_bar(bars, bars[-1]["close"] + 0.5)})
+        events = out["actions"] + self._account(out, self.U)["actions"]
+        self.assertEqual([e for e in events if e["event"] == "qty_synced"], [])
 
     def test_two_operations_do_not_lose_each_others_change(self):
         """Enrolment is one JSON value. Written from a copy read earlier,
@@ -911,8 +1090,12 @@ class Interleavings(_Base):
             sid, err = execute_paper_trade(self.U, "SOLUSDT", "crypto", side,
                                            1.0, price)
             self.assertIsNotNone(sid, err)
+        # the baseline is the row id trend_stats filters on, not the public
+        # signal_id — on prod the two differ
+        self._x("UPDATE signals SET signal_id = signal_id + 100000")
         ta.enrol(self.U)
-        self.assertGreater(ta.stored()[0][0]["since_signal_id"], 0)
+        self.assertEqual(ta.stored()[0][0]["since_signal_id"],
+                         self._q("SELECT MAX(id) AS n FROM signals")[0]["n"])
         stats = tm.trend_stats(self.U)
         self.assertEqual((stats["entries"], stats["n_trades"], stats["total_pnl"]),
                          (0, 0, 0))
@@ -1031,6 +1214,17 @@ class AdminApi(_Base):
         self.assertEqual(r.status_code, 200, r.text)
         row, = r.json()["accounts"]
         self.assertEqual((row["account_type"], row["risk_usd"]), ("shadow", 45.0))
+        r = self.client.post(self.URL, headers=self.admin, json={
+            "agent_id": self.U, "account_type": "simulator"})
+        row, = r.json()["accounts"]
+        self.assertEqual((row["account_type"], row["risk_usd"]),
+                         ("simulator", 45.0))
+        for bad in ("", False):
+            r = self.client.post(self.URL, headers=self.admin, json={
+                "agent_id": self.U, "account_type": bad})
+            self.assertEqual(r.status_code, 400, repr(bad))
+        r = self.client.post(self.URL, headers=self.admin, json={"agent_id": "²"})
+        self.assertEqual(r.status_code, 400)
 
     def test_the_console_sees_what_is_stored_not_what_is_running(self):
         ta.enrol(self.U)

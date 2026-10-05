@@ -357,18 +357,23 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     mode = normalize_account_type(config.get("account_type"))
     result["execution_mode"] = mode
 
+    # Plan 32: an automation rule does not trade a dedicated trend account —
+    # not to open (the ledger fences that) and not to sell the rule's
+    # position either. Checked BEFORE any venue: a live order the broker
+    # filled and the ledger then refused is a real position nothing on the
+    # platform knows about. For a live order, not knowing is a refusal.
+    try:
+        enrolled = agent_id in trend_accounts.enrolled_ids()
+    except Exception:  # noqa: BLE001
+        enrolled = None
+        logger.warning("trend-account check failed for agent %s", agent_id,
+                       exc_info=True)
+    if enrolled:
+        return None, trend_accounts.FENCED
+    if enrolled is None and mode == LIVE:
+        return None, "account checks unavailable — live order not sent"
+
     if mode == LIVE:
-        # Plan 32: a dedicated trend account takes no real order. Checked
-        # BEFORE the venue: the ledger fences this account, and an order the
-        # broker filled and the ledger then refused is a real position
-        # nothing on the platform knows about. Unknown is a refusal.
-        try:
-            if trend_accounts.is_trend_account(agent_id):
-                return None, trend_accounts.FENCED
-        except Exception:  # noqa: BLE001
-            logger.warning("live order withheld: trend-account check failed "
-                           "for agent %s", agent_id, exc_info=True)
-            return None, "account checks unavailable — live order not sent"
         order = submit_live(agent_id, symbol, market, side, quantity, price)
         result["broker"] = order.broker
         result["broker_order_id"] = order.broker_order_id
@@ -672,6 +677,20 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
     market = config["market"]
 
     result: dict[str, Any] = {"config_id": config_id, "executed": False, "skip_reason": None}
+
+    # Plan 32: an auto-executing rule does not trade a dedicated trend
+    # account (_execute_for_account_type). Say so before paying for the
+    # analysis, every interval, of an order that will be refused.
+    if config.get("auto_execute"):
+        try:
+            fenced = trend_accounts.is_trend_account(agent_id)
+        except Exception:  # noqa: BLE001 — the execution-time check stands
+            fenced = False
+        if fenced:
+            result["skip_reason"] = trend_accounts.FENCED
+            result.update({"action": None, "confidence": None, "signal_id": None})
+            _record_run(config_id, agent_id, result, None)
+            return result
 
     # Agent Mode (Plan 06 C1): the planner picks this cycle's parameters
     # (symbol/size/cadence/confidence/risk level) inside deterministic bounds.

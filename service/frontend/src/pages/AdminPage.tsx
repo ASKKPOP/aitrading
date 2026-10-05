@@ -438,6 +438,7 @@ export function AdminPage() {
     trendRemove: tr(language, { ko: '해제', en: 'Remove', ja: '解除', th: 'นำออก', vi: 'Gỡ', id: 'Hapus' }),
     trendNone: tr(language, { ko: '등록된 계정 없음', en: 'No account enrolled', ja: '登録口座なし', th: 'ยังไม่มีบัญชีที่ลงทะเบียน', vi: 'Chưa có tài khoản nào', id: 'Belum ada akun terdaftar' }),
     trendOff: tr(language, { ko: '추세 모듈이 꺼져 있어 계정이 실행되지 않습니다', en: 'The trend module is off — no account runs', ja: 'トレンドモジュールがオフのため口座は動きません', th: 'โมดูลเทรนด์ปิดอยู่ — ไม่มีบัญชีทำงาน', vi: 'Mô-đun xu hướng đang tắt — không tài khoản nào chạy', id: 'Modul tren mati — tidak ada akun yang berjalan' }),
+    trendUnmanaged: tr(language, { ko: '모듈이 꺼진 동안 이 계정들의 보유 포지션은 아무도 청산하지 않습니다', en: 'While the module is off, nothing exits the positions these accounts hold', ja: 'モジュールがオフの間、これらの口座の保有ポジションは誰も決済しません', th: 'ขณะที่โมดูลปิดอยู่ ไม่มีอะไรปิดสถานะที่บัญชีเหล่านี้ถืออยู่', vi: 'Khi mô-đun tắt, không gì đóng các vị thế mà những tài khoản này đang giữ', id: 'Selama modul mati, tidak ada yang menutup posisi yang dipegang akun-akun ini' }),
     trendNoBroker: tr(language, { ko: '연결된 브로커 없음', en: 'no broker linked', ja: 'ブローカー未接続', th: 'ยังไม่เชื่อมโบรกเกอร์', vi: 'chưa kết nối sàn', id: 'belum ada broker terhubung' }),
     usdtSave: tr(language, { ko: '저장', en: 'Save', ja: '保存', th: 'บันทึก', vi: 'Lưu', id: 'Simpan' }),
     usdtConfirm: tr(language, {
@@ -1525,6 +1526,9 @@ export function AdminPage() {
               </div>
               {!trendAccounts.module_enabled && (
                 <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 8 }}>⚠️ {T.trendOff}</div>
+              )}
+              {!trendAccounts.module_enabled && (trendAccounts.accounts || []).some((a: any) => (a.open_positions || []).length > 0) && (
+                <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 8 }}>⚠️ {T.trendUnmanaged}</div>
               )}
               {trendAccounts.problem && (
                 <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 8 }}>⚠️ {trendAccounts.problem}</div>

@@ -117,10 +117,17 @@ enrols one account at a time (console → Automation → Trend accounts, or
   at the ledger (`execute_paper_trade` and the realtime-signal route).
   Closing is never fenced. The orphan sweep skips the account. Both hold
   while the module is switched off.
-- **No real order.** An automation rule set to `live` is stopped before the
-  venue on an enrolled account (either side). Found in review: the rule
-  path sends the venue order first and writes the ledger after, so the new
-  ledger fence alone would have left a real fill with no ledger record.
+- **No real order, and no rule or copied fill at all.** An automation rule
+  does not trade an enrolled account in any mode or on either side — it is
+  stopped before its analysis is bought and again before any venue — and a
+  leader's fill is not copied into one (a copied or rule-driven SELL would
+  sell the rule's position). Found in review: the rule path sends a `live`
+  order to the venue first and writes the ledger after, so the new ledger
+  fence alone would have left a real fill with no ledger record. For a
+  live order, an enrolment that cannot be read is a refusal.
+- **The fence reads who is enrolled, not whether every field validates.**
+  An entry whose risk or type stopped validating trades nothing but stays
+  fenced; a strict read would have taken every fence down at once.
 - **The rule on it.** Long-only, exits on the daily close, no stop on the
   ledger row, own state and own risk figure ($25 default, $100 cap).
 - **Shadow.** After each ledger fill the same order goes to the account's
@@ -142,6 +149,21 @@ broker whatever its market (`submit_shadow` is market-blind — keep one
 broker link on a trend account); order sizes are not rounded to the venue's
 lot step, so a dry run may be rejected for size — that is a shadow finding,
 not yet a fix; each account makes its own LLM veto call per signal.
+
+Two more, stated because they are traps rather than gaps:
+
+- **Module off = nothing exits.** An enrolled account carries no stop on
+  its ledger rows by design, so with the module switched off (or the
+  enrolment invalid) its open positions have no exit until the module is
+  back or someone closes them by hand. The console says so in red; there
+  is no push alert.
+- **The row locks are untested on MySQL.** Enrol, remove and the module's
+  entry serialise on `SELECT … FOR UPDATE` of the enrolment row. SQLite
+  (every test) emits no such clause; the tests count that each path asks
+  for the lock, and a reviewer reasoned through InnoDB's behaviour, but
+  nobody has run the race on MySQL. Known from that reasoning: two admins
+  making the very first enrolment at the same instant can deadlock, and
+  one gets an error to retry.
 
 To use it: create a separate login for the trend account (one user has one
 account), connect a broker on its Accounts page in paper/sandbox mode,

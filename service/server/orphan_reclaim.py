@@ -142,8 +142,8 @@ def _module_managed_agents() -> "set[int] | None":
         pass
     try:
         import trend_accounts
-        return managed | {int(a["agent_id"]) for a in trend_accounts._read()}
-    except ValueError:      # stored value does not validate: enrols nobody
+        return managed | trend_accounts.enrolled_ids()
+    except ValueError:      # stored value cannot be parsed: enrols nobody
         return managed
     except Exception:  # noqa: BLE001
         logger.warning("orphan sweep: trend accounts unreadable — skipping "

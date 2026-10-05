@@ -85,7 +85,8 @@ def _agent_id(value: Any) -> int:
     # An id, exactly: `true` is not agent 1 and 6.9 is not agent 6.
     if isinstance(value, bool) or not (
             isinstance(value, int)
-            or (isinstance(value, str) and value.strip().isdigit())):
+            or (isinstance(value, str) and value.strip().isascii()
+                and value.strip().isdigit())):
         raise AccountError("agent_id must be a whole number")
     agent_id = int(value)
     if not 0 < agent_id <= _MAX_AGENT_ID:
@@ -107,7 +108,12 @@ def normalize(entries: Any) -> list[dict[str, Any]]:
         if agent_id in seen:
             raise AccountError(f"agent {agent_id} is enrolled twice")
         seen.add(agent_id)
-        account_type = str(raw.get("account_type") or "simulator").strip().lower()
+        account_type = raw.get("account_type", "simulator")
+        if account_type is None:
+            account_type = "simulator"
+        if not isinstance(account_type, str):
+            raise AccountError("account_type must be text")
+        account_type = account_type.strip().lower()
         if account_type not in ACCOUNT_TYPES:
             raise AccountError(
                 f"account_type '{account_type}' is not available for a trend "
@@ -156,6 +162,36 @@ def _read(cursor=None, lock: bool = False) -> list[dict[str, Any]]:
     return normalize(json.loads(raw)) if raw else []
 
 
+def enrolled_ids(cursor=None, lock: bool = False) -> set[int]:
+    """Who is enrolled, as stored — for the FENCE, which must not depend on
+    every field of every entry still validating. If a later release
+    tightened a rule (a lower risk cap, say) a strict read would enrol
+    nobody: every fence down at once, the live-order guard with them.
+    Raises on a database failure, and ValueError when the stored value
+    cannot be parsed at all — then nobody can be told apart."""
+    sql = "SELECT setting_value FROM platform_settings WHERE setting_key = ?"
+    if lock:
+        sql += _for_update()
+    if cursor is None:
+        rows = _query(sql, (ACCOUNTS_KEY,))
+    else:
+        cursor.execute(sql, (ACCOUNTS_KEY,))
+        rows = [dict(r) for r in cursor.fetchall()]
+    raw = (rows[0]["setting_value"] or "").strip() if rows else ""
+    if not raw:
+        return set()
+    entries = json.loads(raw)
+    if not isinstance(entries, list):
+        raise ValueError("stored enrolment is not a list")
+    ids: set[int] = set()
+    for entry in entries:
+        try:
+            ids.add(_agent_id(entry.get("agent_id")))
+        except (AccountError, AttributeError):
+            continue
+    return ids
+
+
 def stored() -> tuple[list[dict[str, Any]], "str | None"]:
     """(enrolments, problem) exactly as stored, whatever the module switch
     says — what the admin console shows."""
@@ -187,14 +223,27 @@ def accounts() -> list[dict[str, Any]]:
 
 def is_trend_account(agent_id: int, cursor=None, lock: bool = False) -> bool:
     """Is this agent enrolled? As STORED — the module switch does not lift
-    the fence. Raises on a database failure, so a caller inside a write
-    transaction fails with it instead of guessing. A stored value that does
-    not validate (the API cannot write one) enrols nobody."""
+    the fence, and neither does an entry whose other fields stopped
+    validating (`enrolled_ids`). Raises on a database failure, so a caller
+    inside a write transaction fails with it instead of guessing. A stored
+    value that cannot be parsed at all enrols nobody here; the live-order
+    guard asks `enrolled_ids` itself and treats that as unknown."""
     try:
-        entries = _read(cursor, lock)
-    except (AccountError, ValueError):
+        return int(agent_id) in enrolled_ids(cursor, lock)
+    except ValueError:
         return False
-    return any(a["agent_id"] == int(agent_id) for a in entries)
+
+
+def copy_fence(cursor, agent_id: int) -> bool:
+    """Should a copied fill skip this follower? Any side: a leader's sell
+    would sell the rule's position, which is not the account owner closing
+    it. Fails open like `entry_fence`, for the same reason."""
+    try:
+        return is_trend_account(agent_id, cursor)
+    except Exception:  # noqa: BLE001
+        logger.warning("trend_accounts: enrolment unreadable — copy fence "
+                       "skipped for agent %s", agent_id, exc_info=True)
+        return False
 
 
 def own_entry_fence(agent_id: int):
@@ -358,6 +407,13 @@ def enrol(agent_id: Any, account_type: Any = None, risk_usd: Any = None,
             raise AccountError(
                 f"agent {agent_id} was removed while this was being saved — "
                 "enrol it again")
+        if base is None:
+            # Again, inside the write: `_busy` ran before the lock was taken.
+            held = _open_positions(agent_id, cursor)
+            if held:
+                raise AccountError(
+                    f"agent {agent_id} holds open positions "
+                    f"({', '.join(held[:6])}) — a trend account starts flat")
         entry = merged(base, since)
         rest = [a for a in entries if a["agent_id"] != agent_id]
         return entry, rest + [entry], by
