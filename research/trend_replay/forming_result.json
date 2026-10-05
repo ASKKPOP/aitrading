@@ -1,0 +1,1962 @@
+{
+  "hourly_vs_daily_sanity": {
+    "BTCUSDT": {
+      "daily_bars_with_hourly": 2469,
+      "with_all_24_hours": 2469,
+      "ohlc_identical": 2467,
+      "worst_relative_mismatch": 0.000502,
+      "hourly_bars": 59273,
+      "first_hour": "2020-01-01T00:00:00Z",
+      "last_hour": "2026-10-05T16:00:00Z"
+    },
+    "ETHUSDT": {
+      "daily_bars_with_hourly": 2469,
+      "with_all_24_hours": 2469,
+      "ohlc_identical": 2467,
+      "worst_relative_mismatch": 0.005042,
+      "hourly_bars": 59273,
+      "first_hour": "2020-01-01T00:00:00Z",
+      "last_hour": "2026-10-05T16:00:00Z"
+    },
+    "SOLUSDT": {
+      "daily_bars_with_hourly": 2083,
+      "with_all_24_hours": 2082,
+      "ohlc_identical": 1585,
+      "worst_relative_mismatch": 0.005587,
+      "hourly_bars": 49979,
+      "first_hour": "2021-01-22T06:00:00Z",
+      "last_hour": "2026-10-05T16:00:00Z"
+    },
+    "BNBUSDT": {
+      "daily_bars_with_hourly": 1383,
+      "with_all_24_hours": 1382,
+      "ohlc_identical": 1383,
+      "worst_relative_mismatch": 0.0,
+      "hourly_bars": 33179,
+      "first_hour": "2022-12-23T06:00:00Z",
+      "last_hour": "2026-10-05T16:00:00Z"
+    },
+    "XRPUSDT": {
+      "daily_bars_with_hourly": 2469,
+      "with_all_24_hours": 2469,
+      "ohlc_identical": 2467,
+      "worst_relative_mismatch": 0.000821,
+      "hourly_bars": 59273,
+      "first_hour": "2020-01-01T00:00:00Z",
+      "last_hour": "2026-10-05T16:00:00Z"
+    }
+  },
+  "hourly": {
+    "full": {
+      "label": "hourly",
+      "entries_from": "full history",
+      "forming_replay": {
+        "n": 164,
+        "net_usd": 2322.642934,
+        "net_R": 92.905717,
+        "gross_usd": 2432.384635,
+        "cost_usd": 109.741701,
+        "wins": 64,
+        "losses": 100,
+        "win_rate": 0.390244,
+        "avg_win_usd": 77.024961,
+        "avg_loss_usd": 26.069546,
+        "payoff": 2.954595,
+        "mean_R": 0.566498,
+        "median_R": -1.019541,
+        "best_trade_R": 18.284432,
+        "worst_trade_R": -1.914042,
+        "net_R_ex_best_trade": 74.621285,
+        "longest_losing_streak": 12,
+        "longest_losing_streak_span": [
+          "2024-04-13T02:00:00Z",
+          "2024-08-07T21:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 17.653029,
+          "max_dd_usd": 441.325726,
+          "peak_date": "2024-03-15T22:00:00Z",
+          "trough_date": "2024-11-15T00:00:00Z",
+          "peak_to_trough_days": 244.1,
+          "recovered_date": "2024-12-10T03:00:00Z",
+          "peak_to_recovery_days": 269.2
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 115,
+        "net_R": 114.145862
+      },
+      "net_R_difference_forming_minus_completed": -21.240144,
+      "forming_only_entries": {
+        "n": 63,
+        "share_of_forming_entries": 0.384146,
+        "net_usd": -53.925853,
+        "net_R": -2.157034,
+        "wins": 20,
+        "losses": 43,
+        "win_rate": 0.31746,
+        "payoff": 2.052575,
+        "mean_R": -0.034239,
+        "median_R": -1.03992,
+        "best_trade_R": 5.285059,
+        "worst_trade_R": -1.829053,
+        "by_side": {
+          "long": {
+            "n": 35,
+            "net_usd": -144.65876,
+            "net_R": -5.78635,
+            "wins": 11
+          },
+          "short": {
+            "n": 28,
+            "net_usd": 90.732908,
+            "net_R": 3.629316,
+            "wins": 9
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 40,
+            "net_usd": -1133.284016,
+            "net_R": -45.331361,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 7,
+            "net_usd": 627.55774,
+            "net_R": 25.10231,
+            "wins": 7
+          },
+          "trail_stop": {
+            "n": 16,
+            "net_usd": 451.800424,
+            "net_R": 18.072017,
+            "wins": 13
+          }
+        },
+        "by_exit_year": {
+          "2020": {
+            "n": 2,
+            "net_usd": 16.18749,
+            "net_R": 0.6475,
+            "wins": 1
+          },
+          "2021": {
+            "n": 11,
+            "net_usd": 170.529059,
+            "net_R": 6.821162,
+            "wins": 5
+          },
+          "2022": {
+            "n": 8,
+            "net_usd": -10.005988,
+            "net_R": -0.40024,
+            "wins": 2
+          },
+          "2023": {
+            "n": 9,
+            "net_usd": -133.666102,
+            "net_R": -5.346644,
+            "wins": 2
+          },
+          "2024": {
+            "n": 6,
+            "net_usd": -160.143787,
+            "net_R": -6.405751,
+            "wins": 0
+          },
+          "2025": {
+            "n": 18,
+            "net_usd": -112.8355,
+            "net_R": -4.51342,
+            "wins": 7
+          },
+          "2026": {
+            "n": 9,
+            "net_usd": 176.008975,
+            "net_R": 7.040359,
+            "wins": 3
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 101,
+        "net_R": 95.062751,
+        "mean_hours_into_day_at_entry": 12.39604,
+        "mean_fill_edge_vs_next_daily_open_R": 0.21659
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 90,
+        "forming_replay_only": 72,
+        "completed_replay_only": 25
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -1.735082,
+          "net_R": -0.069403,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 80,
+          "net_usd": -2304.2666,
+          "net_R": -92.170664,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 23,
+          "net_usd": 2433.737788,
+          "net_R": 97.349512,
+          "wins": 23
+        },
+        "trail_stop": {
+          "n": 60,
+          "net_usd": 2194.906828,
+          "net_R": 87.796273,
+          "wins": 41
+        }
+      },
+      "by_exit_year": {
+        "2020": {
+          "n": 9,
+          "net_usd": 671.664497,
+          "net_R": 26.86658,
+          "wins": 4
+        },
+        "2021": {
+          "n": 29,
+          "net_usd": 353.915864,
+          "net_R": 14.156635,
+          "wins": 12
+        },
+        "2022": {
+          "n": 17,
+          "net_usd": 320.753945,
+          "net_R": 12.830158,
+          "wins": 8
+        },
+        "2023": {
+          "n": 30,
+          "net_usd": 284.913007,
+          "net_R": 11.39652,
+          "wins": 11
+        },
+        "2024": {
+          "n": 28,
+          "net_usd": 474.832497,
+          "net_R": 18.9933,
+          "wins": 8
+        },
+        "2025": {
+          "n": 31,
+          "net_usd": -74.835087,
+          "net_R": -2.993403,
+          "wins": 13
+        },
+        "2026": {
+          "n": 20,
+          "net_usd": 291.398211,
+          "net_R": 11.655928,
+          "wins": 8
+        }
+      }
+    },
+    "from_2023": {
+      "label": "hourly",
+      "entries_from": "2023-01-01",
+      "forming_replay": {
+        "n": 108,
+        "net_usd": 957.643878,
+        "net_R": 38.305755,
+        "gross_usd": 1036.986679,
+        "cost_usd": 79.342801,
+        "wins": 39,
+        "losses": 69,
+        "win_rate": 0.361111,
+        "avg_win_usd": 69.764483,
+        "avg_loss_usd": 25.553203,
+        "payoff": 2.730166,
+        "mean_R": 0.354683,
+        "median_R": -1.028511,
+        "best_trade_R": 18.284432,
+        "worst_trade_R": -1.744798,
+        "net_R_ex_best_trade": 20.021323,
+        "longest_losing_streak": 12,
+        "longest_losing_streak_span": [
+          "2024-04-13T02:00:00Z",
+          "2024-08-07T21:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 17.653029,
+          "max_dd_usd": 441.325726,
+          "peak_date": "2024-03-15T22:00:00Z",
+          "trough_date": "2024-11-15T00:00:00Z",
+          "peak_to_trough_days": 244.1,
+          "recovered_date": "2024-12-10T03:00:00Z",
+          "peak_to_recovery_days": 269.2
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 72,
+        "net_R": 66.940098
+      },
+      "net_R_difference_forming_minus_completed": -28.634343,
+      "forming_only_entries": {
+        "n": 42,
+        "share_of_forming_entries": 0.388889,
+        "net_usd": -230.636415,
+        "net_R": -9.225457,
+        "wins": 12,
+        "losses": 30,
+        "win_rate": 0.285714,
+        "payoff": 1.785002,
+        "mean_R": -0.219654,
+        "median_R": -1.044294,
+        "best_trade_R": 5.285059,
+        "worst_trade_R": -1.353219,
+        "by_side": {
+          "long": {
+            "n": 23,
+            "net_usd": -306.156348,
+            "net_R": -12.246254,
+            "wins": 6
+          },
+          "short": {
+            "n": 19,
+            "net_usd": 75.519933,
+            "net_R": 3.020797,
+            "wins": 6
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 27,
+            "net_usd": -749.663195,
+            "net_R": -29.986528,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 3,
+            "net_usd": 341.411311,
+            "net_R": 13.656452,
+            "wins": 3
+          },
+          "trail_stop": {
+            "n": 12,
+            "net_usd": 177.615469,
+            "net_R": 7.104619,
+            "wins": 9
+          }
+        },
+        "by_exit_year": {
+          "2023": {
+            "n": 9,
+            "net_usd": -133.666102,
+            "net_R": -5.346644,
+            "wins": 2
+          },
+          "2024": {
+            "n": 6,
+            "net_usd": -160.143787,
+            "net_R": -6.405751,
+            "wins": 0
+          },
+          "2025": {
+            "n": 18,
+            "net_usd": -112.8355,
+            "net_R": -4.51342,
+            "wins": 7
+          },
+          "2026": {
+            "n": 9,
+            "net_usd": 176.008975,
+            "net_R": 7.040359,
+            "wins": 3
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 66,
+        "net_R": 47.531212,
+        "mean_hours_into_day_at_entry": 12.772727,
+        "mean_fill_edge_vs_next_daily_open_R": 0.209399
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 58,
+        "forming_replay_only": 48,
+        "completed_replay_only": 14
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -1.735082,
+          "net_R": -0.069403,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 53,
+          "net_usd": -1500.514598,
+          "net_R": -60.020584,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 13,
+          "net_usd": 1512.036917,
+          "net_R": 60.481477,
+          "wins": 13
+        },
+        "trail_stop": {
+          "n": 41,
+          "net_usd": 947.856641,
+          "net_R": 37.914266,
+          "wins": 26
+        }
+      },
+      "by_exit_year": {
+        "2023": {
+          "n": 29,
+          "net_usd": 266.248256,
+          "net_R": 10.64993,
+          "wins": 10
+        },
+        "2024": {
+          "n": 28,
+          "net_usd": 474.832497,
+          "net_R": 18.9933,
+          "wins": 8
+        },
+        "2025": {
+          "n": 31,
+          "net_usd": -74.835087,
+          "net_R": -2.993403,
+          "wins": 13
+        },
+        "2026": {
+          "n": 20,
+          "net_usd": 291.398211,
+          "net_R": 11.655928,
+          "wins": 8
+        }
+      }
+    },
+    "from_2024": {
+      "label": "hourly",
+      "entries_from": "2024-01-01",
+      "forming_replay": {
+        "n": 77,
+        "net_usd": 625.28441,
+        "net_R": 25.011376,
+        "gross_usd": 680.2845,
+        "cost_usd": 55.00009,
+        "wins": 27,
+        "losses": 50,
+        "win_rate": 0.350649,
+        "avg_win_usd": 70.497421,
+        "avg_loss_usd": 25.562919,
+        "payoff": 2.7578,
+        "mean_R": 0.324823,
+        "median_R": -1.024558,
+        "best_trade_R": 18.284432,
+        "worst_trade_R": -1.744798,
+        "net_R_ex_best_trade": 6.726944,
+        "longest_losing_streak": 12,
+        "longest_losing_streak_span": [
+          "2024-04-13T02:00:00Z",
+          "2024-08-07T21:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 17.653029,
+          "max_dd_usd": 441.325726,
+          "peak_date": "2024-03-15T22:00:00Z",
+          "trough_date": "2024-11-15T00:00:00Z",
+          "peak_to_trough_days": 244.1,
+          "recovered_date": "2024-12-10T03:00:00Z",
+          "peak_to_recovery_days": 269.2
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 51,
+        "net_R": 47.226825
+      },
+      "net_R_difference_forming_minus_completed": -22.215449,
+      "forming_only_entries": {
+        "n": 33,
+        "share_of_forming_entries": 0.428571,
+        "net_usd": -96.970312,
+        "net_R": -3.878812,
+        "wins": 10,
+        "losses": 23,
+        "win_rate": 0.30303,
+        "payoff": 1.940242,
+        "mean_R": -0.11754,
+        "median_R": -1.03992,
+        "best_trade_R": 5.285059,
+        "worst_trade_R": -1.353219,
+        "by_side": {
+          "long": {
+            "n": 17,
+            "net_usd": -241.92373,
+            "net_R": -9.676949,
+            "wins": 4
+          },
+          "short": {
+            "n": 16,
+            "net_usd": 144.953418,
+            "net_R": 5.798137,
+            "wins": 6
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 21,
+            "net_usd": -579.529101,
+            "net_R": -23.181164,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 3,
+            "net_usd": 341.411311,
+            "net_R": 13.656452,
+            "wins": 3
+          },
+          "trail_stop": {
+            "n": 9,
+            "net_usd": 141.147478,
+            "net_R": 5.645899,
+            "wins": 7
+          }
+        },
+        "by_exit_year": {
+          "2024": {
+            "n": 6,
+            "net_usd": -160.143787,
+            "net_R": -6.405751,
+            "wins": 0
+          },
+          "2025": {
+            "n": 18,
+            "net_usd": -112.8355,
+            "net_R": -4.51342,
+            "wins": 7
+          },
+          "2026": {
+            "n": 9,
+            "net_usd": 176.008975,
+            "net_R": 7.040359,
+            "wins": 3
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 44,
+        "net_R": 28.890189,
+        "mean_hours_into_day_at_entry": 12.386364,
+        "mean_fill_edge_vs_next_daily_open_R": 0.255128
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 39,
+        "forming_replay_only": 37,
+        "completed_replay_only": 12
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -1.735082,
+          "net_R": -0.069403,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 38,
+          "net_usd": -1084.992858,
+          "net_R": -43.399714,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 10,
+          "net_usd": 899.229843,
+          "net_R": 35.969194,
+          "wins": 10
+        },
+        "trail_stop": {
+          "n": 28,
+          "net_usd": 812.782507,
+          "net_R": 32.5113,
+          "wins": 17
+        }
+      },
+      "by_exit_year": {
+        "2024": {
+          "n": 26,
+          "net_usd": 408.721285,
+          "net_R": 16.348851,
+          "wins": 6
+        },
+        "2025": {
+          "n": 31,
+          "net_usd": -74.835087,
+          "net_R": -2.993403,
+          "wins": 13
+        },
+        "2026": {
+          "n": 20,
+          "net_usd": 291.398211,
+          "net_R": 11.655928,
+          "wins": 8
+        }
+      }
+    },
+    "dup_entry_refused": 0,
+    "dup_exit_deferred": 9
+  },
+  "every_6h_phase0_incl_close": {
+    "full": {
+      "label": "every_6h_phase0_incl_close",
+      "entries_from": "full history",
+      "forming_replay": {
+        "n": 142,
+        "net_usd": 2729.697699,
+        "net_R": 109.187908,
+        "gross_usd": 2822.915985,
+        "cost_usd": 93.218287,
+        "wins": 61,
+        "losses": 81,
+        "win_rate": 0.429577,
+        "avg_win_usd": 80.169663,
+        "avg_loss_usd": 26.674713,
+        "payoff": 3.005455,
+        "mean_R": 0.768929,
+        "median_R": -0.709373,
+        "best_trade_R": 17.168325,
+        "worst_trade_R": -2.367858,
+        "net_R_ex_best_trade": 92.019583,
+        "longest_losing_streak": 11,
+        "longest_losing_streak_span": [
+          "2024-04-13T22:00:00Z",
+          "2024-08-07T22:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 18.070426,
+          "max_dd_usd": 451.760659,
+          "peak_date": "2024-03-19T10:00:00Z",
+          "trough_date": "2024-11-14T16:00:00Z",
+          "peak_to_trough_days": 240.2,
+          "recovered_date": "2024-12-11T22:00:00Z",
+          "peak_to_recovery_days": 267.5
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 115,
+        "net_R": 114.145862
+      },
+      "net_R_difference_forming_minus_completed": -4.957954,
+      "forming_only_entries": {
+        "n": 33,
+        "share_of_forming_entries": 0.232394,
+        "net_usd": -100.875632,
+        "net_R": -4.035025,
+        "wins": 8,
+        "losses": 25,
+        "win_rate": 0.242424,
+        "payoff": 2.679227,
+        "mean_R": -0.122273,
+        "median_R": -1.076227,
+        "best_trade_R": 8.56858,
+        "worst_trade_R": -1.840299,
+        "by_side": {
+          "long": {
+            "n": 21,
+            "net_usd": -30.196531,
+            "net_R": -1.207861,
+            "wins": 6
+          },
+          "short": {
+            "n": 12,
+            "net_usd": -70.679101,
+            "net_R": -2.827164,
+            "wins": 2
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 23,
+            "net_usd": -678.815687,
+            "net_R": -27.152627,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 4,
+            "net_usd": 531.920254,
+            "net_R": 21.27681,
+            "wins": 4
+          },
+          "trail_stop": {
+            "n": 6,
+            "net_usd": 46.019802,
+            "net_R": 1.840792,
+            "wins": 4
+          }
+        },
+        "by_exit_year": {
+          "2020": {
+            "n": 1,
+            "net_usd": 18.330394,
+            "net_R": 0.733216,
+            "wins": 1
+          },
+          "2021": {
+            "n": 4,
+            "net_usd": 21.47919,
+            "net_R": 0.859168,
+            "wins": 1
+          },
+          "2022": {
+            "n": 2,
+            "net_usd": 54.864537,
+            "net_R": 2.194581,
+            "wins": 1
+          },
+          "2023": {
+            "n": 5,
+            "net_usd": -34.811165,
+            "net_R": -1.392447,
+            "wins": 2
+          },
+          "2024": {
+            "n": 4,
+            "net_usd": -124.570115,
+            "net_R": -4.982805,
+            "wins": 0
+          },
+          "2025": {
+            "n": 12,
+            "net_usd": -47.773195,
+            "net_R": -1.910928,
+            "wins": 2
+          },
+          "2026": {
+            "n": 5,
+            "net_usd": 11.604723,
+            "net_R": 0.464189,
+            "wins": 1
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 109,
+        "net_R": 113.222933,
+        "mean_hours_into_day_at_entry": 15.798165,
+        "mean_fill_edge_vs_next_daily_open_R": 0.086146
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 102,
+        "forming_replay_only": 40,
+        "completed_replay_only": 13
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -1.320205,
+          "net_R": -0.052808,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 65,
+          "net_usd": -1937.796055,
+          "net_R": -77.511842,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 34,
+          "net_usd": 3101.624307,
+          "net_R": 124.064972,
+          "wins": 34
+        },
+        "trail_stop": {
+          "n": 42,
+          "net_usd": 1567.189652,
+          "net_R": 62.687586,
+          "wins": 27
+        }
+      },
+      "by_exit_year": {
+        "2020": {
+          "n": 7,
+          "net_usd": 630.251383,
+          "net_R": 25.210055,
+          "wins": 4
+        },
+        "2021": {
+          "n": 25,
+          "net_usd": 353.947688,
+          "net_R": 14.157908,
+          "wins": 11
+        },
+        "2022": {
+          "n": 14,
+          "net_usd": 406.235765,
+          "net_R": 16.249431,
+          "wins": 9
+        },
+        "2023": {
+          "n": 25,
+          "net_usd": 289.916045,
+          "net_R": 11.596642,
+          "wins": 9
+        },
+        "2024": {
+          "n": 27,
+          "net_usd": 598.030019,
+          "net_R": 23.921201,
+          "wins": 9
+        },
+        "2025": {
+          "n": 29,
+          "net_usd": -0.068594,
+          "net_R": -0.002744,
+          "wins": 11
+        },
+        "2026": {
+          "n": 15,
+          "net_usd": 451.385392,
+          "net_R": 18.055416,
+          "wins": 8
+        }
+      }
+    },
+    "from_2023": {
+      "label": "every_6h_phase0_incl_close",
+      "entries_from": "2023-01-01",
+      "forming_replay": {
+        "n": 95,
+        "net_usd": 1327.315417,
+        "net_R": 53.092617,
+        "gross_usd": 1396.049842,
+        "cost_usd": 68.734426,
+        "wins": 36,
+        "losses": 59,
+        "win_rate": 0.378947,
+        "avg_win_usd": 80.065206,
+        "avg_loss_usd": 26.356475,
+        "payoff": 3.037781,
+        "mean_R": 0.55887,
+        "median_R": -0.985412,
+        "best_trade_R": 17.168325,
+        "worst_trade_R": -2.367858,
+        "net_R_ex_best_trade": 35.924292,
+        "longest_losing_streak": 11,
+        "longest_losing_streak_span": [
+          "2024-04-13T22:00:00Z",
+          "2024-08-07T22:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 18.070426,
+          "max_dd_usd": 451.760659,
+          "peak_date": "2024-03-19T10:00:00Z",
+          "trough_date": "2024-11-14T16:00:00Z",
+          "peak_to_trough_days": 240.2,
+          "recovered_date": "2024-12-11T22:00:00Z",
+          "peak_to_recovery_days": 267.5
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 72,
+        "net_R": 66.940098
+      },
+      "net_R_difference_forming_minus_completed": -13.847481,
+      "forming_only_entries": {
+        "n": 26,
+        "share_of_forming_entries": 0.273684,
+        "net_usd": -195.549753,
+        "net_R": -7.82199,
+        "wins": 5,
+        "losses": 21,
+        "win_rate": 0.192308,
+        "payoff": 2.820007,
+        "mean_R": -0.300846,
+        "median_R": -1.096732,
+        "best_trade_R": 8.56858,
+        "worst_trade_R": -1.840299,
+        "by_side": {
+          "long": {
+            "n": 16,
+            "net_usd": -70.006115,
+            "net_R": -2.800245,
+            "wins": 4
+          },
+          "short": {
+            "n": 10,
+            "net_usd": -125.543637,
+            "net_R": -5.021745,
+            "wins": 1
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 19,
+            "net_usd": -566.802834,
+            "net_R": -22.672113,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 2,
+            "net_usd": 343.563674,
+            "net_R": 13.742547,
+            "wins": 2
+          },
+          "trail_stop": {
+            "n": 5,
+            "net_usd": 27.689407,
+            "net_R": 1.107576,
+            "wins": 3
+          }
+        },
+        "by_exit_year": {
+          "2023": {
+            "n": 5,
+            "net_usd": -34.811165,
+            "net_R": -1.392447,
+            "wins": 2
+          },
+          "2024": {
+            "n": 4,
+            "net_usd": -124.570115,
+            "net_R": -4.982805,
+            "wins": 0
+          },
+          "2025": {
+            "n": 12,
+            "net_usd": -47.773195,
+            "net_R": -1.910928,
+            "wins": 2
+          },
+          "2026": {
+            "n": 5,
+            "net_usd": 11.604723,
+            "net_R": 0.464189,
+            "wins": 1
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 69,
+        "net_R": 60.914607,
+        "mean_hours_into_day_at_entry": 15.826087,
+        "mean_fill_edge_vs_next_daily_open_R": 0.075692
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 63,
+        "forming_replay_only": 32,
+        "completed_replay_only": 9
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -1.320205,
+          "net_R": -0.052808,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 45,
+          "net_usd": -1346.949553,
+          "net_R": -53.877982,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 20,
+          "net_usd": 1978.789909,
+          "net_R": 79.151596,
+          "wins": 20
+        },
+        "trail_stop": {
+          "n": 29,
+          "net_usd": 696.795267,
+          "net_R": 27.871811,
+          "wins": 16
+        }
+      },
+      "by_exit_year": {
+        "2023": {
+          "n": 24,
+          "net_usd": 277.9686,
+          "net_R": 11.118744,
+          "wins": 8
+        },
+        "2024": {
+          "n": 27,
+          "net_usd": 598.030019,
+          "net_R": 23.921201,
+          "wins": 9
+        },
+        "2025": {
+          "n": 29,
+          "net_usd": -0.068594,
+          "net_R": -0.002744,
+          "wins": 11
+        },
+        "2026": {
+          "n": 15,
+          "net_usd": 451.385392,
+          "net_R": 18.055416,
+          "wins": 8
+        }
+      }
+    },
+    "from_2024": {
+      "label": "every_6h_phase0_incl_close",
+      "entries_from": "2024-01-01",
+      "forming_replay": {
+        "n": 68,
+        "net_usd": 983.209169,
+        "net_R": 39.328367,
+        "gross_usd": 1031.009496,
+        "cost_usd": 47.800326,
+        "wins": 26,
+        "losses": 42,
+        "win_rate": 0.382353,
+        "avg_win_usd": 80.969866,
+        "avg_loss_usd": 26.714461,
+        "payoff": 3.030938,
+        "mean_R": 0.578358,
+        "median_R": -1.004982,
+        "best_trade_R": 16.531533,
+        "worst_trade_R": -2.367858,
+        "net_R_ex_best_trade": 22.796833,
+        "longest_losing_streak": 11,
+        "longest_losing_streak_span": [
+          "2024-04-13T22:00:00Z",
+          "2024-08-07T22:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 18.070426,
+          "max_dd_usd": 451.760659,
+          "peak_date": "2024-03-19T10:00:00Z",
+          "trough_date": "2024-11-14T16:00:00Z",
+          "peak_to_trough_days": 240.2,
+          "recovered_date": "2024-12-11T22:00:00Z",
+          "peak_to_recovery_days": 267.5
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 51,
+        "net_R": 47.226825
+      },
+      "net_R_difference_forming_minus_completed": -7.898459,
+      "forming_only_entries": {
+        "n": 21,
+        "share_of_forming_entries": 0.308824,
+        "net_usd": -160.738588,
+        "net_R": -6.429544,
+        "wins": 3,
+        "losses": 18,
+        "win_rate": 0.142857,
+        "payoff": 4.120464,
+        "mean_R": -0.306169,
+        "median_R": -1.099088,
+        "best_trade_R": 8.56858,
+        "worst_trade_R": -1.840299,
+        "by_side": {
+          "long": {
+            "n": 12,
+            "net_usd": -62.62505,
+            "net_R": -2.505002,
+            "wins": 2
+          },
+          "short": {
+            "n": 9,
+            "net_usd": -98.113537,
+            "net_R": -3.924541,
+            "wins": 1
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 16,
+            "net_usd": -484.770612,
+            "net_R": -19.390824,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 2,
+            "net_usd": 343.563674,
+            "net_R": 13.742547,
+            "wins": 2
+          },
+          "trail_stop": {
+            "n": 3,
+            "net_usd": -19.531649,
+            "net_R": -0.781266,
+            "wins": 1
+          }
+        },
+        "by_exit_year": {
+          "2024": {
+            "n": 4,
+            "net_usd": -124.570115,
+            "net_R": -4.982805,
+            "wins": 0
+          },
+          "2025": {
+            "n": 12,
+            "net_usd": -47.773195,
+            "net_R": -1.910928,
+            "wins": 2
+          },
+          "2026": {
+            "n": 5,
+            "net_usd": 11.604723,
+            "net_R": 0.464189,
+            "wins": 1
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 47,
+        "net_R": 45.75791,
+        "mean_hours_into_day_at_entry": 15.319149,
+        "mean_fill_edge_vs_next_daily_open_R": 0.100585
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 44,
+        "forming_replay_only": 24,
+        "completed_replay_only": 7
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -1.320205,
+          "net_R": -0.052808,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 33,
+          "net_usd": -1000.374005,
+          "net_R": -40.01496,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 15,
+          "net_usd": 1324.681743,
+          "net_R": 52.98727,
+          "wins": 15
+        },
+        "trail_stop": {
+          "n": 19,
+          "net_usd": 660.221637,
+          "net_R": 26.408865,
+          "wins": 11
+        }
+      },
+      "by_exit_year": {
+        "2024": {
+          "n": 24,
+          "net_usd": 531.892372,
+          "net_R": 21.275695,
+          "wins": 7
+        },
+        "2025": {
+          "n": 29,
+          "net_usd": -0.068594,
+          "net_R": -0.002744,
+          "wins": 11
+        },
+        "2026": {
+          "n": 15,
+          "net_usd": 451.385392,
+          "net_R": 18.055416,
+          "wins": 8
+        }
+      }
+    },
+    "dup_entry_refused": 0,
+    "dup_exit_deferred": 0
+  },
+  "every_6h_phase3": {
+    "full": {
+      "label": "every_6h_phase3",
+      "entries_from": "full history",
+      "forming_replay": {
+        "n": 139,
+        "net_usd": 2277.419873,
+        "net_R": 91.096795,
+        "gross_usd": 2367.892186,
+        "cost_usd": 90.472313,
+        "wins": 60,
+        "losses": 79,
+        "win_rate": 0.431655,
+        "avg_win_usd": 73.500389,
+        "avg_loss_usd": 26.994981,
+        "payoff": 2.722743,
+        "mean_R": 0.655373,
+        "median_R": -0.675673,
+        "best_trade_R": 17.825663,
+        "worst_trade_R": -1.770086,
+        "net_R_ex_best_trade": 73.271132,
+        "longest_losing_streak": 13,
+        "longest_losing_streak_span": [
+          "2024-04-14T01:00:00Z",
+          "2024-08-08T01:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 19.504427,
+          "max_dd_usd": 487.61068,
+          "peak_date": "2024-03-16T01:00:00Z",
+          "trough_date": "2024-11-15T01:00:00Z",
+          "peak_to_trough_days": 244.0,
+          "recovered_date": "2024-12-11T19:00:00Z",
+          "peak_to_recovery_days": 270.8
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 115,
+        "net_R": 114.145862
+      },
+      "net_R_difference_forming_minus_completed": -23.049067,
+      "forming_only_entries": {
+        "n": 50,
+        "share_of_forming_entries": 0.359712,
+        "net_usd": -206.689212,
+        "net_R": -8.267568,
+        "wins": 14,
+        "losses": 36,
+        "win_rate": 0.28,
+        "payoff": 2.053495,
+        "mean_R": -0.165351,
+        "median_R": -1.065331,
+        "best_trade_R": 6.654121,
+        "worst_trade_R": -1.770086,
+        "by_side": {
+          "long": {
+            "n": 27,
+            "net_usd": -271.315168,
+            "net_R": -10.852607,
+            "wins": 6
+          },
+          "short": {
+            "n": 23,
+            "net_usd": 64.625956,
+            "net_R": 2.585038,
+            "wins": 8
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 33,
+            "net_usd": -970.703767,
+            "net_R": -38.828151,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 8,
+            "net_usd": 663.799932,
+            "net_R": 26.551997,
+            "wins": 8
+          },
+          "trail_stop": {
+            "n": 9,
+            "net_usd": 100.214623,
+            "net_R": 4.008585,
+            "wins": 6
+          }
+        },
+        "by_exit_year": {
+          "2020": {
+            "n": 1,
+            "net_usd": 18.023721,
+            "net_R": 0.720949,
+            "wins": 1
+          },
+          "2021": {
+            "n": 9,
+            "net_usd": 52.811421,
+            "net_R": 2.112457,
+            "wins": 3
+          },
+          "2022": {
+            "n": 8,
+            "net_usd": 134.743698,
+            "net_R": 5.389748,
+            "wins": 3
+          },
+          "2023": {
+            "n": 3,
+            "net_usd": -36.538018,
+            "net_R": -1.461521,
+            "wins": 1
+          },
+          "2024": {
+            "n": 8,
+            "net_usd": -241.427629,
+            "net_R": -9.657105,
+            "wins": 0
+          },
+          "2025": {
+            "n": 15,
+            "net_usd": -118.382768,
+            "net_R": -4.735311,
+            "wins": 5
+          },
+          "2026": {
+            "n": 6,
+            "net_usd": -15.919638,
+            "net_R": -0.636786,
+            "wins": 1
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 89,
+        "net_R": 99.364363,
+        "mean_hours_into_day_at_entry": 12.910112,
+        "mean_fill_edge_vs_next_daily_open_R": 0.189604
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 74,
+        "forming_replay_only": 65,
+        "completed_replay_only": 41
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -4.348952,
+          "net_R": -0.173958,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 65,
+          "net_usd": -1922.305342,
+          "net_R": -76.892214,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 29,
+          "net_usd": 2573.06505,
+          "net_R": 102.922602,
+          "wins": 27
+        },
+        "trail_stop": {
+          "n": 44,
+          "net_usd": 1631.009117,
+          "net_R": 65.240365,
+          "wins": 33
+        }
+      },
+      "by_exit_year": {
+        "2020": {
+          "n": 6,
+          "net_usd": 573.937553,
+          "net_R": 22.957502,
+          "wins": 4
+        },
+        "2021": {
+          "n": 28,
+          "net_usd": 378.791468,
+          "net_R": 15.151659,
+          "wins": 12
+        },
+        "2022": {
+          "n": 15,
+          "net_usd": 419.505464,
+          "net_R": 16.780219,
+          "wins": 9
+        },
+        "2023": {
+          "n": 20,
+          "net_usd": 273.869445,
+          "net_R": 10.954778,
+          "wins": 7
+        },
+        "2024": {
+          "n": 28,
+          "net_usd": 443.343227,
+          "net_R": 17.733729,
+          "wins": 9
+        },
+        "2025": {
+          "n": 28,
+          "net_usd": -161.458196,
+          "net_R": -6.458328,
+          "wins": 11
+        },
+        "2026": {
+          "n": 14,
+          "net_usd": 349.430913,
+          "net_R": 13.977237,
+          "wins": 8
+        }
+      }
+    },
+    "from_2023": {
+      "label": "every_6h_phase3",
+      "entries_from": "2023-01-01",
+      "forming_replay": {
+        "n": 88,
+        "net_usd": 927.402661,
+        "net_R": 37.096106,
+        "gross_usd": 991.360939,
+        "cost_usd": 63.958278,
+        "wins": 34,
+        "losses": 54,
+        "win_rate": 0.386364,
+        "avg_win_usd": 68.741256,
+        "avg_loss_usd": 26.107408,
+        "payoff": 2.633017,
+        "mean_R": 0.421547,
+        "median_R": -0.906992,
+        "best_trade_R": 17.825663,
+        "worst_trade_R": -1.767391,
+        "net_R_ex_best_trade": 19.270443,
+        "longest_losing_streak": 13,
+        "longest_losing_streak_span": [
+          "2024-04-14T01:00:00Z",
+          "2024-08-08T01:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 19.504427,
+          "max_dd_usd": 487.61068,
+          "peak_date": "2024-03-16T01:00:00Z",
+          "trough_date": "2024-11-15T01:00:00Z",
+          "peak_to_trough_days": 244.0,
+          "recovered_date": "2024-12-11T19:00:00Z",
+          "peak_to_recovery_days": 270.8
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 72,
+        "net_R": 66.940098
+      },
+      "net_R_difference_forming_minus_completed": -29.843992,
+      "forming_only_entries": {
+        "n": 32,
+        "share_of_forming_entries": 0.363636,
+        "net_usd": -412.268053,
+        "net_R": -16.490722,
+        "wins": 7,
+        "losses": 25,
+        "win_rate": 0.21875,
+        "payoff": 1.454625,
+        "mean_R": -0.515335,
+        "median_R": -1.095195,
+        "best_trade_R": 5.150804,
+        "worst_trade_R": -1.767391,
+        "by_side": {
+          "long": {
+            "n": 18,
+            "net_usd": -318.421373,
+            "net_R": -12.736855,
+            "wins": 3
+          },
+          "short": {
+            "n": 14,
+            "net_usd": -93.84668,
+            "net_R": -3.753867,
+            "wins": 4
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 22,
+            "net_usd": -640.106724,
+            "net_R": -25.604269,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 2,
+            "net_usd": 145.647769,
+            "net_R": 5.825911,
+            "wins": 2
+          },
+          "trail_stop": {
+            "n": 8,
+            "net_usd": 82.190902,
+            "net_R": 3.287636,
+            "wins": 5
+          }
+        },
+        "by_exit_year": {
+          "2023": {
+            "n": 3,
+            "net_usd": -36.538018,
+            "net_R": -1.461521,
+            "wins": 1
+          },
+          "2024": {
+            "n": 8,
+            "net_usd": -241.427629,
+            "net_R": -9.657105,
+            "wins": 0
+          },
+          "2025": {
+            "n": 15,
+            "net_usd": -118.382768,
+            "net_R": -4.735311,
+            "wins": 5
+          },
+          "2026": {
+            "n": 6,
+            "net_usd": -15.919638,
+            "net_R": -0.636786,
+            "wins": 1
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 56,
+        "net_R": 53.586829,
+        "mean_hours_into_day_at_entry": 12.75,
+        "mean_fill_edge_vs_next_daily_open_R": 0.140419
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 45,
+        "forming_replay_only": 43,
+        "completed_replay_only": 27
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -4.348952,
+          "net_R": -0.173958,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 42,
+          "net_usd": -1243.946175,
+          "net_R": -49.757847,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 16,
+          "net_usd": 1427.691417,
+          "net_R": 57.107657,
+          "wins": 14
+        },
+        "trail_stop": {
+          "n": 29,
+          "net_usd": 748.006371,
+          "net_R": 29.920255,
+          "wins": 20
+        }
+      },
+      "by_exit_year": {
+        "2023": {
+          "n": 18,
+          "net_usd": 296.086718,
+          "net_R": 11.843469,
+          "wins": 6
+        },
+        "2024": {
+          "n": 28,
+          "net_usd": 443.343227,
+          "net_R": 17.733729,
+          "wins": 9
+        },
+        "2025": {
+          "n": 28,
+          "net_usd": -161.458196,
+          "net_R": -6.458328,
+          "wins": 11
+        },
+        "2026": {
+          "n": 14,
+          "net_usd": 349.430913,
+          "net_R": 13.977237,
+          "wins": 8
+        }
+      }
+    },
+    "from_2024": {
+      "label": "every_6h_phase3",
+      "entries_from": "2024-01-01",
+      "forming_replay": {
+        "n": 67,
+        "net_usd": 509.139104,
+        "net_R": 20.365564,
+        "gross_usd": 557.041477,
+        "cost_usd": 47.902373,
+        "wins": 25,
+        "losses": 42,
+        "win_rate": 0.373134,
+        "avg_win_usd": 66.170617,
+        "avg_loss_usd": 27.264912,
+        "payoff": 2.426951,
+        "mean_R": 0.303964,
+        "median_R": -1.050359,
+        "best_trade_R": 16.385502,
+        "worst_trade_R": -1.767391,
+        "net_R_ex_best_trade": 3.980062,
+        "longest_losing_streak": 13,
+        "longest_losing_streak_span": [
+          "2024-04-14T01:00:00Z",
+          "2024-08-08T01:00:00Z"
+        ],
+        "drawdown": {
+          "max_dd_R": 19.504427,
+          "max_dd_usd": 487.61068,
+          "peak_date": "2024-03-16T01:00:00Z",
+          "trough_date": "2024-11-15T01:00:00Z",
+          "peak_to_trough_days": 244.0,
+          "recovered_date": "2024-12-11T19:00:00Z",
+          "peak_to_recovery_days": 270.8
+        }
+      },
+      "completed_bar_replay_same_period": {
+        "n": 51,
+        "net_R": 47.226825
+      },
+      "net_R_difference_forming_minus_completed": -26.861261,
+      "forming_only_entries": {
+        "n": 29,
+        "share_of_forming_entries": 0.432836,
+        "net_usd": -375.730035,
+        "net_R": -15.029201,
+        "wins": 6,
+        "losses": 23,
+        "win_rate": 0.206897,
+        "payoff": 1.579017,
+        "mean_R": -0.518248,
+        "median_R": -1.097616,
+        "best_trade_R": 5.150804,
+        "worst_trade_R": -1.767391,
+        "by_side": {
+          "long": {
+            "n": 15,
+            "net_usd": -281.883354,
+            "net_R": -11.275334,
+            "wins": 2
+          },
+          "short": {
+            "n": 14,
+            "net_usd": -93.84668,
+            "net_R": -3.753867,
+            "wins": 4
+          }
+        },
+        "by_exit_reason": {
+          "initial_stop": {
+            "n": 20,
+            "net_usd": -583.443173,
+            "net_R": -23.337727,
+            "wins": 0
+          },
+          "time_stop": {
+            "n": 2,
+            "net_usd": 145.647769,
+            "net_R": 5.825911,
+            "wins": 2
+          },
+          "trail_stop": {
+            "n": 7,
+            "net_usd": 62.065369,
+            "net_R": 2.482615,
+            "wins": 4
+          }
+        },
+        "by_exit_year": {
+          "2024": {
+            "n": 8,
+            "net_usd": -241.427629,
+            "net_R": -9.657105,
+            "wins": 0
+          },
+          "2025": {
+            "n": 15,
+            "net_usd": -118.382768,
+            "net_R": -4.735311,
+            "wins": 5
+          },
+          "2026": {
+            "n": 6,
+            "net_usd": -15.919638,
+            "net_R": -0.636786,
+            "wins": 1
+          }
+        }
+      },
+      "confirmed_at_close_entries": {
+        "n": 38,
+        "net_R": 35.394766,
+        "mean_hours_into_day_at_entry": 13.263158,
+        "mean_fill_edge_vs_next_daily_open_R": 0.170263
+      },
+      "undetermined": 0,
+      "entry_set_vs_completed_replay": {
+        "in_both": 31,
+        "forming_replay_only": 36,
+        "completed_replay_only": 20
+      },
+      "by_exit_reason": {
+        "end_of_data": {
+          "n": 1,
+          "net_usd": -4.348952,
+          "net_R": -0.173958,
+          "wins": 0
+        },
+        "initial_stop": {
+          "n": 35,
+          "net_usd": -1047.614641,
+          "net_R": -41.904586,
+          "wins": 0
+        },
+        "time_stop": {
+          "n": 11,
+          "net_usd": 861.459442,
+          "net_R": 34.458378,
+          "wins": 11
+        },
+        "trail_stop": {
+          "n": 20,
+          "net_usd": 699.643256,
+          "net_R": 27.98573,
+          "wins": 14
+        }
+      },
+      "by_exit_year": {
+        "2024": {
+          "n": 25,
+          "net_usd": 321.166388,
+          "net_R": 12.846656,
+          "wins": 6
+        },
+        "2025": {
+          "n": 28,
+          "net_usd": -161.458196,
+          "net_R": -6.458328,
+          "wins": 11
+        },
+        "2026": {
+          "n": 14,
+          "net_usd": 349.430913,
+          "net_R": 13.977237,
+          "wins": 8
+        }
+      }
+    },
+    "dup_entry_refused": 0,
+    "dup_exit_deferred": 1
+  },
+  "live_fills": [
+    {
+      "live_fill": {
+        "symbol": "XRPUSDT",
+        "side": "short",
+        "ts": "2026-09-15T20:30:00Z",
+        "price": 1.2716,
+        "note": "stopped 2026-09-18 @1.3423"
+      },
+      "daily_bar_containing_fill": "2026-09-15T16:00:00Z",
+      "hours_into_that_bar": 4.5,
+      "hourly_bar_at_fill": {
+        "open": 1.2956,
+        "high": 1.3019,
+        "low": 1.2633,
+        "close": 1.2929
+      },
+      "forming_window_before_fill": {
+        "close": 1.2955,
+        "channel_low": 1.3091,
+        "channel_high": 1.4914,
+        "adx": 29.513468,
+        "ma200": 1.272865,
+        "atr": 0.078677,
+        "signal": null,
+        "as_of": "2026-09-15T20:00:00Z"
+      },
+      "completed_bar_containing_fill": {
+        "bar": "2026-09-15T16:00:00Z",
+        "close": 1.2658,
+        "channel_low": 1.3091,
+        "channel_high": 1.4914,
+        "adx": 29.104617,
+        "ma200": 1.272716,
+        "atr": 0.080677,
+        "signal": "short",
+        "bar_ohlc": {
+          "open": 1.389,
+          "high": 1.4126,
+          "low": 1.2597,
+          "close": 1.2658
+        }
+      },
+      "previous_completed_bar": {
+        "bar": "2026-09-14T16:00:00Z",
+        "close": 1.389,
+        "channel_low": 1.3091,
+        "channel_high": 1.4839,
+        "adx": 31.173403,
+        "ma200": 1.273002,
+        "atr": 0.075121,
+        "signal": null
+      },
+      "completed_rule_signals_same_side_within_15_bars": [
+        "2026-09-15T16:00:00Z"
+      ],
+      "completed_bar_replay_trades_within_15_bars": [
+        {
+          "symbol": "XRPUSDT",
+          "side": "short",
+          "signal_bar": "2026-09-15T16:00:00Z",
+          "entry_ts": "2026-09-16T16:00:00Z",
+          "entry_price": "1.2658",
+          "exit_ts": "2026-09-19T16:00:00Z",
+          "exit_price": "1.4303",
+          "exit_reason": "initial_stop",
+          "R": "-1.3804952121603866"
+        },
+        {
+          "symbol": "XRPUSDT",
+          "side": "long",
+          "signal_bar": "2026-09-20T16:00:00Z",
+          "entry_ts": "2026-09-21T16:00:00Z",
+          "entry_price": "1.4947",
+          "exit_ts": "2026-10-05T16:00:00Z",
+          "exit_price": "1.492",
+          "exit_reason": "end_of_data",
+          "R": "-0.043409828965280006"
+        }
+      ]
+    },
+    {
+      "live_fill": {
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "ts": "2026-09-21T01:43:00Z",
+        "price": 782.1,
+        "note": ""
+      },
+      "daily_bar_containing_fill": "2026-09-20T16:00:00Z",
+      "hours_into_that_bar": 9.72,
+      "hourly_bar_at_fill": {
+        "open": 779.6,
+        "high": 784.6,
+        "low": 773.5,
+        "close": 774.0
+      },
+      "forming_window_before_fill": {
+        "close": 779.7,
+        "channel_low": 674.1,
+        "channel_high": 781.9,
+        "adx": 39.905945,
+        "ma200": 629.379,
+        "atr": 24.841295,
+        "signal": null,
+        "as_of": "2026-09-21T01:00:00Z"
+      },
+      "completed_bar_containing_fill": {
+        "bar": "2026-09-20T16:00:00Z",
+        "close": 802.6,
+        "channel_low": 674.1,
+        "channel_high": 781.9,
+        "adx": 40.525427,
+        "ma200": 629.4935,
+        "atr": 26.627009,
+        "signal": null,
+        "bar_ohlc": {
+          "open": 757.1,
+          "high": 807.4,
+          "low": 755.8,
+          "close": 802.6
+        }
+      },
+      "previous_completed_bar": {
+        "bar": "2026-09-19T16:00:00Z",
+        "close": 757.0,
+        "channel_low": 674.1,
+        "channel_high": 781.9,
+        "adx": 39.882918,
+        "ma200": 628.7435,
+        "atr": 24.70601,
+        "signal": null
+      },
+      "completed_rule_signals_same_side_within_15_bars": [],
+      "completed_bar_replay_trades_within_15_bars": []
+    },
+    {
+      "live_fill": {
+        "symbol": "XRPUSDT",
+        "side": "long",
+        "ts": "2026-09-21T12:48:00Z",
+        "price": 1.4916,
+        "note": ""
+      },
+      "daily_bar_containing_fill": "2026-09-20T16:00:00Z",
+      "hours_into_that_bar": 20.8,
+      "hourly_bar_at_fill": {
+        "open": 1.4856,
+        "high": 1.496,
+        "low": 1.4834,
+        "close": 1.4872
+      },
+      "forming_window_before_fill": {
+        "close": 1.4856,
+        "channel_low": 1.2461,
+        "channel_high": 1.4914,
+        "adx": 25.756597,
+        "ma200": 1.272605,
+        "atr": 0.084254,
+        "signal": null,
+        "as_of": "2026-09-21T12:00:00Z"
+      },
+      "completed_bar_containing_fill": {
+        "bar": "2026-09-20T16:00:00Z",
+        "close": 1.4948,
+        "channel_low": 1.2461,
+        "channel_high": 1.4914,
+        "adx": 25.857763,
+        "ma200": 1.272651,
+        "atr": 0.08504,
+        "signal": "buy",
+        "bar_ohlc": {
+          "open": 1.3901,
+          "high": 1.5089,
+          "low": 1.3868,
+          "close": 1.4948
+        }
+      },
+      "previous_completed_bar": {
+        "bar": "2026-09-19T16:00:00Z",
+        "close": 1.3902,
+        "channel_low": 1.2461,
+        "channel_high": 1.4914,
+        "adx": 25.543776,
+        "ma200": 1.272258,
+        "atr": 0.082189,
+        "signal": null
+      },
+      "completed_rule_signals_same_side_within_15_bars": [
+        "2026-09-20T16:00:00Z",
+        "2026-09-21T16:00:00Z"
+      ],
+      "completed_bar_replay_trades_within_15_bars": [
+        {
+          "symbol": "XRPUSDT",
+          "side": "short",
+          "signal_bar": "2026-09-15T16:00:00Z",
+          "entry_ts": "2026-09-16T16:00:00Z",
+          "entry_price": "1.2658",
+          "exit_ts": "2026-09-19T16:00:00Z",
+          "exit_price": "1.4303",
+          "exit_reason": "initial_stop",
+          "R": "-1.3804952121603866"
+        },
+        {
+          "symbol": "XRPUSDT",
+          "side": "long",
+          "signal_bar": "2026-09-20T16:00:00Z",
+          "entry_ts": "2026-09-21T16:00:00Z",
+          "entry_price": "1.4947",
+          "exit_ts": "2026-10-05T16:00:00Z",
+          "exit_price": "1.492",
+          "exit_reason": "end_of_data",
+          "R": "-0.043409828965280006"
+        }
+      ]
+    }
+  ]
+}

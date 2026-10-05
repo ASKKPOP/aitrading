@@ -1,0 +1,37 @@
+{
+  "fetched_at_utc": "2026-10-05T17:35:50+00:00",
+  "endpoint": "https://www.okx.com/api/v5/market/history-candles",
+  "bar": "1D",
+  "symbols": {
+    "BTCUSDT": {
+      "inst_id": "BTC-USDT-SWAP",
+      "rows_confirmed": 2469,
+      "first_ts_ms": 1577894400000,
+      "last_ts_ms": 1791129600000
+    },
+    "ETHUSDT": {
+      "inst_id": "ETH-USDT-SWAP",
+      "rows_confirmed": 2469,
+      "first_ts_ms": 1577894400000,
+      "last_ts_ms": 1791129600000
+    },
+    "SOLUSDT": {
+      "inst_id": "SOL-USDT-SWAP",
+      "rows_confirmed": 2083,
+      "first_ts_ms": 1611244800000,
+      "last_ts_ms": 1791129600000
+    },
+    "BNBUSDT": {
+      "inst_id": "BNB-USDT-SWAP",
+      "rows_confirmed": 1383,
+      "first_ts_ms": 1671724800000,
+      "last_ts_ms": 1791129600000
+    },
+    "XRPUSDT": {
+      "inst_id": "XRP-USDT-SWAP",
+      "rows_confirmed": 2469,
+      "first_ts_ms": 1577894400000,
+      "last_ts_ms": 1791129600000
+    }
+  }
+}

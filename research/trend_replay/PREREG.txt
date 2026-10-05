@@ -1,0 +1,218 @@
+PRE-REGISTRATION — trend module historical replay
+Written 2026-10-05, BEFORE any replay was run (only the module source, its
+tests, and three raw OKX candle rows for a reachability check had been seen).
+
+STATUS OF THE PRIOR CLAIM
+A previous session claimed +117R over 2020-2026, n=114, payoff 2.8, 7/7 years
+positive, permutation p~0.001. Its scripts and trade list are lost. It is
+treated here as an UNVERIFIED HYPOTHESIS. This replay does not reconcile
+toward it.
+
+======================================================================
+A. SUCCESS CRITERIA (verbatim from the task)
+======================================================================
+H-TREND: on completed daily bars, default parameters, with costs of 4.5bp fee
++ 5bp slippage per side, signal on bar close and fill at the NEXT bar's open:
+ (1) net P&L > 0; (2) payoff ratio (avg win / avg loss) >= 1.5; (3) net stays
+ > 0 with the single best trade removed AND with the single best symbol
+ removed; (4) at least 5 of the 7 calendar years 2020-2026 net positive;
+ (5) permutation null — same symbol, same side, same holding length, random
+ start date, >=2000 shuffles — one-sided p < 0.05.
+Verdict rules: all five -> NOT FALSIFIED; (1) fails -> FALSIFIED; otherwise ->
+INCONCLUSIVE, naming which failed. Report every figure with n. Report max
+drawdown in R and in calendar time, longest losing streak, median trade,
+trades per year, long-only vs short-only split, and a 2023-onward-only subset
+(to limit how much the 2020-21 bull run carries it).
+Name the biases you cannot remove (survivorship in today's universe,
+cross-symbol correlation, single path) in plain words.
+
+======================================================================
+B. WHAT I ADD (fixed before the run so nothing can be chosen after the fact)
+======================================================================
+B1. Rule source. The replay imports service/server/trend_module.py and calls
+    its own evaluate_symbol, wilder_atr, position_qty, update_trail,
+    check_exit and reads its constants (DEFAULT_UNIVERSE, HISTORY_DAYS,
+    STOP_ATR_MULT, TIME_STOP_DAYS, _max_positions(), _risk_usd()). No
+    parameter is tuned. TREND_* env vars are cleared so defaults apply
+    (universe BTC/ETH/SOL/BNB/XRP, risk $25, max 3 positions).
+
+B2. Data. OKX USDT-margined perpetual swaps (the live path:
+    crypto_feed._to_inst_id -> <BASE>-USDT-SWAP), bar "1D" exactly as the
+    live module requests it. OKX "1D" bars open at 16:00 UTC (UTC+8
+    midnight); that is the live module's day and therefore the replay's day.
+    Only bars with OKX confirm == "1" are used. From 2020-01-01 or the
+    swap's first available bar, whichever is later. No splicing of spot or
+    other venues to extend history.
+
+B3. Indicator window. The live module computes on get_daily_candles(days=280).
+    The replay passes the trailing 280 COMPLETED bars (fewer early on; the
+    module's own MIN_BARS=210 gate decides eligibility).
+
+B4. LLM veto: SKIPPED — treated as {veto: False, size_mult: 1.0}, which is
+    the module's own documented fail-open default. Reason: a historical LLM
+    call cannot be replayed without look-ahead and is not deterministic.
+    Fear & Greed: PRIMARY run passes fear_greed=None (the function accepts
+    None; the overlay is then inert: no greed block, no contrarian longs).
+    Reason: the task says skip unless mandatory, and it is not mandatory.
+    A SECONDARY, non-verdict sensitivity run uses alternative.me historical
+    F&G (the live source), value stamped with the UTC date of the bar's open.
+
+B5. Order of operations at each daily close D (mirrors run_trend_cycle):
+    (i) open positions, sorted by symbol: atr=wilder_atr(window);
+        update_trail(pos, close, atr); check_exit(pos, close, now=bar close
+        time). An exit signal frees the slot immediately (as live does) and
+        fills at the open of bar D+1.
+    (ii) entries: universe in DEFAULT_UNIVERSE order; skip held symbols;
+        stop scanning when open positions >= max; evaluate_symbol(window,
+        None); a signal fills at the open of bar D+1 with
+        qty = position_qty(signal ATR), initial_stop = fill price -/+
+        1.5 x signal ATR (the module anchors its stop on its fill price),
+        best_close = fill price, entry_ts = fill time.
+    A position entered at open of bar E gets its first trail update / exit
+    check at the close of bar E. Exits are on CLOSE only (the module has no
+    intrabar stop).
+
+B6. Costs: per side, fee 4.5bp + slippage 5bp of that side's notional
+    (qty x raw open price). Net USD = qty x (exit_open - entry_open) x dir
+    - 9.5bp x (entry notional + exit notional). R = net USD / TREND_RISK_USD
+    (25). No funding payments are modelled (cannot be verified from the
+    candle data; named as an unmodelled cost).
+
+B7. End of data. A position still open after the last completed bar is
+    closed at that bar's CLOSE, tagged exit_reason=end_of_data, and INCLUDED
+    in all figures (also reported excluding it). An entry signal on the
+    last bar (no next open) is dropped.
+
+B8. Calendar-year attribution: the UTC calendar year of the EXIT fill.
+    A year with zero closed trades counts as NOT positive.
+
+B9. Criterion 3: "best trade" = largest net USD trade; "best symbol" = the
+    symbol with the largest summed net USD; both removed by filtering the
+    primary trade list. (A rerun with that symbol excluded from the universe
+    is reported as supplementary, non-verdict.)
+
+B10. Criterion 5 null. For each real trade: same symbol, same side, same
+    holding length in bars (entry-fill bar to exit-fill bar), start bar drawn
+    uniformly from that symbol's eligible range (bar index >= 210, and the
+    exit bar must exist). Null trade is sized the same way as a real one
+    (qty = 25 / (1.5 x ATR14 on the 280-bar window ending the bar before the
+    start)), filled open-to-open, same costs. Draws are independent per
+    trade. Statistic = total net USD over all trades. 5000 shuffles, fixed
+    seed 20261005. p = (1 + #{null >= observed}) / (1 + 5000).
+
+B11. Other reported figures: win rate; avg win / avg loss; median trade (R);
+    max drawdown on the closed-trade equity curve ordered by exit time (R,
+    peak date -> trough date, and date of recovery if any); longest run of
+    consecutive net <= 0 trades; trades per year (n / years from the first
+    bar on which any symbol was eligible to the last bar); long vs short;
+    subset with ENTRY fill >= 2023-01-01 (filter of the same run).
+
+B12. Outlier rule (project law): every headline net figure is given with and
+    without the largest contributor. If removing it flips the sign, that is
+    stated as inconclusive.
+
+B13. Secondary, non-verdict runs, reported alongside but never substituted:
+    S1 F&G overlay on (B4); S2 fill at the signal bar's close instead of the
+    next open (what the live module does); S3 best symbol excluded from the
+    universe (B9).
+
+======================================================================
+C. FORMING-BAR QUESTION (pre-stated definitions)
+======================================================================
+C1. Hypothesis: the live loop evaluates the still-forming daily bar; an
+    intraday breakout that reverses by the 16:00 UTC close creates entries
+    the completed-bar rule never takes. Falsified if the code drops the
+    forming bar or if the forming-bar replay produces no such entries.
+C2. Forming-bar replay: OKX 1H swap candles; at the end of each hour h the
+    module's window = trailing 279 completed daily bars + the forming daily
+    bar built from the completed hours since 16:00 UTC. Same B5 logic run
+    every hour (entries AND trail/exit, as the live code does), fills at the
+    next hourly open, same costs. Period: full history if the hourly data
+    can be fetched, otherwise 2024-01-01 onward (stated in the result).
+    Because daily-candle caching (6-7.5h TTL when Redis is up) may make the
+    live cadence coarser than hourly, a 6-hourly cadence is run as a
+    sensitivity.
+C3. "Forming-only entry" = a forming-replay entry (symbol, side) during
+    daily bar D for which evaluate_symbol on the COMPLETED window ending at
+    bar D does not return that side. Reported: count, share of all
+    forming-replay entries, and their summed net USD / R.
+C4. Live fills to check against the completed-bar rule: XRPUSDT short
+    2026-09-15T20:30Z @1.2716 (stopped 09-18 @1.3423); BNBUSDT buy
+    2026-09-21T01:43Z @782.10; XRPUSDT buy 2026-09-21T12:48Z @1.4916.
+
+======================================================================
+D. VERIFICATION
+======================================================================
+Best, worst and one median trade hand-recomputed from the raw CSV rows
+independently of the replay loop. Whole replay run twice from cache;
+outputs must be byte-identical.
+
+======================================================================
+E. ADDENDUM — intraday-stop variants (appended 2026-10-05, AFTER sections
+   A-D were run and reported, BEFORE replay_stops.py was written or run;
+   nothing above this line has been edited)
+======================================================================
+Context known when this was written: the primary result (+114.15R, n=115);
+the prod finding relayed by the coordinator that orphan_reclaim.protect()
+writes a 5% stop on the trend agent's positions and the SL/TP watcher
+closes them intraday; orphan_reclaim.py and automation.py source. No
+intraday-stop replay of any kind had been run.
+
+E1. Common to both variants: same data, costs (4.5bp fee + 5bp slippage per
+    side), module functions, default parameters and completed-bar ENTRY rule
+    as the primary run (B1-B7). The replay is run naturally: an earlier exit
+    frees (or, in V3, does not free — E4) its slot, so later entries may
+    differ from the primary's. Trades are paired with the primary by
+    (symbol, side, signal bar); unpaired trades are counted and reported.
+    As a self-check the same engine with NO intraday stop must reproduce
+    trades.csv exactly, or the run aborts.
+
+E2. Intraday stop mechanics (both variants). Checked on OKX 1H swap bars
+    inside each daily bar, before that daily bar's close logic. Long: the
+    first 1H bar whose LOW <= stop exits the whole position; short: first
+    1H bar whose HIGH >= stop. Fill = the stop price, except when that 1H
+    bar OPENS already through the stop, then fill = that bar's open (worse).
+    Exit time is stamped at the end of that hour. exit_reason =
+    "intraday_stop". The module's own daily-close exits (trail, time stop,
+    initial stop on close -> next daily open) continue unchanged for
+    positions the intraday stop has not closed.
+
+E3. V2 "module stop, intraday": stop = the module's initial stop (fill
+    price -/+ 1.5 x signal ATR), fixed, active from the entry hour. Slot
+    and symbol are free from the next daily close. NO expectation stated;
+    reported only.
+
+E4. V3 "foreign 5% stop, intraday" (what prod does today): stop written
+    once, 2 hours after entry, at min(entry, mark) x 0.95 for a long /
+    max(entry, mark) x 1.05 for a short (orphan_reclaim.protect), where
+    mark = the OPEN of the 1H bar that starts 2h after the entry fill. The
+    sweep actually runs every 15 min, so the real write lands 120-135 min
+    after entry; modelled as exactly 120 min. Active from that bar on;
+    never moved. After a foreign stop-out the module's state still holds
+    the position (the ledger closed it, the module was not told): the slot
+    and the symbol stay BLOCKED until the module's own daily-close exit
+    condition fires and its sell/cover is refused ("no ... position" ->
+    state_desync, trend_module.py:512-516). V3 models that phantom (trail
+    and exit check keep running on it; no P&L). V3b = same stop but the
+    slot is freed at once (sensitivity; isolates the stop from the phantom).
+    NOT modelled: orphan_reclaim's desk-read EXIT path (LLM-dependent,
+    separate flag), and the SL/TP watcher's 30s granularity (1H bars
+    cannot see which of stop / daily event came first inside one hour; the
+    stop is assumed first).
+
+E5. H-STOP (expectation to test, not to confirm): V3 net R is LOWER than
+    the primary run's net R. FALSIFIED if V3 net R >= primary net R.
+    Judged on V3 (phantom, code-faithful); V3b is reported beside it and if
+    V3 and V3b fall on opposite sides of the primary that disagreement is
+    the finding.
+
+E6. Reported for primary / V2 / V3 (/V3b): n, net R, payoff, win rate,
+    positive calendar years (by exit year, B8), max closed-trade drawdown
+    (R), net R ex best trade; number of trades ended by the intraday stop;
+    for those, the paired primary result: sum of (variant - primary) in R,
+    count better / worse / equal, count unpaired; number of trades lacking
+    full 1H coverage while open.
+
+E7. Verification: two intraday-stop trades (one V2, one V3) re-derived
+    from the raw 1H rows by a script that imports neither trend_module nor
+    the replay; whole run twice, byte-identical outputs.

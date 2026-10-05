@@ -1,0 +1,649 @@
+{
+  "hypothesis": "H-TREND (see PREREG.txt)",
+  "verdict": "NOT FALSIFIED",
+  "criteria": {
+    "1_net_positive": true,
+    "2_payoff_ge_1.5": true,
+    "3_survives_best_trade_and_best_symbol_removed": true,
+    "4_at_least_5_of_7_years_positive": true,
+    "5_permutation_p_lt_0.05": true
+  },
+  "criteria_failed": [],
+  "config": {
+    "universe": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT"
+    ],
+    "risk_usd": 25.0,
+    "max_positions": 3,
+    "window_bars": 280,
+    "fee_bp_per_side": 4.5,
+    "slippage_bp_per_side": 5.0,
+    "fill": "next daily bar open",
+    "fear_greed": null,
+    "llm_veto": "skipped (fail-open default)",
+    "bar": "OKX USDT-SWAP 1D, opens 16:00 UTC, confirmed bars only"
+  },
+  "data": {
+    "BTCUSDT": {
+      "bars": 2469,
+      "first_bar": "2020-01-01T16:00:00Z",
+      "last_bar": "2026-10-04T16:00:00Z",
+      "first_eligible_bar": "2020-07-28T16:00:00Z"
+    },
+    "ETHUSDT": {
+      "bars": 2469,
+      "first_bar": "2020-01-01T16:00:00Z",
+      "last_bar": "2026-10-04T16:00:00Z",
+      "first_eligible_bar": "2020-07-28T16:00:00Z"
+    },
+    "SOLUSDT": {
+      "bars": 2083,
+      "first_bar": "2021-01-21T16:00:00Z",
+      "last_bar": "2026-10-04T16:00:00Z",
+      "first_eligible_bar": "2021-08-18T16:00:00Z"
+    },
+    "BNBUSDT": {
+      "bars": 1383,
+      "first_bar": "2022-12-22T16:00:00Z",
+      "last_bar": "2026-10-04T16:00:00Z",
+      "first_eligible_bar": "2023-07-19T16:00:00Z"
+    },
+    "XRPUSDT": {
+      "bars": 2469,
+      "first_bar": "2020-01-01T16:00:00Z",
+      "last_bar": "2026-10-04T16:00:00Z",
+      "first_eligible_bar": "2020-07-28T16:00:00Z"
+    }
+  },
+  "data_fetched_at_utc": "2026-10-05T17:35:50+00:00",
+  "span": {
+    "first_eligible_bar": "2020-07-28T16:00:00Z",
+    "last_bar": "2026-10-04T16:00:00Z",
+    "years": 6.187543
+  },
+  "signals": {
+    "entry_signals_taken_or_dropped": 115,
+    "dropped_no_next_open": 0,
+    "signal_bars_suppressed_by_position_cap": 20
+  },
+  "overall": {
+    "n": 115,
+    "net_usd": 2853.646545,
+    "net_R": 114.145862,
+    "gross_usd": 2929.691536,
+    "cost_usd": 76.044991,
+    "wins": 54,
+    "losses": 61,
+    "win_rate": 0.469565,
+    "avg_win_usd": 85.673921,
+    "avg_loss_usd": 29.061397,
+    "payoff": 2.948032,
+    "mean_R": 0.992573,
+    "median_R": -0.264056,
+    "best_trade_R": 26.690649,
+    "worst_trade_R": -3.502253,
+    "net_R_ex_best_trade": 87.455213,
+    "longest_losing_streak": 11,
+    "longest_losing_streak_span": [
+      "2024-06-08T16:00:00Z",
+      "2024-08-28T16:00:00Z"
+    ],
+    "drawdown": {
+      "max_dd_R": 20.218408,
+      "max_dd_usd": 505.460211,
+      "peak_date": "2024-03-22T16:00:00Z",
+      "trough_date": "2024-12-10T16:00:00Z",
+      "peak_to_trough_days": 263.0,
+      "recovered_date": "2024-12-10T16:00:00Z",
+      "peak_to_recovery_days": 263.0
+    },
+    "trades_per_year": 18.58573
+  },
+  "criterion_3": {
+    "best_trade": {
+      "symbol": "XRPUSDT",
+      "side": "long",
+      "entry_ts": "2024-11-12T16:00:00Z",
+      "R": 26.690649
+    },
+    "net_R_ex_best_trade": 87.455213,
+    "n_ex_best_trade": 114,
+    "best_symbol": "BTCUSDT",
+    "net_R_ex_best_symbol": 72.053892,
+    "n_ex_best_symbol": 89
+  },
+  "by_exit_year": {
+    "2020": {
+      "n": 7,
+      "net_usd": 554.347844,
+      "net_R": 22.173914,
+      "wins": 4
+    },
+    "2021": {
+      "n": 22,
+      "net_usd": 308.644853,
+      "net_R": 12.345794,
+      "wins": 11
+    },
+    "2022": {
+      "n": 13,
+      "net_usd": 323.75279,
+      "net_R": 12.950112,
+      "wins": 9
+    },
+    "2023": {
+      "n": 19,
+      "net_usd": 324.906318,
+      "net_R": 12.996253,
+      "wins": 6
+    },
+    "2024": {
+      "n": 24,
+      "net_usd": 937.484267,
+      "net_R": 37.499371,
+      "wins": 9
+    },
+    "2025": {
+      "n": 18,
+      "net_usd": 57.415268,
+      "net_R": 2.296611,
+      "wins": 8
+    },
+    "2026": {
+      "n": 12,
+      "net_usd": 347.095205,
+      "net_R": 13.883808,
+      "wins": 7
+    }
+  },
+  "positive_years": [
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025",
+    "2026"
+  ],
+  "by_symbol": {
+    "BNBUSDT": {
+      "n": 13,
+      "net_usd": 32.585724,
+      "net_R": 1.303429,
+      "wins": 4
+    },
+    "BTCUSDT": {
+      "n": 26,
+      "net_usd": 1052.299236,
+      "net_R": 42.091969,
+      "wins": 17
+    },
+    "ETHUSDT": {
+      "n": 32,
+      "net_usd": 429.915589,
+      "net_R": 17.196624,
+      "wins": 14
+    },
+    "SOLUSDT": {
+      "n": 19,
+      "net_usd": 450.601006,
+      "net_R": 18.02404,
+      "wins": 7
+    },
+    "XRPUSDT": {
+      "n": 25,
+      "net_usd": 888.24499,
+      "net_R": 35.5298,
+      "wins": 12
+    }
+  },
+  "by_side": {
+    "long": {
+      "n": 66,
+      "net_usd": 2677.193101,
+      "net_R": 107.087724,
+      "gross_usd": 2727.306765,
+      "cost_usd": 50.113663,
+      "wins": 32,
+      "losses": 34,
+      "win_rate": 0.484848,
+      "avg_win_usd": 111.787666,
+      "avg_loss_usd": 26.470947,
+      "payoff": 4.223032,
+      "mean_R": 1.622541,
+      "median_R": -0.088402,
+      "best_trade_R": 26.690649,
+      "worst_trade_R": -1.680444,
+      "net_R_ex_best_trade": 80.397075,
+      "longest_losing_streak": 7,
+      "longest_losing_streak_span": [
+        "2024-06-08T16:00:00Z",
+        "2024-12-10T16:00:00Z"
+      ],
+      "drawdown": {
+        "max_dd_R": 7.902383,
+        "max_dd_usd": 197.559586,
+        "peak_date": "2024-03-22T16:00:00Z",
+        "trough_date": "2024-12-10T16:00:00Z",
+        "peak_to_trough_days": 263.0,
+        "recovered_date": "2024-12-10T16:00:00Z",
+        "peak_to_recovery_days": 263.0
+      }
+    },
+    "short": {
+      "n": 49,
+      "net_usd": 176.453443,
+      "net_R": 7.058138,
+      "gross_usd": 202.384771,
+      "cost_usd": 25.931328,
+      "wins": 22,
+      "losses": 27,
+      "win_rate": 0.44898,
+      "avg_win_usd": 47.690292,
+      "avg_loss_usd": 32.323444,
+      "payoff": 1.475409,
+      "mean_R": 0.144044,
+      "median_R": -0.701803,
+      "best_trade_R": 4.193076,
+      "worst_trade_R": -3.502253,
+      "net_R_ex_best_trade": 2.865062,
+      "longest_losing_streak": 15,
+      "longest_losing_streak_span": [
+        "2022-09-06T16:00:00Z",
+        "2024-08-08T16:00:00Z"
+      ],
+      "drawdown": {
+        "max_dd_R": 23.3141,
+        "max_dd_usd": 582.85249,
+        "peak_date": "2022-07-13T16:00:00Z",
+        "trough_date": "2025-02-12T16:00:00Z",
+        "peak_to_trough_days": 945.0,
+        "recovered_date": null,
+        "peak_to_recovery_days": null
+      }
+    }
+  },
+  "by_exit_reason": {
+    "end_of_data": {
+      "n": 1,
+      "net_usd": -1.085246,
+      "net_R": -0.04341,
+      "wins": 0
+    },
+    "initial_stop": {
+      "n": 46,
+      "net_usd": -1530.364468,
+      "net_R": -61.214579,
+      "wins": 0
+    },
+    "time_stop": {
+      "n": 46,
+      "net_usd": 3148.431516,
+      "net_R": 125.937261,
+      "wins": 41
+    },
+    "trail_stop": {
+      "n": 22,
+      "net_usd": 1236.664742,
+      "net_R": 49.46659,
+      "wins": 13
+    }
+  },
+  "subset_entry_2023_onward": {
+    "n": 72,
+    "net_usd": 1673.50245,
+    "net_R": 66.940098,
+    "gross_usd": 1727.448327,
+    "cost_usd": 53.945877,
+    "wins": 30,
+    "losses": 42,
+    "win_rate": 0.416667,
+    "avg_win_usd": 97.201299,
+    "avg_loss_usd": 29.584203,
+    "payoff": 3.285581,
+    "mean_R": 0.929724,
+    "median_R": -0.59882,
+    "best_trade_R": 26.690649,
+    "worst_trade_R": -3.502253,
+    "net_R_ex_best_trade": 40.249449,
+    "longest_losing_streak": 11,
+    "longest_losing_streak_span": [
+      "2024-06-08T16:00:00Z",
+      "2024-08-28T16:00:00Z"
+    ],
+    "drawdown": {
+      "max_dd_R": 20.218408,
+      "max_dd_usd": 505.460211,
+      "peak_date": "2024-03-22T16:00:00Z",
+      "trough_date": "2024-12-10T16:00:00Z",
+      "peak_to_trough_days": 263.0,
+      "recovered_date": "2024-12-10T16:00:00Z",
+      "peak_to_recovery_days": 263.0
+    }
+  },
+  "subset_entry_2023_onward_by_year": {
+    "2023": {
+      "n": 18,
+      "net_usd": 331.50771,
+      "net_R": 13.260308,
+      "wins": 6
+    },
+    "2024": {
+      "n": 24,
+      "net_usd": 937.484267,
+      "net_R": 37.499371,
+      "wins": 9
+    },
+    "2025": {
+      "n": 18,
+      "net_usd": 57.415268,
+      "net_R": 2.296611,
+      "wins": 8
+    },
+    "2026": {
+      "n": 12,
+      "net_usd": 347.095205,
+      "net_R": 13.883808,
+      "wins": 7
+    }
+  },
+  "excluding_end_of_data_trades": {
+    "n": 114,
+    "net_usd": 2854.731791,
+    "net_R": 114.189272,
+    "gross_usd": 2930.220698,
+    "cost_usd": 75.488907,
+    "wins": 54,
+    "losses": 60,
+    "win_rate": 0.473684,
+    "avg_win_usd": 85.673921,
+    "avg_loss_usd": 29.527666,
+    "payoff": 2.90148,
+    "mean_R": 1.00166,
+    "median_R": -0.311179,
+    "best_trade_R": 26.690649,
+    "worst_trade_R": -3.502253,
+    "net_R_ex_best_trade": 87.498623,
+    "longest_losing_streak": 11,
+    "longest_losing_streak_span": [
+      "2024-06-08T16:00:00Z",
+      "2024-08-28T16:00:00Z"
+    ],
+    "drawdown": {
+      "max_dd_R": 20.218408,
+      "max_dd_usd": 505.460211,
+      "peak_date": "2024-03-22T16:00:00Z",
+      "trough_date": "2024-12-10T16:00:00Z",
+      "peak_to_trough_days": 263.0,
+      "recovered_date": "2024-12-10T16:00:00Z",
+      "peak_to_recovery_days": 263.0
+    }
+  },
+  "permutation": {
+    "n_trades": 115,
+    "n_shuffles": 5000,
+    "seed": 20261005,
+    "observed_net_usd": 2853.646545,
+    "selfcheck_recomputed_net_usd": 2853.646545,
+    "null_mean_usd": 138.559737,
+    "null_sd_usd": 801.399394,
+    "null_p05_usd": -1176.965359,
+    "null_p50_usd": 147.168012,
+    "null_p95_usd": 1446.600528,
+    "null_ge_observed": 9,
+    "p_one_sided": 0.002
+  },
+  "drawdown_mark_to_market_daily": {
+    "max_dd_R": 24.998242,
+    "peak_date": "2024-03-13T16:00:00Z",
+    "trough_date": "2024-11-12T16:00:00Z",
+    "peak_to_trough_days": 244.0,
+    "recovered_date": "2024-11-30T16:00:00Z",
+    "peak_to_recovery_days": 262.0,
+    "longest_underwater_days": 507.0,
+    "longest_underwater_span": [
+      "2022-06-18T16:00:00Z",
+      "2023-11-07T16:00:00Z"
+    ]
+  },
+  "post_hoc_not_preregistered": {
+    "common_shift_null": {
+      "post_hoc": true,
+      "n_trades": 115,
+      "n_shifts": 2258,
+      "observed_net_usd": 2853.646545,
+      "null_mean_usd": 142.560176,
+      "null_sd_usd": 1181.705693,
+      "null_p95_usd": 1958.311523,
+      "null_max_usd": 7905.885196,
+      "null_ge_observed": 44,
+      "p_one_sided": 0.01992
+    },
+    "S4_funding_proxy": {
+      "available": true,
+      "post_hoc": true,
+      "proxy": "BitMEX 8h funding (cross-venue)",
+      "funding_paid_usd": 516.28626,
+      "funding_paid_R": 20.65145,
+      "funding_paid_R_long": 24.445696,
+      "funding_paid_R_short": -3.794246,
+      "stamps_filled_with_baseline": 158,
+      "net_R_after_funding": 93.494411,
+      "payoff_after_funding": 2.715218,
+      "net_R_after_funding_ex_best_trade": 69.238643,
+      "by_exit_year_R_after_funding": {
+        "2020": 18.515297,
+        "2021": 5.618413,
+        "2022": 15.268708,
+        "2023": 9.041923,
+        "2024": 29.424101,
+        "2025": 1.744323,
+        "2026": 13.881647
+      }
+    }
+  },
+  "secondary_non_verdict": {
+    "S1_fear_greed_overlay_on": {
+      "n": 121,
+      "net_usd": 2270.257216,
+      "net_R": 90.810289,
+      "gross_usd": 2347.441942,
+      "cost_usd": 77.184727,
+      "wins": 54,
+      "losses": 67,
+      "win_rate": 0.446281,
+      "avg_win_usd": 78.845813,
+      "avg_loss_usd": 29.662936,
+      "payoff": 2.658058,
+      "mean_R": 0.750498,
+      "median_R": -0.527958,
+      "best_trade_R": 26.690649,
+      "worst_trade_R": -3.502253,
+      "net_R_ex_best_trade": 64.11964,
+      "longest_losing_streak": 11,
+      "longest_losing_streak_span": [
+        "2024-06-08T16:00:00Z",
+        "2024-08-28T16:00:00Z"
+      ],
+      "drawdown": {
+        "max_dd_R": 20.218408,
+        "max_dd_usd": 505.460211,
+        "peak_date": "2024-03-22T16:00:00Z",
+        "trough_date": "2024-12-10T16:00:00Z",
+        "peak_to_trough_days": 263.0,
+        "recovered_date": "2024-12-10T16:00:00Z",
+        "peak_to_recovery_days": 263.0
+      },
+      "by_entry_kind": {
+        "donchian": {
+          "n": 99,
+          "net_usd": 2137.167283,
+          "net_R": 85.486691,
+          "wins": 42
+        },
+        "fg_contrarian": {
+          "n": 22,
+          "net_usd": 133.089932,
+          "net_R": 5.323597,
+          "wins": 12
+        }
+      },
+      "by_exit_year": {
+        "2020": {
+          "n": 3,
+          "net_usd": 349.026086,
+          "net_R": 13.961043,
+          "wins": 2
+        },
+        "2021": {
+          "n": 21,
+          "net_usd": 165.201656,
+          "net_R": 6.608066,
+          "wins": 9
+        },
+        "2022": {
+          "n": 19,
+          "net_usd": 123.384684,
+          "net_R": 4.935387,
+          "wins": 9
+        },
+        "2023": {
+          "n": 19,
+          "net_usd": 324.906318,
+          "net_R": 12.996253,
+          "wins": 6
+        },
+        "2024": {
+          "n": 24,
+          "net_usd": 937.484267,
+          "net_R": 37.499371,
+          "wins": 9
+        },
+        "2025": {
+          "n": 19,
+          "net_usd": 61.601026,
+          "net_R": 2.464041,
+          "wins": 9
+        },
+        "2026": {
+          "n": 16,
+          "net_usd": 308.653178,
+          "net_R": 12.346127,
+          "wins": 10
+        }
+      }
+    },
+    "S2_fill_at_signal_close": {
+      "n": 115,
+      "net_usd": 2852.927552,
+      "net_R": 114.117102,
+      "gross_usd": 2928.971721,
+      "cost_usd": 76.044169,
+      "wins": 54,
+      "losses": 61,
+      "win_rate": 0.469565,
+      "avg_win_usd": 85.648922,
+      "avg_loss_usd": 29.051053,
+      "payoff": 2.948221,
+      "mean_R": 0.992323,
+      "median_R": -0.264056,
+      "best_trade_R": 26.686728,
+      "worst_trade_R": -3.502253,
+      "net_R_ex_best_trade": 87.430374,
+      "longest_losing_streak": 11,
+      "longest_losing_streak_span": [
+        "2024-06-08T16:00:00Z",
+        "2024-08-28T16:00:00Z"
+      ],
+      "drawdown": {
+        "max_dd_R": 20.219898,
+        "max_dd_usd": 505.497441,
+        "peak_date": "2024-03-22T16:00:00Z",
+        "trough_date": "2024-12-10T16:00:00Z",
+        "peak_to_trough_days": 263.0,
+        "recovered_date": "2024-12-10T16:00:00Z",
+        "peak_to_recovery_days": 263.0
+      },
+      "by_exit_year": {
+        "2020": {
+          "n": 7,
+          "net_usd": 554.479493,
+          "net_R": 22.17918,
+          "wins": 4
+        },
+        "2021": {
+          "n": 22,
+          "net_usd": 308.247125,
+          "net_R": 12.329885,
+          "wins": 11
+        },
+        "2022": {
+          "n": 13,
+          "net_usd": 323.337329,
+          "net_R": 12.933493,
+          "wins": 9
+        },
+        "2023": {
+          "n": 19,
+          "net_usd": 325.145,
+          "net_R": 13.0058,
+          "wins": 6
+        },
+        "2024": {
+          "n": 24,
+          "net_usd": 936.963553,
+          "net_R": 37.478542,
+          "wins": 9
+        },
+        "2025": {
+          "n": 18,
+          "net_usd": 57.608153,
+          "net_R": 2.304326,
+          "wins": 8
+        },
+        "2026": {
+          "n": 12,
+          "net_usd": 347.146899,
+          "net_R": 13.885876,
+          "wins": 7
+        }
+      }
+    },
+    "S3_universe_without_BTCUSDT": {
+      "n": 96,
+      "net_usd": 1687.648366,
+      "net_R": 67.505935,
+      "gross_usd": 1745.095148,
+      "cost_usd": 57.446782,
+      "wins": 38,
+      "losses": 58,
+      "win_rate": 0.395833,
+      "avg_win_usd": 87.567329,
+      "avg_loss_usd": 28.274313,
+      "payoff": 3.097063,
+      "mean_R": 0.703187,
+      "median_R": -0.59882,
+      "best_trade_R": 26.690649,
+      "worst_trade_R": -3.502253,
+      "net_R_ex_best_trade": 40.815286,
+      "longest_losing_streak": 9,
+      "longest_losing_streak_span": [
+        "2022-09-06T16:00:00Z",
+        "2023-02-24T16:00:00Z"
+      ],
+      "drawdown": {
+        "max_dd_R": 17.539662,
+        "max_dd_usd": 438.491539,
+        "peak_date": "2024-03-22T16:00:00Z",
+        "trough_date": "2024-12-10T16:00:00Z",
+        "peak_to_trough_days": 263.0,
+        "recovered_date": "2024-12-10T16:00:00Z",
+        "peak_to_recovery_days": 263.0
+      }
+    }
+  }
+}

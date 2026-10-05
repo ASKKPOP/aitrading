@@ -1,0 +1,537 @@
+{
+  "conventions": "PREREG.txt section E",
+  "self_check_reproduces_trades_csv": true,
+  "primary": {
+    "n": 115,
+    "net_R": 114.145862,
+    "payoff": 2.948032,
+    "win_rate": 0.469565,
+    "median_R": -0.264056,
+    "positive_years": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026"
+    ],
+    "n_positive_years": 7,
+    "by_exit_year_R": {
+      "2020": [
+        7,
+        22.173914
+      ],
+      "2021": [
+        22,
+        12.345794
+      ],
+      "2022": [
+        13,
+        12.950112
+      ],
+      "2023": [
+        19,
+        12.996253
+      ],
+      "2024": [
+        24,
+        37.499371
+      ],
+      "2025": [
+        18,
+        2.296611
+      ],
+      "2026": [
+        12,
+        13.883808
+      ]
+    },
+    "max_dd_closed_R": 20.218408,
+    "drawdown": {
+      "max_dd_R": 20.218408,
+      "max_dd_usd": 505.460211,
+      "peak_date": "2024-03-22T16:00:00Z",
+      "trough_date": "2024-12-10T16:00:00Z",
+      "peak_to_trough_days": 263.0,
+      "recovered_date": "2024-12-10T16:00:00Z",
+      "peak_to_recovery_days": 263.0
+    },
+    "net_R_ex_best_trade": 87.455213,
+    "best_trade_R": 26.690649,
+    "worst_trade_R": -3.502253,
+    "longest_losing_streak": 11,
+    "by_exit_reason": {
+      "end_of_data": {
+        "n": 1,
+        "net_usd": -1.085246,
+        "net_R": -0.04341,
+        "wins": 0
+      },
+      "initial_stop": {
+        "n": 46,
+        "net_usd": -1530.364468,
+        "net_R": -61.214579,
+        "wins": 0
+      },
+      "time_stop": {
+        "n": 46,
+        "net_usd": 3148.431516,
+        "net_R": 125.937261,
+        "wins": 41
+      },
+      "trail_stop": {
+        "n": 22,
+        "net_usd": 1236.664742,
+        "net_R": 49.46659,
+        "wins": 13
+      }
+    },
+    "by_side": {
+      "long": {
+        "n": 66,
+        "net_usd": 2677.193101,
+        "net_R": 107.087724,
+        "wins": 32
+      },
+      "short": {
+        "n": 49,
+        "net_usd": 176.453443,
+        "net_R": 7.058138,
+        "wins": 22
+      }
+    },
+    "intraday_stop": {
+      "n_ended_by_intraday_stop": 0,
+      "their_net_R_in_this_variant": 0.0,
+      "n_paired_with_primary": 0,
+      "n_unpaired": 0,
+      "paired_primary_net_R": 0.0,
+      "paired_variant_net_R": 0.0,
+      "paired_diff_R_variant_minus_primary": 0,
+      "n_better_than_primary": 0,
+      "n_worse_than_primary": 0,
+      "n_equal": 0,
+      "paired_primary_winners_cut": 0,
+      "paired_primary_winners_cut_net_R_lost": 0.0,
+      "paired_primary_losers_net_R_saved": 0.0,
+      "largest_paired_loss_R": null,
+      "largest_paired_gain_R": null,
+      "paired_diff_R_ex_largest_abs": null
+    },
+    "entry_set_vs_primary": {
+      "in_both": 115,
+      "variant_only": 0,
+      "primary_only": 0,
+      "variant_only_net_R": 0.0,
+      "primary_only_net_R": 0.0
+    },
+    "missing_hours_while_open": 0,
+    "phantom_position_days": 0
+  },
+  "V2": {
+    "n": 118,
+    "net_R": 122.874779,
+    "payoff": 3.582835,
+    "win_rate": 0.457627,
+    "median_R": -0.465161,
+    "positive_years": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026"
+    ],
+    "n_positive_years": 7,
+    "by_exit_year_R": {
+      "2020": [
+        7,
+        22.641481
+      ],
+      "2021": [
+        22,
+        13.777052
+      ],
+      "2022": [
+        13,
+        13.65526
+      ],
+      "2023": [
+        22,
+        9.159897
+      ],
+      "2024": [
+        24,
+        44.858594
+      ],
+      "2025": [
+        18,
+        3.826788
+      ],
+      "2026": [
+        12,
+        14.955707
+      ]
+    },
+    "max_dd_closed_R": 14.597745,
+    "drawdown": {
+      "max_dd_R": 14.597745,
+      "max_dd_usd": 364.943627,
+      "peak_date": "2022-07-13T16:00:00Z",
+      "trough_date": "2023-09-15T05:00:00Z",
+      "peak_to_trough_days": 428.5,
+      "recovered_date": "2023-11-19T16:00:00Z",
+      "peak_to_recovery_days": 494.0
+    },
+    "net_R_ex_best_trade": 96.184131,
+    "best_trade_R": 26.690649,
+    "worst_trade_R": -1.052217,
+    "longest_losing_streak": 11,
+    "by_exit_reason": {
+      "end_of_data": {
+        "n": 1,
+        "net_usd": -1.085246,
+        "net_R": -0.04341,
+        "wins": 0
+      },
+      "intraday_stop": {
+        "n": 57,
+        "net_usd": -1459.34162,
+        "net_R": -58.373665,
+        "wins": 0
+      },
+      "time_stop": {
+        "n": 44,
+        "net_usd": 3155.301173,
+        "net_R": 126.212047,
+        "wins": 41
+      },
+      "trail_stop": {
+        "n": 16,
+        "net_usd": 1376.995171,
+        "net_R": 55.079807,
+        "wins": 13
+      }
+    },
+    "by_side": {
+      "long": {
+        "n": 68,
+        "net_usd": 2697.993314,
+        "net_R": 107.919733,
+        "wins": 32
+      },
+      "short": {
+        "n": 50,
+        "net_usd": 373.876165,
+        "net_R": 14.955047,
+        "wins": 22
+      }
+    },
+    "intraday_stop": {
+      "n_ended_by_intraday_stop": 57,
+      "their_net_R_in_this_variant": -58.373665,
+      "n_paired_with_primary": 55,
+      "n_unpaired": 2,
+      "paired_primary_net_R": -66.080428,
+      "paired_variant_net_R": -56.334159,
+      "paired_diff_R_variant_minus_primary": 9.746269,
+      "n_better_than_primary": 50,
+      "n_worse_than_primary": 5,
+      "n_equal": 0,
+      "paired_primary_winners_cut": 1,
+      "paired_primary_winners_cut_net_R_lost": -3.49088,
+      "paired_primary_losers_net_R_saved": 13.23715,
+      "largest_paired_loss_R": -3.49088,
+      "largest_paired_gain_R": 2.469441,
+      "paired_diff_R_ex_largest_abs": 13.23715
+    },
+    "entry_set_vs_primary": {
+      "in_both": 115,
+      "variant_only": 3,
+      "primary_only": 0,
+      "variant_only_net_R": -1.017352,
+      "primary_only_net_R": 0.0
+    },
+    "missing_hours_while_open": 0,
+    "phantom_position_days": 0
+  },
+  "V3": {
+    "n": 115,
+    "net_R": 71.423834,
+    "payoff": 4.789796,
+    "win_rate": 0.330435,
+    "median_R": -0.515924,
+    "positive_years": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026"
+    ],
+    "n_positive_years": 7,
+    "by_exit_year_R": {
+      "2020": [
+        8,
+        11.371054
+      ],
+      "2021": [
+        21,
+        8.526263
+      ],
+      "2022": [
+        13,
+        3.63413
+      ],
+      "2023": [
+        19,
+        9.917361
+      ],
+      "2024": [
+        24,
+        21.249955
+      ],
+      "2025": [
+        18,
+        0.790177
+      ],
+      "2026": [
+        12,
+        15.934896
+      ]
+    },
+    "max_dd_closed_R": 12.276916,
+    "drawdown": {
+      "max_dd_R": 12.276916,
+      "max_dd_usd": 306.922894,
+      "peak_date": "2022-07-13T16:00:00Z",
+      "trough_date": "2023-09-13T08:00:00Z",
+      "peak_to_trough_days": 426.7,
+      "recovered_date": "2023-11-19T16:00:00Z",
+      "peak_to_recovery_days": 494.0
+    },
+    "net_R_ex_best_trade": 55.532389,
+    "best_trade_R": 15.891445,
+    "worst_trade_R": -1.450961,
+    "longest_losing_streak": 12,
+    "by_exit_reason": {
+      "end_of_data": {
+        "n": 1,
+        "net_usd": -1.085246,
+        "net_R": -0.04341,
+        "wins": 0
+      },
+      "initial_stop": {
+        "n": 1,
+        "net_usd": -28.659328,
+        "net_R": -1.146373,
+        "wins": 0
+      },
+      "intraday_stop": {
+        "n": 72,
+        "net_usd": -1244.70366,
+        "net_R": -49.788146,
+        "wins": 0
+      },
+      "time_stop": {
+        "n": 30,
+        "net_usd": 2708.231702,
+        "net_R": 108.329268,
+        "wins": 29
+      },
+      "trail_stop": {
+        "n": 11,
+        "net_usd": 351.812392,
+        "net_R": 14.072496,
+        "wins": 9
+      }
+    },
+    "by_side": {
+      "long": {
+        "n": 66,
+        "net_usd": 1602.692563,
+        "net_R": 64.107703,
+        "wins": 24
+      },
+      "short": {
+        "n": 49,
+        "net_usd": 182.903298,
+        "net_R": 7.316132,
+        "wins": 14
+      }
+    },
+    "intraday_stop": {
+      "n_ended_by_intraday_stop": 72,
+      "their_net_R_in_this_variant": -49.788146,
+      "n_paired_with_primary": 72,
+      "n_unpaired": 0,
+      "paired_primary_net_R": -7.066119,
+      "paired_variant_net_R": -49.788146,
+      "paired_diff_R_variant_minus_primary": -42.722027,
+      "n_better_than_primary": 48,
+      "n_worse_than_primary": 24,
+      "n_equal": 0,
+      "paired_primary_winners_cut": 16,
+      "paired_primary_winners_cut_net_R_lost": -69.998332,
+      "paired_primary_losers_net_R_saved": 27.276305,
+      "largest_paired_loss_R": -27.381205,
+      "largest_paired_gain_R": 2.631115,
+      "paired_diff_R_ex_largest_abs": -15.340823
+    },
+    "entry_set_vs_primary": {
+      "in_both": 115,
+      "variant_only": 0,
+      "primary_only": 0,
+      "variant_only_net_R": 0.0,
+      "primary_only_net_R": 0.0
+    },
+    "missing_hours_while_open": 0,
+    "phantom_position_days": 747
+  },
+  "V3b": {
+    "n": 136,
+    "net_R": 98.895254,
+    "payoff": 5.201253,
+    "win_rate": 0.338235,
+    "median_R": -0.492879,
+    "positive_years": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2026"
+    ],
+    "n_positive_years": 6,
+    "by_exit_year_R": {
+      "2020": [
+        9,
+        19.939899
+      ],
+      "2021": [
+        25,
+        12.34455
+      ],
+      "2022": [
+        16,
+        9.761855
+      ],
+      "2023": [
+        23,
+        9.302222
+      ],
+      "2024": [
+        30,
+        31.867879
+      ],
+      "2025": [
+        21,
+        -0.256047
+      ],
+      "2026": [
+        12,
+        15.934896
+      ]
+    },
+    "max_dd_closed_R": 13.553024,
+    "drawdown": {
+      "max_dd_R": 13.553024,
+      "max_dd_usd": 338.825601,
+      "peak_date": "2024-03-22T16:00:00Z",
+      "trough_date": "2024-12-05T02:00:00Z",
+      "peak_to_trough_days": 257.4,
+      "recovered_date": "2024-12-10T16:00:00Z",
+      "peak_to_recovery_days": 263.0
+    },
+    "net_R_ex_best_trade": 83.003809,
+    "best_trade_R": 15.891445,
+    "worst_trade_R": -1.450961,
+    "longest_losing_streak": 12,
+    "by_exit_reason": {
+      "end_of_data": {
+        "n": 1,
+        "net_usd": -1.085246,
+        "net_R": -0.04341,
+        "wins": 0
+      },
+      "initial_stop": {
+        "n": 1,
+        "net_usd": -28.659328,
+        "net_R": -1.146373,
+        "wins": 0
+      },
+      "intraday_stop": {
+        "n": 85,
+        "net_usd": -1426.22619,
+        "net_R": -57.049048,
+        "wins": 0
+      },
+      "time_stop": {
+        "n": 35,
+        "net_usd": 2990.471954,
+        "net_R": 119.618878,
+        "wins": 34
+      },
+      "trail_stop": {
+        "n": 14,
+        "net_usd": 937.880152,
+        "net_R": 37.515206,
+        "wins": 12
+      }
+    },
+    "by_side": {
+      "long": {
+        "n": 79,
+        "net_usd": 2182.408199,
+        "net_R": 87.296328,
+        "wins": 29
+      },
+      "short": {
+        "n": 57,
+        "net_usd": 289.973144,
+        "net_R": 11.598926,
+        "wins": 17
+      }
+    },
+    "intraday_stop": {
+      "n_ended_by_intraday_stop": 85,
+      "their_net_R_in_this_variant": -57.049048,
+      "n_paired_with_primary": 71,
+      "n_unpaired": 14,
+      "paired_primary_net_R": -6.007107,
+      "paired_variant_net_R": -49.128609,
+      "paired_diff_R_variant_minus_primary": -43.121502,
+      "n_better_than_primary": 47,
+      "n_worse_than_primary": 24,
+      "n_equal": 0,
+      "paired_primary_winners_cut": 16,
+      "paired_primary_winners_cut_net_R_lost": -69.998332,
+      "paired_primary_losers_net_R_saved": 26.87683,
+      "largest_paired_loss_R": -27.381205,
+      "largest_paired_gain_R": 2.631115,
+      "paired_diff_R_ex_largest_abs": -15.740298
+    },
+    "entry_set_vs_primary": {
+      "in_both": 114,
+      "variant_only": 22,
+      "primary_only": 1,
+      "variant_only_net_R": 26.811882,
+      "primary_only_net_R": -1.059012
+    },
+    "missing_hours_while_open": 0,
+    "phantom_position_days": 0
+  },
+  "H_STOP": {
+    "statement": "V3 net R is lower than the primary run's net R",
+    "primary_net_R": 114.145862,
+    "V3_net_R": 71.423834,
+    "V3b_net_R": 98.895254,
+    "V3_minus_primary_R": -42.722027,
+    "V3b_minus_primary_R": -15.250608,
+    "verdict": "NOT FALSIFIED",
+    "V3_and_V3b_same_side_of_primary": true
+  }
+}
