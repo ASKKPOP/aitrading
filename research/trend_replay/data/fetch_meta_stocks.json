@@ -1,0 +1,287 @@
+{
+  "fetched_at_utc": "2026-10-05T19:25:32+00:00",
+  "source": "Yahoo Finance chart API v8, interval=1d, events=div,splits",
+  "window_end_exclusive_utc": "2026-10-05T00:00:00+00:00",
+  "symbols": {
+    "AAPL": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 2,
+      "dividends": 51
+    },
+    "AMD": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 0
+    },
+    "AMGN": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "AMZN": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 0
+    },
+    "AVGO": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    },
+    "AXP": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "BA": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 25
+    },
+    "CAT": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "CRM": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 11
+    },
+    "CSCO": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 52
+    },
+    "CVX": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "DIS": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 17
+    },
+    "GOOGL": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 2,
+      "dividends": 10
+    },
+    "GS": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "HD": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "HON": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 5,
+      "dividends": 51
+    },
+    "IBM": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    },
+    "JNJ": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "JPM": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "KO": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "MCD": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "META": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 11
+    },
+    "MMM": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    },
+    "MRK": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    },
+    "MSFT": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "NFLX": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 2,
+      "dividends": 0
+    },
+    "NKE": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    },
+    "NVDA": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 2,
+      "dividends": 51
+    },
+    "PG": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "SHW": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    },
+    "TRV": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "TSLA": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 2,
+      "dividends": 0
+    },
+    "UNH": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 0,
+      "dividends": 51
+    },
+    "V": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    },
+    "WMT": {
+      "rows": 3207,
+      "dropped_null": 0,
+      "first": "2014-01-02",
+      "last": "2026-10-02",
+      "splits": 1,
+      "dividends": 51
+    }
+  }
+}

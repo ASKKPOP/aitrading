@@ -121,3 +121,37 @@ primary winners (−70.0R). One trade is −27.4R of that (XRP long 2024-11-12:
 stopped 13 hours after entry, +26.7R in the primary); without it the paired
 difference is still −15.3R. V2's 55 paired stops: +9.75R (50 better, 5 worse).
 No open trade lacked 1H coverage.
+
+## R-LONG and R-STOCK (PREREG sections F and G, appended before the runs)
+
+```bash
+$PY research/trend_replay/fetch_stocks.py     # Yahoo chart API, 35 tickers, 2014-01-02 -> last completed session
+$PY research/trend_replay/replay_long.py      # -> trades_RLONG_D.csv, trades_RLONG_V2.csv, long_result.json
+$PY research/trend_replay/replay_stock.py     # -> trades_STOCK_{U1,U2}_{LS,LO}.csv, stock_result.json
+$PY research/trend_replay/handcheck_ext.py    # independent reproduction of all six runs + best/worst/median
+```
+
+`replay_ext.py` is the shared engine; `replay_long.py` aborts unless it
+reproduces `trades.csv` and `trades_V2.csv` exactly.
+
+| run | n | net R | payoff | win | years + | max DD | ex best trade | perm. p | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| R-LONG daily-close | 66 | +107.09 | 4.22 | 48.5% | 6/7 | 7.9R | +80.40 | 0.004 | NOT FALSIFIED |
+| R-LONG V2 | 68 | +107.92 | 4.72 | 47.1% | 6/7 | 8.2R | +81.23 | 0.003 | NOT FALSIFIED |
+| R-STOCK U1 long/short | 339 | +115.67 | 1.82 | 45.4% | 12/12 | 13.9R | +103.51 | 0.19 | INCONCLUSIVE (5) |
+| R-STOCK U1 long-only | 250 | +133.71 | 1.84 | 50.0% | 11/12 | 12.7R | +121.55 | 0.44 | INCONCLUSIVE (5) |
+| R-STOCK U2 long/short | 543 | +34.67 | 1.58 | 40.7% | 8/12 | 41.7R | +26.27 | 0.73 | INCONCLUSIVE (4, 5) |
+| R-STOCK U2 long-only | 414 | +69.39 | 1.50 | 45.2% | 8/12 | 30.8R | +55.14 | 0.91 | INCONCLUSIVE (4, 5) |
+
+R-LONG: the long-only run takes exactly the primary's 66 long trades — no
+long trade was added, lost or changed by freeing the short slots. 2022 has
+no trade; 2025 is +0.6R (n=10) and 2026 +0.4R (n=4).
+
+R-STOCK: every run is net positive and every run fails the permutation
+test. Holding the same names, on the same side, for the same number of
+sessions from a random date earns on average +82.5R (U1 L/S), +129.0R (U1
+long-only), +63.5R (U2 L/S), +123.8R (U2 long-only) — as much as or more
+than the rule. The profit is the drift of stocks that are in these lists
+because they rose; the rule's timing adds nothing measurable. Shorts lose in
+both universes (U1 −16.4R, n=97; U2 −30.1R, n=172). Reversing the scan order
+moves U2 long/short to +17.1R and U1 long/short to +96.4R.

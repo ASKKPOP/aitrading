@@ -1,0 +1,252 @@
+{{Short description|List of companies in the Dow Jones Industrial Average}}
+{{Use American English|date=August 2026}}
+{{Use mdy dates|date=August 2026}}
+{{for|a list of previous components of the index|Historical components of the Dow Jones Industrial Average}}
+
+The [[Dow Jones Industrial Average]] (DJIA) is a [[stock market index]] tracking the stock performance of 30 large companies listed on [[stock exchange]]s in the [[United States]]. The index is a [[price-weighted index]]; stocks with the highest price per share have the highest weighting in the index.<ref name=data>{{cite web | url=https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/#data | title=Dow Jones Industrial Average® | publisher=[[S&P Global]]}}</ref> An updated weighting of each component is available [https://www.ssga.com/us/en/intermediary/etfs/state-street-spdr-dow-jones-industrial-average-etf-trust-dia online].
+
+==Components==
+The following are the components of the index:<ref>{{Cite web | url=https://www.ssga.com/us/en/intermediary/etfs/state-street-spdr-dow-jones-industrial-average-etf-trust-dia | title=DIA: State Street® SPDR® Dow Jones Industrial Average® | work=[[State Street Corporation]]}}</ref>
+{| class="wikitable sortable sticky-header" id="constituents"
+|-
+!scope="col"| Company
+!scope="col"| Exchange
+!scope="col"| Symbol
+!scope="col"| Sector
+!scope="col"| Date added
+!scope="col" class=unsortable| Notes
+|-
+!scope="row"| [[3M]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|MMM}}
+| Industrials
+| 1976-08-09
+| As Minnesota Mining and Manufacturing
+|-
+!scope="row"| [[Alphabet Inc.|Alphabet]]<br/>(Class A)
+| [[NASDAQ]]
+| {{NASDAQ link|GOOGL}}
+| Communication Services
+| 2026-06-29
+|
+|-
+!scope="row"| [[American Express]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|AXP}}
+| Financials
+| 1982-08-30
+|
+|-
+!scope="row"| [[Amgen]]
+| [[NASDAQ]]
+| {{NASDAQ link|AMGN}}
+| Health Care
+| 2020-08-31
+|
+|-
+!scope="row"| [[Amazon (company)|Amazon]]
+| [[NASDAQ]]
+| {{NASDAQ link|AMZN}}
+| Consumer Discretionary
+| 2024-02-26
+|
+|-
+!scope="row"| [[Apple Inc.|Apple]]
+| [[NASDAQ]]
+| {{NASDAQ link|AAPL}}
+| Information Technology
+| 2015-03-19
+|
+|-
+!scope="row"| [[Boeing]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|BA}}
+| Industrials
+| 1987-03-12
+|
+|-
+!scope="row"| [[Caterpillar Inc.|Caterpillar]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|CAT}}
+| Industrials
+| 1991-05-06
+|
+|-
+!scope="row"| [[Chevron Corporation|Chevron]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|CVX}}
+| Energy
+| 2008-02-19
+| Also 1930-07-18 to 1999-11-01
+|-
+!scope="row"| [[Cisco]]
+| [[NASDAQ]]
+| {{NASDAQ link|CSCO}}
+| Information Technology
+| 2009-06-08
+|
+|-
+!scope="row"| [[The Coca-Cola Company|Coca-Cola]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|KO}}
+| Consumer Staples
+| 1987-03-12
+| Also 1932-05-26 to 1935-11-20
+|-
+!scope="row"| [[The Walt Disney Company|Disney]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|DIS}}
+| Communication Services
+| 1991-05-06
+|
+|-
+!scope="row"| [[Goldman Sachs]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|GS}}
+| Financials
+| 2013-09-23
+|
+|-
+!scope="row"| [[Home Depot]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|HD}}
+| Consumer Discretionary
+| 1999-11-01
+|
+|-
+!scope="row"| [[Honeywell|Honeywell Technologies]]
+| | [[NASDAQ]]
+| {{NASDAQ link|HON}}
+| Industrials
+| 2020-08-31
+| Also 1925-12-07 to 2008-02-19 under various names, including Allied Chemical and Dye, Allied Chemical, |AlliedSignal and Honeywell
+|-
+!scope="row"| [[IBM]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|IBM}}
+| Information Technology
+| 1979-06-29
+| Also 1932-05-26 to 1939-03-04
+|-
+!scope="row"| [[Johnson & Johnson]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|JNJ}}
+| Health Care
+| 1997-03-17
+|
+|-
+!scope="row"| [[JPMorgan Chase]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|JPM}}
+| Financials
+| 1991-05-06
+|
+|-
+!scope="row"| [[McDonald's]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|MCD}}
+| Consumer Discretionary
+| 1985-10-30
+|
+|-
+!scope="row"| [[Merck & Co.|Merck]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|MRK}}
+| Health Care
+| 1979-06-29
+|
+|-
+!scope="row"| [[Microsoft]]
+| [[NASDAQ]]
+| {{NASDAQ link|MSFT}}
+| Information Technology
+| 1999-11-01
+|
+|-
+!scope="row"| [[Nike, Inc.|Nike]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|NKE}}
+| Consumer Discretionary
+| 2013-09-23
+|
+|-
+!scope="row"| [[Nvidia]]
+| [[NASDAQ]]
+| {{NASDAQ link|NVDA}}
+| Information Technology
+| 2024-11-08
+|
+|-
+!scope="row"| [[Procter & Gamble]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|PG}}
+| Consumer Staples
+| 1932-05-26
+|
+|-
+!scope="row"| [[Salesforce]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|CRM}}
+| Information Technology
+| 2020-08-31
+| 
+|-
+!scope="row"| [[Sherwin-Williams]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|SHW}}
+| Materials
+| 2024-11-08
+| 
+|-
+!scope="row"| [[The Travelers Companies|Travelers]] 
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|TRV}}
+| Financials
+| 2009-06-08
+|
+|-
+!scope="row"| [[UnitedHealth Group]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|UNH}}
+| Health Care
+| 2012-09-24
+|
+|-
+!scope="row"| [[Visa Inc.|Visa]]
+| [[New York Stock Exchange|NYSE]]
+| {{NYSE link|V}}
+| Financials
+| 2013-09-23
+|
+|-
+!scope="row"| [[Walmart]]
+| [[NASDAQ]]
+| {{NASDAQ link|WMT}}
+| Consumer Staples
+| 1997-03-17
+|
+
+|}
+
+==See also==
+* [[Historical components of the Dow Jones Industrial Average]]
+* [[Closing milestones of the Dow Jones Industrial Average]]
+* [[List of largest daily changes in the Dow Jones Industrial Average]]
+
+==References==
+{{Reflist}}
+{{DEFAULTSORT:List of Dow Jones Industrial Average companies}}
+
+{{Dow Jones Industrial Average companies}}
+{{North and South American Stock market indices}}
+{{Stock market indices}}
+{{News Corporation}}
+{{Authority control}}
+
+[[Category:Dow Jones Industrial Average| ]]
+[[Category:1896 establishments in the United States]]
+[[Category:1896 introductions]]
+[[Category:American stock market indices]]
+[[Category:Dow Jones & Company]]
+[[Category:S&P Dow Jones Indices]]
+[[Category:Lists of companies]]

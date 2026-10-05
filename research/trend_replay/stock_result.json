@@ -1,0 +1,1041 @@
+{
+  "conventions": "PREREG.txt section G",
+  "data": {
+    "source": "Yahoo chart API v8; O/H/L/C x adjclose/close (total return)",
+    "bars_per_symbol": 3207,
+    "first_bar": "2014-01-02 (warm-up)",
+    "first_signal_allowed": "2015-01-01",
+    "last_bar": "2026-10-02"
+  },
+  "costs": {
+    "fee_bp_per_side": 1,
+    "slippage_bp_per_side": 2
+  },
+  "universes": {
+    "U1": [
+      "AAPL",
+      "MSFT",
+      "NVDA",
+      "AMZN",
+      "GOOGL",
+      "META",
+      "TSLA",
+      "AVGO",
+      "AMD",
+      "NFLX"
+    ],
+    "U2": [
+      "AAPL",
+      "AMGN",
+      "AMZN",
+      "AXP",
+      "BA",
+      "CAT",
+      "CRM",
+      "CSCO",
+      "CVX",
+      "DIS",
+      "GOOGL",
+      "GS",
+      "HD",
+      "HON",
+      "IBM",
+      "JNJ",
+      "JPM",
+      "KO",
+      "MCD",
+      "MMM",
+      "MRK",
+      "MSFT",
+      "NKE",
+      "NVDA",
+      "PG",
+      "SHW",
+      "TRV",
+      "UNH",
+      "V",
+      "WMT"
+    ]
+  },
+  "U1_LS": {
+    "verdict": "INCONCLUSIVE",
+    "criteria": {
+      "1_net_positive": true,
+      "2_payoff_ge_1.5": true,
+      "3_survives_best_trade_and_best_symbol_removed": true,
+      "4_at_least_9_of_12_years_positive": true,
+      "5_permutation_p_lt_0.05": false
+    },
+    "criteria_failed": [
+      "5_permutation_p_lt_0.05"
+    ],
+    "n": 339,
+    "net_R": 115.670349,
+    "payoff": 1.815866,
+    "win_rate": 0.454277,
+    "median_R": -0.436212,
+    "mean_R": 0.34121,
+    "n_positive_years": 12,
+    "n_years": 12,
+    "positive_years": [
+      "2015",
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026"
+    ],
+    "by_exit_year": {
+      "2015": [
+        25,
+        3.8516
+      ],
+      "2016": [
+        32,
+        6.1616
+      ],
+      "2017": [
+        30,
+        14.7719
+      ],
+      "2018": [
+        29,
+        9.34
+      ],
+      "2019": [
+        24,
+        1.2979
+      ],
+      "2020": [
+        27,
+        27.5078
+      ],
+      "2021": [
+        28,
+        16.6045
+      ],
+      "2022": [
+        34,
+        1.6414
+      ],
+      "2023": [
+        26,
+        16.4153
+      ],
+      "2024": [
+        28,
+        10.0496
+      ],
+      "2025": [
+        33,
+        7.3788
+      ],
+      "2026": [
+        23,
+        0.65
+      ]
+    },
+    "max_dd_closed_R": 13.866934,
+    "drawdown": {
+      "max_dd_R": 13.866934,
+      "max_dd_usd": 346.673357,
+      "peak_date": "2025-09-11T14:30:00Z",
+      "trough_date": "2026-04-20T14:30:00Z",
+      "peak_to_trough_days": 221.0,
+      "recovered_date": "2026-05-27T14:30:00Z",
+      "peak_to_recovery_days": 258.0
+    },
+    "longest_losing_streak": 11,
+    "longest_losing_streak_span": [
+      "2024-06-21T14:30:00Z",
+      "2024-11-01T14:30:00Z"
+    ],
+    "trades_per_year": 28.853865,
+    "best_trade": {
+      "symbol": "AMD",
+      "side": "long",
+      "entry_ts": "2026-04-23T14:30:00Z",
+      "R": 12.16395
+    },
+    "net_R_ex_best_trade": 103.506398,
+    "best_symbol": "AMD",
+    "net_R_ex_best_symbol": 68.941815,
+    "by_symbol": {
+      "AAPL": [
+        37,
+        16.4487
+      ],
+      "AMD": [
+        34,
+        46.7285
+      ],
+      "AMZN": [
+        36,
+        -6.5698
+      ],
+      "AVGO": [
+        34,
+        -14.7787
+      ],
+      "GOOGL": [
+        30,
+        9.558
+      ],
+      "META": [
+        30,
+        -0.5275
+      ],
+      "MSFT": [
+        38,
+        7.1836
+      ],
+      "NFLX": [
+        34,
+        14.4763
+      ],
+      "NVDA": [
+        34,
+        33.6968
+      ],
+      "TSLA": [
+        32,
+        9.4544
+      ]
+    },
+    "by_side": {
+      "long": {
+        "n": 242,
+        "net_R": 132.018448,
+        "payoff": 1.863871
+      },
+      "short": {
+        "n": 97,
+        "net_R": -16.348099,
+        "payoff": 1.50673
+      }
+    },
+    "by_exit_reason": {
+      "end_of_data": [
+        1,
+        -0.0965
+      ],
+      "initial_stop": [
+        137,
+        -185.458
+      ],
+      "time_stop": [
+        151,
+        313.3917
+      ],
+      "trail_stop": [
+        50,
+        -12.1669
+      ]
+    },
+    "cost_R": 5.420858,
+    "gross_R": 121.091207,
+    "subset_entry_from_2023-01-01": {
+      "n": 109,
+      "net_R": 32.38515,
+      "payoff": 2.070279,
+      "win_rate": 0.40367,
+      "net_R_ex_best_trade": 20.2212
+    },
+    "permutation": {
+      "n_trades": 339,
+      "n_shuffles": 5000,
+      "seed": 20261005,
+      "observed_net_R": 115.670349,
+      "null_mean_R": 82.505153,
+      "null_sd_R": 38.964995,
+      "null_p95_R": 147.518833,
+      "null_ge_observed": 959,
+      "p_one_sided": 0.191962
+    },
+    "ignored_short_signal_bars": 0,
+    "sensitivity_5bp_per_side_net_R": 112.056444,
+    "sensitivity_reversed_scan_order": {
+      "n": 343,
+      "net_R": 96.391837
+    }
+  },
+  "U1_LO": {
+    "verdict": "INCONCLUSIVE",
+    "criteria": {
+      "1_net_positive": true,
+      "2_payoff_ge_1.5": true,
+      "3_survives_best_trade_and_best_symbol_removed": true,
+      "4_at_least_9_of_12_years_positive": true,
+      "5_permutation_p_lt_0.05": false
+    },
+    "criteria_failed": [
+      "5_permutation_p_lt_0.05"
+    ],
+    "n": 250,
+    "net_R": 133.70926,
+    "payoff": 1.839465,
+    "win_rate": 0.5,
+    "median_R": -0.030485,
+    "mean_R": 0.534837,
+    "n_positive_years": 11,
+    "n_years": 12,
+    "positive_years": [
+      "2015",
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2023",
+      "2024",
+      "2025",
+      "2026"
+    ],
+    "by_exit_year": {
+      "2015": [
+        21,
+        2.5286
+      ],
+      "2016": [
+        22,
+        11.1077
+      ],
+      "2017": [
+        30,
+        12.6672
+      ],
+      "2018": [
+        21,
+        9.0752
+      ],
+      "2019": [
+        14,
+        6.08
+      ],
+      "2020": [
+        24,
+        27.9495
+      ],
+      "2021": [
+        24,
+        22.2517
+      ],
+      "2022": [
+        10,
+        -3.6941
+      ],
+      "2023": [
+        23,
+        18.8116
+      ],
+      "2024": [
+        23,
+        13.8436
+      ],
+      "2025": [
+        24,
+        10.9723
+      ],
+      "2026": [
+        14,
+        2.1161
+      ]
+    },
+    "max_dd_closed_R": 12.668077,
+    "drawdown": {
+      "max_dd_R": 12.668077,
+      "max_dd_usd": 316.701926,
+      "peak_date": "2025-09-11T14:30:00Z",
+      "trough_date": "2026-04-20T14:30:00Z",
+      "peak_to_trough_days": 221.0,
+      "recovered_date": "2026-05-27T14:30:00Z",
+      "peak_to_recovery_days": 258.0
+    },
+    "longest_losing_streak": 7,
+    "longest_losing_streak_span": [
+      "2024-06-21T14:30:00Z",
+      "2024-11-01T14:30:00Z"
+    ],
+    "trades_per_year": 21.278662,
+    "best_trade": {
+      "symbol": "AMD",
+      "side": "long",
+      "entry_ts": "2026-04-23T14:30:00Z",
+      "R": 12.16395
+    },
+    "net_R_ex_best_trade": 121.545309,
+    "best_symbol": "AMD",
+    "net_R_ex_best_symbol": 76.215126,
+    "by_symbol": {
+      "AAPL": [
+        30,
+        9.1063
+      ],
+      "AMD": [
+        23,
+        57.4941
+      ],
+      "AMZN": [
+        23,
+        2.6467
+      ],
+      "AVGO": [
+        28,
+        -9.4139
+      ],
+      "GOOGL": [
+        24,
+        7.8018
+      ],
+      "META": [
+        20,
+        -1.369
+      ],
+      "MSFT": [
+        32,
+        15.299
+      ],
+      "NFLX": [
+        24,
+        9.5039
+      ],
+      "NVDA": [
+        28,
+        28.4551
+      ],
+      "TSLA": [
+        18,
+        14.1852
+      ]
+    },
+    "by_side": {
+      "long": {
+        "n": 250,
+        "net_R": 133.70926,
+        "payoff": 1.839465
+      },
+      "short": {
+        "n": 0,
+        "net_R": 0.0,
+        "payoff": null
+      }
+    },
+    "by_exit_reason": {
+      "end_of_data": [
+        1,
+        -0.0965
+      ],
+      "initial_stop": [
+        93,
+        -128.8731
+      ],
+      "time_stop": [
+        122,
+        269.761
+      ],
+      "trail_stop": [
+        34,
+        -7.0822
+      ]
+    },
+    "cost_R": 4.4729,
+    "gross_R": 138.182159,
+    "subset_entry_from_2023-01-01": {
+      "n": 84,
+      "net_R": 45.743543,
+      "payoff": 2.069807,
+      "win_rate": 0.464286,
+      "net_R_ex_best_trade": 33.579593
+    },
+    "permutation": {
+      "n_trades": 250,
+      "n_shuffles": 5000,
+      "seed": 20261005,
+      "observed_net_R": 133.70926,
+      "null_mean_R": 128.969751,
+      "null_sd_R": 33.818519,
+      "null_p95_R": 185.306232,
+      "null_ge_observed": 2212,
+      "p_one_sided": 0.442511
+    },
+    "ignored_short_signal_bars": 291,
+    "sensitivity_5bp_per_side_net_R": 130.727326,
+    "sensitivity_reversed_scan_order": {
+      "n": 252,
+      "net_R": 122.700052
+    }
+  },
+  "U2_LS": {
+    "verdict": "INCONCLUSIVE",
+    "criteria": {
+      "1_net_positive": true,
+      "2_payoff_ge_1.5": true,
+      "3_survives_best_trade_and_best_symbol_removed": true,
+      "4_at_least_9_of_12_years_positive": false,
+      "5_permutation_p_lt_0.05": false
+    },
+    "criteria_failed": [
+      "4_at_least_9_of_12_years_positive",
+      "5_permutation_p_lt_0.05"
+    ],
+    "n": 543,
+    "net_R": 34.669888,
+    "payoff": 1.582756,
+    "win_rate": 0.406998,
+    "median_R": -0.799181,
+    "mean_R": 0.063849,
+    "n_positive_years": 8,
+    "n_years": 12,
+    "positive_years": [
+      "2016",
+      "2017",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2026"
+    ],
+    "by_exit_year": {
+      "2015": [
+        44,
+        -26.5232
+      ],
+      "2016": [
+        47,
+        8.8823
+      ],
+      "2017": [
+        44,
+        16.1016
+      ],
+      "2018": [
+        53,
+        -14.3883
+      ],
+      "2019": [
+        44,
+        -5.4103
+      ],
+      "2020": [
+        41,
+        27.0982
+      ],
+      "2021": [
+        41,
+        9.6829
+      ],
+      "2022": [
+        47,
+        3.2628
+      ],
+      "2023": [
+        39,
+        14.9046
+      ],
+      "2024": [
+        48,
+        15.2146
+      ],
+      "2025": [
+        53,
+        -21.3839
+      ],
+      "2026": [
+        42,
+        7.2285
+      ]
+    },
+    "max_dd_closed_R": 41.651369,
+    "drawdown": {
+      "max_dd_R": 41.651369,
+      "max_dd_usd": 1041.284236,
+      "peak_date": "2018-01-23T14:30:00Z",
+      "trough_date": "2019-10-24T14:30:00Z",
+      "peak_to_trough_days": 639.0,
+      "recovered_date": "2020-09-03T14:30:00Z",
+      "peak_to_recovery_days": 954.0
+    },
+    "longest_losing_streak": 15,
+    "longest_losing_streak_span": [
+      "2024-12-19T14:30:00Z",
+      "2025-02-28T14:30:00Z"
+    ],
+    "trades_per_year": 46.217253,
+    "best_trade": {
+      "symbol": "GS",
+      "side": "long",
+      "entry_ts": "2016-11-10T14:30:00Z",
+      "R": 8.403701
+    },
+    "net_R_ex_best_trade": 26.266187,
+    "best_symbol": "AAPL",
+    "net_R_ex_best_symbol": 11.91649,
+    "by_symbol": {
+      "AAPL": [
+        32,
+        22.7534
+      ],
+      "AMGN": [
+        26,
+        -13.168
+      ],
+      "AMZN": [
+        22,
+        -6.0401
+      ],
+      "AXP": [
+        18,
+        9.0153
+      ],
+      "BA": [
+        24,
+        19.8628
+      ],
+      "CAT": [
+        24,
+        4.6106
+      ],
+      "CRM": [
+        14,
+        -3.5598
+      ],
+      "CSCO": [
+        21,
+        -2.4293
+      ],
+      "CVX": [
+        24,
+        0.6245
+      ],
+      "DIS": [
+        20,
+        -7.3221
+      ],
+      "GOOGL": [
+        13,
+        -4.9646
+      ],
+      "GS": [
+        20,
+        6.0436
+      ],
+      "HD": [
+        24,
+        -1.8132
+      ],
+      "HON": [
+        14,
+        -3.0109
+      ],
+      "IBM": [
+        26,
+        4.4526
+      ],
+      "JNJ": [
+        22,
+        -0.8287
+      ],
+      "JPM": [
+        15,
+        -4.7826
+      ],
+      "KO": [
+        17,
+        -4.3469
+      ],
+      "MCD": [
+        11,
+        1.1888
+      ],
+      "MMM": [
+        16,
+        10.9457
+      ],
+      "MRK": [
+        14,
+        4.3277
+      ],
+      "MSFT": [
+        14,
+        0.6095
+      ],
+      "NKE": [
+        23,
+        -4.9656
+      ],
+      "NVDA": [
+        16,
+        16.2793
+      ],
+      "PG": [
+        17,
+        -2.9075
+      ],
+      "SHW": [
+        12,
+        -1.8912
+      ],
+      "TRV": [
+        8,
+        -8.0873
+      ],
+      "UNH": [
+        10,
+        8.2447
+      ],
+      "V": [
+        8,
+        -6.6098
+      ],
+      "WMT": [
+        18,
+        2.4391
+      ]
+    },
+    "by_side": {
+      "long": {
+        "n": 371,
+        "net_R": 64.787094,
+        "payoff": 1.569802
+      },
+      "short": {
+        "n": 172,
+        "net_R": -30.117205,
+        "payoff": 1.570401
+      }
+    },
+    "by_exit_reason": {
+      "end_of_data": [
+        3,
+        4.003
+      ],
+      "initial_stop": [
+        249,
+        -336.9819
+      ],
+      "time_stop": [
+        222,
+        401.1511
+      ],
+      "trail_stop": [
+        69,
+        -33.5023
+      ]
+    },
+    "cost_R": 11.775893,
+    "gross_R": 46.445781,
+    "subset_entry_from_2023-01-01": {
+      "n": 182,
+      "net_R": 15.963818,
+      "payoff": 1.523242,
+      "win_rate": 0.423077,
+      "net_R_ex_best_trade": 9.070841
+    },
+    "permutation": {
+      "n_trades": 543,
+      "n_shuffles": 5000,
+      "seed": 20261005,
+      "observed_net_R": 34.669888,
+      "null_mean_R": 63.515265,
+      "null_sd_R": 46.677042,
+      "null_p95_R": 139.637973,
+      "null_ge_observed": 3667,
+      "p_one_sided": 0.733453
+    },
+    "ignored_short_signal_bars": 0,
+    "sensitivity_5bp_per_side_net_R": 26.819293,
+    "sensitivity_reversed_scan_order": {
+      "n": 544,
+      "net_R": 17.052013
+    }
+  },
+  "U2_LO": {
+    "verdict": "INCONCLUSIVE",
+    "criteria": {
+      "1_net_positive": true,
+      "2_payoff_ge_1.5": true,
+      "3_survives_best_trade_and_best_symbol_removed": true,
+      "4_at_least_9_of_12_years_positive": false,
+      "5_permutation_p_lt_0.05": false
+    },
+    "criteria_failed": [
+      "4_at_least_9_of_12_years_positive",
+      "5_permutation_p_lt_0.05"
+    ],
+    "n": 414,
+    "net_R": 69.388852,
+    "payoff": 1.501824,
+    "win_rate": 0.451691,
+    "median_R": -0.644383,
+    "mean_R": 0.167606,
+    "n_positive_years": 8,
+    "n_years": 12,
+    "positive_years": [
+      "2016",
+      "2017",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024"
+    ],
+    "by_exit_year": {
+      "2015": [
+        23,
+        -10.9971
+      ],
+      "2016": [
+        35,
+        20.0853
+      ],
+      "2017": [
+        41,
+        17.0851
+      ],
+      "2018": [
+        40,
+        -20.1483
+      ],
+      "2019": [
+        31,
+        16.2049
+      ],
+      "2020": [
+        33,
+        13.6607
+      ],
+      "2021": [
+        34,
+        13.9846
+      ],
+      "2022": [
+        28,
+        2.0867
+      ],
+      "2023": [
+        31,
+        16.406
+      ],
+      "2024": [
+        41,
+        24.6487
+      ],
+      "2025": [
+        43,
+        -22.9562
+      ],
+      "2026": [
+        34,
+        -0.6715
+      ]
+    },
+    "max_dd_closed_R": 30.785996,
+    "drawdown": {
+      "max_dd_R": 30.785996,
+      "max_dd_usd": 769.649906,
+      "peak_date": "2018-01-23T14:30:00Z",
+      "trough_date": "2018-11-21T14:30:00Z",
+      "peak_to_trough_days": 302.0,
+      "recovered_date": "2020-09-04T14:30:00Z",
+      "peak_to_recovery_days": 955.0
+    },
+    "longest_losing_streak": 16,
+    "longest_losing_streak_span": [
+      "2018-02-01T14:30:00Z",
+      "2018-07-31T14:30:00Z"
+    ],
+    "trades_per_year": 35.237464,
+    "best_trade": {
+      "symbol": "GS",
+      "side": "long",
+      "entry_ts": "2016-11-08T14:30:00Z",
+      "R": 14.245077
+    },
+    "net_R_ex_best_trade": 55.143775,
+    "best_symbol": "NVDA",
+    "net_R_ex_best_symbol": 50.015922,
+    "by_symbol": {
+      "AAPL": [
+        24,
+        15.5277
+      ],
+      "AMGN": [
+        17,
+        -4.7234
+      ],
+      "AMZN": [
+        21,
+        -5.789
+      ],
+      "AXP": [
+        9,
+        7.5706
+      ],
+      "BA": [
+        12,
+        4.9043
+      ],
+      "CAT": [
+        19,
+        10.4257
+      ],
+      "CRM": [
+        13,
+        -2.0018
+      ],
+      "CSCO": [
+        18,
+        3.7466
+      ],
+      "CVX": [
+        20,
+        2.7134
+      ],
+      "DIS": [
+        10,
+        -8.1351
+      ],
+      "GOOGL": [
+        12,
+        -4.2251
+      ],
+      "GS": [
+        15,
+        8.0334
+      ],
+      "HD": [
+        19,
+        -2.0932
+      ],
+      "HON": [
+        7,
+        3.5178
+      ],
+      "IBM": [
+        16,
+        4.8993
+      ],
+      "JNJ": [
+        21,
+        3.3585
+      ],
+      "JPM": [
+        12,
+        -2.3397
+      ],
+      "KO": [
+        18,
+        2.0632
+      ],
+      "MCD": [
+        13,
+        0.35
+      ],
+      "MMM": [
+        6,
+        4.8558
+      ],
+      "MRK": [
+        13,
+        -0.0631
+      ],
+      "MSFT": [
+        12,
+        3.1411
+      ],
+      "NKE": [
+        12,
+        -8.0479
+      ],
+      "NVDA": [
+        14,
+        19.3729
+      ],
+      "PG": [
+        11,
+        6.2817
+      ],
+      "SHW": [
+        11,
+        3.3715
+      ],
+      "TRV": [
+        6,
+        -5.0789
+      ],
+      "UNH": [
+        11,
+        8.3044
+      ],
+      "V": [
+        7,
+        -3.6538
+      ],
+      "WMT": [
+        15,
+        3.102
+      ]
+    },
+    "by_side": {
+      "long": {
+        "n": 414,
+        "net_R": 69.388852,
+        "payoff": 1.501824
+      },
+      "short": {
+        "n": 0,
+        "net_R": 0.0,
+        "payoff": null
+      }
+    },
+    "by_exit_reason": {
+      "initial_stop": [
+        176,
+        -242.6174
+      ],
+      "time_stop": [
+        191,
+        344.6087
+      ],
+      "trail_stop": [
+        47,
+        -32.6024
+      ]
+    },
+    "cost_R": 9.597706,
+    "gross_R": 78.986558,
+    "subset_entry_from_2023-01-01": {
+      "n": 149,
+      "net_R": 17.426919,
+      "payoff": 1.530595,
+      "win_rate": 0.42953,
+      "net_R_ex_best_trade": 10.533942
+    },
+    "permutation": {
+      "n_trades": 414,
+      "n_shuffles": 5000,
+      "seed": 20261005,
+      "observed_net_R": 69.388852,
+      "null_mean_R": 123.833336,
+      "null_sd_R": 41.194019,
+      "null_p95_R": 192.364452,
+      "null_ge_observed": 4543,
+      "p_one_sided": 0.908618
+    },
+    "ignored_short_signal_bars": 756,
+    "sensitivity_5bp_per_side_net_R": 62.990382,
+    "sensitivity_reversed_scan_order": {
+      "n": 414,
+      "net_R": 55.434334
+    }
+  }
+}

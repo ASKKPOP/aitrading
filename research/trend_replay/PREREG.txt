@@ -216,3 +216,111 @@ E6. Reported for primary / V2 / V3 (/V3b): n, net R, payoff, win rate,
 E7. Verification: two intraday-stop trades (one V2, one V3) re-derived
     from the raw 1H rows by a script that imports neither trend_module nor
     the replay; whole run twice, byte-identical outputs.
+
+======================================================================
+F. ADDENDUM — R-LONG: crypto, long-only (appended 2026-10-05, after
+   sections A-E were run and reported, BEFORE any long-only replay was
+   written or run; nothing above this line has been edited)
+======================================================================
+Known when this was written: primary +114.15R n=115, of which long
++107.09R n=66 and short +7.06R n=49; V2 +122.87R. No long-only run of any
+kind had been made, so how freed slots change the long trades is unknown.
+
+F1. Same data, costs (4.5bp + 5bp per side), module functions, defaults
+    and conventions as the primary (B1-B8). The ONLY change: a signal with
+    side "short" is ignored entirely — it opens nothing and occupies no
+    slot. No parameter is tuned.
+F2. Two exit models, each judged on its own:
+    R-LONG-D  daily-close exits (primary convention, B5);
+    R-LONG-V2 the module's initial stop additionally enforced on 1H bars,
+              fill at the stop (E2/E3), slot free from the next daily close.
+F3. Criteria, per exit model (identical to section A):
+    (1) net > 0; (2) payoff >= 1.5; (3) net > 0 with the best trade removed
+    AND with the best symbol removed (filter, B9); (4) >= 5 of the 7
+    calendar years 2020-2026 net positive (exit year, zero-trade year = not
+    positive, B8); (5) permutation one-sided p < 0.05 (B10: same symbol,
+    same side, same holding length, random start, 5000 shuffles, seed
+    20261005). For a trade ended by the intraday stop the "holding length"
+    is entry bar -> the daily bar in which it stopped, and the null trade
+    is marked open -> CLOSE of that bar (the B10 end_of_data convention).
+    Verdict: all five -> NOT FALSIFIED; (1) fails -> FALSIFIED; otherwise
+    INCONCLUSIVE naming what failed.
+F4. Reported besides: win rate, median, max closed-trade drawdown (R and
+    dates), longest losing streak, trades/yr, entries from 2023-01-01, and
+    the comparison with the primary's 66 long trades keyed by
+    (symbol, signal bar): identical / same entry but different outcome /
+    only in the primary / only in R-LONG.
+F5. Self-check: the new engine with both sides allowed and no intraday
+    stop must reproduce trades.csv exactly, and with V2 must reproduce
+    trades_V2.csv exactly, or the run aborts.
+
+======================================================================
+G. ADDENDUM — R-STOCK: US stocks, daily bars (appended 2026-10-05 at the
+   same time as F, BEFORE any stock price series was downloaded or any
+   stock replay written or run)
+======================================================================
+Seen before writing: one 3-row Yahoo response for AAPL (January 2014) to
+confirm the endpoint answers, and Wikipedia's current Dow component list.
+No stock return or backtest of this rule has been seen. My prior is that
+I do not know; the rule was built for crypto.
+
+G1. Rule: trend_module.py's own functions and defaults, unchanged
+    (Donchian 20, ADX14 in [25,40], MA200, 1.5xATR stop, 3xATR chandelier,
+    30-day time stop, $25 risk vol-parity sizing, max 3 positions,
+    280-bar window, MIN_BARS 210). fear_greed=None, LLM veto skipped (B4).
+    Bars are trading sessions; the 30-day time stop is CALENDAR days
+    (check_exit compares timestamps), evaluated at each session close.
+G2. Universes, fixed now:
+    U1 (in this scan order): AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA,
+        AVGO, AMD, NFLX.
+    U2 = the 30 Dow Jones Industrial Average components as listed by
+        Wikipedia "List of Dow Jones Industrial Average companies" on
+        2026-10-05 (raw page cached in data/), scanned alphabetically:
+        AAPL, AMGN, AMZN, AXP, BA, CAT, CRM, CSCO, CVX, DIS, GOOGL, GS, HD,
+        HON, IBM, JNJ, JPM, KO, MCD, MMM, MRK, MSFT, NKE, NVDA, PG, SHW,
+        TRV, UNH, V, WMT.
+    The module takes the first signals in scan order when slots are short,
+    so order matters; the reversed order is run as a non-verdict
+    sensitivity.
+G3. Data: Yahoo Finance chart API (v8, interval 1d, events div+splits),
+    2014-01-01 -> the last COMPLETED session before the fetch (the current
+    session is excluded by the request window). Yahoo's open/high/low/close
+    are split-adjusted; "adjclose" is split+dividend adjusted. Each bar's
+    O/H/L/C are multiplied by that bar's adjclose/close, giving a
+    total-return series (so a short pays the dividends). Rows with a null
+    field are dropped. Raw fields are cached untouched. Stooq was not used
+    (it answers with a browser challenge from this machine).
+G4. Period: 2014 is warm-up only. A signal may be taken on any session
+    dated >= 2015-01-01 (first fills from the first 2015 session after
+    that). End of data as B7.
+G5. Fills and costs: signal on the session close, fill at the NEXT
+    session's open (adjusted); stop anchored on the fill (B5). Per side
+    1bp fee + 2bp slippage of notional (3bp); sensitivity at 5bp per side
+    total. Fractional shares. NOT modelled: short borrow fees, locate
+    availability, margin interest, the uptick rule, taxes.
+G6. Runs per universe: LS (long and short) and LO (short signals ignored
+    entirely, as F1) — four runs, each judged on its own against:
+    (1) net > 0; (2) payoff >= 1.5; (3) net > 0 ex best trade AND ex best
+    symbol (filter); (4) >= 70% of the calendar years 2015-2026 net
+    positive by exit year = at least 9 of 12 (zero-trade year = not
+    positive; 2026 is partial); (5) permutation p < 0.05 (B10, null starts
+    restricted to the tradable period of G4).
+    Verdict: all five -> NOT FALSIFIED; net <= 0 -> FALSIFIED; otherwise
+    INCONCLUSIVE naming what failed.
+G7. Reported besides: win rate, median, max closed-trade drawdown, longest
+    losing streak, trades/yr, by-year table, by-symbol table, long/short
+    split, 2023-onward subset, 5bp cost sensitivity, reversed scan order.
+G8. Biases stated in advance. U1 was chosen KNOWING these ten names were
+    among the best performers of the decade; a long-biased trend rule on
+    them is close to guaranteed a tailwind, so a pass on U1 says little.
+    U2 is today's Dow membership: companies that were added because they
+    had done well (NVDA, AMZN, CRM, GOOGL, SHW...) are in from 2015 and
+    the ones that were dropped after doing badly (GE, XOM, WBA, INTC, DOW,
+    RTX/UTX, PFE, VZ...) are absent — survivorship still flatters U2, less
+    than U1. U2 is the cleaner test, not a clean one. Trades cluster on
+    market-wide moves; one historical path.
+G9. Verification for F and G: best, worst and median trade of each of the
+    six runs re-derived from the raw cached bars by a script importing
+    neither trend_module nor the replay engine, plus an independent
+    full-list reproduction of each run; everything run twice for
+    byte-identical outputs.
