@@ -406,3 +406,32 @@ Replaced by (a) process: every live entry must be one the completed-bar replay
 also takes on that date, checked monthly — any that is not means the fix
 failed; (b) outcome: stand the module down if its closed-trade drawdown passes
 30R (1.5× the worst in the replay) or 24 months end net negative.
+
+## 9. "Real account also same" — replays run, a shared-account book built and not shipped
+
+Owner follow-up the same day: put the trend rule on the real accounts — real
+money through a broker, next to the AI desk, US stocks only if a US-stock
+replay passes, $25 risk a trade. Detail and the recommended path:
+`docs/plan/32-trend-on-user-accounts.md`.
+
+- **Long-only crypto passes on its own** (`research/trend_replay`, R-LONG):
+  66 trades, +107.1R, payoff 4.22, 6 of 7 years, permutation p = 0.004. It is
+  exactly the long half of the primary run. 2025 and 2026 are near zero.
+- **US stocks do not pass** (R-STOCK): all four runs net positive, all four
+  fail the permutation test (p 0.19–0.91). The same names held from random
+  dates earn as much or more — drift, not the rule. forevery1969@gmail.com is
+  left on the AI desk.
+- **No real money has ever moved.** Both accounts are on the simulated
+  ledger; the desk engine cannot send a real order; the gateway's live path
+  needs four owner-side steps.
+- **A simulated book on the shared account was built and stopped before
+  deploy.** Two reviews, two SHIP-AFTER-FIXES. The findings converge on one
+  defect of design: on an account shared with the desk, manual trades,
+  copy-trading and the orphan sweep, the book does not own its rows (it
+  adopted a desk short; after that was fixed, a manual add got its position a
+  foreign stop and a sell-and-rebuy had it sell the user's own lot). Parked
+  on `trend-books-stage1-wip`; nothing from it is on main or prod.
+- **Recommendation:** real money goes on a dedicated trend account — one only
+  the module trades, with its own broker link — which is the model already
+  live in simulation. Routing that account's orders to a broker is unbuilt
+  work with its own review.
