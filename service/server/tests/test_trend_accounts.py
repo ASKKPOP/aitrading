@@ -174,6 +174,8 @@ class Enrolment(_Base):
             [{"agent_id": 6, "account_type": []}],
             [{"agent_id": "²"}],                   # isdigit() says yes
             [{"agent_id": "9" * 5000}],            # int() would not even parse it
+            [{"agent_id": "2147483648"}],          # one past the largest id
+            [{"agent_id": "00000000012"}],
             [{"agent_id": 6, "risk_usd": 10 ** 400}],
             [{"agent_id": 6, "since_signal_id": -1}],
             [{"agent_id": 6, "since_signal_id": "7"}],
@@ -185,6 +187,14 @@ class Enrolment(_Base):
         self.assertEqual(
             ta.normalize([{"agent_id": 6, "risk_usd": ta.MAX_RISK_USD}])[0]
             ["risk_usd"], ta.MAX_RISK_USD)
+        # the largest id there is, as text: ten digits, accepted
+        # ...and whatever strip() treats as surrounding whitespace is gone
+        # before the conversion, not only before the check (int() refuses
+        # \x1c where strip() removes it: that was a ValueError, a 500)
+        for text, agent_id in (("2147483647", 2147483647), (" 12 ", 12),
+                               ("0012", 12), ("\x1c12", 12), ("12\x1f", 12)):
+            self.assertEqual(ta.normalize([{"agent_id": text}])[0]["agent_id"],
+                             agent_id)
 
     def test_only_a_users_agent_can_be_enrolled(self):
         with self.assertRaises(ta.AccountError):
@@ -328,6 +338,7 @@ class Enrolment(_Base):
                 ("[" * 100000, False),             # a RecursionError to parse
                 # ...whatever else is in the list, before it or after
                 (json.dumps([None, "x", [1], {"agent_id": "9" * 5000},
+                             {"agent_id": 10 ** 400}, {"agent_id": 1.5},
                              {"agent_id": {"a": 1}}, {"agent_id": "abc"},
                              {"agent_id": self.U, "risk_usd": 9999}, 7.5]),
                  True)):
@@ -1307,6 +1318,7 @@ class AdminApi(_Base):
                 "agent_id": self.U, "account_type": bad})
             self.assertEqual(r.status_code, 400, repr(bad))
         for bad in ({"agent_id": "²"}, {"agent_id": "9" * 5000},
+                    {"agent_id": "\x1c12"},
                     {"agent_id": self.U, "risk_usd": 10 ** 400}):
             r = self.client.post(self.URL, headers=self.admin, json=bad)
             self.assertEqual(r.status_code, 400, str(bad)[:40])

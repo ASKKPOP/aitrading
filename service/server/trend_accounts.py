@@ -82,16 +82,19 @@ def _agent_user_id(agent_id: int) -> "int | None":
 
 
 def _agent_id(value: Any) -> int:
-    # An id, exactly: `true` is not agent 1 and 6.9 is not agent 6.
-    if isinstance(value, bool) or not (
-            isinstance(value, int)
-            or (isinstance(value, str) and value.strip().isascii()
-                and value.strip().isdigit() and len(value.strip()) <= 10)):
+    # An id, exactly: `true` is not agent 1 and 6.9 is not agent 6. The text
+    # that is checked is the text that is converted — strip() drops a few
+    # control characters int() will not take.
+    if isinstance(value, str):
+        text = value.strip()
+        if not (text.isascii() and text.isdigit() and len(text) <= 10):
+            raise AccountError("agent_id must be a whole number")
+        value = int(text)
+    if isinstance(value, bool) or not isinstance(value, int):
         raise AccountError("agent_id must be a whole number")
-    agent_id = int(value)
-    if not 0 < agent_id <= _MAX_AGENT_ID:
+    if not 0 < value <= _MAX_AGENT_ID:
         raise AccountError("agent_id is out of range")
-    return agent_id
+    return value
 
 
 def normalize(entries: Any) -> list[dict[str, Any]]:
