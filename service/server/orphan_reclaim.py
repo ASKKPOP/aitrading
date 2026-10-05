@@ -116,10 +116,10 @@ def find_orphans(agent_id: "int | None" = None) -> list[dict[str, Any]]:
 
 
 def _module_managed_agents() -> "set[int] | None":
-    """The accounts the trend module trades, while that module is running:
-    its dedicated agent and every enrolled trend account (Plan 32). None
-    when the module is on and its enrolment cannot be read — the sweep then
-    sits this pass out rather than guess which rows are the module's.
+    """The accounts the trend module trades: every enrolled trend account
+    (Plan 32) and, while the module is running, its own dedicated agent.
+    None when the enrolment cannot be read — the sweep then sits this pass
+    out rather than guess which rows are the module's.
 
     Its positions carry run_id NULL by design — no run owns them, the module
     does, with its own stop (1.5×ATR, judged on the daily close) kept in
@@ -128,14 +128,18 @@ def _module_managed_agents() -> "set[int] | None":
     SL/TP watcher closed on it intraday: prod 2026-09-18, the module's XRP
     short was taken out at 1.3423 by this job, not by its own rule, and both
     positions open on 2026-10-05 carried such stops. With the module switched
-    off nobody manages those rows and they are orphans again."""
+    off nobody manages its own agent's rows and they are orphans again.
+
+    An ENROLLED account is skipped whatever the switch says: it stays fenced
+    while the module is paused, and a stop this sweep left on its row would
+    outlive the pause — the module never writes that column on an account."""
+    managed: set = set()
     try:
         import trend_module
-        if not trend_module.module_enabled():
-            return set()
-        managed = {trend_module._agent_id()}
+        if trend_module.module_enabled():
+            managed.add(trend_module._agent_id())
     except Exception:  # noqa: BLE001 — never break the sweep
-        return set()
+        pass
     try:
         import trend_accounts
         return managed | {int(a["agent_id"]) for a in trend_accounts._read()}

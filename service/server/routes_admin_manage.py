@@ -240,9 +240,12 @@ class LlmSettingsBody(BaseModel):
 class TrendAccountBody(BaseModel):
     # One account at a time: a console showing a stale list cannot drop
     # somebody else's enrolment by saving over it.
-    agent_id: int
-    account_type: str = "simulator"
-    risk_usd: float = 25.0
+    # Untyped on purpose: pydantic would turn `true` into agent 1. The
+    # enrolment's own validation decides, and a value left out keeps what an
+    # enrolled account already has.
+    agent_id: Any
+    account_type: Any = None
+    risk_usd: Any = None
 
 
 def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
@@ -1413,11 +1416,12 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
             row["open_positions"] = trend_accounts._open_positions(agent_id)
         except Exception:  # noqa: BLE001
             row["open_positions"] = None
-        # Which broker a shadow order would be sent to — the name only.
+        # Which broker a shadow order would be sent to — the name only,
+        # picked exactly as execution.gateway.submit_shadow picks it.
         try:
             from execution.gateway import (_has_usable_credentials,
                                            active_broker_account)
-            link = active_broker_account(agent_id, "crypto")
+            link = active_broker_account(agent_id)
             row["broker"] = (link.get("broker") if link
                              and _has_usable_credentials(link) else None)
         except Exception:  # noqa: BLE001

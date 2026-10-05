@@ -105,15 +105,22 @@ enrols one account at a time (console → Automation → Trend accounts, or
 `live` is refused by the enrolment itself and the module has no live branch.
 
 - **Enrolled clean.** The agent must belong to a user and hold no open
-  position, no active run and no active fleet. Removal is refused while it
-  holds a position.
+  position, no active run, no active fleet and no enabled auto-executing
+  automation rule. Removal is refused while it holds a position. Enrol and
+  remove are each one locked read-modify-write; the module's own entry
+  re-checks the enrolment inside the ledger write, so an account removed
+  mid-cycle is not entered.
 - **Fenced.** On an enrolled account nothing but the rule opens a position:
   runs and fleets are refused at start (`start_run`,
   `resolve_start_conflicts`, `create_fleet`, `start_fleet`), and every other
   writer — manual order, copy-trade fill, automation rule, resting order —
   at the ledger (`execute_paper_trade` and the realtime-signal route).
-  Closing is never fenced. The orphan sweep skips the account. The fence
-  holds while the module is switched off.
+  Closing is never fenced. The orphan sweep skips the account. Both hold
+  while the module is switched off.
+- **No real order.** An automation rule set to `live` is stopped before the
+  venue on an enrolled account (either side). Found in review: the rule
+  path sends the venue order first and writes the ledger after, so the new
+  ledger fence alone would have left a real fill with no ledger record.
 - **The rule on it.** Long-only, exits on the daily close, no stop on the
   ledger row, own state and own risk figure ($25 default, $100 cap).
 - **Shadow.** After each ledger fill the same order goes to the account's
@@ -126,10 +133,15 @@ enrols one account at a time (console → Automation → Trend accounts, or
 
 Known limits of stage B, all of which stage C would have to close: a
 position the user closes by hand, or a stop the user sets on the row, is a
-ledger-only close the broker never sees (the module notices and frees the
-slot); a dry run answers accept/reject, not a fill, so there is no fill
-reconciliation yet; the entry fence fails open if the enrolment cannot be
-read (it sits on every simulated entry on the platform).
+ledger-only close the broker never sees (the module notices, follows the
+ledger's quantity and frees the slot); a dry run answers accept/reject, not
+a fill, so there is no fill reconciliation yet; the entry fence fails open
+if the enrolment cannot be read (it sits on every simulated entry on the
+platform); the shadow leg goes to the account's most recently connected
+broker whatever its market (`submit_shadow` is market-blind — keep one
+broker link on a trend account); order sizes are not rounded to the venue's
+lot step, so a dry run may be rejected for size — that is a shadow finding,
+not yet a fix; each account makes its own LLM veto call per signal.
 
 To use it: create a separate login for the trend account (one user has one
 account), connect a broker on its Accounts page in paper/sandbox mode,

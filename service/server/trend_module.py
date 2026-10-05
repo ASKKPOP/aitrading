@@ -469,6 +469,15 @@ def _drop_closed_outside(state: dict[str, Any], actions: list[dict[str, Any]],
             pos = state["positions"].pop(symbol)
             _emit(state, actions, "closed_outside", symbol=symbol,
                   side=pos.get("side"), stop=pos.get("initial_stop"))
+            continue
+        # Partly closed outside: the exit must ask for what is there. The
+        # ledger clamps an oversized sell, but a shadow order does not.
+        pos = state["positions"][symbol]
+        held = abs(float(ledger[symbol]["quantity"]))
+        if abs(held - float(pos["qty"])) > 1e-6 * max(held, float(pos["qty"])):
+            _emit(state, actions, "qty_synced", symbol=symbol,
+                  was=pos["qty"], now=held)
+            pos["qty"] = held
 
 
 def _sync_stop(agent_id: int, symbol: str, stop: float) -> None:
@@ -735,13 +744,20 @@ def _place(book: dict[str, Any], state: dict[str, Any],
     (execution.gateway.submit_shadow — never a real order, never raises).
 
     The ledger write comes first and carries the order id, so a duplicate is
-    refused before anything reaches a venue. There is no live branch: an
-    enrolment cannot say `live` (trend_accounts.ACCOUNT_TYPES)."""
+    refused before anything reaches a venue. An enrolled account's entry
+    also re-checks, inside that write, that the account is still enrolled.
+    There is no live branch: an enrolment cannot say `live`
+    (trend_accounts.ACCOUNT_TYPES)."""
     from automation import execute_paper_trade
     agent_id = int(book["agent_id"])
+    fence = None
+    if book["user"] and side in ("buy", "short"):
+        import trend_accounts
+        fence = trend_accounts.own_entry_fence(agent_id)
     signal_id, err = execute_paper_trade(
         agent_id, symbol, "crypto", side, float(qty), price,
-        content=content, run_id=None, client_order_id=client_order_id)
+        content=content, run_id=None, client_order_id=client_order_id,
+        fence=fence)
     if signal_id is not None and book["account_type"] == "shadow":
         try:
             from execution.gateway import submit_shadow
@@ -933,8 +949,14 @@ def trend_stats(agent_id: Optional[int] = None) -> dict[str, Any]:
     'trend:' order id: its stop is enforced by the SL/TP watcher, whose
     close has no order id, and a record without the stop-outs is a record
     without most of the losses."""
+    since = 0
     if agent_id is None:
         agent_id = _agent_id()
+    else:
+        # What the account did before it was handed over is not the rule's.
+        import trend_accounts
+        since = next((a["since_signal_id"] for a in trend_accounts.stored()[0]
+                      if a["agent_id"] == int(agent_id)), 0)
     if agent_id is None:
         return {"error": "TREND_AGENT_ID unset"}
     from database import get_db_connection
@@ -943,7 +965,7 @@ def trend_stats(agent_id: Optional[int] = None) -> dict[str, Any]:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT side, pnl FROM signals WHERE agent_id = ? "
-            "AND message_type = 'operation'", (agent_id,))
+            "AND message_type = 'operation' AND id > ?", (agent_id, since))
         rows = cursor.fetchall()
     finally:
         conn.close()

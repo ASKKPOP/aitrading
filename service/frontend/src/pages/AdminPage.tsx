@@ -1544,7 +1544,7 @@ export function AdminPage() {
                     {(a.open_positions || []).join(' ')}
                     {a.stats ? ` n=${a.stats.n_trades ?? 0} · pnl ${a.stats.total_pnl ?? 0}` : ''}
                   </span>
-                  <button style={{ ...inputStyle, cursor: 'pointer' }}
+                  <button style={{ ...inputStyle, cursor: 'pointer' }} disabled={actBusy}
                     onClick={() => act(`settings/trend-accounts/${a.agent_id}`, { method: 'DELETE' }, 'automation')}>{T.trendRemove}</button>
                 </div>
               ))}
@@ -1562,7 +1562,7 @@ export function AdminPage() {
                 <input placeholder={T.trendRisk} value={trendForm.risk_usd}
                   onChange={e => setTrendForm(p => ({ ...p, risk_usd: e.target.value }))}
                   style={{ ...inputStyle, width: 160, fontFamily: 'ui-monospace, monospace' }} />
-                <button style={primaryBtn} disabled={!trendForm.agent_id.trim()}
+                <button style={primaryBtn} disabled={actBusy || !/^\d+$/.test(trendForm.agent_id.trim())}
                   onClick={async () => {
                     const ok = await act('settings/trend-accounts', {
                       method: 'POST',

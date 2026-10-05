@@ -358,6 +358,17 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     result["execution_mode"] = mode
 
     if mode == LIVE:
+        # Plan 32: a dedicated trend account takes no real order. Checked
+        # BEFORE the venue: the ledger fences this account, and an order the
+        # broker filled and the ledger then refused is a real position
+        # nothing on the platform knows about. Unknown is a refusal.
+        try:
+            if trend_accounts.is_trend_account(agent_id):
+                return None, trend_accounts.FENCED
+        except Exception:  # noqa: BLE001
+            logger.warning("live order withheld: trend-account check failed "
+                           "for agent %s", agent_id, exc_info=True)
+            return None, "account checks unavailable — live order not sent"
         order = submit_live(agent_id, symbol, market, side, quantity, price)
         result["broker"] = order.broker
         result["broker_order_id"] = order.broker_order_id

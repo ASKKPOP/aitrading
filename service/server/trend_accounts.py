@@ -123,15 +123,30 @@ def normalize(entries: Any) -> list[dict[str, Any]]:
         if not 0 < risk <= MAX_RISK_USD:      # also refuses NaN and inf
             raise AccountError(
                 f"risk_usd must be above 0 and at most {MAX_RISK_USD:g}")
+        # Fills up to this signals.id were on the account before the rule
+        # was: they are not its record (trend_module.trend_stats).
+        since = raw.get("since_signal_id", 0)
+        if isinstance(since, bool) or not isinstance(since, int) or since < 0:
+            raise AccountError("since_signal_id must be a whole number")
         out.append({"agent_id": agent_id, "account_type": account_type,
-                    "risk_usd": risk})
+                    "risk_usd": risk, "since_signal_id": since})
     return out
 
 
-def _read(cursor=None) -> list[dict[str, Any]]:
+def _for_update() -> str:
+    """Row lock for a read-then-write inside one transaction. MySQL only:
+    SQLite's BEGIN IMMEDIATE already admits one writer at a time."""
+    from database import using_mysql
+    return " FOR UPDATE" if using_mysql() else ""
+
+
+def _read(cursor=None, lock: bool = False) -> list[dict[str, Any]]:
     """The stored enrolment. Raises on a database failure and on a stored
-    value that no longer validates."""
+    value that no longer validates. `lock` (with the caller's write
+    transaction) holds the row until that transaction ends."""
     sql = "SELECT setting_value FROM platform_settings WHERE setting_key = ?"
+    if lock:
+        sql += _for_update()
     if cursor is None:
         rows = _query(sql, (ACCOUNTS_KEY,))
     else:
@@ -170,16 +185,31 @@ def accounts() -> list[dict[str, Any]]:
         return []
 
 
-def is_trend_account(agent_id: int, cursor=None) -> bool:
+def is_trend_account(agent_id: int, cursor=None, lock: bool = False) -> bool:
     """Is this agent enrolled? As STORED — the module switch does not lift
     the fence. Raises on a database failure, so a caller inside a write
     transaction fails with it instead of guessing. A stored value that does
     not validate (the API cannot write one) enrols nobody."""
     try:
-        entries = _read(cursor)
+        entries = _read(cursor, lock)
     except (AccountError, ValueError):
         return False
     return any(a["agent_id"] == int(agent_id) for a in entries)
+
+
+def own_entry_fence(agent_id: int):
+    """The check the MODULE's own entry carries into the ledger transaction
+    (execute_paper_trade's `fence`): the account must still be enrolled when
+    the fill is written. The module reads the enrolment once a cycle and an
+    LLM call sits between that read and the order; an account removed in
+    between would be left holding a position nobody exits. The read locks
+    the enrolment row, and `remove` takes the same lock before it looks at
+    the positions, so one of the two always sees the other."""
+    def fence(cursor) -> "str | None":
+        if is_trend_account(agent_id, cursor, lock=True):
+            return None
+        return "account is no longer a trend account"
+    return fence
 
 
 def entry_fence(cursor, agent_id: int, side: str,
@@ -203,10 +233,15 @@ def entry_fence(cursor, agent_id: int, side: str,
         return None
 
 
-def _open_positions(agent_id: int) -> list[str]:
-    rows = _query(
-        "SELECT symbol FROM positions WHERE agent_id = ? AND quantity != 0",
-        (agent_id,))
+def _open_positions(agent_id: int, cursor=None) -> list[str]:
+    """Symbols the agent holds. With the caller's cursor: a locking read
+    inside that transaction, so it sees every committed fill."""
+    sql = "SELECT symbol FROM positions WHERE agent_id = ? AND quantity != 0"
+    if cursor is None:
+        rows = _query(sql, (agent_id,))
+    else:
+        cursor.execute(sql + _for_update(), (agent_id,))
+        rows = [dict(r) for r in cursor.fetchall()]
     return sorted({str(r["symbol"]) for r in rows})
 
 
@@ -231,60 +266,121 @@ def _busy(agent_id: int, user_id: int) -> "str | None":
               "ON a.id = f.agent_id WHERE a.user_id = ? "
               f"AND f.status IN ({marks})", (user_id, *_ACTIVE_FLEETS)):
         return "has an active fleet — stop it first"
+    # An auto-executing rule would keep asking for entries the fence
+    # refuses, every interval, with an LLM call each time.
+    if _count("SELECT COUNT(*) AS n FROM automation_configs WHERE agent_id = ? "
+              "AND enabled = 1 AND auto_execute = 1", (agent_id,)):
+        return "has an enabled auto-executing automation rule — disable it first"
     return None
 
 
-def _write(entries: list[dict[str, Any]], by: "str | None") -> None:
-    from platform_settings import set_setting
-    set_setting(ACCOUNTS_KEY, json.dumps(entries), by)
+def _transact(change) -> Any:
+    """One read-modify-write of the enrolment in a single write transaction,
+    the row locked from the read to the commit: two operations cannot lose
+    each other's change. `change(cursor, entries)` returns (result,
+    new_entries) or raises AccountError to abandon."""
+    from database import begin_write_transaction, get_db_connection
+    from platform_settings import _now_iso
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        try:
+            entries = _read(cursor, lock=True)
+        except (AccountError, ValueError) as exc:
+            raise AccountError(f"stored enrolment is invalid: {exc} — fix "
+                               "that before changing it") from None
+        result, entries, by = change(cursor, entries)
+        value = json.dumps(sorted(normalize(entries),
+                                  key=lambda a: a["agent_id"]))
+        cursor.execute("SELECT setting_key FROM platform_settings "
+                       "WHERE setting_key = ?", (ACCOUNTS_KEY,))
+        if cursor.fetchone():
+            cursor.execute(
+                "UPDATE platform_settings SET setting_value = ?, updated_by = ?, "
+                "updated_at = ? WHERE setting_key = ?",
+                (value, by, _now_iso(), ACCOUNTS_KEY))
+        else:
+            cursor.execute(
+                "INSERT INTO platform_settings (setting_key, setting_value, "
+                "updated_by, updated_at) VALUES (?, ?, ?, ?)",
+                (ACCOUNTS_KEY, value, by, _now_iso()))
+        conn.commit()
+        return result
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
-def _stored_or_raise() -> list[dict[str, Any]]:
-    entries, problem = stored()
-    if problem:
-        raise AccountError(f"{problem} — fix that before changing it")
-    return entries
-
-
-def enrol(agent_id: Any, account_type: Any = "simulator",
-          risk_usd: Any = DEFAULT_RISK_USD,
+def enrol(agent_id: Any, account_type: Any = None, risk_usd: Any = None,
           by: "str | None" = None) -> dict[str, Any]:
     """Enrol one account, or change the type / risk of an enrolled one.
 
     A NEW enrolment needs an agent that belongs to a user and is clean (see
-    `_busy`). Changing an enrolled account's type or risk is always allowed:
-    risk applies to the next entry, and a shadow leg can start or stop with
-    positions open (the ledger is the record either way)."""
-    entry = normalize([{"agent_id": agent_id, "account_type": account_type,
-                        "risk_usd": risk_usd}])[0]
-    entries = _stored_or_raise()
-    if not any(a["agent_id"] == entry["agent_id"] for a in entries):
-        user_id = _agent_user_id(entry["agent_id"])
+    `_busy`). On an enrolled account a value left out keeps what is stored —
+    changing the risk does not quietly change the type — and either can
+    change with positions open: risk applies to the next entry, and a shadow
+    leg can start or stop at any time (the ledger is the record either way)."""
+    agent_id = _agent_id(agent_id)
+    current, problem = stored()
+    if problem:
+        raise AccountError(f"{problem} — fix that before changing it")
+    known = next((a for a in current if a["agent_id"] == agent_id), None)
+
+    def merged(base: "dict[str, Any] | None", since: int) -> dict[str, Any]:
+        base = base or {}
+        return normalize([{
+            "agent_id": agent_id,
+            "account_type": (account_type if account_type is not None
+                             else base.get("account_type", "simulator")),
+            "risk_usd": (risk_usd if risk_usd is not None
+                         else base.get("risk_usd", DEFAULT_RISK_USD)),
+            "since_signal_id": base.get("since_signal_id", since)}])[0]
+
+    since = 0
+    if known is None:
+        merged(None, 0)                      # a bad value fails before any read
+        user_id = _agent_user_id(agent_id)
         if user_id is None:
             raise AccountError(
-                f"agent {entry['agent_id']} does not exist or belongs to no "
-                "user — a trend account is a user's account")
-        busy = _busy(entry["agent_id"], user_id)
+                f"agent {agent_id} does not exist or belongs to no user — a "
+                "trend account is a user's account")
+        busy = _busy(agent_id, user_id)
         if busy:
-            raise AccountError(f"agent {entry['agent_id']} {busy}")
-    entries = [a for a in entries if a["agent_id"] != entry["agent_id"]]
-    entries.append(entry)
-    _write(sorted(entries, key=lambda a: a["agent_id"]), by)
-    return entry
+            raise AccountError(f"agent {agent_id} {busy}")
+        since = _count("SELECT COALESCE(MAX(id), 0) AS n FROM signals", ())
+
+    def change(cursor, entries):
+        base = next((a for a in entries if a["agent_id"] == agent_id), None)
+        if base is None and known is not None:
+            raise AccountError(
+                f"agent {agent_id} was removed while this was being saved — "
+                "enrol it again")
+        entry = merged(base, since)
+        rest = [a for a in entries if a["agent_id"] != agent_id]
+        return entry, rest + [entry], by
+
+    return _transact(change)
 
 
 def remove(agent_id: Any, by: "str | None" = None) -> None:
     """Take one account off the rule. Refused while it holds a position:
     nothing would be left to exit it, and the desk would be let onto an
-    account that is not flat."""
+    account that is not flat. The position check runs inside the same
+    transaction that holds the enrolment row (see `own_entry_fence`)."""
     agent_id = _agent_id(agent_id)
-    entries = _stored_or_raise()
-    if not any(a["agent_id"] == agent_id for a in entries):
-        raise AccountError(f"agent {agent_id} is not a trend account")
-    held = _open_positions(agent_id)
-    if held:
-        raise AccountError(
-            f"agent {agent_id} still holds {', '.join(held[:6])} — close "
-            "those positions (or wait for the rule to exit them) before "
-            "removing the account")
-    _write([a for a in entries if a["agent_id"] != agent_id], by)
+
+    def change(cursor, entries):
+        if not any(a["agent_id"] == agent_id for a in entries):
+            raise AccountError(f"agent {agent_id} is not a trend account")
+        held = _open_positions(agent_id, cursor)
+        if held:
+            raise AccountError(
+                f"agent {agent_id} still holds {', '.join(held[:6])} — close "
+                "those positions (or wait for the rule to exit them) before "
+                "removing the account")
+        return None, [a for a in entries if a["agent_id"] != agent_id], by
+
+    _transact(change)

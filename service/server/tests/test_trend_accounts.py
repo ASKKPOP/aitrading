@@ -136,7 +136,8 @@ class Enrolment(_Base):
         self.assertEqual(
             ta.normalize([{"agent_id": "6", "account_type": " Shadow ",
                            "risk_usd": "40"}]),
-            [{"agent_id": 6, "account_type": "shadow", "risk_usd": 40.0}])
+            [{"agent_id": 6, "account_type": "shadow", "risk_usd": 40.0,
+              "since_signal_id": 0}])
         entry = ta.normalize([{"agent_id": 6}])[0]
         self.assertEqual((entry["account_type"], entry["risk_usd"]),
                          ("simulator", ta.DEFAULT_RISK_USD))
@@ -167,6 +168,9 @@ class Enrolment(_Base):
             [{"agent_id": 6, "risk_usd": True}],
             [{"agent_id": 6, "risk_usd": float("nan")}],
             [{"agent_id": 6, "risk_usd": float("inf")}],
+            [{"agent_id": 6, "since_signal_id": -1}],
+            [{"agent_id": 6, "since_signal_id": "7"}],
+            [{"agent_id": 6, "since_signal_id": True}],
         ]
         for entries in bad:
             with self.assertRaises(ta.AccountError, msg=str(entries)):
@@ -221,8 +225,47 @@ class Enrolment(_Base):
         self._position(self.U, "BTCUSDT")
         entry = ta.enrol(self.U, "shadow", 40)
         self.assertEqual(entry, {"agent_id": self.U, "account_type": "shadow",
-                                 "risk_usd": 40.0})
+                                 "risk_usd": 40.0, "since_signal_id": 0})
         self.assertEqual(ta.stored()[0], [entry])
+
+    def test_a_value_left_out_keeps_what_is_stored(self):
+        """Changing the risk of a shadow account used to send the default
+        type along with it: the account went back to simulator, silently."""
+        ta.enrol(self.U, "shadow", 40)
+        self.assertEqual(ta.enrol(self.U, risk_usd=60)["account_type"], "shadow")
+        entry = ta.enrol(self.U, account_type="simulator")
+        self.assertEqual((entry["account_type"], entry["risk_usd"]),
+                         ("simulator", 60.0))
+        fresh = ta.enrol(self.V)
+        self.assertEqual((fresh["account_type"], fresh["risk_usd"]),
+                         ("simulator", ta.DEFAULT_RISK_USD))
+
+    def test_an_account_with_an_auto_executing_rule_cannot_be_enrolled(self):
+        rule = self._x("INSERT INTO automation_configs (agent_id, symbol, market,"
+                       " auto_execute, enabled) VALUES (?, 'BTCUSDT', 'crypto', 1, 1)",
+                       (self.U,))
+        with self.assertRaises(ta.AccountError) as ctx:
+            ta.enrol(self.U)
+        self.assertIn("automation rule", str(ctx.exception))
+        # a rule that only advises, or is switched off, is no obstacle
+        self._x("UPDATE automation_configs SET auto_execute = 0 WHERE id = ?", (rule,))
+        ta.enrol(self.U)
+        self._x("UPDATE automation_configs SET agent_id = ?, auto_execute = 1, "
+                "enabled = 0 WHERE id = ?", (self.V, rule))
+        ta.enrol(self.V)
+
+    def test_a_fleet_on_any_of_the_users_agents_counts(self):
+        """One fleet per USER: it may sit on another agent of the same user."""
+        other = self._x(
+            "INSERT INTO agents (name, token_hash, cash, user_id, created_at) "
+            "VALUES ('user-u-2', 'tu2', 100000, ?, '2026-01-01T00:00:00Z')",
+            (self.user_u,))
+        with _PRO:
+            fleet_id = fleet_planner.create_fleet(other, 2, 5000.0)
+        self._x("UPDATE fleets SET status = 'active' WHERE id = ?", (fleet_id,))
+        with self.assertRaises(ta.AccountError) as ctx:
+            ta.enrol(self.U)
+        self.assertIn("active fleet", str(ctx.exception))
 
     def test_one_operation_touches_one_account(self):
         """Enrolment used to be "save the whole list": a console showing a
@@ -234,7 +277,8 @@ class Enrolment(_Base):
         ta.remove(self.U)
         self.assertEqual(ta.stored()[0], [{"agent_id": self.V,
                                            "account_type": "shadow",
-                                           "risk_usd": 50.0}])
+                                           "risk_usd": 50.0,
+                                           "since_signal_id": 0}])
         with self.assertRaises(ta.AccountError):
             ta.remove(self.U)                # not enrolled any more
 
@@ -392,11 +436,18 @@ class EntryFence(_Base):
             with patch.object(ta, "_read", side_effect=ValueError("bad")):
                 self.assertEqual(sorted(r["id"] for r in orc.find_orphans()),
                                  [1, 2])
-        # module off: nobody manages those rows, they are orphans again
+        # module off: its OWN agent's rows are orphans again; an enrolled
+        # account is still fenced, and a stop left on its row would outlive
+        # the pause (the module never writes that column on an account)
         with patch.dict(os.environ, {"ORPHAN_RECLAIM_ENABLED": "true",
                                      "TREND_MODULE_ENABLED": "0"}):
             self.assertEqual(sorted(r["id"] for r in orc.find_orphans()),
-                             [1, 2, 3])
+                             [2, 3])
+            orc.sweep(blocking={})
+            self.assertIsNone(self._q("SELECT stop_loss FROM positions "
+                                      "WHERE id = 1")[0]["stop_loss"])
+            with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+                self.assertEqual(orc.find_orphans(), [])
 
 
 class ManualAndCopyOrders(unittest.TestCase):
@@ -458,6 +509,16 @@ class ManualAndCopyOrders(unittest.TestCase):
             self.assertEqual(r.json()["detail"], ta.FENCED)
         self.assertEqual(self._qty("trend"), 0.0)
         self.assertEqual(self._trade("plain", "buy").status_code, 200)
+
+    def test_a_manual_close_is_never_fenced(self):
+        agent_id = self.agents["trend"][0]
+        sid, err = execute_paper_trade(
+            agent_id, "AAPL", "us-stock", "buy", 2.0, 150.0,
+            client_order_id=f"trend:{agent_id}:AAPL:buy:2026-10-05")
+        self.assertIsNotNone(sid, err)
+        r = self._trade("trend", "sell", 1.0)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(self._qty("trend"), 1.0)
 
     def test_a_copied_fill_does_not_open_on_a_trend_account(self):
         r = self._trade("leader", "buy", 2.0)
@@ -698,6 +759,212 @@ class ShadowLeg(_Base):
         self.assertEqual(self._q("SELECT id FROM broker_orders"), [])
 
 
+class LiveOrders(_Base):
+    """An automation rule set to `live` sends the venue order FIRST and
+    writes the ledger after. On a trend account the ledger refuses that
+    write — so the order must be stopped before the venue, or the broker
+    holds a position the platform has no record of."""
+
+    def _run(self, agent_id, side="buy"):
+        import automation
+        from execution.base import OrderStatus
+        order = SimpleNamespace(broker="binance", broker_order_id="b-1",
+                                status=OrderStatus.FILLED, filled_qty=1.0,
+                                error_message=None)
+        with patch("execution.gateway.submit_live", return_value=order) as live:
+            out = automation._execute_for_account_type(
+                {"account_type": "live"}, agent_id, "SOLUSDT", "crypto", side,
+                1.0, 100.0, None, None, {})
+        return live, out
+
+    def test_no_live_order_is_sent_for_a_trend_account(self):
+        ta.enrol(self.U)
+        for side in ("buy", "short", "sell", "cover"):
+            live, (signal_id, reason) = self._run(self.U, side)
+            live.assert_not_called()
+            self.assertIsNone(signal_id)
+            self.assertEqual(reason, ta.FENCED)
+        self.assertEqual(self._q("SELECT id FROM signals"), [])
+
+    def test_other_accounts_live_orders_are_untouched(self):
+        ta.enrol(self.U)
+        live, (signal_id, reason) = self._run(self.V)
+        live.assert_called_once()
+        self.assertIsNotNone(signal_id, reason)
+
+    def test_an_unreadable_enrolment_withholds_the_live_order(self):
+        """Opposite to the ledger fence on purpose: a simulated fill that
+        slips through is a row; a real order that slips through is money."""
+        with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+            live, (signal_id, reason) = self._run(self.V)
+        live.assert_not_called()
+        self.assertIsNone(signal_id)
+        self.assertIn("not sent", reason)
+
+
+class Interleavings(_Base):
+    def test_an_account_removed_mid_cycle_is_not_entered(self):
+        """The module reads the enrolment once a cycle and an LLM call sits
+        between that read and the order. Removed in between, the account was
+        entered anyway and left holding a position nobody exits."""
+        ta.enrol(self.U)
+        real = tm._llm_veto
+        removed = []
+
+        def veto(symbol, sig):
+            if not removed:
+                ta.remove(self.U)
+                removed.append(True)
+            return real(symbol, sig)
+
+        # the module's own account is left out, so U's is the only veto call
+        with patch.dict(os.environ, {"TREND_AGENT_ID": ""}), \
+             patch.object(tm, "_llm_veto", side_effect=veto):
+            summary = self._cycle({"BTCUSDT": _bars_up()})
+        self.assertEqual(removed, [True])
+        account = self._account(summary, self.U)
+        self.assertEqual(account["entries"], 0)
+        self.assertEqual([e["reason"] for e in account["actions"]
+                          if e["event"] == "entry_failed"],
+                         ["account is no longer a trend account"])
+        self.assertEqual(self._open(self.U), [])
+        self.assertEqual(self._state(self.U)["positions"], {})
+
+    def test_the_modules_entry_is_checked_inside_the_ledger_write(self):
+        fence = ta.own_entry_fence(self.U)
+        order_id = f"trend:{self.U}:BTCUSDT:buy:2026-10-05"
+        sid, err = execute_paper_trade(self.U, "BTCUSDT", "crypto", "buy", 1.0,
+                                       100.0, client_order_id=order_id, fence=fence)
+        self.assertIsNone(sid)
+        self.assertEqual(err, "account is no longer a trend account")
+        ta.enrol(self.U)
+        with patch.object(ta, "_read", side_effect=RuntimeError("db down")):
+            sid, err = execute_paper_trade(
+                self.U, "BTCUSDT", "crypto", "buy", 1.0, 100.0,
+                client_order_id=order_id, fence=fence)
+        self.assertIsNone(sid, "unknown is a refusal for the module's own entry")
+        sid, err = execute_paper_trade(self.U, "BTCUSDT", "crypto", "buy", 1.0,
+                                       100.0, client_order_id=order_id, fence=fence)
+        self.assertIsNotNone(sid, err)
+
+    def test_removal_checks_positions_inside_its_own_transaction(self):
+        ta.enrol(self.U)
+        seen = []
+        real = ta._open_positions
+
+        def positions(agent_id, cursor=None):
+            seen.append(cursor is not None)
+            return real(agent_id, cursor)
+
+        with patch.object(ta, "_open_positions", side_effect=positions):
+            ta.remove(self.U)
+        self.assertEqual(seen, [True])
+
+    def test_two_operations_do_not_lose_each_others_change(self):
+        """Enrolment is one JSON value. Written from a copy read earlier,
+        the second save dropped whatever the first had added."""
+        ta.enrol(self.U)
+        real = ta._agent_user_id
+
+        def slow_lookup(agent_id):
+            # V is enrolled by someone else while W's checks are running
+            if agent_id == self.W and not ta.is_trend_account(self.V):
+                ta.enrol(self.V)
+            return real(agent_id)
+
+        self.W = self._x(
+            "INSERT INTO agents (name, token_hash, cash, user_id, created_at) "
+            "VALUES ('user-w', 'tw', 100000, ?, '2026-01-01T00:00:00Z')",
+            (self._x("INSERT INTO users (email, password_hash) "
+                     "VALUES ('w@t.dev', 'x')"),))
+        with patch.object(ta, "_agent_user_id", side_effect=slow_lookup):
+            ta.enrol(self.W)
+        self.assertEqual([a["agent_id"] for a in ta.stored()[0]],
+                         sorted([self.U, self.V, self.W]))
+
+    def test_a_partial_close_outside_is_followed_by_the_state(self):
+        """The exit must ask for what is there: the ledger clamps an
+        oversized sell, a shadow order does not."""
+        ta.enrol(self.U, "shadow")
+        bars = _bars_up()
+        order = SimpleNamespace(broker="coinbase", error_message=None,
+                                status=SimpleNamespace(value="validated"))
+        with patch("execution.gateway.submit_shadow", return_value=order) as shadow:
+            self._cycle({"BTCUSDT": bars})
+            full = self._open(self.U)[0]["quantity"]
+            sid, err = execute_paper_trade(self.U, "BTCUSDT", "crypto", "sell",
+                                           full / 2, bars[-1]["close"])
+            self.assertIsNotNone(sid, err)
+            out = self._cycle({"BTCUSDT": _next_bar(bars, bars[-1]["close"] - 20.0)})
+        account = self._account(out, self.U)
+        self.assertEqual(account["exits"], 1)
+        synced, = [e for e in account["actions"] if e["event"] == "qty_synced"]
+        self.assertAlmostEqual(synced["now"], full / 2)
+        args, kwargs = shadow.call_args
+        self.assertEqual(args[3], "sell")
+        self.assertAlmostEqual(args[4], full / 2)
+        self.assertAlmostEqual(kwargs["ledger_quantity"], full / 2)
+        self.assertEqual(self._open(self.U), [])
+
+    def test_an_accounts_record_starts_at_its_enrolment(self):
+        for side, price in (("buy", 100.0), ("sell", 50.0)):
+            sid, err = execute_paper_trade(self.U, "SOLUSDT", "crypto", side,
+                                           1.0, price)
+            self.assertIsNotNone(sid, err)
+        ta.enrol(self.U)
+        self.assertGreater(ta.stored()[0][0]["since_signal_id"], 0)
+        stats = tm.trend_stats(self.U)
+        self.assertEqual((stats["entries"], stats["n_trades"], stats["total_pnl"]),
+                         (0, 0, 0))
+        # the baseline is kept when the enrolment is changed later
+        since = ta.stored()[0][0]["since_signal_id"]
+        self._cycle({"BTCUSDT": _bars_up()})
+        ta.enrol(self.U, risk_usd=30)
+        self.assertEqual(ta.stored()[0][0]["since_signal_id"], since)
+        self.assertEqual(tm.trend_stats(self.U)["entries"], 1)
+
+
+class RealGateway(_Base):
+    """The trend path through the REAL submit_shadow, faked only at the
+    venue's network call."""
+
+    def test_a_shadow_fill_goes_to_the_sandbox_even_if_the_link_says_live(self):
+        from execution.base import OrderStatus
+        from execution.binance import BinanceBroker
+        from execution.crypto import encrypt_credentials
+        self._x("INSERT INTO broker_accounts (agent_id, broker, execution_mode,"
+                " credentials_enc, is_active, created_at, updated_at) VALUES "
+                "(?, 'binance', 'live', ?, 1, '2026-10-05T00:00:00Z', "
+                "'2026-10-05T00:00:00Z')",
+                (self.U, encrypt_credentials({"key": "k", "secret": "s"})))
+        ta.enrol(self.U, "shadow")
+        sent = []
+
+        async def submit(broker, order, cursor=None):
+            sent.append((broker._testnet, order.execution_mode.value,
+                         order.symbol, order.side, order.quantity))
+            order.status = OrderStatus.FILLED
+            order.filled_qty = order.quantity
+            order.filled_price = order.price
+            return order
+
+        with patch.object(BinanceBroker, "submit_order", submit):
+            account = self._account(self._cycle({"BTCUSDT": _bars_up()}), self.U)
+        fill, = self._q("SELECT id, quantity FROM signals WHERE agent_id = ?",
+                        (self.U,))
+        (testnet, mode, symbol, side, qty), = sent
+        self.assertTrue(testnet, "a shadow order reached the live endpoint")
+        self.assertEqual((mode, symbol, side), ("shadow", "BTCUSDT", "buy"))
+        self.assertAlmostEqual(qty, fill["quantity"])
+        row, = self._q("SELECT execution_mode, broker, agent_id, signal_id "
+                       "FROM broker_orders")
+        self.assertEqual((row["execution_mode"], row["broker"], row["agent_id"],
+                          row["signal_id"]),
+                         ("shadow", "binance", self.U, fill["id"]))
+        event, = [e for e in account["actions"] if e["event"] == "shadow"]
+        self.assertEqual((event["broker"], event["status"]), ("binance", "filled"))
+
+
 class AdminApi(_Base):
     URL = "/api/admin/settings/trend-accounts"
 
@@ -747,10 +1014,23 @@ class AdminApi(_Base):
     def test_live_and_bad_accounts_are_400_and_nothing_is_stored(self):
         for body in ({"agent_id": self.U, "account_type": "live"},
                      {"agent_id": self.D},
-                     {"agent_id": self.U, "risk_usd": 5000}):
+                     {"agent_id": self.U, "risk_usd": 5000},
+                     {"agent_id": True},            # not agent 1
+                     {"agent_id": None},
+                     {"agent_id": "abc"},
+                     {"agent_id": self.U, "risk_usd": True}):
             r = self.client.post(self.URL, headers=self.admin, json=body)
             self.assertEqual(r.status_code, 400, body)
         self.assertEqual(ta.stored(), ([], None))
+
+    def test_changing_the_risk_does_not_change_the_type(self):
+        self.client.post(self.URL, headers=self.admin, json={
+            "agent_id": self.U, "account_type": "shadow", "risk_usd": 30})
+        r = self.client.post(self.URL, headers=self.admin, json={
+            "agent_id": self.U, "risk_usd": 45})
+        self.assertEqual(r.status_code, 200, r.text)
+        row, = r.json()["accounts"]
+        self.assertEqual((row["account_type"], row["risk_usd"]), ("shadow", 45.0))
 
     def test_the_console_sees_what_is_stored_not_what_is_running(self):
         ta.enrol(self.U)
