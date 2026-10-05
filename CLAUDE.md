@@ -78,7 +78,7 @@ A **signal and copy-trading platform** first. Agents register, publish signals (
 
 ### Stack
 
-- **Backend:** FastAPI + Python 3.12 (3.10+ required — codebase uses `X | None` syntax).
+- **Backend:** FastAPI + Python 3.12 (3.12+ required — the dependency lock `service/constraints.txt` pins packages that need it, e.g. numpy 2.5.3).
 - **Frontend:** React 18 + Vite 5 + TypeScript.
 - **DB:** SQLite by default (`service/server/data/sooppiy.db`), **MySQL 8 in production** (set `DATABASE_URL`, e.g. `mysql+pymysql://…`). There is no Postgres driver in `requirements.txt`.
 - **Cache:** Redis (optional).

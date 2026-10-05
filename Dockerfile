@@ -2,7 +2,12 @@
 # Build context: repo root
 # Runs from /app (project root) so DB_PATH=service/server/data/... resolves.
 
-FROM python:3.12-slim AS base
+# Base pinned by digest (python 3.12.15-slim-trixie, built 2026-10-01). A tag
+# alone floats: prod's base went 3.12.14 -> 3.12.15 between the 2026-09-10 and
+# 2026-10-05 builds, which evicted the pip layer during an unrelated deploy.
+# To take a newer base, change the digest on purpose:
+#   docker buildx imagetools inspect python:3.12-slim
+FROM python:3.12-slim@sha256:02108f5d322dd89f1c9e552442c25acb0543dfdbc455693a5599624f20d9155d AS base
 
 # libpq5 required by psycopg[binary]
 RUN apt-get update \

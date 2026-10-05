@@ -1,0 +1,11 @@
+# Lock for the test tools in requirements-dev.txt (and what they pull in).
+# Kept apart from constraints.txt so that file stays equal to prod's
+# `pip freeze`. ruff and pytest are the local merge gate: unpinned, a new
+# release could change what passes without anyone choosing it.
+iniconfig==2.3.0
+packaging==26.3
+pluggy==1.6.0
+Pygments==2.21.0
+pytest==9.1.1
+pytest-asyncio==1.4.0
+ruff==0.16.10

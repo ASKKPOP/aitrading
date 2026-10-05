@@ -17,7 +17,7 @@
 #
 # Usage:
 #   scripts/deploy.sh <tag-suffix>            # e.g. scripts/deploy.sh welcome
-#   scripts/deploy.sh <tag-suffix> --dry-run  # every check + build, no mutation
+#   scripts/deploy.sh <tag-suffix> --dry-run  # pre-flight only (main parity, audit, lock, guard): no upload, no build, no mutation
 #
 # Env overrides: SOOPPIY_SSH_KEY, SOOPPIY_SSH_HOST, SOOPPIY_REMOTE_DIR
 
@@ -37,6 +37,11 @@ say() { echo "▶ $*"; }
 
 [ -n "$SUFFIX" ] || die "usage: scripts/deploy.sh <tag-suffix> [--dry-run]"
 [[ "$SUFFIX" =~ ^[a-z0-9-]+$ ]] || die "tag suffix must be [a-z0-9-]+"
+# How many sooppiy-backend images step 7 keeps. Validated here, before anything
+# mutates: a non-number reaches the box as `tail -n +$((abc + 1))`, which the
+# shell evaluates to 1 and would remove every image no container is using.
+KEEP_IMAGES="${KEEP_IMAGES:-10}"
+{ [[ "$KEEP_IMAGES" =~ ^[0-9]+$ ]] && [ "$KEEP_IMAGES" -ge 2 ]; } || die "KEEP_IMAGES must be an integer >= 2 (got '$KEEP_IMAGES')"
 
 cd "$(git rev-parse --show-toplevel)"
 
@@ -48,6 +53,24 @@ HEAD_SHA=$(git rev-parse HEAD)
 MAIN_SHA=$(git rev-parse origin/main)
 [ "$HEAD_SHA" = "$MAIN_SHA" ] || die "HEAD ${HEAD_SHA:0:7} != origin/main ${MAIN_SHA:0:7} — deploy merged main only"
 say "at origin/main ${MAIN_SHA:0:7}"
+
+# ── 1b. audit the dependency lock (warn only) ────────────────────────────────
+# service/constraints.txt pins every package the image installs, so a security
+# fix no longer rides in on a rebuild: someone has to bump the pin. The weekly
+# hosted audit in security.yml is not relied on (ship process is local-only),
+# so every deploy runs it here. Warn-only on purpose: an advisory published
+# this morning must not block an unrelated trading fix.
+if command -v pip-audit >/dev/null 2>&1; then
+  say "auditing the dependency lock"
+  if AUDIT=$(pip-audit -r service/constraints.txt --no-deps --disable-pip 2>&1); then
+    say "dependency lock: no known vulnerabilities"
+  else
+    echo "WARNING: pip-audit flagged service/constraints.txt (or could not run) — bump the pins:" >&2
+    echo "$AUDIT" | grep -v '^WARNING:pip_audit' >&2 || true
+  fi
+else
+  echo "WARNING: pip-audit not installed — the dependency lock was NOT audited this deploy" >&2
+fi
 
 TAG="$(date -u +%Y%m%d)-$SUFFIX"
 IMAGE="sooppiy-backend:$TAG"
@@ -135,7 +158,13 @@ remote_locked "
 
 # ── 4. build + migrate (both safe while the old image still serves) ─────────
 say "building $IMAGE"
-$SSH "cd $REMOTE && docker build -q -t $IMAGE app" >/dev/null
+# This was `docker build -q ... >/dev/null`, which threw away WHY a build
+# failed. The dependency-lock check in the Dockerfile prints the offending
+# package and exits 1; the quiet form showed only the exit code. Keep the log
+# on the box and show its tail on failure. Nothing has been swapped yet at this
+# point except app/, so the old image keeps serving.
+$SSH "rm -f /tmp/sooppiy-build.log; cd $REMOTE && docker build -t $IMAGE app >/tmp/sooppiy-build.log 2>&1 || { tail -n 40 /tmp/sooppiy-build.log; exit 1; }" \
+  || die "image build did not complete (if it ran, its log tail is above and the full log is on the box at /tmp/sooppiy-build.log) — the old image is still serving"
 
 say "running migrations"
 $SSH "docker run --rm --env-file $REMOTE/.env -w /app/service/server $IMAGE python -m alembic upgrade head"
@@ -238,6 +267,30 @@ $SSH "
   prune_name  '/usr/share/nginx/sooppiy.prev-*'
   prune_name  '/usr/share/nginx/sooppiy-marketing.prev-*'
 "
+
+# Old images. Every deploy tags a new ~1 GB image and nothing removed them:
+# 477 had piled up by 2026-10-05, the disk was at 95%, and the next build was a
+# layer away from failing. Keep the newest $KEEP_IMAGES by CREATION time (tags
+# are not lexically ordered), and never remove, whatever its age:
+#   - the image just deployed and the rollback target ($GUARD). A build that is
+#     a full cache hit keeps its ORIGINAL creation time, so a redeploy of an old
+#     tree can sort as the oldest image on the box;
+#   - any tag a container was started from. `docker rmi` only refuses an
+#     image's LAST tag: given two tags on one image it silently drops the one
+#     .env names and refuses the other.
+say "pruning old images (keeping the $KEEP_IMAGES newest)"
+$SSH "
+  { docker ps -a --format '{{.Image}}'; printf '%s\\n' '$IMAGE' '$GUARD'; } > /tmp/sooppiy-prune-keep.txt
+  docker images sooppiy-backend --format '{{.CreatedAt}}\t{{.Repository}}:{{.Tag}}' | sort -r \
+    | tail -n +\$(($KEEP_IMAGES + 1)) | cut -f2 | grep -v ':<none>\$' \
+    | grep -vxFf /tmp/sooppiy-prune-keep.txt > /tmp/sooppiy-prune-list.txt || true
+  n=0
+  while read -r t; do
+    if docker rmi \"\$t\" >/dev/null 2>&1; then n=\$((n + 1)); else echo \"  could not remove \$t\"; fi
+  done < /tmp/sooppiy-prune-list.txt
+  echo \"  removed \$n image(s); \$(docker images sooppiy-backend --format '{{.Tag}}' | wc -l) tag(s) remain\"
+  rm -f /tmp/sooppiy-prune-keep.txt /tmp/sooppiy-prune-list.txt
+" || echo "WARNING: image prune did not complete — check the disk on $SSH_HOST" >&2
 
 # Stale upload tarballs in the box's /tmp. This deploy removes its own two
 # (step 6), but hand deploys from before this script existed did not: five
