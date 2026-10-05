@@ -44,6 +44,17 @@ def _bars_up(n=220, base=100.0, step=0.5, final_jump=5.0):
     return bars
 
 
+def _next_bar(bars, close):
+    """`bars` plus one newly COMPLETED bar. An open position is evaluated
+    once per completed bar, so "the next cycle" needs one."""
+    last = bars[-1]
+    return [dict(b) for b in bars] + [{
+        "ts": last["ts"] + 1, "open": last["close"],
+        "high": max(last["close"], close) + 1.0,
+        "low": min(last["close"], close) - 1.0,
+        "close": close, "volume": 1e6}]
+
+
 def _bars_down(n=220, base=1000.0, step=0.5, final_drop=5.0):
     """Steady downtrend whose final close breaks the prior 20d low."""
     bars, price = [], base
@@ -242,6 +253,11 @@ class CycleBase(unittest.TestCase):
         self.agent_id = cur.lastrowid
         conn.commit()
         conn.close()
+        # Fills go at the live mark; the suite must not reach a price feed.
+        mark = patch.object(tm, "_mark",
+                            side_effect=lambda symbol, fallback: fallback)
+        mark.start()
+        self.addCleanup(mark.stop)
         os.environ["TREND_MODULE_ENABLED"] = "1"
         os.environ["TREND_AGENT_ID"] = str(self.agent_id)
         os.environ["TREND_UNIVERSE"] = "BTCUSDT"
@@ -394,9 +410,8 @@ class TestCycleExits(CycleBase):
         bars = _bars_up()
         self._enter(bars)
         entry_close = bars[-1]["close"]
-        crashed = [dict(b) for b in bars]
         crash_close = entry_close - 20.0   # far through the 1.5×ATR stop
-        crashed[-1].update({"close": crash_close, "low": crash_close - 1.0})
+        crashed = _next_bar(bars, crash_close)
         with patch.object(tm, "_get_bars", return_value=crashed), \
              patch.object(tm, "wilder_adx", return_value=30.0), \
              patch.object(tm, "_fear_greed_value", return_value=50), \
@@ -423,6 +438,7 @@ class TestCycleExits(CycleBase):
         stale = (datetime.now(timezone.utc) - timedelta(days=31)).isoformat()
         state["positions"]["BTCUSDT"]["entry_ts"] = stale
         set_setting(tm.STATE_KEY, json.dumps(state), updated_by="test")
+        bars = _next_bar(bars, bars[-1]["close"] + 0.5)
         with patch.object(tm, "_get_bars", return_value=bars), \
              patch.object(tm, "wilder_adx", return_value=30.0), \
              patch.object(tm, "_fear_greed_value", return_value=50), \
@@ -433,9 +449,10 @@ class TestCycleExits(CycleBase):
         self.assertEqual(exit_events[0]["reason"], "time_stop")
         self.assertEqual(self._state()["positions"], {})
 
-    def test_trail_update_emitted_each_cycle_without_exit(self):
+    def test_trail_update_emitted_on_each_new_bar_without_exit(self):
         bars = _bars_up()
         self._enter(bars)
+        bars = _next_bar(bars, bars[-1]["close"] + 0.5)
         with patch.object(tm, "_get_bars", return_value=bars), \
              patch.object(tm, "wilder_adx", return_value=45.0), \
              patch.object(tm, "_fear_greed_value", return_value=50), \
@@ -511,6 +528,7 @@ class TestExitFailureRetention(CycleBase):
         stale = (datetime.now(timezone.utc) - timedelta(days=31)).isoformat()
         state["positions"]["BTCUSDT"]["entry_ts"] = stale
         set_setting(tm.STATE_KEY, json.dumps(state), updated_by="test")
+        bars = _next_bar(bars, bars[-1]["close"] + 0.5)
         with patch.object(tm, "_get_bars", return_value=bars), \
              patch.object(tm, "wilder_adx", return_value=30.0), \
              patch.object(tm, "_fear_greed_value", return_value=50), \
@@ -523,6 +541,373 @@ class TestExitFailureRetention(CycleBase):
         events = [e["event"] for e in summary["actions"]]
         self.assertIn("exit_failed", events)
         self.assertNotIn("state_desync", events)
+        # The retry is the NEXT TICK on the same bar — a failed exit must
+        # not wait for tomorrow's close behind the once-per-bar rule.
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            summary = tm.run_trend_cycle()
+        self.assertEqual(summary["exits"], 1)
+        self.assertEqual(self._state()["positions"], {})
+
+
+class TestCompletedBars(unittest.TestCase):
+    """The rule decides on a bar's CLOSE; the feed's last row is the bar in
+    progress. research/trend_replay (2026-10-05): completed bars 115 trades
+    +114R; the same rule read hourly on the forming bar 164 trades +93R,
+    and the 63 forming-only entries net -2.2R."""
+
+    NOW = 1_760_000_000_000
+
+    def _bar(self, age_ms, close=1.0):
+        return {"ts": self.NOW - age_ms, "open": close, "high": close,
+                "low": close, "close": close, "volume": 1.0}
+
+    def test_the_forming_bar_is_dropped(self):
+        done = self._bar(2 * tm.DAY_MS)
+        just_closed = self._bar(tm.DAY_MS)              # closed this instant
+        forming = self._bar(tm.DAY_MS - 1, close=99.0)
+        out = tm._completed_bars([done, just_closed, forming], self.NOW)
+        self.assertEqual(out, [done, just_closed])
+
+    def test_a_bar_without_a_timestamp_is_kept(self):
+        bar = {"close": 5.0}
+        self.assertEqual(tm._completed_bars([bar], self.NOW), [bar])
+
+    def test_get_bars_reads_fresh_and_drops_the_forming_bar(self):
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        closed = {"ts": now_ms - 2 * tm.DAY_MS, "open": 1, "high": 1,
+                  "low": 1, "close": 1.0, "volume": 1}
+        forming = {"ts": now_ms - 3_600_000, "open": 1, "high": 9,
+                   "low": 1, "close": 9.0, "volume": 1}
+        with patch("crypto_feed.fetch_candles",
+                   return_value=[closed, forming]) as fc, \
+             patch("price_fetcher.get_daily_candles") as cached:
+            out = tm._get_bars("BTCUSDT")
+        self.assertEqual(out, [closed])
+        cached.assert_not_called()      # the hours-long cache is bypassed
+        self.assertEqual(fc.call_args.kwargs["bar"], "1D")
+        # one extra row is requested so the window survives the drop
+        self.assertEqual(fc.call_args.kwargs["limit"], tm.HISTORY_DAYS + 1)
+
+    def test_a_dead_feed_is_no_bars_not_a_crash(self):
+        with patch("crypto_feed.fetch_candles",
+                   side_effect=RuntimeError("okx down")):
+            self.assertEqual(tm._get_bars("BTCUSDT"), [])
+
+
+class TestOncePerCompletedBar(CycleBase):
+    def _cycle(self, bars, adx=45.0):
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=adx), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            return tm.run_trend_cycle()
+
+    def test_ticks_inside_the_entry_bar_rule_on_nothing(self):
+        bars = _bars_up()
+        self.assertEqual(self._cycle(bars, adx=30.0)["entries"], 1)
+        pos = self._state()["positions"]["BTCUSDT"]
+        self.assertEqual(pos["bar_ts"], bars[-1]["ts"])
+        before = dict(pos)
+        # same completed bar, an hour later: the position was not open for
+        # it, so no trail is drawn off it and no exit is judged on it
+        summary = self._cycle(bars)
+        self.assertEqual([e["event"] for e in summary["actions"]], [])
+        self.assertEqual(self._state()["positions"]["BTCUSDT"], before)
+
+    def test_a_new_bar_is_ruled_on_exactly_once(self):
+        bars = _bars_up()
+        self._cycle(bars, adx=30.0)
+        bars = _next_bar(bars, bars[-1]["close"] + 0.5)
+        first = self._cycle(bars)
+        self.assertIn("trail_update", [e["event"] for e in first["actions"]])
+        self.assertEqual(self._state()["positions"]["BTCUSDT"]["bar_ts"],
+                         bars[-1]["ts"])
+        again = self._cycle(bars)
+        self.assertEqual([e["event"] for e in again["actions"]], [])
+
+    def test_a_position_from_before_this_rule_is_picked_up(self):
+        # The two live positions carry no bar_ts.
+        bars = _bars_up()
+        self._cycle(bars, adx=30.0)
+        from platform_settings import get_setting, set_setting
+        state = json.loads(get_setting(tm.STATE_KEY))
+        del state["positions"]["BTCUSDT"]["bar_ts"]
+        set_setting(tm.STATE_KEY, json.dumps(state), updated_by="test")
+        summary = self._cycle(bars)
+        self.assertIn("trail_update",
+                      [e["event"] for e in summary["actions"]])
+        self.assertEqual(self._state()["positions"]["BTCUSDT"]["bar_ts"],
+                         bars[-1]["ts"])
+
+
+class TestFillsAtTheMark(CycleBase):
+    def test_entry_and_stop_are_anchored_on_the_live_mark(self):
+        bars = _bars_up()
+        close = bars[-1]["close"]
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "_mark", return_value=close + 2.0), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            summary = tm.run_trend_cycle()
+        self.assertEqual(summary["entries"], 1)
+        pos = self._state()["positions"]["BTCUSDT"]
+        self.assertEqual(pos["entry_price"], close + 2.0)
+        self.assertAlmostEqual(
+            pos["initial_stop"],
+            close + 2.0 - tm.STOP_ATR_MULT * pos["entry_atr"])
+        self.assertEqual(self._signals()[0]["entry_price"], close + 2.0)
+
+    def test_an_exit_also_fills_at_the_mark(self):
+        bars = _bars_up()
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            tm.run_trend_cycle()
+        crash = bars[-1]["close"] - 20.0
+        with patch.object(tm, "_get_bars",
+                          return_value=_next_bar(bars, crash)), \
+             patch.object(tm, "_mark", return_value=crash - 3.0), \
+             patch.object(tm, "wilder_adx", return_value=30.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            summary = tm.run_trend_cycle()
+        self.assertEqual(summary["exits"], 1)
+        exit_event = [e for e in summary["actions"]
+                      if e["event"] == "exit"][0]
+        self.assertEqual(exit_event["price"], crash - 3.0)
+
+
+class TestModuleStopOnTheLedger(CycleBase):
+    """research/trend_replay, stop variants (2026-10-05), same 2020-2026
+    entries: daily-close exits +114.2R; the module's own 1.5×ATR stop
+    enforced intraday +122.9R (max drawdown 14.6R vs 20.2R); the 5% stop the
+    orphan sweep had been attaching +71.4R. So the row carries the MODULE's
+    stop, the SL/TP watcher enforces it, and nothing else."""
+
+    def _row(self):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT stop_loss, take_profit, exit_policy, quantity "
+                "FROM positions WHERE agent_id = ? AND symbol = 'BTCUSDT'",
+                (self.agent_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def _cycle(self, bars, adx=30.0):
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=adx), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            return tm.run_trend_cycle()
+
+    def test_entry_puts_the_modules_own_stop_on_the_row(self):
+        self._cycle(_bars_up())
+        pos = self._state()["positions"]["BTCUSDT"]
+        row = self._row()
+        self.assertAlmostEqual(row["stop_loss"], pos["initial_stop"])
+        self.assertIsNone(row["take_profit"])
+        # exit_policy stays NULL: 'v1' would switch on the watcher's own
+        # loser time-stop and trailing — two more foreign exits.
+        self.assertIsNone(row["exit_policy"])
+
+    def test_a_foreign_stop_is_replaced_by_the_modules(self):
+        # The two positions open on 2026-10-05 carry the sweep's 5% stop.
+        bars = _bars_up()
+        self._cycle(bars)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE positions SET stop_loss = 1.0 WHERE agent_id = ?",
+                    (self.agent_id,))
+        conn.commit()
+        conn.close()
+        self._cycle(bars, adx=45.0)       # same bar: nothing else to rule on
+        self.assertAlmostEqual(
+            self._row()["stop_loss"],
+            self._state()["positions"]["BTCUSDT"]["initial_stop"])
+
+    def test_a_position_the_watcher_closed_frees_its_slot(self):
+        """The watcher sells the ledger lot; module state knew nothing, kept
+        the slot, and only found out when its own exit was refused — 747
+        phantom position-days in the replay of that behaviour."""
+        bars = _bars_up()
+        self._cycle(bars)
+        from automation import execute_paper_trade
+        pos = self._state()["positions"]["BTCUSDT"]
+        sid, err = execute_paper_trade(
+            self.agent_id, "BTCUSDT", "crypto", "sell", float(pos["qty"]),
+            pos["initial_stop"], content="risk: stop_loss triggered")
+        self.assertIsNotNone(sid, err)
+        summary = self._cycle(bars, adx=45.0)
+        self.assertEqual(self._state()["positions"], {})
+        events = [e["event"] for e in summary["actions"]]
+        self.assertIn("closed_outside", events)
+        self.assertEqual(summary["open_positions"], 0)
+
+    def test_the_sync_never_touches_a_row_a_run_owns(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO positions (agent_id, symbol, market, side, quantity,"
+            " entry_price, opened_at, run_id, stop_loss) VALUES "
+            "(?, 'ETHUSDT', 'crypto', 'long', 1.0, 10.0,"
+            " '2026-01-01T00:00:00Z', 7, 5.0)", (self.agent_id,))
+        conn.commit()
+        conn.close()
+        tm._sync_stop(self.agent_id, "ETHUSDT", 9.0)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT stop_loss FROM positions WHERE symbol = 'ETHUSDT'")
+        self.assertEqual(cur.fetchone()["stop_loss"], 5.0)
+        conn.close()
+
+    def test_a_stopped_out_signal_is_not_taken_again_on_the_same_bar(self):
+        """The slot is free again, the bar that gave the signal is still the
+        newest one, and the signal still evaluates true — so every tick
+        re-entered (review 2026-10-05; five times in the 6.7-year replay,
+        four of them losers). The replay takes a signal bar once."""
+        bars = _bars_up()
+        self._cycle(bars)
+        from automation import execute_paper_trade
+        pos = self._state()["positions"]["BTCUSDT"]
+        sid, err = execute_paper_trade(
+            self.agent_id, "BTCUSDT", "crypto", "sell", float(pos["qty"]),
+            pos["initial_stop"], content="risk: stop_loss triggered")
+        self.assertIsNotNone(sid, err)
+        with patch.object(tm, "_llm_veto") as veto:
+            summary = self._cycle(bars)           # adx 30: the signal holds
+        self.assertEqual(summary["entries"], 0)
+        self.assertEqual(self._state()["positions"], {})
+        veto.assert_not_called()                  # nor an LLM call an hour
+        # A NEW bar that still breaks out is a new signal and is evaluated.
+        # (It cannot FILL inside this test: the order id is per UTC day, and
+        # a real next bar is a day later.)
+        fresh = _next_bar(bars, bars[-1]["close"] + 30.0)
+        self.assertEqual(self._cycle(fresh)["signals"], 1)
+
+    def test_stats_count_the_trades_the_watcher_closed(self):
+        """`trend_stats` read only fills carrying the module's own order id.
+        The watcher's close has none, so every stop-out — 57 of 118 trades
+        and -58R in the replay of this stop — was missing from the record
+        the falsifier is read off: a loss-censored payoff."""
+        bars = _bars_up()
+        self._cycle(bars)
+        from automation import execute_paper_trade
+        pos = self._state()["positions"]["BTCUSDT"]
+        sid, err = execute_paper_trade(
+            self.agent_id, "BTCUSDT", "crypto", "sell", float(pos["qty"]),
+            pos["initial_stop"],
+            content="risk: stop_loss triggered (SL/TP watcher)")
+        self.assertIsNotNone(sid, err)
+        stats = tm.trend_stats()
+        self.assertEqual(stats["entries"], 1)
+        self.assertEqual(stats["n_trades"], 1)
+        self.assertLess(stats["total_pnl"], 0)
+
+    def test_a_failed_ledger_read_is_None_not_an_empty_book(self):
+        self.assertEqual(tm._ledger_read(self.agent_id), {})
+        with patch("database.get_db_connection",
+                   side_effect=RuntimeError("db down")):
+            self.assertIsNone(tm._ledger_read(self.agent_id))
+
+        class _Boom:
+            def cursor(self):
+                raise RuntimeError("query failed")
+
+            def close(self):
+                pass
+
+        with patch("database.get_db_connection", return_value=_Boom()):
+            self.assertIsNone(tm._ledger_read(self.agent_id))
+            self.assertEqual(tm._ledger_positions(self.agent_id), {})
+
+    def test_an_unreadable_ledger_drops_nothing(self):
+        bars = _bars_up()
+        self._cycle(bars)
+        with patch.object(tm, "_ledger_read", return_value=None):
+            summary = self._cycle(bars, adx=45.0)
+        self.assertIn("BTCUSDT", self._state()["positions"])
+        self.assertNotIn("closed_outside",
+                         [e["event"] for e in summary["actions"]])
+
+
+class TestStateFitsItsColumn(CycleBase):
+    """platform_settings.setting_value is TEXT on MySQL — 65,535 bytes, strict
+    mode. The event log (EVENT_CAP 400 rows of ~180 bytes) cannot fit, and on
+    prod it stopped fitting at 366 rows: the state was last saved
+    2026-09-27T06:25Z and every hourly save after it failed, so trails,
+    exits and entries ran from a frozen snapshot for eight days."""
+
+    def _big_state(self, n_events):
+        row = {"ts": "2026-09-27T06:25:24+00:00", "event": "trail_update",
+               "symbol": "BNBUSDT", "trail": 733.5111561035872,
+               "best_close": 805.2, "close": 786.72,
+               "atr": 24.998437745867932}
+        return {"positions": {"BNBUSDT": {"side": "long", "qty": 0.6667,
+                                          "initial_stop": 744.6}},
+                "entered_bar": {"BNBUSDT": 1},
+                "events": [dict(row, n=i) for i in range(n_events)]}
+
+    def test_an_oversized_state_is_trimmed_to_fit_and_still_saved(self):
+        state = self._big_state(600)
+        self.assertGreater(len(json.dumps(state).encode()), 65_535)
+        tm._save_state(state)
+        from platform_settings import get_setting
+        raw = get_setting(tm.STATE_KEY)
+        self.assertLessEqual(len(raw.encode()), tm.STATE_MAX_BYTES)
+        self.assertLess(tm.STATE_MAX_BYTES, 65_535)
+        saved = json.loads(raw)
+        # what trading depends on survives whole; only old telemetry goes
+        self.assertEqual(saved["positions"], state["positions"])
+        self.assertEqual(saved["entered_bar"], {"BNBUSDT": 1})
+        self.assertTrue(saved["events"])
+        self.assertEqual(saved["events"][-1]["n"], 599)   # newest kept
+
+    def test_a_state_that_fits_is_saved_untouched(self):
+        state = self._big_state(20)
+        tm._save_state(state)
+        self.assertEqual(self._state(), state)
+
+    def test_the_prod_shape_saves_after_one_more_cycle(self):
+        # 366 rows on file, then a cycle that emits more.
+        from platform_settings import set_setting
+        on_file = self._big_state(366)
+        on_file["positions"] = {}       # the telemetry is what overflowed
+        set_setting(tm.STATE_KEY, json.dumps(on_file), updated_by="test")
+        with patch.object(tm, "_get_bars", return_value=_bars_up()), \
+             patch.object(tm, "_ledger_read", return_value=None), \
+             patch.object(tm, "_sync_stop"), \
+             patch.object(tm, "wilder_adx", return_value=45.0), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None), \
+             patch("platform_settings.set_setting") as write:
+            tm.run_trend_cycle()
+        raw = write.call_args.args[1]
+        self.assertLessEqual(len(raw.encode()), tm.STATE_MAX_BYTES)
+
+
+class TestMark(unittest.TestCase):
+    def test_live_mark_wins_and_every_miss_falls_back(self):
+        with patch("price_fetcher.get_price_from_market",
+                   return_value=12.0) as feed:
+            self.assertEqual(tm._mark("BTCUSDT", 7.5), 12.0)
+        self.assertEqual(feed.call_args.args[0], "BTCUSDT")
+        self.assertEqual(feed.call_args.args[2], "crypto")
+        for miss in (None, 0, -1.0):
+            with patch("price_fetcher.get_price_from_market",
+                       return_value=miss):
+                self.assertEqual(tm._mark("BTCUSDT", 7.5), 7.5, miss)
+        with patch("price_fetcher.get_price_from_market",
+                   side_effect=RuntimeError("feed down")):
+            self.assertEqual(tm._mark("BTCUSDT", 7.5), 7.5)
 
 
 class TestDedicatedAgentRefusal(CycleBase):

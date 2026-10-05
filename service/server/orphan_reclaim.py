@@ -107,8 +107,30 @@ def find_orphans(agent_id: "int | None" = None) -> list[dict[str, Any]]:
         except Exception:  # noqa: BLE001
             pass
     floor = min_age_minutes()
+    managed = _module_managed_agent()
     return [r for r in rows
-            if _age_minutes(r.get("first_opened_at") or r.get("opened_at"), now) >= floor]
+            if r.get("agent_id") != managed
+            and _age_minutes(r.get("first_opened_at") or r.get("opened_at"), now) >= floor]
+
+
+def _module_managed_agent() -> "int | None":
+    """The trend module's dedicated agent, while that module is running.
+
+    Its positions carry run_id NULL by design — no run owns them, the module
+    does, with its own stop (1.5×ATR, judged on the daily close) kept in
+    platform_settings rather than on the row. To this sweep that looked
+    "unowned and unprotected", so it attached the account's 5% stop and the
+    SL/TP watcher closed on it intraday: prod 2026-09-18, the module's XRP
+    short was taken out at 1.3423 by this job, not by its own rule, and both
+    positions open on 2026-10-05 carried such stops. With the module switched
+    off nobody manages those rows and they are orphans again."""
+    try:
+        import trend_module
+        if not trend_module.module_enabled():
+            return None
+        return trend_module._agent_id()
+    except Exception:  # noqa: BLE001 — never break the sweep
+        return None
 
 
 def decide(position: dict[str, Any], read_desk=None) -> dict[str, Any]:

@@ -141,6 +141,67 @@ class Age(unittest.TestCase):
         self.assertEqual(orc._age_minutes(None, "2026-07-28T06:00:00Z"), 0.0)
 
 
+class ModuleManagedBook(unittest.TestCase):
+    """The trend module's positions carry run_id NULL by design and are
+    managed by the module (its own 1.5×ATR stop, judged on the daily close).
+    The sweep read them as "unowned and unprotected", attached the 5% account
+    stop, and the SL/TP watcher closed on it intraday — prod 2026-09-18, the
+    module's XRP short went out at 1.3423 on this job's stop, not its own."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for pid, agent in ((1, 63), (2, 6)):
+            cur.execute(
+                "INSERT INTO positions (id,agent_id,symbol,market,side,"
+                "quantity,entry_price,current_price,opened_at,run_id) VALUES "
+                "(?,?,'XRPUSDT','crypto','long',10.0,1.5,1.5,"
+                "'2026-08-11T18:46:50Z',NULL)", (pid, agent))
+        conn.commit(); conn.close()
+        self.env = unittest.mock.patch.dict(os.environ, {
+            "ORPHAN_RECLAIM_ENABLED": "true", "TREND_MODULE_ENABLED": "1",
+            "TREND_AGENT_ID": "63"})
+        self.env.start()
+
+    def tearDown(self):
+        self.env.stop()
+        self.tmp.cleanup()
+
+    def _stops(self):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, stop_loss FROM positions ORDER BY id")
+        out = {r["id"]: r["stop_loss"] for r in cur.fetchall()}
+        conn.close()
+        return out
+
+    def test_the_sweep_leaves_the_modules_book_alone(self):
+        self.assertEqual([r["id"] for r in orc.find_orphans()], [2])
+        orc.sweep(blocking={})
+        stops = self._stops()
+        self.assertIsNone(stops[1], "a foreign stop was attached to the "
+                                    "trend module's position")
+        self.assertIsNotNone(stops[2], "a real orphan lost its protection")
+
+    def test_a_switched_off_module_manages_nothing(self):
+        # Nobody is looking at those rows any more: they are orphans again.
+        os.environ["TREND_MODULE_ENABLED"] = "0"
+        self.assertEqual(sorted(r["id"] for r in orc.find_orphans()), [1, 2])
+        os.environ["TREND_MODULE_ENABLED"] = "1"
+        os.environ["TREND_AGENT_ID"] = ""
+        self.assertEqual(sorted(r["id"] for r in orc.find_orphans()), [1, 2])
+
+    def test_a_broken_module_lookup_does_not_stop_the_sweep(self):
+        with unittest.mock.patch("trend_module.module_enabled",
+                                 side_effect=RuntimeError("boom")):
+            self.assertEqual(sorted(r["id"] for r in orc.find_orphans()),
+                             [1, 2])
+
+
 class GhostRows(unittest.TestCase):
     """Plan 24 fix 2 residue: a zero-quantity unowned row is bookkeeping
     debris — the sweep deletes it; owned rows and real orphans are kept."""

@@ -268,9 +268,79 @@ def check_exit(pos: dict[str, Any], close: float,
 
 # ─────────────────────────── feeds / LLM ───────────────────────────
 
+DAY_MS = 86_400_000
+
+
+def _completed_bars(bars: list[dict[str, Any]],
+                    now_ms: Optional[int] = None) -> list[dict[str, Any]]:
+    """Daily bars with the one still FORMING dropped.
+
+    The rule this module trades — and the only form of it with a tested
+    record (research/trend_replay, 2026-10-05: 115 trades 2020-2026,
+    +114R, on completed bars) — decides on a bar's CLOSE. The feed's last
+    row is the bar in progress, and the loop ticks hourly, so until this
+    filter every tick read an intraday price as "today's close". Replayed
+    hourly on that reading: 164 trades for +93R; the 63 entries that exist
+    only because a bar was read before it closed net -2.2R. Live, the
+    2026-09-21 BNB entry is one the completed-bar rule never takes.
+
+    A bar with no timestamp is kept — nothing can be said about it."""
+    if now_ms is None:
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    out = []
+    for bar in bars or []:
+        ts = bar.get("ts")
+        if ts is not None and int(ts) + DAY_MS > now_ms:
+            continue
+        out.append(bar)
+    return out
+
+
 def _get_bars(symbol: str) -> list[dict[str, Any]]:
-    import price_fetcher
-    return price_fetcher.get_daily_candles(symbol, "crypto", days=HISTORY_DAYS)
+    """Completed daily bars, fetched fresh.
+
+    Not price_fetcher.get_daily_candles: that caches for hours, so a
+    snapshot taken mid-bar would still be served after the bar closed and
+    its stale "close" would pass the completed-bar filter as final. Five
+    symbols an hour is nothing to the venue. Fail-soft to [] — the cycle
+    already treats missing bars as "skip this symbol"."""
+    try:
+        import crypto_feed
+        bars = crypto_feed.fetch_candles(symbol, bar="1D",
+                                         limit=HISTORY_DAYS + 1)
+    except Exception:  # noqa: BLE001
+        logger.warning("trend_module: daily bars unavailable for %s", symbol,
+                       exc_info=True)
+        return []
+    return _completed_bars(bars)
+
+
+def _bar_ts(bars: list[dict[str, Any]]) -> Optional[int]:
+    """Timestamp of the newest bar in hand, when the feed carries one."""
+    try:
+        ts = bars[-1].get("ts") if bars else None
+        return None if ts is None else int(ts)
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
+def _mark(symbol: str, fallback: float) -> float:
+    """The price a fill happens at: the live mark, not the bar's close.
+
+    The decision is taken on a completed bar, but the tick that takes it
+    runs up to an hour after that bar closed. Booking the fill at the old
+    close records a price the market no longer offers; the replay fills at
+    the next bar's open for the same reason. Falls back to the close when
+    no mark is available rather than skipping the order."""
+    try:
+        import price_fetcher
+        px = price_fetcher.get_price_from_market(symbol, _now_iso(), "crypto")
+        if px is not None and float(px) > 0:
+            return float(px)
+    except Exception:  # noqa: BLE001
+        logger.debug("trend_module: no live mark for %s", symbol,
+                     exc_info=True)
+    return fallback
 
 
 def _fear_greed_value() -> Optional[int]:
@@ -348,8 +418,18 @@ def _ledger_positions(agent_id: int) -> dict[str, dict[str, Any]]:
     lot on a dedicated agent belongs to this module, so any symbol here
     that state does not track is an orphan (crash between ledger commit
     and _save_state — verification A3-5) and must be re-adopted."""
+    return _ledger_read(agent_id) or {}
+
+
+def _ledger_read(agent_id: int) -> "dict[str, dict[str, Any]] | None":
+    """`_ledger_positions`, with a failed read told apart from an empty
+    book (None vs {}). Dropping state needs that difference: a database
+    hiccup must not look like every position having been closed."""
     from database import get_db_connection
-    conn = get_db_connection()
+    try:
+        conn = get_db_connection()
+    except Exception:  # noqa: BLE001
+        return None
     try:
         cursor = conn.cursor()
         cursor.execute(
@@ -358,9 +438,61 @@ def _ledger_positions(agent_id: int) -> dict[str, dict[str, Any]]:
         return {r["symbol"]: dict(r) for r in cursor.fetchall()
                 if float(r["quantity"] or 0) != 0}
     except Exception:  # noqa: BLE001
-        return {}
+        return None
     finally:
         conn.close()
+
+
+def _drop_closed_outside(state: dict[str, Any], actions: list[dict[str, Any]],
+                         agent_id: int) -> None:
+    """Forget positions the ledger no longer holds.
+
+    The module's stop sits on the ledger row and the SL/TP watcher closes on
+    it between ticks, so a position can be gone before the module looks.
+    Without this the state kept it — occupying one of TREND_MAX_POSITIONS —
+    until the module's own exit was refused, which for a position that never
+    reaches its trail is the 30-day time stop."""
+    ledger = _ledger_read(agent_id)
+    if ledger is None:
+        return
+    for symbol in sorted(state["positions"]):
+        if symbol not in ledger:
+            pos = state["positions"].pop(symbol)
+            _emit(state, actions, "closed_outside", symbol=symbol,
+                  side=pos.get("side"), stop=pos.get("initial_stop"))
+
+
+def _sync_stop(agent_id: int, symbol: str, stop: float) -> None:
+    """Put the module's initial stop on its ledger row, and only that.
+
+    The SL/TP watcher enforces whatever `positions.stop_loss` holds, intraday.
+    Replay 2020-2026, same entries (research/trend_replay): exits on the
+    daily close only +114.2R; this stop enforced intraday +122.9R with the
+    drawdown 14.6R against 20.2R; the 5% stop the orphan sweep used to write
+    here +71.4R. Written directly rather than through execute_paper_trade's
+    stop_loss argument: that also stamps exit_policy='v1', which arms the
+    watcher's own loser time-stop and trail — two more exits this rule never
+    had. Idempotent, so it also replaces a stop somebody else left."""
+    from database import get_db_connection
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE positions SET stop_loss = ? WHERE agent_id = ? "
+            "AND market = 'crypto' AND symbol = ? AND run_id IS NULL "
+            "AND (stop_loss IS NULL OR stop_loss != ?)",
+            (float(stop), agent_id, symbol, float(stop)))
+        conn.commit()
+    except Exception:  # noqa: BLE001 — the daily-close stop still stands
+        logger.warning("trend_module: stop sync failed for %s", symbol,
+                       exc_info=True)
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def _reconcile_ledger(state: dict[str, Any], actions: list[dict[str, Any]],
@@ -431,9 +563,25 @@ def _load_state() -> dict[str, Any]:
     return {"positions": {}, "events": []}
 
 
+# platform_settings.setting_value is TEXT on MySQL: 65,535 bytes, strict mode.
+STATE_MAX_BYTES = 60_000
+
+
 def _save_state(state: dict[str, Any]) -> None:
+    """Persist the module state — inside the column it lives in.
+
+    EVENT_CAP rows of telemetry (~180 bytes each) do not fit a TEXT column,
+    and the write is all-or-nothing: on prod the state stopped saving at 366
+    rows (last write 2026-09-27T06:25Z) and every hourly cycle after that ran
+    from the same frozen snapshot. Positions and entered bars are what
+    trading depends on; the oldest telemetry is dropped until the whole fits.
+    The rows are also on the JSON log line `_emit` writes."""
     from platform_settings import set_setting
-    set_setting(STATE_KEY, json.dumps(state), updated_by="trend_module")
+    raw = json.dumps(state)
+    while len(raw.encode("utf-8")) > STATE_MAX_BYTES and state.get("events"):
+        del state["events"][:max(1, len(state["events"]) // 4)]
+        raw = json.dumps(state)
+    set_setting(STATE_KEY, raw, updated_by="trend_module")
 
 
 def _emit(state: dict[str, Any], actions: list[dict[str, Any]],
@@ -476,13 +624,24 @@ def run_trend_cycle() -> dict[str, Any]:
     state = _load_state()
     actions: list[dict[str, Any]] = []
     _reconcile_ledger(state, actions, agent_id)
+    _drop_closed_outside(state, actions, agent_id)
+    for symbol, pos in state["positions"].items():
+        _sync_stop(agent_id, symbol, pos["initial_stop"])
     fear_greed = _fear_greed_value()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     # ── open positions: trail update once per cycle, then exit checks ──
     for symbol in sorted(state["positions"]):
         pos = state["positions"][symbol]
-        highs, lows, closes = _series(_get_bars(symbol))
+        bars = _get_bars(symbol)
+        bar_ts = _bar_ts(bars)
+        # One evaluation per completed bar, and none on the bar the entry
+        # itself was decided on — the position was not open for it. Hourly
+        # ticks inside the same bar have nothing new to rule on.
+        if (bar_ts is not None and pos.get("bar_ts") is not None
+                and bar_ts <= int(pos["bar_ts"])):
+            continue
+        highs, lows, closes = _series(bars)
         atr = wilder_atr(highs, lows, closes) if closes else None
         if not closes or not atr or atr <= 0:
             _emit(state, actions, "skip", symbol=symbol,
@@ -495,8 +654,13 @@ def run_trend_cycle() -> dict[str, Any]:
               close=close, atr=atr)
         reason = check_exit(pos, close)
         if not reason:
+            # Ruled on. Stamped only here: an exit that FAILS below must be
+            # retried on the next tick, not parked until tomorrow's bar.
+            if bar_ts is not None:
+                pos["bar_ts"] = bar_ts
             continue
         side = "sell" if pos["side"] == "long" else "cover"
+        close = _mark(symbol, close)
         signal_id, err = execute_paper_trade(
             agent_id, symbol, "crypto", side, float(pos["qty"]), close,
             content=json.dumps({"module": "trend", "exit_reason": reason,
@@ -525,7 +689,15 @@ def run_trend_cycle() -> dict[str, Any]:
         if len(state["positions"]) >= _max_positions():
             break
         summary["scanned"] += 1
-        sig = evaluate_symbol(_get_bars(symbol), fear_greed)
+        bars = _get_bars(symbol)
+        # A signal bar is taken once. After an intraday stop-out the slot is
+        # free while that bar is still the newest one and its signal still
+        # evaluates true; without this every tick re-entered it.
+        bar_ts = _bar_ts(bars)
+        if (bar_ts is not None
+                and state.get("entered_bar", {}).get(symbol) == bar_ts):
+            continue
+        sig = evaluate_symbol(bars, fear_greed)
         if sig is None:
             continue
         if sig.get("blocked"):
@@ -550,7 +722,7 @@ def run_trend_cycle() -> dict[str, Any]:
         qty = position_qty(sig["atr"], verdict["size_mult"])
         if qty <= 0:
             continue
-        entry = sig["close"]
+        entry = _mark(symbol, sig["close"])
         if sig["side"] == "buy":
             book_side, initial_stop = "long", entry - STOP_ATR_MULT * sig["atr"]
         else:
@@ -583,7 +755,11 @@ def run_trend_cycle() -> dict[str, Any]:
             "entry_atr": sig["atr"], "initial_stop": initial_stop,
             "trail": None, "best_close": entry, "entry_ts": _now_iso(),
             "entry_kind": sig["entry_kind"], "signal_id": signal_id,
+            "bar_ts": bar_ts,
         }
+        if bar_ts is not None:
+            state.setdefault("entered_bar", {})[symbol] = bar_ts
+        _sync_stop(agent_id, symbol, initial_stop)
         summary["entries"] += 1
         _emit(state, actions, "entry", symbol=symbol, side=sig["side"],
               entry_kind=sig["entry_kind"], qty=qty, price=entry,
@@ -598,8 +774,13 @@ def run_trend_cycle() -> dict[str, Any]:
 # ─────────────────────────── falsifier instrumentation ───────────────────────────
 
 def trend_stats() -> dict[str, Any]:
-    """The module's own record from its recorded fills (client_order_id
-    prefix 'trend:'): n closed trades, win rate, payoff, total pnl."""
+    """The module's own record from its agent's fills: n closed trades, win
+    rate, payoff, total pnl.
+
+    EVERY fill on the dedicated agent, not only those carrying the module's
+    'trend:' order id: its stop is enforced by the SL/TP watcher, whose
+    close has no order id, and a record without the stop-outs is a record
+    without most of the losses."""
     agent_id = _agent_id()
     if agent_id is None:
         return {"error": "TREND_AGENT_ID unset"}
@@ -609,8 +790,7 @@ def trend_stats() -> dict[str, Any]:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT side, pnl FROM signals WHERE agent_id = ? "
-            "AND signal_type = 'automation' AND client_order_id LIKE 'trend:%'",
-            (agent_id,))
+            "AND message_type = 'operation'", (agent_id,))
         rows = cursor.fetchall()
     finally:
         conn.close()
