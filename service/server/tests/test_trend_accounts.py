@@ -1032,12 +1032,15 @@ class Interleavings(_Base):
         """positions.quantity keeps 8 places on MySQL; a BTC-sized lot
         differs from the float in state by more than a relative 1e-6."""
         ta.enrol(self.U)
-        bars = _bars_up()
+        bars = _bars_up(base=1_000_000.0, step=5000.0, final_jump=50000.0)
         self._cycle({"BTCUSDT": bars})
+        qty = self._open(self.U)[0]["quantity"]
+        self.assertLess(qty, 0.004, "fixture: the lot must be BTC-sized")
         self._x("UPDATE positions SET quantity = quantity + 0.000000004")
-        out = self._cycle({"BTCUSDT": _next_bar(bars, bars[-1]["close"] + 0.5)})
+        out = self._cycle({"BTCUSDT": _next_bar(bars, bars[-1]["close"] + 500.0)})
         events = out["actions"] + self._account(out, self.U)["actions"]
         self.assertEqual([e for e in events if e["event"] == "qty_synced"], [])
+        self.assertEqual(self._account(out, self.U)["open_positions"], 1)
 
     def test_two_operations_do_not_lose_each_others_change(self):
         """Enrolment is one JSON value. Written from a copy read earlier,
