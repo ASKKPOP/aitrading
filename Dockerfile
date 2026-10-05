@@ -11,11 +11,18 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# ── dependency layer (cached unless requirements.txt changes) ────────────────
+# ── dependency layer ─────────────────────────────────────────────────────────
+# Versions come from constraints.txt, so a rebuild of this layer (an edited
+# requirements file, or a new base image evicting the cache) installs the same
+# set. The check after the install fails the build if anything was installed
+# that the lock does not pin at exactly that version.
 FROM base AS deps
 
-COPY service/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY service/requirements.txt service/constraints.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip freeze > /tmp/installed.txt \
+    && [ -s /tmp/installed.txt ] \
+    && ! grep -vxFf constraints.txt /tmp/installed.txt
 
 # ── frontend build (deployment gap #1: the API serves the SPA from
 #    service/frontend/dist via routes_misc — the image must contain it) ───────

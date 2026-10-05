@@ -1,4 +1,7 @@
 # Server requirements for Sooppiy
+# Exact versions come from constraints.txt (the prod lock): the floors below say
+# what the code needs, the lock says what gets installed.
+-c constraints.txt
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 pydantic>=2.5.3
