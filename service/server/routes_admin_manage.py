@@ -237,6 +237,14 @@ class LlmSettingsBody(BaseModel):
     decision_model: str | None = None
 
 
+class TrendAccountBody(BaseModel):
+    # One account at a time: a console showing a stale list cannot drop
+    # somebody else's enrolment by saving over it.
+    agent_id: int
+    account_type: str = "simulator"
+    risk_usd: float = 25.0
+
+
 def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     # ────────────────────────── member management ──────────────────────────
@@ -1389,3 +1397,76 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         invalidate_admin_llm_settings_cache()
         audit(admin, "settings.llm", "routing", "; ".join(changed) or "(no-op)")
         return {"ok": True, "effective": _llm_effective()}
+
+    # ── Trend accounts (Plan 32): a user's account dedicated to the trend rule ──
+
+    def _trend_account_row(account: dict) -> dict:
+        import trend_accounts
+        import trend_module
+        row = dict(account)
+        agent_id = account["agent_id"]
+        try:
+            row["stats"] = trend_module.trend_stats(agent_id)
+        except Exception:  # noqa: BLE001 — a stats miss must not hide the row
+            row["stats"] = None
+        try:
+            row["open_positions"] = trend_accounts._open_positions(agent_id)
+        except Exception:  # noqa: BLE001
+            row["open_positions"] = None
+        # Which broker a shadow order would be sent to — the name only.
+        try:
+            from execution.gateway import (_has_usable_credentials,
+                                           active_broker_account)
+            link = active_broker_account(agent_id, "crypto")
+            row["broker"] = (link.get("broker") if link
+                             and _has_usable_credentials(link) else None)
+        except Exception:  # noqa: BLE001
+            row["broker"] = None
+        return row
+
+    def _trend_accounts_view() -> dict:
+        import trend_accounts
+        import trend_module
+        # The STORED list, whatever the module switch says.
+        entries, problem = trend_accounts.stored()
+        return {"accounts": [_trend_account_row(a) for a in entries],
+                "problem": problem,
+                "module_enabled": trend_module.module_enabled(),
+                "symbols": trend_module._universe(),
+                "account_types": list(trend_accounts.ACCOUNT_TYPES),
+                "default_risk_usd": trend_accounts.DEFAULT_RISK_USD,
+                "max_risk_usd": trend_accounts.MAX_RISK_USD}
+
+    @app.get('/api/admin/settings/trend-accounts')
+    async def admin_trend_accounts(authorization: str = Header(None)):
+        require_admin(authorization)
+        return _trend_accounts_view()
+
+    @app.post('/api/admin/settings/trend-accounts')
+    async def admin_trend_account_enrol(body: TrendAccountBody,
+                                        authorization: str = Header(None)):
+        """Hand one user account to the trend rule, or change the type / risk
+        of one already handed over. `simulator` or `shadow` (a dry run at the
+        account's connected broker); real money cannot be switched on here."""
+        admin = require_admin(authorization)
+        import trend_accounts
+        try:
+            entry = trend_accounts.enrol(body.agent_id, body.account_type,
+                                         body.risk_usd, admin.get("email"))
+        except trend_accounts.AccountError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        audit(admin, "settings.trend_accounts", f"agent:{entry['agent_id']}",
+              f"enrol {entry['account_type']} risk={entry['risk_usd']:g}")
+        return {"ok": True, **_trend_accounts_view()}
+
+    @app.delete('/api/admin/settings/trend-accounts/{agent_id}')
+    async def admin_trend_account_remove(agent_id: int,
+                                         authorization: str = Header(None)):
+        admin = require_admin(authorization)
+        import trend_accounts
+        try:
+            trend_accounts.remove(agent_id, admin.get("email"))
+        except trend_accounts.AccountError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        audit(admin, "settings.trend_accounts", f"agent:{agent_id}", "remove")
+        return {"ok": True, **_trend_accounts_view()}

@@ -297,6 +297,9 @@ export function AdminPage() {
   const [crawlBusy, setCrawlBusy] = useState(false)
   const [crawlResult, setCrawlResult] = useState<any | null>(null)
   const [llmSettings, setLlmSettings] = useState<any | null>(null)
+  // Trend accounts (Plan 32): user accounts dedicated to the trend rule.
+  const [trendAccounts, setTrendAccounts] = useState<any | null>(null)
+  const [trendForm, setTrendForm] = useState({ agent_id: '', account_type: 'simulator', risk_usd: '25' })
   const [llmForm, setLlmForm] = useState({ local_base_url: '', local_model: '',
     brief_provider: '', brief_model: '', decision_provider: '', decision_model: '' })
   // Trading skills (Plan 20): the desk's house decision methods. `skillEdit`
@@ -427,6 +430,15 @@ export function AdminPage() {
       vi: 'Người đăng ký được hướng dẫn gửi tiền thật tới địa chỉ lưu ở đây, và nó hiện ngay trên trang thanh toán. Dán trực tiếp từ ví và kiểm tra trước khi lưu. Để trống sẽ gỡ USDT khỏi trang thanh toán.',
       id: 'Pelanggan diminta mengirim uang sungguhan ke alamat apa pun yang tersimpan di sini, dan alamat itu langsung muncul di halaman pembayaran. Tempel langsung dari dompet Anda dan periksa sebelum menyimpan. Mengosongkannya akan menghapus USDT dari halaman pembayaran.' }),
     usdtAddrPlaceholder: tr(language, { ko: '지갑에서 복사한 USDT 주소', en: 'USDT address, pasted from your wallet', ja: 'ウォレットからコピーしたUSDTアドレス', th: 'ที่อยู่ USDT ที่คัดลอกจากกระเป๋าเงิน', vi: 'Địa chỉ USDT dán từ ví của bạn', id: 'Alamat USDT, ditempel dari dompet Anda' }),
+    trendTitle: tr(language, { ko: '추세 전용 계정', en: 'Trend accounts (dedicated)', ja: 'トレンド専用口座', th: 'บัญชีเทรนด์เฉพาะ', vi: 'Tài khoản xu hướng chuyên dụng', id: 'Akun tren khusus' }),
+    trendHint: tr(language, { ko: '등록된 계정은 추세 규칙만 거래합니다 (롱 전용, 일봉 종가 청산). 런·플릿·수동·카피 주문은 이 계정에서 신규 진입할 수 없습니다. shadow는 각 주문을 연결된 브로커에 모의(dry-run)로도 보냅니다. 실제 자금은 사용되지 않습니다.', en: 'An enrolled account is traded by the trend rule only — long-only, exits on the daily close. Runs, fleets, manual and copy orders cannot open a position on it. "shadow" also sends each order to the account\'s connected broker as a dry run. No real money.', ja: '登録した口座はトレンドルールだけが取引します（ロングのみ、日足終値で決済）。ラン・フリート・手動・コピー注文はこの口座で新規建てできません。shadow は各注文を接続済みブローカーにもドライランで送ります。実資金は使いません。', th: 'บัญชีที่ลงทะเบียนจะถูกเทรดโดยกฎเทรนด์เท่านั้น (เฉพาะฝั่งซื้อ ปิดที่ราคาปิดรายวัน) รัน ฟลีต คำสั่งมือ และคำสั่งคัดลอกเปิดสถานะในบัญชีนี้ไม่ได้ shadow จะส่งแต่ละคำสั่งไปยังโบรกเกอร์ที่เชื่อมไว้แบบ dry-run ด้วย ไม่ใช้เงินจริง', vi: 'Tài khoản đã đăng ký chỉ do quy tắc xu hướng giao dịch (chỉ mua, thoát theo giá đóng cửa ngày). Run, fleet, lệnh thủ công và lệnh sao chép không thể mở vị thế trên đó. shadow còn gửi từng lệnh tới sàn đã kết nối dưới dạng chạy thử. Không dùng tiền thật.', id: 'Akun terdaftar hanya diperdagangkan oleh aturan tren (hanya long, keluar pada penutupan harian). Run, fleet, order manual dan salinan tidak dapat membuka posisi di sana. shadow juga mengirim tiap order ke broker terhubung sebagai uji coba. Tanpa uang sungguhan.' }),
+    trendAgentId: tr(language, { ko: '에이전트 ID', en: 'agent id', ja: 'エージェントID', th: 'รหัสเอเจนต์', vi: 'ID agent', id: 'ID agen' }),
+    trendRisk: tr(language, { ko: '거래당 리스크 ($)', en: 'risk per trade ($)', ja: '1取引あたりリスク ($)', th: 'ความเสี่ยงต่อเทรด ($)', vi: 'rủi ro mỗi lệnh ($)', id: 'risiko per trade ($)' }),
+    trendAdd: tr(language, { ko: '등록', en: 'Enrol', ja: '登録', th: 'ลงทะเบียน', vi: 'Đăng ký', id: 'Daftarkan' }),
+    trendRemove: tr(language, { ko: '해제', en: 'Remove', ja: '解除', th: 'นำออก', vi: 'Gỡ', id: 'Hapus' }),
+    trendNone: tr(language, { ko: '등록된 계정 없음', en: 'No account enrolled', ja: '登録口座なし', th: 'ยังไม่มีบัญชีที่ลงทะเบียน', vi: 'Chưa có tài khoản nào', id: 'Belum ada akun terdaftar' }),
+    trendOff: tr(language, { ko: '추세 모듈이 꺼져 있어 계정이 실행되지 않습니다', en: 'The trend module is off — no account runs', ja: 'トレンドモジュールがオフのため口座は動きません', th: 'โมดูลเทรนด์ปิดอยู่ — ไม่มีบัญชีทำงาน', vi: 'Mô-đun xu hướng đang tắt — không tài khoản nào chạy', id: 'Modul tren mati — tidak ada akun yang berjalan' }),
+    trendNoBroker: tr(language, { ko: '연결된 브로커 없음', en: 'no broker linked', ja: 'ブローカー未接続', th: 'ยังไม่เชื่อมโบรกเกอร์', vi: 'chưa kết nối sàn', id: 'belum ada broker terhubung' }),
     usdtSave: tr(language, { ko: '저장', en: 'Save', ja: '保存', th: 'บันทึก', vi: 'Lưu', id: 'Simpan' }),
     usdtConfirm: tr(language, {
       ko: '이 주소로 구독자의 실제 자금이 입금됩니다. 지갑의 주소와 정확히 일치하는지 확인하셨습니까?',
@@ -624,6 +636,7 @@ export function AdminPage() {
         setAutoRules(await call('automation?limit=100'))
         // Plan 21 P3: crypto composite rides the public regime payload.
         try { setRegimeRead(await (await fetch('/api/market-intel/regime')).json()) } catch { /* advisory card only */ }
+        try { setTrendAccounts(await call('settings/trend-accounts')) } catch { /* card stays hidden */ }
         const llm = await call('settings/llm')
         setLlmSettings(llm)
         const s = llm?.settings || {}
@@ -1499,6 +1512,65 @@ export function AdminPage() {
               {regimeRead.crypto_composite.as_of && (
                 <div style={{ fontSize: 10, color: 'var(--text-muted,#8a8073)', marginTop: 6 }}>as of {regimeRead.crypto_composite.as_of}</div>
               )}
+            </div>
+          )}
+          {/* Trend accounts (Plan 32) — hand a user's account to the trend
+              rule. simulator | shadow; the server refuses anything else. */}
+          {trendAccounts && (
+            <div style={{ ...card, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{T.trendTitle}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted,#8a8073)', marginBottom: 6 }}>{T.trendHint}</div>
+              <div style={{ fontSize: 11, fontFamily: 'ui-monospace, monospace', marginBottom: 10 }}>
+                {(trendAccounts.symbols || []).join(' · ')}
+              </div>
+              {!trendAccounts.module_enabled && (
+                <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 8 }}>⚠️ {T.trendOff}</div>
+              )}
+              {trendAccounts.problem && (
+                <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 8 }}>⚠️ {trendAccounts.problem}</div>
+              )}
+              {(trendAccounts.accounts || []).length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted,#8a8073)', marginBottom: 8 }}>{T.trendNone}</div>
+              )}
+              {(trendAccounts.accounts || []).map((a: any) => (
+                <div key={a.agent_id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6, fontSize: 12, fontFamily: 'ui-monospace, monospace' }}>
+                  <span>agent {a.agent_id}</span>
+                  <span>{a.account_type}</span>
+                  <span>${a.risk_usd}</span>
+                  {a.account_type === 'shadow' && (
+                    <span style={a.broker ? undefined : { color: '#ef4444' }}>{a.broker || T.trendNoBroker}</span>
+                  )}
+                  <span style={{ color: 'var(--text-muted,#8a8073)' }}>
+                    {(a.open_positions || []).join(' ')}
+                    {a.stats ? ` n=${a.stats.n_trades ?? 0} · pnl ${a.stats.total_pnl ?? 0}` : ''}
+                  </span>
+                  <button style={{ ...inputStyle, cursor: 'pointer' }}
+                    onClick={() => act(`settings/trend-accounts/${a.agent_id}`, { method: 'DELETE' }, 'automation')}>{T.trendRemove}</button>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+                <input placeholder={T.trendAgentId} value={trendForm.agent_id}
+                  onChange={e => setTrendForm(p => ({ ...p, agent_id: e.target.value }))}
+                  style={{ ...inputStyle, width: 120, fontFamily: 'ui-monospace, monospace' }} />
+                <select value={trendForm.account_type}
+                  onChange={e => setTrendForm(p => ({ ...p, account_type: e.target.value }))}
+                  style={{ ...inputStyle, fontFamily: 'ui-monospace, monospace' }}>
+                  {(trendAccounts.account_types || ['simulator']).map((t: string) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <input placeholder={T.trendRisk} value={trendForm.risk_usd}
+                  onChange={e => setTrendForm(p => ({ ...p, risk_usd: e.target.value }))}
+                  style={{ ...inputStyle, width: 160, fontFamily: 'ui-monospace, monospace' }} />
+                <button style={primaryBtn} disabled={!trendForm.agent_id.trim()}
+                  onClick={async () => {
+                    const ok = await act('settings/trend-accounts', {
+                      method: 'POST',
+                      body: JSON.stringify({ agent_id: Number(trendForm.agent_id), account_type: trendForm.account_type, risk_usd: Number(trendForm.risk_usd) }),
+                    }, 'automation')
+                    if (ok) setTrendForm({ agent_id: '', account_type: 'simulator', risk_usd: '25' })
+                  }}>{T.trendAdd}</button>
+              </div>
             </div>
           )}
           {/* LLM routing — the operator's own AI server + per-tier models,

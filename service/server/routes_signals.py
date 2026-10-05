@@ -46,6 +46,7 @@ from metrics import signal_publish_total
 from services import _add_agent_points, _get_agent_by_token, _reserve_signal_id, _update_position_from_signal
 from signal_feed_snapshot import read_signal_feed_snapshot
 from signal_quality import score_signal_quality
+import trend_accounts
 from team_missions import TeamMissionError, record_team_message_from_signal, record_team_reply_from_parent_signal
 from utils import _extract_token
 
@@ -301,6 +302,9 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
         cursor = conn.cursor()
         try:
             begin_write_transaction(cursor)
+            # Plan 32: on a dedicated trend account only the trend rule opens.
+            if trend_accounts.entry_fence(cursor, agent_id, action_lower):
+                raise HTTPException(status_code=409, detail=trend_accounts.FENCED)
             signal_id = _reserve_signal_id(cursor)
 
             position_lev = 1.0
@@ -526,6 +530,9 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                     follower_position = None
 
                     if action_lower in ['buy', 'short']:
+                        if trend_accounts.entry_fence(cursor, follower_id, action_lower):
+                            cursor.execute(f'ROLLBACK TO SAVEPOINT follower_{follower_id}')
+                            continue
                         follower_fee = trade_value * TRADE_FEE_RATE
                         follower_total = trade_value + follower_fee
                         cursor.execute('SELECT cash FROM agents WHERE id = ?', (follower_id,))

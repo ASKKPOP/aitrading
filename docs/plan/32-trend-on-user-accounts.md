@@ -88,13 +88,52 @@ the row: the desk keeps the user's main account, the rule has its own.
 | B | the same account in **shadow**: every order also sent to a connected broker as a dry run, drift journalled | engineering work, then the owner connects a broker link to that account |
 | C | **live** on that account | owner only — see below |
 
-What stage B/C need that does not exist yet: the module's orders routed
+What stage B/C needed when this was written (stage B is now built — see
+"Stage B as built" below; stage C is not): the module's orders routed
 through the execution gateway (with the order id checked BEFORE the broker
 call — a duplicate must never reach the venue); a long-only switch; exits on
 the daily close only, sent by the module (no intraday stop on the row, because
 the watcher's close never reaches a broker); reconciliation of the module's
 state against the broker's fills; a per-account kill switch. None of this is
 built. It is a piece of work with its own plan review, not a setting.
+
+### Stage B as built (2026-10-05)
+
+`service/server/trend_accounts.py` + `trend_module._run_accounts`. An admin
+enrols one account at a time (console → Automation → Trend accounts, or
+`POST /api/admin/settings/trend-accounts`) as `simulator` or `shadow`;
+`live` is refused by the enrolment itself and the module has no live branch.
+
+- **Enrolled clean.** The agent must belong to a user and hold no open
+  position, no active run and no active fleet. Removal is refused while it
+  holds a position.
+- **Fenced.** On an enrolled account nothing but the rule opens a position:
+  runs and fleets are refused at start (`start_run`,
+  `resolve_start_conflicts`, `create_fleet`, `start_fleet`), and every other
+  writer — manual order, copy-trade fill, automation rule, resting order —
+  at the ledger (`execute_paper_trade` and the realtime-signal route).
+  Closing is never fenced. The orphan sweep skips the account. The fence
+  holds while the module is switched off.
+- **The rule on it.** Long-only, exits on the daily close, no stop on the
+  ledger row, own state and own risk figure ($25 default, $100 cap).
+- **Shadow.** After each ledger fill the same order goes to the account's
+  connected broker through `execution.gateway.submit_shadow` — sandbox or
+  the venue's validate-only call, journalled in `broker_orders` and the
+  reconciliation log. The ledger order id is checked first, so a duplicate
+  never reaches a venue; a broker failure never undoes the ledger fill.
+- **Kill switch.** The account's master hold (and the entry freeze, a
+  tripped breaker, the plan gate) stops new entries; exits still run.
+
+Known limits of stage B, all of which stage C would have to close: a
+position the user closes by hand, or a stop the user sets on the row, is a
+ledger-only close the broker never sees (the module notices and frees the
+slot); a dry run answers accept/reject, not a fill, so there is no fill
+reconciliation yet; the entry fence fails open if the enrolment cannot be
+read (it sits on every simulated entry on the platform).
+
+To use it: create a separate login for the trend account (one user has one
+account), connect a broker on its Accounts page in paper/sandbox mode,
+then enrol its agent id as `shadow`.
 
 What turns real money on — each step is the owner's, and none will be done by
 an engineering session: connect a live broker account and enter its API

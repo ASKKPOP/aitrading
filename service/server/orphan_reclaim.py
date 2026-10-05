@@ -107,14 +107,19 @@ def find_orphans(agent_id: "int | None" = None) -> list[dict[str, Any]]:
         except Exception:  # noqa: BLE001
             pass
     floor = min_age_minutes()
-    managed = _module_managed_agent()
+    managed = _module_managed_agents()
+    if managed is None:
+        return []
     return [r for r in rows
-            if r.get("agent_id") != managed
+            if r.get("agent_id") not in managed
             and _age_minutes(r.get("first_opened_at") or r.get("opened_at"), now) >= floor]
 
 
-def _module_managed_agent() -> "int | None":
-    """The trend module's dedicated agent, while that module is running.
+def _module_managed_agents() -> "set[int] | None":
+    """The accounts the trend module trades, while that module is running:
+    its dedicated agent and every enrolled trend account (Plan 32). None
+    when the module is on and its enrolment cannot be read — the sweep then
+    sits this pass out rather than guess which rows are the module's.
 
     Its positions carry run_id NULL by design — no run owns them, the module
     does, with its own stop (1.5×ATR, judged on the daily close) kept in
@@ -127,9 +132,18 @@ def _module_managed_agent() -> "int | None":
     try:
         import trend_module
         if not trend_module.module_enabled():
-            return None
-        return trend_module._agent_id()
+            return set()
+        managed = {trend_module._agent_id()}
     except Exception:  # noqa: BLE001 — never break the sweep
+        return set()
+    try:
+        import trend_accounts
+        return managed | {int(a["agent_id"]) for a in trend_accounts._read()}
+    except ValueError:      # stored value does not validate: enrols nobody
+        return managed
+    except Exception:  # noqa: BLE001
+        logger.warning("orphan sweep: trend accounts unreadable — skipping "
+                       "this pass", exc_info=True)
         return None
 
 

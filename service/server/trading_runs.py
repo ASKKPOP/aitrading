@@ -36,6 +36,7 @@ from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
 import markets
+import trend_accounts
 
 logger = logging.getLogger(__name__)
 
@@ -589,6 +590,9 @@ def resolve_start_conflicts(run_id: int, agent_id: int) -> dict:
         run = dict(run)
         if run["status"] != STATUS_DRAFT:
             raise ValueError(f"only a draft run can start (status={run['status']})")
+        # Plan 32: "resolving" would close the trend rule's own position.
+        if trend_accounts.is_trend_account(agent_id, cursor):
+            raise EntitlementDenied(trend_accounts.NO_RUNS)
         market, symbol = run["market"], run["symbol"]
         conflicts = list_start_conflicts(cursor, agent_id, market, symbol)
     finally:
@@ -681,6 +685,9 @@ def start_run(run_id: int, agent_id: int) -> dict:
         run = dict(run)
         if run["status"] != STATUS_DRAFT:
             raise ValueError(f"only a draft run can start (status={run['status']})")
+        # Plan 32: a dedicated trend account is traded by the trend rule only.
+        if trend_accounts.is_trend_account(agent_id, cursor):
+            raise EntitlementDenied(trend_accounts.NO_RUNS)
 
         # Plan 10 D9: server-side tier gate (env-gated until PLAN_LIMITS is
         # confirmed). Same gate family as the automation engine's — the two

@@ -31,6 +31,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import trading_runs
+import trend_accounts
 from database import begin_write_transaction, get_db_connection
 
 logger = logging.getLogger(__name__)
@@ -748,6 +749,9 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
         user_id = _user_id_for_agent(cursor, agent_id)
         if user_id is None:
             raise ValueError("fleets require an agent linked to a user account")
+        # Plan 32: a dedicated trend account is traded by the trend rule only.
+        if trend_accounts.is_trend_account(agent_id, cursor):
+            raise trading_runs.EntitlementDenied(trend_accounts.NO_RUNS)
         from entitlements import check_fleet_create
         deny = check_fleet_create(cursor, agent_id, int(n_runs))
         if deny:
@@ -971,6 +975,9 @@ def start_fleet(fleet_id: int, agent_id: int) -> dict:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        # A draft made before the account was handed to the trend rule.
+        if trend_accounts.is_trend_account(agent_id, cursor):
+            raise trading_runs.EntitlementDenied(trend_accounts.NO_RUNS)
         from entitlements import check_fleet_create
         deny = check_fleet_create(cursor, agent_id, int(fleet["n_runs"]))
         if deny:

@@ -33,6 +33,7 @@ from typing import Any, Optional
 
 from database import begin_write_transaction, get_db_connection
 import markets
+import trend_accounts
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +119,12 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             if fence_reason:
                 conn.rollback()
                 return None, fence_reason
+        # Plan 32: on a dedicated trend account only the trend rule opens.
+        fenced = trend_accounts.entry_fence(cursor, agent_id, side,
+                                            client_order_id)
+        if fenced:
+            conn.rollback()
+            return None, fenced
         if client_order_id:
             cursor.execute("SELECT id FROM signals WHERE client_order_id = ?",
                            (client_order_id,))

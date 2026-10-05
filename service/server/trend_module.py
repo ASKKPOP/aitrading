@@ -27,6 +27,12 @@ Execution: automation.execute_paper_trade under a DEDICATED agent id
 (open positions, trail levels, telemetry) lives as JSON in
 platform_settings under `trend_module_state`.
 
+Trend accounts (Plan 32, trend_accounts.py): the same rule on a user's
+account that has been handed to it and fenced off from every other writer —
+long-only, exits on the daily close, own state (`trend_module_state:<id>`),
+own risk figure. A `shadow` account's fills are also sent to its connected
+broker as a dry run. No account type here sends a real order.
+
 Falsifier (pre-registered, Plan 31): 30 trips or 60 trading days of
 live-window sim — true-net EV ≤ 0 or payoff < 1.5 → module dies, no
 capital. `trend_stats()` reports the module's own record from its fills.
@@ -218,11 +224,14 @@ def evaluate_symbol(bars: list[dict[str, Any]],
     return None
 
 
-def position_qty(atr: float, size_mult: float = 1.0) -> float:
-    """Vol-parity sizing: risk TREND_RISK_USD over the 1.5×ATR initial stop."""
+def position_qty(atr: float, size_mult: float = 1.0,
+                 risk_usd: Optional[float] = None) -> float:
+    """Vol-parity sizing: risk TREND_RISK_USD (or an enrolled account's own
+    figure) over the 1.5×ATR initial stop."""
     if atr <= 0:
         return 0.0
-    return _risk_usd() / (STOP_ATR_MULT * atr) * size_mult
+    risk = _risk_usd() if risk_usd is None else float(risk_usd)
+    return risk / (STOP_ATR_MULT * atr) * size_mult
 
 
 # ─────────────────────────── trail / exits ───────────────────────────
@@ -548,9 +557,9 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _load_state() -> dict[str, Any]:
+def _load_state(key: str = STATE_KEY) -> dict[str, Any]:
     from platform_settings import get_setting
-    raw = get_setting(STATE_KEY)
+    raw = get_setting(key)
     if raw:
         try:
             state = json.loads(raw)
@@ -567,7 +576,7 @@ def _load_state() -> dict[str, Any]:
 STATE_MAX_BYTES = 60_000
 
 
-def _save_state(state: dict[str, Any]) -> None:
+def _save_state(state: dict[str, Any], key: str = STATE_KEY) -> None:
     """Persist the module state — inside the column it lives in.
 
     EVENT_CAP rows of telemetry (~180 bytes each) do not fit a TEXT column,
@@ -581,7 +590,7 @@ def _save_state(state: dict[str, Any]) -> None:
     while len(raw.encode("utf-8")) > STATE_MAX_BYTES and state.get("events"):
         del state["events"][:max(1, len(state["events"]) // 4)]
         raw = json.dumps(state)
-    set_setting(STATE_KEY, raw, updated_by="trend_module")
+    set_setting(key, raw, updated_by="trend_module")
 
 
 def _emit(state: dict[str, Any], actions: list[dict[str, Any]],
@@ -610,23 +619,162 @@ def run_trend_cycle() -> dict[str, Any]:
     if agent_id is None:
         logger.warning("trend_module: TREND_AGENT_ID unset — refusing to run")
         summary["error"] = "TREND_AGENT_ID unset"
-        return summary
-
-    if not _agent_is_dedicated(agent_id):
+    elif not _agent_is_dedicated(agent_id):
         logger.warning("trend_module: TREND_AGENT_ID=%s is not a dedicated "
                        "agent (user_id must be NULL) — refusing to run",
                        agent_id)
         summary["error"] = "TREND_AGENT_ID not a dedicated agent"
-        return summary
+    else:
+        try:
+            _run_book(_module_book(agent_id), summary)
+        except Exception as exc:  # noqa: BLE001 — must not stop the accounts
+            logger.exception("trend_module: module account cycle failed")
+            summary["error"] = str(exc)[:200]
+    accounts = _run_accounts()
+    if accounts:
+        summary["accounts"] = accounts
+    return summary
 
+
+def _module_book(agent_id: int) -> dict[str, Any]:
+    """The module's own account: long and short, its initial stop enforced
+    intraday on the ledger row, simulated ledger only."""
+    return {"agent_id": agent_id, "state_key": STATE_KEY, "risk_usd": None,
+            "long_only": False, "intraday_stop": True, "user": False,
+            "account_type": "simulator"}
+
+
+def _account_book(entry: dict[str, Any]) -> dict[str, Any]:
+    """An enrolled user's dedicated trend account (Plan 32, trend_accounts).
+
+    Long-only and exits on the daily close only — the form a spot broker
+    can carry, and the one R-LONG tested (+107R, n=66, the primary run's
+    own 66 longs). No stop on the ledger row: the SL/TP watcher closes on
+    the ledger alone, and a close the broker never hears of is exactly what
+    a shadow account exists to not have. Like the module's own account,
+    every lot on it is the rule's — the enrolment fence keeps it so."""
+    agent_id = int(entry["agent_id"])
+    return {"agent_id": agent_id, "state_key": f"{STATE_KEY}:{agent_id}",
+            "risk_usd": float(entry["risk_usd"]), "long_only": True,
+            "intraday_stop": False, "user": True,
+            "account_type": entry["account_type"]}
+
+
+def _run_accounts() -> list[dict[str, Any]]:
+    """One cycle for every enrolled trend account. An account that fails
+    does so on its own: it cannot stop another or the module's account."""
+    out: list[dict[str, Any]] = []
+    try:
+        import trend_accounts
+        entries = trend_accounts.accounts()
+    except Exception:  # noqa: BLE001
+        logger.exception("trend_module: trend accounts unreadable")
+        return out
+    for entry in entries:
+        summary: dict[str, Any] = {
+            "agent_id": entry["agent_id"],
+            "account_type": entry["account_type"], "scanned": 0,
+            "signals": 0, "entries": 0, "exits": 0, "vetoes": 0,
+            "actions": []}
+        try:
+            # Fail closed, mirror of the dedicated check: an enrolment only
+            # ever trades an agent that provably belongs to a user.
+            if trend_accounts._agent_user_id(entry["agent_id"]) is None:
+                summary["error"] = "agent belongs to no user"
+            else:
+                _run_book(_account_book(entry), summary)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("trend_module: trend account %s failed",
+                             entry.get("agent_id"))
+            summary["error"] = str(exc)[:200]
+        out.append(summary)
+    return out
+
+
+def _entry_block(agent_id: int) -> Optional[str]:
+    """Why a user's trend account may not OPEN anything this cycle, or None.
+    Exits are never gated by this.
+
+    Every stop that keeps the AI desk from opening on a user's account keeps
+    the rule from opening too: the user's master hold, the per-agent entry
+    freeze, a tripped breaker (global, market or agent), and the plan gate.
+    The module does not go through run_cycle or the execution gates where
+    those live, so they are asked here. The master hold is therefore the
+    account's kill switch. Fails closed: a check that cannot be made is a
+    block."""
+    try:
+        import run_engine
+        if run_engine._master_held(agent_id):
+            return "account is on master hold"
+        if run_engine._entry_frozen(agent_id):
+            return "entries are frozen for this agent (AGENT_ENTRY_FREEZE)"
+        import risk_engine
+        from database import get_db_connection
+        conn = get_db_connection()
+        try:
+            halt = risk_engine._is_halted(conn.cursor(), agent_id, "crypto")
+        finally:
+            conn.close()
+        if halt:
+            return f"trading is halted: {halt}"
+        from automation import _entitlement_blocks
+        return _entitlement_blocks(agent_id)
+    except Exception:  # noqa: BLE001
+        logger.warning("trend_module: entry checks unavailable for agent %s",
+                       agent_id, exc_info=True)
+        return "account checks unavailable"
+
+
+def _place(book: dict[str, Any], state: dict[str, Any],
+           actions: list[dict[str, Any]], symbol: str, side: str, qty: float,
+           price: float, content: str, client_order_id: str,
+           ) -> tuple[Optional[int], Optional[str]]:
+    """One order for a book. The simulated ledger is the record for every
+    account type; a `shadow` account's fill is then also sent to its
+    connected broker as a sandbox / dry-run order and journalled for drift
+    (execution.gateway.submit_shadow — never a real order, never raises).
+
+    The ledger write comes first and carries the order id, so a duplicate is
+    refused before anything reaches a venue. There is no live branch: an
+    enrolment cannot say `live` (trend_accounts.ACCOUNT_TYPES)."""
     from automation import execute_paper_trade
+    agent_id = int(book["agent_id"])
+    signal_id, err = execute_paper_trade(
+        agent_id, symbol, "crypto", side, float(qty), price,
+        content=content, run_id=None, client_order_id=client_order_id)
+    if signal_id is not None and book["account_type"] == "shadow":
+        try:
+            from execution.gateway import submit_shadow
+            order = submit_shadow(agent_id, symbol, "crypto", side,
+                                  float(qty), price,
+                                  ledger_quantity=float(qty),
+                                  signal_id=signal_id)
+            if order is None:
+                # No usable broker link, or a journal-only venue.
+                _emit(state, actions, "shadow", symbol=symbol, side=side,
+                      status="no_broker_order", signal_id=signal_id)
+            else:
+                _emit(state, actions, "shadow", symbol=symbol, side=side,
+                      broker=order.broker, signal_id=signal_id,
+                      status=getattr(order.status, "value", str(order.status)),
+                      error=(order.error_message or None))
+        except Exception as exc:  # noqa: BLE001 — the ledger fill stands
+            _emit(state, actions, "shadow", symbol=symbol, side=side,
+                  status="error", signal_id=signal_id, error=str(exc)[:200])
+    return signal_id, err
 
-    state = _load_state()
+
+def _run_book(book: dict[str, Any], summary: dict[str, Any]) -> None:
+    """One cycle for one account: trail and exits on its open positions,
+    then new entries. Mutates `summary` in place."""
+    agent_id = int(book["agent_id"])
+    state = _load_state(book["state_key"])
     actions: list[dict[str, Any]] = []
     _reconcile_ledger(state, actions, agent_id)
     _drop_closed_outside(state, actions, agent_id)
-    for symbol, pos in state["positions"].items():
-        _sync_stop(agent_id, symbol, pos["initial_stop"])
+    if book["intraday_stop"]:
+        for symbol, pos in state["positions"].items():
+            _sync_stop(agent_id, symbol, pos["initial_stop"])
     fear_greed = _fear_greed_value()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -661,12 +809,11 @@ def run_trend_cycle() -> dict[str, Any]:
             continue
         side = "sell" if pos["side"] == "long" else "cover"
         close = _mark(symbol, close)
-        signal_id, err = execute_paper_trade(
-            agent_id, symbol, "crypto", side, float(pos["qty"]), close,
-            content=json.dumps({"module": "trend", "exit_reason": reason,
-                                "entry_kind": pos.get("entry_kind")}),
-            run_id=None,
-            client_order_id=f"trend:{agent_id}:{symbol}:exit:{today}")
+        signal_id, err = _place(
+            book, state, actions, symbol, side, float(pos["qty"]), close,
+            json.dumps({"module": "trend", "exit_reason": reason,
+                        "entry_kind": pos.get("entry_kind")}),
+            f"trend:{agent_id}:{symbol}:exit:{today}")
         if signal_id is not None:
             summary["exits"] += 1
             del state["positions"][symbol]
@@ -683,7 +830,10 @@ def run_trend_cycle() -> dict[str, Any]:
                   reason=err, exit_reason=reason)
 
     # ── new entries ──
-    for symbol in _universe():
+    entry_block = _entry_block(agent_id) if book["user"] else None
+    if entry_block:
+        _emit(state, actions, "entries_blocked", reason=entry_block)
+    for symbol in ([] if entry_block else _universe()):
         if symbol in state["positions"]:
             continue
         if len(state["positions"]) >= _max_positions():
@@ -699,6 +849,8 @@ def run_trend_cycle() -> dict[str, Any]:
             continue
         sig = evaluate_symbol(bars, fear_greed)
         if sig is None:
+            continue
+        if book["long_only"] and sig.get("side") == "short":
             continue
         if sig.get("blocked"):
             _emit(state, actions, "signal_blocked", symbol=symbol,
@@ -719,7 +871,8 @@ def run_trend_cycle() -> dict[str, Any]:
             _emit(state, actions, "veto", symbol=symbol,
                   entry_kind=sig["entry_kind"])
             continue
-        qty = position_qty(sig["atr"], verdict["size_mult"])
+        qty = position_qty(sig["atr"], verdict["size_mult"],
+                           book["risk_usd"])
         if qty <= 0:
             continue
         entry = _mark(symbol, sig["close"])
@@ -727,12 +880,10 @@ def run_trend_cycle() -> dict[str, Any]:
             book_side, initial_stop = "long", entry - STOP_ATR_MULT * sig["atr"]
         else:
             book_side, initial_stop = "short", entry + STOP_ATR_MULT * sig["atr"]
-        signal_id, err = execute_paper_trade(
-            agent_id, symbol, "crypto", sig["side"], qty, entry,
-            content=json.dumps({"module": "trend",
-                                "entry_kind": sig["entry_kind"]}),
-            run_id=None,
-            client_order_id=f"trend:{agent_id}:{symbol}:{sig['side']}:{today}")
+        signal_id, err = _place(
+            book, state, actions, symbol, sig["side"], qty, entry,
+            json.dumps({"module": "trend", "entry_kind": sig["entry_kind"]}),
+            f"trend:{agent_id}:{symbol}:{sig['side']}:{today}")
         if signal_id is None:
             if err and "client_order_id" in err:
                 # Verification A3-5: a crash between the ledger commit and
@@ -759,29 +910,31 @@ def run_trend_cycle() -> dict[str, Any]:
         }
         if bar_ts is not None:
             state.setdefault("entered_bar", {})[symbol] = bar_ts
-        _sync_stop(agent_id, symbol, initial_stop)
+        if book["intraday_stop"]:
+            _sync_stop(agent_id, symbol, initial_stop)
         summary["entries"] += 1
         _emit(state, actions, "entry", symbol=symbol, side=sig["side"],
               entry_kind=sig["entry_kind"], qty=qty, price=entry,
               stop=initial_stop, signal_id=signal_id)
 
-    _save_state(state)
+    _save_state(state, book["state_key"])
     summary["actions"] = actions
     summary["open_positions"] = len(state["positions"])
-    return summary
 
 
 # ─────────────────────────── falsifier instrumentation ───────────────────────────
 
-def trend_stats() -> dict[str, Any]:
-    """The module's own record from its agent's fills: n closed trades, win
-    rate, payoff, total pnl.
+def trend_stats(agent_id: Optional[int] = None) -> dict[str, Any]:
+    """The rule's record on one account, from that account's fills: n closed
+    trades, win rate, payoff, total pnl. The module's own account by
+    default; an enrolled trend account when `agent_id` is given.
 
-    EVERY fill on the dedicated agent, not only those carrying the module's
+    EVERY fill on the account, not only those carrying the module's
     'trend:' order id: its stop is enforced by the SL/TP watcher, whose
     close has no order id, and a record without the stop-outs is a record
     without most of the losses."""
-    agent_id = _agent_id()
+    if agent_id is None:
+        agent_id = _agent_id()
     if agent_id is None:
         return {"error": "TREND_AGENT_ID unset"}
     from database import get_db_connection
