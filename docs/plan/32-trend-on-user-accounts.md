@@ -177,6 +177,34 @@ To use it: create a separate login for the trend account (one user has one
 account), connect a broker on its Accounts page in paper/sandbox mode,
 then enrol its agent id as `shadow`.
 
+#### Ship record, 2026-10-05 (local CI, owner rule: no hosted CI, no PR)
+
+Head `97096d6` = `7aa1204` (prod) + 7 commits, fast-forward. Run in a fresh
+scratch clone (`git archive`-clean checkout, Python 3.12, Node 22):
+
+| job (exact command from `.github/workflows/*.yml`) | result |
+|---|---|
+| `ruff check server/ --select F401,F811,F821,F841` (cwd `service`) | exit 0 |
+| `pytest -q` (cwd `service/server`, `DB_PATH`, `ALPHA_VANTAGE_API_KEY=demo`) | 5,339 passed, 1,349 subtests, exit 0, 11m02s |
+| `npm ci` / `npm run build` (cwd `service/frontend`) | exit 0 / exit 0 |
+| `npm audit --audit-level=high --omit=dev` | exit 0 (2 moderate, below the gate) |
+| `gitleaks detect --log-opts=origin/main..HEAD` | 7 commits, no leaks |
+| `pip-audit -r service/constraints.txt --no-deps --disable-pip` | no known vulnerabilities |
+
+Ship test (owner rule: two independent agents before push): four rounds —
+adversarial reviewer + independent verifier each time, in private exports.
+Round 1 found a real-money defect in this change (a `live` rule's venue order
+preceded the ledger write the new fence refuses) and two more; round 2 found
+only LOW items and nine unpinned tests; round 3 two exception-type holes in
+hand-edited enrolment rows; round 4 one control-character id that still
+raised the wrong type. All fixed; 100+ mutants killed across the rounds.
+
+What a local run does not give: a clean-room hosted runner, the hosted audit
+trail, and any check that needs provider secrets. Not exercised anywhere:
+MySQL row locking (`FOR UPDATE`) and a real broker dry run — both run first
+on prod, in that order: deploy, then enrol one account as `simulator`, then
+`shadow` once its broker link exists.
+
 What turns real money on — each step is the owner's, and none will be done by
 an engineering session: connect a live broker account and enter its API
 credentials; accept the live-trading terms; put the broker on
