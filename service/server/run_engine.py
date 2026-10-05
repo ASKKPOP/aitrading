@@ -7478,11 +7478,13 @@ def _settle_stop_hit(run_id: int, decision: dict) -> None:
     `stop_router.clear` means "a desk decision cycle ran, its verdict
     governs": it cancels the watcher's fail-safe close and suppresses
     re-noting for 30 minutes. A rule fallback or a no-verdict scaffold is
-    not a verdict — the trader returned nothing — so it must not buy the
-    position 30 minutes past its own breached stop. Left pending, the
-    watcher closes at STOP_DESK_TIMEOUT_S exactly as for a silent desk.
+    not a verdict — no trader decision was read — so it must not buy the
+    position 30 minutes past its own breached stop. Left uncleared, the
+    note behaves exactly as for a silent desk: the watcher closes at
+    STOP_DESK_TIMEOUT_S if the level is still traded through, and
+    `stop_router.pending` stops reporting it at that deadline either way.
     (2026-10-05, adversarial review, reproduced through run_cycle; the
-    chair no longer answers for a silent trader, which made this the
+    chair no longer answers for a rule fallback, which made this the
     normal outcome of a stop hit during an LLM outage.)"""
     if (decision or {}).get("decided_by") in ("rule", "scaffold"):
         return
@@ -7604,11 +7606,12 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
     and the failure is journaled in the same event."""
     proposal = (analysis.get("decision") or {})
     action = proposal.get("action")
+    _held_unknown = False
     try:
         held = _position_quantity(run["agent_id"], run["market"],
                                   run["symbol"], run["id"])
     except Exception:  # noqa: BLE001
-        held = 0.0
+        held, _held_unknown = 0.0, True
     if not _produces_order(action, held):
         return analysis
     payload: dict = {"proposed": {"action": action,
@@ -7748,7 +7751,9 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
             # flag alone it also carried an add to the breached position,
             # and any entry behind a stale flag or a raising router, over
             # the panel's hold.
-            _stop_ruling = _stop_hit and not _entry_side
+            # An unreadable book is not a flat one: on a stop hit it keeps
+            # the exemption rather than reading the desk's exit as an entry.
+            _stop_ruling = _stop_hit and (not _entry_side or _held_unknown)
             if (not _panel_order_veto_enabled()
                     and ((_entry_side and _panel_entry_override_enabled())
                          or _stop_ruling)
@@ -8343,9 +8348,11 @@ def run_cycle(run_id: int) -> dict:
                                       **_outlook})
                 _warm_outlook_i18n(run["agent_id"], _outlook)
 
-        # Stop-hit routing: this decision IS the desk's ruling on the noted
-        # hit — clear it (which also suppresses re-noting for one think
+        # Stop-hit routing: a desk decision IS the ruling on the noted hit
+        # and clears it (which also suppresses re-noting for one think
         # window, so a justified hold is not re-litigated every scan tick).
+        # A rule fallback or scaffold is not one and leaves it for the
+        # watcher.
         _settle_stop_hit(run_id, decision)
 
         # The report just journaled is English on purpose (it is the corpus

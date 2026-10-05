@@ -61,6 +61,73 @@ class RouterCoreTests(unittest.TestCase):
         with patch.dict(os.environ, {"STOP_DESK_ROUTING": "0"}):
             self.assertFalse(stop_router.enabled())
 
+    def _at(self, t):
+        return patch.object(stop_router, "_now", lambda: float(t))
+
+    def test_a_hit_is_pending_only_inside_the_desks_window(self):
+        """`pending` is what makes a run due NOW, lifts its loss cooldown and
+        writes the STOP HIT brief line. A hit nobody cleared kept doing all
+        three for as long as the process lived (adversarial review round 2,
+        2026-10-05: still due at +6h, six full-tier cycles). Past the
+        fail-safe deadline the desk's window is over."""
+        with self._at(1000):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        with self._at(1179):
+            self.assertIsNotNone(stop_router.pending(9))
+        with self._at(1180):
+            self.assertIsNone(stop_router.pending(9))
+        # a desk that started deliberating gets its window from that start
+        stop_router._reset()
+        with self._at(1000):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        with self._at(1100):
+            stop_router.begin_ruling(9)
+        with self._at(1279):
+            self.assertIsNotNone(stop_router.pending(9))
+        with self._at(1280):
+            self.assertIsNone(stop_router.pending(9))
+
+    def test_an_unruled_hit_still_meets_the_failsafe_while_in_breach(self):
+        with self._at(1000):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        for t in (1030, 1060, 1090, 1120, 1150):      # watcher scan ticks
+            with self._at(t):
+                self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58))
+        with self._at(1180):
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 57.9),
+                             "still through the level at the deadline ⇒ "
+                             "programming closes")
+
+    def test_a_long_deliberation_still_ends_in_the_close(self):
+        # Deadline 330s after the first note (ruling began at +150s). The
+        # hit has been seen every scan, so it is the SAME breach and the
+        # fail-safe closes — it is not mistaken for a new hit because the
+        # note is old.
+        with self._at(1000):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        for t in range(1030, 1330, 30):
+            with self._at(t):
+                if t == 1150:
+                    stop_router.begin_ruling(9)
+                self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 58))
+        with self._at(1330):
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 57.9))
+
+    def test_a_rebreach_after_the_price_left_is_a_new_hit(self):
+        """Touch, bounce, nobody ruled. The stale note must not turn a
+        breach a day later into an instant close with no desk window."""
+        with self._at(1000):
+            stop_router.note_hit(9, 1, "stop_loss", 58.3)
+        with self._at(1030):
+            stop_router.note_hit(9, 1, "stop_loss", 58.2)     # last seen
+        with self._at(1000 + 86400):
+            self.assertTrue(stop_router.note_hit(9, 1, "stop_loss", 57.0),
+                            "a new breach closed on yesterday's clock")
+            self.assertEqual(stop_router.pending(9)["price"], 57.0)
+        with self._at(1000 + 86400 + 180):
+            self.assertFalse(stop_router.note_hit(9, 1, "stop_loss", 56.9),
+                             "the new hit has its own fail-safe")
+
     def test_the_failsafe_does_not_dump_mid_deliberation(self):
         """A desk actually DECIDING must not be fail-safed out from under
         its own ruling. SOL 1274 (2026-08-15): the fail-safe fired at 183s
@@ -315,6 +382,62 @@ class EngineSideTests(unittest.TestCase):
         import inspect
         self.assertIn("_settle_stop_hit(run_id, decision)",
                       inspect.getsource(run_engine.run_cycle))
+
+    def _cycle(self, decision):
+        """One REAL run_cycle for a run with a noted stop hit."""
+        import json
+        import tempfile as _tf
+        from datetime import datetime, timedelta, timezone
+        tmp = _tf.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(tmp.name, "t.db")
+        database.init_database()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO agents (name, cash) VALUES ('c', 100000)")
+        fresh = (datetime.now(timezone.utc)
+                 - timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        cur.execute(
+            "INSERT INTO trading_runs (agent_id, symbol, market, market_type,"
+            " status, config_snapshot_json, start_condition_json,"
+            " stop_conditions_json, last_cycle_at, created_at) VALUES "
+            "(?,?,?,'spot','running',?,'{}','{}',?,?)",
+            (cur.lastrowid, "ETHUSDT", "crypto",
+             json.dumps({"interval_minutes": 60}), fresh,
+             "2026-01-01T00:00:00Z"))
+        rid = cur.lastrowid
+        conn.commit()
+        conn.close()
+        stop_router.note_hit(rid, 1, "stop_loss", 100.0)
+        with patch("analysis_agents.run_analysis",
+                   return_value={"decision": decision, "analysts": {}}), \
+             patch.object(run_engine, "_pre_gate_skip",
+                          lambda run, cfg: None):
+            self.assertIn(rid, run_engine.due_run_ids(),
+                          "fixture: the noted hit did not dispatch the run")
+            run_engine.run_cycle(rid)
+        return rid
+
+    def test_run_cycle_settles_with_the_decision_it_made(self):
+        """The seam. `_settle_stop_hit(run_id, {})` — the round-1 bug with
+        the right function name on it — passed every test in the tree."""
+        rid = self._cycle({"action": "hold", "confidence": 0.6,
+                           "decided_by": "ai", "report": "stop re-authored"})
+        self.assertIsNone(stop_router.pending(rid),
+                          "the desk ruled and the hit was not cleared")
+        stop_router._reset()
+        rid = self._cycle({"action": "hold", "confidence": 0.0,
+                           "decided_by": "rule",
+                           "fallback_reason": "no llm response",
+                           "report": "Technical signal is 'buy'"})
+        self.assertIsNotNone(stop_router.pending(rid),
+                             "a hold nobody authored cancelled the fail-safe")
+        # ...and the run stops being dispatched for it once the window ends
+        import time as _time
+        with patch.object(stop_router, "_now",
+                          lambda: _time.monotonic() + stop_router.timeout_s()):
+            self.assertNotIn(rid, run_engine.due_run_ids())
 
     def test_an_unlabelled_decision_still_clears(self):
         # Older producers stamp no decided_by; absence is not "not the AI".

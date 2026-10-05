@@ -65,6 +65,29 @@ def enabled() -> bool:
             not in ("0", "false", "no"))
 
 
+# The watcher scans every ~30s and calls note_hit each time the level is
+# still traded through; a note unseen for this long means the price left.
+_REBREACH_GAP_S = 300.0
+
+
+def _deadline(note: dict) -> float:
+    """When the desk's window on a noted hit ends and programming closes.
+
+    A desk actually DECIDING is not "silent": once run_cycle stamps
+    begin_ruling, the hit gets one full timeout window measured from
+    deliberation start (SOL 1274's fail-safe fired at 183s vs the 180s
+    window; dispatch alone can eat 30s and the emergency runs the expensive
+    full tier — dumping the book mid-deliberation both wastes the LLM call
+    and steals the ruling). HARD-BOUNDED: a hung cycle still meets the
+    fail-safe at deciding_since + timeout, so the worst case is
+    dispatch-window + one deliberation window."""
+    deadline = note["ts"] + timeout_s()
+    deciding = note.get("deciding_since")
+    if deciding is not None:
+        deadline = max(deadline, deciding + timeout_s())
+    return deadline
+
+
 def note_hit(run_id: int, position_id: int, trigger: str,
              price: float) -> bool:
     """Record a stop/target hit for the desk. Returns True when the hit is
@@ -75,22 +98,18 @@ def note_hit(run_id: int, position_id: int, trigger: str,
     now = _now()
     pending = _PENDING.get(run_id)
     if pending is not None:
-        # A desk actually DECIDING is not "silent": once run_cycle stamps
-        # begin_ruling, the hit gets one full timeout window measured from
-        # deliberation start (SOL 1274's fail-safe fired at 183s vs the
-        # 180s window; dispatch alone can eat 30s and the emergency runs
-        # the expensive full tier — dumping the book mid-deliberation both
-        # wastes the LLM call and steals the ruling). HARD-BOUNDED: a hung
-        # cycle still meets the fail-safe at deciding_since + timeout, so
-        # the worst case is dispatch-window + one deliberation window.
-        deadline = pending["ts"] + timeout_s()
-        deciding = pending.get("deciding_since")
-        if deciding is not None:
-            deadline = max(deadline, deciding + timeout_s())
-        if now >= deadline:
-            _PENDING.pop(run_id, None)
+        seen = pending.get("seen", pending["ts"])
+        if now < _deadline(pending):
+            pending["seen"] = now
+            return True                # meeting already convened — wait
+        _PENDING.pop(run_id, None)
+        if now - seen < _REBREACH_GAP_S:
             return False               # fail-safe: programming closes
-        return True                    # meeting already convened — wait
+        # The note expired with nobody ruling AND the watcher stopped
+        # seeing the level traded (it calls here every scan while price is
+        # through it): the price left. This breach is a new hit with its
+        # own window — not an instant close on a clock that ran out while
+        # the position was fine.
     if now < _SUPPRESS_UNTIL.get(run_id, 0.0):
         return True                    # desk just ruled; do not re-litigate
     _PENDING[run_id] = {"position_id": position_id, "trigger": trigger,
@@ -109,7 +128,18 @@ def begin_ruling(run_id: int) -> None:
 
 
 def pending(run_id: int) -> "dict | None":
-    return _PENDING.get(run_id)
+    """The hit the desk is still inside its window to rule on.
+
+    None once the fail-safe deadline has passed, even though the note stays
+    for the watcher to close on. A cycle that ends without a verdict (rule
+    fallback, scaffold) deliberately leaves the note uncleared, and callers
+    read this to dispatch the run NOW, lift its loss cooldown and write the
+    STOP HIT line — unbounded, that was a run cycled on the full tier for
+    as long as the process lived after one touch-and-bounce."""
+    note = _PENDING.get(run_id)
+    if note is None or _now() >= _deadline(note):
+        return None
+    return note
 
 
 def clear(run_id: int) -> None:

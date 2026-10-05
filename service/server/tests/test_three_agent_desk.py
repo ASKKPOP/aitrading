@@ -289,10 +289,15 @@ class FullTierChair(unittest.TestCase):
         self.assertEqual(out["chair"], "no_trader_verdict")
         self.assertEqual(calls, [], "no trader verdict, nothing to chair")
 
-    def test_an_unreadable_trader_is_still_chaired(self):
-        # "decision json unparseable" means the trader DID answer: the
-        # report is its own prose. That is an AI voice the chair may weigh;
-        # only a trader that said nothing leaves nothing to chair.
+    def test_an_unreadable_trader_is_not_chaired_either(self):
+        # Decided, both ways, on 2026-10-05. Round 1 kept this case open
+        # ("the report is the trader's own prose"); round 2 closed it:
+        # anything with an action and a confidence is already salvaged
+        # upstream, so what reaches here as unparseable carried no decision;
+        # the chair is still told "Trader (verified) decision: hold 0.0";
+        # and its order would journal decided_by=rule, which the stop
+        # router reads as "nobody ruled". Owner policy 2026-07-27: holding
+        # is the honest answer when the desk could not be read.
         prose = dict(self._RULE_FALLBACK,
                      fallback_reason="decision json unparseable",
                      report="I would buy the pullback to 98, stop 95.")
@@ -302,8 +307,8 @@ class FullTierChair(unittest.TestCase):
                                                  "confidence": 0.6})])):
             out = analysis_agents._chair_final(
                 "NVDA", "us-stock", prose, None, "en", can_sell=True)
-        self.assertEqual(out["action"], "buy")
-        self.assertIn("action", out["chair"]["amended"])
+        self.assertEqual(out["action"], "hold")
+        self.assertEqual(out["chair"], "no_trader_verdict")
 
     def test_an_AI_verdict_is_still_chaired(self):
         decision = dict(self._DECISION, decided_by="ai")

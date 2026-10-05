@@ -755,6 +755,25 @@ class RoutedStopHitExemption(unittest.TestCase):
         self.assertEqual(self._drive_entry(0.0, "buy", boom), "hold",
                          "a broken router carried a fresh entry")
 
+    def test_an_unreadable_book_keeps_the_stop_ruling(self):
+        # A failed position lookup reads as flat, and "flat + sell" is not a
+        # reduction — so a real stop ruling lost its exemption (round 2).
+        # Unknown is not flat: on a stop hit the desk's ruling stands.
+        def hit(rid):
+            return {"reason": "stop"}
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 side_effect=RuntimeError("db down"))
+        self.held.start()
+        import stop_router
+        panel = {"decision": {"action": "hold", "confidence": 0.5},
+                 "analysts": {}}
+        with patch.object(stop_router, "enabled", lambda: True), \
+             patch.object(stop_router, "pending", hit), \
+             patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis("sell"))
+        self.assertEqual(out["decision"]["action"], "sell")
+
     def test_the_entry_flag_does_not_reopen_the_EXIT_veto(self):
         # PANEL_ENTRY_OVERRIDE=1 restores 09-05 for entries only; the
         # discretionary-exit veto (LTC / ASTER / FIL) stays.

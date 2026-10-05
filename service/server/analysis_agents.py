@@ -901,22 +901,23 @@ def _chair_final(symbol: str, market: str, decision: dict[str, Any],
     action/confidence/report; every other key (order, intent, outlook,
     scores) stays the trader's. Fail-open — any trouble returns the
     decision unchanged (caller also guards)."""
-    # A trader that said nothing leaves nothing to chair (2026-10-05).
-    # `_hold_only` holds the rule fallback, but its report still carries the
-    # rule engine's read ("Technical signal is 'buy'"), and the prompt below
-    # presents that as the "Trader (verified) decision". Tape 09-11..10-05,
-    # agent 6, with the trader returning nothing on 79% of decisions: the
-    # chair amended that hold into an order 192 times out of 192 (187 buys,
-    # 5 sells), and 99 became positions (-$19.69; two of them shorts opened
-    # by a "sell") — the rule engine originating a position through an AI
-    # voice that had seen no analysis. Same policy and switch as
-    # `_hold_only`. An UNPARSEABLE answer is different and still chaired:
-    # its report is the trader's own prose. A held book loses no exit to
-    # this — the dollar rails never ran through the chair, and a routed
-    # stop hit left unruled falls to the watcher's fail-safe
-    # (run_engine._settle_stop_hit).
-    if (ai_only_orders() and decision.get("decided_by") == "rule"
-            and decision.get("fallback_reason") == "no llm response"):
+    # A rule fallback is not a trader verdict, so there is nothing to chair
+    # (2026-10-05). `_hold_only` holds the fallback, but its report still
+    # carries the rule engine's read ("Technical signal is 'buy'"), and the
+    # prompt below presents that as the "Trader (verified) decision". Tape
+    # 09-11..10-05, agent 6, with the trader returning nothing on 79% of
+    # decisions: the chair amended that hold into an order 192 times out of
+    # 192 (187 buys, 5 sells), and 99 became positions (-$19.69; two of them
+    # shorts opened by a "sell") — the rule engine originating a position
+    # through an AI voice that had seen no analysis. Same policy and switch
+    # as `_hold_only`, and the same scope: an unparseable answer too. What
+    # carried an action and a confidence was already salvaged upstream, and
+    # an order amended here would journal decided_by="rule", which
+    # run_engine._settle_stop_hit reads as "nobody ruled". A held book loses
+    # no exit to this: the dollar rails never ran through the chair, and a
+    # routed stop hit left unruled falls to the watcher's fail-safe for as
+    # long as the level stays traded.
+    if ai_only_orders() and decision.get("decided_by") == "rule":
         out = dict(decision)
         out["chair"] = "no_trader_verdict"
         return out
