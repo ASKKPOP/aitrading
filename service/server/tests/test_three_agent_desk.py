@@ -289,6 +289,31 @@ class FullTierChair(unittest.TestCase):
         self.assertEqual(out["chair"], "no_trader_verdict")
         self.assertEqual(calls, [], "no trader verdict, nothing to chair")
 
+    def test_an_unreadable_trader_is_still_chaired(self):
+        # "decision json unparseable" means the trader DID answer: the
+        # report is its own prose. That is an AI voice the chair may weigh;
+        # only a trader that said nothing leaves nothing to chair.
+        prose = dict(self._RULE_FALLBACK,
+                     fallback_reason="decision json unparseable",
+                     report="I would buy the pullback to 98, stop 95.")
+        with patch.object(analysis_agents, "generate_text",
+                          _fake_llm([json.dumps({"final": "amend",
+                                                 "action": "buy",
+                                                 "confidence": 0.6})])):
+            out = analysis_agents._chair_final(
+                "NVDA", "us-stock", prose, None, "en", can_sell=True)
+        self.assertEqual(out["action"], "buy")
+        self.assertIn("action", out["chair"]["amended"])
+
+    def test_an_AI_verdict_is_still_chaired(self):
+        decision = dict(self._DECISION, decided_by="ai")
+        with patch.object(analysis_agents, "generate_text",
+                          _fake_llm([json.dumps({"final": "amend",
+                                                 "action": "hold"})])):
+            out = analysis_agents._chair_final(
+                "NVDA", "us-stock", decision, None, "en", can_sell=True)
+        self.assertEqual(out["action"], "hold")
+
     def test_ai_only_off_restores_the_old_chair(self):
         # RUN_AI_ONLY_ORDERS is the policy this guard enforces; switching the
         # policy off must not leave a second, hidden copy of it behind.

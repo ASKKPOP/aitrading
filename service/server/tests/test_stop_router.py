@@ -306,10 +306,43 @@ class EngineSideTests(unittest.TestCase):
                             "loss cooldown")
 
     def test_decision_clears_the_pending_hit(self):
+        stop_router.note_hit(9, 1, "stop_loss", 10.0)
+        run_engine._settle_stop_hit(9, {"action": "hold",
+                                        "decided_by": "ai"})
+        self.assertIsNone(stop_router.pending(9),
+                          "the desk's ruling must clear the noted hit")
+        # wiring: the cycle settles through the helper, with the decision
         import inspect
-        src = inspect.getsource(run_engine.run_cycle)
-        self.assertIn("stop_router.clear(run_id)", src,
-                      "the desk's ruling must clear the noted hit")
+        self.assertIn("_settle_stop_hit(run_id, decision)",
+                      inspect.getsource(run_engine.run_cycle))
+
+    def test_an_unlabelled_decision_still_clears(self):
+        # Older producers stamp no decided_by; absence is not "not the AI".
+        stop_router.note_hit(9, 1, "stop_loss", 10.0)
+        run_engine._settle_stop_hit(9, {"action": "sell"})
+        self.assertIsNone(stop_router.pending(9))
+
+    def test_a_hold_nobody_authored_does_not_cancel_the_failsafe(self):
+        """`clear` means "a desk decision cycle ran, its verdict governs".
+        A rule fallback or a no-verdict scaffold is not a verdict: the
+        trader returned nothing. Clearing on it cancelled the fail-safe and
+        suppressed re-noting for 30 minutes, so a position sat through its
+        own breached stop for as long as the LLM stayed down (adversarial
+        review 2026-10-05, reproduced through run_cycle). Left pending, the
+        watcher closes at the timeout exactly as it does for a silent
+        desk."""
+        for label in ("rule", "scaffold"):
+            stop_router._reset()
+            stop_router.note_hit(9, 1, "stop_loss", 10.0)
+            run_engine._settle_stop_hit(9, {"action": "hold",
+                                            "decided_by": label})
+            self.assertIsNotNone(stop_router.pending(9), label)
+            # ...and the fail-safe still fires on schedule
+            with patch.object(stop_router, "_now",
+                              lambda: __import__("time").monotonic()
+                              + stop_router.timeout_s() + 1):
+                self.assertFalse(stop_router.note_hit(9, 1, "stop_loss",
+                                                      9.9), label)
 
 
 if __name__ == "__main__":

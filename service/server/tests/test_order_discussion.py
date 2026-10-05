@@ -713,6 +713,54 @@ class RoutedStopHitExemption(unittest.TestCase):
         """The three losses that justified the revert were all this shape."""
         self.assertEqual(self._drive(stop_pending=False), "hold")
 
+    def test_the_stop_hit_override_is_journaled(self):
+        # The action alone cannot pin the exemption: the substitution guard
+        # restores the desk's verb even with the exemption removed. The
+        # record of WHY it stood can.
+        self._drive(stop_pending=True)
+        _, payload = self.events[0]
+        self.assertEqual(payload["panel_verdict"], "hold")
+        self.assertTrue(payload["veto_overridden"])
+
+    def _drive_entry(self, held, action, pending_fn):
+        import stop_router
+        self.held.stop()
+        self.held = patch.object(run_engine, "_position_quantity",
+                                 return_value=held)
+        self.held.start()
+        panel = {"decision": {"action": "hold", "confidence": 0.5},
+                 "analysts": {}}
+        with patch.object(stop_router, "enabled", lambda: True), \
+             patch.object(stop_router, "pending", pending_fn), \
+             patch("analysis_agents.run_analysis", return_value=panel):
+            out = run_engine._order_discussion(_RUN, {}, _analysis(action))
+        return out["decision"]["action"]
+
+    def test_a_stop_hit_does_not_carry_an_ENTRY_past_the_panel(self):
+        """The exemption protects the desk's ruling on its own breached
+        stop — a reduction. It was keyed on the stop flag alone, so three
+        entries rode it over a panel hold (adversarial review 2026-10-05):
+        an add to the long that just breached, a buy on a flat book with a
+        stale flag, and a buy when the router itself raised."""
+        def hit(rid):
+            return {"reason": "stop"}
+
+        def boom(rid):
+            raise RuntimeError("router down")
+
+        self.assertEqual(self._drive_entry(4.0, "buy", hit), "hold",
+                         "an add stood over the panel on a stop hit")
+        self.assertEqual(self._drive_entry(0.0, "buy", hit), "hold",
+                         "a stale stop flag carried a fresh entry")
+        self.assertEqual(self._drive_entry(0.0, "buy", boom), "hold",
+                         "a broken router carried a fresh entry")
+
+    def test_the_entry_flag_does_not_reopen_the_EXIT_veto(self):
+        # PANEL_ENTRY_OVERRIDE=1 restores 09-05 for entries only; the
+        # discretionary-exit veto (LTC / ASTER / FIL) stays.
+        with patch.dict("os.environ", {"PANEL_ENTRY_OVERRIDE": "1"}):
+            self.assertEqual(self._drive(stop_pending=False), "hold")
+
     def test_a_broken_router_fails_toward_the_desks_ruling(self):
         import stop_router
         panel = {"decision": {"action": "hold", "confidence": 0.5},

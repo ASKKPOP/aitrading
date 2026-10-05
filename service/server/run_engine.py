@@ -7455,7 +7455,7 @@ def _panel_entry_override_enabled() -> bool:
     The 2026-09-05 override was shipped to buy outcome data ("EXPECT
     TRADES"). The data, 09-05..10-05, owner accounts (agents 6 and 60):
 
-        proposed buys reviewed by the panel   590   panel said hold: 590
+        proposed buys reviewed by the panel   671   panel said hold: 671
         entries taken over that hold          548   net -$67.26
         desk entry vs a random minute, same symbol and side (n=632):
             1h -6.8bp  4h -3.1bp  12h +1.3bp  24h -24.4bp  48h -38.0bp
@@ -7470,6 +7470,28 @@ def _panel_entry_override_enabled() -> bool:
     routed stop hits are untouched either way."""
     return (os.environ.get("PANEL_ENTRY_OVERRIDE", "0").strip().lower()
             in ("1", "true", "yes", "on"))
+
+
+def _settle_stop_hit(run_id: int, decision: dict) -> None:
+    """Clear the run's noted stop hit — if a desk actually ruled on it.
+
+    `stop_router.clear` means "a desk decision cycle ran, its verdict
+    governs": it cancels the watcher's fail-safe close and suppresses
+    re-noting for 30 minutes. A rule fallback or a no-verdict scaffold is
+    not a verdict — the trader returned nothing — so it must not buy the
+    position 30 minutes past its own breached stop. Left pending, the
+    watcher closes at STOP_DESK_TIMEOUT_S exactly as for a silent desk.
+    (2026-10-05, adversarial review, reproduced through run_cycle; the
+    chair no longer answers for a silent trader, which made this the
+    normal outcome of a stop hit during an LLM outage.)"""
+    if (decision or {}).get("decided_by") in ("rule", "scaffold"):
+        return
+    try:
+        import stop_router
+        if stop_router.enabled():
+            stop_router.clear(run_id)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _produces_order(action: "str | None", held: float) -> bool:
@@ -7721,11 +7743,15 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
                 _stop_hit = True
             # 2026-10-05: the entry side of this override is now opt-in
             # (`_panel_entry_override_enabled`) — the tape it was shipped
-            # to collect came back against it. The stop-hit side is
-            # unchanged.
+            # to collect came back against it. The stop-hit exemption is
+            # for the ruling it was written for, a REDUCTION: keyed on the
+            # flag alone it also carried an add to the breached position,
+            # and any entry behind a stale flag or a raising router, over
+            # the panel's hold.
+            _stop_ruling = _stop_hit and not _entry_side
             if (not _panel_order_veto_enabled()
                     and ((_entry_side and _panel_entry_override_enabled())
-                         or _stop_hit)
+                         or _stop_ruling)
                     and str(final.get("action") or "").lower() == "hold"):
                 payload["panel_verdict"] = "hold"
                 payload["veto_overridden"] = True
@@ -7755,7 +7781,7 @@ def _order_discussion(run: dict, cfg: dict, analysis: dict) -> dict:
             # ruling on its own breached level under a fail-safe clock —
             # the one population where this codebase has already paid 2x for
             # letting anything but the desk's ruling govern (SOL 1274).
-            if _stop_hit and not _panel_order_veto_enabled():
+            if _stop_ruling and not _panel_order_veto_enabled():
                 if str(final.get("action") or "").lower() != str(
                         action or "").lower():
                     payload["panel_substitution_refused"] = str(
@@ -8320,12 +8346,7 @@ def run_cycle(run_id: int) -> dict:
         # Stop-hit routing: this decision IS the desk's ruling on the noted
         # hit — clear it (which also suppresses re-noting for one think
         # window, so a justified hold is not re-litigated every scan tick).
-        try:
-            import stop_router
-            if stop_router.enabled():
-                stop_router.clear(run_id)
-        except Exception:  # noqa: BLE001
-            pass
+        _settle_stop_hit(run_id, decision)
 
         # The report just journaled is English on purpose (it is the corpus
         # desk_memory retrieves from), and the AI-analysis panel localizes it
