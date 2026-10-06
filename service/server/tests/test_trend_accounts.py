@@ -1323,6 +1323,27 @@ class AdminApi(_Base):
             r = self.client.post(self.URL, headers=self.admin, json=bad)
             self.assertEqual(r.status_code, 400, str(bad)[:40])
 
+    def test_the_console_shows_the_crypto_broker_the_shadow_leg_uses(self):
+        """binance link plus a NEWER ibkr link: the trend book trades crypto
+        only, so the console must name binance — the market-blind pick named
+        ibkr, which the shadow leg never uses."""
+        from execution.crypto import encrypt_credentials
+        self._x("INSERT INTO broker_accounts (agent_id, broker, execution_mode,"
+                " credentials_enc, is_active, created_at, updated_at) VALUES "
+                "(?, 'binance', 'paper', ?, 1, '2026-10-01T00:00:00Z', "
+                "'2026-10-01T00:00:00Z')",
+                (self.U, encrypt_credentials({"key": "k", "secret": "s"})))
+        self._x("INSERT INTO broker_accounts (agent_id, broker, execution_mode,"
+                " credentials_enc, is_active, created_at, updated_at) VALUES "
+                "(?, 'ibkr', 'paper', ?, 1, '2026-10-02T00:00:00Z', "
+                "'2026-10-02T00:00:00Z')",
+                (self.U, encrypt_credentials({"gateway_url": "https://gw/v1/api",
+                                              "account_id": "DU1"})))
+        ta.enrol(self.U, "shadow")
+        body = self.client.get(self.URL, headers=self.admin).json()
+        row, = body["accounts"]
+        self.assertEqual(row["broker"], "binance")
+
     def test_the_console_sees_what_is_stored_not_what_is_running(self):
         ta.enrol(self.U)
         with patch.dict(os.environ, {"TREND_MODULE_ENABLED": "0"}):

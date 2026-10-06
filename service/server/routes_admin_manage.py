@@ -1417,11 +1417,12 @@ def register_admin_manage_routes(app: FastAPI, ctx: RouteContext) -> None:
         except Exception:  # noqa: BLE001
             row["open_positions"] = None
         # Which broker a shadow order would be sent to — the name only,
-        # picked exactly as execution.gateway.submit_shadow picks it.
+        # picked exactly as execution.gateway.submit_shadow picks it: the
+        # agent's active link that trades crypto (the trend book's market).
         try:
             from execution.gateway import (_has_usable_credentials,
                                            active_broker_account)
-            link = active_broker_account(agent_id)
+            link = active_broker_account(agent_id, "crypto")
             row["broker"] = (link.get("broker") if link
                              and _has_usable_credentials(link) else None)
         except Exception:  # noqa: BLE001

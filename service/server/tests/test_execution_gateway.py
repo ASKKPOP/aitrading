@@ -342,6 +342,14 @@ class TestGatewayHealth(_GatewayTestCase):
         self.assertFalse(h["configured"])
         self.assertIn("no trading gateway", h["detail"])
 
+    def test_health_for_a_market_picks_that_markets_broker(self):
+        from execution.gateway import gateway_health
+        _add_broker_account(self.agent_id, broker="binance", creds=True)
+        _add_broker_account(self.agent_id, broker="alpaca", creds=True)
+        self.assertEqual(gateway_health(self.agent_id, market="crypto")["broker"],
+                         "binance")
+        self.assertFalse(gateway_health(self.agent_id, market="forex")["configured"])
+
     def test_undecryptable_credentials_report_not_ok(self):
         from execution.gateway import gateway_health
         _add_broker_account(self.agent_id, creds=False)
@@ -405,6 +413,89 @@ class TestGatewayHealth(_GatewayTestCase):
             h = gateway_health(self.agent_id)
         self.assertFalse(h["ok"])
         self.assertIn("health check failed", h["detail"])
+
+
+class TestSubmitLiveMarketSelection(_GatewayTestCase):
+    """submit_live is the last gate before real money: it must route the
+    order to a broker that trades the ORDER'S market, and refuse (never
+    reroute, never paper-fill) when no connected broker does."""
+
+    def test_live_order_for_a_market_no_linked_broker_trades_is_refused(self):
+        from execution.base import OrderStatus
+        from execution.gateway import NOT_CONFIGURED, submit_live
+        _add_broker_account(self.agent_id, broker="alpaca", creds=True)
+        _accept_tcs(self.agent_id, "alpaca")
+        with patch("execution.gateway._broker_for") as build:
+            order = submit_live(self.agent_id, "BTC", "crypto", "buy",
+                                0.01, 50_000.0)
+        build.assert_not_called()
+        self.assertIs(order.status, OrderStatus.REJECTED)
+        self.assertEqual(order.error_message, NOT_CONFIGURED)
+
+    def test_live_order_on_a_link_whose_credentials_no_longer_decrypt_is_refused(self):
+        """Adversarial review 2026-10-05: a rotated EXECUTION_ENCRYPTION_KEY
+        leaves a link whose blob cannot be read. router._build_real_broker
+        turns that into a PaperBroker, whose "fill" wrote a REAL position for
+        a live order and was journalled as filled/paper/live. The live gate
+        refuses this row (NOT_CONFIGURED_NO_CREDS); submit_live must too."""
+        from execution.base import OrderStatus
+        from execution.gateway import NOT_CONFIGURED_NO_CREDS, submit_live
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO broker_accounts
+               (agent_id, broker, execution_mode, credentials_enc, is_active, created_at, updated_at)
+               VALUES (?,?,?,?,1,?,?)""",
+            (self.agent_id, "binance", "live", "not-a-valid-token",
+             utc_now_iso_z(), utc_now_iso_z()))
+        conn.commit()
+        conn.close()
+        _accept_tcs(self.agent_id, "binance")
+        with patch("execution.gateway._broker_for") as build:
+            order = submit_live(self.agent_id, "BTCUSDT", "crypto", "buy",
+                                0.01, 50_000.0)
+        build.assert_not_called()
+        self.assertIs(order.status, OrderStatus.REJECTED)
+        self.assertEqual(order.error_message, NOT_CONFIGURED_NO_CREDS)
+        self.assertNotEqual(order.broker, "paper")
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) AS n FROM positions WHERE agent_id = ?",
+                       (self.agent_id,))
+        self.assertEqual(dict(cursor.fetchone())["n"], 0)
+        conn.close()
+
+    def test_live_never_sends_through_a_paper_adapter(self):
+        """Defense in depth: whatever the adapter factory hands back, a LIVE
+        order never goes through PaperBroker — that is simulation wearing a
+        live label, and the paper name used to skip the allowlist check."""
+        from execution.base import OrderStatus
+        from execution.gateway import submit_live
+        from execution.paper import PaperBroker
+        _add_broker_account(self.agent_id, broker="binance", creds=True)
+        _accept_tcs(self.agent_id, "binance")
+        with patch("execution.gateway._broker_for", return_value=PaperBroker()):
+            order = submit_live(self.agent_id, "BTCUSDT", "crypto", "buy",
+                                0.01, 50_000.0)
+        self.assertIs(order.status, OrderStatus.REJECTED)
+        self.assertIn("binance", order.error_message or "")
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) AS n FROM positions WHERE agent_id = ?",
+                       (self.agent_id,))
+        self.assertEqual(dict(cursor.fetchone())["n"], 0)
+        conn.close()
+
+    def test_live_order_with_no_link_at_all_is_refused_not_paper_filled(self):
+        """Before: an empty account row built a PaperBroker, whose fill
+        looked exactly like a real one."""
+        from execution.base import OrderStatus
+        from execution.gateway import NOT_CONFIGURED, submit_live
+        order = submit_live(self.agent_id, "BTC", "crypto", "buy",
+                            0.01, 50_000.0)
+        self.assertIs(order.status, OrderStatus.REJECTED)
+        self.assertEqual(order.error_message, NOT_CONFIGURED)
+        self.assertNotEqual(order.broker, "paper")
 
 
 class TestGatewayFailureAlert(_GatewayTestCase):

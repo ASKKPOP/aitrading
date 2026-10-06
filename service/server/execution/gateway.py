@@ -177,8 +177,13 @@ def live_refusal_reason(agent_id: int, account_type: Optional[str],
     return None
 
 
-def gateway_health(agent_id: int) -> dict[str, Any]:
+def gateway_health(agent_id: int, market: "str | None" = None) -> dict[str, Any]:
     """Is this agent's configured gateway actually usable right now?
+
+    With `market` given, the gateway that would take an order in THAT market
+    is probed (a crypto link and a stock link can both be active); without
+    it, the most recently updated link — the legacy "is anything connected"
+    question the UI asks.
 
     Credentials being on file is not the same as the venue being reachable.
     IBKR in particular holds a session that expires, so a live rule can stop
@@ -190,7 +195,7 @@ def gateway_health(agent_id: int) -> dict[str, Any]:
         "configured": False, "broker": None, "checked": False,
         "ok": None, "detail": "",
     }
-    account = active_broker_account(agent_id)
+    account = active_broker_account(agent_id, market)
     if not account:
         out["detail"] = "no trading gateway connected"
         return out
@@ -308,7 +313,7 @@ def reconcile_orders_tick(limit: int = 200) -> dict[str, Any]:
     try:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, agent_id, symbol, side, quantity, broker,
+            """SELECT id, agent_id, symbol, market, side, quantity, broker,
                       broker_order_id, execution_mode
                FROM broker_orders
                WHERE status IN ('submitted', 'partial_fill') AND broker != 'paper'
@@ -320,13 +325,17 @@ def reconcile_orders_tick(limit: int = 200) -> dict[str, Any]:
     finally:
         conn.close()
 
-    accounts: dict[int, Optional[dict[str, Any]]] = {}
+    accounts: dict[tuple, Optional[dict[str, Any]]] = {}
     for row in rows:
         out["checked"] += 1
         agent_id = row["agent_id"]
-        if agent_id not in accounts:
-            accounts[agent_id] = active_broker_account(agent_id)
-        account = accounts[agent_id]
+        # The link for the ORDER'S market — a stock link and a crypto link
+        # can both be active, and the newest one is not necessarily the venue
+        # this order went to.
+        key = (agent_id, row.get("market"))
+        if key not in accounts:
+            accounts[key] = active_broker_account(agent_id, row.get("market"))
+        account = accounts[key]
         # The order remembers which venue it went to; the CURRENT account row
         # may have changed broker since — only reconcile against the same one.
         if not account or (account.get("broker") or "") != row["broker"]:
@@ -515,17 +524,46 @@ def submit_live(agent_id: int, symbol: str, market: str, side: str,
     """
     from execution.router import _persist_order
 
-    account = active_broker_account(agent_id) or {}
+    # The broker that trades the ORDER'S market — the same selection the
+    # live gate (live_refusal_reason) made. None means no connected broker
+    # can trade this market: refuse. Never the newest link of another
+    # market, and never the paper ledger dressed up as a fill.
+    account = active_broker_account(agent_id, market)
+
+    def _refuse(broker_name: str, reason: str) -> Order:
+        order = _build_order(agent_id, symbol, market, side, quantity, price,
+                             ExecutionMode.LIVE, broker_name)
+        order.status = OrderStatus.REJECTED
+        order.error_message = reason
+        try:
+            order.db_id = _persist_order(order)
+        except Exception:  # noqa: BLE001
+            _logger.exception("[live] could not persist refused order for agent %s", agent_id)
+        return order
+
+    if not account:
+        return _refuse("none", NOT_CONFIGURED)
+    # A link whose blob no longer decrypts (key rotation) is not a gateway:
+    # the adapter factory would hand back a PaperBroker, whose "fill" is a
+    # real ledger position wearing a live label. The gate refuses this row;
+    # so does the submit.
+    if not _has_usable_credentials(account):
+        return _refuse((account.get("broker") or "").strip().lower() or "none",
+                       NOT_CONFIGURED_NO_CREDS)
     broker = _broker_for(account, ExecutionMode.LIVE)
+    broker_name = broker.broker_name
+    if broker_name == "paper":
+        return _refuse((account.get("broker") or "").strip().lower() or "none",
+                       f"no live adapter for broker {account.get('broker')!r} "
+                       "— live order not sent")
     order = _build_order(agent_id, symbol, market, side, quantity, price,
-                         ExecutionMode.LIVE, broker.broker_name)
+                         ExecutionMode.LIVE, broker_name)
 
     # Defense in depth: automation checks live_refusal_reason before calling,
     # but submit_live is the last gate before real money — enforce the
     # allowlist and the new-venue notional cap here too. Caps REFUSE, never
     # resize: resizing an order the AI sized is a silent decision change.
-    broker_name = broker.broker_name
-    if broker_name != "paper" and broker_name not in _live_broker_allowlist():
+    if broker_name not in _live_broker_allowlist():
         order.status = OrderStatus.REJECTED
         order.error_message = NOT_ALLOWLISTED
         try:
@@ -571,7 +609,9 @@ def submit_shadow(agent_id: int, symbol: str, market: str, side: str,
     """
     from execution.router import _persist_order, _record_reconciliation
 
-    account = active_broker_account(agent_id)
+    # The broker that trades the ORDER'S market. A link for another market
+    # is not a gateway for this order — None, like no link at all.
+    account = active_broker_account(agent_id, market)
     if not account or not _has_usable_credentials(account):
         return None
 

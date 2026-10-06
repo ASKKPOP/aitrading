@@ -196,15 +196,16 @@ def register_execution_routes(app: FastAPI, ctx: RouteContext) -> None:
 
     # ── GET /api/execution/health ─────────────────────────────────────────────
     @app.get("/api/execution/health")
-    def gateway_health_check(req: Request):
+    def gateway_health_check(req: Request, market: Optional[str] = None):
         """Live readiness of the agent's gateway.
 
         Credentials on file is not the same as the venue accepting orders —
         IBKR sessions expire — so this probes rather than trusting the row.
+        `?market=` probes the link that would take an order in that market.
         """
         agent = _require_agent(req)
         from execution.gateway import gateway_health
-        return gateway_health(agent["id"])
+        return gateway_health(agent["id"], market)
 
     # ── PUT /api/execution/accounts/{account_id}/mode ─────────────────────────
     @app.put("/api/execution/accounts/{account_id}/mode")
