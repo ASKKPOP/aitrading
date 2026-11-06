@@ -317,6 +317,38 @@ def _reentry_cooldown_reason(last_close_iso: Optional[str], cfg: dict,
     return None
 
 
+def _stop_reentry_fence_min() -> float:
+    """Minutes a symbol stays closed to re-entry after the SL/TP watcher
+    closed it. 2026-11-06 (docs/reports/2026-11-06-one-month-loss-analysis.md
+    §2.3): UNI 10-08 — fail-safe cover 00:51:43Z, desk re-short 20× larger at
+    00:52:30Z, stopped again 15 min later (−$2.67). The re-entry cooldown
+    above is dormant at 1x (lev − 1 = 0), so nothing stood between a stop
+    close and the next cycle's order. 0 disables."""
+    try:
+        v = float(os.getenv("STOP_REENTRY_FENCE_MIN", "30") or 30)
+    except ValueError:
+        return 30.0
+    if not math.isfinite(v):
+        return 0.0
+    return max(0.0, min(v, 7 * 24 * 60.0))
+
+
+def _stop_reentry_fence_reason(last_watcher_close_iso: Optional[str],
+                               now: datetime) -> Optional[str]:
+    """Skip reason while a symbol is inside its post-stop fence. Pure."""
+    fence = _stop_reentry_fence_min()
+    if fence <= 0 or not last_watcher_close_iso:
+        return None
+    try:
+        last_dt = datetime.strptime(str(last_watcher_close_iso)[:19],
+                                    "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
+    if now - last_dt < timedelta(minutes=fence):
+        return f"stop-hit re-entry fence ({fence:.0f}m after watcher close)"
+    return None
+
+
 # ── #3 leverage-aware conviction sizing ────────────────────────────────────
 def _lev_sizing_enabled() -> bool:
     return os.getenv("RUN_LEV_SIZING", "true").strip().lower() in (
@@ -463,17 +495,27 @@ def _conviction_exit_strikes() -> int:
 
 
 def _recent_run_convictions(run_id: int, window: int) -> "list[float]":
-    """The most recent `window` conviction scalars for THIS run, newest first.
+    """The most recent `window` conviction scalars for THIS run, newest first,
+    counting ONLY decisions taken while the run held its position.
+
     Missing/None conviction is skipped, so a run must have ACTUALLY read low
-    conviction `window` times — an absent score never triggers the exit."""
+    conviction `window` times — an absent score never triggers the exit.
+
+    2026-11-06 (docs/reports/2026-11-06-one-month-loss-analysis.md §2.9):
+    15 trips closed 0–76s after entry because this read the FLAT cycles
+    before the open (the entry gate reads confidence; this rail read a
+    conviction history the position never had). A decision journaled with
+    held=false — or a legacy one without the flag — ends the streak."""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        # Over-fetch: the streak may be cut short by a flat read and the
+        # payload filter runs here, not in SQL.
         cursor.execute(
             """SELECT payload FROM run_events
                WHERE run_id = ? AND event_type = 'decision'
                ORDER BY id DESC LIMIT ?""",
-            (run_id, window))
+            (run_id, max(window * 4, 8)))
         rows = cursor.fetchall()
     except Exception:  # noqa: BLE001 — telemetry read, never blocks a cycle
         return []
@@ -485,11 +527,17 @@ def _recent_run_convictions(run_id: int, window: int) -> "list[float]":
     out: list[float] = []
     for row in rows:
         try:
-            val = json.loads(row["payload"] or "{}").get("conviction")
+            payload = json.loads(row["payload"] or "{}")
         except (ValueError, TypeError):
             continue
-        if isinstance(val, (int, float)) and not isinstance(val, bool):
-            out.append(float(val))
+        if payload.get("held") is not True:
+            break                       # flat (or pre-flag) read: streak ends
+        val = payload.get("conviction")
+        if not isinstance(val, (int, float)) or isinstance(val, bool):
+            break                       # absent score: never counts, never skipped over
+        out.append(float(val))
+        if len(out) >= window:
+            break
     return out
 
 
@@ -4932,6 +4980,19 @@ def _null_size_cap_frac() -> float:
     return min(max(v, 0.01), 1.0)
 
 
+def _null_size_refuse_enabled() -> bool:
+    """2026-11-06 (docs/reports/2026-11-06-one-month-loss-analysis.md §2.5):
+    the desk now sizes 60% of its opens itself at a $20 median; the 187 opens
+    it returned NO size for were clamped to 0.25 × max_bet = $94 — five times
+    the desk's own size — and carried $15.47 of the month's $25.74 fee bill
+    at net −$12.21 (−$8.96 ex-worst; both signs survive the largest trip).
+    A null/absent size is the desk declining to size; the platform must not
+    size the order for it. Default ON. RUN_NULL_SIZE_REFUSE=0 restores the
+    R17 clamp (kill switch)."""
+    return (os.getenv("RUN_NULL_SIZE_REFUSE", "1") or "1").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
 def _brake_room_usd(run: dict) -> Optional[float]:
     """USD of further equity loss this run can take before the platform's
     loss rail acts: the binding rail's cap minus the drawdown already
@@ -7972,6 +8033,29 @@ def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
         if cooldown:
             return cooldown
 
+    # Stop-hit re-entry fence (2026-11-06): the SL/TP watcher's close carries
+    # client_order_id "run:<id>:watcher:<trigger>:<epoch>" (risk_engine). A
+    # flat run may not re-open a symbol this agent was just stopped out of —
+    # keyed on agent + symbol + market, not run, because a no-prospect switch
+    # can hand the symbol to a fresh run inside the window.
+    if not has_position and _stop_reentry_fence_min() > 0:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT MAX(created_at) AS last_stop FROM signals "
+                "WHERE agent_id = ? AND symbol = ? AND market = ? "
+                "AND pnl IS NOT NULL "
+                "AND client_order_id LIKE 'run:%:watcher:%'",
+                (run["agent_id"], run["symbol"], run["market"]))
+            row = cursor.fetchone()
+            last_stop = row["last_stop"] if row else None
+        finally:
+            conn.close()
+        fence = _stop_reentry_fence_reason(last_stop, _now_dt())
+        if fence:
+            return fence
+
     # daily trade cap (always-on per-run rail)
     cap = int(run.get("max_trades_per_day") or 0)
     if cap > 0:
@@ -8339,6 +8423,9 @@ def run_cycle(run_id: int) -> dict:
                                  if (_fr := decision.get("fallback_reason"))
                                  else {}),
                               "conviction": conviction, "scores": scores,
+                              # 2026-11-06: the conviction-collapse rail
+                              # counts only reads taken while holding.
+                              "held": bool(abs(float(held or 0)) > 0),
                               "gate_source": "conviction" if use_conviction else "confidence",
                               "size_scale": size_scale,
                               "entry": entry,
@@ -8823,15 +8910,29 @@ def run_cycle(run_id: int) -> dict:
                 and action in ("buy", "short")
                 and (order_params is None or order_params.size_frac is None)
                 and float(size_usd or 0) > 0):
+            params_state = ("parsed_null" if order_params is not None
+                            else ("defer" if order_params_outcome(
+                                decision.get("order")) == "defer" else "absent"))
+            # 2026-11-06: refuse, don't size (see _null_size_refuse_enabled).
+            # The desk that sizes itself at $20 must not have the platform
+            # open $94 on its behalf whenever it stays silent on size.
+            if _null_size_refuse_enabled():
+                result["skip_reason"] = ("desk declined to size this entry "
+                                         f"(order_params {params_state})")
+                emit_telemetry_event(run_id, "gate_skip",
+                                     {"cycle": seq,
+                                      "stage": "null_size_refused",
+                                      "reason": result["skip_reason"],
+                                      "params_state": params_state,
+                                      "size_before": round(float(size_usd), 2)})
+                return result
             cap = _null_size_cap_frac() * float(cfg.get("max_bet_usd") or 0)
             if 0 < cap < float(size_usd):
                 emit_telemetry_event(run_id, "size_clamp",
                                      {"cycle": seq,
                                       "stage": "null_size_cap",
                                       "cap_frac": _null_size_cap_frac(),
-                                      "params_state": ("parsed_null"
-                                                       if order_params is not None
-                                                       else "absent"),
+                                      "params_state": params_state,
                                       "size_before": round(float(size_usd), 2),
                                       "size_after": round(cap, 2)})
                 size_usd = cap

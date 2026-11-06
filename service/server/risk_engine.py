@@ -569,12 +569,45 @@ def evaluate_order(agent_id: int, symbol: str, market: str, side: str,
 
 # ─────────────────────────── SL/TP watcher ───────────────────────────
 
+def _stop_close_first() -> bool:
+    """2026-11-06 (docs/reports/2026-11-06-one-month-loss-analysis.md §2.3):
+    on the 10-05→11-06 tape 0 of 26 stop hits received an AI ruling inside
+    the 180s window — the watcher closed every one, 25 of 26 PAST the
+    authored stop ($1.95 of slippage bought by waiting), and once the late
+    ruling re-entered 20× larger 47s after the fail-safe cover (UNI, −$2.67).
+    The emergency discussion produced zero decisions in a month; the wait
+    only moved the fill. Default now: close AT the stop. STOP_DESK_CLOSE_FIRST=0
+    restores the routed mode (owner 2026-08-13 design) for a desk that can
+    actually answer inside its window."""
+    return (os.environ.get("STOP_DESK_CLOSE_FIRST", "1").strip().lower()
+            not in ("0", "false", "no"))
+
+
+def _journal_stop_hit(run_id: int, pos: dict, trigger: str, price: float,
+                      mode: str, **extra: Any) -> None:
+    """A `stop_hit` run_event per watcher decision — "routed" (desk convened),
+    "failsafe_close" (window expired), "closed" (the watcher's close went
+    through, with its signal_id and client_order_id) — so the tape can
+    attribute every stop exit (29 NULL-coid exits on 10-05→11-06 had to be
+    inferred from the absence of a decision). Telemetry never blocks
+    protection."""
+    try:
+        from trading_runs import emit_telemetry_event
+        emit_telemetry_event(int(run_id), "stop_hit",
+                             {"trigger": trigger, "price": float(price),
+                              "position_id": int(pos["id"]), "mode": mode,
+                              **extra})
+    except Exception:  # noqa: BLE001
+        logger.debug("stop_hit journal failed (run %s)", run_id)
+
+
 def _route_stop_hit_to_desk(pos: dict, trigger: str, price: float) -> bool:
     """True = the hit is routed to the desk's emergency discussion and the
     watcher must NOT close this tick. False = close now (routing disabled,
-    a non-fleet position — manual SL/TP is a promise — a dead run, or the
-    fail-safe timeout expired with the desk silent). Fail-CLOSED to False:
-    any error here must leave the position protected by the old behavior."""
+    close-first mode, a non-fleet position — manual SL/TP is a promise — a
+    dead run, or the fail-safe timeout expired with the desk silent).
+    Fail-CLOSED to False: any error here must leave the position protected
+    by the old behavior."""
     try:
         import stop_router
         if not stop_router.enabled():
@@ -593,12 +626,23 @@ def _route_stop_hit_to_desk(pos: dict, trigger: str, price: float) -> bool:
         if (not run or run["created_via"] != "fleet"
                 or run["status"] != "running"):
             return False
+        if _stop_close_first():
+            # The close itself is journaled by the watcher loop once it has
+            # actually happened (mode "closed"), so a skipped close cannot
+            # journal the same hit every scan.
+            logger.info("SL/TP hit: closing at the stop (run %s, position %s, "
+                        "%s @ %s)", run_id, pos["id"], trigger, price)
+            return False
+        fresh = stop_router.pending(int(run_id)) is None
         routed = stop_router.note_hit(int(run_id), int(pos["id"]),
                                       trigger, float(price))
         if routed:
+            if fresh:
+                _journal_stop_hit(run_id, pos, trigger, price, "routed")
             logger.info("SL/TP hit routed to desk (run %s, position %s, "
                         "%s @ %s)", run_id, pos["id"], trigger, price)
         else:
+            _journal_stop_hit(run_id, pos, trigger, price, "failsafe_close")
             logger.warning("SL/TP desk routing TIMED OUT — fail-safe close "
                            "(run %s, position %s)", run_id, pos["id"])
         return routed
@@ -759,6 +803,13 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
         # manual users' SL/TP is a promise and executes exactly as always).
         if _route_stop_hit_to_desk(pos, trigger, price):
             continue
+        # 2026-11-06: the watcher's close carries an order id so the tape can
+        # attribute it (run_engine's re-entry fence keys on the same prefix).
+        # Per-attempt unique (epoch seconds; scans are ≥30s apart) so a
+        # failed insert never blocks the retry that protects the position.
+        watcher_coid = (f"run:{int(pos['run_id'])}:watcher:{trigger}:"
+                        f"{int(datetime.now(timezone.utc).timestamp())}"
+                        if pos.get("run_id") else None)
         signal_id, skip = execute_paper_trade(
             pos["agent_id"], pos["symbol"], pos["market"],
             "cover" if is_short else "sell",
@@ -767,11 +818,16 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
             # Plan 10 D4: run ownership lives on the position row, so a
             # stopped-with-hold run still gets its final exit attributed
             # (and the trade event journaled in the same transaction).
-            run_id=pos.get("run_id"))
+            run_id=pos.get("run_id"),
+            client_order_id=watcher_coid)
         if signal_id:
             closed += 1
             logger.info("SL/TP watcher closed position %s (%s %s @ %s, %s)",
                         pos["id"], pos["symbol"], pos["market"], price, trigger)
+            if pos.get("run_id"):
+                _journal_stop_hit(pos["run_id"], pos, trigger, price, "closed",
+                                  signal_id=int(signal_id),
+                                  client_order_id=watcher_coid)
             try:
                 from alerts import send_alert
                 send_alert(pos["agent_id"], "position_closed", "position_closed",

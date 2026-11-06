@@ -686,8 +686,11 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         # The order block: the desk sizes its own trade. Every field is
         # RELATIVE — no absolute prices, no dollar amounts — so a wrong number
         # is bounded by the rails instead of becoming a fabricated order. All
-        # fields optional; "defer" hands the trade back to the fixed defaults,
-        # which is the right answer whenever the situation is unremarkable.
+        # fields optional EXCEPT size on an open: since 2026-11-06 an entry the
+        # desk did not size is REFUSED (run_engine null_size_refused) — the
+        # platform no longer sizes a trade for a desk that stayed silent on it.
+        # "defer" therefore means "no order this cycle", not "use the house
+        # size"; the house BRACKET still applies when stop/target are omitted.
         '"order":{"defer":true|false,'
         '"size_frac":0.05-1.0 (fraction of the max bet; on a small slot an '
         'ask below the $10-margin minimum is raised to it, never discarded),'
@@ -720,11 +723,13 @@ def _trader_risk_decision(symbol, market, briefs, technical, news, lang,
         "over hold whenever you can name the level that would change your "
         "mind: it acts at machine latency instead of waiting for your next "
         "cycle, and the platform will never second-guess a reduction.\n\n"
-        "For the order block: set defer=true unless the analysts give you a "
-        "concrete reason to depart from a house default. When you do set the "
-        "numbers, anchor the stop to measured volatility (ATR/sigma) and a "
-        "structural level, and the target to a real level the move can reach "
-        "— not to a round number.\n\n"
+        "For the order block: EVERY buy or short must carry size_frac — an "
+        "entry you did not size is refused by the platform and does not open. "
+        "defer=true means no order this cycle, never 'use the house size'. "
+        "stop_pct/target_pct may be omitted (the house bracket applies); when "
+        "you do set them, anchor the stop to measured volatility (ATR/sigma) "
+        "and a structural level, and the target to a real level the move can "
+        "reach — not to a round number.\n\n"
         + ("For the outlook: state your forward plan — when you will buy (an "
            "entry/add zone in price, or a named trigger), when you will sell "
            "(target price; stop reference — echo your EXISTING stop, never a "

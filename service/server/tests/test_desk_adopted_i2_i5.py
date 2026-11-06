@@ -78,11 +78,7 @@ class ConvictionCollapseExit(unittest.TestCase):
         self.assertIn("stop_event:conviction_collapse",
                       fleet_planner.REPLACE_IMMEDIATE)
 
-    def test_reader_extracts_conviction(self):
-        rows = [{"payload": json.dumps({"conviction": 0.27})},
-                {"payload": json.dumps({"confidence": 0.9})},  # no conviction key
-                {"payload": "{bad json"}]
-
+    def _reader(self, rows):
         class _Cur:
             def execute(self, *a): pass
             def fetchall(self): return rows
@@ -91,7 +87,39 @@ class ConvictionCollapseExit(unittest.TestCase):
             def cursor(self): return _Cur()
             def close(self): pass
         with patch.object(run_engine, "get_db_connection", return_value=_Conn()):
-            self.assertEqual(run_engine._recent_run_convictions(1, 3), [0.27])
+            return run_engine._recent_run_convictions(1, 2)
+
+    def test_reader_extracts_conviction(self):
+        rows = [{"payload": json.dumps({"conviction": 0.27, "held": True})},
+                {"payload": json.dumps({"confidence": 0.9, "held": True})},  # no conviction key
+                {"payload": "{bad json"}]
+        self.assertEqual(self._reader(rows), [0.27])
+
+    # 2026-11-06 (docs/reports/2026-11-06-one-month-loss-analysis.md §2.9):
+    # 15 trips closed 0–76s after entry because the rail counted conviction
+    # reads from the FLAT cycles before the entry (13 on agent 60, median hold
+    # 0.3 min, pure fee burn). Only reads taken while holding count; a flat
+    # read ends the streak, and a legacy read without the flag is a flat read.
+    def test_reader_counts_only_reads_taken_while_holding(self):
+        rows = [{"payload": json.dumps({"conviction": 0.20, "held": True})},   # newest
+                {"payload": json.dumps({"conviction": 0.10, "held": False})},  # flat: streak ends
+                {"payload": json.dumps({"conviction": 0.10, "held": True})}]
+        self.assertEqual(self._reader(rows), [0.20])
+
+    def test_reader_never_skips_across_an_absent_score(self):
+        """A held read with no conviction neither counts nor is skipped over:
+        the old LIMIT-window read went silent on it, and so must this one
+        (adversarial review 2026-11-06: over-fetch + continue would have let
+        three low reads separated by up to nine scoreless cycles fire)."""
+        rows = [{"payload": json.dumps({"conviction": 0.20, "held": True})},
+                {"payload": json.dumps({"conviction": None, "held": True})},
+                {"payload": json.dumps({"conviction": 0.10, "held": True})}]
+        self.assertEqual(self._reader(rows), [0.20])
+
+    def test_reader_treats_a_legacy_read_as_flat(self):
+        rows = [{"payload": json.dumps({"conviction": 0.20, "held": True})},
+                {"payload": json.dumps({"conviction": 0.10})}]  # pre-flag decision
+        self.assertEqual(self._reader(rows), [0.20])
 
 
 if __name__ == "__main__":

@@ -76,7 +76,8 @@ class RunCycleOrderParamTests(unittest.TestCase):
         self.probe.stop()
         for key in ("AUTO_TRADING_ENABLED", "RUN_CONF_PERCENTILE",
                     "RUN_AI_ORDER_PARAMS", "RISK_ENGINE_ENABLED",
-                    "FEE_PER_MARKET", "RUN_NULL_SIZE_CAP_FRAC"):
+                    "FEE_PER_MARKET", "RUN_NULL_SIZE_CAP_FRAC",
+                    "RUN_NULL_SIZE_REFUSE"):
             os.environ.pop(key, None)
         self.tmp.cleanup()
 
@@ -205,6 +206,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
         default-sized opens realized −$178.69 over 47 runs vs +$5.55 over
         17 desk-sized (runs ≥ 1020). A null size_frac on an OPEN must fall
         to a quarter bet, not the full conviction-scaled default."""
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # clamp path = kill switch
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         run_id = self._run()
         with patch("analysis_agents.run_analysis",
@@ -236,6 +238,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
                              for c in self._events(run_id, "size_clamp")))
 
     def test_null_size_cap_env_one_disables(self):
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # clamp path = kill switch
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         os.environ["RUN_NULL_SIZE_CAP_FRAC"] = "1.0"
         run_id = self._run()
@@ -251,6 +254,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
         """Owner order 2026-08-18 ("fixing"): the cap guards every open the
         desk did not size — including outcome:absent (no order block at
         all, the 1392/1419 class), not just parsed-with-null."""
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # clamp path = kill switch
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         run_id = self._run()
         with patch("analysis_agents.run_analysis",
@@ -265,6 +269,195 @@ class RunCycleOrderParamTests(unittest.TestCase):
         self.assertTrue(any(c.get("stage") == "null_size_cap" and
                             c.get("params_state") == "absent"
                             for c in clamps), clamps)
+
+    # ── 2026-11-06: an entry the desk declined to size is REFUSED ──────
+    # Tape 10-05→11-06 (docs/reports/2026-11-06-one-month-loss-analysis.md
+    # §2.5): the desk now sizes itself at a $20 median; the 187 opens it
+    # returned no size for were clamped to 0.25×max_bet = $94 — 5× the
+    # desk's own size — and carried $15.47 of the $25.74 fee bill at net
+    # −$12.21 (−$8.96 ex-worst). A null/absent size is the desk declining to
+    # size, and the platform must not size it for the desk.
+
+    def test_null_size_open_is_refused_by_default(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": None})):
+            result = run_engine.run_cycle(run_id)
+        self.assertFalse(result["executed"])
+        self.assertIn("declined to size", result.get("skip_reason") or "")
+        self.assertEqual(self._fill(run_id), [])
+        skips = self._events(run_id, "gate_skip")
+        self.assertTrue(any(e.get("stage") == "null_size_refused" and
+                            e.get("params_state") == "parsed_null"
+                            for e in skips), skips)
+        self.assertFalse(any(c.get("stage") == "null_size_cap"
+                             for c in self._events(run_id, "size_clamp")))
+
+    def test_absent_params_open_is_refused_by_default(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=None)):
+            result = run_engine.run_cycle(run_id)
+        self.assertFalse(result["executed"])
+        self.assertEqual(self._fill(run_id), [])
+        skips = self._events(run_id, "gate_skip")
+        self.assertTrue(any(e.get("stage") == "null_size_refused" and
+                            e.get("params_state") == "absent"
+                            for e in skips), skips)
+
+    def test_refusal_never_touches_an_authored_size(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": 0.1})):
+            result = run_engine.run_cycle(run_id)
+        self.assertTrue(result["executed"], result.get("skip_reason"))
+        self.assertAlmostEqual(float(self._fill(run_id)[0]["quantity"]) * 100.0,
+                               50.0, places=2)
+
+    def test_a_deferral_is_refused_by_default(self):
+        """`defer: true` is the desk declining to size this cycle; it used to
+        fall through to the house bracket at the clamp size (105 of the 187
+        refused-class trips on 10-05→11-06 were deferrals)."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={"defer": True})):
+            result = run_engine.run_cycle(run_id)
+        self.assertFalse(result["executed"])
+        self.assertEqual(self._fill(run_id), [])
+        self.assertTrue(any(e.get("stage") == "null_size_refused"
+                            for e in self._events(run_id, "gate_skip")))
+
+    def test_decision_event_journals_whether_the_run_was_holding(self):
+        """The conviction-collapse rail reads this flag (2026-11-06): a flat
+        cycle journals held=false, a cycle on an open position held=true."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=ORDER)):
+            first = run_engine.run_cycle(run_id)
+        self.assertTrue(first["executed"], first.get("skip_reason"))
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order=None, action="hold")):
+            run_engine.run_cycle(run_id)
+        decisions = self._events(run_id, "decision")
+        self.assertEqual([d.get("held") for d in decisions], [False, True],
+                         decisions)
+
+    # ── behavioural probes adopted from the 2026-11-06 adversarial review ──
+    # (the source-text pins those replaced let three mutations through:
+    # fence on holding runs, refusal of sell/cover, hard-coded held).
+
+    def _run_row(self, run_id):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM trading_runs WHERE id = ?", (run_id,))
+            return dict(cur.fetchone())
+        finally:
+            conn.close()
+
+    def _insert_close(self, coid, pnl=1.0, symbol=None, market=None):
+        """A realised closing leg as the SL/TP watcher (or the desk) writes it."""
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            now = run_engine._now_iso()
+            cur.execute(
+                """INSERT INTO signals (signal_id, agent_id, message_type, market,
+                   signal_type, symbol, side, entry_price, quantity, content,
+                   timestamp, created_at, executed_at, run_id, client_order_id,
+                   fee_usd, pnl, exit_price)
+                   VALUES (?, ?, 'operation', ?, 'automation', ?, 'sell', 100, 1,
+                   'x', 1, ?, ?, NULL, ?, 0.1, ?, 100)""",
+                (9000 + abs(hash(coid)) % 1000, self.agent_id, market or "crypto",
+                 symbol or "BTC", now, now, coid, pnl))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _pre(self, run_id):
+        run = self._run_row(run_id)
+        return run_engine._pre_gate_skip(
+            run, json.loads(run.get("config_snapshot_json") or "{}"))
+
+    def test_fence_blocks_a_flat_run_after_a_watcher_close(self):
+        run_id = self._run()
+        run = self._run_row(run_id)
+        self.assertIsNone(self._pre(run_id))
+        self._insert_close(f"run:{run_id}:watcher:stop_loss:1700000000",
+                           symbol=run["symbol"], market=run["market"])
+        reason = self._pre(run_id)
+        self.assertIsNotNone(reason)
+        self.assertIn("fence", reason)
+
+    def test_fence_ignores_desk_closes_unrealised_legs_other_symbols_and_markets(self):
+        run_id = self._run()
+        run = self._run_row(run_id)
+        self._insert_close(f"run:{run_id}:cyc:3", symbol=run["symbol"], market=run["market"])
+        self.assertIsNone(self._pre(run_id), "a desk close is not a stop-out")
+        self._insert_close(f"run:{run_id}:watcher:stop_loss:1", pnl=None,
+                           symbol=run["symbol"], market=run["market"])
+        self.assertIsNone(self._pre(run_id), "an unrealised leg is not a close")
+        self._insert_close(f"run:{run_id}:watcher:stop_loss:2", symbol="ETH",
+                           market=run["market"])
+        self.assertIsNone(self._pre(run_id), "another symbol is not fenced")
+        self._insert_close(f"run:{run_id}:watcher:stop_loss:3", symbol=run["symbol"],
+                           market="us-stock")
+        self.assertIsNone(self._pre(run_id), "the same symbol on another market is not fenced")
+
+    def test_fence_never_blocks_a_holding_run(self):
+        """The fence gates OPENS. A run that holds must keep cycling so it can
+        manage (and exit) its position — the asymmetry rule."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        run = self._run_row(run_id)
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": 0.1})):
+            self.assertTrue(run_engine.run_cycle(run_id)["executed"])
+        self._insert_close(f"run:{run_id}:watcher:stop_loss:1700000000",
+                           symbol=run["symbol"], market=run["market"])
+        self.assertIsNone(self._pre(run_id))
+
+    def test_run_cycle_consults_the_fence_before_analysis(self):
+        run_id = self._run()
+        run = self._run_row(run_id)
+        self._insert_close(f"run:{run_id}:watcher:take_profit:1700000000",
+                           symbol=run["symbol"], market=run["market"])
+        with patch("analysis_agents.run_analysis",
+                   side_effect=AssertionError("analysis ran")):
+            res = run_engine.run_cycle(run_id)
+        self.assertFalse(res["executed"])
+        self.assertIn("fence", res.get("skip_reason") or "")
+
+    def test_null_size_sell_on_a_long_is_never_refused(self):
+        """The refusal guards OPENS only: a sell on a long is a reduce, and a
+        risk-shedding order is never refused (asymmetry rule)."""
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": 0.1})):
+            self.assertTrue(run_engine.run_cycle(run_id)["executed"])
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={**ORDER, "size_frac": None},
+                                          action="sell")):
+            res = run_engine.run_cycle(run_id)
+        self.assertTrue(res["executed"], res.get("skip_reason"))
+        self.assertFalse(any(e.get("stage") == "null_size_refused"
+                             for e in self._events(run_id, "gate_skip")))
+
+    def test_a_deferral_is_journaled_as_defer_not_absent(self):
+        os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
+        run_id = self._run()
+        with patch("analysis_agents.run_analysis",
+                   return_value=_analysis(order={"defer": True})):
+            run_engine.run_cycle(run_id)
+        states = [e.get("params_state") for e in self._events(run_id, "gate_skip")
+                  if e.get("stage") == "null_size_refused"]
+        self.assertEqual(states, ["defer"], states)
 
     def test_absent_params_shadow_mode_is_not_capped(self):
         os.environ["RUN_AI_ORDER_PARAMS"] = "shadow"
@@ -358,6 +551,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
                          params["notes"])
 
     def test_apply_with_a_deferral_falls_back_to_the_house_bracket(self):
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # bracket test: the clamp path
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         run_id = self._run()
         with patch("analysis_agents.run_analysis",
@@ -407,6 +601,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
             self.addCleanup(self._floor_patch.stop)
 
     def test_cap_env_absent_leaves_brackets_byte_identical(self):
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # bracket test: the clamp path
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         os.environ["TARGET_PSYCH_CAP_MAP"] = '{"crypto": {"base": 0.3}}'
         self.addCleanup(os.environ.pop, "TARGET_PSYCH_CAP_MAP", None)
@@ -422,6 +617,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
         """The recon's trap #1: at the default RR_FLOOR (2.0) a 0.3% cap on a
         5% stop must floor to 10%% — bracket unchanged, entry NOT refused,
         and no target_cap telemetry claiming credit for a no-op."""
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # bracket test: the clamp path
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         self._cap_env()
         run_id = self._run()
@@ -440,6 +636,7 @@ class RunCycleOrderParamTests(unittest.TestCase):
         """Defect-2 routing: the absent/deferred 5%%/10%% house bracket must
         route through the cap too. With RR_FLOOR 0.2, eff = max(0.3,
         5.0*0.2, fee floor) = 1.0%% -> take_profit 101.0, not 110.0."""
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # bracket test: the clamp path
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         self._cap_env(floor=0.2)
         run_id = self._run()
@@ -723,6 +920,7 @@ class LightPathOrderBlockTests(RunCycleOrderParamTests):
         self.assertTrue(any("R:R floor" in n for n in p["notes"]))
 
     def test_light_bracket_reaches_the_book_in_apply_mode(self):
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # bracket test: the clamp path
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         run_id = self._light('{"action":"buy","confidence":0.9,'
                              '"stop_pct":2.0,"target_pct":6.0,"report":"r"}')
@@ -733,6 +931,7 @@ class LightPathOrderBlockTests(RunCycleOrderParamTests):
 
     def test_omitted_bracket_still_degrades_to_the_house_default(self):
         """"If you have no concrete basis, omit them" must keep working."""
+        os.environ["RUN_NULL_SIZE_REFUSE"] = "0"  # bracket test: the clamp path
         os.environ["RUN_AI_ORDER_PARAMS"] = "apply"
         run_id = self._light('{"action":"buy","confidence":0.9,"report":"r"}')
         fill = self._fill(run_id)

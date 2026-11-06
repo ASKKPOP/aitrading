@@ -539,11 +539,23 @@ class RunStopsTests(unittest.TestCase):
         conn = database.get_db_connection()
         try:
             cur = conn.cursor()
-            cur.execute("SELECT run_id, side FROM signals WHERE agent_id = ? "
-                        "ORDER BY id DESC LIMIT 1", (self.agent_id,))
+            cur.execute("SELECT run_id, side, client_order_id FROM signals "
+                        "WHERE agent_id = ? ORDER BY id DESC LIMIT 1",
+                        (self.agent_id,))
             last = dict(cur.fetchone())
             self.assertEqual(last["side"], "sell")
             self.assertEqual(last["run_id"], run_id)
+            # 2026-11-06: the watcher's close must be attributable on the
+            # tape — 29 exits on 10-05→11-06 had a NULL client_order_id.
+            self.assertTrue((last["client_order_id"] or "").startswith(
+                f"run:{run_id}:watcher:stop_loss:"), last["client_order_id"])
+            cur.execute("SELECT payload FROM run_events WHERE run_id = ? "
+                        "AND event_type = 'stop_hit' ORDER BY id", (run_id,))
+            hits = [json.loads(r["payload"]) for r in cur.fetchall()]
+            self.assertEqual(len(hits), 1, hits)
+            self.assertEqual(hits[0]["mode"], "closed")
+            self.assertEqual(hits[0]["trigger"], "stop_loss")
+            self.assertEqual(hits[0]["client_order_id"], last["client_order_id"])
             cur.execute("SELECT COUNT(*) AS n FROM run_events WHERE run_id = ? "
                         "AND event_type = 'trade'", (run_id,))
             self.assertEqual(cur.fetchone()["n"], 2)  # entry + watcher close

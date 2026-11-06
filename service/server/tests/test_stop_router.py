@@ -10,8 +10,10 @@ authored levels the desk never got to reconsider at the moment they traded.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
+from datetime import datetime, timezone
 import tempfile
 import unittest
 from pathlib import Path
@@ -246,9 +248,51 @@ class WatcherRoutingTests(unittest.TestCase):
 
     def test_fleet_run_hit_is_routed_not_closed(self):
         rid = self._run_row()
-        self.assertTrue(risk_engine._route_stop_hit_to_desk(
-            self._pos(rid), "stop_loss", 58.3))
+        with patch.dict(os.environ, {"STOP_DESK_CLOSE_FIRST": "0"}):
+            self.assertTrue(risk_engine._route_stop_hit_to_desk(
+                self._pos(rid), "stop_loss", 58.3))
         self.assertIsNotNone(stop_router.pending(rid))
+        hits = self._stop_hits(rid)
+        self.assertEqual([h["mode"] for h in hits], ["routed"], hits)
+
+    # ── 2026-11-06: close first; the desk never ruled inside its window ──
+    # Tape 10-05→11-06 (docs/reports/2026-11-06-one-month-loss-analysis.md
+    # §2.3): 0 of 26 stop hits received an AI ruling within 180s; the watcher
+    # closed all 26, 25 of them past the authored stop ($1.95 slippage), and
+    # once (UNI 10-08) the late ruling re-shorted 20× larger 47s after the
+    # fail-safe cover. The default is now: close AT the stop, journal the
+    # hit so the next tape can attribute it, and fence re-entry.
+
+    def _stop_hits(self, rid):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT payload FROM run_events WHERE run_id = ? AND "
+                        "event_type = 'stop_hit' ORDER BY id", (rid,))
+            return [json.loads(r["payload"]) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def test_close_first_is_the_default(self):
+        rid = self._run_row()
+        self.assertFalse(risk_engine._route_stop_hit_to_desk(
+            self._pos(rid), "stop_loss", 58.3), "default must close at the stop")
+        self.assertIsNone(stop_router.pending(rid), "nothing routed to the desk")
+        # The close is journaled by the watcher loop once it happens (mode
+        # "closed", see test_run_stops), never here — a skipped close must
+        # not journal the same hit on every scan.
+        self.assertEqual(self._stop_hits(rid), [])
+
+    def test_failsafe_close_in_routed_mode_is_journaled_too(self):
+        rid = self._run_row()
+        with patch.dict(os.environ, {"STOP_DESK_CLOSE_FIRST": "0",
+                                     "STOP_DESK_TIMEOUT_S": "0"}):
+            self.assertTrue(risk_engine._route_stop_hit_to_desk(
+                self._pos(rid), "stop_loss", 58.3))
+            self.assertFalse(risk_engine._route_stop_hit_to_desk(
+                self._pos(rid), "stop_loss", 58.1))
+        modes = [h["mode"] for h in self._stop_hits(rid)]
+        self.assertEqual(modes, ["routed", "failsafe_close"], modes)
 
     def test_manual_position_closes_exactly_as_before(self):
         self.assertFalse(risk_engine._route_stop_hit_to_desk(
@@ -266,7 +310,8 @@ class WatcherRoutingTests(unittest.TestCase):
 
     def test_timeout_falls_back_to_the_close(self):
         rid = self._run_row()
-        with patch.dict(os.environ, {"STOP_DESK_TIMEOUT_S": "0"}):
+        with patch.dict(os.environ, {"STOP_DESK_CLOSE_FIRST": "0",
+                                     "STOP_DESK_TIMEOUT_S": "0"}):
             self.assertTrue(risk_engine._route_stop_hit_to_desk(
                 self._pos(rid), "stop_loss", 58.3))
             self.assertFalse(risk_engine._route_stop_hit_to_desk(
@@ -284,6 +329,46 @@ class WatcherRoutingTests(unittest.TestCase):
         src = inspect.getsource(risk_engine.run_sltp_watcher_tick)
         self.assertIn("_route_stop_hit_to_desk(pos, trigger, price)", src,
                       "routing is not wired into the watcher loop")
+
+
+class ReentryFenceTests(unittest.TestCase):
+    """After a watcher stop close the same symbol must not be re-opened for
+    STOP_REENTRY_FENCE_MIN (default 30): UNI 10-08 was covered by the
+    fail-safe at 00:51:43Z and re-shorted 20× larger by the desk at
+    00:52:30Z, stopped again 15 min later (−$2.67)."""
+
+    def test_inside_the_fence_is_refused(self):
+        now = datetime(2026, 10, 8, 0, 52, 30, tzinfo=timezone.utc)
+        reason = run_engine._stop_reentry_fence_reason("2026-10-08T00:51:43Z", now)
+        self.assertIsNotNone(reason)
+        self.assertIn("fence", reason)
+
+    def test_outside_the_fence_is_free(self):
+        now = datetime(2026, 10, 8, 1, 30, 0, tzinfo=timezone.utc)
+        self.assertIsNone(run_engine._stop_reentry_fence_reason(
+            "2026-10-08T00:51:43Z", now))
+
+    def test_no_watcher_close_no_fence(self):
+        now = datetime(2026, 10, 8, 0, 52, 30, tzinfo=timezone.utc)
+        self.assertIsNone(run_engine._stop_reentry_fence_reason(None, now))
+
+    def test_env_zero_disables(self):
+        now = datetime(2026, 10, 8, 0, 52, 30, tzinfo=timezone.utc)
+        with patch.dict(os.environ, {"STOP_REENTRY_FENCE_MIN": "0"}):
+            self.assertIsNone(run_engine._stop_reentry_fence_reason(
+                "2026-10-08T00:51:43Z", now))
+
+    def test_fence_is_WIRED_into_the_pre_gate(self):
+        import inspect
+        src = inspect.getsource(run_engine._pre_gate_skip)
+        self.assertIn("_stop_reentry_fence_reason(", src)
+        self.assertIn(":watcher:", src, "the fence must key on the watcher's order id")
+
+    def test_watcher_close_carries_its_order_id(self):
+        import inspect
+        src = inspect.getsource(risk_engine.run_sltp_watcher_tick)
+        self.assertIn(":watcher:", src, "the watcher close has no client_order_id — "
+                      "it is invisible on the tape (29 NULL-coid exits on 10-05→11-06)")
 
 
 class EngineSideTests(unittest.TestCase):
