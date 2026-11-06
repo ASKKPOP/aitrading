@@ -1,0 +1,12 @@
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+user_id	int	YES	MUL	NULL	
+agent_id	int	YES		NULL	
+provider	varchar(32)	NO		NULL	
+model	varchar(128)	NO		NULL	
+tier	varchar(16)	NO		NULL	
+key_source	varchar(16)	NO		system	
+prompt_tokens	int	NO		0	
+completion_tokens	int	NO		0	
+cost_usd	double	NO		0	
+created_at	varchar(32)	NO	MUL	NULL	

@@ -1,0 +1,18 @@
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+name	varchar(255)	NO	UNI	NULL	
+token	varchar(255)	YES		NULL	
+token_hash	varchar(191)	YES	MUL	NULL	
+token_expires_at	mediumtext	YES		NULL	
+password_hash	mediumtext	YES		NULL	
+password_reset_token	mediumtext	YES		NULL	
+password_reset_expires_at	mediumtext	YES		NULL	
+wallet_address	mediumtext	YES		NULL	
+points	int	YES		0	
+cash	decimal(20,8)	YES		100000.00000000	
+deposited	decimal(20,8)	YES		0.00000000	
+reputation_score	int	YES		0	
+created_at	mediumtext	YES		date_format(utc_timestamp(),_utf8mb4\'%Y-%m-%dT%H:%i:%sZ\')	DEFAULT_GENERATED
+updated_at	mediumtext	YES		date_format(utc_timestamp(),_utf8mb4\'%Y-%m-%dT%H:%i:%sZ\')	DEFAULT_GENERATED
+user_id	int	YES		NULL	
+starting_capital	decimal(20,8)	NO		100000.00000000	

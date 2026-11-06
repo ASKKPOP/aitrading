@@ -1,0 +1,36 @@
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+agent_id	int	NO	MUL	NULL	
+name	varchar(80)	YES		NULL	
+status	varchar(16)	NO	MUL	draft	
+status_reason	varchar(255)	YES		NULL	
+active_fleet_key	varchar(64)	YES	UNI	NULL	
+idempotency_key	varchar(64)	YES		NULL	
+n_runs	int	NO		NULL	
+total_budget_usd	decimal(20,8)	NO		NULL	
+risk_appetite	varchar(12)	NO		balanced	
+market_scope_json	mediumtext	YES		NULL	
+warn_loss_frac	decimal(20,8)	NO		0.30000000	
+stop_loss_frac	decimal(20,8)	NO		0.40000000	
+warn_latched_at	varchar(32)	YES		NULL	
+warn_acked_at	varchar(32)	YES		NULL	
+warn_level_frac	decimal(20,8)	YES		NULL	
+warn_episode	int	NO		0	
+entry_paused_reason	varchar(24)	YES		NULL	
+held_by_master	int	NO		0	
+rotation_enabled	int	NO		1	
+build_attempts	int	NO		0	
+last_event_seq	int	NO		0	
+provider	varchar(16)	YES		NULL	
+lang	varchar(8)	NO		en	
+claimed_by	varchar(64)	YES		NULL	
+claim_expires_at	varchar(32)	YES		NULL	
+last_supervise_at	varchar(32)	YES		NULL	
+created_at	varchar(32)	NO		NULL	
+started_at	varchar(32)	YES		NULL	
+stopped_at	varchar(32)	YES		NULL	
+leverage	decimal(10,4)	YES		NULL	
+profit_target_frac	double	YES		NULL	
+successor_fleet_id	bigint	YES		NULL	
+archetype	varchar(16)	NO		short	
+user_size_cap	int	YES		NULL	

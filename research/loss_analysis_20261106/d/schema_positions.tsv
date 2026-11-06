@@ -1,0 +1,20 @@
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+agent_id	int	NO	MUL	NULL	
+leader_id	int	YES		NULL	
+symbol	varchar(191)	NO		NULL	
+market	varchar(191)	NO	MUL	us-stock	
+token_id	varchar(191)	YES		NULL	
+outcome	mediumtext	YES		NULL	
+side	mediumtext	NO		NULL	
+quantity	decimal(20,8)	NO		NULL	
+entry_price	decimal(20,8)	NO		NULL	
+current_price	decimal(20,8)	YES		NULL	
+opened_at	mediumtext	NO		NULL	
+stop_loss	float	YES		NULL	
+take_profit	float	YES		NULL	
+first_opened_at	varchar(64)	YES		NULL	
+exit_policy	varchar(32)	YES		NULL	
+run_id	int	YES		NULL	
+price_updated_at	varchar(32)	YES		NULL	
+leverage	decimal(10,4)	NO		1.0000	

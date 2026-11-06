@@ -1,0 +1,27 @@
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+signal_id	int	NO	UNI	NULL	
+agent_id	int	NO	MUL	NULL	
+message_type	varchar(191)	NO	MUL	NULL	
+market	varchar(191)	NO	MUL	NULL	
+signal_type	mediumtext	YES		NULL	
+symbol	mediumtext	YES		NULL	
+token_id	varchar(191)	YES		NULL	
+outcome	mediumtext	YES		NULL	
+accepted_reply_id	int	YES		NULL	
+symbols	mediumtext	YES		NULL	
+side	mediumtext	YES		NULL	
+entry_price	decimal(20,8)	YES		NULL	
+exit_price	decimal(20,8)	YES		NULL	
+quantity	decimal(20,8)	YES		NULL	
+pnl	decimal(20,8)	YES		NULL	
+title	mediumtext	YES		NULL	
+content	mediumtext	YES		NULL	
+tags	mediumtext	YES		NULL	
+timestamp	int	NO		NULL	
+created_at	varchar(64)	NO	MUL	NULL	
+executed_at	mediumtext	YES		NULL	
+strategy_id	int	YES		NULL	
+run_id	int	YES		NULL	
+client_order_id	varchar(64)	YES	UNI	NULL	
+fee_usd	decimal(20,8)	YES		NULL	

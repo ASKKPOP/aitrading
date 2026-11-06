@@ -1,0 +1,40 @@
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+agent_id	int	NO	MUL	NULL	
+symbol	varchar(20)	NO		NULL	
+market	varchar(16)	NO		crypto	
+market_type	varchar(10)	NO		spot	
+status	varchar(16)	NO	MUL	draft	
+status_reason	varchar(255)	YES		NULL	
+active_key	varchar(80)	YES	UNI	NULL	
+config_snapshot_json	mediumtext	YES		NULL	
+start_condition_json	mediumtext	YES		NULL	
+stop_conditions_json	mediumtext	YES		NULL	
+stop_flatten	int	NO		1	
+report_frequency	varchar(16)	NO		off	
+report_hour_local	int	YES		NULL	
+report_tz	varchar(64)	YES		NULL	
+notify_on_trade	int	NO		0	
+profit_threshold_pct	decimal(20,8)	YES		NULL	
+loss_threshold_pct	decimal(20,8)	YES		NULL	
+drawdown_threshold_pct	decimal(20,8)	YES		NULL	
+last_report_at	varchar(32)	YES		NULL	
+max_trades_per_day	int	NO		50	
+consecutive_errors	int	NO		0	
+consecutive_infeasible	int	NO		0	
+paused_reason	varchar(64)	YES		NULL	
+started_at	varchar(32)	YES		NULL	
+stopped_at	varchar(32)	YES		NULL	
+last_cycle_at	varchar(32)	YES		NULL	
+cycle_seq	int	NO		0	
+last_event_seq	int	NO		0	
+claimed_by	varchar(64)	YES		NULL	
+claim_expires_at	varchar(32)	YES		NULL	
+realized_pnl_usd	decimal(20,8)	NO		0.00000000	
+created_at	varchar(32)	NO		NULL	
+fleet_id	int	YES	MUL	NULL	
+created_via	varchar(16)	NO		user	
+adapt_state_json	mediumtext	YES		NULL	
+peak_pnl_usd	double	YES		NULL	
+armed_order_json	text	YES		NULL	
+peak_realized_usd	float	YES		NULL	

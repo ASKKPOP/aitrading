@@ -1,0 +1,7 @@
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+run_id	int	NO	MUL	NULL	
+seq	int	NO		NULL	
+event_type	varchar(32)	NO	MUL	NULL	
+ts	varchar(32)	NO		NULL	
+payload	mediumtext	YES		NULL	

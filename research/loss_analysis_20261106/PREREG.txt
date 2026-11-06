@@ -1,0 +1,17 @@
+PRE-REGISTERED 2026-11-06 ~21:15Z. Headline totals (n, gross, fees, net per agent) were viewed first via trips1.py;
+nothing below has been looked at yet.
+Tape: agents 6 (crypto desk, fleet 44), 60 (us-stock, fleet 43), 63 (trend module). Window 2026-10-05T15:49Z -> 2026-11-06T20:30Z
+(continues the 09-05..10-05 analysis exactly). Fills = signals.tsv; events = events.tsv (run_events joined to trading_runs for agent_id).
+H1 ENTRY-EDGE (4th replication): side-signed forward return of agent-6 entries at {1h,4h,12h,24h,48h} beats a same-symbol,
+   same-side random-entry-time null (Hyperliquid 15m candles, 2000 shuffles). FALSIFIED at T if desk-null <= 0 or p > 0.05.
+H2 FIX-LANDED: the 10-05 ship (a29cd6b: panel hold binds on entries; chair cannot order off a rule fallback) cut
+   veto_overridden entries to ~0 and removed chair-from-rule-fallback entries. FALSIFIED if > 5% of window entries carry
+   veto_overridden=true, or any entry is traceable to a rule-fallback chair amendment.
+H3 FEE-SHARE: with zero-edge entries, loss ~= trips x fee. Prediction: fees >= 50% of |net|, and gross CI contains 0.
+   FALSIFIED if gross CI excludes 0 (either side).
+H4 SHORT-BIAS: 433 of 468 trips are shorts. Prediction: the short tilt was NOT a market read (symbol-matched buy-and-hold
+   over each trip's hold window has mean return ~0, i.e. shorts did not profit from a falling tape). FALSIFIED if the shorts'
+   gross is positive AND the matched market move over the same windows is negative beyond noise.
+H5 SIZE: median notional fell from $94 to $45. Prediction: the null_size_cap (0.25) clamp is the cause, and it halves both
+   fees and gross, so it changes the SCALE of the loss, not the sign. FALSIFIED if trips with clamp show different gross bp.
+Rule: every per-trade statement must carry a reason; report n with and without the largest contributor.
