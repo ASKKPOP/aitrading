@@ -245,6 +245,20 @@ at zero), tuning the ratchet arm (08-27 falsifier passes; 393 code-banked trips 
 only positive bucket), changing the exit horizon (fixed-hold counterfactuals flip sign),
 switching provider (paid spend is $0 and the model's silence fails closed).
 
+**Ship record (2026-11-06).** Solutions #1, #2 and #3 shipped as `f545d3e`
+(local CI gate in a fresh clone: 5,390 backend tests, ruff, gitleaks, frontend
+build, npm audit; two-agent review — independent verifier 313 green ×2 on its own
+scenarios, adversarial reviewer no blocker, its 3 should-fix + 2 notes folded in)
+and deployed to sooppiy.com at 22:49Z as `sooppiy-backend:20261106-refuse-unsized-closefirst`.
+Verified on prod from inside the live worker: `RUN_NULL_SIZE_REFUSE` default on,
+`STOP_DESK_CLOSE_FIRST` default on, `STOP_REENTRY_FENCE_MIN` 30, prompt updated,
+no tracebacks; first 11 minutes of tape: 3 decisions, all journaled with the new
+`held` flag, 0 entries attempted (nothing to refuse yet). Kill switches:
+`RUN_NULL_SIZE_REFUSE=0`, `STOP_DESK_CLOSE_FIRST=0`, `STOP_REENTRY_FENCE_MIN=0`.
+Solutions #4 (orphans after `stop_eval_failed`) and #5 (trend-module telemetry)
+are NOT shipped. Research scripts for the fee counterfactuals and attribution
+live in `research/loss_analysis_20261106/`.
+
 **Pre-registered falsifiers for the ships above** (read on the next tape):
 #1 — `size_clamp` events with stage `null_size_cap` must be 0 and agent-6 fees must fall
 by ≥ 40% per trip-count; if trips fall but fees/trip do not, the fix failed.
