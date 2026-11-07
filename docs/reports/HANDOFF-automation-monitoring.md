@@ -185,6 +185,28 @@ regression-check against yesterday, compute the true 24 h P&L
 losses took. **Be adversarial about prior conclusions — if a fix did not
 move anything, say so and say what you will do instead.**
 
+> ### ⏰ DAILY 24h SWEEP IS NOW A PERSISTENT APP TASK — 2026-11-07 (owner: "make cron task monitoring & analysis fully each 24 hours for two user trading")
+>
+> The 24-hour verification sweep no longer depends on a session-only cron.
+> It is a Claude desktop **scheduled task** stored on disk at
+> `~/.claude/scheduled-tasks/sooppiy-24h-monitoring-sweep/SKILL.md`, cron
+> `7 7 * * *` LOCAL (America/Los_Angeles; 07:07 PST = 15:07Z, the KST day
+> boundary — under PDT it lands at 14:07Z, one hour before the boundary),
+> dispatched a few minutes late by design. It survives session ends and
+> account rotation of this machine's Claude install, but **runs only while
+> the desktop app is open** (a missed slot runs at next launch). Each run is
+> a fresh session: it clones `origin/main` into a scratch dir, reads THIS
+> file first, sweeps the previous 24 h for the two trading users (user 5 /
+> agent 6 `info@askkpop.com`, user 25 / agent 60 `forevery1969@gmail.com` —
+> re-derived each run from active fleets / cycled runs), runs the
+> two-subagent trade analysis + three-axis verification, re-verifies every
+> fix and watch of the prior day, produces the daily solution, appends the
+> note to `YYYY-MM-DD-automation-monitoring.md`, pushes to main, and deploys
+> under mode ② (deploy-worthy content or >1 day of prod != main).
+> Monitor-only, never operates trades or fleets. Manage it from the app's
+> "Scheduled" sidebar section. The hourly loop remains stopped (owner
+> 2026-08-14) — only this daily sweep runs.
+
 **Both crons are session-only and die with the session.** Re-arm BOTH at the
 start of every session; this has already cost a 3-hour gap and a 2.8-day
 gap. They also only fire while the session is idle, so an hourly slot can be
