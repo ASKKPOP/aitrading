@@ -2295,9 +2295,13 @@ def _simple_transition(run: dict, target: str, reason: str,
             # close it by hand. `run_id` marks an ACTIVE run's book now that
             # sibling runs share a symbol, and every non-run reader filters on
             # `run_id IS NULL`.
+            # …stamped with the run that released it (2026-11-06, loss
+            # analysis §5 #4), so the orphan sweep reads the desk on it at
+            # once instead of holding a stop-wearing position for days.
             cursor.execute(
-                "UPDATE positions SET run_id = NULL WHERE run_id = ? AND agent_id = ?",
-                (run["id"], run["agent_id"]))
+                "UPDATE positions SET handoff_run_id = ?, run_id = NULL "
+                "WHERE run_id = ? AND agent_id = ?",
+                (run["id"], run["id"], run["agent_id"]))
         if extra_sets:
             sets += ", " + extra_sets
             args.extend(extra_args)
@@ -2867,6 +2871,7 @@ def _control_stopping(run: dict, out: dict) -> None:
         if _simple_transition(run, STATUS_STOPPED, "positions_held",
                               clear_active_key=True):
             out["stopping_finished"] += 1
+            _handoff_held_position(run, run.get("status_reason") or "hold")
         return
 
     # Plan 23 Phase C2: a flatten on a CLOSED market would fill at the last
@@ -2923,10 +2928,38 @@ def _control_stopping(run: dict, out: dict) -> None:
         if _simple_transition(run, STATUS_STOPPED, "positions_held",
                               clear_active_key=True):
             out["stopping_finished"] += 1
+            _handoff_held_position(run, why or "flatten timed out")
             _alert_run(run, "run_stopped", "run_positions_held",
                        {"run_id": run["id"], "why": why,
                         "minutes": _flatten_timeout() // 60},
                        dedupe=f"run:{run['id']}:positions_held")
+
+
+def _handoff_held_position(run: dict, why: str) -> None:
+    """A run that stopped holding hands its book to the orphan reclaim NOW
+    (2026-11-06, loss analysis §2.3 / §5 #4: three positions released after
+    `stop_eval_failed` sat 39–75 h — stop on the row, no fleet slot refused,
+    so the sweep held them on every pass). Journals the handoff on this run's
+    tape and protects a bare position at once; the sweep reads the desk on it
+    on its next pass. Telemetry: never raises past the terminal."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT * FROM positions
+                   WHERE agent_id = ? AND market = ? AND symbol = ?
+                     AND handoff_run_id = ? AND run_id IS NULL AND quantity != 0""",
+                (run["agent_id"], run["market"], run["symbol"], run["id"]))
+            rows = [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+        import orphan_reclaim
+        for pos in rows:
+            orphan_reclaim.handoff(pos, int(run["id"]), str(why))
+    except Exception:  # noqa: BLE001
+        logger.warning("positions_held handoff failed (run %s)", run["id"],
+                       exc_info=True)
 
 
 # ── cycle cadence (#269) ───────────────────────────────────────────────────

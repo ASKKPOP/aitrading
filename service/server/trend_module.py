@@ -40,6 +40,22 @@ capital. `trend_stats()` reports the module's own record from its fills.
 Env: TREND_MODULE_ENABLED (default off) · TREND_AGENT_ID (required, no
 default) · TREND_UNIVERSE (csv, default large-cap five) ·
 TREND_RISK_USD (25) · TREND_MAX_POSITIONS (3).
+
+Telemetry (2026-11-06, docs/reports/2026-11-06-one-month-loss-analysis.md
+§2.8 / §5 #5): every `_emit` row also goes to the `trend_events` table, and
+the SL/TP watcher writes a `watcher_close` row there when it closes a
+position on one of this module's agents (`managed_agent_ids`), with the
+order id `trend:<agent>:<symbol>:watcher:<trigger>:<epoch>`. Until then the
+module's state blob (truncated at 60 KB) and the logger were its only
+record, and the watcher's two 10-08 closes (−$51.31) had no row anywhere.
+
+Bar convention (BAR_CONVENTION below): the daily bar is OKX's "1D", which
+opens and closes at 16:00 UTC (the UTC+8 calendar day). The trail and exit
+checks run on the first hourly tick after that close. The +114R replay
+(research/trend_replay/fetch_data.py) was fetched on the same bar, so live
+and replay agree; the UTC-midnight reading the 11-06 analysis compared
+against (XRP: −$14.0 instead of −$25.3, n=1) is NOT the tested rule and is
+not adopted here — changing the bar needs its own replay first.
 """
 
 from __future__ import annotations
@@ -68,6 +84,11 @@ TIME_STOP_DAYS = 30
 FG_GREED_BLOCK = 80
 FG_FEAR_CONTRARIAN = 20
 EVENT_CAP = 400         # telemetry rows kept in state
+# The bar the rule is evaluated on. OKX "1D" candles (crypto_feed.fetch_candles)
+# open at 16:00 UTC; `_completed_bars` keeps a bar only once ts + 1 day has
+# passed, so a position is ruled on at the first tick after 16:00Z. Same bar
+# as the pre-registered replay. Documentation, not a knob.
+BAR_CONVENTION = "OKX 1D: closes 16:00Z (UTC+8 day); evaluated first tick after close"
 
 
 def module_enabled() -> bool:
@@ -104,6 +125,34 @@ def _max_positions() -> int:
         return max(1, int(os.getenv("TREND_MAX_POSITIONS", "3")))
     except ValueError:
         return 3
+
+
+def managed_agent_ids() -> "set[int] | None":
+    """The agents whose every lot is this rule's: the module's own dedicated
+    agent while the module is switched on, plus every enrolled trend account
+    (Plan 32) whatever the switch says — an enrolled account stays fenced
+    while the module is paused. None when the enrolment cannot be read: the
+    caller must then not guess (the orphan sweep sits the pass out; the
+    watcher falls back to the plain unowned id).
+
+    Shared by orphan_reclaim (leave these rows alone) and risk_engine's
+    watcher (attribute a close on one of them to the module)."""
+    managed: set = set()
+    try:
+        if module_enabled():
+            agent = _agent_id()
+            if agent is not None:
+                managed.add(agent)
+    except Exception:  # noqa: BLE001 — never break a caller's sweep
+        pass
+    try:
+        import trend_accounts
+        return managed | trend_accounts.enrolled_ids()
+    except ValueError:      # stored value cannot be parsed: enrols nobody
+        return managed
+    except Exception:  # noqa: BLE001
+        logger.warning("trend_module: trend accounts unreadable", exc_info=True)
+        return None
 
 
 # ─────────────────────────── indicators (Wilder) ───────────────────────────
@@ -604,14 +653,61 @@ def _save_state(state: dict[str, Any], key: str = STATE_KEY) -> None:
     set_setting(key, raw, updated_by="trend_module")
 
 
+def journal_event(agent_id: int, event: str, symbol: Optional[str],
+                  payload: dict[str, Any], ts: Optional[str] = None) -> bool:
+    """One `trend_events` row — the module's queryable journal (it has no
+    trading run, so no run_events). Fail-soft: telemetry never blocks the
+    cycle or the watcher's close. Returns whether the row was written."""
+    from database import begin_write_transaction, get_db_connection
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        begin_write_transaction(cursor)
+        cursor.execute(
+            "INSERT INTO trend_events (agent_id, ts, event_type, symbol, payload) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (int(agent_id), ts or _now_iso(), str(event)[:48],
+             (str(symbol)[:32] if symbol else None),
+             json.dumps(payload, default=str)))
+        conn.commit()
+        return True
+    except Exception:  # noqa: BLE001
+        logger.warning("trend_module: trend_events write failed (%s %s)",
+                       agent_id, event, exc_info=True)
+        try:
+            if conn is not None:
+                conn.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def _emit(state: dict[str, Any], actions: list[dict[str, Any]],
           event: str, **fields: Any) -> None:
-    """Telemetry: JSON logger line + a queryable row in the module's state."""
+    """Telemetry: JSON logger line + a row in the module's state + a
+    `trend_events` row (when the state knows its agent — `_run_book` stamps
+    it before anything is emitted)."""
     row = {"ts": _now_iso(), "event": event, **fields}
     state["events"].append(row)
     del state["events"][:-EVENT_CAP]
     actions.append(row)
     logger.info("trend_module %s", json.dumps(row, default=str))
+    agent_id = state.get("agent_id")
+    if agent_id is not None:
+        try:
+            payload = {k: v for k, v in fields.items() if k != "symbol"}
+            journal_event(int(agent_id), event, fields.get("symbol"), payload,
+                          ts=row["ts"])
+        except Exception:  # noqa: BLE001 — telemetry never blocks the cycle
+            logger.debug("trend_module: journal failed for %s", event,
+                         exc_info=True)
 
 
 # ─────────────────────────── module cycle ───────────────────────────
@@ -787,6 +883,7 @@ def _run_book(book: dict[str, Any], summary: dict[str, Any]) -> None:
     then new entries. Mutates `summary` in place."""
     agent_id = int(book["agent_id"])
     state = _load_state(book["state_key"])
+    state["agent_id"] = agent_id        # `_emit` journals under this agent
     actions: list[dict[str, Any]] = []
     _reconcile_ledger(state, actions, agent_id)
     _drop_closed_outside(state, actions, agent_id)
@@ -947,10 +1044,11 @@ def trend_stats(agent_id: Optional[int] = None) -> dict[str, Any]:
     trades, win rate, payoff, total pnl. The module's own account by
     default; an enrolled trend account when `agent_id` is given.
 
-    EVERY fill on the account, not only those carrying the module's
-    'trend:' order id: its stop is enforced by the SL/TP watcher, whose
-    close has no order id, and a record without the stop-outs is a record
-    without most of the losses."""
+    EVERY fill on the account, not only those the module placed itself:
+    its stop is enforced by the SL/TP watcher (since 2026-11-06 its close
+    carries 'trend:<agent>:<symbol>:watcher:…'; before that no id at all),
+    and a record without the stop-outs is a record without most of the
+    losses."""
     since = 0
     if agent_id is None:
         agent_id = _agent_id()

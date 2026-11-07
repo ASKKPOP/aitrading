@@ -22,6 +22,16 @@ exactly like a position the fleet holds. The only thing done unilaterally is
 PROTECTION — attaching the account's default stop to a position that has none
 is strictly safer than leaving it bare, and it is what the SL/TP watcher
 already expects to find.
+
+Handoff from a run (2026-11-06, loss analysis §5 #4). A run that stops while
+holding (`positions_held`: a hold-stop, a `stop_eval_failed` stop, a flatten
+that timed out) releases its position here with `positions.handoff_run_id`
+stamped. Three such positions on the 10-05→11-06 tape sat 39–75 h with this
+sweep running every 15 minutes: they already wore the desk's stop (not bare)
+and refused no fleet slot (not blocking), so every pass "held" them. A
+handed-off position is scanned whatever its age, read by the desk like a
+blocking orphan, and everything that happens to it — the handoff, each
+verdict, the close — is journaled on the run that released it.
 """
 
 from __future__ import annotations
@@ -112,7 +122,9 @@ def find_orphans(agent_id: "int | None" = None) -> list[dict[str, Any]]:
         return []
     return [r for r in rows
             if r.get("agent_id") not in managed
-            and _age_minutes(r.get("first_opened_at") or r.get("opened_at"), now) >= floor]
+            and (r.get("handoff_run_id") is not None
+                 or _age_minutes(r.get("first_opened_at") or r.get("opened_at"),
+                                 now) >= floor)]
 
 
 def _module_managed_agents() -> "set[int] | None":
@@ -133,19 +145,10 @@ def _module_managed_agents() -> "set[int] | None":
     An ENROLLED account is skipped whatever the switch says: it stays fenced
     while the module is paused, and a stop this sweep left on its row would
     outlive the pause — the module never writes that column on an account."""
-    managed: set = set()
     try:
         import trend_module
-        if trend_module.module_enabled():
-            managed.add(trend_module._agent_id())
+        return trend_module.managed_agent_ids()
     except Exception:  # noqa: BLE001 — never break the sweep
-        pass
-    try:
-        import trend_accounts
-        return managed | trend_accounts.enrolled_ids()
-    except ValueError:      # stored value cannot be parsed: enrols nobody
-        return managed
-    except Exception:  # noqa: BLE001
         logger.warning("orphan sweep: trend accounts unreadable — skipping "
                        "this pass", exc_info=True)
         return None
@@ -255,18 +258,25 @@ def sweep(read_desk=None, execute=None, blocking=None) -> dict[str, Any]:
         is_blocking = (pos.get("symbol") or "") in blocked
         if is_blocking:
             out["blocking"] += 1
+        handoff = pos.get("handoff_run_id")
+        if handoff is not None:
+            out["handoff"] = out.get("handoff", 0) + 1
         reader = None
-        if is_blocking and read_desk is not None:
-            cached = recent_verdict(str(pos.get("symbol") or ""))
+        # A released position is read like a blocking one: a run just decided
+        # it could no longer manage this book, which is the question the desk
+        # exists to answer. Its verdicts live on that run's tape.
+        if (is_blocking or handoff is not None) and read_desk is not None:
+            cached = recent_verdict(str(pos.get("symbol") or ""),
+                                    run_id=handoff)
             if cached is not None:
                 out["cached"] = out.get("cached", 0) + 1
                 reader = lambda _p, _v=cached: _v          # noqa: E731
             else:
                 _fid = blocked.get(str(pos.get("symbol") or "")) or 0
 
-                def reader(p, _rd=read_desk, _f=_fid):     # noqa: F811
+                def reader(p, _rd=read_desk, _f=_fid, _run=handoff):  # noqa: F811
                     v = _rd(p)
-                    journal_verdict(p, v, fleet_id=_f)
+                    journal_verdict(p, v, fleet_id=_f, run_id=_run)
                     return v
         try:
             verdict = decide(pos, read_desk=reader)
@@ -388,13 +398,14 @@ def desk_cooldown_minutes() -> int:
         return 60
 
 
-def recent_verdict(symbol: str) -> "str | None":
+def recent_verdict(symbol: str, run_id: "int | None" = None) -> "str | None":
     """The last journaled desk verdict for `symbol` inside the cooldown.
 
-    Read back from fleet_events rather than an in-process dict so a worker
+    Read back from the journal rather than an in-process dict so a worker
     restart does not re-bill the read — and so the daemon's autonomous
     decisions leave an audit trail, which matters more here than for a gate
-    that only ever refuses."""
+    that only ever refuses. A handed-off position's verdicts are on the
+    releasing run's tape (`run_id`); a blocking orphan's on fleet_events."""
     from run_engine import _now_iso
     from datetime import datetime, timedelta
     try:
@@ -407,10 +418,16 @@ def recent_verdict(symbol: str) -> "str | None":
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            """SELECT payload FROM fleet_events
-               WHERE event_type = 'orphan_verdict' AND ts >= ?
-               ORDER BY id DESC LIMIT 50""", (cutoff,))
+        if run_id is not None:
+            cursor.execute(
+                """SELECT payload FROM run_events
+                   WHERE run_id = ? AND event_type = 'orphan_verdict' AND ts >= ?
+                   ORDER BY id DESC LIMIT 50""", (int(run_id), cutoff))
+        else:
+            cursor.execute(
+                """SELECT payload FROM fleet_events
+                   WHERE event_type = 'orphan_verdict' AND ts >= ?
+                   ORDER BY id DESC LIMIT 50""", (cutoff,))
         rows = cursor.fetchall()
     except Exception:  # noqa: BLE001
         return None
@@ -432,17 +449,24 @@ def recent_verdict(symbol: str) -> "str | None":
 
 
 def journal_verdict(position: dict, verdict: "str | None",
-                    fleet_id: int = 0) -> None:
+                    fleet_id: int = 0, run_id: "int | None" = None) -> None:
     """Record a desk verdict so the cooldown can see it and a human can audit
-    why the daemon kept or closed someone's position."""
+    why the daemon kept or closed someone's position. On the releasing run's
+    tape for a handed-off position (`run_id`), else on the fleet whose slot
+    the orphan refuses."""
+    payload = {"symbol": position.get("symbol"),
+               "market": position.get("market"),
+               "side": position.get("side"),
+               "position_id": position.get("id"),
+               "verdict": verdict}
     try:
-        import fleet_planner as fp
-        fp.emit_fleet_event(fleet_id, "orphan_verdict",
-                            {"symbol": position.get("symbol"),
-                             "market": position.get("market"),
-                             "side": position.get("side"),
-                             "position_id": position.get("id"),
-                             "verdict": verdict})
+        if run_id is not None:
+            from trading_runs import emit_telemetry_event
+            if emit_telemetry_event(int(run_id), "orphan_verdict", payload) is None:
+                raise RuntimeError("run_events write refused")
+        else:
+            import fleet_planner as fp
+            fp.emit_fleet_event(fleet_id, "orphan_verdict", payload)
     except Exception:  # noqa: BLE001 — journalling must never block the sweep
         # WARNING, not debug: a failed journal means the cooldown cannot see
         # this verdict and the next sweep re-bills the full desk read. Silent
@@ -503,13 +527,72 @@ def close_orphan(position: dict, verdict: dict) -> None:
     if qty <= 0 or mark is None:
         raise ValueError("no quantity or no mark to close against")
     side = "cover" if (position.get("side") or "").lower() in ("short", "sell") else "sell"
+    coid = f"orphan:{position['id']}:reclaim"
     signal_id, skip = execute_paper_trade(
         position["agent_id"], position["symbol"], position["market"],
         side, qty, float(mark),
         content=f"Orphan reclaim — {verdict.get('reason') or 'desk turned'}",
-        client_order_id=f"orphan:{position['id']}:reclaim")
+        client_order_id=coid)
     if not signal_id and not (skip and "duplicate client_order_id" in str(skip)):
         raise RuntimeError(skip or "close refused")
+    if signal_id and position.get("handoff_run_id") is not None:
+        # The run that released this position gets to see how it ended.
+        try:
+            from trading_runs import emit_telemetry_event
+            emit_telemetry_event(int(position["handoff_run_id"]), "orphan_closed",
+                                 {"position_id": position.get("id"),
+                                  "symbol": position.get("symbol"),
+                                  "side": side, "quantity": qty,
+                                  "price": float(mark), "signal_id": int(signal_id),
+                                  "client_order_id": coid,
+                                  "reason": verdict.get("reason")})
+        except Exception:  # noqa: BLE001 — never undo a close for a journal
+            logger.debug("orphan_closed journal failed for %s", position.get("id"),
+                         exc_info=True)
+
+
+def handoff(position: dict, run_id: int, why: str) -> dict:
+    """Intake for a position a run just released on `positions_held`.
+
+    Protects it NOW if it is bare (the sweep would, but up to 15 minutes
+    later — and the run that released it may have done so because marks were
+    stale, so a bare position is the one case where waiting is the risk), and
+    journals the handoff on the releasing run's tape with what the sweep will
+    find: position id, quantity, stop, mark. The sweep then reads the desk on
+    it on its next pass (see `sweep`). Never raises; the run's terminal must
+    not depend on telemetry."""
+    out = {"position_id": position.get("id"), "symbol": position.get("symbol"),
+           "market": position.get("market"), "side": position.get("side"),
+           "quantity": position.get("quantity"),
+           "entry_price": position.get("entry_price"),
+           "mark": position.get("current_price"),
+           "stop_loss": position.get("stop_loss"),
+           "take_profit": position.get("take_profit"),
+           "why": why, "protected": False, "reclaim": "orphan_reclaim"}
+    try:
+        bare = position.get("stop_loss") is None and position.get("take_profit") is None
+        if bare and protect(position):
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT stop_loss FROM positions WHERE id = ?",
+                               (position["id"],))
+                row = cursor.fetchone()
+            finally:
+                conn.close()
+            if row is not None and row["stop_loss"] is not None:
+                out["protected"] = True
+                out["stop_loss"] = row["stop_loss"]
+    except Exception:  # noqa: BLE001
+        logger.warning("orphan handoff: protect failed for %s", position.get("id"),
+                       exc_info=True)
+    try:
+        from trading_runs import emit_telemetry_event
+        emit_telemetry_event(int(run_id), "positions_held", out)
+    except Exception:  # noqa: BLE001
+        logger.warning("orphan handoff: journal failed for run %s", run_id,
+                       exc_info=True)
+    return out
 
 
 async def orphan_reclaim_loop() -> None:

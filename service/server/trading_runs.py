@@ -784,9 +784,12 @@ def _transition(run_id: int, agent_id: int, allowed_from: tuple, target: str,
             # this"; leaving a finished run's stamp on it would hide the
             # position from manual selling and from the automation rules,
             # since both read `run_id IS NULL`.
+            # Stamped with the releasing run (2026-11-06, loss analysis §5
+            # #4) so the orphan sweep reads the desk on it at once.
             cursor.execute(
-                "UPDATE positions SET run_id = NULL WHERE run_id = ? AND agent_id = ?",
-                (run_id, agent_id))
+                "UPDATE positions SET handoff_run_id = ?, run_id = NULL "
+                "WHERE run_id = ? AND agent_id = ?",
+                (run_id, run_id, agent_id))
         if extra_sets:
             sets += ", " + extra_sets
             args.extend(extra_args)
@@ -925,6 +928,14 @@ def delete_run(run_id: int, agent_id: int) -> None:
             raise ValueError("only draft or stopped runs can be deleted")
         cursor.execute("DELETE FROM run_events WHERE run_id = ?", (run_id,))
         cursor.execute("DELETE FROM run_reports WHERE run_id = ?", (run_id,))
+        # A position this run handed off (positions_held) loses its handoff
+        # stamp with the run: the orphan sweep journals its desk verdicts on
+        # the run's tape, and with the run gone that write fails on the FK
+        # every pass — the cooldown never caches and the desk is re-billed
+        # every 15 minutes. It becomes a plain orphan again.
+        cursor.execute(
+            "UPDATE positions SET handoff_run_id = NULL "
+            "WHERE handoff_run_id = ? AND agent_id = ?", (run_id, agent_id))
         cursor.execute("DELETE FROM trading_runs WHERE id = ? AND agent_id = ?",
                        (run_id, agent_id))
         conn.commit()

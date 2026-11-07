@@ -548,3 +548,60 @@ class DeskCooldown(unittest.TestCase):
     def test_unknown_symbol_has_no_cached_verdict(self):
         self._sweep([])
         self.assertIsNone(orc.recent_verdict("ETHUSDT"))
+
+
+class HandoffFromARun(unittest.TestCase):
+    """2026-11-06 §5 #4: a position a run released on `positions_held` is
+    handed to this sweep at once. It is stamped `handoff_run_id`; the sweep
+    scans it whatever its age, and reads the desk on it as it does for a
+    blocking orphan — a released position already wearing a stop was held
+    on every pass for 39–75 h on the 10-05→11-06 tape."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        database.DATABASE_URL = ""
+        database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "t.db")
+        database.init_database()
+        from run_engine import _now_iso
+        now = _now_iso()
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for pid, handoff in ((1, 4242), (2, None)):
+            cur.execute(
+                "INSERT INTO positions (id,agent_id,symbol,market,side,quantity,"
+                "entry_price,current_price,opened_at,first_opened_at,run_id,"
+                "stop_loss,handoff_run_id) VALUES "
+                "(?,6,'ETHUSDT','crypto','long',1.0,100.0,99.0,?,?,NULL,95.0,?)",
+                (pid, now, now, handoff))
+        conn.commit(); conn.close()
+        self.env = unittest.mock.patch.dict(os.environ, {
+            "ORPHAN_RECLAIM_ENABLED": "true"})
+        self.env.start()
+
+    def tearDown(self):
+        self.env.stop()
+        self.tmp.cleanup()
+
+    def test_a_handed_off_position_skips_the_grace_period(self):
+        # Both rows were opened this second: only the handoff is abandoned.
+        self.assertEqual([r["id"] for r in orc.find_orphans()], [1])
+
+    def test_the_desk_is_consulted_for_a_handoff_without_a_blocking_slot(self):
+        asked = []
+        with unittest.mock.patch.object(orc, "recent_verdict", return_value=None), \
+             unittest.mock.patch.object(orc, "journal_verdict"):
+            out = orc.sweep(read_desk=lambda p: asked.append(p["id"]) or None,
+                            blocking={})
+        self.assertEqual(asked, [1])
+        self.assertEqual(out["held"], 1)
+
+    def test_a_stop_on_the_row_still_counts_as_protected(self):
+        # The handoff escalates the READ; it never writes over the desk's stop.
+        with unittest.mock.patch.object(orc, "recent_verdict", return_value=None), \
+             unittest.mock.patch.object(orc, "journal_verdict"):
+            orc.sweep(read_desk=lambda p: "buy", blocking={})
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT stop_loss FROM positions WHERE id = 1")
+        self.assertAlmostEqual(cur.fetchone()["stop_loss"], 95.0)
+        conn.close()

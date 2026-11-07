@@ -970,5 +970,169 @@ class TestOrphanReconcile(CycleBase):
         self.assertEqual(summary["entries"], 0)  # no double-entry on top
 
 
+
+class TestWatcherAttribution(CycleBase):
+    """2026-11-06 §2.8 / §5 #5: the SL/TP watcher closed the module's BNB and
+    XRP longs on 10-08 for −$51.31 with `run_id NULL`, `client_order_id NULL`
+    and no run_events row — invisible to every monitor. The module has no
+    run; its closes get a `trend:` order id and a `trend_events` row."""
+
+    def _trend_events(self, event=None):
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            sql = ("SELECT agent_id, symbol, event_type, payload FROM trend_events "
+                   "WHERE agent_id = ?")
+            params: tuple = (self.agent_id,)
+            if event:
+                sql += " AND event_type = ?"
+                params += (event,)
+            cur.execute(sql + " ORDER BY id", params)
+            return [dict(r, payload=json.loads(r["payload"] or "{}"))
+                    for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def _cycle(self, bars, adx=30.0):
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=adx), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            return tm.run_trend_cycle()
+
+    def _watcher_tick(self, mark):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE positions SET current_price = ?, price_updated_at = ? "
+                    "WHERE agent_id = ?",
+                    (mark, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                     self.agent_id))
+        conn.commit(); conn.close()
+        from risk_engine import run_sltp_watcher_tick
+        with patch.dict(os.environ, {"RISK_ENGINE_ENABLED": "true"}):
+            return run_sltp_watcher_tick()
+
+    def test_module_events_are_journaled_where_a_monitor_can_query(self):
+        self._cycle(_bars_up())
+        entries = self._trend_events("entry")
+        self.assertEqual(len(entries), 1, entries)
+        self.assertEqual(entries[0]["symbol"], "BTCUSDT")
+        self.assertEqual(entries[0]["payload"]["side"], "buy")
+        self.assertIsNotNone(entries[0]["payload"]["signal_id"])
+
+    def test_the_watchers_close_of_a_module_position_is_attributed(self):
+        bars = _bars_up()
+        self._cycle(bars)
+        pos = self._state()["positions"]["BTCUSDT"]
+        out = self._watcher_tick(pos["initial_stop"] - 1.0)
+        self.assertEqual(out["closed"], 1)
+        sig = self._signals()[-1]
+        self.assertEqual(sig["side"], "sell")
+        self.assertTrue((sig["client_order_id"] or "").startswith(
+            f"trend:{self.agent_id}:BTCUSDT:watcher:stop_loss:"),
+            sig["client_order_id"])
+        rows = self._trend_events("watcher_close")
+        self.assertEqual(len(rows), 1, rows)
+        self.assertEqual(rows[0]["symbol"], "BTCUSDT")
+        self.assertEqual(rows[0]["payload"]["trigger"], "stop_loss")
+        self.assertEqual(rows[0]["payload"]["client_order_id"], sig["client_order_id"])
+        self.assertIsNotNone(rows[0]["payload"]["signal_id"])
+        self.assertAlmostEqual(float(rows[0]["payload"]["qty"]), float(pos["qty"]))
+        # The module's own bookkeeping of that close reaches the table too.
+        self._cycle(bars, adx=45.0)
+        self.assertEqual(len(self._trend_events("closed_outside")), 1)
+
+    def _other_agent_position(self, run_id):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO agents (name, token_hash, cash, user_id, created_at) "
+            "VALUES ('other', 'tth2', 1000, 7, '2026-01-01T00:00:00Z')")
+        other = cur.lastrowid
+        cur.execute(
+            "INSERT INTO positions (agent_id, symbol, market, side, quantity,"
+            " entry_price, current_price, opened_at, run_id, stop_loss) VALUES "
+            "(?, 'ETHUSDT', 'crypto', 'long', 1.0, 100.0, 90.0, "
+            "'2026-01-01T00:00:00Z', ?, 95.0)", (other, run_id))
+        pid = cur.lastrowid
+        conn.commit(); conn.close()
+        with patch("automation.execute_paper_trade",
+                   return_value=(1, None)) as ept, \
+             patch.dict(os.environ, {"RISK_ENGINE_ENABLED": "true"}):
+            from risk_engine import run_sltp_watcher_tick
+            run_sltp_watcher_tick()
+        return pid, ept.call_args.kwargs["client_order_id"]
+
+    def test_an_unowned_position_on_another_agent_gets_the_orphan_prefix(self):
+        # The trend prefix is for the module's agents only.
+        pid, coid = self._other_agent_position(run_id=None)
+        self.assertTrue(coid.startswith(f"orphan:{pid}:watcher:stop_loss:"), coid)
+        self.assertEqual(self._trend_events("watcher_close"), [])
+
+    def test_a_run_owned_position_keeps_the_run_prefix(self):
+        _pid, coid = self._other_agent_position(run_id=4242)
+        self.assertTrue(coid.startswith("run:4242:watcher:stop_loss:"), coid)
+        self.assertEqual(self._trend_events("watcher_close"), [])
+
+    def test_the_trend_order_id_fits_the_64_char_column(self):
+        from risk_engine import _watcher_order_id
+        pos = {"id": 1, "run_id": None, "agent_id": 2_147_483_647,
+               "symbol": "X" * 40}
+        coid = _watcher_order_id(pos, "take_profit", {2_147_483_647})
+        self.assertTrue(coid.startswith("trend:2147483647:XXXXXXXXXXXXXXXX:watcher:"))
+        self.assertLessEqual(len(coid), 64, coid)
+
+
+class TestJournalIsFailSoft(CycleBase):
+    """Independent verification 2026-11-06: `_emit` called the journal with no
+    guard of its own, so a raising journaler aborted the book cycle at the
+    first emit — before the entry was placed."""
+
+    def _cycle(self, bars, adx=30.0):
+        with patch.object(tm, "_get_bars", return_value=bars), \
+             patch.object(tm, "wilder_adx", return_value=adx), \
+             patch.object(tm, "_fear_greed_value", return_value=50), \
+             patch("llm_client.generate_text", return_value=None):
+            return tm.run_trend_cycle()
+
+    def test_a_raising_journal_does_not_stop_the_entry(self):
+        with patch.object(tm, "journal_event", side_effect=RuntimeError("boom")):
+            summary = self._cycle(_bars_up())
+        self.assertNotIn("error", summary, summary)
+        self.assertEqual(summary["entries"], 1)
+        self.assertEqual([s["side"] for s in self._signals()], ["buy"])
+        self.assertIn("BTCUSDT", self._state()["positions"])
+
+    def test_a_missing_table_does_not_stop_the_entry(self):
+        conn = database.get_db_connection()
+        conn.cursor().execute("DROP TABLE trend_events")
+        conn.commit(); conn.close()
+        summary = self._cycle(_bars_up())
+        self.assertEqual(summary["entries"], 1, summary)
+
+
+class TestManagedAgents(unittest.TestCase):
+    """Who the watcher and the orphan sweep must treat as the module's."""
+
+    def test_module_agent_and_enrolled_accounts(self):
+        with patch.dict(os.environ, {"TREND_MODULE_ENABLED": "1",
+                                     "TREND_AGENT_ID": "63"}), \
+             patch("trend_accounts.enrolled_ids", return_value={77, 78}):
+            self.assertEqual(tm.managed_agent_ids(), {63, 77, 78})
+
+    def test_a_switched_off_module_manages_only_the_enrolled(self):
+        with patch.dict(os.environ, {"TREND_MODULE_ENABLED": "0",
+                                     "TREND_AGENT_ID": "63"}), \
+             patch("trend_accounts.enrolled_ids", return_value={77}):
+            self.assertEqual(tm.managed_agent_ids(), {77})
+
+    def test_an_unreadable_enrolment_is_none_not_a_guess(self):
+        with patch.dict(os.environ, {"TREND_MODULE_ENABLED": "1",
+                                     "TREND_AGENT_ID": "63"}), \
+             patch("trend_accounts.enrolled_ids",
+                   side_effect=RuntimeError("db down")):
+            self.assertIsNone(tm.managed_agent_ids())
+
+
 if __name__ == "__main__":
     unittest.main()

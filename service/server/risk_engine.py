@@ -702,6 +702,53 @@ def _apply_trailing_stop(cursor, pos: dict[str, Any], price: float,
     return True
 
 
+def _trend_managed_agents() -> set:
+    """Agents whose positions belong to the trend module (its own agent and
+    the enrolled trend accounts). Empty on any failure: attribution falls
+    back to the plain unowned id; protection is never held up."""
+    try:
+        import trend_module
+        return set(trend_module.managed_agent_ids() or ())
+    except Exception:  # noqa: BLE001
+        logger.debug("trend managed-agent lookup failed", exc_info=True)
+        return set()
+
+
+def _watcher_order_id(pos: dict, trigger: str, trend_agents: set) -> str:
+    """Per-attempt unique client_order_id for the watcher's close, prefixed
+    by who owns the position (see run_sltp_watcher_tick)."""
+    epoch = int(datetime.now(timezone.utc).timestamp())
+    if pos.get("run_id"):
+        return f"run:{int(pos['run_id'])}:watcher:{trigger}:{epoch}"
+    if pos.get("agent_id") in trend_agents:
+        # signals.client_order_id is VARCHAR(64) on MySQL: 38 fixed chars +
+        # agent (≤10) + symbol — cap the symbol at 16 so a long venue symbol
+        # can never turn the close into a deterministic "Data too long".
+        return (f"trend:{int(pos['agent_id'])}:{str(pos['symbol'])[:16]}"
+                f":watcher:{trigger}:{epoch}")
+    return f"orphan:{int(pos['id'])}:watcher:{trigger}:{epoch}"
+
+
+def _journal_trend_close(pos: dict, trigger: str, price: float,
+                         signal_id: int, client_order_id: str) -> None:
+    """A `trend_events` row for the watcher's close of a trend-module position
+    (loss analysis §2.8: −$51.31 on 10-08 with no row anywhere). Fail-soft."""
+    try:
+        import trend_module
+        trend_module.journal_event(
+            int(pos["agent_id"]), "watcher_close", pos.get("symbol"),
+            {"trigger": trigger, "price": float(price),
+             "qty": abs(float(pos["quantity"])),
+             "side": "cover" if float(pos["quantity"]) < 0 else "sell",
+             "stop_loss": pos.get("stop_loss"), "take_profit": pos.get("take_profit"),
+             "position_id": int(pos["id"]), "signal_id": int(signal_id),
+             "client_order_id": client_order_id,
+             "bar_convention": trend_module.BAR_CONVENTION})
+    except Exception:  # noqa: BLE001
+        logger.debug("trend watcher_close journal failed (position %s)",
+                     pos.get("id"), exc_info=True)
+
+
 def run_sltp_watcher_tick() -> dict[str, Any]:
     """Close long positions whose polled price crossed stop_loss/take_profit;
     ratchet trailing stops; time-stop stale losers (Phase 3).
@@ -723,7 +770,7 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
         cursor.execute(
             """SELECT id, agent_id, symbol, market, quantity, current_price,
                       entry_price, stop_loss, take_profit, exit_policy,
-                      first_opened_at, run_id
+                      first_opened_at, run_id, handoff_run_id
                FROM positions
                WHERE quantity != 0 AND current_price IS NOT NULL
                  AND (stop_loss IS NOT NULL OR take_profit IS NOT NULL
@@ -764,6 +811,7 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
 
     now = datetime.now(timezone.utc)
     closed = 0
+    trend_agents = _trend_managed_agents() if rows else set()
     for pos in rows:
         price = float(pos["current_price"])
         is_short = float(pos["quantity"]) < 0
@@ -804,12 +852,14 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
         if _route_stop_hit_to_desk(pos, trigger, price):
             continue
         # 2026-11-06: the watcher's close carries an order id so the tape can
-        # attribute it (run_engine's re-entry fence keys on the same prefix).
+        # attribute it (run_engine's re-entry fence keys on the run prefix).
         # Per-attempt unique (epoch seconds; scans are ≥30s apart) so a
         # failed insert never blocks the retry that protects the position.
-        watcher_coid = (f"run:{int(pos['run_id'])}:watcher:{trigger}:"
-                        f"{int(datetime.now(timezone.utc).timestamp())}"
-                        if pos.get("run_id") else None)
+        #   run:<id>:watcher:…          an active run's position
+        #   trend:<agent>:<sym>:watcher:…  the trend module's (no run; §5 #5)
+        #   orphan:<pos>:watcher:…      an unowned position (a run's handoff
+        #                               or a manual user's own SL/TP)
+        watcher_coid = _watcher_order_id(pos, trigger, trend_agents)
         signal_id, skip = execute_paper_trade(
             pos["agent_id"], pos["symbol"], pos["market"],
             "cover" if is_short else "sell",
@@ -828,6 +878,15 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
                 _journal_stop_hit(pos["run_id"], pos, trigger, price, "closed",
                                   signal_id=int(signal_id),
                                   client_order_id=watcher_coid)
+            elif pos.get("handoff_run_id") is not None:
+                # Released by a run that stopped holding: its tape shows how
+                # the position ended (loss analysis §5 #4).
+                _journal_stop_hit(pos["handoff_run_id"], pos, trigger, price,
+                                  "closed", signal_id=int(signal_id),
+                                  client_order_id=watcher_coid, handoff=True)
+            if pos["agent_id"] in trend_agents:
+                _journal_trend_close(pos, trigger, price, int(signal_id),
+                                     watcher_coid)
             try:
                 from alerts import send_alert
                 send_alert(pos["agent_id"], "position_closed", "position_closed",

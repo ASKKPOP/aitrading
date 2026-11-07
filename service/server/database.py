@@ -2856,6 +2856,28 @@ def init_database():
     # swing signal stack — ok/duration/items/error. The admin console's feed
     # probes only answer "does the upstream answer right now"; these rows are
     # what OUR crawlers actually did, so a silently dead collector is visible.
+    # Trend module journal (2026-11-06, loss analysis §2.8 / §5 #5): the module
+    # has no trading run, so its telemetry lived only in a platform_settings
+    # JSON blob (truncated at 60 KB) and the watcher's closes of its positions
+    # had NO row anywhere — −$51.31 on 10-08 invisible to every monitor built
+    # on run_events. One row per module event and per watcher close of a
+    # module position; agent_id is the module's dedicated agent or an
+    # enrolled trend account. MySQL mirror: alembic 0057.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS trend_events (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id   INTEGER NOT NULL,
+            ts         VARCHAR(32) NOT NULL,
+            event_type VARCHAR(48) NOT NULL,
+            symbol     VARCHAR(32),
+            payload    TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS ix_trend_events_agent_ts
+        ON trend_events(agent_id, ts)
+    """)
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS crawl_runs (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2977,6 +2999,11 @@ def init_database():
         "ALTER TABLE signals ADD COLUMN fee_usd REAL",
         "ALTER TABLE positions ADD COLUMN run_id INTEGER",
         "ALTER TABLE positions ADD COLUMN price_updated_at TEXT",
+        # 2026-11-06 (loss analysis §5 #4): the run that RELEASED this row on
+        # its terminal (run_id goes back to NULL so the owner can sell by
+        # hand). The orphan sweep reads the desk on a handed-off position at
+        # once instead of holding it for days. MySQL mirror: alembic 0057.
+        "ALTER TABLE positions ADD COLUMN handoff_run_id INTEGER",
     ):
         try:
             cursor.execute(_ddl)
