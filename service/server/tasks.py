@@ -943,6 +943,32 @@ async def trend_module_loop():
         await asyncio.sleep(tick_interval)
 
 
+async def llm_silence_loop():
+    """Operator alert when the desk goes mute (llm_silence.py).
+
+    Every LLM_SILENCE_INTERVAL seconds (default 900) read the trailing window
+    of `decision` run_events; when the LLM answered almost none of them, send
+    one admin alert, repeat every LLM_SILENCE_REALERT_H hours while it lasts,
+    and one recovery notice after. Pure measurement; LLM_SILENCE_ALERT=0 off.
+    """
+    from llm_silence import enabled as llm_silence_enabled, tick as llm_silence_tick
+
+    tick_interval = _env_int("LLM_SILENCE_INTERVAL", 900, minimum=60)
+
+    await asyncio.sleep(120)
+
+    while True:
+        try:
+            if llm_silence_enabled():
+                result = await asyncio.to_thread(llm_silence_tick)
+                if result.get("event"):
+                    print(f"[LlmSilence] {result}")
+        except Exception as e:
+            print(f"[LlmSilence Error] {e}")
+
+        await asyncio.sleep(tick_interval)
+
+
 async def subscription_enforcer_loop():
     """Background task for Trading Runs entitlements (Plan 10, Phase 5).
 
@@ -2063,6 +2089,7 @@ BACKGROUND_TASK_REGISTRY = {
     "ledger_invariant": ledger_invariant_loop,
     "trend_module": trend_module_loop,
     "swing_pipeline": _swing_pipeline_loop,
+    "llm_silence": llm_silence_loop,
 }
 
 
@@ -2154,6 +2181,8 @@ BACKGROUND_TASK_ROLES: dict[str, str] = {
     "ledger_invariant":        "research",
     # Plan 31 item 7 — sim-only trend module; daily bars, hourly tick
     "trend_module":            "research",
+    # 2026-11-07 sweep — admin alert when the desk LLM stops answering
+    "llm_silence":             "research",
 }
 
 WORKER_ROLES: tuple[str, ...] = ("all", "prices", "settlement", "research")
