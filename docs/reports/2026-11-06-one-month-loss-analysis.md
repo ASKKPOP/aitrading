@@ -266,6 +266,62 @@ by ≥ 40% per trip-count; if trips fall but fees/trip do not, the fix failed.
 the median fill-vs-authored-stop gap must drop from ~15bp to ≤ 5bp.
 #3 — zero `conviction_collapse` closes with hold < 2 min.
 
+**Ship record (2026-11-07), solutions #4 and #5.** Shipped as `7110f54` and deployed
+to sooppiy.com at 02:40Z as `sooppiy-backend:20261107-handoff-trend-telemetry`
+(alembic `0057`). What the code showed first: the reclaim sweep was ON for the whole
+39–75 h (`ORPHAN_RECLAIM_ENABLED=true`, `ORPHAN_RECLAIM_EXIT=true` on prod) and ran
+every 15 minutes — it only protects a *bare* orphan and only asks the desk about an
+orphan that *blocks* a fleet slot, and a released position wearing the desk's stop
+is neither, so every pass "held" it. The fix is therefore an intake, not a new
+close path:
+
+- **#4** `positions.handoff_run_id` is stamped when a run releases its book
+  (`run_engine._simple_transition`, `trading_runs._transition`) and cleared by
+  `delete_run`. On `positions_held` the run journals a `positions_held` run_event
+  (position id, qty, stop, mark, why, protected) and a bare position is protected
+  at once. The sweep scans a handed-off row whatever its age and reads the desk on
+  it like a blocking orphan, under the existing `ORPHAN_RECLAIM_EXIT` switch;
+  `orphan_verdict` / `orphan_closed` land on the releasing run's tape, where the
+  60-min cooldown now reads them. The watcher's close of such a row carries
+  `orphan:<pos>:watcher:<trigger>:<epoch>` and writes `stop_hit` (handoff=true) on
+  the dead run. The 2026-07-26 rule stands: no flatten on marks just declared stale.
+- **#5** `trend_events` (agent_id, ts, event_type, symbol, payload): every module
+  `_emit` row and a `watcher_close` row per watcher close of a module position;
+  watcher id `trend:<agent>:<symbol>:watcher:<trigger>:<epoch>`;
+  `trend_module.managed_agent_ids()` shared with the orphan sweep.
+  **Bar convention settled (not changed):** the live module and the +114R replay
+  both read OKX "1D" bars, which close at 16:00Z (UTC+8 day); the trail is ruled on
+  at the first hourly tick after that close (`BAR_CONVENTION` in `trend_module.py`).
+  The UTC-midnight reading above (XRP, $11.3) is n=1 and would need its own replay.
+
+Process: 18 tests red on `187b980` first, green after; 14 hand mutations each caught;
+two-agent review (adversarial: 3 should-fix folded in — `delete_run` clears the stamp,
+a mislabeled test split, the `trend:` id capped to VARCHAR(64); independent verifier
+on 23 own scenarios ×4 runs: one FAIL — `_emit` called the journal unguarded — fixed
+with fail-soft tests); migration run from empty and round-tripped on a throwaway
+MySQL 8, and the handoff / reclaim-close / watcher-close flows run end to end on it;
+local gate in a scratch clone (ruff, 5,414 pytest, frontend build, npm audit,
+gitleaks, pip-audit clean after `56e1118`). Verified on prod from inside the live
+worker: the five changed modules carry the new symbols, `positions.handoff_run_id`
+and `trend_events` (+index) exist, `alembic_version = 0057`, zero tracebacks, health
+200; first trend cycle after boot `scanned 5, signals 0, actions []` (so no row yet —
+a quiet scan writes nothing); no run has stopped `positions_held` since the deploy.
+Kill switch for the new close path is the existing `ORPHAN_RECLAIM_EXIT=0`; the
+journals have none (fail-soft, never block a close or a terminal).
+
+**Pre-registered falsifiers for #4/#5** (read on the next tape):
+#4 — every `run_status → stopped (positions_held)` must have a `positions_held`
+run_event on the same run and, within 15 min, an `orphan_verdict` on it; a position
+with `handoff_run_id` set and no verdict after 30 min means the fix failed. Expect
+≤ 24 `orphan_verdict` rows per handed-off position per day (hourly cooldown, no
+back-off — a cost watch item).
+#5 — every `sell`/`cover` on agent 63 must carry a `trend:` order id and have a
+`watcher_close` or `exit` row in `trend_events`; a NULL-id fill on agent 63 means the
+fix failed. `trend_events` growth should stay under ~500 rows/day.
+Known, not fixed: the stop re-entry fence keys only on `run:%:watcher:%`, so a
+handed-off position's stop-out does not fence the symbol (as before); a `None` desk
+verdict is never cached, so an unreadable desk is re-asked every sweep (pre-existing).
+
 ## 6. What could not be determined
 
 - Why fleet 43 ran 3/8 for 92% of the window (planner rejections are fleet-level events).
