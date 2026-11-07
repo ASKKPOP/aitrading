@@ -196,7 +196,9 @@ move anything, say so and say what you will do instead.**
 > **`llm_silence` admin alert** (`service/server/llm_silence.py`, task
 > `llm_silence`, backlog R28) — email+SMS to the console's admin contacts when
 > ≥80 % of the last 2 h of decisions had no verdict; kill `LLM_SILENCE_ALERT=0`.
-> **Watch next run:** did `[LlmSilence]` fire on the first tick after deploy?
+> **Prod image after this run: `sooppiy-backend:20261107-sweep-20261107` (994782f).**
+> The alert FIRED on the first tick (16:15:42Z, email+sms accepted, state persisted).
+> **Watch next run:** one re-alert per 6 h while mute; one recovery notice when the host returns.
 >
 > **New traps (bit this run):**
 > - `git log --since=48h` is NOT valid approxidate — it silently prints nothing.

@@ -1,7 +1,7 @@
 {
   "cycle": "24h-sweep-2026-11-07 (daily scheduled task, run 1)",
   "captured_at_utc": "2026-11-07T15:14:13Z",
-  "prod_image": "sooppiy-backend:20261107-drop-authlib (95e50b3); deploy this run: sweep-20261107",
+  "prod_image": "sooppiy-backend:20261107-sweep-20261107 (994782f; deployed 2026-11-07T16:13:08Z)",
   "SWEEP_1107": {
     "window": "KST day 2026-11-07 = 2026-11-06T15:00Z\u21922026-11-07T15:00Z; UTC day 2026-11-06 reported too",
     "pnl": {
@@ -40,7 +40,7 @@
       "skips_7d": 37922
     },
     "falsifiers_f545d3e_7110f54": "all five NOT YET MEASURABLE (0 entries attempted, 0 stop closes, 0 positions_held, 0 trend actions); code present in image verified by import",
-    "shipped_this_run": "llm_silence admin alert (R28)",
+    "shipped_this_run": "llm_silence admin alert (R28) \u2014 b3849b0, deployed 16:13Z, first tick fired silent \u2192 email+sms at 16:15:42Z",
     "open_watches": [
       "R28 alert must fire on first tick after deploy (prod ~99% mute)",
       "R29 fleet 43 plan cap; pro plan expiry 2026-11-17",

@@ -248,6 +248,32 @@ are paused by `subscription_enforcer`).
 suite is running in the same tree — run 1's only failure was my M5 mutant, not the code.
 Mutation tests go BEFORE the full run, or in a copy.
 
+### 10b. Ship record — deployed and verified on prod
+
+Commits `b3849b0` (code) + `994782f` (docs) fast-forwarded to `main`; `scripts/deploy.sh
+sweep-20261107` from the scratch clone (lock acquired, guard captured `drop-authlib`,
+build, migrations, SPA + marketing published, verify) → image
+**`sooppiy-backend:20261107-sweep-20261107`** on both containers at 16:13:08Z.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261107-drop-authlib` + compose up.
+
+| prod check | pass 1 (16:14:26Z) | pass 2 (16:15:52Z) |
+|---|---|---|
+| image on worker + backend | `20261107-sweep-20261107` ×2 | same |
+| `Starting background task: llm_silence` | 1 | 1 |
+| tracebacks worker / backend | 0 / 0 | 0 |
+| today's note in `/app/docs/reports/` (RAG corpus) | present | — |
+| live `llm_silence.measure()` | n 25, mute 25, frac 1.0 → `evaluate` = silent | — |
+| **first tick** (120 s after start) | — | `[LlmSilence] {'event': 'silent', 'n': 24, 'mute': 24, 'frac': 1.0, 'sent': {'channels': ['email', 'sms']}, 'persisted': True}` |
+| persisted state row | fresh `{silent False}` | `{"silent": true, "alerted_at": "2026-11-07T16:15:42Z"}` by `llm_silence` |
+| events flowing | max ts 16:14:07Z at a 16:14:30Z clock | 16:14:07Z at 16:15:53Z (first cycles after restart pending) |
+| `https://sooppiy.com/api/health` | 200 | — |
+
+**R28 falsifier, first condition met:** the alert fired within 2 min of the container
+start and both operator channels accepted it. Still to read on the next tape: exactly one
+re-alert per 6 h while the host stays mute (next due ≈ 22:15Z), one recovery notice when
+it returns, and whether the operator actually received the email/SMS (not observable
+from the box).
+
 ### 11. Not verified this run
 
 - Why the LLM host stopped answering (no access to the host; only its symptoms).
