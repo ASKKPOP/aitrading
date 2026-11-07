@@ -185,6 +185,60 @@ regression-check against yesterday, compute the true 24 h P&L
 losses took. **Be adversarial about prior conclusions — if a fix did not
 move anything, say so and say what you will do instead.**
 
+> ### 📋 DAILY SWEEP RUN 1 — 2026-11-07 15:14Z (first run of the scheduled task) — what it learned
+>
+> Notes: `2026-11-07-automation-monitoring.md`. Verdict: **$0 realized in the
+> KST day for both users, 0 fills, 0 open positions — because the desk was
+> MUTE, not because it chose to be.** The local LLM host (`LOCAL_LLM_BASE_URL`,
+> a Tailscale address — NOT the prod box, NOT this Mac) has answered almost
+> nothing since **2026-11-05T21Z**; the previous outage ran 10-30T12Z→11-02T10Z.
+> Agent 6: 255/255 decisions hold, 251 with no verdict. Shipped from this run:
+> **`llm_silence` admin alert** (`service/server/llm_silence.py`, task
+> `llm_silence`, backlog R28) — email+SMS to the console's admin contacts when
+> ≥80 % of the last 2 h of decisions had no verdict; kill `LLM_SILENCE_ALERT=0`.
+> **Watch next run:** did `[LlmSilence]` fire on the first tick after deploy?
+>
+> **New traps (bit this run):**
+> - `git log --since=48h` is NOT valid approxidate — it silently prints nothing.
+>   Use `--since="48 hours ago"`. (Cost one confused minute; could have hidden
+>   the whole ship list.)
+> - `pnl_audit --since <today>` prints **no row at all** on a day with zero
+>   closes (EXIT 0). An empty table is "no closes", not "tool broken" — confirm
+>   with `signals` before reading it either way.
+> - The 11-06 loss-analysis falsifier #2 named a `stop_dispatch` event that does
+>   not exist; the code journals **`stop_hit`** (mode routed | failsafe_close |
+>   closed). Corrected in that file with a dated note. Always grep the shipped
+>   diff for the event name before writing a falsifier.
+> - A mute LLM makes the **desk's own `no_verdict` events under-count**: 70
+>   `no_verdict` rows vs 251 verdict-less decisions. Measure silence from the
+>   `decision` payload (`decided_by` scaffold, or rule + `fallback_reason`
+>   "no llm response"), never from `no_verdict` alone.
+> - `llm_usage` logs only SUCCESSFUL calls — a timeout leaves no row. Decision
+>   calls/hour collapsing from ~300 to <15 is the outage signature; the worker
+>   log has the timeouts (`LLM generation failed (provider=local): Request timed out`).
+> - **Fleet 43 runs 3/8 by ENTITLEMENT, not by a planner defect**: user 25 is on
+>   `pro` (max_concurrent_runs 3, expires 2026-11-17), the fleet was built for 8
+>   under an enterprise grant that expired 2026-09-14. 37,922 `candidate_skipped`
+>   rows in 7 days say so. Do not chase this in the planner (R29).
+> - The user-facing `fleet_churn` alert blames "market volatility" for idle-retire
+>   rotations that a dead LLM caused (16 on 11-07). Wording, not logic; R29.
+> - **Never mutate a module on disk while a full pytest run is executing in the same
+>   tree.** Run 1 of the 11-07 gate failed exactly one test — the signature of the
+>   mutant I had applied for ten seconds mid-run; run 2 was 5,441/5,441. Mutation
+>   tests go BEFORE the full run, or in a copy of the tree.
+> - `docker logs --since 24h` only reaches back to the container's START — after
+>   a deploy the window is shorter than 24 h (04:12Z→15:14Z today). Say so when
+>   quoting log counts.
+>
+> **Standing facts re-verified this run:** prod image = origin/main (one docs
+> commit ahead), alembic 0057, 0 tracebacks, `fence: lease expired` 0,
+> `_null_size_refuse_enabled()`/`_stop_close_first()`/`_stop_reentry_fence_min()`
+> = True/True/30.0 inside the live worker; all five 11-06/07 falsifiers
+> NOT YET MEASURABLE (0 entry attempts, 0 stop closes, 0 `positions_held`,
+> 0 trend actions). Both UTC-11-06 losses (LINK −0.68, MCD −2.00) came from
+> `null_size_cap`-sized entries — the exact class `RUN_NULL_SIZE_REFUSE` now
+> refuses; both predate that deploy.
+
 > ### ⏰ DAILY 24h SWEEP IS NOW A PERSISTENT APP TASK — 2026-11-07 (owner: "make cron task monitoring & analysis fully each 24 hours for two user trading")
 >
 > The 24-hour verification sweep no longer depends on a session-only cron.

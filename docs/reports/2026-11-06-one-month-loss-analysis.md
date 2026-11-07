@@ -262,8 +262,12 @@ live in `research/loss_analysis_20261106/`.
 **Pre-registered falsifiers for the ships above** (read on the next tape):
 #1 — `size_clamp` events with stage `null_size_cap` must be 0 and agent-6 fees must fall
 by ≥ 40% per trip-count; if trips fall but fees/trip do not, the fix failed.
-#2 — every watcher stop close must have a `stop_dispatch` event within 180s before it, and
-the median fill-vs-authored-stop gap must drop from ~15bp to ≤ 5bp.
+#2 — every watcher stop close must have a `stop_hit` run_event (mode `routed` → `failsafe_close`,
+or `closed`) on its run, and the median fill-vs-authored-stop gap must drop from ~15bp to ≤ 5bp.
+*(Corrected 2026-11-07 sweep: the text above originally named a `stop_dispatch` event; no such
+event exists in `f545d3e` — `risk_engine._journal_stop_hit` writes `stop_hit`. The falsifier is
+the same, the event name was wrong. As of 2026-11-07T15Z there have been 0 watcher stop closes
+since the deploy, so #1–#5 are all NOT YET MEASURABLE.)*
 #3 — zero `conviction_collapse` closes with hold < 2 min.
 
 **Ship record (2026-11-07), solutions #4 and #5.** Shipped as `7110f54` and deployed
@@ -324,7 +328,14 @@ verdict is never cached, so an unreadable desk is re-asked every sweep (pre-exis
 
 ## 6. What could not be determined
 
-- Why fleet 43 ran 3/8 for 92% of the window (planner rejections are fleet-level events).
+- ~~Why fleet 43 ran 3/8 for 92% of the window (planner rejections are fleet-level events).~~
+  **RESOLVED 2026-11-07 sweep:** `fleet_events.candidate_skipped` reason `"plan allows 3 concurrent
+  run(s); 3 already active"` (37,922 rows in the 7 days to 11-07; first one 2026-09-15T19:13Z).
+  User 25's `enterprise` manual grant expired 2026-09-14; the active plan is `pro` (Stripe,
+  expires 2026-11-17, auto-renew on) → `entitlements.PLAN_LIMITS["pro"].max_concurrent_runs = 3`,
+  enforced by `check_run_start` (`ENTITLEMENTS_ENFORCED=true` on prod). The fleet was built for 8
+  under the enterprise grant and has been capped at 3 by the plan ever since — by design, not a
+  planner bug. Owner item: resize the fleet to the plan or restore the plan; see backlog R29.
 - Whether the stop-router dispatch fired at all (no event for the dispatch, only the
   absent decision).
 - Prod env values: `BREAKEVEN_ARM_FEES` (1.78 inferred from 377/377 payload ratios),

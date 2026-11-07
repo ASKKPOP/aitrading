@@ -1,7 +1,56 @@
 {
-  "cycle": "2026-08-22/207",
-  "captured_at_utc": "2026-08-22T02:51Z",
-  "prod_image": "sooppiy-backend:20260821-revert-entry-window",
+  "cycle": "24h-sweep-2026-11-07 (daily scheduled task, run 1)",
+  "captured_at_utc": "2026-11-07T15:14:13Z",
+  "prod_image": "sooppiy-backend:20261107-drop-authlib (95e50b3); deploy this run: sweep-20261107",
+  "SWEEP_1107": {
+    "window": "KST day 2026-11-07 = 2026-11-06T15:00Z\u21922026-11-07T15:00Z; UTC day 2026-11-06 reported too",
+    "pnl": {
+      "kst_day": {
+        "agent6": 0.0,
+        "agent60": 0.0,
+        "combined": 0.0,
+        "fills": 0,
+        "open_positions": 0
+      },
+      "utc_1106": {
+        "agent6": -0.68,
+        "agent60": -2.0,
+        "combined": -2.68,
+        "fills": 2,
+        "pnl_audit": "ok, ledger -2.68 = adapt -2.68"
+      },
+      "utc_1107_partial": {
+        "combined": 0.0,
+        "fills": 0,
+        "pnl_audit": "prints no row on a zero-close day"
+      }
+    },
+    "llm_outage": {
+      "since": "2026-11-05T21Z",
+      "prev": "2026-10-30T12Z\u21922026-11-02T~10Z",
+      "timeouts_11h": 967,
+      "probe_s": 271,
+      "agent6_mute": "251/255",
+      "agent60_mute": "27/29"
+    },
+    "fleet43_cap": {
+      "reason": "plan allows 3 concurrent run(s)",
+      "plan": "pro (expires 2026-11-17)",
+      "since": "2026-09-15T19:13Z",
+      "skips_7d": 37922
+    },
+    "falsifiers_f545d3e_7110f54": "all five NOT YET MEASURABLE (0 entries attempted, 0 stop closes, 0 positions_held, 0 trend actions); code present in image verified by import",
+    "shipped_this_run": "llm_silence admin alert (R28)",
+    "open_watches": [
+      "R28 alert must fire on first tick after deploy (prod ~99% mute)",
+      "R29 fleet 43 plan cap; pro plan expiry 2026-11-17",
+      "#1 null_size_refused count on first entry attempt",
+      "#2 stop_hit modes on first watcher close",
+      "#4 positions_held\u2192orphan_verdict",
+      "#5 trend: ids on agent 63 fills",
+      "ratchet_audit 6 to-review candidates (shared reason string; confirm vs log)"
+    ]
+  },
   "R28_REVERT_VINDICATED_0822": "PRE-REGISTERED TEST PASSED, CALLED at cycle 206/207. Post-revert: 57 decisions / 0 truncations; under the R28-era 5.18% rate P(0 in 57) ~ 0.048, below the 0.05 line; observed rate 0% vs the 0.59-2.37% daily band the test required. Control: the #508 A/B was live during BOTH windows, so the only differential is R28's ~350-char text. VERDICT: the truncation spike is attributed to R28 and the revert did what it claimed. Called only after the threshold - two earlier R28 verdicts had been walked back for being early. This closes the last open falsification from 08-21. Standing: #508 readout is the sole pending gate; queued behind it: desk_record corrections (R30+staleness), cooldown A/B, sizing OFF (replay precondition failed).",
   "STEP2_EXPERIMENTS_COMPLETE_0822": "BOTH consensus-plan step-2 experiments COMPLETE. KNEE-DIFF: after the 08-18 level shift, agent 6's actionable rate decayed SMOOTHLY (~halving/day: 18->8->5->2->~1->0) - no second switch; rag-flat-on (08-20 21:56) EXONERATED (actionable already 0 for the 12h before it); feedback-loop hypothesis logged (hold lessons in the recall corpus teach later holds; testable - decay rate should track corpus growth). DECLINED-ENTRY REPLAY (the A-vs-B decider): 25 declined concrete plans replayed at their OWN zone/stop/target; 15 triggered (10 never reached entry - declining cost $0); mean +$1.87/trade but WITHOUT the one LTC rally (+$42.26) it is -$1.02 - SIGN FLIPS -> INCONCLUSIVE by pre-registration (n=15<30). Median -$2.27, win rate 6/15, refused SHORTS clearly correct (-$2.52/trade). Known case 1577 reproduced WITH correction: honoring the plan's own stop the loss was -0.86%, not -11.6%. RESOLUTION: B right about the INSTRUMENT, A roughly right about the BEHAVIOR - fixing the mirror is a correctness duty, not a profit unlock; the profit constraint sits in candidate generation + the platform sizing envelope. STEP 5 (sizing lift) STAYS OFF - precondition not met.",
   "DEBATE_5AGENT_0822": "OWNER-REQUESTED 5-agent debate on the zero-trade day, cross-checked. VERDICT: the desk reads a broken instrument (B: denominator bug + 76% dead-regime tape + forex best-ever 0.047% ~ 5 pips, absurd vs 30-min EURUSD moves; a random-direction 5h hold beats the disclosed median best 74% of the time on the live tape), inside a starving structure (C: 98% of stopped runs never traded; 41% of builds land within 300s of cooldown expiry; 60.3% slot-hour occupancy), at a platform-capped size (~8.9% of capital deployable; the AI presses the cap - the 'AI sizes tiny' premise from cycle 177 is PARTLY WRONG), and at a throughput (0.17 entries/day) where NO strategy can be evaluated (~4.5y to t~2). A's 'negative gross edge' headline was KILLED by cross-check (its window pooled the extinct 08-13 size-bug day, -144.40; post-fix ledger is +5.62); what survives of A is the declined TRUMP short counterfactual (+11.6% against). E: the data is a DISCONTINUITY (agent 6 ~14 trades/day for 5 days, then stopped ~08-19/20) and two diseases are pooled (agent 60 was always slow). CONSENSUS PLAN: (1) wait for #508; (2) meanwhile run the DECIDING read-only experiment - replay ALL declined entries (n>=30) at their own zone/stop/target vs actual prices (LAUNCHED cycle 202) + E's knee-diff; (3) after #508, ship desk_record corrections (R30 + staleness) regardless of arm; (4) then C's cooldown A/B 12h->2h for never-traded; (5) sizing lift LAST, only if the declined book proves +EV. All five agree: never loosen gates to buy throughput.",
