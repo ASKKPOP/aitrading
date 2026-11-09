@@ -658,6 +658,30 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-09 (daily sweep) — A SWEEP THAT DIES MID-RUN LEAVES ITS WORK IN /tmp, NOT IN THE REPO
+
+The 2026-11-08 scheduled sweep wrote a code fix (R31 `_mute_cycles`) into its scratch clone
+and then never committed, pushed, wrote its note, or deleted the clone. The next day found
+no 11-08 note on main and the code sitting uncommitted in `/tmp/sooppiy-sweep.*`.
+**Every sweep must start with `ls -d /tmp/sooppiy-sweep.*`**: a leftover clone = the
+previous run died; read `git -C <it>/repo status` / `diff` before deleting it, carry its
+work forward through the full gate (never push it unreviewed), and record the failure in
+the day's ledger. Commit the day's note EARLY (P&L + ledger) and amend later, so a run that
+dies after the data pass still leaves the record.
+
+### ⚠️ Added 2026-11-09 — the space-form ts literal bit AGAIN, on `trading_runs.stopped_at`
+
+`stopped_at > '2026-11-08 15:00:00'` against a `T…Z` varchar matched from 11-08T00 and
+reported 40 idle retires instead of 26. `stopped_at`, `started_at`, `last_cycle_at` are the
+same varchar ISO format as `run_events.ts` — always write `'YYYY-MM-DDTHH:MM:SSZ'`.
+
+### Added 2026-11-09 — known flake: BriefJournalTests byte-identical composition
+
+`tests/test_run_engine.py::BriefJournalTests::test_composition_is_byte_identical_to_the_old_concatenation`
+can fail in a full run (±1.30 % vs ±1.31 % median-daily line): the two compositions read a
+live-data value a moment apart. Passes in isolation and on main. Re-run it alone before
+treating it as a regression; fixing it = freeze the vol input in the test.
+
 ### Added 2026-08-17 (#475) — IN-IMAGE TESTS FAIL ON PROD'S OWN ENV
 
 `docker exec … python -m unittest tests.test_x` inside the prod container

@@ -1,6 +1,6 @@
 {
-  "cycle": "24h-sweep-2026-11-07 (daily scheduled task, run 1)",
-  "captured_at_utc": "2026-11-07T15:14:13Z",
+  "cycle": "24h-sweep-2026-11-09 (daily scheduled task)",
+  "captured_at_utc": "2026-11-09T17:59:18Z",
   "prod_image": "sooppiy-backend:20261107-sweep-20261107 (994782f; deployed 2026-11-07T16:13:08Z)",
   "SWEEP_1107": {
     "window": "KST day 2026-11-07 = 2026-11-06T15:00Z\u21922026-11-07T15:00Z; UTC day 2026-11-06 reported too",
@@ -992,5 +992,48 @@
   "C86B_XOM_COMPLETE": "1426 COMPLETE +0.119 (fleet 37 first us-stock run, a WIN, flat before close, stop honored, RAG used). MEASURED: cyc-22 churn cost -0.582 = 83% of the +0.701 hold counterfactual (verified 2 ways; fees exonerated). Churn class strongest number yet. New minor class: desk self-accounting overstated gain 60%. Trail $15.29 unreachable (dim b). No EOD flatten rail by design.",
   "C87_ANCHOR_ECHO_AND_CORRECTION": "1462 trim +0.042: NEW anchor-echo sizing class (same rationale -> 45% then 5%; fraction echoes canonical 0.05). R21 stamps sane. CORRECTION: B repeated the protection-missing error \u2014 ratchet floor DOES guard remainder (excursion 1.0368 >= arm ~0.05); real residual = dim (b) quantified: trail threshold sized off machine_size ~40x actual book.",
   "C90_PLAN27_REJECTED": "Plan 27 full arc done: 5-agent verified plan, amended experiment ran, VERDICT REJECTED (negative absolute expectancy both variants; excess = inverse-selection artifact; high-prints-late refuted vs arcsine). Nothing shipped \u2014 garbage rule held. Dead theories named in docs/plan/27 v3.",
-  "C92_1462_COMPLETE_TEMPLATE_VALIDATED": "1462 +0.69612 exact. Harvest template VALIDATED (staging +7.3% vs hold \u2014 opposite of XOM -83%; bank INTO strength). Dust rail authored final (net-positive). R21 first fire still pending: trail $1.99 never rescales after covers \u2014 dim (b) THIRD instance -> R22 staged. Cycle-10 override forgone ~$0.41; 4 consecutive no_verdicts. Books flat."
+  "C92_1462_COMPLETE_TEMPLATE_VALIDATED": "1462 +0.69612 exact. Harvest template VALIDATED (staging +7.3% vs hold \u2014 opposite of XOM -83%; bank INTO strength). Dust rail authored final (net-positive). R21 first fire still pending: trail $1.99 never rescales after covers \u2014 dim (b) THIRD instance -> R22 staged. Cycle-10 override forgone ~$0.41; 4 consecutive no_verdicts. Books flat.",
+  "SWEEP_1109": {
+    "window": "KST day 2026-11-09 = 2026-11-08T15:00Z->2026-11-09T15:00Z",
+    "pnl": {
+      "kst_day": {
+        "agent6": 0.0,
+        "agent60": 0.0,
+        "combined": 0.0,
+        "fills": 0,
+        "open_positions": 0
+      },
+      "utc_1108": 0.0,
+      "utc_1109_partial": 0.0,
+      "pnl_audit_since_1106": "-2.68 all on 11-06, ok"
+    },
+    "llm_outage": {
+      "since": "2026-11-05T21Z",
+      "hours_at_capture": 93,
+      "probe_s": 271,
+      "mute": "313/314",
+      "llm_silence_realerts": [
+        "11-08T16:16Z",
+        "11-08T22:15Z",
+        "11-09T04:15Z",
+        "11-09T10:18Z",
+        "11-09T16:19Z"
+      ],
+      "recovery": null
+    },
+    "idle_retired_in_window": 26,
+    "zero_verdict": 25,
+    "at_time_agent60": 2,
+    "process_failure": "11-08 sweep never committed notes; left uncommitted R31 code in its scratch clone",
+    "shipped_this_run": "R31 _mute_cycles (see note \u00a710)"
+  },
+  "open_watches": [
+    "R31 falsifiers (zero-verdict idle retires ~0/day while mute; idle retires still on up days; no run past at_time)",
+    "W-post-stop-cycle (n=1)",
+    "W-chair-refuse",
+    "f545d3e #1-#3, 7110f54 #4 NOT YET MEASURABLE",
+    "R29 fleet43 plan expiry 2026-11-17",
+    "LLM host down since 11-05T21Z (owner)",
+    "BriefJournalTests byte-identical flake (live data)"
+  ]
 }
