@@ -233,3 +233,133 @@ class EntryWakeDiscount(ClosedMarketCounting):
         """The rail must keep working — this fix must not disable it."""
         self._wakes(127, 1)
         self.assertEqual(self._evaluate(_run(30)), "idle_retired")
+
+
+class MuteCycleDiscount(ClosedMarketCounting):
+    """A dead LLM must not author the rotation (2026-11-08, fourth correction).
+
+    Two outages (10-30→11-02 and 11-05→) retired 10-31 12/13, 11-01 22/23,
+    11-06 15/18, 11-07 20/24 and 11-08 16/16 agent-6 runs `idle_retired`
+    whose desk never produced ONE verdict in their whole life: every cycle
+    was the light path's `scaffold` or the full path's rule-engine fallback
+    (`decided_by="rule"`, "no llm response"). The rail's premise — "the desk
+    looked twelve times and never wanted to trade" — is false for a cycle
+    the desk never saw. Those cycles cost nothing but still rotated the
+    slot, benched its symbol for 12h, burned a research batch and a build,
+    and sent the user a `fleet_churn` alert blaming market volatility.
+
+    `_flat_hold_span` already refuses to let `rule`/`scaffold` holds author
+    the no-prospect switch; this is the same predicate applied to the idle
+    fuse. `at_time` (48h on fleet runs) still expires the run, so an outage
+    cannot make a slot immortal. Like the wake tests these drive the REAL
+    rail through _evaluate_stop — no re-implementation of the arithmetic.
+    """
+
+    def _decisions(self, run_id, n, decided_by="rule", route="full",
+                   reason="no llm response"):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for i in range(n):
+            ClosedMarketCounting._seq += 1
+            payload = {"cycle": i + 1, "action": "hold", "confidence": 0.0,
+                       "decided_by": decided_by,
+                       "llm": {"provider": "local", "model": "gpt-oss:120b",
+                               "source": "rule"},
+                       "route": {"route": route, "route_by": "rule"}}
+            if decided_by == "rule":
+                payload["fallback_reason"] = reason
+                payload["chair"] = "no_trader_verdict"
+            elif decided_by == "scaffold":
+                payload["report"] = "light cycle: no LLM verdict"
+            else:
+                payload["report"] = "desk hold: no edge at this level"
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'decision', ?, ?)",
+                (run_id, ClosedMarketCounting._seq,
+                 f"2026-11-08T{i % 24:02d}:00:00Z", json.dumps(payload)))
+        conn.commit()
+        conn.close()
+
+    def test_counts_rule_fallbacks_and_scaffolds(self):
+        self._decisions(127, 7, decided_by="rule")
+        self._decisions(127, 5, decided_by="scaffold", route="light")
+        self.assertEqual(run_engine._mute_cycles(127), 12)
+
+    def test_the_desks_own_verdicts_are_never_discounted(self):
+        self._decisions(127, 12, decided_by="ai", route="light")
+        self.assertEqual(run_engine._mute_cycles(127), 0)
+
+    def test_an_outage_does_not_retire_a_run_the_desk_never_spoke_to(self):
+        """The exact 2026-11-08 prod shape: 12 cycles, 9 full-route rule
+        fallbacks + 3 light-route scaffolds, zero verdicts."""
+        self._decisions(127, 9, decided_by="rule")
+        self._decisions(127, 3, decided_by="scaffold", route="light")
+        self.assertIsNone(self._evaluate(_run(12)),
+                          "a run whose desk never answered was retired for "
+                          "never trading — the outage authored the rotation")
+        # eleven real holds on top of those twelve: still under the limit
+        self.assertIsNone(self._evaluate(_run(23)))
+        self.assertEqual(self._evaluate(_run(24)), "idle_retired")
+
+    def test_the_same_run_with_real_holds_is_retired(self):
+        """Guards the SIGN and keeps the rail alive: twelve genuine desk
+        holds ARE idle, and the slot must still rotate."""
+        self._decisions(127, 12, decided_by="ai", route="light")
+        self.assertEqual(self._evaluate(_run(12)), "idle_retired")
+
+    def test_the_discount_cannot_exceed_the_mute_cycles(self):
+        """Guards the MAGNITUDE: one mute cycle buys one cycle of life."""
+        self._decisions(127, 1, decided_by="scaffold", route="light")
+        self.assertEqual(self._evaluate(_run(13)), "idle_retired",
+                         "one mute cycle bought more than one cycle of life")
+
+    def test_mute_and_closed_cycles_both_discount(self):
+        self._decisions(127, 3, decided_by="rule")
+        self._skips(127, 3)
+        self.assertIsNone(self._evaluate(_run(17)))      # 17-3-3 = 11
+        self.assertEqual(self._evaluate(_run(18)), "idle_retired")  # 12
+
+    def test_other_event_types_do_not_count(self):
+        """A `no_verdict` journal row is NOT a decision; only the decision
+        payload's `decided_by` says who spoke."""
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        for i in range(12):
+            ClosedMarketCounting._seq += 1
+            cur.execute(
+                "INSERT INTO run_events (run_id, seq, event_type, ts, payload) "
+                "VALUES (?, ?, 'no_verdict', ?, ?)",
+                (127, ClosedMarketCounting._seq, f"2026-11-08T{i:02d}:00:00Z",
+                 json.dumps({"kind": "no_response", "decided_by": "rule"})))
+        conn.commit()
+        conn.close()
+        self.assertEqual(run_engine._mute_cycles(127), 0)
+        self.assertEqual(self._evaluate(_run(12)), "idle_retired")
+
+    def test_unreadable_journal_falls_back_to_old_behaviour(self):
+        with patch.object(run_engine, "get_db_connection",
+                          side_effect=RuntimeError("db down")):
+            self.assertEqual(run_engine._mute_cycles(127), 0)
+
+    def test_unparseable_reply_is_an_outage_too(self):
+        self._decisions(127, 12, reason="decision json unparseable")
+        self.assertEqual(run_engine._mute_cycles(127), 12)
+
+    def test_a_held_entry_cycle_is_discounted_once_not_twice(self):
+        """Review 2026-11-09: a panel-unreachable cycle writes BOTH an
+        `entry_held` order_discussion (counted by `_entry_held_cycles`) and a
+        `rule` decision with fallback "panel unavailable". Counting the
+        decision too would buy two cycles of life for one."""
+        self._discussions(127, 6)
+        self._decisions(127, 6, reason="panel unavailable")
+        self.assertEqual(run_engine._mute_cycles(127), 0)
+        self.assertIsNone(self._evaluate(_run(17)))       # 17-6 = 11
+        self.assertEqual(self._evaluate(_run(18)), "idle_retired")  # 12
+
+    def test_no_provider_configured_is_not_an_outage(self):
+        """A permanent no-AI configuration is not a brownout: discounting it
+        would make a manual run with no `at_time` immortal."""
+        self._decisions(127, 12, reason="no llm provider configured")
+        self.assertEqual(run_engine._mute_cycles(127), 0)
+        self.assertEqual(self._evaluate(_run(12)), "idle_retired")

@@ -997,6 +997,65 @@ def _entry_wake_cycles(run_id: int) -> int:
         return 0
 
 
+def _mute_cycles(run_id: int) -> int:
+    """Cycles in which the desk never spoke: the light path's `scaffold`
+    placeholder or the full path's rule-engine fallback (`decided_by="rule"`,
+    "no llm response" / unparseable). Fourth correction to the same
+    count-based rail (see _closed_market_cycles, _entry_wake_cycles,
+    _entry_held_cycles).
+
+    `idle_retired` means the desk looked and never wanted to trade. A cycle
+    the model never answered is not a look. Live, two LLM-host outages
+    (2026-10-30→11-02, 2026-11-05→) retired 10-31 12/13, 11-01 22/23, 11-06
+    15/18, 11-07 20/24 and 11-08 16/16 agent-6 runs `idle_retired` with ZERO
+    verdicts in their whole life — the outage authored every rotation,
+    benched 15 symbols for 12h at once, burned a research batch and a build
+    per slot, and told the user (`fleet_churn`) that market volatility was
+    doing it. Fees $0; the cost is the fleet's own replenishment.
+
+    Same predicate `_flat_hold_span` uses to keep a brownout from authoring
+    the no-prospect switch — `rule`/`scaffold` is "not the desk's word". On
+    up days it is 2-4% of cycles (11-03: 15/337; 11-05: 7/360), so the
+    discount is noise when the host is up. `at_time` (48h on fleet runs)
+    still expires the run, so a long outage cannot make a slot immortal.
+
+    Only OUTAGE fallbacks count (review 2026-11-09): a `rule` decision whose
+    `fallback_reason` is "no llm response" / "decision json unparseable"
+    (the router's `_INFRA_RULE_REASONS`). Two other `rule` writers are
+    excluded on purpose: "panel unavailable" — that cycle is already
+    discounted by `_entry_held_cycles`, so counting it here would buy the
+    run two cycles for one — and "no llm provider configured", a permanent
+    configuration state, not a brownout, which on a manual run with no
+    `at_time` would make the slot immortal.
+
+    Fail-soft to 0, so an unreadable journal leaves the rail as it was."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM run_events
+               WHERE run_id = ? AND event_type = 'decision'
+                 AND (payload LIKE '%"decided_by": "scaffold"%'
+                      OR (payload LIKE '%"decided_by": "rule"%'
+                          AND (payload LIKE '%"fallback_reason": "no llm response"%'
+                               OR payload LIKE '%"fallback_reason": "decision json unparseable"%')))""",
+            (run_id,))
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 — including the connect itself
+        return 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        return int((row["n"] if row else 0) or 0)
+    except (KeyError, TypeError, ValueError):
+        return 0
+
+
 def _thesis_decay_enabled() -> bool:
     """Ship gate, default OFF.
 
@@ -1613,7 +1672,8 @@ def _evaluate_stop(run: dict) -> Optional[str]:
             worked = int(run.get("cycle_seq") or 0) \
                 - _closed_market_cycles(run["id"]) \
                 - _entry_wake_cycles(run["id"]) \
-                - _entry_held_cycles(run["id"])
+                - _entry_held_cycles(run["id"]) \
+                - _mute_cycles(run["id"])
             if worked >= limit and not _cycle_in_flight(run):
                 return "idle_retired"
         # Thesis invalidation (2026-07-27), a sharper rail than the idle timer.
