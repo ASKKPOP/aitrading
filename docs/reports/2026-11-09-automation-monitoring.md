@@ -171,6 +171,26 @@ the alert has fired 7+ times. **Nothing in this repo can trade until it answers.
 | adversarial reviewer | NO BLOCKER ×2; SHOULD-FIX ×2 (double count with `entry_held`; no-provider immortality) folded in; NOTE: wake-cycle overlap (backlog R31) |
 | independent verifier | VERIFIED (own scenarios on a real temp DB, 3 mutants caught, prod replay 0/26 would retire); found the same double count independently |
 
+### 10. Ship record — deployed and verified on prod
+
+Commits `b773a20` (code) + `374bba4` (docs) fast-forwarded to `main`; `scripts/deploy.sh
+sweep-20261109` from the scratch clone, rc 0 → image **`sooppiy-backend:20261109-sweep-20261109`**.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261107-sweep-20261107` + compose up.
+
+| prod check | pass 1 (~18:37Z) | pass 2 (18:39:30Z) |
+|---|---|---|
+| image worker + backend | `20261109-sweep-20261109` ×2 | same |
+| today's note in `/app/docs/reports/` (RAG) | present | — |
+| `run_engine._mute_cycles` in the live worker | present; run 143128 → 11 (= LIKE/JSON count) | 8 running agent-6 runs: mute = cycle_seq − 1 or less, entry_held 0 → worked ≤ 2 |
+| tracebacks worker / backend | 0 / 0 | 0 (15 min) |
+| `idle_retired` since deploy | — | 0 (15 min) |
+| events flowing | — | max ts 18:39:00Z at 18:39:30Z |
+| public routes | `/`, `/pricing`, legal, `/api/subscriptions/plans` 200 | — |
+
+**Next sweep must measure:** zero-verdict `idle_retired` per day (expect ~0 while the host is
+mute; was 25/26), `at_time` expiries of agent-6 runs started after 18:37Z (≤ 48 h), and — once
+the host returns — that idle retires resume on an up day.
+
 ### 11. Not verified this run
 
 - Why the LLM host is down (no access).
