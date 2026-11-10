@@ -658,6 +658,28 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-10 (daily sweep) — RATCHET REPLAY: 1m CANDLES LAST ~3.5 DAYS; RUN IT DAILY
+
+The 51/57 exits on 11-10 were the breakeven ratchet (prod env `BREAKEVEN_ARM_FEES=1.78`,
+`RATCHET_LOCK_FRAC` 0.5 default), not the desk. Whether its arm is too low is **regime-dependent**
+(trending days say raise it, 09-20→10-01 and October say don't) — R32 STAGED. Hyperliquid
+`candleSnapshot` keeps only ~5,000 bars per interval: 1m reaches back ~3.5 days, so an older window
+returns nothing (n = 0, "skipped" = every run) or must use 15m, which calibrated −3.69 vs +13.40 on
+October. **Every daily sweep: run `research/ratchet_arm_replay.py <window> 6` on its own window,
+check the k = 1 calibration line FIRST, and append the k-table to the note.** R32's promotion and
+kill triggers are in `recommendations-backlog.md`. Pace calls ~0.7 s apart (HTTP 429/500 bursts).
+
+### ⚠️ Added 2026-11-10 — `signals.created_at` is the same `T…Z` varchar trap
+
+`signals.created_at >= '2026-11-09 17:28:00'` (space form) matched from 11-09T00. Same rule as
+`run_events.ts` / `trading_runs.stopped_at`: always `'YYYY-MM-DDTHH:MM:SSZ'`.
+
+### Added 2026-11-10 — closes ≠ entries; win rate is fee-inclusive per trip
+
+A close-leg replay over a window counts entries carried in and misses entry fees. Report closes from
+`client_order_id` kinds, and win rate on net-of-both-legs per trip (11-10: 57 closes, 77.6 %, not
+58 / 84 %).
+
 ### ⚠️ Added 2026-11-09 (daily sweep) — A SWEEP THAT DIES MID-RUN LEAVES ITS WORK IN /tmp, NOT IN THE REPO
 
 The 2026-11-08 scheduled sweep wrote a code fix (R31 `_mute_cycles`) into its scratch clone

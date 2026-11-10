@@ -19,6 +19,16 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ## Items
 
+### R32 — Breakeven-ratchet arm vs the desk's own bracket · **STAGED (2026-11-10 daily sweep)**
+- **Evidence:** 11-10: 51/57 agent-6 exits were `breakeven_ratchet` (+1.26 net, fees 52.5 % of gross, median capture 0.154 %), while the desk's 3 trail exits made +1.12; the desk's last verdict before every ratchet fire was sell/hold. Calibrated 1m replay today: Δ k=3 +4.06, k=5 +7.62, none +24.76.
+- **Against:** 15m replays 09-20→10-01 (n=50, calib ok): Δ k=3 −13.91, k=5 −13.48; October (n=303, calib poor): Δ k=5 −25.25, none −24.57. Sign follows the tape (trend vs chop), not k. **H-ratchet-arm-too-low killed as a general rule.**
+- **Next:** daily calibrated 1m replay via `research/ratchet_arm_replay.py` (HANDOFF §10, 11-10). **Promote** (propose `BREAKEVEN_ARM_FEES = 1.78 × k*` to the owner) only if, over ≥10 sweep-days with median calib error ≤ $0.01, ΣΔ(k*) > 0 with and without the largest day, positive on ≥7/10 days incl. ≥3 non-trending days (|ETH day| < 1.5 %). **Drop** if ΣΔ ≤ 0 over those 10 days.
+- **Not a code ship:** the arm is a prod `.env` knob already set to 1.78 (owner's file; env overrides any code default).
+
+### R33 — Desk stop width inside one hourly range · **SOFT (2026-11-10, n=1)**
+- TRUMP 147516: desk stop 1.0 % vs 1.55 % mean 1 h range → −0.206 (= 16 median ratchet wins). Promote to a skill line when ≥5 watcher stops in a week sat inside their symbol's median hourly range and 2× the stop is better in counterfactual.
+
+
 ### R6 — Breakeven ratchet for the give-back leak · **DROPPED (cycle 6, backtested)**
 - **Asked to build + verify off `main`. Built the counterfactual backtest first (28 closed runs, 10,644 recorded equity points, 7d, no lookahead). Verdict: do NOT ship.**
 - **Numbers:** baseline realized −$57.60. Best arm threshold (0.15–0.25×max_loss) nets **+$5.00 only** — save 3 give-back runs (+$26) minus **one clipped real winner, run 125 +$20.80→−0.18** (−$21). Outside that narrow band net is −$8 to −$31. Floor variations: no change.
