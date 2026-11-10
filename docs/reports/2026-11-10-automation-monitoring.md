@@ -192,3 +192,20 @@ propose `BREAKEVEN_ARM_FEES = 1.78 × k*` to the owner (prod `.env` is the owner
 | FleetPlanner | 1,278 ticks, researched 0, built 0 (replenishment via rotation only) |
 | stamp defect | all 424 decisions carry `llm.source="rule"` incl. decided_by ai — known (memory), attribute via llm_usage |
 | temp file | Agent B left `/tmp/agB_w.log` on the prod host — **deleted** this run |
+
+### 11. Deploy record (notes → desk RAG corpus; no app code changed)
+
+`scripts/deploy.sh sweep-20261110` from the scratch clone at c46a3ff, rc 0 → image
+**`sooppiy-backend:20261110-sweep-20261110`**. Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261109-sweep-20261109`.
+Reason (mode ②): new finding (exit authorship), corrections, a killed hypothesis.
+
+| prod check | pass 1 (18:45Z) | pass 2 (18:46Z) |
+|---|---|---|
+| `.env` + worker + backend image | 20261110-sweep-20261110 ×3 | same |
+| today's note in `/app/docs/reports/` | present | present |
+| `_mute_cycles` in live worker (R31 still in) | True | True |
+| tracebacks worker / backend (10 min) | 0 / 0 | 0 / 0 |
+| `/api/health` + public routes | 200 | 200 |
+| events flowing | max ts 18:45:07Z | 18:46:40Z at 18:47:45Z |
+
+`research/ratchet_arm_replay.py` is not in the image by design (repo-only; it is piped into the worker).
