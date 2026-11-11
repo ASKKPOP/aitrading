@@ -176,3 +176,19 @@ against the desk's own invalidation.**
 - Whether agent cash is debited by orphan closes (user-visible balance) — R36.
 - Whether the 18:09Z stop-widen request ever reached `positions.stop_loss` (inferred from the stop that hit).
 - Hyperliquid candles vs the simulator's own marks; Binance klines are geo-blocked from prod.
+
+### 11. Deploy record
+
+`scripts/deploy.sh sweep-20261111` from the scratch clone at 277ad05, rc 0 → image
+**`sooppiy-backend:20261111-sweep-20261111`**. Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261110-sweep-20261110`.
+Reason (mode ②): code fix shipped (pnl_audit), corrections, a FAILED falsifier (f545d3e #2).
+
+| prod check | pass 1 (15:44Z) | pass 2 (15:45Z) |
+|---|---|---|
+| `.env` + worker + backend image | 20261111-sweep-20261111 ×3 | same |
+| today's note in `/app/docs/reports/` | present | present |
+| `pnl_audit` live: 11-10 / 11-11 all_in | −1.10 / +0.39, `ok` | same |
+| `_mute_cycles` in live worker (R31 still in) | True | True |
+| tracebacks worker / backend (10 min) | 0 / 0 | 0 / 0 |
+| `/api/health` + public routes | 200 | 200 |
+| events flowing | max ts 15:43:45Z at 15:44:06Z | 15:43:45Z at 15:45:13Z |
