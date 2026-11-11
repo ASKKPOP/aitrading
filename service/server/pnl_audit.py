@@ -151,7 +151,9 @@ def realized_by_day(since: str, *, conn=None,
     `since` is an ISO date/prefix, e.g. "2026-08-06". Returns one row per
     day: ledger (authoritative), adapt (the old runbook snippet), delta,
     fee_asym (the delta EXPECTED from adapt netting exit-side fees only),
-    resid (delta - fee_asym), flatten count, and `agrees` — False when the
+    resid (delta - fee_asym), flatten count, `orphan` (closes of
+    handed-off positions, which no run replay sees) and `all_in`
+    (ledger + orphan), and `agrees` — False when the
     residual exceeds tolerance, which is the alarm this module exists to
     raise. Judging the residual, not the raw delta, keeps the known fee
     asymmetry from crying wolf without hiding a real drift behind it.
@@ -171,6 +173,25 @@ def realized_by_day(since: str, *, conn=None,
         adapts = _rows(cursor,
                        "SELECT ts, payload FROM run_events "
                        "WHERE event_type = 'adapt' AND ts >= ?", (since,))
+        # Closes of handed-off positions (7110f54): the orphan watcher /
+        # reclaim fills them with run_id NULL and no run `trade` event, so
+        # the replay above never sees them. Their `signals.pnl` is the
+        # close leg net of its exit fee; the entry fee is already in the
+        # releasing run's ledger. Missed 2026-11-10 -0.49, 11-11 -0.47.
+        # Only ids the releasing run journaled count (`stop_hit` with
+        # handoff=true, or `orphan_closed`): a manual user's own SL/TP
+        # also uses `orphan:<pos>:watcher:` and was never in any run's
+        # ledger. Pre-2026-11-06 watcher closes carry no id at all, so
+        # history before the handoff ship is not covered.
+        handoff_events = _rows(cursor,
+                               "SELECT event_type, payload FROM run_events "
+                               "WHERE event_type IN ('stop_hit', 'orphan_closed') "
+                               "AND ts >= ?", (since,))
+        orphans = _rows(cursor,
+                        "SELECT created_at, pnl, client_order_id FROM signals "
+                        "WHERE message_type = 'operation' "
+                        "AND client_order_id LIKE 'orphan:%' "
+                        "AND created_at >= ?", (since,))
     finally:
         if close_after:
             conn.close()
@@ -218,8 +239,28 @@ def realized_by_day(since: str, *, conn=None,
         except (TypeError, ValueError):
             continue
 
+    handoff_ids: set[str] = set()
+    for row in handoff_events:
+        try:
+            payload = json.loads(row["payload"])
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(payload, dict) or not payload.get("client_order_id"):
+            continue
+        if row["event_type"] == "orphan_closed" or payload.get("handoff") is True:
+            handoff_ids.add(str(payload["client_order_id"]))
+
+    orphan_sum: dict[str, float] = defaultdict(float)
+    for row in orphans:
+        if str(row["client_order_id"]) not in handoff_ids:
+            continue
+        try:
+            orphan_sum[str(row["created_at"])[:10]] += float(row["pnl"] or 0.0)
+        except (TypeError, ValueError):
+            continue
+
     out = []
-    for day in sorted(set(ledger) | set(adapt_sum)):
+    for day in sorted(set(ledger) | set(adapt_sum) | set(orphan_sum)):
         led = round(ledger.get(day, 0.0), 2)
         ada = round(adapt_sum.get(day, 0.0), 2)
         # Expected delta from the fee asymmetry: the ledger charged the
@@ -230,27 +271,39 @@ def realized_by_day(since: str, *, conn=None,
                     "delta": round(led - ada, 2),
                     "fee_asym": asym, "resid": resid,
                     "flattens": flattens.get(day, 0),
+                    "orphan": round(orphan_sum.get(day, 0.0), 2),
+                    "all_in": round(ledger.get(day, 0.0)
+                                    + orphan_sum.get(day, 0.0), 2),
                     "agrees": abs(resid) <= tolerance_usd})
     return out
 
 
 def format_report(rows: list[dict[str, Any]]) -> str:
     lines = [f"{'day':12}{'ledger':>10}{'adapt':>10}{'delta':>9}"
-             f"{'fee_asym':>10}{'resid':>9}{'flat':>6}  check",
-             "-" * 74]
+             f"{'fee_asym':>10}{'resid':>9}{'flat':>6}{'orphan':>9}"
+             f"{'all_in':>10}  check",
+             "-" * 93]
     for r in rows:
         mark = "ok" if r["agrees"] else "*** DRIFT ***"
         lines.append(f"{r['day']:12}{r['ledger']:>10.2f}{r['adapt']:>10.2f}"
                      f"{r['delta']:>9.2f}{r['fee_asym']:>10.2f}"
-                     f"{r['resid']:>9.2f}{r['flattens']:>6}  {mark}")
+                     f"{r['resid']:>9.2f}{r['flattens']:>6}"
+                     f"{r.get('orphan', 0.0):>9.2f}"
+                     f"{r.get('all_in', r['ledger']):>10.2f}  {mark}")
     if rows:
-        lines.append("-" * 74)
+        lines.append("-" * 93)
         lines.append(f"{'TOTAL':12}{sum(r['ledger'] for r in rows):>10.2f}"
-                     f"{sum(r['adapt'] for r in rows):>10.2f}")
+                     f"{sum(r['adapt'] for r in rows):>10.2f}"
+                     f"{'':>34}{sum(r.get('orphan', 0.0) for r in rows):>9.2f}"
+                     f"{sum(r.get('all_in', r['ledger']) for r in rows):>10.2f}")
     lines.append("ledger = authoritative (validated 71/71 vs the platform's "
                  "own stored realized_pnl_usd)")
     lines.append("fee_asym = expected delta from adapt netting exit-side "
                  "fees only; resid = delta - fee_asym is what's judged")
+    lines.append("orphan = closes of positions handed off by a dying run "
+                 "(7110f54; journaled stop_hit handoff / orphan_closed), "
+                 "which the run replay cannot see; all_in = ledger + orphan. "
+                 "Excludes manual-user and trend-module fills.")
     return "\n".join(lines)
 
 

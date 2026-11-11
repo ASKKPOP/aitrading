@@ -295,3 +295,108 @@ class RealizedByDayTests(unittest.TestCase):
                          "a real 19.73 gap must NOT hide behind the fee excuse")
         # And the CLI must fail loudly on it, through the real query path.
         self.assertEqual(pnl_audit.main(["--since", "2026-08-06"]), 1)
+
+
+class OrphanCloseTests(unittest.TestCase):
+    """2026-11-11 sweep: the ledger replays only run `trade` events, so a
+    handed-off position (7110f54) closed by the orphan watcher —
+    `signals` row with run_id NULL and client_order_id 'orphan:<pos>:...'
+    — never reached any day's figure. Prod: 09-10 -0.49, 11-10 -0.49,
+    11-11 -0.47 were all invisible to the "authoritative" number, and the
+    sweep that relied on it reported -0.65 for a -1.65 day."""
+
+    setUp = RealizedByDayTests.setUp
+    tearDown = RealizedByDayTests.tearDown
+    _seed = RealizedByDayTests._seed
+
+    def _handoff(self, ts, coid, event_type="stop_hit", handoff=True, seq=[500]):
+        import json as _json
+        conn = self.database.get_db_connection()
+        cur = conn.cursor()
+        self.database.begin_write_transaction(cur)
+        seq[0] += 1
+        payload = {"client_order_id": coid, "mode": "closed"}
+        if event_type == "stop_hit":
+            payload["handoff"] = handoff
+        cur.execute(
+            "INSERT INTO run_events (run_id, seq, event_type, ts, payload)"
+            " VALUES (99, ?, ?, ?, ?)",
+            (seq[0], event_type, ts, _json.dumps(payload)))
+        conn.commit()
+        conn.close()
+
+    def _signal(self, ts, coid, pnl, run_id=None, sid=[1000], handoff=True):
+        conn = self.database.get_db_connection()
+        cur = conn.cursor()
+        self.database.begin_write_transaction(cur)
+        sid[0] += 1
+        cur.execute(
+            "INSERT INTO signals (signal_id, agent_id, message_type, market,"
+            " side, quantity, pnl, timestamp, created_at, run_id,"
+            " client_order_id, fee_usd)"
+            " VALUES (?, 6, 'operation', 'crypto', 'cover', 1, ?, 0, ?, ?, ?, 0.02)",
+            (sid[0], pnl, ts, run_id, coid))
+        conn.commit()
+        conn.close()
+        if handoff and coid and coid.startswith("orphan:"):
+            self._handoff(ts, coid,
+                          "orphan_closed" if coid.endswith(":reclaim") else "stop_hit")
+
+    def test_an_orphan_watcher_close_is_counted_in_all_in_not_in_ledger(self):
+        self._seed(
+            trades=[(1, "2026-08-06T01:00:00Z",
+                     {"side": "buy", "quantity": 10, "price": 100.0,
+                      "fee_usd": 0.0}),
+                    (1, "2026-08-06T02:00:00Z",
+                     {"side": "sell", "quantity": 10, "price": 110.0,
+                      "fee_usd": 0.0})],
+            adapts=[("2026-08-06T02:00:00Z", {"realized": 100.0})])
+        self._signal("2026-08-06T05:00:00Z",
+                     "orphan:1706:watcher:stop_loss:1794346510", -0.48841007)
+        # A run-owned close must NOT be double-counted as an orphan.
+        self._signal("2026-08-06T02:00:00Z", "run:1:flatten", 100.0, run_id=1)
+        row = pnl_audit.realized_by_day("2026-08-06")[0]
+        self.assertAlmostEqual(row["ledger"], 100.0, places=2)
+        self.assertAlmostEqual(row["orphan"], -0.49, places=2)
+        self.assertAlmostEqual(row["all_in"], 99.51, places=2)
+        self.assertTrue(row["agrees"], "orphan P&L is not adapt drift")
+
+    def test_a_day_with_only_an_orphan_close_still_prints_a_row(self):
+        self._signal("2026-11-11T01:30:35Z",
+                     "orphan:1704:watcher:stop_loss:1794360635", -0.4728443)
+        rows = pnl_audit.realized_by_day("2026-11-11")
+        self.assertEqual([r["day"] for r in rows], ["2026-11-11"])
+        self.assertAlmostEqual(rows[0]["ledger"], 0.0, places=2)
+        self.assertAlmostEqual(rows[0]["all_in"], -0.47, places=2)
+
+    def test_orphan_closes_before_since_are_ignored(self):
+        self._signal("2026-11-10T21:35:10Z", "orphan:1706:watcher:x:1", -0.49)
+        self.assertEqual(pnl_audit.realized_by_day("2026-11-11"), [])
+
+    def test_report_shows_orphan_and_all_in_columns(self):
+        self._signal("2026-11-11T01:30:35Z", "orphan:1704:watcher:x:1", -0.4728)
+        report = pnl_audit.format_report(pnl_audit.realized_by_day("2026-11-11"))
+        self.assertIn("orphan", report)
+        self.assertIn("all_in", report)
+        self.assertIn("-0.47", report)
+
+    def test_only_HANDED_OFF_orphan_closes_count(self):
+        # Reviewer should-fix: a manual user's own SL/TP uses the same
+        # orphan:<pos>:watcher: id and was never in a run ledger.
+        self._signal("2026-11-11T01:00:00Z", "orphan:9:watcher:stop_loss:1",
+                     -5.0, handoff=False)                      # manual: out
+        self._signal("2026-11-11T02:00:00Z", "orphan:10:reclaim", -0.30)  # in
+        self._signal("2026-11-11T03:00:00Z", "orphan:11:watcher:stop_loss:2",
+                     -0.20)                                    # handoff: in
+        self._signal("2026-11-11T04:00:00Z", "trend:63:SOL:watcher:x:3", -7.0,
+                     handoff=False)                            # trend: out
+        self._signal("2026-11-11T05:00:00Z", None, -9.0, handoff=False)   # NULL id: out
+        # A stop_hit for a NON-handoff close must not whitelist its id.
+        self._signal("2026-11-11T06:00:00Z", "orphan:12:watcher:stop_loss:4",
+                     -3.0, handoff=False)
+        self._handoff("2026-11-11T06:00:00Z", "orphan:12:watcher:stop_loss:4",
+                      handoff=False)
+        rows = pnl_audit.realized_by_day("2026-11-11")
+        self.assertAlmostEqual(rows[0]["orphan"], -0.50, places=2)
+        report = pnl_audit.format_report(rows)
+        self.assertIn("-0.50", report.splitlines()[-4])  # TOTAL all_in
