@@ -658,6 +658,26 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-11 (daily sweep) — HANDED-OFF CLOSES HAVE run_id NULL; USE `pnl_audit` all_in
+
+When a run dies `positions_held` (7110f54), the orphan watcher / reclaim closes its position with a
+`signals` row whose **run_id is NULL** (`orphan:<pos>:watcher:…` / `orphan:<pos>:reclaim`) and **no run
+`trade` event**. Any P&L keyed on run_id — my own trip pairing AND the old `pnl_audit` ledger — silently
+dropped them: the 11-11 sweep first reported −0.65 for a −1.65 day. `pnl_audit` now prints `orphan` and
+**`all_in` (= ledger + orphan) — quote all_in as the day's realized.** It counts only ids the releasing run
+journaled (`stop_hit` handoff:true / `orphan_closed`), so manual-user SL/TP closes (same prefix) stay out.
+The releasing run's `realized_pnl_usd` still omits the close (R36).
+
+### Added 2026-11-11 — `status_reason = 'user_resume'` is NOT a human
+
+`trading_runs.resume_run()` hardcodes the label; fleet_supervisor's `eval_recovered` auto-resume calls it.
+Check `fleet_events` before attributing a resume to the owner.
+
+### ⚠️ 2026-11-11 — the "never mutate a module while full pytest runs" trap bit AGAIN (this sweep)
+
+I ran mutation tests on `pnl_audit.py` while a full pytest run executed in the same clone. Killed it and
+re-ran from clean (5,467 pass). Mutation checks go in a COPY of the tree, or before the full run, always.
+
 ### ⚠️ Added 2026-11-10 (daily sweep) — RATCHET REPLAY: 1m CANDLES LAST ~3.5 DAYS; RUN IT DAILY
 
 The 51/57 exits on 11-10 were the breakeven ratchet (prod env `BREAKEVEN_ARM_FEES=1.78`,

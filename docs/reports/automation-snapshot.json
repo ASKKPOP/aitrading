@@ -1,7 +1,67 @@
 {
-  "cycle": "24h-sweep-2026-11-10 (daily scheduled task)",
-  "captured_at_utc": "2026-11-10T17:27:57Z",
-  "prod_image": "sooppiy-backend:20261109-sweep-20261109 (374bba4; deployed 2026-11-09T18:37:55Z)",
+  "cycle": "24h-sweep-2026-11-11 (daily scheduled task)",
+  "captured_at_utc": "2026-11-11T15:13:26Z",
+  "prod_image": "sooppiy-backend:20261110-sweep-20261110 before this run's deploy (see note §11)",
+  "SWEEP_1111": {
+    "window": "2026-11-10T15:13:26Z->2026-11-11T15:13:26Z (= KST day 11-11)",
+    "pnl": {
+      "agent6_net_24h": -1.645,
+      "agent60": 0.0,
+      "combined": -1.645,
+      "trips": 34,
+      "win": "22/34",
+      "fees": 1.005,
+      "ex_largest": 1.11,
+      "largest": "NEAR 151814a -2.755 (size_frac 0.3, conf 0.6)",
+      "open_upnl": 0.0,
+      "utc_1110_all_in": -1.1,
+      "utc_1111_all_in": 0.39,
+      "orphan_closes": -0.99,
+      "pnl_audit": "ok EXIT 0 (ledger blind to orphan closes; fixed)"
+    },
+    "exit_authors": {
+      "breakeven_ratchet": [
+        27,
+        1.214
+      ],
+      "desk_trail": [
+        3,
+        1.118
+      ],
+      "desk_arm": [
+        1,
+        0.147
+      ],
+      "run_watcher_stop": [
+        2,
+        -3.134
+      ],
+      "orphan_watcher_stop": [
+        2,
+        -0.99
+      ]
+    },
+    "llm_mute_agent6": "129/272 (47%), full route 75/78 failed",
+    "ratchet_replay": "all k>1 worse; calib median 0.0116 (fails <=0.01)",
+    "shipped": "pnl_audit orphan/all_in columns (handoff-journaled orphan closes)",
+    "killed": [
+      "my -0.65 (run_id NULL orphan closes)",
+      "yesterday sizes all 0.05 (false)",
+      "user_resume = human (fleet_supervisor label)",
+      "f545d3e #2 gap<=5bp FAILED at 7.0bp"
+    ]
+  },
+  "open_watches": [
+    "R32 ratchet arm: 11-10 for, 11-11 against (uncalibrated) — 8 days to go",
+    "R34 size_frac>0.1 at low confidence (n=3, -2.11)",
+    "R35 chair re-entry against own invalidation (class c n=5, all losers)",
+    "R36 run realized_pnl_usd omits handed-off close P&L (user-visible)",
+    "handoff custody cost n=2 -0.88 vs flatten-at-handoff",
+    "W-post-stop-cycle 8 runs, 0 fills",
+    "R29 fleet 43 plan cap; pro expires 2026-11-17T21:52Z",
+    "llm host: 4th outage episode 11-11T04Z->now",
+    "f545d3e #2b fence, #3 conviction NOT YET MEASURABLE"
+  ],
   "SWEEP_1110": {
     "window": "2026-11-09T17:28Z->2026-11-10T17:28Z; KST day 11-10 = 11-09T15Z->11-10T15Z",
     "pnl": {
@@ -41,15 +101,6 @@
     ],
     "shipped": "research/ratchet_arm_replay.py (read-only tool) + notes; no app code"
   },
-  "open_watches": [
-    "R32 daily calibrated 1m ratchet replay (10-day promotion/kill trigger)",
-    "R33 stop width vs hourly range (n=1)",
-    "W-post-stop-cycle 8/83 runs, 0 trades",
-    "34 panel buy->sell verb flips not recorded as chair amendments",
-    "null_size_refused 31/day P&L unquantified",
-    "R29 fleet 43 plan cap; pro expires 2026-11-17T21:52Z auto_renew=1",
-    "f545d3e #2/#3, 7110f54 #4 NOT YET MEASURABLE"
-  ],
   "SWEEP_1107": {
     "window": "KST day 2026-11-07 = 2026-11-06T15:00Z→2026-11-07T15:00Z; UTC day 2026-11-06 reported too",
     "pnl": {

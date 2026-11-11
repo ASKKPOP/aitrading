@@ -19,10 +19,22 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ## Items
 
+### R34 — Desk sizes up at its LOWEST confidence · **STAGED (2026-11-11 daily sweep, n=3)**
+- 11-11: the three size_frac 0.3–0.4 entries (NEAR 151814 $103.8, UNI 152355 $112.8, TRUMP 153039 $124.5) came at chair confidence 0.55–0.6; net −2.11 (without NEAR +0.65). Agents A/B, both days: size does not track confidence.
+- Counterfactual at the live mark, cap 0.1 unless conf ≥ 0.7: +1.37 today. **Falsifier:** over 7 days the ≥0.3 entries net ≥ the 0.05–0.1 entries per $ notional. **Promote** (desk sizing skill line, after a catalogue prune) at ≥10 such entries in 7 days with the counterfactual positive with and without the largest.
+
+### R35 — Chair re-enters against the desk's own invalidation · **STAGED, near-ready (2026-11-11, class (c) n=5, all losers)**
+- 151814b NEAR: desk outlook 23:41Z "short plan invalidated"; trader proposed BUY 0.65; chair overrode to SELL 0.62 at 3.6435 → −0.379. HANDOFF §8 class (c) was n=4, all losers.
+- Lesson (chair skill): "If the desk's own outlook declared the plan invalidated, do not override a reversing trader back into the invalidated direction; hold." **Falsifier:** a class-(c) re-entry that wins. Ship in a run with review budget + catalogue prune (chair prompt = money path).
+
+### R36 — A handed-off position's stop loss is in no run's realized_pnl_usd · **STAGED (2026-11-11)**
+- FIL 151804 / BTC 151825 runs show realized −0.008 / −0.020 (entry fee only); their orphan stop closes (−0.47 / −0.49) have run_id NULL. Monitoring side fixed (pnl_audit `orphan`/`all_in`, 2026-11-11). User-visible side (run P&L, agent cash reconciliation) not verified — design first.
+
 ### R32 — Breakeven-ratchet arm vs the desk's own bracket · **STAGED (2026-11-10 daily sweep)**
 - **Evidence:** 11-10: 51/57 agent-6 exits were `breakeven_ratchet` (+1.26 net, fees 52.5 % of gross, median capture 0.154 %), while the desk's 3 trail exits made +1.12; the desk's last verdict before every ratchet fire was sell/hold. Calibrated 1m replay today: Δ k=3 +4.06, k=5 +7.62, none +24.76.
 - **Against:** 15m replays 09-20→10-01 (n=50, calib ok): Δ k=3 −13.91, k=5 −13.48; October (n=303, calib poor): Δ k=5 −25.25, none −24.57. Sign follows the tape (trend vs chop), not k. **H-ratchet-arm-too-low killed as a general rule.**
 - **Next:** daily calibrated 1m replay via `research/ratchet_arm_replay.py` (HANDOFF §10, 11-10). **Promote** (propose `BREAKEVEN_ARM_FEES = 1.78 × k*` to the owner) only if, over ≥10 sweep-days with median calib error ≤ $0.01, ΣΔ(k*) > 0 with and without the largest day, positive on ≥7/10 days incl. ≥3 non-trending days (|ETH day| < 1.5 %). **Drop** if ΣΔ ≤ 0 over those 10 days.
+- **Day 2 (11-11):** 1m replay n=25, every k>1 worse (k=3 −2.24, none −3.67); calib median 0.0116 just fails the ≤$0.01 bar → counts as an uncalibrated day, direction against.
 - **Not a code ship:** the arm is a prod `.env` knob already set to 1.78 (owner's file; env overrides any code default).
 
 ### R33 — Desk stop width inside one hourly range · **SOFT (2026-11-10, n=1)**
