@@ -38,4 +38,4 @@ pyotp>=2.9
 # so without these floors an existing env or a still-cached Docker pip layer
 # keeps satisfying this file on the vulnerable versions.
 urllib3>=2.8.0    # PYSEC-2026-4175/4176/4177
-soupsieve>=2.9.0  # PYSEC-2026-4170/4171
+soupsieve>=4.0.1  # PYSEC-2026-4170/4171, CVE-2026-126190/126191/126193
