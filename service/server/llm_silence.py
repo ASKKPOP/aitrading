@@ -154,39 +154,70 @@ def evaluate(sample: dict, state: Optional[dict], now: datetime) -> tuple[Option
     if frac >= mute_frac():
         last = _parse_ts(state.get("alerted_at"))
         due = last is None or (now - last) >= timedelta(hours=realert_hours())
+        if not state.get("silent"):
+            # silent_since = the tick that first DETECTED the silence (the
+            # window start is not when it began either — decisions
+            # bunched at the window's end would overstate it). Set only on the
+            # transition into silence, so it survives every re-alert (the
+            # window start alone understated the 11-11T04Z outage by 2 days)
+            # and a state persisted before this field existed keeps None: no
+            # age is claimed rather than a backfilled, too-late one.
+            state["silent_since"] = now.strftime(TS_FMT)
         state["silent"] = True
         if due:
             state["alerted_at"] = now.strftime(TS_FMT)
             return EVENT_SILENT, state
         return None, state
     if state.get("silent") and frac < recover_frac():
-        had_alert = bool(state.get("alerted_at"))
+        # notified: some SILENT of this outage reached a channel. alerted_at
+        # alone is not enough — a failed RE-alert resets it to None for the
+        # retry, which used to swallow the recovery of a delivered outage.
+        had_alert = bool(state.get("alerted_at") or state.get("notified"))
         state["silent"] = False
         state["alerted_at"] = None
+        state["silent_since"] = None
+        state["notified"] = False
         # A recovery nobody's SILENT preceded (every delivery failed) is noise.
         return (EVENT_RECOVERED if had_alert else None), state
     return None, state
 
 
-def _format(event: str, sample: dict) -> tuple[str, str]:
+def _hours_since(onset: Optional[str], now: Optional[datetime]) -> Optional[float]:
+    start = _parse_ts(onset)
+    if start is None or now is None:
+        return None
+    return max(0.0, (now - start).total_seconds() / 3600)
+
+
+def _format(event: str, sample: dict, onset: Optional[str] = None,
+            now: Optional[datetime] = None) -> tuple[str, str]:
+    hours = _hours_since(onset, now)
     pct = round(100.0 * float(sample.get("frac") or 0.0))
     n = int(sample.get("n") or 0)
     mute = int(sample.get("mute") or 0)
     window = int(sample.get("window_min") or window_minutes())
     if event == EVENT_SILENT:
         return (f"Desk LLM silent — {pct}% of decisions had no verdict",
-                f"{mute} of {n} desk decisions in the last {window} min ended as "
+                # A fact, not a continuity claim: a worker-down gap or a
+                # recovery whose notice never got through can sit in between.
+                (f"First detected mute at {onset}"
+                 + (f" ({int(hours)} h ago)" if hours >= 1 else "")
+                 + ". " if hours is not None else "")
+                + f"{mute} of {n} desk decisions in the last {window} min ended as "
                 f"scaffold/rule holds because the LLM did not answer "
-                f"(since {sample.get('since')}). No orders are being authored. "
+                f"(window from {sample.get('since')}). No orders are being authored. "
                 f"Check the local LLM host / LOCAL_LLM_BASE_URL.")
     return (f"Desk LLM recovered — {pct}% no-verdict",
             f"{mute} of {n} desk decisions in the last {window} min had no "
-            f"verdict; the desk is deciding again.")
+            f"verdict; the desk is deciding again"
+            + (f", ~{round(hours)} h after the silence was first detected "
+               f"({onset})." if hours is not None else "."))
 
 
 STATE_KEY = "llm_silence_state"
 
-_EMPTY_STATE: dict = {"silent": False, "alerted_at": None}
+_EMPTY_STATE: dict = {"silent": False, "alerted_at": None, "silent_since": None,
+                      "notified": False}
 
 
 def load_state() -> dict:
@@ -200,7 +231,12 @@ def load_state() -> dict:
             d = json.loads(raw)
             if isinstance(d, dict):
                 return {"silent": bool(d.get("silent")),
-                        "alerted_at": d.get("alerted_at") or None}
+                        "alerted_at": d.get("alerted_at") or None,
+                        "silent_since": d.get("silent_since") or None,
+                        # a state persisted before `notified` existed: a
+                        # non-null alerted_at already meant "delivered"
+                        "notified": bool(d.get("notified")) or bool(
+                            d.get("silent") and d.get("alerted_at"))}
     except Exception as exc:  # noqa: BLE001
         logger.warning("llm_silence: state read failed: %s", exc)
     return dict(_EMPTY_STATE)
@@ -210,7 +246,9 @@ def save_state(state: dict) -> bool:
     try:
         from platform_settings import set_setting
         set_setting(STATE_KEY, json.dumps(
-            {"silent": bool(state.get("silent")), "alerted_at": state.get("alerted_at")}),
+            {"silent": bool(state.get("silent")), "alerted_at": state.get("alerted_at"),
+             "silent_since": state.get("silent_since"),
+             "notified": bool(state.get("notified"))}),
             updated_by="llm_silence")
         return True
     except Exception as exc:  # noqa: BLE001
@@ -241,7 +279,8 @@ def tick(now: Optional[datetime] = None,
     event, new_state = evaluate(sample, st, now)
     result = {"event": event, **sample}
     if event:
-        subject, body = _format(event, sample)
+        onset = new_state.get("silent_since") or before.get("silent_since")
+        subject, body = _format(event, sample, onset, now)
         try:
             send = notify
             if send is None:
@@ -251,8 +290,14 @@ def tick(now: Optional[datetime] = None,
         except Exception as exc:  # noqa: BLE001
             logger.warning("llm_silence: notify failed: %s", exc)
             result["sent"] = {"channels": [], "error": str(exc)[:200]}
-        if event == EVENT_SILENT and not (result.get("sent") or {}).get("channels"):
-            new_state["alerted_at"] = None   # nobody reached: retry next tick
+        delivered = bool((result.get("sent") or {}).get("channels"))
+        if event == EVENT_SILENT:
+            if delivered:
+                new_state["notified"] = True
+            else:
+                new_state["alerted_at"] = None   # nobody reached: retry next tick
+        elif event == EVENT_RECOVERED and not delivered:
+            new_state = dict(before)   # keep the outage open: retry next tick
     st.clear()
     st.update(new_state)
     if persist and new_state != before:

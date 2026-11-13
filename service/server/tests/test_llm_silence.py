@@ -208,6 +208,132 @@ class MeasureOnDb(unittest.TestCase):
         self.assertEqual(r2["event"], ls.EVENT_SILENT)
         self.assertEqual(r2["sent"]["channels"], [])
 
+    def test_alert_states_the_outage_onset_not_the_window_start(self):
+        """2026-11-13: the 6-hourly re-alert said "(since 10:33Z)" — only the
+        start of the 120-min window — while the desk had been mute since
+        11-11T04Z. The onset is the first window that crossed the threshold
+        and must survive every re-alert, and the recovery must say how long."""
+        for i in range(12):
+            self._event(f"2026-11-07T14:{10 + i:02d}:00Z", {"decided_by": "scaffold"})
+        sent = []
+        note = lambda s, b: sent.append(b) or {"channels": ["email"]}
+        state = {"silent": False, "alerted_at": None}
+        ls.tick(NOW, notify=note, state=state)
+        self.assertEqual(state["silent_since"], "2026-11-07T15:00:00Z")
+        self.assertIn("First detected mute at 2026-11-07T15:00:00Z.", sent[0])
+        self.assertNotIn("h ago", sent[0], "under 1 h: no age claimed")
+        later = NOW + timedelta(hours=54)
+        for i in range(12):
+            self._event((later - timedelta(minutes=50 - i)).strftime(ls.TS_FMT),
+                        {"decided_by": "scaffold"})
+        ls.tick(later, notify=note, state=state)
+        self.assertEqual(len(sent), 2, "re-alert after 54 h")
+        self.assertIn("First detected mute at 2026-11-07T15:00:00Z (54 h ago).", sent[1])
+        self.assertEqual(state["silent_since"], "2026-11-07T15:00:00Z", "onset kept")
+        for i in range(12):
+            self._event((later + timedelta(minutes=10 + i)).strftime(ls.TS_FMT),
+                        {"decided_by": "ai"})
+        for i in range(30):
+            self._event((later + timedelta(minutes=30, seconds=i)).strftime(ls.TS_FMT),
+                        {"decided_by": "ai"})
+        r = ls.tick(later + timedelta(hours=2), notify=note, state=state)
+        self.assertEqual(r["event"], ls.EVENT_RECOVERED)
+        self.assertIn("~56 h after the silence was first detected (2026-11-07T15:00:00Z)", sent[-1])
+        self.assertIsNone(state.get("silent_since"))
+
+    def test_legacy_silent_state_claims_no_onset(self):
+        """Adversarial review 2026-11-13 #1: prod's persisted state predates
+        silent_since. Backfilling the current window start would announce a
+        2.5-day-old outage as ~6 h old; an unknown onset must claim no age."""
+        for i in range(12):
+            self._event(f"2026-11-07T14:{10 + i:02d}:00Z", {"decided_by": "scaffold"})
+        sent = []
+        state = {"silent": True, "alerted_at": "2026-11-07T08:00:00Z"}
+        r = ls.tick(NOW, notify=lambda s, b: sent.append(b) or {"channels": ["email"]}, state=state)
+        self.assertEqual(r["event"], ls.EVENT_SILENT)
+        self.assertIsNone(state.get("silent_since"))
+        self.assertNotIn("Mute for at least", sent[0])
+        self.assertNotIn("first detected", sent[0])
+
+    def test_failed_realert_keeps_the_recovery_notice(self):
+        """Adversarial review 2026-11-13 #3: a delivered SILENT, then a re-alert
+        nobody received (alerted_at reset for the retry), then recovery — the
+        operator was told of the outage, so must be told it ended."""
+        _, st = ls.evaluate({"n": 40, "mute": 38, "frac": 0.95, "since": "x"}, None, NOW)
+        st["notified"] = True          # tick marks a delivered SILENT
+        st["alerted_at"] = None        # tick resets it after a failed re-alert
+        ev, st2 = ls.evaluate({"n": 40, "mute": 4, "frac": 0.1}, st, NOW + timedelta(hours=7))
+        self.assertEqual(ev, ls.EVENT_RECOVERED)
+        self.assertFalse(st2["notified"])
+
+    def test_tick_marks_notified_only_on_delivery(self):
+        for i in range(12):
+            self._event(f"2026-11-07T14:{10 + i:02d}:00Z", {"decided_by": "scaffold"})
+        st = {"silent": False, "alerted_at": None}
+        ls.tick(NOW, notify=lambda s, b: {"channels": []}, state=st)
+        self.assertFalse(st.get("notified"))
+        ls.tick(NOW + timedelta(minutes=15), notify=lambda s, b: {"channels": ["sms"]}, state=st)
+        self.assertTrue(st["notified"])
+
+    def test_age_is_a_lower_bound_when_decisions_bunch_late(self):
+        """Adversarial review 2026-11-13 round 2 #1: 100 min with no decisions,
+        then 10 mute ones in the last 20 min — silent ~20 min, not "at least
+        ~2 h". The onset is the detecting tick, so no hour claim at all."""
+        for i in range(10):
+            self._event(f"2026-11-07T14:{40 + i:02d}:00Z", {"decided_by": "scaffold"})
+        sent = []
+        st = {"silent": False, "alerted_at": None}
+        ls.tick(NOW, notify=lambda s, b: sent.append(b) or {"channels": ["email"]}, state=st)
+        self.assertEqual(len(sent), 1)
+        self.assertNotIn("h ago", sent[0])
+
+    def test_legacy_alerted_state_counts_as_notified(self):
+        """Round 2 #2: prod's persisted state predates `notified`; its non-null
+        alerted_at already meant delivered, so a failed re-alert must not
+        swallow the recovery."""
+        from platform_settings import set_setting
+        set_setting(ls.STATE_KEY, json.dumps(
+            {"silent": True, "alerted_at": "2026-11-07T08:00:00Z"}))
+        self.assertTrue(ls.load_state()["notified"])
+        set_setting(ls.STATE_KEY, json.dumps({"silent": True, "alerted_at": None}))
+        self.assertFalse(ls.load_state()["notified"], "never delivered: no inference")
+
+    def test_failed_recovery_notice_is_retried(self):
+        """Round 2 #3: a recovery notice nobody received kept the outage closed
+        for good; it must retry on the next tick, then close once delivered."""
+        for i in range(12):
+            self._event(f"2026-11-07T14:{10 + i:02d}:00Z", {"decided_by": "ai"})
+        st = {"silent": True, "alerted_at": "2026-11-07T10:00:00Z", "notified": True,
+              "silent_since": "2026-11-07T09:00:00Z"}
+        r = ls.tick(NOW, notify=lambda s, b: {"channels": []}, state=st)
+        self.assertEqual(r["event"], ls.EVENT_RECOVERED)
+        self.assertTrue(st["silent"], "undelivered recovery keeps the outage open")
+        sent = []
+        r2 = ls.tick(NOW + timedelta(minutes=15),
+                     notify=lambda s, b: sent.append(b) or {"channels": ["sms"]}, state=st)
+        self.assertEqual(r2["event"], ls.EVENT_RECOVERED)
+        self.assertIn("~6 h after the silence was first detected", sent[0])
+        self.assertFalse(st["silent"])
+
+    def test_full_tick_flow_delivered_then_failed_realert_then_recovery(self):
+        for i in range(12):
+            self._event(f"2026-11-07T14:{10 + i:02d}:00Z", {"decided_by": "scaffold"})
+        st = {"silent": False, "alerted_at": None}
+        ls.tick(NOW, notify=lambda s, b: {"channels": ["email"]}, state=st)
+        later = NOW + timedelta(hours=6, minutes=5)
+        for i in range(12):
+            self._event((later - timedelta(minutes=30 - i)).strftime(ls.TS_FMT),
+                        {"decided_by": "scaffold"})
+        r = ls.tick(later, notify=lambda s, b: {"channels": []}, state=st)
+        self.assertEqual(r["event"], ls.EVENT_SILENT)
+        self.assertIsNone(st["alerted_at"])
+        for i in range(40):
+            self._event((later + timedelta(minutes=20, seconds=i)).strftime(ls.TS_FMT),
+                        {"decided_by": "ai"})
+        r2 = ls.tick(later + timedelta(minutes=30), notify=lambda s, b: {"channels": ["email"]},
+                     state=st)
+        self.assertEqual(r2["event"], ls.EVENT_RECOVERED)
+
     def test_failed_delivery_does_not_stamp_the_alert(self):
         """Adversarial review #2: a SILENT alert nobody received must retry on
         the next tick, not go quiet for the re-alert window."""
@@ -233,7 +359,8 @@ class MeasureOnDb(unittest.TestCase):
         r = ls.tick(NOW, notify=lambda s, b: sent.append(s) or {"channels": ["email"]})
         self.assertEqual(r["event"], ls.EVENT_SILENT)
         self.assertTrue(r["persisted"])
-        self.assertEqual(ls.load_state(), {"silent": True, "alerted_at": "2026-11-07T15:00:00Z"})
+        self.assertEqual(ls.load_state(), {"silent": True, "alerted_at": "2026-11-07T15:00:00Z",
+                                           "silent_since": "2026-11-07T15:00:00Z", "notified": True})
         # "restart": no in-memory state handed in; the persisted one must gate the re-alert
         r2 = ls.tick(NOW + timedelta(hours=1), notify=lambda s, b: sent.append(s) or {"channels": ["email"]})
         self.assertIsNone(r2["event"])
@@ -244,12 +371,12 @@ class MeasureOnDb(unittest.TestCase):
         r3 = ls.tick(NOW + timedelta(hours=2), notify=lambda s, b: sent.append(s) or {"channels": ["email"]})
         self.assertEqual(r3["event"], ls.EVENT_RECOVERED)
         self.assertIn("recovered", sent[-1])
-        self.assertEqual(ls.load_state(), {"silent": False, "alerted_at": None})
+        self.assertEqual(ls.load_state(), {"silent": False, "alerted_at": None, "silent_since": None, "notified": False})
 
     def test_unreadable_persisted_state_is_fresh_state(self):
         from platform_settings import set_setting
         set_setting(ls.STATE_KEY, "not json {{{")
-        self.assertEqual(ls.load_state(), {"silent": False, "alerted_at": None})
+        self.assertEqual(ls.load_state(), {"silent": False, "alerted_at": None, "silent_since": None, "notified": False})
 
     def test_tick_is_quiet_on_a_healthy_desk(self):
         for i in range(12):
