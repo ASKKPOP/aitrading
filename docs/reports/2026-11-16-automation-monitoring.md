@@ -195,3 +195,18 @@ The day's loss is **$0 realized but ~$18 of directional value not kept** on the 
 - Whether prod Stripe keys are test-mode by design (all 8 billing_events are livemode=false).
 - The outcome of the two open shorts (AAVE at_time 22:35:47Z falls after this note).
 
+### 10. Deploy record
+
+`scripts/deploy.sh sweep-20261116` from the scratch clone at 495f5a5, rc 0 → **`sooppiy-backend:20261116-sweep-20261116`**.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261113-deps-cve-1113`. Reason (mode ②): R32 verdict moved, R29 killed, new findings
+(O-1116, R37, R39), coverage failure. Docs-only; no code change.
+
+| prod check | pass 1 (21:59:29Z) | pass 2 (22:00:20Z) |
+|---|---|---|
+| `.env` + worker + backend image | 20261116-sweep-20261116 ×3 | same |
+| today's note in `/app/docs/reports/` | present | present |
+| `pnl_audit` 11-13 / 14 / 16 all_in | +1.09 / −0.00 / −0.02, `ok` | same |
+| `_mute_cycles` in live worker | True | True |
+| tracebacks worker / backend (10 min) | 0 / 0 | 0 / 0 |
+| events flowing | max ts 21:58:42Z at 21:59:34Z | 21:59:41Z at 22:00:25Z |
+| `/api/health` + public routes | 200 | 200 |
