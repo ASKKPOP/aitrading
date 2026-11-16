@@ -1,7 +1,55 @@
 {
-  "cycle": "24h-sweep-2026-11-11 (daily scheduled task)",
-  "captured_at_utc": "2026-11-11T15:13:26Z",
-  "prod_image": "sooppiy-backend:20261110-sweep-20261110 before this run's deploy (see note §11)",
+  "cycle": "24h-sweep-2026-11-16 (daily scheduled task; covers gap 11-11T15:13Z→11-16T21:43Z)",
+  "captured_at_utc": "2026-11-16T21:42:52Z",
+  "prod_image": "sooppiy-backend:20261113-deps-cve-1113 before this run's deploy",
+  "SWEEP_1116": {
+    "window_24h": "2026-11-15T21:42:52Z->2026-11-16T21:42:52Z",
+    "pnl_24h": {
+      "agent6": -0.015,
+      "agent60": 0.0,
+      "open_upnl_agent6": -0.09
+    },
+    "gap_window": "2026-11-11T15:13:26Z->2026-11-16T21:43Z",
+    "pnl_gap": {
+      "agent6": 1.089,
+      "ex_largest": 0.696,
+      "trips": 26,
+      "win": "20/26",
+      "payoff": 1.99,
+      "fees": 0.742,
+      "agent60": 0.0
+    },
+    "exits": "26/26 breakeven_ratchet; AI authored 28/28 entries (all shorts), 0 exits",
+    "step_through_usd": 0.706,
+    "ratchet_replay": {
+      "n": 26,
+      "calib_median": 0.004,
+      "k2": 1.17,
+      "k3": 2.29,
+      "none": 17.88,
+      "trending": true
+    },
+    "mute_frac_window": 0.937,
+    "agent60_cause": "Stripe test-mode sub deleted by retention policy 2026-11-12T22:07:55Z",
+    "missed_sweeps": [
+      "2026-11-12",
+      "2026-11-13",
+      "2026-11-14",
+      "2026-11-15"
+    ]
+  },
+  "open_watches": [
+    "R32 ratchet arm: 2/10 calibrated days (both trending, for), 0/3 non-trending",
+    "R34 size at low confidence n=4 sum -1.72",
+    "R35 chair re-entry against own invalidation",
+    "R37 ratchet step-through 0.706 on 26 closes (2 readings)",
+    "R38 entry inside last hour of run (n=1)",
+    "R39 entitlement-denial retry loop (fleet 43)",
+    "O-1116 owner: user 25 subscription (test-mode Stripe) ended 11-12",
+    "R36 handed-off stop loss in no run realized",
+    "W-post-stop-cycle",
+    "Daily sweep cadence depends on desktop app open"
+  ],
   "SWEEP_1111": {
     "window": "2026-11-10T15:13:26Z->2026-11-11T15:13:26Z (= KST day 11-11)",
     "pnl": {
@@ -51,17 +99,6 @@
       "f545d3e #2 gap<=5bp FAILED at 7.0bp"
     ]
   },
-  "open_watches": [
-    "R32 ratchet arm: 11-10 for, 11-11 against (uncalibrated) — 8 days to go",
-    "R34 size_frac>0.1 at low confidence (n=3, -2.11)",
-    "R35 chair re-entry against own invalidation (class c n=5, all losers)",
-    "R36 run realized_pnl_usd omits handed-off close P&L (user-visible)",
-    "handoff custody cost n=2 -0.88 vs flatten-at-handoff",
-    "W-post-stop-cycle 8 runs, 0 fills",
-    "R29 fleet 43 plan cap; pro expires 2026-11-17T21:52Z",
-    "llm host: 4th outage episode 11-11T04Z->now",
-    "f545d3e #2b fence, #3 conviction NOT YET MEASURABLE"
-  ],
   "SWEEP_1110": {
     "window": "2026-11-09T17:28Z->2026-11-10T17:28Z; KST day 11-10 = 11-09T15Z->11-10T15Z",
     "pnl": {

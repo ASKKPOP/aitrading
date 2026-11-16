@@ -658,6 +658,24 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-16 (daily sweep) — THE DAILY SWEEP SILENTLY SKIPS DAYS WHEN THE DESKTOP APP IS CLOSED
+
+`list_task_runs` for `sooppiy-24h-monitoring-sweep`: runs 11-07…11-11, then nothing until 11-16T21:41Z. Four days went
+unmonitored, including the only trading burst (11-13 20–23Z). There is no leftover clone when this happens (the task never
+started), so `ls -d /tmp/sooppiy-sweep.*` cannot detect it — **check `git log` for the last `24h sweep` commit date first, and
+cover the whole gap since it** (as 11-16 did). Durable fix = §12 EC2 timer (owner decision).
+
+### ⚠️ Added 2026-11-16 — USER 25'S ENTITLEMENT WAS A STRIPE TEST-MODE SUBSCRIPTION
+
+`billing_events` id 8 (`customer.subscription.deleted`, `livemode:false`, reason `canceled_by_retention_policy`) ended
+user_subscriptions row 21 on 11-12T22:07:55Z, 5 days before its `expires_at`. Every one of the 8 billing_events is test-mode.
+An "expired" row whose expires_at is in the future = a webhook (`billing_sync.end_subscription`), not lazy expiry. Agent 60 has
+been denied every run start since 11-12T22:12:55Z (owner item, R39 for the retry-loop cost).
+
+### Added 2026-11-16 — `fleet_events` / `run_events` column is `event_type`, `platform_settings` key is `setting_key`
+
+`ev.type` / `key` error out (1054). `billing_events(id, provider, event_id, type, payload, processed_at)` does use `type`.
+
 ### ⚠️ Added 2026-11-11 (daily sweep) — HANDED-OFF CLOSES HAVE run_id NULL; USE `pnl_audit` all_in
 
 When a run dies `positions_held` (7110f54), the orphan watcher / reclaim closes its position with a

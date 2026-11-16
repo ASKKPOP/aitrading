@@ -19,7 +19,19 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ## Items
 
+### R37 — Breakeven-ratchet step-through: fills land below the lock on 60–75 s mark samples · **STAGED (2026-11-16 sweep, 2 readings)**
+- 11-13/14 (n = 26 ratchet closes): Σ(intended floor − fill) = **0.706** = 65 % of the window's +1.09 net; all 6 losers lost to it (ENA 169724 −0.096: peak +0.144 → next sample −0.062). 11-11: 9 net-negative ratchet exits, same mechanism. Platform-only (the desk cannot act in 60 s).
+- *Hypothesis:* sampling marks for ratchet-armed positions at ≤ 15 s recovers ≥ 50 % of step-through. Fills must stay at the first sampled price past the floor (never at the floor — that fakes fills). *Falsifier:* a 15 s replay on the 11-11 + 11-13 tapes recovers < 0.3. *Upper-bound counterfactual (exact floor):* +0.71 for this window. Design first (sampler cost, live parity).
+
+### R38 — Desk opens inside the last hour of a run whose horizon is far longer · **SOFT (2026-11-16, n=1)**
+- AAVE 169927 shorted 21:33:23Z, 72 h horizon, at_time 22:35:47Z; `_run_expiry_line` was in the brief. Lesson (run-expiry skill, after a prune): "If the run ends before your stated horizon, do not open; hold and let the successor decide." *Measure first:* all entries since 10-01 with run-life < horizon vs > 6 h, net per $ notional. *Falsifier:* short-life entries net ≥ long-life ones.
+
+### R39 — Entitlement denial is retried on every candidate, every tick, forever · **STAGED (2026-11-16 sweep)**
+- Fleet 43 (user 25, subscription ended 11-12T22:07Z): 11.8k–17.6k `candidate_skipped`/day + ~2k `backtest_gate`/day; 279,951 fleet_events rows; ~39.5k burned `trading_runs` ids (13 surviving rows in 169928–209416); 1 leaked draft (169250). Code: `fleet_supervisor._build_replacement` generic `except` → `candidate_skipped`, cooldown only for "outside any run".
+- Fix: a user-level EntitlementDenied (no subscription / concurrency) breaks the candidate loop and backs off ≥ 30 min; check entitlement BEFORE `create_run`. $0 money path, changes fleet build flow → full gate + two reviewers. *Metric:* fleet 43 `candidate_skipped`/day → ≤ 50. *Falsifier:* a per-candidate deny (max_bet) wrongly blocking a buildable candidate in tests.
+
 ### R34 — Desk sizes up at its LOWEST confidence · **STAGED (2026-11-11 daily sweep, n=3)**
+- 11-16 sweep: +1 (AAVE 169219 size_frac 0.40 at conf 0.55, +0.393 on a trending tape) → n=4, Σ −1.72; corr(conf, notional) −0.15.
 - 11-11: the three size_frac 0.3–0.4 entries (NEAR 151814 $103.8, UNI 152355 $112.8, TRUMP 153039 $124.5) came at chair confidence 0.55–0.6; net −2.11 (without NEAR +0.65). Agents A/B, both days: size does not track confidence.
 - Counterfactual at the live mark, cap 0.1 unless conf ≥ 0.7: +1.37 today. **Falsifier:** over 7 days the ≥0.3 entries net ≥ the 0.05–0.1 entries per $ notional. **Promote** (desk sizing skill line, after a catalogue prune) at ≥10 such entries in 7 days with the counterfactual positive with and without the largest.
 
@@ -35,6 +47,7 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 - **Against:** 15m replays 09-20→10-01 (n=50, calib ok): Δ k=3 −13.91, k=5 −13.48; October (n=303, calib poor): Δ k=5 −25.25, none −24.57. Sign follows the tape (trend vs chop), not k. **H-ratchet-arm-too-low killed as a general rule.**
 - **Next:** daily calibrated 1m replay via `research/ratchet_arm_replay.py` (HANDOFF §10, 11-10). **Promote** (propose `BREAKEVEN_ARM_FEES = 1.78 × k*` to the owner) only if, over ≥10 sweep-days with median calib error ≤ $0.01, ΣΔ(k*) > 0 with and without the largest day, positive on ≥7/10 days incl. ≥3 non-trending days (|ETH day| < 1.5 %). **Drop** if ΣΔ ≤ 0 over those 10 days.
 - **Day 2 (11-11):** 1m replay n=25, every k>1 worse (k=3 −2.24, none −3.67); calib median 0.0116 just fails the ≤$0.01 bar → counts as an uncalibrated day, direction against.
+- **Day 3 (11-13→11-16 window):** 1m replay n=26, calib median 0.004 (passes); Δ k=2 +1.17, k=3 +2.29, none +17.88 (ex-largest +15.54). ETH ≈ −2.5 % → **trending** day, for. Tally: 2/10 calibrated days, 0/3 non-trending. Stays STAGED.
 - **Not a code ship:** the arm is a prod `.env` knob already set to 1.78 (owner's file; env overrides any code default).
 
 ### R33 — Desk stop width inside one hourly range · **SOFT (2026-11-10, n=1)**
