@@ -658,6 +658,17 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-17 (daily sweep) — A SUBAGENT WROTE A SCRATCH FILE INSIDE THE PROD WORKER
+
+Agent A's script wrote `/tmp/agA.json` (16 KB) inside `sooppiy-worker`. Removed and verified absent. Brief every subagent: scripts
+may only PRINT to stdout; no file writes inside any prod container, and `ls /tmp` in the worker at the end of every sweep.
+
+### Added 2026-11-17 — THE CHAIR DOES NOT SEE THE INVENTORY RULE; DO NOT "FIX" IT WITHOUT THE P&L
+
+`_three_agent_light_discussion` tells the chair the signed position and the allowed verbs, not "'sell' extends a short". 30 stated
+reduces since 10-01 went out as `sell` on a short (22 blocked add_limit, 1 executed as an ADD). Executing them as reduces would have
+lost 2.70 (n = 26), and the chair's sell-over-trader-cover holds saved 4.83 (n = 32). R40: promote only on the next stated-reduce-as-ADD.
+
 ### ⚠️ Added 2026-11-16 (daily sweep) — THE DAILY SWEEP SILENTLY SKIPS DAYS WHEN THE DESKTOP APP IS CLOSED
 
 `list_task_runs` for `sooppiy-24h-monitoring-sweep`: runs 11-07…11-11, then nothing until 11-16T21:41Z. Four days went

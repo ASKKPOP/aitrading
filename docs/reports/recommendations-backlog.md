@@ -19,7 +19,17 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ## Items
 
-### R37 — Breakeven-ratchet step-through: fills land below the lock on 60–75 s mark samples · **STAGED (2026-11-16 sweep, 2 readings)**
+### R41 — Breakeven ratchet is blind after a losing partial cover · **STAGED (2026-11-17 sweep, n=1)**
+- `_ratchet_peak_pnl` advances `peak_pnl_usd` only when the run TOTAL beats it while holding (re-anchors only when flat). TRUMP 217302: peak ≈ −0.08 at open; after the desk's losing covers the total sat at −1.38 + uPNL, so the remainder's own +0.37 excursion (10:58Z, arm ≈ 0.30) could not arm the lock. Counterfactual ≈ +1.5 (n=1). R21 (run 1417) is the opposite failure of the opposite anchor — do not flip blindly.
+- *Measure first:* every run since 10-01 with a losing partial whose remainder later exceeded the arm; counterfactual P&L of a position-anchored peak. *Falsifier:* Σ < 0 or n < 5.
+
+### R40 — Chair is not told that `sell` ADDS to a short · **STAGED, do-not-ship on P&L (2026-11-17 sweep, n=30)**
+- `_three_agent_light_discussion` shows the chair `position N (negative = short)` + `Allowed actions: buy|hold|sell` but not the trader's inventory rule. Since 10-01: 30 `order_params` with `sell` on a held short whose own `why` says close/reduce/cut; 22 blocked `add_limit`, **1 executed as an ADD** (11-05 run 123737).
+- Counterfactual of executing the stated reduce at the live marks: **n=26, Σ −2.70** (−0.92 ex-largest; Oct −1.41, Nov −1.30). The mis-send has been P&L-positive, so the fix is not shipped. **Promote** (one chair prompt line, wiring test) on the next instance of a stated reduce executed as an add — that is a risk event, not a P&L bet.
+- Related kill (E1, same sweep): chair `sell` overriding a trader's cover on a held short, n=32 since 10-01 — covering would have lost 4.83. Not a money defect.
+
+### R37 — Breakeven-ratchet step-through: fills land below the lock on 60–75 s mark samples · **STAGED (3 readings: 11-11, 11-13/14, 11-17)**
+- 11-17: n=36 ratchet closes, Σ(floor − fill gross) **0.70**, 9 net-negative (Σ −0.165), sampling ≈ 62 s with 190–220 s gaps.
 - 11-13/14 (n = 26 ratchet closes): Σ(intended floor − fill) = **0.706** = 65 % of the window's +1.09 net; all 6 losers lost to it (ENA 169724 −0.096: peak +0.144 → next sample −0.062). 11-11: 9 net-negative ratchet exits, same mechanism. Platform-only (the desk cannot act in 60 s).
 - *Hypothesis:* sampling marks for ratchet-armed positions at ≤ 15 s recovers ≥ 50 % of step-through. Fills must stay at the first sampled price past the floor (never at the floor — that fakes fills). *Falsifier:* a 15 s replay on the 11-11 + 11-13 tapes recovers < 0.3. *Upper-bound counterfactual (exact floor):* +0.71 for this window. Design first (sampler cost, live parity).
 
@@ -31,6 +41,7 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 - Fix: a user-level EntitlementDenied (no subscription / concurrency) breaks the candidate loop and backs off ≥ 30 min; check entitlement BEFORE `create_run`. $0 money path, changes fleet build flow → full gate + two reviewers. *Metric:* fleet 43 `candidate_skipped`/day → ≤ 50. *Falsifier:* a per-candidate deny (max_bet) wrongly blocking a buildable candidate in tests.
 
 ### R34 — Desk sizes up at its LOWEST confidence · **STAGED (2026-11-11 daily sweep, n=3)**
+- 11-17 sweep: +1 (TRUMP 217302 size_frac 0.50 at conf 0.55, $187, **−2.74**) → **n=5, Σ −4.46**; corr(conf, notional) −0.06. Counterfactual cap 0.1 unless conf ≥ 0.7: +2.19 today, ≈ +3.26 over the 5 (+1.07 ex-largest).
 - 11-16 sweep: +1 (AAVE 169219 size_frac 0.40 at conf 0.55, +0.393 on a trending tape) → n=4, Σ −1.72; corr(conf, notional) −0.15.
 - 11-11: the three size_frac 0.3–0.4 entries (NEAR 151814 $103.8, UNI 152355 $112.8, TRUMP 153039 $124.5) came at chair confidence 0.55–0.6; net −2.11 (without NEAR +0.65). Agents A/B, both days: size does not track confidence.
 - Counterfactual at the live mark, cap 0.1 unless conf ≥ 0.7: +1.37 today. **Falsifier:** over 7 days the ≥0.3 entries net ≥ the 0.05–0.1 entries per $ notional. **Promote** (desk sizing skill line, after a catalogue prune) at ≥10 such entries in 7 days with the counterfactual positive with and without the largest.
