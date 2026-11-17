@@ -169,3 +169,19 @@ The day's loss is **−5.17, of which −2.74 is one entry sized 0.50 at confide
 - E1/E2 use the run's own later cover VWAP as the counterfactual exit, not a fixed horizon.
 - The +4 h direction sample (n = 23) is survivorship-biased.
 - Agent A wrote a 16 KB scratch file `/tmp/agA.json` inside `sooppiy-worker`; **deleted by me** (15:2xZ), verified absent.
+
+### 10. Deploy record
+
+`scripts/deploy.sh sweep-20261117` from the scratch clone at 5a28171, rc 0 → **`sooppiy-backend:20261117-sweep-20261117`**.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261116-sweep-20261116`. Reason (mode ②): R32 verdict moved (calibrated day against), new
+findings R40/R41, E1 kill. Docs-only; no code change.
+
+| prod check | pass 1 (15:24:11Z) | pass 2 (15:25:07Z) |
+|---|---|---|
+| `.env` + worker + backend image | 20261117-sweep-20261117 ×3 | same |
+| today's note in `/app/docs/reports/` | present | present |
+| `/tmp/agA.json` in worker | absent | absent |
+| `pnl_audit` 11-17 all_in | −5.34 `ok` | same |
+| tracebacks worker / backend (10 min) | 0 / 0 | 0 / 0 |
+| events flowing | max ts 15:24:10Z at 15:24:16Z | 15:24:10Z at 15:25:11Z (equity cadence ~62 s) |
+| `/api/health` + public routes | 200 | 200 |
