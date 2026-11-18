@@ -1,7 +1,55 @@
 {
-  "cycle": "24h-sweep-2026-11-17 (daily scheduled task, fired on schedule 15:07Z)",
-  "captured_at_utc": "2026-11-17T15:13:07Z",
-  "prod_image": "sooppiy-backend:20261116-sweep-20261116 before this run's deploy",
+  "cycle": "24h-sweep-2026-11-18 (daily scheduled task, fired ~2h55m late at 18:02Z)",
+  "captured_at_utc": "2026-11-18T18:02:21Z",
+  "prod_image": "sooppiy-backend:20261117-sweep-20261117 before this run's deploy",
+  "SWEEP_1118": {
+    "window_24h": "2026-11-17T18:02Z->2026-11-18T18:03Z",
+    "pnl_24h": {
+      "agent6": 3.45,
+      "ex_largest": 2.41,
+      "agent60": 0.0,
+      "open_upnl_agent6": 0.22
+    },
+    "pnl_kst_1118": {
+      "agent6": 2.48,
+      "ex_largest": 1.45,
+      "trips": 62,
+      "win": "46/62",
+      "payoff": 0.78
+    },
+    "pnl_audit_utc": {
+      "2026-11-17": -5.58,
+      "2026-11-18_to_18Z": 4.01,
+      "total_since_1116": -1.4
+    },
+    "exits": {
+      "algorithm": 4.23,
+      "ai_cyc": -0.37
+    },
+    "H_CUT": {
+      "n": 47,
+      "sum_hold_minus_cut": 4.85,
+      "ex_largest": 3.4,
+      "count_hold_better": "23/47",
+      "status": "R42 STAGED + lesson L-1118 via RAG"
+    },
+    "R32_day4_k3": 5.69,
+    "R37_step_through": 1.9,
+    "R39_candidate_skipped_24h": 4616,
+    "llm_silence": "silent 21:44Z -> recovered 23:44Z (first full live cycle, HELD)"
+  },
+  "open_watches": [
+    "R42 desk partial covers: 7-day falsifier from 11-18 (\u03a3(hold\u2212cut)>0 at baseline rate \u2192 promote prompt line; \u22640 \u2192 kill H-CUT)",
+    "R32 ratchet arm: 4 calibrated days, 3 for / 1 against, 0/3 non-trending",
+    "R34 size at low confidence: weakened (n=11 \u03a3 \u22122.15, sign flips ex-largest)",
+    "R37 ratchet step-through $1.90/day (4 readings, worsening) \u2014 15 s sampler design owed",
+    "R41 inconclusive n=2 (+1.5/\u22120.86)",
+    "R35 chair re-entry against own invalidation",
+    "R38 entry inside last hour of run (n=1, -0.14)",
+    "R39 entitlement-denial retry loop (fleet 43, ~12k skips/day)",
+    "R40 chair sell-on-short = add (do-not-ship; promote on next stated-reduce executed as add)",
+    "O-1116 owner: user 25 subscription (test-mode Stripe) ended 11-12"
+  ],
   "SWEEP_1117": {
     "window_24h": "2026-11-16T15:13Z->2026-11-17T15:13Z",
     "pnl_24h": {
@@ -43,17 +91,6 @@
       "E4_R41": "code confirmed n=1 +1.5"
     }
   },
-  "open_watches": [
-    "R32 ratchet arm: 3 calibrated days, 2 for (trending) / 1 against (11-17 reversal)",
-    "R34 size at low confidence n=5 sum -4.46 (bar n>=10/7d)",
-    "R35 chair re-entry against own invalidation",
-    "R37 ratchet step-through 0.70/day (3 readings)",
-    "R38 entry inside last hour of run (n=1, -0.14)",
-    "R39 entitlement-denial retry loop (fleet 43, ~12k skips/day)",
-    "R40 chair sell-on-short = add (do-not-ship; promote on next stated-reduce executed as add)",
-    "R41 ratchet blind after losing partial (n=1)",
-    "O-1116 owner: user 25 subscription (test-mode Stripe) ended 11-12"
-  ],
   "SWEEP_1116": {
     "window_24h": "2026-11-15T21:42:52Z->2026-11-16T21:42:52Z",
     "pnl_24h": {

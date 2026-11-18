@@ -19,7 +19,13 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ## Items
 
+### R42 — Desk discretionary partial covers destroy money (encode L-1118) · **STAGED (2026-11-18 sweep, 2 readings)**
+- E1 (11-18): every agent-6 desk `cyc:` partial cover since 10-01 vs holding the cut size to the trip's own later exits: **n=47, Σ +4.85** (+3.40 ex-largest; Oct +3.72 / Nov +1.13); underwater n=33 +3.03 (+1.58 ex-largest). By COUNT 23/47 — magnitude rule, not frequency. Reading 2 (11-17 E2): blocked reduces, if executed, −2.70 (n=26).
+- AI-first step taken: lesson L-1118 written into `2026-11-18-automation-monitoring.md` §7 (RAG corpus on deploy). *Promote* to one decision-prompt line (needs a catalogue prune + two reviewers) only if over the next 7 days desk partials continue at ≥ the baseline rate (47/49 days) AND Σ(hold − cut) > 0. *Kill* H-CUT if Σ(hold − cut) ≤ 0 over those 7 days.
+- Trap: rebuild trips with a relative tolerance (|pos| ≤ 1e-5 × trip qty) — fill quantities carry ~2e-8 residue.
+
 ### R41 — Breakeven ratchet is blind after a losing partial cover · **STAGED (2026-11-17 sweep, n=1)**
+- **11-18:** n=1 more (FIL 226601) AGAINST: blindness worth +0.86 (desk cover + TP beat a position-anchored fire). Tally +1.5 / −0.86 → inconclusive; do not ship.
 - `_ratchet_peak_pnl` advances `peak_pnl_usd` only when the run TOTAL beats it while holding (re-anchors only when flat). TRUMP 217302: peak ≈ −0.08 at open; after the desk's losing covers the total sat at −1.38 + uPNL, so the remainder's own +0.37 excursion (10:58Z, arm ≈ 0.30) could not arm the lock. Counterfactual ≈ +1.5 (n=1). R21 (run 1417) is the opposite failure of the opposite anchor — do not flip blindly.
 - *Measure first:* every run since 10-01 with a losing partial whose remainder later exceeded the arm; counterfactual P&L of a position-anchored peak. *Falsifier:* Σ < 0 or n < 5.
 
@@ -29,6 +35,7 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 - Related kill (E1, same sweep): chair `sell` overriding a trader's cover on a held short, n=32 since 10-01 — covering would have lost 4.83. Not a money defect.
 
 ### R37 — Breakeven-ratchet step-through: fills land below the lock on 60–75 s mark samples · **STAGED (3 readings: 11-11, 11-13/14, 11-17)**
+- **11-18 (4th reading, worse):** Σ(floor − fill) **$1.90 over 67 fires** ($0.028/fire vs 0.019), fill = fire-time mark 67/67 (all sampling); 6 fires below zero gross (Σ −0.447). Largest algorithmic leak (≈55 % of the ratchet's +3.50).
 - 11-17: n=36 ratchet closes, Σ(floor − fill gross) **0.70**, 9 net-negative (Σ −0.165), sampling ≈ 62 s with 190–220 s gaps.
 - 11-13/14 (n = 26 ratchet closes): Σ(intended floor − fill) = **0.706** = 65 % of the window's +1.09 net; all 6 losers lost to it (ENA 169724 −0.096: peak +0.144 → next sample −0.062). 11-11: 9 net-negative ratchet exits, same mechanism. Platform-only (the desk cannot act in 60 s).
 - *Hypothesis:* sampling marks for ratchet-armed positions at ≤ 15 s recovers ≥ 50 % of step-through. Fills must stay at the first sampled price past the floor (never at the floor — that fakes fills). *Falsifier:* a 15 s replay on the 11-11 + 11-13 tapes recovers < 0.3. *Upper-bound counterfactual (exact floor):* +0.71 for this window. Design first (sampler cost, live parity).
@@ -41,6 +48,7 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 - Fix: a user-level EntitlementDenied (no subscription / concurrency) breaks the candidate loop and backs off ≥ 30 min; check entitlement BEFORE `create_run`. $0 money path, changes fleet build flow → full gate + two reviewers. *Metric:* fleet 43 `candidate_skipped`/day → ≤ 50. *Falsifier:* a per-candidate deny (max_bet) wrongly blocking a buildable candidate in tests.
 
 ### R34 — Desk sizes up at its LOWEST confidence · **STAGED (2026-11-11 daily sweep, n=3)**
+- **11-18:** 6 entries at size_frac ≥ 0.3 / conf < 0.7, all won (+2.31, +1.27 ex-ASTER); 7-day n=11 Σ −2.15; cap-0.1 counterfactual ≈ +1.4 total but −0.8 without TRUMP → inconclusive. Confidence carried no outcome information (conf<0.6 out-earned conf≥0.65). **Weakened.**
 - 11-17 sweep: +1 (TRUMP 217302 size_frac 0.50 at conf 0.55, $187, **−2.74**) → **n=5, Σ −4.46**; corr(conf, notional) −0.06. Counterfactual cap 0.1 unless conf ≥ 0.7: +2.19 today, ≈ +3.26 over the 5 (+1.07 ex-largest).
 - 11-16 sweep: +1 (AAVE 169219 size_frac 0.40 at conf 0.55, +0.393 on a trending tape) → n=4, Σ −1.72; corr(conf, notional) −0.15.
 - 11-11: the three size_frac 0.3–0.4 entries (NEAR 151814 $103.8, UNI 152355 $112.8, TRUMP 153039 $124.5) came at chair confidence 0.55–0.6; net −2.11 (without NEAR +0.65). Agents A/B, both days: size does not track confidence.
@@ -54,6 +62,7 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 - FIL 151804 / BTC 151825 runs show realized −0.008 / −0.020 (entry fee only); their orphan stop closes (−0.47 / −0.49) have run_id NULL. Monitoring side fixed (pnl_audit `orphan`/`all_in`, 2026-11-11). User-visible side (run P&L, agent cash reconciliation) not verified — design first.
 
 ### R32 — Breakeven-ratchet arm vs the desk's own bracket · **STAGED (2026-11-10 daily sweep)**
+- **Day 4 (11-17T15Z→11-18T18Z):** n=63, calib median 0.0053 (passes); Δ k=2 +3.96, k=3 +5.69, none +33.97 — falling tape, for. Calibrated tally k=3: +4.06, +2.29, −3.96, +5.69 → ΣΔ +8.08 (+2.39 ex-largest), 3/4 positive, 4/10 days, 0/3 non-trending. STAGED.
 - **Evidence:** 11-10: 51/57 agent-6 exits were `breakeven_ratchet` (+1.26 net, fees 52.5 % of gross, median capture 0.154 %), while the desk's 3 trail exits made +1.12; the desk's last verdict before every ratchet fire was sell/hold. Calibrated 1m replay today: Δ k=3 +4.06, k=5 +7.62, none +24.76.
 - **Against:** 15m replays 09-20→10-01 (n=50, calib ok): Δ k=3 −13.91, k=5 −13.48; October (n=303, calib poor): Δ k=5 −25.25, none −24.57. Sign follows the tape (trend vs chop), not k. **H-ratchet-arm-too-low killed as a general rule.**
 - **Next:** daily calibrated 1m replay via `research/ratchet_arm_replay.py` (HANDOFF §10, 11-10). **Promote** (propose `BREAKEVEN_ARM_FEES = 1.78 × k*` to the owner) only if, over ≥10 sweep-days with median calib error ≤ $0.01, ΣΔ(k*) > 0 with and without the largest day, positive on ≥7/10 days incl. ≥3 non-trending days (|ETH day| < 1.5 %). **Drop** if ΣΔ ≤ 0 over those 10 days.

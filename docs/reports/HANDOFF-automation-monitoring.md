@@ -1489,6 +1489,12 @@ did not exist). **Open question — do not assert either way without evidence.**
 - **Mutation tests need `__pycache__` cleared**, and the mutation must be
   asserted as actually applied.
 
+- **Trip rebuild from `signals` must close on a RELATIVE tolerance** (found 2026-11-18 sweep). Fill quantities carry ~2e-8 rounding residue
+  (FIL 226601: covers sum 252.18560863 vs entry 252.18560861), so `abs(pos) < 1e-9` never closes a trip that had partial covers — the
+  measurement silently drops exactly the trips under study (first H-CUT pass n=19 instead of 47). Use `abs(pos) <= 1e-5 * trip_qty`.
+- **`llm_silence` alerts do not write `alert_log`.** They go through `admin_alerts.notify_admins` (email+sms); verify with
+  `docker logs sooppiy-worker | grep LlmSilence`. First full live silent→recovered cycle: 11-17 21:44Z → 23:44Z.
+
 ## 11. Where things live
 
 - Cycle notes: `docs/reports/YYYY-MM-DD-automation-monitoring.md` (per UTC day)
