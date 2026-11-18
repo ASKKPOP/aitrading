@@ -185,3 +185,19 @@ destruction was FIL 226601 — two "cut half on squeeze fear" covers at −0.95 
 - H-CUT counterfactual uses the trip's own later-exit VWAP, which itself depends on later desk/ratchet choices — not a fixed horizon.
 - R32 non-trending classification for 11-18 (ETH day change not separately read).
 - Agents A and B left local scratch files only (`scratchpad/a/`); nothing written on the prod box.
+
+### 10. Deploy record
+
+`scripts/deploy.sh sweep-20261118` from the scratch clone at f8a015c, rc 0 → **`sooppiy-backend:20261118-sweep-20261118`**.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261117-sweep-20261117`. Reason (mode ②): new finding H-CUT (R42) whose AI-first step is the
+L-1118 lesson in this note (reaches the desk only via the image's `/app/docs/reports/`), R32 verdict moved, llm_silence verdict HELD.
+Docs-only; no code change.
+
+| prod check | pass 1 (18:17:26Z) | pass 2 (18:18:46Z) |
+|---|---|---|
+| `.env` + worker + backend image | 20261118-sweep-20261118 ×3 | same |
+| today's note in `/app/docs/reports/` (L-1118 present) | present (2 hits) | present |
+| tracebacks worker / backend (10 min) | 0 / 0 | 0 / 0 |
+| events flowing | max ts 18:17:11Z at 18:17:28Z | 18:18:23Z at 18:18:49Z |
+| `pnl_audit` 11-18 all_in | +4.01 `ok` | same |
+| `/api/health` + public routes | 200 | 200 |
