@@ -658,6 +658,15 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-19 (daily sweep) — MONITORING NOTES DO NOT REACH THE DESK'S DECISIONS
+
+`run_engine._RECALL_KINDS = ("outcome", "lesson")`; `monitoring` is only `_RECALL_KINDS_FALLBACK`, searched when outcome+lesson return
+nothing. Deploying a note DOES ingest it into `desk_memory` (kind `monitoring`), but **15,601 desk recalls since 10-01 retrieved 0 monitoring
+chunks** (11-19 sweep E5). So a "lesson delivered through this note into the RAG corpus" (L-1118, 11-18) never reaches a decision, and any
+falsifier that measures its effect is void. **An AI-first lesson must be a SKILL (ingested as `lesson`) or a prompt line** — and the skills
+catalogue is at capacity, so it needs a prune. Notes still matter as the durable record and the fallback corpus; they are not a treatment.
+Before claiming any lesson reached the desk, count it in `run_events` `recall` payloads (`chunks[].kind` / `source`).
+
 ### ⚠️ Added 2026-11-17 (daily sweep) — A SUBAGENT WROTE A SCRATCH FILE INSIDE THE PROD WORKER
 
 Agent A's script wrote `/tmp/agA.json` (16 KB) inside `sooppiy-worker`. Removed and verified absent. Brief every subagent: scripts

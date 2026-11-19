@@ -19,7 +19,13 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ## Items
 
+### R43 — Chair amends a trader's stated close to `hold` after the desk's own invalidation printed · **STAGED (2026-11-19 sweep, n=9, measurement owed)**
+- 11-19: 9 cycles where final = `hold` while the trader's `order_params.why` said close/cut/reduce (trader verb `buy` in 4, `sell` — R40 ambiguity — in 5). INJ 229944 07:50Z: trader `sell` 0.80 "Stop breach invalidates short; close now." → chair `hold` 0.32 → stopped −0.82 (≈ +0.46 had it closed). Full-close intents n=5 counterfactual **+0.63, +0.17 ex-INJ**. INJ+HYPE+LTC −2.13.
+- Opposite reading: 11-17 E1, chair `sell` over a trader cover on a held short, n=32 since 10-01 → covering would have LOST 4.83. Hypothesis that reconciles both: the chair's hold is right in general but wrong once the desk's OWN printed invalidation has crossed.
+- *Measure first:* every chair close→hold amendment since 10-01, split by invalidation-crossed; counterfactual close at the decision mark. *Falsifier:* Σ ≤ 0 on the crossed subset, sign flips ex-largest, or n < 15. *Ship form (AI-first):* one chair skill line (needs a catalogue prune + two reviewers), merged with R42's line if both hold.
+
 ### R42 — Desk discretionary partial covers destroy money (encode L-1118) · **STAGED (2026-11-18 sweep, 2 readings)**
+- **11-19 CORRECTION:** L-1118 was never shown to the desk — monitoring notes are a recall fallback only (HANDOFF §10, 11-19). The 7-day "did the RAG lesson work" falsifier is VOID. H-CUT continues as an observation: post-18:17Z day 1 n=2, Σ(hold − cut) −0.14. Ship path = a skill line, possibly merged with R43.
 - E1 (11-18): every agent-6 desk `cyc:` partial cover since 10-01 vs holding the cut size to the trip's own later exits: **n=47, Σ +4.85** (+3.40 ex-largest; Oct +3.72 / Nov +1.13); underwater n=33 +3.03 (+1.58 ex-largest). By COUNT 23/47 — magnitude rule, not frequency. Reading 2 (11-17 E2): blocked reduces, if executed, −2.70 (n=26).
 - AI-first step taken: lesson L-1118 written into `2026-11-18-automation-monitoring.md` §7 (RAG corpus on deploy). *Promote* to one decision-prompt line (needs a catalogue prune + two reviewers) only if over the next 7 days desk partials continue at ≥ the baseline rate (47/49 days) AND Σ(hold − cut) > 0. *Kill* H-CUT if Σ(hold − cut) ≤ 0 over those 7 days.
 - Trap: rebuild trips with a relative tolerance (|pos| ≤ 1e-5 × trip qty) — fill quantities carry ~2e-8 residue.
@@ -35,6 +41,7 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 - Related kill (E1, same sweep): chair `sell` overriding a trader's cover on a held short, n=32 since 10-01 — covering would have lost 4.83. Not a money defect.
 
 ### R37 — Breakeven-ratchet step-through: fills land below the lock on 60–75 s mark samples · **STAGED (3 readings: 11-11, 11-13/14, 11-17)**
+- **11-19 (5th reading):** 1.26 over 58 fires = **$0.022/fire** (0.027, 0.019, 0.028, 0.022) → "worsening" REFUTED; stable ≈ $1.2–1.9/day, 64 % of the ratchet's net; zero execution slippage (53/53).
 - **11-18 (4th reading, worse):** Σ(floor − fill) **$1.90 over 67 fires** ($0.028/fire vs 0.019), fill = fire-time mark 67/67 (all sampling); 6 fires below zero gross (Σ −0.447). Largest algorithmic leak (≈55 % of the ratchet's +3.50).
 - 11-17: n=36 ratchet closes, Σ(floor − fill gross) **0.70**, 9 net-negative (Σ −0.165), sampling ≈ 62 s with 190–220 s gaps.
 - 11-13/14 (n = 26 ratchet closes): Σ(intended floor − fill) = **0.706** = 65 % of the window's +1.09 net; all 6 losers lost to it (ENA 169724 −0.096: peak +0.144 → next sample −0.062). 11-11: 9 net-negative ratchet exits, same mechanism. Platform-only (the desk cannot act in 60 s).

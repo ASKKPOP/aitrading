@@ -1,7 +1,55 @@
 {
-  "cycle": "24h-sweep-2026-11-18 (daily scheduled task, fired ~2h55m late at 18:02Z)",
-  "captured_at_utc": "2026-11-18T18:02:21Z",
-  "prod_image": "sooppiy-backend:20261117-sweep-20261117 before this run's deploy",
+  "cycle": "24h-sweep-2026-11-19 (daily scheduled task, on time 15:13Z)",
+  "captured_at_utc": "2026-11-19T15:13:14Z",
+  "prod_image": "sooppiy-backend:20261118-sweep-20261118 before this run's deploy",
+  "SWEEP_1119": {
+    "window_kst": "2026-11-18T15:00Z->2026-11-19T15:00Z",
+    "pnl_kst": {
+      "agent6": 0.97,
+      "ex_largest": -0.03,
+      "agent60": 0.0,
+      "verdict": "inconclusive"
+    },
+    "pnl_24h": {
+      "agent6": 1.03,
+      "agent60": 0.0,
+      "open_upnl_agent6": -0.52
+    },
+    "pnl_audit_utc": {
+      "2026-11-18": 4.87,
+      "2026-11-19_to_15Z": -1.15,
+      "total_since_1117": -1.86
+    },
+    "exits": {
+      "platform": 2.8,
+      "desk_levels": -1.69
+    },
+    "direction_4h_hit": "18/56",
+    "R32_day5_k3": 0.71,
+    "R37_per_fire": 0.022,
+    "killed": [
+      "H-TINY",
+      "H-1H-EDGE",
+      "R37-worsening",
+      "L-1118-reached-desk",
+      "H-CONF-SIZE"
+    ],
+    "finding": "monitoring notes never retrieved by desk recall (0/15601 since 10-01); lessons must be skills"
+  },
+  "open_watches": [
+    "R43 chair close->hold after printed invalidation (n=9, history measurement owed)",
+    "R42 H-CUT observation only (lesson never delivered); day1 n=2 sum -0.14",
+    "R32 ratchet arm: 5/10 calibrated days, 4 for / 1 against",
+    "R37 step-through stable ~$0.022/fire",
+    "R34 size ignores confidence (corr -0.09)",
+    "R35",
+    "R38",
+    "R39 fleet 43 denial loop (2176 skips/24h)",
+    "R40 sell-on-short: 0 executed adds, 10 blocked",
+    "R41 inconclusive",
+    "direction: 4h hit per day; trigger 3rd consecutive day <40%",
+    "O-1116 owner: user 25 subscription"
+  ],
   "SWEEP_1118": {
     "window_24h": "2026-11-17T18:02Z->2026-11-18T18:03Z",
     "pnl_24h": {
@@ -38,18 +86,6 @@
     "R39_candidate_skipped_24h": 4616,
     "llm_silence": "silent 21:44Z -> recovered 23:44Z (first full live cycle, HELD)"
   },
-  "open_watches": [
-    "R42 desk partial covers: 7-day falsifier from 11-18 (\u03a3(hold\u2212cut)>0 at baseline rate \u2192 promote prompt line; \u22640 \u2192 kill H-CUT)",
-    "R32 ratchet arm: 4 calibrated days, 3 for / 1 against, 0/3 non-trending",
-    "R34 size at low confidence: weakened (n=11 \u03a3 \u22122.15, sign flips ex-largest)",
-    "R37 ratchet step-through $1.90/day (4 readings, worsening) \u2014 15 s sampler design owed",
-    "R41 inconclusive n=2 (+1.5/\u22120.86)",
-    "R35 chair re-entry against own invalidation",
-    "R38 entry inside last hour of run (n=1, -0.14)",
-    "R39 entitlement-denial retry loop (fleet 43, ~12k skips/day)",
-    "R40 chair sell-on-short = add (do-not-ship; promote on next stated-reduce executed as add)",
-    "O-1116 owner: user 25 subscription (test-mode Stripe) ended 11-12"
-  ],
   "SWEEP_1117": {
     "window_24h": "2026-11-16T15:13Z->2026-11-17T15:13Z",
     "pnl_24h": {
