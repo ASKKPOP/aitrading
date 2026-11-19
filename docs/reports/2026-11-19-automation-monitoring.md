@@ -186,3 +186,17 @@ own "close now" — INJ, HYPE, LTC lost −2.13 between them.** The platform's e
 - The notional < $27.5 proxy for sf ≤ 0.07 is exact for today (A: same 33 trips) but assumed for the history.
 - Whether any *outcome* chunk carried an equivalent of L-1118 — not checked.
 
+### 10. Deploy record
+
+`scripts/deploy.sh sweep-20261119` from the scratch clone at 937234e, rc 0 → **`sooppiy-backend:20261119-sweep-20261119`**.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261118-sweep-20261118`. Reason (mode ②): new finding + retraction (E5 — notes never recalled;
+L-1118 withdrawn), R43 staged, R37 verdict moved. Docs-only; no code change.
+
+| prod check | pass 1 (15:31:02Z) | pass 2 (15:32:20Z) |
+|---|---|---|
+| `.env` + worker + backend image | 20261119-sweep-20261119 ×3 | same |
+| today's note in `/app/docs/reports/`; HANDOFF trap present | present / 1 hit | present / 1 hit |
+| tracebacks worker / backend (10 min) | 0 / 0 | 0 / 0 |
+| `MAX(run_events.ts)` vs clock | 15:30:58Z at 15:31:04Z | 15:30:58Z at 15:32:22Z |
+| worker `/tmp` | lock only | lock only |
+| public pages + `/api/subscriptions/plans` | 200 ×5 (deploy.sh) | — |
