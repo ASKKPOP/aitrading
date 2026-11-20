@@ -421,8 +421,9 @@ def _members_public(fleet_id: int) -> list[dict]:
         # whole fleet: compute_run_pnl per member (a DB connection each) on
         # fleet 44's 3,697 members pinned the event loop ~169 s per request
         # and 504'd the whole API (prod 2026-11-20). The stamped
-        # realized_pnl_usd is NOT used — direct running→stopped paths
-        # (request_stop with no position) never re-stamp it.
+        # realized_pnl_usd is NOT used: the replay is the ledger itself, and
+        # members stopped before 2026-11-20 by a flat request_stop were never
+        # re-stamped at the stop.
         if _cleanly_stopped(m):
             if bulk_legs is not None:
                 try:

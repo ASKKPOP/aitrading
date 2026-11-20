@@ -210,7 +210,7 @@ class ControlPassEndToEndTests(unittest.TestCase):
                "mark_age_ok": True, "position": {"quantity": 0.0}}
         with patch.object(run_engine, "_evaluate_stop", lambda r: None), \
              patch.object(run_engine, "compute_run_pnl", lambda r: pnl), \
-             patch.object(run_engine, "_cache_realized_pnl", lambda *a: None), \
+             patch.object(run_engine, "_cache_realized_pnl", lambda *a, **k: None), \
              patch.object(run_engine, "_ratchet_peak_pnl", lambda *a: None), \
              patch.object(run_engine, "_fire_armed_order", lambda *a: None), \
              patch.object(run_engine, "_maybe_emit_equity", lambda *a: None), \

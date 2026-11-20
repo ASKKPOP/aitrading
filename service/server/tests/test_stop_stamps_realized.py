@@ -161,6 +161,46 @@ class StopStampsRealized(unittest.TestCase):
         trading_runs.request_stop(RUN_ID, AGENT_ID, True)
         self.assertAlmostEqual(self._stamp()[1], 9.79, places=9)
 
+    def _tick(self, between=None):
+        """One _control_active pass whose leg read returns the stale value
+        (-0.10, buy only) and, if given, runs `between` right after that read
+        — the interleaving the review reproduced."""
+        def stale_pnl(run):
+            if between:
+                between()
+            return {"realized": -0.10, "unrealized": 0.0, "total": -0.10,
+                    "trades": 1, "position": None, "mark_age_ok": True}
+        run = trading_runs.get_run(RUN_ID, AGENT_ID)
+        with patch.object(run_engine, "_evaluate_stop", return_value=None), \
+                patch.object(run_engine, "compute_run_pnl",
+                             side_effect=stale_pnl), \
+                patch.object(run_engine, "_fire_armed_order"):
+            run_engine._control_active(run, {})
+
+    def test_a_tick_in_flight_cannot_overwrite_the_stop_stamp(self):
+        """The tick read its legs while the position was open; the closing
+        leg and a flat stop committed before the tick wrote. The stop's
+        stamp must survive."""
+        self._run(stamp=-0.10)
+        self._round_trip()
+        self._tick(between=lambda: trading_runs.request_stop(
+            RUN_ID, AGENT_ID, True))
+        status, stamp = self._stamp()
+        self.assertEqual(status, trading_runs.STATUS_STOPPED)
+        self.assertAlmostEqual(stamp, 9.79, places=9)
+
+    def test_a_tick_still_stamps_a_running_run(self):
+        self._run(stamp=0.0)
+        self._leg(1, "buy", 100.0, 1.0, 0.10)
+        self._tick()
+        self.assertAlmostEqual(self._stamp()[1], -0.10, places=9)
+
+    def test_a_tick_still_stamps_a_paused_run(self):
+        self._run(status="paused", stamp=0.0)
+        self._leg(1, "buy", 100.0, 1.0, 0.10)
+        self._tick()
+        self.assertAlmostEqual(self._stamp()[1], -0.10, places=9)
+
     def test_paused_member_is_stamped_too(self):
         self._run(status="paused")
         self._round_trip()

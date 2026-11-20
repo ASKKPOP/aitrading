@@ -1958,13 +1958,26 @@ def _maybe_emit_equity(run: dict, pnl: dict) -> None:
         pass
 
 
-def _cache_realized_pnl(run_id: int, realized: float) -> None:
+def _cache_realized_pnl(run_id: int, realized: float,
+                        only_while_active: bool = False) -> None:
+    """Write the realized P&L stamp. `only_while_active` is for the tick's
+    write: its legs were read before this UPDATE, and a stop that committed
+    in between (request_stop stamps a flat stop itself) must not be
+    overwritten with the older value — a stopped run is never ticked
+    again, so that value would be permanent (2026-11-20 review)."""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         begin_write_transaction(cursor)
-        cursor.execute("UPDATE trading_runs SET realized_pnl_usd = ? WHERE id = ?",
-                       (realized, run_id))
+        if only_while_active:
+            cursor.execute(
+                "UPDATE trading_runs SET realized_pnl_usd = ? "
+                "WHERE id = ? AND status IN (?, ?)",
+                (realized, run_id, STATUS_RUNNING, STATUS_PAUSED))
+        else:
+            cursor.execute(
+                "UPDATE trading_runs SET realized_pnl_usd = ? WHERE id = ?",
+                (realized, run_id))
         conn.commit()
     except Exception:  # noqa: BLE001
         logger.debug("realized_pnl cache write failed for run %s", run_id, exc_info=True)
@@ -2632,7 +2645,7 @@ def _control_active(run: dict, out: dict) -> None:
     try:
         reason = _evaluate_stop(run)
         pnl = compute_run_pnl(run)
-        _cache_realized_pnl(run["id"], pnl["realized"])
+        _cache_realized_pnl(run["id"], pnl["realized"], only_while_active=True)
         _ratchet_peak_pnl(run, pnl)
         # The desk's pre-committed exit. This is the ONLY path that can act
         # between two decision cycles, which is where the profit lived on
