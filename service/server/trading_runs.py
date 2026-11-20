@@ -893,9 +893,43 @@ def request_stop(run_id: int, agent_id: int, flatten: bool,
                 run_id, agent_id, (STATUS_RUNNING, STATUS_PAUSED), STATUS_STOPPING,
                 reason, extra_sets="stop_flatten = ?, stopped_at = ?",
                 extra_args=(1 if flatten else 0, _now_iso()))
+        # Flat: stop now, and stamp the realized P&L in the same UPDATE. The
+        # engine stamps each tick BEFORE that tick's exits fire, and this
+        # branch bypasses _control_stopping's post-stop stamp, so a leg that
+        # closed since the last tick would be missing from the stamp forever
+        # (marked_equity sums it for stopped members; 2026-11-20 report).
+        realized = _replayed_realized(run_id)
+        if realized is None:
+            return _transition(run_id, agent_id, (STATUS_RUNNING, STATUS_PAUSED),
+                               STATUS_STOPPED, reason, clear_active_key=True)
         return _transition(run_id, agent_id, (STATUS_RUNNING, STATUS_PAUSED),
-                           STATUS_STOPPED, reason, clear_active_key=True)
+                           STATUS_STOPPED, reason, clear_active_key=True,
+                           extra_sets="realized_pnl_usd = ?",
+                           extra_args=(realized,))
     raise ValueError(f"cannot stop a {run['status']} run")
+
+
+def _replayed_realized(run_id: int) -> Optional[float]:
+    """The run's fee-inclusive realized P&L from its operation legs, or None
+    if it cannot be read — a stop must never fail on its bookkeeping."""
+    try:
+        # run_engine imports this module, so the import is deferred
+        from run_engine import replay_realized
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT side, entry_price, quantity, fee_usd FROM signals
+                   WHERE run_id = ? AND message_type = 'operation' ORDER BY id""",
+                (run_id,))
+            legs = [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+        return float(replay_realized(legs))
+    except Exception:  # noqa: BLE001
+        logger.warning("realized replay at stop failed for run %s", run_id,
+                       exc_info=True)
+        return None
 
 
 def update_stop_conditions(run_id: int, agent_id: int, new_conditions: dict) -> dict:
