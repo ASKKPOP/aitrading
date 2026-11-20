@@ -206,7 +206,8 @@ def _resolved_plan_for_agent(agent_id: int) -> Optional[str]:
 def check_futures_access(agent_id: int, market_type: str,
                          leverage: float) -> Optional[str]:
     """Deny reason (or None) for a non-spot run. Junior is spot-only."""
-    if market_type != "futures" and float(leverage or 1.0) <= 1.0:
+    # 'margin' (US-stock short-capable book) is gated like futures.
+    if market_type not in ("futures", "margin") and float(leverage or 1.0) <= 1.0:
         return None
     if _resolved_plan_for_agent(agent_id) == "junior":
         return ("the Junior plan is spot-only — futures and leverage need "

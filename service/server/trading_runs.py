@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 TS_FMT = "%Y-%m-%dT%H:%M:%SZ"
 
 VALID_RUN_MARKETS = markets.automatable_markets()
-VALID_MARKET_TYPES = ("spot", "futures")
+VALID_MARKET_TYPES = ("spot", "futures", "margin")
 
 STATUS_DRAFT = "draft"
 STATUS_ARMED = "armed"
@@ -424,8 +424,13 @@ def is_futures_book(market: Optional[str], market_type: Optional[str]) -> bool:
     `market` now has a genuinely-futures member of its own. Either one makes
     the book short-capable, so this is a named predicate rather than a string
     compare scattered across the engine.
+
+    'margin' (owner 2026-11-20, two-way) is the US-stock short-capable book:
+    a 'sell' with no long opens a short-sale. Valid only on us-stock
+    (routes_runs and futures_policy enforce that).
     """
-    return ((market_type or "spot").strip().lower() == "futures"
+    mt = (market_type or "spot").strip().lower()
+    return (mt in ("futures", "margin")
             or (market or "").strip().lower() == "futures")
 
 

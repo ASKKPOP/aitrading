@@ -427,6 +427,9 @@ def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
     # carry the flag redundantly; everything else may not.
     if data.market_type == "futures" and data.market not in ("crypto", "futures"):
         raise ValueError("futures market_type is crypto-only")
+    # 'margin' is the US-stock short-capable book (two-way, 2026-11-20).
+    if data.market_type == "margin" and data.market != "us-stock":
+        raise ValueError("margin market_type is US-stock-only")
     # Leveraged SPOT with NO max-loss stop (2026-07-30). A spot book cannot
     # short, so a desk reading bearish has no legal action at all — and
     # leverage then amplifies the one direction it is refusing to take. Live
@@ -445,7 +448,7 @@ def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
     #
     # The message names every remedy rather than picking one, because which is
     # right is a trading decision, not a code one.
-    if data.market_type != "futures" and float(data.leverage or 1.0) > 1.0 \
+    if data.market_type not in ("futures", "margin") and float(data.leverage or 1.0) > 1.0 \
             and not (data.stop_conditions or {}).get("max_loss_usd") \
             and _leveraged_spot_guard():
         raise ValueError(

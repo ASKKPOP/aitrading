@@ -1326,8 +1326,10 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     risk = fleet.get("risk_appetite") or "balanced"
     market = thesis["market"]
     direction = (thesis.get("direction") or "long").strip().lower()
-    market_type = "futures" if (direction == "short" and market == "crypto") else \
-        thesis.get("market_type") or "spot"
+    import symbol_research
+    market_type = symbol_research.thesis_market_type(market, direction)
+    if market_type == "spot":
+        market_type = thesis.get("market_type") or "spot"
     archetype = (fleet.get("archetype") or "short").strip().lower()
     if archetype == "swing":
         # Owner spec 2026-08-12: decouple LOOKING from ACTING. The desk

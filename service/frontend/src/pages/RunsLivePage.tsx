@@ -1121,7 +1121,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <strong style={{ fontSize: 15 }}>{run.symbol}
                   <span className="muted" style={{ fontSize: 11, marginLeft: 6 }}>
-                    {run.market}{run.market_type === 'futures' ? ' · fut' : ''}</span>
+                    {run.market}{run.market_type === 'futures' ? ' · fut' : run.market_type === 'margin' ? ' · margin' : ''}</span>
                   {(run as any).fleet_id ? (
                     <span style={{ fontSize: 10.5, marginLeft: 6, padding: '1px 7px', borderRadius: 9,
                       background: 'rgba(194,106,69,0.14)', color: 'var(--accent-primary,#c26a45)' }}>
@@ -1196,7 +1196,7 @@ export function RunsLiveSection({ token, embedded = false, reloadKey = 0,
                     {kv(tr(language, { ko: '주기', en: 'Interval', ja: '間隔', th: 'ช่วง', vi: 'Chu kỳ', id: 'Interval' }),
                       `${cfg.interval_minutes ?? 60}m·≥${Math.round((cfg.min_confidence ?? 0.65) * 100)}%`)}
                     {kv(tr(language, { ko: '유형', en: 'Type', ja: 'タイプ', th: 'ชนิด', vi: 'Loại', id: 'Jenis' }),
-                      `${run.market_type === 'futures' ? 'futures' : 'spot'}${lev > 1 ? `·${lev}×` : ''}`)}
+                      `${run.market_type === 'futures' ? 'futures' : run.market_type === 'margin' ? 'margin' : 'spot'}${lev > 1 ? `·${lev}×` : ''}`)}
                     {kv('AI', String(cfg.provider ||
                       tr(language, { ko: '서버 기본값', en: 'server default', ja: 'サーバー既定', th: 'ค่าเริ่มต้นเซิร์ฟเวอร์', vi: 'mặc định máy chủ', id: 'bawaan server' })))}
                   </div>

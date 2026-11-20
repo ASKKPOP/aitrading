@@ -7215,11 +7215,12 @@ def _light_analysis(run: dict, cfg: dict) -> dict:
         # long" while holding that long; it gave back 94% of the peak with
         # the desk unable to reach "reduce this long" at all. Short and flat
         # keep the original wording — only the long case was unreachable.
+        book = "Margin book" if market_type == "margin" else "Futures book"
         if pos_qty > 0:
-            inventory_rule = ("Futures book, currently LONG: 'sell' "
+            inventory_rule = (f"{book}, currently LONG: 'sell' "
                               "reduces/closes this long; 'buy' adds to it.")
         else:
-            inventory_rule = ("Futures book: 'sell' opens or extends a short; "
+            inventory_rule = (f"{book}: 'sell' opens or extends a short; "
                               "'buy' covers a short or goes long.")
     elif pos_qty > 0:
         inventory_rule = "'sell' reduces/closes this long; 'buy' adds to it."

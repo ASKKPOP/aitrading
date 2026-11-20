@@ -167,9 +167,15 @@ def shorts_blocked(cursor=None) -> bool:
     return _switch(SHORTS_SETTING_KEY, SHORTS_ENV_VAR, False, cursor)
 
 
-def _perp_ok(market: Optional[str], cursor=None) -> bool:
-    """A 1x short / perp book on this market is allowed right now."""
-    return _norm(market) in PERP_MARKETS and not shorts_blocked(cursor)
+# Which market each short-capable book type may live on.
+_BOOK_MARKETS = {"futures": PERP_MARKETS, "margin": ("us-stock",)}
+
+
+def _book_ok(market: Optional[str], market_type: Optional[str], cursor=None) -> bool:
+    """A short-capable book of this type on this market is allowed right now:
+    'futures' (perp) on crypto, 'margin' (short-sale) on US stock."""
+    allowed = _BOOK_MARKETS.get((market_type or "spot").strip().lower())
+    return bool(allowed) and _norm(market) in allowed and not shorts_blocked(cursor)
 
 
 def _exposure_kind(action: str, market: Optional[str], leverage: float,
@@ -191,9 +197,10 @@ def _exposure_kind(action: str, market: Optional[str], leverage: float,
             return "opening a short"
         if live and _norm(market) not in LIVE_SHORT_MARKETS:
             return "a live crypto short (no perp venue is connected)"
-    if ((market_type or "spot").strip().lower() == "futures"
-            and not _perp_ok(market, cursor)):
-        return "a futures (perpetual) book"
+    mt = (market_type or "spot").strip().lower()
+    if mt in _BOOK_MARKETS and not _book_ok(market, mt, cursor):
+        return ("a margin (short-sale) book" if mt == "margin"
+                else "a futures (perpetual) book")
     try:
         lev = float(leverage or 1.0)
     except (TypeError, ValueError):
@@ -233,9 +240,11 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
     elif _is_option_symbol(symbol):
         kind = "an options-contract run"
         market = "options"
-    elif ((market_type or "spot").strip().lower() == "futures"
-          and not _perp_ok(market, cursor)):
-        kind = "a futures (perpetual) run"
+    elif ((market_type or "spot").strip().lower() in _BOOK_MARKETS
+          and not _book_ok(market, market_type, cursor)):
+        kind = ("a margin (short-sale) run"
+                if (market_type or "").strip().lower() == "margin"
+                else "a futures (perpetual) run")
     else:
         try:
             lev = float(leverage or 1.0)

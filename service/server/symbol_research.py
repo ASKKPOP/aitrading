@@ -742,10 +742,15 @@ def thesis_rr_feasible(thesis: dict, last: Optional[float]) -> bool:
 def thesis_market_type(market: str, direction: str) -> str:
     """The venue a thesis will be written to.
 
-    Only crypto has a futures book in this system, so a short anywhere else
-    lands on spot — which has no inventory to sell.
+    A crypto short lands on a futures (perp) book; a US-stock short on a
+    'margin' book (short-sale; owner 2026-11-20, two-way). A short anywhere
+    else lands on spot — which has no inventory to sell.
     """
-    return "futures" if (direction == "short" and market == "crypto") else "spot"
+    if direction == "short" and market == "crypto":
+        return "futures"
+    if direction == "short" and market == "us-stock":
+        return "margin"
+    return "spot"
 
 
 def thesis_is_expressible(market: str, direction: str) -> bool:
