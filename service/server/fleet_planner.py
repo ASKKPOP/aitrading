@@ -758,15 +758,18 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
             raise trading_runs.EntitlementDenied(deny)
         # Platform-wide futures block (owner 2026-11-20): a fleet that can
         # only trade futures, or asks for leverage, is refused at creation.
-        from futures_policy import (BLOCKED_MARKETS, REFUSAL_PREFIX, _norm,
-                                    _prefix, futures_blocked)
+        from futures_policy import (_LABEL, BLOCKED_MARKETS, REFUSAL_PREFIX,
+                                    _norm, _prefix, futures_blocked)
         if futures_blocked(cursor):
             scope = [_norm(m) for m in (market_scope or [])]
             if scope and all(m in BLOCKED_MARKETS for m in scope):
-                prefix = _prefix(scope[0]) if len(set(scope)) == 1 else REFUSAL_PREFIX
+                names = sorted({_LABEL.get(m, m) for m in scope})
+                prefix = (_prefix(scope[0]) if len(names) == 1 else
+                          f"{' and '.join(names)} trading is disabled on this "
+                          "platform (spot and US stock only)")
                 raise trading_runs.EntitlementDenied(
                     f"{prefix}: a fleet that can only trade "
-                    f"{', '.join(sorted(set(scope)))} cannot be created.")
+                    f"{', '.join(names)} cannot be created.")
             if leverage and float(leverage) > 1.0:
                 raise trading_runs.EntitlementDenied(
                     f"{REFUSAL_PREFIX}: a leveraged fleet cannot be created.")

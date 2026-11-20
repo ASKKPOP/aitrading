@@ -841,9 +841,13 @@ class OptionsPolymarketBlockTests(_DbBase):
         self.assertEqual(futures_policy.thesis_refusal("polymarket", "long"),
                          "polymarket_blocked")
         with patch("entitlements.plan_code_for_user", return_value="professional"):
-            for scope in (["options"], ["polymarket"], ["options", "forex"]):
-                with self.assertRaises(trading_runs.EntitlementDenied, msg=scope):
+            for scope, starts in ((["options"], "options trading"),
+                                  (["polymarket"], "Polymarket trading"),
+                                  (["options", "polymarket"],
+                                   "Polymarket and options trading")):
+                with self.assertRaises(trading_runs.EntitlementDenied, msg=scope) as ctx:
                     fp.create_fleet(self.agent_id, 2, 2000.0, market_scope=scope)
+                self.assertTrue(str(ctx.exception).startswith(starts), str(ctx.exception))
             self.assertTrue(fp.create_fleet(self.agent_id, 2, 2000.0,
                                             market_scope=["options", "us-stock"]))
 
