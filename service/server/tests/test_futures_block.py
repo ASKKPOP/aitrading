@@ -786,5 +786,67 @@ class ForexAliasLedgerTests(_DbBase):
         self.assertEqual(self._positions("EURUSD"), [])
 
 
+
+# ── options + Polymarket (owner 2026-11-20: "Block them too") ──────────────
+
+class OptionsPolymarketBlockTests(_DbBase):
+    def test_opens_refused_closes_allowed(self):
+        for market, label in (("options", "options"), ("polymarket", "Polymarket")):
+            why = futures_policy.order_refusal(market, "buy")
+            self.assertTrue(why.startswith(f"{label} trading is disabled"), why)
+            self.assertIsNone(futures_policy.order_refusal(market, "sell"))
+            with patch.dict(os.environ, _OFF):
+                self.assertIsNone(futures_policy.order_refusal(market, "buy"))
+
+    def test_ledger_refuses_the_buy_and_sells_a_held_one(self):
+        from automation import execute_paper_trade
+        sid, why = execute_paper_trade(self.agent_id, "AAPL240119C00190000",
+                                       "options", "buy", 1.0, 2.5)
+        self.assertIsNone(sid)
+        self.assertIn("options trading is disabled", why)
+        self._seed_position("SPY240119C00470000", "options", 2.0, entry=3.0)
+        sid, why = execute_paper_trade(self.agent_id, "SPY240119C00470000",
+                                       "options", "sell", 2.0, 3.5)
+        self.assertIsNone(why)
+        self.assertEqual(self._positions("SPY240119C00470000"), [])
+        from services import _update_position_from_signal
+        with self.assertRaises(ValueError) as ctx:
+            _update_position_from_signal(self.agent_id, "will-x", "polymarket", "buy",
+                                         10.0, 0.4, _NOW, token_id="tok1")
+        self.assertIn("Polymarket trading is disabled", str(ctx.exception))
+
+    def test_runs_cannot_start(self):
+        for market, sym in (("options", "AAPL240119C00190000"), ("polymarket", "will-x")):
+            with patch.dict(os.environ, _OFF):
+                run_id = trading_runs.create_run(
+                    self.agent_id, _settings(symbol=sym, market=market),
+                    {"type": "manual"}, {}, True)
+            with self.assertRaises(trading_runs.EntitlementDenied) as ctx:
+                trading_runs.start_run(run_id, self.agent_id)
+            self.assertIn("run cannot start", str(ctx.exception))
+
+    def test_research_and_fleets_skip_them(self):
+        import fleet_planner as fp
+        import markets
+        import symbol_research as sr
+        with patch.object(markets, "automatable_markets",
+                          return_value=("options", "polymarket", "us-stock")), \
+             patch.object(sr, "_options_universe", return_value=[], create=True):
+            try:
+                on = {u["market"] for u in sr.build_universe()}
+            except Exception as exc:  # noqa: BLE001
+                self.fail(f"build_universe raised {exc!r}")
+        self.assertEqual(on, {"us-stock"})
+        self.assertEqual(futures_policy.thesis_refusal("options", "long"), "options_blocked")
+        self.assertEqual(futures_policy.thesis_refusal("polymarket", "long"),
+                         "polymarket_blocked")
+        with patch("entitlements.plan_code_for_user", return_value="professional"):
+            for scope in (["options"], ["polymarket"], ["options", "forex"]):
+                with self.assertRaises(trading_runs.EntitlementDenied, msg=scope):
+                    fp.create_fleet(self.agent_id, 2, 2000.0, market_scope=scope)
+            self.assertTrue(fp.create_fleet(self.agent_id, 2, 2000.0,
+                                            market_scope=["options", "us-stock"]))
+
+
 if __name__ == "__main__":
     unittest.main()
