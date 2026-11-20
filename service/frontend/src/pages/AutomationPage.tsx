@@ -115,6 +115,8 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   }, [])
 
   const [rules, setRules] = useState<Rule[]>([])
+  // The page-end slot FleetPanel portals the Full Auto AI feed into.
+  const [aiFeedHost, setAiFeedHost] = useState<HTMLDivElement | null>(null)
   const [topCoins, setTopCoins] = useState<string[]>(SIMPLE_COINS_FALLBACK)
   const [ruleMode, setRuleMode] = useState<'agent' | 'simple' | 'fleet'>(
     () => planFeatures(planCode).simpleMode ? 'simple' : 'agent')
@@ -1105,7 +1107,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       {/* Not plan-gated here: a LIVE fleet's monitor (and its stop button)
           must stay visible even after a plan lapses (fleet 43, 11-12).
           FleetPanel gates only the create form on the plan. */}
-      <FleetPanel token={token!} combined blockCreate={anythingLive !== false}
+      <FleetPanel token={token!} combined blockCreate={anythingLive !== false} aiFeedHost={aiFeedHost}
         onSelectRun={(id) => setOpenRunReq(p => ({ id, nonce: (p?.nonce || 0) + 1 }))} />
 
       {/* The other two ways to make one, below and secondary — shown only
@@ -1146,6 +1148,11 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       <RunsLiveSection token={token} embedded reloadKey={runsReload}
         hideCreateButton hideCreateForm openCreateSignal={openCreate} extraPanel={rulePanel}
         openRunRequest={openRunReq} />
+
+      {/* ── Full Auto's 30-minute AI analysis, at the page end (owner
+             2026-11-20: "AI feed to page end"). FleetPanel portals the feed
+             here; the monitor, base plan, scoreboard and stop stay on top. ── */}
+      <div ref={setAiFeedHost} />
 
       {/* ── ② Make by AI Analyst ── */}
       {/* ── Summary-tile detail modal: the numbers behind whichever tile was

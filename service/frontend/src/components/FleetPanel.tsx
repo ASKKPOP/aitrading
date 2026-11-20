@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
+import { createPortal } from 'react-dom'
 import { API_BASE, marketLabel, useLanguage } from '../appShared'
 import { statusLabel } from '../pages/RunsLivePage'
 import { GuideBadge, HelpTip } from './HelpTip'
@@ -64,11 +65,15 @@ const FLEET_MARKETS = ['crypto', 'us-stock', 'futures', 'forex']
 // of /automation — the creation form while no fleet is live, the live monitor
 // (+ base plan + 30-minute AI analysis feed) once one is.
 export function FleetPanel({ token, monitorOnly = false, combined = false, onSelectRun,
-  blockCreate = false }: {
+  blockCreate = false, aiFeedHost }: {
   token: string; monitorOnly?: boolean; combined?: boolean; onSelectRun?: (runId: number) => void
   // Owner 2026-11-20: while any TRADING is live, nothing new is made — the
   // top box shows no create form (a live fleet's monitor still renders).
   blockCreate?: boolean
+  // Owner 2026-11-20 ("AI feed to page end"): where the 30-minute AI feed
+  // renders. undefined = inline in this box (old layout); null = the page's
+  // slot is not mounted yet (render nothing); an element = portal into it.
+  aiFeedHost?: HTMLElement | null
 }) {
   const { language } = useLanguage()
   const T = {
@@ -397,6 +402,11 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
     return <div style={card}><div style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>🚀 {T.needPlan}</div></div>
   }
 
+  // The AI feed, at the page's slot when one is given (its own card there),
+  // else inline exactly as before.
+  const feedAt = (feed: ReactElement) => aiFeedHost === undefined ? feed
+    : aiFeedHost ? createPortal(<div style={{ ...card, marginTop: 18 }}>{feed}</div>, aiFeedHost) : null
+
   const warned = !!(fleet && fleet.warn_latched_at && !fleet.warn_acked_at)
   const pnl = fleet && equity !== null ? equity - fleet.total_budget_usd : null
 
@@ -460,10 +470,12 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
           {combined && fleet && fleet.status === 'stopped' && fleet.stopped_at
             && Date.now() - Date.parse(fleet.stopped_at) < 24 * 3600 * 1000 && (
             // Why the last fleet ended (e.g. 20 empty research tries) — the
-            // same 30-minute feed, so the reason is visible, not guessed.
+            // same 30-minute feed, so the reason is visible, not guessed. It
+            // goes where the live feed goes (page end) so it has one place.
+            feedAt(
             <div style={{ marginTop: 12 }}>
               <FleetAiFeed token={token} fleetId={fleet.id} language={language} reasonLabel={reasonLabel} live={false} />
-            </div>
+            </div>)
           )}
         </>
       ) : (
@@ -483,7 +495,7 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
               <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 3 }}>{T.basePlanHint}</div>
             </div>
           )}
-          {combined && (
+          {combined && feedAt(
             <FleetAiFeed token={token} fleetId={fleet.id} language={language} reasonLabel={reasonLabel} live />
           )}
           {/* This sleeve's own scoreboard, rebased to 100 at launch. The
