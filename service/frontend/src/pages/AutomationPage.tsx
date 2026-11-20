@@ -1051,9 +1051,22 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         {summaryStrip}
       </div>
 
-      {/* ── The two ways to make one, above the block ── */}
+      {/* ── Full Auto on top (owner ask 2026-11-20): the order form while no
+             fleet is live, the live monitor + base plan + 30-minute AI
+             analysis once one is. It replaces the two make-buttons as the
+             page's primary action. ── */}
+      {/* Not plan-gated here: a LIVE fleet's monitor (and its stop button)
+          must stay visible even after a plan lapses (fleet 43, 11-12).
+          FleetPanel gates only the create form on the plan. */}
+      <FleetPanel token={token!} combined
+        onSelectRun={(id) => setOpenRunReq(p => ({ id, nonce: (p?.nonce || 0) + 1 }))} />
+
+      {/* The other two ways to make one stay reachable, below and secondary:
+          the create modal holds the automation-rule list whose Remove
+          button is the only kill switch for a running rule. */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14, alignItems: 'stretch' }}>
-        <button style={primaryBtn} onClick={() => setOpenCreate(n => n + 1)}>➕ {T.makeByTrading}</button>
+        {/* Plans without Full Auto keep Make by New Trading as THE action. */}
+        <button style={features.fleetMode ? secondaryBtn : primaryBtn} onClick={() => setOpenCreate(n => n + 1)}>➕ {T.makeByTrading}</button>
         {features.analyst && (
           <button style={secondaryBtn} onClick={() => setShowAnalyst(true)}>🧠 {T.makeByAnalyst}</button>
         )}
@@ -1067,11 +1080,6 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         })} />
       </div>
 
-
-      {/* ── Full Auto fleet monitor — always visible once a fleet is live,
-             so monitoring never requires reopening the create modal ── */}
-      <FleetPanel token={token!} monitorOnly
-        onSelectRun={(id) => setOpenRunReq(p => ({ id, nonce: (p?.nonce || 0) + 1 }))} />
 
       {/* ── The one block on this page ── */}
       <RunsLiveSection token={token} embedded reloadKey={runsReload}

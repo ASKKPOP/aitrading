@@ -714,6 +714,25 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
         return {"events": events}
 
+    @app.get("/api/fleets/{fleet_id}/ai-feed")
+    async def fleet_ai_feed_route(fleet_id: int, limit: int = 3, lang: str = "en",
+                                  authorization: str = Header(None)):
+        """Owner ask 2026-11-20: the fleet's AI analysis, one message per
+        30 minutes (targets found + buy/sell decisions), newest first.
+        Read-side composition of fleet_events × run_events — bounded reads,
+        off the event loop."""
+        agent = _auth(authorization)
+        _fleet_or_404(fleet_id, agent)
+        import fleet_ai_feed
+
+        def _build() -> dict:
+            msgs = fleet_ai_feed.fleet_feed(fleet_id, limit)
+            return {"fleet_id": fleet_id,
+                    "cycle_minutes": fleet_ai_feed.CYCLE_MINUTES,
+                    "messages": fleet_ai_feed.localize_feed(msgs, lang)}
+
+        return await run_in_threadpool(_build)
+
     @app.get("/api/fleets/{fleet_id}/outlook")
     async def fleet_outlook(fleet_id: int, lang: str = "en",
                             dialog_limit: int = 12,

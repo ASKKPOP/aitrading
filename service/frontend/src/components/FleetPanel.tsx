@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE, marketLabel, useLanguage } from '../appShared'
 import { statusLabel } from '../pages/RunsLivePage'
 import { GuideBadge, HelpTip } from './HelpTip'
+import { FleetAiFeed } from './FleetAiFeed'
 import { tr } from '../i18n'
 
 // Plan 14 — Full Auto (fleet mode). The user sets only N and presses go; the
@@ -23,6 +24,8 @@ type Fleet = {
   warn_loss_frac: number; stop_loss_frac: number
   warn_latched_at: string | null; warn_acked_at: string | null
   entry_paused_reason: string | null; held_by_master: number
+  market_scope?: string[] | null
+  stopped_at?: string | null
 }
 // Rebased to 100 at launch, so an N-symbol sleeve is readable on its own
 // terms instead of being lost inside the account total. Server-computed from
@@ -53,12 +56,15 @@ type Entitlements = {
 // means "every market", exactly as before this picker existed.
 const FLEET_MARKETS = ['crypto', 'us-stock', 'futures', 'forex']
 
-// monitorOnly: the always-visible monitor box on /automation — renders nothing
-// until an active fleet exists, and never shows the creation form (the create
-// modal keeps that). onSelectRun opens a member TRADING's full detail drawer
+// monitorOnly: a monitor-only box — renders nothing until an active fleet
+// exists, and never shows the creation form. (/automation now uses
+// `combined` at the top of the page; the create modal uses the default.) onSelectRun opens a member TRADING's full detail drawer
 // (sparkline + event log + pause/stop) via RunsLiveSection.openRunRequest.
-export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
-  token: string; monitorOnly?: boolean; onSelectRun?: (runId: number) => void
+// combined (owner ask 2026-11-20): the Full Auto order form sits at the TOP
+// of /automation — the creation form while no fleet is live, the live monitor
+// (+ base plan + 30-minute AI analysis feed) once one is.
+export function FleetPanel({ token, monitorOnly = false, combined = false, onSelectRun }: {
+  token: string; monitorOnly?: boolean; combined?: boolean; onSelectRun?: (runId: number) => void
 }) {
   const { language } = useLanguage()
   const T = {
@@ -120,6 +126,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
       th: 'หากอยากรู้เงินโดยรวม ให้ดูสรุปบัญชีด้านบนของหน้า (เงินฝาก · กำไร) — ดัชนีนี้ตอบเฉพาะฟลีตนี้เท่านั้น',
       vi: 'Về tổng tài sản, hãy xem phần tóm tắt tài khoản ở đầu trang (số dư · lợi nhuận) — chỉ số này chỉ trả lời cho riêng nhóm này.',
       id: 'Untuk keseluruhan dana Anda, lihat ringkasan akun di bagian atas halaman (setoran · keuntungan) — indeks ini hanya menjawab untuk fleet yang satu ini.' }),
+    basePlan: tr(language, { ko: '기본 계획 (내 주문)', en: 'Base plan (your order)', ja: '基本計画（あなたの注文）', th: 'แผนพื้นฐาน (คำสั่งของคุณ)', vi: 'Kế hoạch gốc (lệnh của bạn)', id: 'Rencana dasar (pesanan Anda)' }),
+    basePlanMarkets: tr(language, { ko: '시장:', en: 'markets:', ja: '市場:', th: 'ตลาด:', vi: 'thị trường:', id: 'pasar:' }),
+    basePlanHint: tr(language, { ko: 'AI는 이 계획 안에서만 종목을 고르고 매수·매도합니다 — 개수·예산·시장을 넘지 않습니다.', en: 'The AI picks symbols and buys/sells only inside this plan — never beyond its count, budget or markets.', ja: 'AIはこの計画の範囲内でのみ銘柄を選び売買します — 数・予算・市場を超えません。', th: 'AI เลือกเหรียญและซื้อขายภายในแผนนี้เท่านั้น — ไม่เกินจำนวน งบ หรือตลาด', vi: 'AI chỉ chọn mã và mua/bán trong kế hoạch này — không vượt số lượng, ngân sách hay thị trường.', id: 'AI memilih simbol dan membeli/menjual hanya di dalam rencana ini — tidak pernah melampaui jumlah, anggaran, atau pasarnya.' }),
     close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
     monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp', id: 'Full Auto — monitor langsung' }),
     buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành', id: 'AI sedang meriset pasar dan menyusun TRADING — masing-masing muncul di sini begitu selesai dibuat' }),
@@ -189,6 +198,9 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
   // the always-visible monitor into a popup behind one button.
   const [showEdit, setShowEdit] = useState(false)
   const [trades, setTrades] = useState<any[]>([])
+  // First /fleets read finished — until then the top box cannot tell a live
+  // fleet from none, so it renders nothing rather than flash the form.
+  const [loaded, setLoaded] = useState(false)
   const [actMkt, setActMkt] = useState('all')
 
   const load = useCallback(async () => {
@@ -201,23 +213,36 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
         setEquity(detail.equity && detail.equity.ok ? detail.equity.equity : null)
         setIndex(detail.index || null)
       } else { setFleet(null); setMembers([]); setIndex(null) }
+      setLoaded(true)
     } catch { /* transient */ }
   }, [token])
 
-  useEffect(() => {
+  const loadEnt = useCallback(() => {
     fetch(`${API_BASE}/entitlements/me`, { headers: authHeaders })
-      .then(r => r.json())
-      .then((e: Entitlements) => { setEnt(e); if (!budget) setBudget(e.default_budget_usd || 1000) })
+      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
+      .then((e: Entitlements) => { setEnt(e); setBudget(b => b || e.default_budget_usd || 1000) })
       .catch(() => setEnt(null))
+  }, [token])
+
+  useEffect(() => {
+    loadEnt()
     load()
   }, [token])
+
+  // The top box hides its create form until the plan is known, so a failed
+  // entitlements read must not hide it for good — retry every 20 s.
+  useEffect(() => {
+    if (!combined || ent) return
+    const id = setInterval(loadEnt, 20000)
+    return () => clearInterval(id)
+  }, [combined, ent, loadEnt])
 
   useEffect(() => {
     if (!fleet || fleet.status === 'stopped') {
       // Discovery poll (monitor box only): the always-visible panel mounts
       // before any fleet exists, so without this a fleet launched from the
       // create modal stays invisible until a full page reload.
-      if (!monitorOnly) return
+      if (!monitorOnly && !combined) return
       const id = setInterval(load, 20000)
       return () => clearInterval(id)
     }
@@ -226,12 +251,12 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     // poll has to be tight enough for the box to visibly breathe.
     const id = setInterval(load, fast ? 2000 : 5000)
     return () => clearInterval(id)
-  }, [fleet?.status, load, monitorOnly])
+  }, [fleet?.status, load, monitorOnly, combined])
 
   // 거래 활동 tab: the account's recent legs across every market (side, symbol,
   // qty, price, P&L, date). Monitor box only; light 15s poll.
   useEffect(() => {
-    if (!monitorOnly || !token) return
+    if (!(monitorOnly || combined) || !token) return
     let dead = false
     const loadTrades = async () => {
       try {
@@ -242,7 +267,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     loadTrades()
     const iv = setInterval(loadTrades, 15000)
     return () => { dead = true; clearInterval(iv) }
-  }, [monitorOnly, token])
+  }, [monitorOnly, combined, token])
 
   // Member-card liveness: the panel is poll-driven, so "an event" here is a
   // change in a member's polled snapshot (status / P&L / pause reason) — blink
@@ -345,14 +370,24 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
     color: active ? 'var(--accent-primary,#c26a45)' : 'inherit',
   })
 
+  // `mon` = render as the live monitor: always for monitorOnly, and for the
+  // combined top box once a fleet is live.
+  const live = !!fleet && fleet.status !== 'stopped'
+  const mon = monitorOnly || (combined && live)
   const card: any = { background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16,
-    ...(monitorOnly ? { marginBottom: 18 } : {}) }
+    ...(monitorOnly || combined ? { marginBottom: 18 } : {}) }
 
   // The monitor box has nothing to say until a fleet is live; the creation
   // form (and the plan-gate notice) stay in the create modal only.
   if (monitorOnly && (!fleet || fleet.status === 'stopped')) return null
+  // Top-of-page box: a live fleet always renders (monitor + stop, whatever
+  // the plan). With no live fleet it shows the create form only once the
+  // plan is known AND allows fleets — never a form a plan cannot launch,
+  // never an upsell card as the page's first element (review 2026-11-20).
+  if (combined && !loaded) return null
+  if (combined && !live && (!ent || ent.max_fleet_size <= 0)) return null
 
-  if (ent && ent.max_fleet_size <= 0) {
+  if (!combined && ent && ent.max_fleet_size <= 0) {
     if (monitorOnly) return null
     return <div style={card}><div style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>🚀 {T.needPlan}</div></div>
   }
@@ -362,8 +397,8 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
 
   return (
     <div style={card}>
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 {monitorOnly ? T.monitorTitle : T.title}</div>
-      {!monitorOnly && (
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 {mon ? T.monitorTitle : T.title}</div>
+      {!mon && (
         <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 14 }}>{T.desc}</div>
       )}
 
@@ -417,11 +452,34 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               ℹ️ {reasonLabel(fleet.status_reason)}
             </div>
           )}
+          {combined && fleet && fleet.status === 'stopped' && fleet.stopped_at
+            && Date.now() - Date.parse(fleet.stopped_at) < 24 * 3600 * 1000 && (
+            // Why the last fleet ended (e.g. 20 empty research tries) — the
+            // same 30-minute feed, so the reason is visible, not guessed.
+            <div style={{ marginTop: 12 }}>
+              <FleetAiFeed token={token} fleetId={fleet.id} language={language} reasonLabel={reasonLabel} live={false} />
+            </div>
+          )}
         </>
       ) : (
         <>
           {!!fleet.held_by_master && (
             <div style={{ fontSize: 12.5, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(240,102,63,0.1)' }}>{T.holdBanner}</div>
+          )}
+          {combined && (
+            // Owner ask 2026-11-20: what the user ordered is the base plan the
+            // AI trades by — state it on the box the AI reports into.
+            <div style={{ fontSize: 12.5, marginBottom: 10, padding: '8px 12px', borderRadius: 8,
+              border: '1px dashed var(--border-color,rgba(0,0,0,0.18))' }}>
+              📋 <b>{T.basePlan}</b>: {fleet.n_runs} TRADING · ${Number(fleet.total_budget_usd).toLocaleString()} · {T.basePlanMarkets} {
+                fleet.market_scope && fleet.market_scope.length
+                  ? fleet.market_scope.map(m => marketLabel(m, language)).join(', ')
+                  : tr(language, { ko: '전체', en: 'All', ja: '全て', th: 'ทั้งหมด', vi: 'Tất cả', id: 'Semua' })}
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginTop: 3 }}>{T.basePlanHint}</div>
+            </div>
+          )}
+          {combined && (
+            <FleetAiFeed token={token} fleetId={fleet.id} language={language} reasonLabel={reasonLabel} live />
           )}
           {/* This sleeve's own scoreboard, rebased to 100 at launch. The
               account total above answers "am I up?"; only this answers "is
@@ -515,7 +573,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               ⏳ {T.buildingHint}
             </div>
           )}
-          {monitorOnly && (
+          {mon && (
             <div style={{ display: 'flex', gap: 20, borderBottom: '1px solid var(--border-color,rgba(0,0,0,0.12))', marginBottom: 14 }}>
               {([['monitor', T.tabMonitor], ['activity', T.tabActivity]] as const).map(([k, lbl]) => (
                 <button key={k} onClick={() => setMonTab(k)}
@@ -535,7 +593,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
               })} />
             </div>
           )}
-          {(!monitorOnly || monTab === 'monitor') ? (
+          {(!mon || monTab === 'monitor') ? (
           <>
           {visibleMembers.length > 0 && onSelectRun && (
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 6 }}>
@@ -559,7 +617,7 @@ export function FleetPanel({ token, monitorOnly = false, onSelectRun }: {
             }
             @keyframes sp-live-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
           `}</style>
-          {monitorOnly ? (
+          {mon ? (
             // Merged with the runs grid below (owner: "the same trading showed
             // twice") — the monitor box keeps a one-line chip strip for
             // at-a-glance fleet state; the full per-run cards live ONLY in the
