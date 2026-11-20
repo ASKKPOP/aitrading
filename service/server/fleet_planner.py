@@ -756,6 +756,16 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
         deny = check_fleet_create(cursor, agent_id, int(n_runs))
         if deny:
             raise trading_runs.EntitlementDenied(deny)
+        # Platform-wide futures block (owner 2026-11-20): a fleet that can
+        # only trade futures, or asks for leverage, is refused at creation.
+        from futures_policy import REFUSAL_PREFIX, futures_blocked
+        if futures_blocked(cursor) and (
+                (market_scope and all((m or "").strip().lower() == "futures"
+                                      for m in market_scope))
+                or (leverage and float(leverage) > 1.0)):
+            raise trading_runs.EntitlementDenied(
+                f"{REFUSAL_PREFIX}: a futures-market or leveraged fleet "
+                "cannot be created.")
         if archetype == "swing":
             # Owner (2026-08-12): the US-stock swing strategy is Professional
             # and Enterprise only. Today every fleet already needs
@@ -1368,6 +1378,12 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     fleet_lev = fleet.get("leverage")
     leverage = float(fleet_lev) if fleet_lev else _tier("auto_leverage", risk)
     leverage = max(1.0, min(10.0, leverage))
+    # Platform-wide futures block (owner 2026-11-20): spot only, so 1x. The
+    # aggressive/extreme tiers' auto-leverage would otherwise compose runs
+    # that start_run refuses.
+    from futures_policy import futures_blocked
+    if futures_blocked():
+        leverage = 1.0
     if archetype == "swing":
         # Plan 23 Phase C: gap-sized risk — derive the bet from the overnight
         # loss budget, not the loss from the bet. R = 1% of the fleet budget;
@@ -1903,6 +1919,17 @@ def _do_build(fleet: dict) -> None:
             skipped += 1
             continue
         thesis = kept[0]
+        # Platform-wide futures block: a short (or futures-market) thesis
+        # selected before the switch went on must not become a futures run.
+        from futures_policy import thesis_refusal
+        futures_why = thesis_refusal(thesis.get("market"), thesis.get("direction"))
+        if futures_why:
+            _mark_candidate(fleet["id"], cand["id"], "skipped")
+            emit_fleet_event(fleet["id"], "candidate_skipped",
+                             {"thesis_key": cand["thesis_key"],
+                              "reason": futures_why})
+            skipped += 1
+            continue
 
         settings = compose_run_settings(thesis, float(cand["allocation_usd"] or 0),
                                         fleet)

@@ -176,6 +176,12 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                 status_code=400,
                 detail='Polymarket paper trading does not support leverage.',
             )
+        # Platform-wide futures block (owner 2026-11-20). The ledger refuses
+        # too; this answers before any row is written. Closes always pass.
+        from futures_policy import order_refusal
+        futures_refusal = order_refusal(market, action_lower, lev)
+        if futures_refusal:
+            raise HTTPException(status_code=403, detail=futures_refusal)
 
         try:
             qty = float(data.quantity)

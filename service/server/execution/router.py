@@ -258,6 +258,15 @@ class ExecutionRouter:
         from execution.paper import PaperBroker
         from routes_shared import utc_now_iso_z
 
+        # Platform-wide futures block (owner 2026-11-20), before any broker:
+        # the live branch below would send the real order first.
+        from futures_policy import order_refusal
+        futures_refusal = order_refusal(order.market, order.side)
+        if futures_refusal:
+            order.status = OrderStatus.REJECTED
+            order.error_message = futures_refusal
+            return order
+
         account = _get_active_broker_account(agent_id, order.market)
         execution_mode = ExecutionMode(account["execution_mode"]) if account else ExecutionMode.PAPER
 

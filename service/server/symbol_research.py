@@ -1724,6 +1724,13 @@ def select_targets(cursor, agent_id: int, n: int,
     eligible = [t for t in theses
                 if (t["market"], t["symbol"]) not in busy
                 and (not markets_scope or t["market"] in markets_scope)]
+    # Platform-wide futures block (owner 2026-11-20): a short thesis can only
+    # become a futures book, so it never takes a slot while the block is on.
+    # Filtered HERE (every fleet build and replenish selects through this
+    # function) so the slots fill with longs instead of dying at the ledger.
+    from futures_policy import thesis_refusal
+    eligible = [t for t in eligible
+                if not thesis_refusal(t.get("market"), t.get("direction"), cursor)]
     _mover_rank_us_stock(eligible)
     # Entry quality before the owner's pinned orders are applied: names the
     # desk demonstrably refuses to chase stop LEADING (they stay eligible).

@@ -280,6 +280,16 @@ def _update_position_from_signal(
         part of the key — without it they average into a shared row and per-run
         P&L becomes fiction.
     """
+    # Platform-wide futures block (owner 2026-11-20). This is the ledger
+    # boundary every simulated fill crosses, so a caller that skipped its own
+    # check still cannot open futures exposure here. Closes (sell, cover)
+    # are never refused. Checked first, before the lot consolidation below
+    # mutates anything.
+    from futures_policy import order_refusal
+    futures_refusal = order_refusal(market, (action or "").lower(), leverage, cursor=cursor)
+    if futures_refusal:
+        raise ValueError(futures_refusal)
+
     # If no cursor provided, create a new connection
     own_connection = False
     if cursor is None:

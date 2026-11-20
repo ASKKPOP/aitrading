@@ -42,3 +42,10 @@ for _key in ("SENDGRID_API_KEY", "ALERT_FROM_EMAIL",
 # discussion off; test_three_agent_desk.py re-enables it explicitly and
 # separately asserts the production default (by unsetting the variable).
 os.environ["DESK_THREE_AGENT"] = "0"
+
+# Platform-wide futures block (owner 2026-11-20) is ON in production by
+# default (futures_policy: unset = blocked). Hundreds of pre-existing tests
+# exercise the futures/short/leverage paths the block refuses, so the suite
+# runs with it OFF; tests/test_futures_block.py turns it back on per test
+# and separately asserts the production default by unsetting the variable.
+os.environ["FUTURES_TRADING_BLOCKED"] = "0"

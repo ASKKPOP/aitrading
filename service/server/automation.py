@@ -103,6 +103,12 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     lev = float(leverage or 1.0)
     if lev < 1.0:
         lev = 1.0
+    # Platform-wide futures block (owner 2026-11-20). The ledger refuses too;
+    # checking here returns a clean skip reason instead of a logged traceback.
+    from futures_policy import order_refusal
+    futures_refusal = order_refusal(market, side, lev)
+    if futures_refusal:
+        return None, futures_refusal
 
     rate = fee_rate(market)
     trade_value = price * quantity
@@ -372,6 +378,12 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
         return None, trend_accounts.FENCED
     if enrolled is None and mode == LIVE:
         return None, "account checks unavailable — live order not sent"
+    # Futures block BEFORE any venue: the ledger would refuse this open
+    # after a live broker had already filled it.
+    from futures_policy import order_refusal
+    futures_refusal = order_refusal(market, side)
+    if futures_refusal:
+        return None, futures_refusal
 
     if mode == LIVE:
         order = submit_live(agent_id, symbol, market, side, quantity, price)

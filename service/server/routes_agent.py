@@ -488,6 +488,17 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
 
             now = utc_now_iso_z()
             if data.positions:
+                # Platform-wide futures block (owner 2026-11-20): seeded
+                # positions skip the ledger, so check them here. A seeded
+                # short or futures-market row is refused while it is on.
+                from futures_policy import order_refusal
+                for pos in data.positions:
+                    seeded_side = str(pos.get('side', 'long') or 'long').lower()
+                    futures_refusal = order_refusal(
+                        pos.get('market', 'us-stock'),
+                        'short' if seeded_side == 'short' else 'buy')
+                    if futures_refusal:
+                        raise HTTPException(status_code=403, detail=futures_refusal)
                 for pos in data.positions:
                     cursor.execute(
                         """

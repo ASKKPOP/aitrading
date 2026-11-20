@@ -498,6 +498,13 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
                                     settings.get("leverage") or 1.0)
         if deny:
             raise HTTPException(status_code=403, detail=deny)
+        # Platform-wide futures block (owner 2026-11-20): refuse the draft
+        # up front; start_run refuses it again.
+        from futures_policy import run_refusal
+        futures_deny = run_refusal(settings.get("market"), settings.get("market_type"),
+                                   settings.get("leverage") or 1.0)
+        if futures_deny:
+            raise HTTPException(status_code=403, detail=futures_deny)
 
     @app.post("/api/runs")
     async def create_run(data: RunIn, authorization: str = Header(None)):

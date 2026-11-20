@@ -541,6 +541,13 @@ def submit_live(agent_id: int, symbol: str, market: str, side: str,
             _logger.exception("[live] could not persist refused order for agent %s", agent_id)
         return order
 
+    # Platform-wide futures block (owner 2026-11-20): the last gate before
+    # real money refuses a new short or a futures-market open itself, not
+    # only through its callers. Closes are never refused.
+    from futures_policy import order_refusal
+    futures_refusal = order_refusal(market, side)
+    if futures_refusal:
+        return _refuse((account or {}).get("broker") or "none", futures_refusal)
     if not account:
         return _refuse("none", NOT_CONFIGURED)
     # A link whose blob no longer decrypts (key rotation) is not a gateway:
@@ -611,6 +618,11 @@ def submit_shadow(agent_id: int, symbol: str, market: str, side: str,
 
     # The broker that trades the ORDER'S market. A link for another market
     # is not a gateway for this order — None, like no link at all.
+    # Futures block: no sandbox order for a futures open either (the ledger
+    # already refused the simulated fill this would mirror).
+    from futures_policy import order_refusal
+    if order_refusal(market, side):
+        return None
     account = active_broker_account(agent_id, market)
     if not account or not _has_usable_credentials(account):
         return None

@@ -688,6 +688,18 @@ def start_run(run_id: int, agent_id: int) -> dict:
         # Plan 32: a dedicated trend account is traded by the trend rule only.
         if trend_accounts.is_trend_account(agent_id, cursor):
             raise EntitlementDenied(trend_accounts.NO_RUNS)
+        # Platform-wide futures block (owner 2026-11-20): a futures-market,
+        # perpetual or leveraged run never starts. Read from the row and its
+        # snapshot, so a draft created before the switch is refused too.
+        from futures_policy import run_refusal
+        try:
+            _snap = json.loads(run.get("config_snapshot_json") or "{}")
+        except Exception:  # noqa: BLE001
+            _snap = {}
+        futures_deny = run_refusal(run.get("market"), run.get("market_type"),
+                                   _snap.get("leverage") or 1.0, cursor=cursor)
+        if futures_deny:
+            raise EntitlementDenied(futures_deny)
 
         # Plan 10 D9: server-side tier gate (env-gated until PLAN_LIMITS is
         # confirmed). Same gate family as the automation engine's — the two

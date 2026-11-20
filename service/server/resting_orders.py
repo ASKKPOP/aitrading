@@ -111,6 +111,12 @@ def place_resting_order(agent_id: int, market: str, side: str, symbol: str,
     if market_price is None or market_price <= 0:
         return None, "live price unavailable — try again"
     leverage = _clamp_leverage(leverage)
+    # Platform-wide futures block (owner 2026-11-20): refused at placement,
+    # not only when the fill reaches the ledger.
+    from futures_policy import order_refusal
+    futures_refusal = order_refusal(market, side, leverage)
+    if futures_refusal:
+        return None, futures_refusal
 
     # Refuse orders that would fill on the next tick: the user wanted a limit,
     # not a market order in disguise.
