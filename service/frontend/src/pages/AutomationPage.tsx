@@ -1101,9 +1101,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       </div>
 
       {/* ── Full Auto on top (owner ask 2026-11-20): the order form while no
-             fleet is live, the live monitor + base plan + 30-minute AI
-             analysis once one is. It replaces the two make-buttons as the
-             page's primary action. ── */}
+             fleet is live, the live monitor + base plan once one is (its
+             30-minute AI analysis renders at the page end). It replaces
+             the two make-buttons as the page's primary action. ── */}
       {/* Not plan-gated here: a LIVE fleet's monitor (and its stop button)
           must stay visible even after a plan lapses (fleet 43, 11-12).
           FleetPanel gates only the create form on the plan. */}

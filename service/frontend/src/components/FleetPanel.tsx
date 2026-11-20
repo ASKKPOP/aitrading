@@ -63,7 +63,8 @@ const FLEET_MARKETS = ['crypto', 'us-stock', 'futures', 'forex']
 // (sparkline + event log + pause/stop) via RunsLiveSection.openRunRequest.
 // combined (owner ask 2026-11-20): the Full Auto order form sits at the TOP
 // of /automation — the creation form while no fleet is live, the live monitor
-// (+ base plan + 30-minute AI analysis feed) once one is.
+// (+ base plan) once one is. The 30-minute AI analysis feed renders at the
+// page end via aiFeedHost (owner 2026-11-20).
 export function FleetPanel({ token, monitorOnly = false, combined = false, onSelectRun,
   blockCreate = false, aiFeedHost }: {
   token: string; monitorOnly?: boolean; combined?: boolean; onSelectRun?: (runId: number) => void
@@ -403,9 +404,10 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
   }
 
   // The AI feed, at the page's slot when one is given (its own card there),
-  // else inline exactly as before.
-  const feedAt = (feed: ReactElement) => aiFeedHost === undefined ? feed
-    : aiFeedHost ? createPortal(<div style={{ ...card, marginTop: 18 }}>{feed}</div>, aiFeedHost) : null
+  // else inline exactly as before (inlineStyle = the old inline wrapper).
+  const feedAt = (feed: ReactElement, inlineStyle?: any) => aiFeedHost === undefined
+    ? (inlineStyle ? <div style={inlineStyle}>{feed}</div> : feed)
+    : aiFeedHost ? createPortal(<div style={{ ...card, marginTop: 18, marginBottom: 0, paddingBottom: 4 }}>{feed}</div>, aiFeedHost) : null
 
   const warned = !!(fleet && fleet.warn_latched_at && !fleet.warn_acked_at)
   const pnl = fleet && equity !== null ? equity - fleet.total_budget_usd : null
@@ -473,9 +475,8 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
             // same 30-minute feed, so the reason is visible, not guessed. It
             // goes where the live feed goes (page end) so it has one place.
             feedAt(
-            <div style={{ marginTop: 12 }}>
-              <FleetAiFeed token={token} fleetId={fleet.id} language={language} reasonLabel={reasonLabel} live={false} />
-            </div>)
+              <FleetAiFeed token={token} fleetId={fleet.id} language={language} reasonLabel={reasonLabel} live={false} />,
+              { marginTop: 12 })
           )}
         </>
       ) : (
