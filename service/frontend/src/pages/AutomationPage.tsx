@@ -405,7 +405,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     // ── the two entry points ──
     makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới', id: 'Buat lewat TRADING baru' }),
     manageRules: tr(language, { ko: '자동화 규칙 관리', en: 'Manage automation rules', ja: '自動売買ルールを管理', th: 'จัดการกฎอัตโนมัติ', vi: 'Quản lý quy tắc tự động', id: 'Kelola aturan otomatis' }),
-    stopAllToMake: tr(language, { ko: 'TRADING이 실행 중입니다 — 새로 만들려면 먼저 전체를 정지하세요.', en: 'A TRADING is live — stop all first to make a new one.', ja: 'TRADING が稼働中です — 新しく作成するには先にすべて停止してください。', th: 'มี TRADING กำลังทำงาน — หยุดทั้งหมดก่อนจึงจะสร้างใหม่ได้', vi: 'Đang có TRADING chạy — hãy dừng tất cả trước để tạo mới.', id: 'Ada TRADING yang berjalan — hentikan semua dulu untuk membuat yang baru.' }),
+    stopAllToMake: tr(language, { ko: '자동매매(TRADING 또는 Full Auto)가 실행 중입니다 — 새로 만들려면 먼저 전체를 정지하세요.', en: 'Trading is live (a TRADING or Full Auto) — stop all first to make a new one.', ja: '自動売買（TRADING または Full Auto）が稼働中です — 新しく作成するには先にすべて停止してください。', th: 'มีการเทรดอัตโนมัติกำลังทำงาน (TRADING หรือ Full Auto) — หยุดทั้งหมดก่อนจึงจะสร้างใหม่ได้', vi: 'Đang có giao dịch chạy (TRADING hoặc Full Auto) — hãy dừng tất cả trước để tạo mới.', id: 'Trading sedang berjalan (TRADING atau Full Auto) — hentikan semua dulu untuk membuat yang baru.' }),
     makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay', id: 'Buat lewat Analis AI — analisis sekarang' }),
     close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
     symbol: tr(language, { ko: '종목', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã', id: 'Simbol' }),
@@ -584,6 +584,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // both would also deadlock on itself: start refuses when an auto-executing
   // rule targets the same symbol (trading_runs.list_start_conflicts).
   async function createAndStartRun(body: Record<string, unknown>) {
+    // Stop all first to make a new one (owner 2026-11-20) — also guards a fast
+    // second click before the next live check.
+    if (anythingLive) { setError(T.stopAllToMake); return }
     setBusy(true); setError(''); setNotice('')
     try {
       const res = await fetch(`${API_BASE}/runs`, {
@@ -606,6 +609,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         const detail = (await start.json().catch(() => null))?.detail
         throw new Error((typeof detail === 'string' ? detail : detail?.message) || T.startFailed)
       }
+      setAnythingLive(true)
     } catch (e: any) { setError(e.message) }
     setBusy(false)
   }
@@ -835,6 +839,11 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         </>
       )}
       </>)}
+      {/* The manipulation advisory lands right as the run goes live, which
+          hides the controls it was shown next to — keep it visible. */}
+      {anythingLive && notice && (
+        <div style={{ color: '#d9a334', fontSize: 12.5, marginTop: 6 }}>⚠️ {notice}</div>
+      )}
 
       {/* Legacy list: nothing on this page creates a rule anymore (both modes
           above make TRADING runs), so an empty list means the section has no
@@ -1096,7 +1105,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       {/* Not plan-gated here: a LIVE fleet's monitor (and its stop button)
           must stay visible even after a plan lapses (fleet 43, 11-12).
           FleetPanel gates only the create form on the plan. */}
-      <FleetPanel token={token!} combined
+      <FleetPanel token={token!} combined blockCreate={anythingLive !== false}
         onSelectRun={(id) => setOpenRunReq(p => ({ id, nonce: (p?.nonce || 0) + 1 }))} />
 
       {/* The other two ways to make one, below and secondary — shown only

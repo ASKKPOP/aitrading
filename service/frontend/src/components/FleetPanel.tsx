@@ -63,8 +63,12 @@ const FLEET_MARKETS = ['crypto', 'us-stock', 'futures', 'forex']
 // combined (owner ask 2026-11-20): the Full Auto order form sits at the TOP
 // of /automation — the creation form while no fleet is live, the live monitor
 // (+ base plan + 30-minute AI analysis feed) once one is.
-export function FleetPanel({ token, monitorOnly = false, combined = false, onSelectRun }: {
+export function FleetPanel({ token, monitorOnly = false, combined = false, onSelectRun,
+  blockCreate = false }: {
   token: string; monitorOnly?: boolean; combined?: boolean; onSelectRun?: (runId: number) => void
+  // Owner 2026-11-20: while any TRADING is live, nothing new is made — the
+  // top box shows no create form (a live fleet's monitor still renders).
+  blockCreate?: boolean
 }) {
   const { language } = useLanguage()
   const T = {
@@ -386,6 +390,7 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
   // never an upsell card as the page's first element (review 2026-11-20).
   if (combined && !loaded) return null
   if (combined && !live && (!ent || ent.max_fleet_size <= 0)) return null
+  if (combined && !live && blockCreate) return null
 
   if (!combined && ent && ent.max_fleet_size <= 0) {
     if (monitorOnly) return null
