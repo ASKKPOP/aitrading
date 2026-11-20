@@ -366,22 +366,30 @@ def get_run_user_scoped(run_id: int, agent_id: int) -> Optional[dict]:
         conn.close()
 
 
-def list_runs_user_scoped(agent_id: int, limit: int = 50) -> list[dict]:
+def list_runs_user_scoped(agent_id: int, limit: int = 50,
+                          active_only: bool = False) -> list[dict]:
     """list_runs widened to every agent of the caller's linked user — the
     /automation grid (and its WS subscriptions) must include fleet member
-    runs that a sibling agent's fleet created."""
+    runs that a sibling agent's fleet created. `active_only`: live statuses
+    only (the /automation "anything live?" check must not lose a live run
+    behind the row cap)."""
+    status_sql = ""
+    params: list = [agent_id]
+    if active_only:
+        status_sql = f" AND r.status IN ({','.join('?' * len(ACTIVE_STATUSES))})"
+        params += list(ACTIVE_STATUSES)
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT r.* FROM trading_runs r
+            f"""SELECT r.* FROM trading_runs r
                JOIN agents owner ON owner.id = r.agent_id
                JOIN agents caller ON caller.id = ?
-               WHERE r.agent_id = caller.id
+               WHERE (r.agent_id = caller.id
                   OR (owner.user_id IS NOT NULL
-                      AND owner.user_id = caller.user_id)
+                      AND owner.user_id = caller.user_id)){status_sql}
                ORDER BY r.id DESC LIMIT ?""",
-            (agent_id, max(1, min(limit, 200))))
+            (*params, max(1, min(limit, 200))))
         return [dict(r) for r in cursor.fetchall()]
     finally:
         conn.close()

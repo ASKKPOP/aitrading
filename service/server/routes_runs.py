@@ -560,10 +560,12 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         return {"ok": True, "run": _public(_run_or_404(run_id, agent["id"]))}
 
     @app.get("/api/runs")
-    async def list_runs(limit: int = 50, authorization: str = Header(None)):
+    async def list_runs(limit: int = 50, active: bool = False,
+                        authorization: str = Header(None)):
         agent = _auth(authorization)
         return {"runs": [_public(r) for r in
-                         trading_runs.list_runs_user_scoped(agent["id"], limit)]}
+                         trading_runs.list_runs_user_scoped(agent["id"], limit,
+                                                            active_only=active)]}
 
     @app.get("/api/runs/{run_id}")
     async def get_run(run_id: int, authorization: str = Header(None)):

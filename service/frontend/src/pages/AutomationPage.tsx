@@ -191,10 +191,15 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     if (!token) return
     let dead = false
     const auth = { headers: { Authorization: `Bearer ${token}` } }
+    let inflight = false
     const check = async () => {
+      if (inflight) return
+      inflight = true
       try {
         const [runs, fleets] = await Promise.all([
-          fetch(`${API_BASE}/runs?limit=200`, auth).then(r => (r.ok ? r.json() : Promise.reject(r.status))),
+          // active=1: the server filters to live statuses, so a live run can
+          // never fall outside a row cap behind newer stopped fleet members.
+          fetch(`${API_BASE}/runs?active=1&limit=200`, auth).then(r => (r.ok ? r.json() : Promise.reject(r.status))),
           fetch(`${API_BASE}/fleets`, auth).then(r => (r.ok ? r.json() : Promise.reject(r.status))),
         ])
         const runLive = (runs.runs || []).some((r: any) =>
@@ -202,7 +207,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         const fleetLive = (fleets.fleets || []).some((f: any) =>
           ['researching', 'building', 'active', 'paused', 'stopping'].includes(f.status))
         if (!dead) setAnythingLive(runLive || fleetLive)
-      } catch { /* transient: keep the last answer */ }
+      } catch { /* transient: keep the last answer */ } finally { inflight = false }
     }
     check()
     const t = setInterval(check, 15000)
@@ -301,6 +306,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   }, [token, sumPeriod])
 
   async function startRunFromAnalysis(symbol: string, market: string) {
+    if (anythingLive) { setRunStartErr(T.stopAllToMake); return }
     setRunStartBusy(true); setRunStartErr('')
     try {
       const res = await fetch(`${API_BASE}/runs`, {
@@ -727,6 +733,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   // way to stop a running rule — it must never be more than one click away.
   const rulePanel = (
     <div style={{ marginTop: 16, background: 'var(--bg-card,#fff)', border: '1px solid var(--border-color,rgba(0,0,0,0.1))', borderRadius: 12, padding: 16 }}>
+      {/* Owner 2026-11-20: while anything is live nothing new is made here —
+          only the rule list (its Remove is the kill switch) stays. */}
+      {!anythingLive && (<>
       <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-secondary,#8a8073)', marginBottom: 10 }}>{T.ruleSection}</div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
@@ -825,6 +834,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           </div>
         </>
       )}
+      </>)}
 
       {/* Legacy list: nothing on this page creates a rule anymore (both modes
           above make TRADING runs), so an empty list means the section has no
@@ -1089,9 +1099,11 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       <FleetPanel token={token!} combined
         onSelectRun={(id) => setOpenRunReq(p => ({ id, nonce: (p?.nonce || 0) + 1 }))} />
 
-      {/* The other two ways to make one stay reachable, below and secondary:
-          the create modal holds the automation-rule list whose Remove
-          button is the only kill switch for a running rule. */}
+      {/* The other two ways to make one, below and secondary — shown only
+          while nothing is live (owner 2026-11-20: stop all first to make a
+          new one). The create modal holds the automation-rule list whose
+          Remove button is the only kill switch for a running rule; while
+          live, "Manage rules" opens that list without the create controls. */}
       {anythingLive && (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>{T.stopAllToMake}</span>
@@ -1353,7 +1365,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
                     {T.confidence}: <b>{Math.round((analyze.result.decision?.confidence ?? 0) * 100)}%</b> · {T.provider}: {analyze.result.llm_provider || T.analystNone}
                   </div>
                   <button onClick={() => startRunFromAnalysis(analyze.result.symbol, analyze.result.market)}
-                    disabled={runStartBusy}
+                    disabled={runStartBusy || !!anythingLive} title={anythingLive ? T.stopAllToMake : undefined}
                     style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: 8, border: '1.5px solid var(--accent-primary,#c26a45)', background: 'rgba(194,106,69,0.12)', color: 'var(--accent-primary,#c26a45)', fontWeight: 700, fontSize: 13, cursor: runStartBusy ? 'default' : 'pointer', opacity: runStartBusy ? 0.6 : 1 }}>
                     ▶ {T.startRunNow}
                   </button>
