@@ -487,7 +487,9 @@ def _mysql_ssl_context() -> ssl.SSLContext:
     """One SSLContext shared by every MySQL connection.
 
     Same settings PyMySQL's default (PREFERRED) mode builds — no CA, so no
-    certificate or hostname check — but built once: PyMySQL otherwise runs
+    certificate or hostname check — but cached (lru_cache takes no lock, so
+    threads racing the very first connect may each build one; harmless,
+    every build is identical, and it settles to one): PyMySQL otherwise runs
     create_default_context() -> load_default_certs() inside every connect,
     which measured 9.8 ms CPU of a 14.3 ms connect on prod (2026-11-20).
     Passing a context switches PyMySQL to REQUIRED, so get_db_connection
