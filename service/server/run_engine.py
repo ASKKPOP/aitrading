@@ -1197,6 +1197,38 @@ def _stop_eval_failure_limit() -> int:
 
 # ── run P&L (fee-inclusive average-cost replay; ledger is the truth) ──────
 
+def replay_realized(legs: list) -> float:
+    """Fee-inclusive average-cost realized P&L of a run's ordered
+    operation legs — the leg math compute_run_pnl uses, callable on legs
+    fetched in bulk (GET /api/fleets/{id} replays thousands of stopped
+    members; one connection each pinned the event loop, 2026-11-20)."""
+    qty = 0.0
+    avg = 0.0
+    realized = 0.0
+    for leg in legs:
+        side = leg["side"]
+        p = float(leg["entry_price"] or 0)
+        q = float(leg["quantity"] or 0)
+        fee = float(leg["fee_usd"] or 0)
+        if side == "buy":
+            avg = (avg * qty + p * q) / (qty + q) if qty + q > 0 else p
+            qty += q
+            realized -= fee
+        elif side == "sell":
+            realized += (p - avg) * min(q, qty) - fee
+            qty -= min(q, qty)
+        elif side == "short":
+            held = -qty  # current short size
+            avg = (avg * held + p * q) / (held + q) if held + q > 0 else p
+            qty -= q
+            realized -= fee
+        elif side == "cover":
+            held = -qty
+            realized += (avg - p) * min(q, held) - fee
+            qty += min(q, held)
+    return realized
+
+
 def compute_run_pnl(run: dict) -> dict:
     """Replay the run's attributed signals with the EXACT leg math of
     execute_paper_trade (fees included — the fee-exclusive trade_stats
@@ -1222,30 +1254,7 @@ def compute_run_pnl(run: dict) -> dict:
     finally:
         conn.close()
 
-    qty = 0.0
-    avg = 0.0
-    realized = 0.0
-    for leg in legs:
-        side = leg["side"]
-        p = float(leg["entry_price"] or 0)
-        q = float(leg["quantity"] or 0)
-        fee = float(leg["fee_usd"] or 0)
-        if side == "buy":
-            avg = (avg * qty + p * q) / (qty + q) if qty + q > 0 else p
-            qty += q
-            realized -= fee
-        elif side == "sell":
-            realized += (p - avg) * min(q, qty) - fee
-            qty -= min(q, qty)
-        elif side == "short":
-            held = -qty  # current short size
-            avg = (avg * held + p * q) / (held + q) if held + q > 0 else p
-            qty -= q
-            realized -= fee
-        elif side == "cover":
-            held = -qty
-            realized += (avg - p) * min(q, held) - fee
-            qty += min(q, held)
+    realized = replay_realized(legs)
     unrealized = 0.0
     mark_age_ok = True
     if pos and float(pos["quantity"] or 0) != 0:

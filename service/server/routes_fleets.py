@@ -10,10 +10,12 @@ flight when the worker discovers them).
 from __future__ import annotations
 
 import json as _json
+import logging
 from typing import Any, Optional
 
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, field_validator
+from starlette.concurrency import run_in_threadpool
 
 import fleet_planner
 import trading_runs
@@ -21,6 +23,8 @@ from database import get_db_connection
 from routes_shared import RouteContext
 from services import _get_agent_by_token
 from utils import _extract_token
+
+logger = logging.getLogger(__name__)
 
 VALID_RISK = ("stable", "balanced", "aggressive", "extreme")
 
@@ -363,9 +367,44 @@ def _fleet_outlook_slots(fleet_id: int, lang: str, dialog_limit: int) -> list[di
     return slots
 
 
+def _stopped_member_legs(fleet_id: int) -> dict[int, list[dict]]:
+    """Every member's ordered operation legs in ONE query, keyed by run_id."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT s.run_id, s.side, s.entry_price, s.quantity, s.fee_usd
+               FROM signals s
+               WHERE s.message_type = 'operation' AND s.run_id IN
+                     (SELECT id FROM trading_runs WHERE fleet_id = ?)
+               ORDER BY s.run_id, s.id""", (fleet_id,))
+        legs: dict[int, list[dict]] = {}
+        for r in cursor.fetchall():
+            legs.setdefault(r["run_id"], []).append(dict(r))
+        return legs
+    finally:
+        conn.close()
+
+
+def _cleanly_stopped(m: dict) -> bool:
+    return (m["status"] == trading_runs.STATUS_STOPPED
+            and (m.get("status_reason") or "") != "positions_held")
+
+
 def _members_public(fleet_id: int) -> list[dict]:
+    import run_engine
     members = []
-    for m in fleet_planner.list_members(fleet_id):
+    rows = fleet_planner.list_members(fleet_id)
+    bulk_legs: Optional[dict[int, list[dict]]] = None
+    if any(_cleanly_stopped(m) for m in rows):
+        try:
+            bulk_legs = _stopped_member_legs(fleet_id)
+        except Exception:  # noqa: BLE001 — card falls back to the stamp
+            logger.warning("fleet %s: bulk leg read failed; stopped member "
+                           "cards show the stamped realized_pnl_usd",
+                           fleet_id, exc_info=True)
+            bulk_legs = None
+    for m in rows:
         cfg: dict[str, Any] = {}
         try:
             cfg = _json.loads(m.get("config_snapshot_json") or "{}")
@@ -377,13 +416,27 @@ def _members_public(fleet_id: int) -> list[dict]:
         # a +$9-unrealized fleet as "100% lost"). Ship the marked total too.
         unrealized = None
         total = m.get("realized_pnl_usd")
-        try:
-            import run_engine
-            pnl = run_engine.compute_run_pnl(m)
-            unrealized = pnl.get("unrealized")
-            total = pnl.get("total")
-        except Exception:  # noqa: BLE001
-            pass
+        # A cleanly stopped member holds no run-owned position, so its P&L is
+        # the ledger replay alone. Replay it from legs fetched once for the
+        # whole fleet: compute_run_pnl per member (a DB connection each) on
+        # fleet 44's 3,697 members pinned the event loop ~169 s per request
+        # and 504'd the whole API (prod 2026-11-20). The stamped
+        # realized_pnl_usd is NOT used — direct running→stopped paths
+        # (request_stop with no position) never re-stamp it.
+        if _cleanly_stopped(m):
+            if bulk_legs is not None:
+                try:
+                    total = run_engine.replay_realized(bulk_legs.get(m["id"], []))
+                    unrealized = 0.0
+                except Exception:  # noqa: BLE001
+                    pass
+        else:
+            try:
+                pnl = run_engine.compute_run_pnl(m)
+                unrealized = pnl.get("unrealized")
+                total = pnl.get("total")
+            except Exception:  # noqa: BLE001
+                pass
         members.append({
             "run_id": m["id"], "symbol": m["symbol"], "market": m["market"],
             "market_type": m["market_type"], "status": m["status"],
@@ -459,6 +512,11 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
     @app.get("/api/fleets")
     async def list_fleets(authorization: str = Header(None)):
         agent = _auth(authorization)
+        # marked_equity reads every member of every live fleet: sync DB work,
+        # kept off the event loop (the get_fleet stall, 2026-11-20).
+        return await run_in_threadpool(_list_fleets_sync, agent)
+
+    def _list_fleets_sync(agent: dict) -> dict:
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
@@ -493,15 +551,21 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
     async def get_fleet(fleet_id: int, authorization: str = Header(None)):
         agent = _auth(authorization)
         fleet = _fleet_or_404(fleet_id, agent)
-        eq = None
-        try:
-            eq = fleet_planner.marked_equity(fleet)
-        except Exception:  # noqa: BLE001
+
+        def _build() -> dict:
+            # Two full member reads + live replays: sync DB work, so it runs
+            # off the event loop rather than stalling every other route.
             eq = None
-        return {"fleet": _public_fleet(fleet),
-                "members": _members_public(fleet_id),
-                "equity": eq,
-                "index": fleet_index(fleet, eq)}
+            try:
+                eq = fleet_planner.marked_equity(fleet)
+            except Exception:  # noqa: BLE001
+                eq = None
+            return {"fleet": _public_fleet(fleet),
+                    "members": _members_public(fleet_id),
+                    "equity": eq,
+                    "index": fleet_index(fleet, eq)}
+
+        return await run_in_threadpool(_build)
 
     @app.put("/api/fleets/{fleet_id}/rails")
     async def edit_rails(fleet_id: int, data: RailsIn,

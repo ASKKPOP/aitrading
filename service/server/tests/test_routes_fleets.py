@@ -306,6 +306,104 @@ class MemberPnlFieldsTests(FleetRouteTests):
                 self.assertAlmostEqual(float(m["total_pnl_usd"]),
                                        float(m["realized_pnl_usd"]), places=6)
 
+    def _stop_member(self, run_id, reason, stamp):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE trading_runs SET status = 'stopped', "
+                    "status_reason = ?, realized_pnl_usd = ? WHERE id = ?",
+                    (reason, stamp, run_id))
+        conn.commit()
+        conn.close()
+
+    def _leg(self, run_id, seq, side, price, qty, fee, kind="operation"):
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO signals (signal_id, agent_id, run_id, message_type, "
+            "market, symbol, side, entry_price, quantity, fee_usd, timestamp, "
+            "created_at) VALUES (?, ?, ?, ?, 'crypto', 'AAA', ?, ?, "
+            "?, ?, ?, '2026-11-20T00:00:00Z')",
+            (90000 + seq, self.agent_id, run_id, kind, side, price, qty, fee,
+             seq))
+        conn.commit()
+        conn.close()
+
+    def _get_with_replay_spy(self, fleet_id):
+        import run_engine
+        replayed = []
+        real = run_engine.compute_run_pnl
+
+        def spy(run):
+            replayed.append(run["id"])
+            return real(run)
+
+        with patch.object(run_engine, "compute_run_pnl", side_effect=spy):
+            r = self.client.get(f"/api/fleets/{fleet_id}", headers=self.auth)
+        self.assertEqual(r.status_code, 200, r.text)
+        return replayed, {m["run_id"]: m for m in r.json()["members"]}
+
+    def test_cleanly_stopped_members_replay_from_bulk_legs(self):
+        """Prod 2026-11-20: GET /api/fleets/44 ran compute_run_pnl (one new
+        MySQL connection each, ~46 ms) for all 3,697 members on the event
+        loop — ~169 s per request; every API route 504'd while the page
+        polled it. Stopped members now replay from one bulk leg read, and
+        still from the LEDGER, not the stamp: request_stop's direct
+        running->stopped path never re-stamps realized_pnl_usd."""
+        fleet_id = self._seed_and_build()
+        live, done = fp.list_members(fleet_id)[:2]
+        self._stop_member(done["id"], "idle_retired", -1.25)  # stale stamp
+        self._leg(done["id"], 1, "buy", 100.0, 1.0, 0.1)
+        self._leg(done["id"], 2, "sell", 103.0, 1.0, 0.1)
+        # a non-ledger row on the run must not count as a leg
+        self._leg(done["id"], 3, "sell", 50.0, 1.0, 0.1, kind="strategy")
+        replayed, by_id = self._get_with_replay_spy(fleet_id)
+        self.assertIn(live["id"], replayed)
+        self.assertNotIn(done["id"], replayed)
+        self.assertAlmostEqual(float(by_id[done["id"]]["total_pnl_usd"]), 2.8)
+        self.assertEqual(by_id[done["id"]]["unrealized_pnl_usd"], 0.0)
+
+    def test_positions_held_member_still_replays(self):
+        fleet_id = self._seed_and_build()
+        held = fp.list_members(fleet_id)[1]
+        self._stop_member(held["id"], "positions_held", 0.0)
+        replayed, _ = self._get_with_replay_spy(fleet_id)
+        self.assertIn(held["id"], replayed)
+
+    def test_fleet_routes_run_off_the_event_loop(self):
+        """Sync DB work inside these async handlers blocks every other
+        route; it must run in a worker thread (no running loop there)."""
+        import asyncio
+        import run_engine
+        fleet_id = self._seed_and_build()
+        on_loop = []
+
+        def has_loop():
+            try:
+                asyncio.get_running_loop()
+                return True
+            except RuntimeError:
+                return False
+
+        real_pnl, real_eq = run_engine.compute_run_pnl, fp.marked_equity
+
+        def pnl_spy(run):
+            on_loop.append(("get_fleet", has_loop()))
+            return real_pnl(run)
+
+        def eq_spy(fleet):
+            on_loop.append(("marked_equity", has_loop()))
+            return real_eq(fleet)
+
+        with patch.object(run_engine, "compute_run_pnl", side_effect=pnl_spy), \
+             patch.object(fp, "marked_equity", side_effect=eq_spy):
+            self.assertEqual(self.client.get(
+                f"/api/fleets/{fleet_id}", headers=self.auth).status_code, 200)
+            self.assertEqual(self.client.get(
+                "/api/fleets", headers=self.auth).status_code, 200)
+        self.assertTrue(on_loop)
+        self.assertGreaterEqual(
+            sum(1 for k, _ in on_loop if k == "marked_equity"), 2)
+        self.assertEqual([c for c in on_loop if c[1]], [])
 
 class FleetLeverageTests(FleetRouteTests):
     """2026-07-23 — fleet-level leverage: None ⇒ auto by tier, a number
