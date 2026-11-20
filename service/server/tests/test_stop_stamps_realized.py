@@ -133,6 +133,34 @@ class StopStampsRealized(unittest.TestCase):
         # the caller (routes_runs' Stop) returns this dict to the UI
         self.assertAlmostEqual(out["realized_pnl_usd"], 9.79, places=9)
 
+    def test_only_this_runs_operation_legs_count(self):
+        """A discussion/strategy signal on the run, and another run's legs,
+        are not part of this run's realized P&L."""
+        self._run(stamp=-0.10)
+        self._round_trip()
+        conn = database.get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO signals (id, signal_id, agent_id, message_type, "
+                "market, symbol, side, entry_price, quantity, fee_usd, run_id, "
+                "timestamp, created_at) VALUES (3, 'sig-3', ?, 'strategy', "
+                "'crypto', 'BTC', 'buy', 100.0, 1.0, 3.0, ?, "
+                "'2026-11-20T00:00:00Z', '2026-11-20T00:00:00Z')",
+                (AGENT_ID, RUN_ID))
+            cur.execute(
+                "INSERT INTO signals (id, signal_id, agent_id, message_type, "
+                "market, symbol, side, entry_price, quantity, fee_usd, run_id, "
+                "client_order_id, timestamp, created_at) VALUES (4, 'sig-4', ?, "
+                "'operation', 'crypto', 'BTC', 'buy', 100.0, 1.0, 7.0, ?, "
+                "'other:1', '2026-11-20T00:00:00Z', '2026-11-20T00:00:00Z')",
+                (AGENT_ID, RUN_ID + 1))
+            conn.commit()
+        finally:
+            conn.close()
+        trading_runs.request_stop(RUN_ID, AGENT_ID, True)
+        self.assertAlmostEqual(self._stamp()[1], 9.79, places=9)
+
     def test_paused_member_is_stamped_too(self):
         self._run(status="paused")
         self._round_trip()
