@@ -180,3 +180,18 @@ on P&L is not any trade: **the platform cannot open a position at all.**
 - Price counterfactuals use Hyperliquid 5 m candles, not the platform mark. Holding-horizon counterfactuals are fixed 1 h / 4 h.
 - The futures block has not refused a single live order yet (none attempted).
 - Decision model stamp (`local / gpt-oss:120b / rule`) is the known-unreliable stamp; provider not resolved from `llm_usage` per decision.
+
+### 10. Deploy record
+
+`scripts/deploy.sh sweep-20261120` from the scratch clone at ef5d57e, rc 0 → **`sooppiy-backend:20261120-sweep-20261120`**.
+Rollback: `SOOPPIY_IMAGE=sooppiy-backend:20261120-stop-stamp`. Reason (mode ②): new finding (E4 / R44, no fleet can build), R32 frozen,
+new handoff trap. Docs-only; no code change.
+
+| prod check | pass 1 (15:29:39Z) | pass 2 (15:30:26Z) |
+|---|---|---|
+| `.env` + worker + backend image | 20261120-sweep-20261120 ×3 | same |
+| today's note in `/app/docs/reports/`; HANDOFF trap present | present / 1 hit | present / 1 hit |
+| tracebacks worker / backend (since restart) | 0 / 0 | 0 / 0 |
+| `futures_blocked()` live | True | True |
+| worker `/tmp` | lock only | lock only |
+| public pages + `/api/subscriptions/plans` | 200 ×5 (deploy.sh) | — |
