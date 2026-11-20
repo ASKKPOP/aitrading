@@ -744,6 +744,28 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             _record_run(config_id, agent_id, result, None)
             return result
 
+    # Platform-wide block (owner 2026-11-20): an auto-executing rule on a
+    # market nothing may open on (forex, futures) is skipped before paying for
+    # the analysis, unless the book still holds that symbol: then it runs, so
+    # the rule can still close what it holds.
+    if config.get("auto_execute"):
+        from futures_policy import _norm, blocked_markets
+        if _norm(market) in blocked_markets():
+            from routes_shared import get_position_snapshot
+            conn = get_db_connection()
+            try:
+                held = get_position_snapshot(conn.cursor(), agent_id, market,
+                                             symbol, None, None)
+            finally:
+                conn.close()
+            if not held or abs(float(held["quantity"] or 0)) <= 1e-12:
+                result["skip_reason"] = (
+                    f"{market} trading is disabled on this platform (spot and "
+                    "US stock only) — rule not analysed")
+                result.update({"action": None, "confidence": None, "signal_id": None})
+                _record_run(config_id, agent_id, result, None)
+                return result
+
     # Agent Mode (Plan 06 C1): the planner picks this cycle's parameters
     # (symbol/size/cadence/confidence/risk level) inside deterministic bounds.
     # The user's budget cap is enforced later, pre-gate. Fail-soft: a planner

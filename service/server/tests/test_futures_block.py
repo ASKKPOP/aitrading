@@ -730,3 +730,43 @@ class ForexBlockTests(_DbBase):
         self.assertEqual(futures_policy.thesis_refusal("crypto", "short"), "futures_blocked")
         self.assertIsNone(futures_policy.thesis_refusal("us-stock", "long"))
         self.assertIsNone(futures_policy.thesis_refusal("crypto", "long"))
+
+    def test_alias_spellings_are_blocked_too(self):
+        for alias in ("fx", "FX", "currency", "currencies", " Forex "):
+            self.assertIsNotNone(futures_policy.order_refusal(alias, "buy"), alias)
+            self.assertIsNotNone(futures_policy.run_refusal(alias, "spot"), alias)
+            self.assertEqual(futures_policy.thesis_refusal(alias, "long"),
+                             "forex_blocked", alias)
+        self.assertIsNone(futures_policy.order_refusal("fx", "sell"))
+
+    def test_auto_rule_on_forex_skips_the_paid_analysis_unless_it_holds(self):
+        import automation
+        cfg = {"id": 1, "agent_id": self.agent_id, "symbol": "EURUSD",
+               "market": "forex", "auto_execute": 1}
+        with patch("analysis_agents.run_analysis") as analysis, \
+             patch.object(automation, "_record_run"):
+            res = automation.run_rule(dict(cfg))
+        analysis.assert_not_called()
+        self.assertIn("forex trading is disabled", res["skip_reason"])
+        # Holding the symbol: the rule must still run so it can close.
+        self._seed_position("EURUSD", "forex", 100.0, entry=1.08)
+        with patch("analysis_agents.run_analysis",
+                   side_effect=RuntimeError("analysis reached")) as analysis, \
+             patch.object(automation, "_record_run"):
+            try:
+                automation.run_rule(dict(cfg))
+            except RuntimeError:
+                pass
+        analysis.assert_called()
+
+
+class ForexSeedTests(_DbBase):
+    def test_self_register_cannot_seed_forex_under_an_alias(self):
+        from routes import create_app
+        client = TestClient(create_app())
+        for i, market in enumerate(("forex", "fx", "currency")):
+            resp = client.post("/api/claw/agents/selfRegister", json={
+                "name": f"fx-seed-{i}", "password": "pw123", "initial_balance": 1000,
+                "positions": [{"symbol": "EURUSD", "market": market, "side": "long",
+                               "quantity": 1000, "entry_price": 1.08}]})
+            self.assertEqual(resp.status_code, 403, (market, resp.text))

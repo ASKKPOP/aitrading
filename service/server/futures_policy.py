@@ -54,8 +54,19 @@ FOREX_PREFIX = "forex trading is disabled on this platform (spot and US stock on
 BLOCKED_MARKETS = ("futures", "forex")
 
 
+def _norm(market: Optional[str]) -> str:
+    """Canonical market name, aliases included ('fx', 'currency' -> 'forex'),
+    so an alias spelling cannot slip past the block."""
+    m = (market or "").strip().lower()
+    try:
+        from markets import MARKET_ALIASES
+        return MARKET_ALIASES.get(m, m)
+    except Exception:  # noqa: BLE001
+        return m
+
+
 def _prefix(market: Optional[str]) -> str:
-    return FOREX_PREFIX if (market or "").strip().lower() == "forex" else REFUSAL_PREFIX
+    return FOREX_PREFIX if _norm(market) == "forex" else REFUSAL_PREFIX
 
 
 def _parse(raw: Optional[str]) -> Optional[bool]:
@@ -103,9 +114,9 @@ def _exposure_kind(action: str, market: Optional[str], leverage: float,
         return None
     if (action or "").strip().lower() == "short":
         return "opening a short"
-    if (market or "").strip().lower() == "futures":
+    if _norm(market) == "futures":
         return "a futures-market order"
-    if (market or "").strip().lower() == "forex":
+    if _norm(market) == "forex":
         return "a forex order"
     if (market_type or "spot").strip().lower() == "futures":
         return "a futures (perpetual) book"
@@ -132,9 +143,9 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
                 leverage: float = 1.0, cursor=None) -> Optional[str]:
     """Reason to refuse starting a run with this shape, or None."""
     kind = None
-    if (market or "").strip().lower() == "futures":
+    if _norm(market) == "futures":
         kind = "a futures-market run"
-    elif (market or "").strip().lower() == "forex":
+    elif _norm(market) == "forex":
         kind = "a forex run"
     elif (market_type or "spot").strip().lower() == "futures":
         kind = "a futures (perpetual) run"
@@ -153,7 +164,7 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
 def thesis_refusal(market: Optional[str], direction: Optional[str],
                    cursor=None) -> Optional[str]:
     """Reason a research thesis cannot become a run, or None."""
-    m = (market or "").strip().lower()
+    m = _norm(market)
     if (direction or "").strip().lower() != "short" and m not in BLOCKED_MARKETS:
         return None
     if not futures_blocked(cursor):
