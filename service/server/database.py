@@ -7,9 +7,11 @@ Database Module
 from __future__ import annotations
 
 import decimal
+import functools
 import os
 import re
 import sqlite3
+import ssl
 from typing import Any, Iterable, Optional, Sequence
 from urllib.parse import urlparse
 
@@ -475,6 +477,24 @@ class DatabaseConnection:
         return getattr(self._connection, name)
 
 
+@functools.lru_cache(maxsize=1)
+def _mysql_ssl_context() -> ssl.SSLContext:
+    """One SSLContext shared by every MySQL connection.
+
+    Same settings PyMySQL's default (PREFERRED) mode builds — no CA, so no
+    certificate or hostname check — but built once: PyMySQL otherwise runs
+    create_default_context() -> load_default_certs() inside every connect,
+    which measured 9.8 ms CPU of a 14.3 ms connect on prod (2026-11-20).
+    Passing a context switches PyMySQL to REQUIRED: a server without TLS now
+    fails the connect instead of silently falling back to plaintext.
+    """
+    ctx = ssl.create_default_context()
+    ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
 def get_db_connection():
     """Get database connection. Supports both SQLite and MySQL."""
     if using_mysql():
@@ -506,6 +526,7 @@ def get_db_connection():
             # fleet member's cycle after its first trade-free save (prod,
             # 2026-07-21: 11 hours of claimed-but-eventless cycles).
             client_flag=pymysql.constants.CLIENT.FOUND_ROWS,
+            ssl=_mysql_ssl_context(),
         )
         return DatabaseConnection(conn, "mysql")
 
