@@ -396,7 +396,10 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     # Futures block BEFORE any venue: the ledger would refuse this open
     # after a live broker had already filled it.
     from futures_policy import order_refusal
-    futures_refusal = order_refusal(market, side, symbol=symbol, live=True)
+    # live=True only for a LIVE rule: a simulator or shadow rule fills on the
+    # ledger (a crypto short is fine there); submit_shadow skips the sandbox
+    # mirror on its own.
+    futures_refusal = order_refusal(market, side, symbol=symbol, live=(mode == LIVE))
     if futures_refusal:
         return None, futures_refusal
     # A live sell larger than the held long (or a cover larger than the held
@@ -764,8 +767,8 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
                 conn.close()
             if not held or abs(float(held["quantity"] or 0)) <= 1e-12:
                 result["skip_reason"] = (
-                    f"{market} trading is disabled on this platform (spot and "
-                    "US stock only) — rule not analysed")
+                    f"{market} trading is disabled on this platform (crypto and "
+                    "US stock at 1x only) — rule not analysed")
                 result.update({"action": None, "confidence": None, "signal_id": None})
                 _record_run(config_id, agent_id, result, None)
                 return result

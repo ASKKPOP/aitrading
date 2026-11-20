@@ -1109,6 +1109,22 @@ class TwoWayTests(_DbBase):
         self.assertIsNone(futures_policy.order_refusal("us-stock", "short", live=True))
         self.assertIsNone(futures_policy.order_refusal("crypto", "short"))  # sim ok
 
+    def test_simulator_and_shadow_rule_crypto_short_fills_on_the_ledger(self):
+        """Re-review F1: the venue rule must not refuse a simulator or shadow
+        rule's crypto short; shadow sends nothing to a venue."""
+        import automation
+        for i, acct in enumerate(("simulator", "shadow")):
+            sym = f"SOL{i}USDT"
+            with patch("execution.gateway.submit_live") as live, \
+                 patch("execution.gateway.active_broker_account") as broker:
+                sid, why = automation._execute_for_account_type(
+                    {"account_type": acct}, self.agent_id, sym, "crypto",
+                    "short", 1.0, 100.0, None, None, {})
+            live.assert_not_called()
+            broker.assert_not_called()
+            self.assertIsNone(why, acct)
+            self.assertEqual(float(self._positions(sym)[0]["quantity"]), -1.0)
+
     def test_shorts_are_an_allowlist(self):
         """Reviewer F4: an unaliased label cannot open a short."""
         for market in ("option", "cme", "", None, "commodities"):
