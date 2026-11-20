@@ -136,6 +136,43 @@ class SwitchTests(_DbBase):
         with patch.dict(os.environ, _OFF):
             self.assertFalse(futures_policy.futures_blocked(broken))
 
+    def test_fails_closed_with_no_env_and_an_unreadable_setting(self):
+        """Prod worst case: env var unset OR empty, settings table unreadable.
+        Opens (short, futures market, leverage) are still refused, on the
+        policy AND on the real ledger; a cover still passes."""
+        import sqlite3
+        from services import _update_position_from_signal
+        broken = MagicMock()
+        broken.execute.side_effect = RuntimeError("settings unreadable")
+        for env_value in (None, "", "   "):
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("FUTURES_TRADING_BLOCKED", None)
+                if env_value is not None:
+                    os.environ["FUTURES_TRADING_BLOCKED"] = env_value
+                self.assertTrue(futures_policy.futures_blocked(broken))
+                for args in (("crypto", "short", 1.0), ("futures", "buy", 1.0),
+                             ("crypto", "buy", 2.0)):
+                    self.assertIsNotNone(
+                        futures_policy.order_refusal(*args, cursor=broken), args)
+                self.assertIsNone(futures_policy.order_refusal(
+                    "crypto", "cover", cursor=broken))
+                # The ledger itself, on a DB with no platform_settings table.
+                mem = sqlite3.connect(":memory:")
+                mem.row_factory = sqlite3.Row
+                cur = mem.cursor()
+                cur.execute("""CREATE TABLE positions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id INTEGER,
+                    leader_id INTEGER, symbol TEXT, market TEXT, token_id TEXT,
+                    outcome TEXT, side TEXT, quantity REAL, entry_price REAL,
+                    current_price REAL, opened_at TEXT, first_opened_at TEXT,
+                    run_id INTEGER, leverage REAL)""")
+                with self.assertRaises(ValueError):
+                    _update_position_from_signal(1, "SOL", "crypto", "short", 1.0,
+                                                 100.0, _NOW, cursor=cur)
+                cur.execute("SELECT COUNT(*) FROM positions")
+                self.assertEqual(cur.fetchone()[0], 0)
+                mem.close()
+
     def test_closes_are_never_refused(self):
         for market in ("crypto", "futures", "us-stock"):
             for action in ("sell", "cover"):
