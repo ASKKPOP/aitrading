@@ -967,6 +967,13 @@ def _run_book(book: dict[str, Any], summary: dict[str, Any]) -> None:
             continue
         if book["long_only"] and sig.get("side") == "short":
             continue
+        if sig.get("side") == "short":
+            # Platform-wide futures block (owner 2026-11-20, trend module
+            # explicitly in scope): the ledger refuses the short, so skip it
+            # before paying for an LLM veto every tick.
+            from futures_policy import order_refusal
+            if order_refusal("crypto", "short"):
+                continue
         if sig.get("blocked"):
             _emit(state, actions, "signal_blocked", symbol=symbol,
                   reason=sig["blocked"], close=sig["close"],

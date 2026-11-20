@@ -399,6 +399,31 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     futures_refusal = order_refusal(market, side)
     if futures_refusal:
         return None, futures_refusal
+    # A live sell larger than the held long (or a cover larger than the held
+    # short) is a NEW short or long at a margin broker, even though the verb
+    # reads as a close. Rules trade the unowned book, so check it before the
+    # venue. A ledger close of what IS held is untouched.
+    if mode == LIVE and side in ("sell", "cover"):
+        from futures_policy import futures_blocked
+        if futures_blocked():
+            from routes_shared import get_position_snapshot
+            conn = get_db_connection()
+            try:
+                pos = get_position_snapshot(conn.cursor(), agent_id, market,
+                                            symbol, None, None)
+            finally:
+                conn.close()
+            held = float(pos["quantity"]) if pos else 0.0
+            if side == "sell" and quantity > max(held, 0.0) + 1e-9:
+                return None, ("futures trading is disabled on this platform "
+                              "(spot and US stock only): a live sell larger than "
+                              "the held long would open a short at the broker — "
+                              "live order not sent")
+            if side == "cover" and quantity > max(-held, 0.0) + 1e-9:
+                return None, ("futures trading is disabled on this platform "
+                              "(spot and US stock only): a live cover larger than "
+                              "the held short would open a position at the broker "
+                              "— live order not sent")
 
     if mode == LIVE:
         order = submit_live(agent_id, symbol, market, side, quantity, price)

@@ -593,6 +593,17 @@ def resolve_start_conflicts(run_id: int, agent_id: int) -> dict:
         # Plan 32: "resolving" would close the trend rule's own position.
         if trend_accounts.is_trend_account(agent_id, cursor):
             raise EntitlementDenied(trend_accounts.NO_RUNS)
+        # Futures block: a run start_run will refuse must not first close the
+        # user's position and disable their rules.
+        from futures_policy import run_refusal
+        try:
+            _snap = json.loads(run.get("config_snapshot_json") or "{}")
+        except Exception:  # noqa: BLE001
+            _snap = {}
+        futures_deny = run_refusal(run.get("market"), run.get("market_type"),
+                                   _snap.get("leverage") or 1.0, cursor=cursor)
+        if futures_deny:
+            raise EntitlementDenied(futures_deny)
         market, symbol = run["market"], run["symbol"]
         conflicts = list_start_conflicts(cursor, agent_id, market, symbol)
     finally:

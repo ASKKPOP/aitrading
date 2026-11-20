@@ -308,6 +308,36 @@ class GatewayTests(_DbBase):
         self.assertIsNone(sid)
         self.assertIn("futures trading is disabled", why)
 
+    def test_live_oversell_never_reaches_the_venue(self):
+        """A live 'sell' with no long (or more than the long) would open a
+        real short at a margin broker; same for an oversized cover."""
+        import automation
+        self._seed_position("AAPL", "us-stock", 3.0)
+        self._seed_position("TSLA", "us-stock", -2.0)
+        for symbol, side, qty in (("MSFT", "sell", 1.0), ("AAPL", "sell", 10.0),
+                                  ("TSLA", "cover", 5.0)):
+            with patch("execution.gateway.submit_live") as live:
+                sid, why = automation._execute_for_account_type(
+                    {"account_type": "live"}, self.agent_id, symbol, "us-stock",
+                    side, qty, 100.0, None, None, {})
+            live.assert_not_called()
+            self.assertIsNone(sid)
+            self.assertIn("live order not sent", why)
+
+    def test_live_sell_of_the_held_long_still_reaches_the_venue(self):
+        import automation
+        from execution.base import OrderStatus
+        self._seed_position("AAPL", "us-stock", 3.0)
+        fake = MagicMock(status=OrderStatus.FILLED, filled_qty=3.0,
+                         broker="alpaca", broker_order_id="x")
+        with patch("execution.gateway.submit_live", return_value=fake) as live:
+            sid, why = automation._execute_for_account_type(
+                {"account_type": "live"}, self.agent_id, "AAPL", "us-stock",
+                "sell", 3.0, 100.0, None, None, {})
+        live.assert_called_once()
+        self.assertIsNone(why)
+        self.assertEqual(self._positions("AAPL"), [])
+
     def test_submit_live_refuses_before_any_broker(self):
         from execution import gateway
         from execution.base import OrderStatus
@@ -380,6 +410,15 @@ class RunStartTests(_DbBase):
                 trading_runs.start_run(run_id, self.agent_id)
             self.assertIn("futures trading is disabled", str(ctx.exception))
             self.assertEqual(self._status(run_id), "draft")
+
+    def test_resolve_conflicts_does_not_close_anything_for_a_refused_run(self):
+        """'Start and resolve' on a futures draft must refuse BEFORE it sells
+        the user's position or disables their rules."""
+        run_id = self._draft(market_type="futures")
+        self._seed_position("BTC", "crypto", 1.0)
+        with self.assertRaises(trading_runs.EntitlementDenied):
+            trading_runs.resolve_start_conflicts(run_id, self.agent_id)
+        self.assertEqual(float(self._positions("BTC")[0]["quantity"]), 1.0)
 
     def test_spot_crypto_and_us_stock_runs_start(self):
         crypto = self._draft()
