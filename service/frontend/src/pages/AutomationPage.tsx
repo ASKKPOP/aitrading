@@ -183,6 +183,32 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   const [runStartErr, setRunStartErr] = useState('')
   const [runsReload, setRunsReload] = useState(0)
 
+  // Owner 2026-11-20: once a TRADING or a Full Auto fleet is live, the two
+  // make-buttons are not needed — to make a new one, stop everything first.
+  // null = not known yet (the buttons stay hidden until the first read).
+  const [anythingLive, setAnythingLive] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (!token) return
+    let dead = false
+    const auth = { headers: { Authorization: `Bearer ${token}` } }
+    const check = async () => {
+      try {
+        const [runs, fleets] = await Promise.all([
+          fetch(`${API_BASE}/runs?limit=200`, auth).then(r => (r.ok ? r.json() : Promise.reject(r.status))),
+          fetch(`${API_BASE}/fleets`, auth).then(r => (r.ok ? r.json() : Promise.reject(r.status))),
+        ])
+        const runLive = (runs.runs || []).some((r: any) =>
+          ['armed', 'running', 'paused', 'stopping'].includes(r.status))
+        const fleetLive = (fleets.fleets || []).some((f: any) =>
+          ['researching', 'building', 'active', 'paused', 'stopping'].includes(f.status))
+        if (!dead) setAnythingLive(runLive || fleetLive)
+      } catch { /* transient: keep the last answer */ }
+    }
+    check()
+    const t = setInterval(check, 15000)
+    return () => { dead = true; clearInterval(t) }
+  }, [token, runsReload])
+
   // Fleet monitor → runs section: clicking a member card opens that TRADING's
   // full detail drawer (the drawer lives in RunsLiveSection).
   const [openRunReq, setOpenRunReq] = useState<{ id: number; nonce: number } | null>(null)
@@ -372,6 +398,8 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     gNoData: tr(language, { ko: '그래프를 그릴 체결이 부족합니다', en: 'not enough fills to draw a graph', ja: 'グラフを描くには約定が不足しています', th: 'รายการไม่พอสำหรับวาดกราฟ', vi: 'chưa đủ lệnh khớp để vẽ biểu đồ', id: 'eksekusi belum cukup untuk menggambar grafik' }),
     // ── the two entry points ──
     makeByTrading: tr(language, { ko: '새 TRADING으로 만들기', en: 'Make by New Trading', ja: '新しい TRADING で作成', th: 'สร้างด้วย TRADING ใหม่', vi: 'Tạo bằng TRADING mới', id: 'Buat lewat TRADING baru' }),
+    manageRules: tr(language, { ko: '자동화 규칙 관리', en: 'Manage automation rules', ja: '自動売買ルールを管理', th: 'จัดการกฎอัตโนมัติ', vi: 'Quản lý quy tắc tự động', id: 'Kelola aturan otomatis' }),
+    stopAllToMake: tr(language, { ko: 'TRADING이 실행 중입니다 — 새로 만들려면 먼저 전체를 정지하세요.', en: 'A TRADING is live — stop all first to make a new one.', ja: 'TRADING が稼働中です — 新しく作成するには先にすべて停止してください。', th: 'มี TRADING กำลังทำงาน — หยุดทั้งหมดก่อนจึงจะสร้างใหม่ได้', vi: 'Đang có TRADING chạy — hãy dừng tất cả trước để tạo mới.', id: 'Ada TRADING yang berjalan — hentikan semua dulu untuk membuat yang baru.' }),
     makeByAnalyst: tr(language, { ko: 'AI 애널리스트로 만들기 — 지금 분석', en: 'Make by AI Analyst — analyze now', ja: 'AIアナリストで作成 — 今すぐ分析', th: 'สร้างด้วยนักวิเคราะห์ AI — วิเคราะห์ตอนนี้', vi: 'Tạo bằng nhà phân tích AI — phân tích ngay', id: 'Buat lewat Analis AI — analisis sekarang' }),
     close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
     symbol: tr(language, { ko: '종목', en: 'Symbol', ja: 'シンボル', th: 'สัญลักษณ์', vi: 'Mã', id: 'Simbol' }),
@@ -1064,6 +1092,17 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       {/* The other two ways to make one stay reachable, below and secondary:
           the create modal holds the automation-rule list whose Remove
           button is the only kill switch for a running rule. */}
+      {anythingLive && (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary,#8a8073)' }}>{T.stopAllToMake}</span>
+          {/* The rule list (whose Remove is the only kill switch for a
+              running rule) lives in the create dialog — keep it reachable. */}
+          {rules.length > 0 && (
+            <button style={secondaryBtn} onClick={() => setOpenCreate(n => n + 1)}>⚙ {T.manageRules}</button>
+          )}
+        </div>
+      )}
+      {anythingLive === false && (
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14, alignItems: 'stretch' }}>
         {/* Plans without Full Auto keep Make by New Trading as THE action. */}
         <button style={features.fleetMode ? secondaryBtn : primaryBtn} onClick={() => setOpenCreate(n => n + 1)}>➕ {T.makeByTrading}</button>
@@ -1079,6 +1118,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           id: '"Buat lewat TRADING baru" membuka formulir pembuatan tempat Anda sendiri mengatur simbol, interval, dan anggaran.\n"Buat lewat Analis AI" langsung menjalankan analisis sekali jalan oleh empat analis AI — tidak ada order yang dipasang, dan jika hasilnya Anda sukai, Anda bisa memulai trading otomatis dengan pengaturan itu.',
         })} />
       </div>
+      )}
 
 
       {/* ── The one block on this page ── */}
