@@ -86,7 +86,35 @@ stamped them. They matched.
 - **"Retire rails race the stamp":** every retire reason goes through
   `stopping` and gets stamped.
 
-## What stays latent (not fixed: no result to implement on)
+## Update 2026-11-20: fixed on owner order
+
+The owner ordered the single-member stop path fixed anyway ("fix the
+single-member stop path anyway"). This is a fix on an order, **not on a
+measured defect**: the measurement above still stands at 0 / 1,196. What
+shipped:
+
+1. `trading_runs.request_stop`'s flat branch replays the run's operation
+   legs (`run_engine.replay_realized`, same query and math as
+   `compute_run_pnl`) and writes `realized_pnl_usd` in the same UPDATE that
+   stops the run. If the leg read fails, the run still stops with its
+   previous stamp.
+2. The adversarial review found and reproduced a race the first commit left
+   open. A `_control_active` tick that read its legs before the stop could
+   write its older value after the stop committed, and a stopped run is
+   never ticked again. The tick's write now applies only while the run is
+   `running` or `paused`. `_control_stopping`'s post-stop writes are
+   unchanged.
+
+Tests: `tests/test_stop_stamps_realized.py`. Fail-before/pass-after on the
+parent commit, with mutants on the leg filter, the guard and the call site
+killed. The independent verifier ran 15 of its own probes, including the
+HTTP Stop route: 11 fail on the parent and all pass after the fix.
+
+To measure afterwards: re-run the replay over the next weekly backup. It
+must still give 0 mismatches. The fix cannot raise that count, so a
+non-zero result would point to a writer that has not been found yet.
+
+## What stays latent (superseded by the update above)
 
 The mechanism is real in code: a member whose position closes (SL/TP watcher,
 desk sell, armed exit, which `_control_active` fires *after* its stamp) and that
