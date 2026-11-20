@@ -44,7 +44,9 @@ import database
 import futures_policy
 import trading_runs
 
-_ON = {"FUTURES_TRADING_BLOCKED": "1"}
+# Long-only re-armed (the morning block): shorts switch ON too. The two-way
+# default (shorts allowed, owner 2026-11-20 ~18:35Z) is in TwoWayTests.
+_ON = {"FUTURES_TRADING_BLOCKED": "1", "SHORTS_TRADING_BLOCKED": "1"}
 _OFF = {"FUTURES_TRADING_BLOCKED": "0"}
 _NOW = "2026-11-20T03:00:00Z"
 # A Tuesday within NYSE market hours (10:00 AM ET).
@@ -892,6 +894,182 @@ class OptionSymbolUnderStockLabelTests(_DbBase):
         headers = {"Authorization": f"Bearer {resp.json()['token']}"}
         body = {"market": "us-stock", "action": "buy", "symbol": self.OCC,
                 "price": 2.5, "quantity": 1, "executed_at": _MARKET_TS}
+        with patch.dict(os.environ, {"ALLOW_SYNC_PRICE_FETCH_IN_API": "false"}):
+            r = client.post("/api/signals/realtime", json=body, headers=headers)
+        self.assertEqual(r.status_code, 403, r.text)
+
+
+# ── two-way (owner 2026-11-20 ~18:35Z: "short and long two way") ────────────
+
+_TWO_WAY = {"FUTURES_TRADING_BLOCKED": "1"}   # main block on, shorts switch unset
+
+
+class TwoWayTests(_DbBase):
+    """Production default after the two-way change: shorts on crypto and US
+    stock at 1x pass; a 1x crypto perp run starts; leverage, the CME futures
+    market, forex, options and Polymarket stay refused."""
+
+    def setUp(self):
+        super().setUp()
+        self.env.stop()
+        self.env = patch.dict(os.environ, _TWO_WAY)
+        self.env.start()
+        os.environ.pop("SHORTS_TRADING_BLOCKED", None)
+        self.plan = patch("entitlements.plan_code_for_user",
+                          return_value="professional")
+        self.plan.start()
+
+    def tearDown(self):
+        self.plan.stop()
+        super().tearDown()
+
+    def _fill(self, symbol, market, action, qty=1.0, leverage=1.0):
+        from services import _update_position_from_signal
+        conn = database.get_db_connection()
+        try:
+            _update_position_from_signal(self.agent_id, symbol, market, action, qty,
+                                         100.0, _NOW, cursor=conn.cursor(),
+                                         leverage=leverage)
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _draft(self, **over):
+        with patch.dict(os.environ, _OFF):
+            return trading_runs.create_run(self.agent_id, _settings(**over),
+                                           {"type": "manual"}, {}, True)
+
+    def test_default_allows_shorts_with_the_main_block_on(self):
+        self.assertTrue(futures_policy.futures_blocked())
+        self.assertFalse(futures_policy.shorts_blocked())
+
+    def test_shorts_switch_re_arms_long_only(self):
+        with patch.dict(os.environ, {"SHORTS_TRADING_BLOCKED": "1"}):
+            self.assertTrue(futures_policy.shorts_blocked())
+            self.assertIsNotNone(futures_policy.order_refusal("crypto", "short"))
+        self._x("INSERT INTO platform_settings (setting_key, setting_value, updated_at) "
+                "VALUES ('shorts_trading_blocked', 'on', ?)", (_NOW,))
+        self.assertTrue(futures_policy.shorts_blocked())      # stored wins
+        self.assertIn("opening a short", futures_policy.order_refusal("us-stock", "short"))
+        with patch.dict(os.environ, _OFF):                   # master off: all open
+            self.assertFalse(futures_policy.shorts_blocked())
+
+    def test_unreadable_shorts_setting_keeps_the_two_way_default(self):
+        broken = MagicMock()
+        broken.execute.side_effect = RuntimeError("settings unreadable")
+        self.assertTrue(futures_policy.futures_blocked(broken))   # still fail closed
+        self.assertFalse(futures_policy.shorts_blocked(broken))
+        self.assertIsNotNone(futures_policy.order_refusal("crypto", "buy", 2.0,
+                                                          cursor=broken))
+
+    def test_ledger_fills_crypto_and_us_stock_shorts(self):
+        self._fill("SOLUSDT", "crypto", "short")
+        self._fill("AAPL", "us-stock", "short")
+        self._fill("SOLUSDT", "crypto", "short")               # adding is fine too
+        self.assertEqual(float(self._positions("SOLUSDT")[0]["quantity"]), -2.0)
+        self.assertEqual(float(self._positions("AAPL")[0]["quantity"]), -1.0)
+
+    def test_still_refused_while_two_way(self):
+        for symbol, market, action, lev in (
+                ("SOLUSDT", "crypto", "short", 2.0),
+                ("AAPL", "us-stock", "short", 3.0),
+                ("ES", "futures", "short", 1.0),
+                ("ES", "futures", "buy", 1.0),
+                ("EURUSD", "forex", "short", 1.0),
+                ("EURUSD", "fx", "buy", 1.0),
+                ("AAPL261218C00200000", "us-stock", "short", 1.0),
+                ("AAPL261218C00200000", "options", "buy", 1.0),
+                ("pm-1", "polymarket", "buy", 1.0),
+                ("BTC", "crypto", "buy", 2.0)):
+            with self.assertRaises(ValueError, msg=(symbol, market, action, lev)):
+                self._fill(symbol, market, action, leverage=lev)
+            self.assertEqual(self._positions(symbol), [])
+
+    def test_perp_book_only_on_crypto(self):
+        self.assertIsNone(futures_policy.order_refusal(
+            "crypto", "buy", 1.0, market_type="futures"))
+        self.assertIsNotNone(futures_policy.order_refusal(
+            "us-stock", "short", 1.0, market_type="futures"))
+
+    def test_crypto_futures_run_at_1x_starts_and_shorts(self):
+        from automation import execute_paper_trade
+        run_id = self._draft(symbol="SOLUSDT", market_type="futures")
+        with patch("entitlements.check_run_start", return_value=None):
+            trading_runs.start_run(run_id, self.agent_id)
+        self.assertEqual(self._q("SELECT status FROM trading_runs WHERE id = ?",
+                                 (run_id,))[0]["status"], "running")
+        sid, why = execute_paper_trade(self.agent_id, "SOLUSDT", "crypto", "short",
+                                       1.0, 100.0, run_id=run_id)
+        self.assertIsNone(why)
+        self.assertIsNotNone(sid)
+        self.assertEqual(float(self._positions("SOLUSDT")[0]["quantity"]), -1.0)
+
+    def test_refused_runs_while_two_way(self):
+        for over in ({"symbol": "SOLUSDT", "market_type": "futures", "leverage": 3.0},
+                     {"symbol": "AAPL", "market": "us-stock", "market_type": "futures"},
+                     {"symbol": "ES", "market": "futures", "market_type": "futures"},
+                     {"symbol": "EURUSD", "market": "forex"}):
+            run_id = self._draft(**over)
+            with self.assertRaises(trading_runs.EntitlementDenied, msg=over):
+                trading_runs.start_run(run_id, self.agent_id)
+
+    def test_select_targets_hands_out_shorts_again(self):
+        import symbol_research as sr
+        FleetTests._seed_theses(self)
+        conn = database.get_db_connection()
+        try:
+            picked = sr.select_targets(conn.cursor(), self.agent_id, 4)
+        finally:
+            conn.close()
+        self.assertIn("short", {t["direction"] for t in picked})
+
+    def test_compose_a_crypto_short_is_a_1x_perp_run(self):
+        import fleet_planner as fp
+        thesis = {"symbol": "SOL", "market": "crypto", "direction": "short",
+                  "confidence": 0.7, "expected_move_pct": 3.0, "horizon_hours": 12}
+        fleet = {"agent_id": self.agent_id, "risk_appetite": "aggressive",
+                 "total_budget_usd": 10000, "n_runs": 4}
+        s = fp.compose_run_settings(thesis, 2500.0, fleet)
+        self.assertEqual((s["market_type"], s["leverage"]), ("futures", 1.0))
+        self.assertIsNone(futures_policy.run_refusal(s["market"], s["market_type"],
+                                                     s["leverage"]))
+
+    def test_thesis_refusal_two_way(self):
+        self.assertIsNone(futures_policy.thesis_refusal("crypto", "short"))
+        self.assertIsNone(futures_policy.thesis_refusal("us-stock", "short"))
+        self.assertEqual(futures_policy.thesis_refusal("forex", "short"), "forex_blocked")
+        self.assertEqual(futures_policy.thesis_refusal("futures", "short"),
+                         "futures_blocked")
+
+    def test_trend_module_short_not_skipped(self):
+        self.assertIsNone(futures_policy.order_refusal("crypto", "short"))
+
+    def test_live_sell_beyond_the_held_long_reaches_the_venue(self):
+        """With shorts allowed, a live oversell is a short at the broker and is
+        no longer refused before the venue."""
+        import automation
+        from execution.base import OrderStatus
+        fake = MagicMock(status=OrderStatus.FILLED, filled_qty=1.0,
+                         broker="alpaca", broker_order_id="x")
+        with patch("execution.gateway.submit_live", return_value=fake) as live:
+            automation._execute_for_account_type(
+                {"account_type": "live"}, self.agent_id, "MSFT", "us-stock",
+                "sell", 1.0, 100.0, None, None, {})
+        live.assert_called_once()
+
+    def test_manual_us_stock_short_route_is_ok(self):
+        from routes import create_app
+        client = TestClient(create_app())
+        resp = client.post("/api/claw/agents/selfRegister",
+                           json={"name": "two-way-agent", "password": "pw123",
+                                 "initial_balance": 100000})
+        headers = {"Authorization": f"Bearer {resp.json()['token']}"}
+        body = {"market": "us-stock", "action": "short", "symbol": "AAPL",
+                "price": 150.0, "quantity": 1, "executed_at": _MARKET_TS}
+        with patch.dict(os.environ, {"ALLOW_SYNC_PRICE_FETCH_IN_API": "false"}):
+            r = client.post("/api/signals/realtime", json=body, headers=headers)
+        self.assertEqual(r.status_code, 200, r.text)
+        body["leverage"] = 3
         with patch.dict(os.environ, {"ALLOW_SYNC_PRICE_FETCH_IN_API": "false"}):
             r = client.post("/api/signals/realtime", json=body, headers=headers)
         self.assertEqual(r.status_code, 403, r.text)

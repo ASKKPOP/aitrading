@@ -404,8 +404,8 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     # reads as a close. Rules trade the unowned book, so check it before the
     # venue. A ledger close of what IS held is untouched.
     if mode == LIVE and side in ("sell", "cover"):
-        from futures_policy import futures_blocked
-        if futures_blocked():
+        from futures_policy import shorts_blocked
+        if shorts_blocked():
             from routes_shared import get_position_snapshot
             conn = get_db_connection()
             try:

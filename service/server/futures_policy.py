@@ -23,6 +23,17 @@ no futures book, no leverage. On this ledger that is:
     do not use"), and on `options` and `polymarket` (same day, owner: "Block
     them too"). None of them is spot or US stock.
 
+TWO-WAY UPDATE (owner 2026-11-20 ~18:35Z: "short and long two way";
+confirmed in chat as "Crypto + US stock shorts"). Shorts are allowed again
+on crypto and US stock, at 1x. A crypto short is a crypto perp book, so a
+market_type='futures' run on the `crypto` market at 1x may start again.
+Still refused: leverage > 1, the CME `futures` market, forex, options,
+Polymarket, and a 'futures' book on any market other than crypto. Shorts
+have their own switch so the long-only block can be re-armed without a
+deploy: platform_settings key `shorts_trading_blocked`, env twin
+`SHORTS_TRADING_BLOCKED`. Default OFF (shorts allowed). It only bites while
+the main block above is on.
+
 Closing is NEVER refused. A sell of a long and a cover of a short always pass,
 so a position opened before the switch can always be reduced to flat.
 
@@ -44,6 +55,11 @@ logger = logging.getLogger(__name__)
 
 SETTING_KEY = "futures_trading_blocked"
 ENV_VAR = "FUTURES_TRADING_BLOCKED"
+SHORTS_SETTING_KEY = "shorts_trading_blocked"
+SHORTS_ENV_VAR = "SHORTS_TRADING_BLOCKED"
+# The only market a 1x short / perp book may open on when shorts are allowed
+# (US-stock shorts are plain short-sales on a spot book).
+PERP_MARKETS = ("crypto",)
 
 _OFF = ("0", "false", "no", "off")
 OPEN_ACTIONS = ("buy", "short")
@@ -99,44 +115,62 @@ def _parse(raw: Optional[str]) -> Optional[bool]:
     return value not in _OFF
 
 
-def futures_blocked(cursor=None) -> bool:
-    """True unless an operator explicitly turned the block off.
-
-    `cursor`: pass the caller's cursor when inside a write transaction, so
-    the read happens on the same connection. Order: stored setting, then the
-    env var, then ON."""
+def _switch(key: str, env_var: str, default: bool, cursor=None) -> bool:
+    """Stored setting, then the env var, then `default`."""
     sql = "SELECT setting_value FROM platform_settings WHERE setting_key = ?"
     try:
         if cursor is not None:
-            cursor.execute(sql, (SETTING_KEY,))
+            cursor.execute(sql, (key,))
             row = cursor.fetchone()
         else:
             from database import get_db_connection
             conn = get_db_connection()
             try:
                 own = conn.cursor()
-                own.execute(sql, (SETTING_KEY,))
+                own.execute(sql, (key,))
                 row = own.fetchone()
             finally:
                 conn.close()
         stored = _parse(row["setting_value"] if row else None)
-    except Exception as exc:  # noqa: BLE001 — fall through to env, then ON
-        logger.warning("futures_policy: setting read failed (%s); using %s "
-                       "or the default (blocked)", exc, ENV_VAR)
+    except Exception as exc:  # noqa: BLE001 — fall through to env, then default
+        logger.warning("futures_policy: %s read failed (%s); using %s "
+                       "or the default", key, exc, env_var)
         stored = None
     if stored is not None:
         return stored
-    env = _parse(os.getenv(ENV_VAR))
-    return True if env is None else env
+    env = _parse(os.getenv(env_var))
+    return default if env is None else env
+
+
+def futures_blocked(cursor=None) -> bool:
+    """True unless an operator explicitly turned the block off.
+
+    `cursor`: pass the caller's cursor when inside a write transaction, so
+    the read happens on the same connection. Order: stored setting, then the
+    env var, then ON (fail closed)."""
+    return _switch(SETTING_KEY, ENV_VAR, True, cursor)
+
+
+def shorts_blocked(cursor=None) -> bool:
+    """True when the main block is on AND shorts are re-armed as blocked.
+    Default: shorts allowed (owner 2026-11-20, two-way)."""
+    if not futures_blocked(cursor):
+        return False
+    return _switch(SHORTS_SETTING_KEY, SHORTS_ENV_VAR, False, cursor)
+
+
+def _perp_ok(market: Optional[str], cursor=None) -> bool:
+    """A 1x short / perp book on this market is allowed right now."""
+    return _norm(market) in PERP_MARKETS and not shorts_blocked(cursor)
 
 
 def _exposure_kind(action: str, market: Optional[str], leverage: float,
                    market_type: Optional[str] = None,
-                   symbol: Optional[str] = None) -> Optional[str]:
-    """Which futures exposure an OPEN would create, or None for spot."""
+                   symbol: Optional[str] = None, cursor=None) -> Optional[str]:
+    """Which refused exposure an OPEN would create, or None if allowed."""
     if (action or "").strip().lower() not in OPEN_ACTIONS:
         return None
-    if (action or "").strip().lower() == "short":
+    if (action or "").strip().lower() == "short" and shorts_blocked(cursor):
         return "opening a short"
     if _norm(market) == "futures":
         return "a futures-market order"
@@ -144,7 +178,8 @@ def _exposure_kind(action: str, market: Optional[str], leverage: float,
         return _ORDER_KIND[_norm(market)]
     if _is_option_symbol(symbol):
         return "an options contract"
-    if (market_type or "spot").strip().lower() == "futures":
+    if ((market_type or "spot").strip().lower() == "futures"
+            and not _perp_ok(market, cursor)):
         return "a futures (perpetual) book"
     try:
         lev = float(leverage or 1.0)
@@ -161,8 +196,10 @@ def order_refusal(market: Optional[str], action: str, leverage: float = 1.0,
     """Reason to refuse this order, or None. Closes always get None.
     `symbol`: pass it where known, so an option contract under another
     market label is refused too."""
-    kind = _exposure_kind(action, market, leverage, market_type, symbol)
-    if kind is None or not futures_blocked(cursor):
+    if not futures_blocked(cursor):
+        return None
+    kind = _exposure_kind(action, market, leverage, market_type, symbol, cursor)
+    if kind is None:
         return None
     prefix = _prefix("options") if kind == "an options contract" else _prefix(market)
     return (f"{prefix}: {kind} is refused. "
@@ -181,7 +218,8 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
     elif _is_option_symbol(symbol):
         kind = "an options-contract run"
         market = "options"
-    elif (market_type or "spot").strip().lower() == "futures":
+    elif ((market_type or "spot").strip().lower() == "futures"
+          and not _perp_ok(market, cursor)):
         kind = "a futures (perpetual) run"
     else:
         try:
@@ -192,20 +230,23 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
             kind = f"a {lev:g}x leveraged run"
     if kind is None or not futures_blocked(cursor):
         return None
-    return f"{_prefix(market)}: {kind} cannot start. Use a spot run at 1x."
+    return f"{_prefix(market)}: {kind} cannot start. Use a 1x spot or crypto run."
 
 
 def thesis_refusal(market: Optional[str], direction: Optional[str],
                    cursor=None) -> Optional[str]:
     """Reason a research thesis cannot become a run, or None."""
     m = _norm(market)
-    if (direction or "").strip().lower() != "short" and m not in BLOCKED_MARKETS:
+    short = (direction or "").strip().lower() == "short"
+    if not short and m not in BLOCKED_MARKETS:
         return None
     if not futures_blocked(cursor):
         return None
-    if m in _LABEL and (direction or "").strip().lower() != "short":
+    if m in _LABEL:
         return f"{m}_blocked"
-    return "futures_blocked"
+    if m == "futures" or shorts_blocked(cursor):
+        return "futures_blocked"
+    return None
 
 
 def blocked_markets(cursor=None) -> tuple[str, ...]:
