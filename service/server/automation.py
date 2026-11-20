@@ -407,12 +407,12 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     # reads as a close. Rules trade the unowned book, so check it before the
     # venue. A ledger close of what IS held is untouched.
     if mode == LIVE and side in ("sell", "cover"):
-        # Two-way (owner 2026-11-20): only a US-stock short-sale is allowed
-        # at a venue; every other market keeps this guard.
-        from futures_policy import LIVE_SHORT_MARKETS, _norm, futures_blocked, \
-            shorts_blocked
-        if futures_blocked() and (_norm(market) not in LIVE_SHORT_MARKETS
-                                  or shorts_blocked()):
+        # Kept on EVERY market, US stock included, after the two-way change:
+        # the broker would fill the whole oversell while the ledger books only
+        # the held part, leaving a broker short the platform cannot see. A
+        # live short must be sent as side 'short' (the ledger records it).
+        from futures_policy import futures_blocked
+        if futures_blocked():
             from routes_shared import get_position_snapshot
             conn = get_db_connection()
             try:

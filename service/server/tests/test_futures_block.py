@@ -1044,22 +1044,36 @@ class TwoWayTests(_DbBase):
     def test_trend_module_short_not_skipped(self):
         self.assertIsNone(futures_policy.order_refusal("crypto", "short"))
 
-    def test_live_sell_beyond_the_held_long_reaches_the_venue(self):
-        """With shorts allowed, a live oversell is a short at the broker and is
-        no longer refused before the venue."""
+    def test_live_us_stock_oversell_still_refused(self):
+        """Verifier finding: a live sell beyond the held long would fill in full
+        at the broker while the ledger books only the held part (a broker
+        short nobody sees). Refused before the venue; an explicit live
+        'short' still goes."""
         import automation
         from execution.base import OrderStatus
+        self._seed_position("AAPL", "us-stock", 1.0)
+        self._seed_position("TSLA", "us-stock", -1.0)
+        for symbol, side, qty in (("MSFT", "sell", 1.0), ("AAPL", "sell", 2.0),
+                                  ("TSLA", "cover", 2.0)):
+            with patch("execution.gateway.submit_live") as live:
+                sid, why = automation._execute_for_account_type(
+                    {"account_type": "live"}, self.agent_id, symbol, "us-stock",
+                    side, qty, 100.0, None, None, {})
+            live.assert_not_called()
+            self.assertIn("live order not sent", why)
         fake = MagicMock(status=OrderStatus.FILLED, filled_qty=1.0,
                          broker="alpaca", broker_order_id="x")
         with patch("execution.gateway.submit_live", return_value=fake) as live:
-            automation._execute_for_account_type(
-                {"account_type": "live"}, self.agent_id, "MSFT", "us-stock",
-                "sell", 1.0, 100.0, None, None, {})
+            sid, why = automation._execute_for_account_type(
+                {"account_type": "live"}, self.agent_id, "NVDA", "us-stock",
+                "short", 1.0, 100.0, None, None, {})
         live.assert_called_once()
+        self.assertIsNone(why)
+        self.assertEqual(float(self._positions("NVDA")[0]["quantity"]), -1.0)
 
     def test_live_oversell_still_guarded_off_us_stock(self):
-        """Reviewer F1: with shorts allowed, a live oversell on any market but
-        US stock would still open a short at the broker. Refused before it."""
+        """Reviewer F1: with shorts allowed, a live oversell would still open a
+        position at the broker. Refused before it (US stock: see above)."""
         import automation
         for market, symbol in (("crypto", "SOLUSDT"), ("forex", "EURUSD"),
                                ("futures", "ES"), ("options", "AAPL261218C00200000")):
