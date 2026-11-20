@@ -140,6 +140,8 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
     basePlanMarkets: tr(language, { ko: '시장:', en: 'markets:', ja: '市場:', th: 'ตลาด:', vi: 'thị trường:', id: 'pasar:' }),
     basePlanHint: tr(language, { ko: 'AI는 이 계획 안에서만 종목을 고르고 매수·매도합니다 — 개수·예산·시장을 넘지 않습니다.', en: 'The AI picks symbols and buys/sells only inside this plan — never beyond its count, budget or markets.', ja: 'AIはこの計画の範囲内でのみ銘柄を選び売買します — 数・予算・市場を超えません。', th: 'AI เลือกเหรียญและซื้อขายภายในแผนนี้เท่านั้น — ไม่เกินจำนวน งบ หรือตลาด', vi: 'AI chỉ chọn mã và mua/bán trong kế hoạch này — không vượt số lượng, ngân sách hay thị trường.', id: 'AI memilih simbol dan membeli/menjual hanya di dalam rencana ini — tidak pernah melampaui jumlah, anggaran, atau pasarnya.' }),
     close: tr(language, { ko: '닫기', en: 'Close', ja: '閉じる', th: 'ปิด', vi: 'Đóng', id: 'Tutup' }),
+    // Names the page-end AI feed card, which sits away from the Full Auto box.
+    feedCardLabel: tr(language, { ko: 'N종목 자동 편성', en: 'Full Auto', ja: '完全自動編成', th: 'อัตโนมัติเต็มรูปแบบ', vi: 'Tự động hoàn toàn', id: 'Full Auto' }),
     monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp', id: 'Full Auto — monitor langsung' }),
     buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành', id: 'AI sedang meriset pasar dan menyusun TRADING — masing-masing muncul di sini begitu selesai dibuat' }),
     clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)', id: 'Klik sebuah kartu untuk membuka monitor langsung TRADING itu (grafik · catatan peristiwa · jeda/hentikan)' }),
@@ -407,7 +409,12 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
   // else inline exactly as before (inlineStyle = the old inline wrapper).
   const feedAt = (feed: ReactElement, inlineStyle?: any) => aiFeedHost === undefined
     ? (inlineStyle ? <div style={inlineStyle}>{feed}</div> : feed)
-    : aiFeedHost ? createPortal(<div style={{ ...card, marginTop: 18, marginBottom: 0, paddingBottom: 4 }}>{feed}</div>, aiFeedHost) : null
+    : aiFeedHost ? createPortal(
+      <div style={{ ...card, marginTop: 18, marginBottom: 0, paddingBottom: 4 }}>
+        {/* Away from the Full Auto box, say whose feed this is. */}
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>🚀 {T.feedCardLabel}</div>
+        {feed}
+      </div>, aiFeedHost) : null
 
   const warned = !!(fleet && fleet.warn_latched_at && !fleet.warn_acked_at)
   const pnl = fleet && equity !== null ? equity - fleet.total_budget_usd : null
