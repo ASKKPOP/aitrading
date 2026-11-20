@@ -489,6 +489,15 @@ class ManualOrderTests(_DbBase):
             return self.client.post("/api/signals/realtime", json=body,
                                     headers=self.headers)
 
+    def test_forex_manual_buy_is_403(self):
+        body = {"market": "forex", "action": "buy", "symbol": "EURUSD",
+                "price": 1.08, "quantity": 100, "executed_at": _MARKET_TS}
+        with patch.dict(os.environ, {"ALLOW_SYNC_PRICE_FETCH_IN_API": "false"}):
+            resp = self.client.post("/api/signals/realtime", json=body,
+                                    headers=self.headers)
+        self.assertEqual(resp.status_code, 403, resp.text)
+        self.assertIn("forex trading is disabled", resp.text)
+
     def test_short_and_leverage_are_403(self):
         self.assertEqual(self._trade("short").status_code, 403)
         resp = self._trade("buy", leverage=5)
@@ -643,3 +652,81 @@ class FleetTests(_DbBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── forex (owner 2026-11-20: "also exchange do not use") ───────────────────
+
+class ForexBlockTests(_DbBase):
+    def test_forex_open_refused_close_allowed(self):
+        why = futures_policy.order_refusal("forex", "buy")
+        self.assertIn("forex trading is disabled", why)
+        self.assertIsNone(futures_policy.order_refusal("forex", "sell"))
+        with patch.dict(os.environ, _OFF):
+            self.assertIsNone(futures_policy.order_refusal("forex", "buy"))
+
+    def test_ledger_refuses_forex_buy_but_sells_a_held_one(self):
+        from automation import execute_paper_trade
+        sid, why = execute_paper_trade(self.agent_id, "EURUSD", "forex", "buy",
+                                       100.0, 1.08)
+        self.assertIsNone(sid)
+        self.assertIn("forex trading is disabled", why)
+        self.assertEqual(self._positions("EURUSD"), [])
+        self._seed_position("USDJPY", "forex", 100.0, entry=150.0)
+        sid, why = execute_paper_trade(self.agent_id, "USDJPY", "forex", "sell",
+                                       100.0, 151.0)
+        self.assertIsNone(why)
+        self.assertEqual(self._positions("USDJPY"), [])
+
+    def test_forex_run_cannot_start(self):
+        with patch.dict(os.environ, _OFF):
+            run_id = trading_runs.create_run(
+                self.agent_id, _settings(symbol="EURUSD", market="forex"),
+                {"type": "manual"}, {}, True)
+        with self.assertRaises(trading_runs.EntitlementDenied) as ctx:
+            trading_runs.start_run(run_id, self.agent_id)
+        self.assertIn("forex run cannot start", str(ctx.exception))
+
+    def test_select_targets_drops_forex(self):
+        import symbol_research as sr
+        for sym, market, score in (("EURUSD", "forex", 0.9), ("AAPL", "us-stock", 0.5)):
+            self._x("""INSERT INTO research_theses
+                       (batch_id, market, symbol, market_type, direction,
+                        factor_scores_json, final_score, selectable, planner,
+                        created_at, expires_at)
+                       VALUES ('b1', ?, ?, 'spot', 'long', '{}', ?, 1, 'fallback',
+                               ?, '2999-01-01T00:00:00Z')""",
+                    (market, sym, score, _NOW))
+        conn = database.get_db_connection()
+        try:
+            picked = sr.select_targets(conn.cursor(), self.agent_id, 4)
+            with patch.dict(os.environ, _OFF):
+                picked_off = sr.select_targets(conn.cursor(), self.agent_id, 4)
+        finally:
+            conn.close()
+        self.assertEqual([t["symbol"] for t in picked], ["AAPL"])
+        self.assertIn("EURUSD", [t["symbol"] for t in picked_off])
+
+    def test_research_universe_skips_forex_and_futures(self):
+        import markets
+        import symbol_research as sr
+        with patch.object(markets, "automatable_markets",
+                          return_value=("forex", "futures", "us-stock")):
+            on = {u["market"] for u in sr.build_universe()}
+            with patch.dict(os.environ, _OFF):
+                off = {u["market"] for u in sr.build_universe()}
+        self.assertEqual(on, {"us-stock"})
+        self.assertTrue({"forex", "futures"} <= off, off)
+
+    def test_forex_only_fleet_refused(self):
+        import fleet_planner as fp
+        with patch("entitlements.plan_code_for_user", return_value="professional"):
+            with self.assertRaises(trading_runs.EntitlementDenied):
+                fp.create_fleet(self.agent_id, 2, 2000.0, market_scope=["forex"])
+            self.assertTrue(fp.create_fleet(self.agent_id, 2, 2000.0,
+                                            market_scope=["forex", "us-stock"]))
+
+    def test_build_skips_a_forex_candidate(self):
+        self.assertEqual(futures_policy.thesis_refusal("forex", "long"), "forex_blocked")
+        self.assertEqual(futures_policy.thesis_refusal("crypto", "short"), "futures_blocked")
+        self.assertIsNone(futures_policy.thesis_refusal("us-stock", "long"))
+        self.assertIsNone(futures_policy.thesis_refusal("crypto", "long"))

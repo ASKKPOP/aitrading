@@ -18,7 +18,9 @@ no futures book, no leverage. On this ledger that is:
     to sell, so a short is a perp or margin construct;
   * any open on the CME `futures` market;
   * a run whose market_type is 'futures';
-  * an open at leverage > 1.
+  * an open at leverage > 1;
+  * any open on the `forex` market (added 2026-11-20, owner: "also exchange
+    do not use"). Forex is neither spot nor US stock.
 
 Closing is NEVER refused. A sell of a long and a cover of a short always pass,
 so a position opened before the switch can always be reduced to flat.
@@ -45,6 +47,15 @@ _OFF = ("0", "false", "no", "off")
 OPEN_ACTIONS = ("buy", "short")
 
 REFUSAL_PREFIX = "futures trading is disabled on this platform (spot and US stock only)"
+FOREX_PREFIX = "forex trading is disabled on this platform (spot and US stock only)"
+
+# Markets nothing may OPEN on while the block is on. Forex added 2026-11-20
+# (owner: "also exchange do not use"): it is neither spot nor US stock.
+BLOCKED_MARKETS = ("futures", "forex")
+
+
+def _prefix(market: Optional[str]) -> str:
+    return FOREX_PREFIX if (market or "").strip().lower() == "forex" else REFUSAL_PREFIX
 
 
 def _parse(raw: Optional[str]) -> Optional[bool]:
@@ -94,6 +105,8 @@ def _exposure_kind(action: str, market: Optional[str], leverage: float,
         return "opening a short"
     if (market or "").strip().lower() == "futures":
         return "a futures-market order"
+    if (market or "").strip().lower() == "forex":
+        return "a forex order"
     if (market_type or "spot").strip().lower() == "futures":
         return "a futures (perpetual) book"
     try:
@@ -111,7 +124,7 @@ def order_refusal(market: Optional[str], action: str, leverage: float = 1.0,
     kind = _exposure_kind(action, market, leverage, market_type)
     if kind is None or not futures_blocked(cursor):
         return None
-    return (f"{REFUSAL_PREFIX}: {kind} is refused. "
+    return (f"{_prefix(market)}: {kind} is refused. "
             "Closing an existing position is still allowed.")
 
 
@@ -121,6 +134,8 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
     kind = None
     if (market or "").strip().lower() == "futures":
         kind = "a futures-market run"
+    elif (market or "").strip().lower() == "forex":
+        kind = "a forex run"
     elif (market_type or "spot").strip().lower() == "futures":
         kind = "a futures (perpetual) run"
     else:
@@ -132,15 +147,21 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
             kind = f"a {lev:g}x leveraged run"
     if kind is None or not futures_blocked(cursor):
         return None
-    return f"{REFUSAL_PREFIX}: {kind} cannot start. Use a spot run at 1x."
+    return f"{_prefix(market)}: {kind} cannot start. Use a spot run at 1x."
 
 
 def thesis_refusal(market: Optional[str], direction: Optional[str],
                    cursor=None) -> Optional[str]:
     """Reason a research thesis cannot become a run, or None."""
-    if (direction or "").strip().lower() != "short" and \
-            (market or "").strip().lower() != "futures":
+    m = (market or "").strip().lower()
+    if (direction or "").strip().lower() != "short" and m not in BLOCKED_MARKETS:
         return None
     if not futures_blocked(cursor):
         return None
-    return "futures_blocked"
+    return "forex_blocked" if m == "forex" and \
+        (direction or "").strip().lower() != "short" else "futures_blocked"
+
+
+def blocked_markets(cursor=None) -> tuple[str, ...]:
+    """Markets with no new opens right now (empty when the block is off)."""
+    return BLOCKED_MARKETS if futures_blocked(cursor) else ()

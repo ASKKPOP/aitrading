@@ -342,6 +342,10 @@ def build_universe() -> list[dict[str, str]]:
     the only network call is the crypto top-volume read, which fails soft."""
     out: list[dict[str, str]] = []
     autom = set(markets.automatable_markets())
+    # Platform-wide block (owner 2026-11-20): no research or LLM thesis spend
+    # on markets nothing may open on (futures, forex).
+    from futures_policy import blocked_markets
+    autom -= set(blocked_markets())
 
     if "crypto" in autom:
         crypto: list[str] = []

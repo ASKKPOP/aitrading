@@ -758,14 +758,14 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
             raise trading_runs.EntitlementDenied(deny)
         # Platform-wide futures block (owner 2026-11-20): a fleet that can
         # only trade futures, or asks for leverage, is refused at creation.
-        from futures_policy import REFUSAL_PREFIX, futures_blocked
+        from futures_policy import BLOCKED_MARKETS, REFUSAL_PREFIX, futures_blocked
         if futures_blocked(cursor) and (
-                (market_scope and all((m or "").strip().lower() == "futures"
+                (market_scope and all((m or "").strip().lower() in BLOCKED_MARKETS
                                       for m in market_scope))
                 or (leverage and float(leverage) > 1.0)):
             raise trading_runs.EntitlementDenied(
-                f"{REFUSAL_PREFIX}: a futures-market or leveraged fleet "
-                "cannot be created.")
+                f"{REFUSAL_PREFIX}: a futures-market, forex-only or leveraged "
+                "fleet cannot be created.")
         if archetype == "swing":
             # Owner (2026-08-12): the US-stock swing strategy is Professional
             # and Enterprise only. Today every fleet already needs
