@@ -74,3 +74,49 @@ def test_found_rows_and_autocommit_unchanged():
     assert conn.autocommit_mode is False
     assert conn.cursorclass is pymysql.cursors.DictCursor
     assert conn.charset == "utf8mb4"
+
+
+def test_shared_context_cipher_list_matches_default():
+    (conn,) = _open_raw_connections(1)
+    default = pymysql.connections.Connection(
+        defer_connect=True, host="dbhost", user="u", password="p").ctx
+    assert [c["name"] for c in conn.ctx.get_ciphers()] == \
+        [c["name"] for c in default.get_ciphers()]
+
+
+def test_server_without_tls_still_falls_back_to_plaintext():
+    """PyMySQL's default falls back to plaintext when the server has no TLS;
+    passing a context makes TLS required. The old fallback must survive."""
+    seen = []
+
+    def fake_connect(**kwargs):
+        seen.append("ssl" in kwargs)
+        if "ssl" in kwargs:
+            raise pymysql.err.OperationalError(
+                2026, "SSL is required but the server doesn't support it")
+        return pymysql.connections.Connection(defer_connect=True, **kwargs)
+
+    with patch.object(database, "DATABASE_URL", _URL), \
+            patch.object(database.pymysql, "connect", side_effect=fake_connect):
+        conn = database.get_db_connection()._connection
+    assert seen == [True, False]
+    assert conn.client_flag & pymysql.constants.CLIENT.FOUND_ROWS
+    assert conn.autocommit_mode is False
+
+
+def test_other_connect_errors_are_not_retried():
+    calls = []
+
+    def fake_connect(**kwargs):
+        calls.append(1)
+        raise pymysql.err.OperationalError(1045, "Access denied")
+
+    with patch.object(database, "DATABASE_URL", _URL), \
+            patch.object(database.pymysql, "connect", side_effect=fake_connect):
+        try:
+            database.get_db_connection()
+        except pymysql.err.OperationalError as exc:
+            assert exc.args[0] == 1045
+        else:
+            raise AssertionError("expected OperationalError")
+    assert calls == [1]

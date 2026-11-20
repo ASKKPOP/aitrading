@@ -477,6 +477,11 @@ class DatabaseConnection:
         return getattr(self._connection, name)
 
 
+# PyMySQL's CR.CR_SSL_CONNECTION_ERROR ("SSL is required but the server
+# doesn't support it" when a context is passed).
+_CR_SSL_CONNECTION_ERROR = 2026
+
+
 @functools.lru_cache(maxsize=1)
 def _mysql_ssl_context() -> ssl.SSLContext:
     """One SSLContext shared by every MySQL connection.
@@ -485,8 +490,9 @@ def _mysql_ssl_context() -> ssl.SSLContext:
     certificate or hostname check — but built once: PyMySQL otherwise runs
     create_default_context() -> load_default_certs() inside every connect,
     which measured 9.8 ms CPU of a 14.3 ms connect on prod (2026-11-20).
-    Passing a context switches PyMySQL to REQUIRED: a server without TLS now
-    fails the connect instead of silently falling back to plaintext.
+    Passing a context switches PyMySQL to REQUIRED, so get_db_connection
+    retries a "server has no TLS" failure without it, keeping the default's
+    plaintext fallback.
     """
     ctx = ssl.create_default_context()
     ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT
@@ -508,7 +514,7 @@ def get_db_connection():
         user = parsed.username or "root"
         password = parsed.password or ""
         database = parsed.path.lstrip("/")
-        conn = pymysql.connect(
+        connect_kwargs = dict(
             host=host,
             port=port,
             user=user,
@@ -526,8 +532,13 @@ def get_db_connection():
             # fleet member's cycle after its first trade-free save (prod,
             # 2026-07-21: 11 hours of claimed-but-eventless cycles).
             client_flag=pymysql.constants.CLIENT.FOUND_ROWS,
-            ssl=_mysql_ssl_context(),
         )
+        try:
+            conn = pymysql.connect(ssl=_mysql_ssl_context(), **connect_kwargs)
+        except pymysql.err.OperationalError as exc:
+            if not exc.args or exc.args[0] != _CR_SSL_CONNECTION_ERROR:
+                raise
+            conn = pymysql.connect(**connect_kwargs)
         return DatabaseConnection(conn, "mysql")
 
     db_path = _SQLITE_DB_PATH
