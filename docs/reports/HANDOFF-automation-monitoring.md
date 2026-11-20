@@ -658,6 +658,16 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-20 (daily sweep) — AFTER THE OWNER RESET, `signals` AND `pnl_audit` ARE EMPTY FOR AGENTS 6/60; USE `run_events` `trade`
+
+The 11-20 reset (fleets 43/44 `stop_all` flatten 02:54:37Z, `member.reset_capital` 03:01:53Z) deleted every agent-6/60 `signals` row and zeroed
+`trading_runs.realized_pnl_usd`. Any window before 03:00Z 11-20 must be rebuilt from `run_events` `trade` fills (side/quantity/price/fee_usd,
+FIFO per run). Cross-check with Σ `adapt.realized` minus entry fees. From 11-20 on, `pnl_audit` works again for new trading.
+**Spot + US stock long-only (futures_policy, 11-20) also means:** research still labels direction by mom_5d sign, so in a downtrend every batch
+is shorts and **no fleet can build** (`research_empty` ×20 → `build_failed`; 11-20 fleets 51, 52). `MAX(run_events.ts)` hours old with 0 active
+fleets is then expected, not a dead worker. Check `research_theses` direction counts before calling it a fault (R44). Ratchet/short-book
+watches (R32, direction-4h-hit, R40, R43) were measured on an all-short book; do not carry their tallies onto the long-only book.
+
 ### ⚠️ Added 2026-11-19 (daily sweep) — MONITORING NOTES DO NOT REACH THE DESK'S DECISIONS
 
 `run_engine._RECALL_KINDS = ("outcome", "lesson")`; `monitoring` is only `_RECALL_KINDS_FALLBACK`, searched when outcome+lesson return

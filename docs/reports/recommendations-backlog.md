@@ -19,6 +19,14 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 
 ## Items
 
+### R44 — Research ranks directions the platform may not trade; under the long-only block no fleet can build in a downtrend · **STAGED (2026-11-20 sweep, measurement owed)**
+- 11-20: `symbol_research.py:922` labels direction by the sign of mom_5d, and the batch keeps the top 8 per market by |score|. `select_targets` then refuses every short (`futures_policy.thesis_refusal`). Batches 498653–498662 (05:21–14:09Z) carried **0 longs**: 8 crypto shorts that were refused, plus 8 us-stock shorts with `selectable=0`. Fleets 51 and 52 ended `build_failed` (20× `research_empty`). The only long since (SLV, 15:13Z) fails `backtest_gate` (−469 USD/trade, n=5). 29/29 major coins had mom_5d < 0 at 06:23Z, so crypto has no long by construction.
+- *Hypothesis:* unselectable shorts crowd tradeable us-stock longs out of the top-8. *Measure first:* replay the screen read-only over today's batches and count us-stock symbols with mom_5d ≥ 0 above the liquidity floor, then whether any passes `backtest_gate`. *Falsifier:* zero such symbols, or all fail the gate. Then the fix only saves thesis LLM compute (local, ~$0) and builds nothing.
+- *Ship form (platform code; the desk is not the actor in research):* when `futures_blocked()`, rank only long-direction candidates per market. *Counterfactual P&L:* not computable (never traded); prior evidence says such longs carry no entry edge (11-19 buy-low research; 5 replications). Do NOT loosen `backtest_gate` to "get trading".
+
+### R37b — Ratchet arms on a single-sample spike · **SOFT (2026-11-20 sweep, n=9 of 37 fires)**
+- 9/37 fires had prior mark < arm, one mark set the peak, and the next ~62 s mark was already under the floor. They netted +0.035 and contained 4 of the 6 ratchet losers (Σ −0.10). Candidate: require two consecutive samples ≥ arm. *Measure first:* the counterfactual over every R37 reading window (it also delays winners). *Falsifier:* Σ ≤ 0 or sign flips ex-largest.
+
 ### R43 — Chair amends a trader's stated close to `hold` after the desk's own invalidation printed · **STAGED (2026-11-19 sweep, n=9, measurement owed)**
 - 11-19: 9 cycles where final = `hold` while the trader's `order_params.why` said close/cut/reduce (trader verb `buy` in 4, `sell` — R40 ambiguity — in 5). INJ 229944 07:50Z: trader `sell` 0.80 "Stop breach invalidates short; close now." → chair `hold` 0.32 → stopped −0.82 (≈ +0.46 had it closed). Full-close intents n=5 counterfactual **+0.63, +0.17 ex-INJ**. INJ+HYPE+LTC −2.13.
 - Opposite reading: 11-17 E1, chair `sell` over a trader cover on a held short, n=32 since 10-01 → covering would have LOST 4.83. Hypothesis that reconciles both: the chair's hold is right in general but wrong once the desk's OWN printed invalidation has crossed.
@@ -68,7 +76,7 @@ This backlog accrues candidates. Items ship to prod one at a time, verified, onl
 ### R36 — A handed-off position's stop loss is in no run's realized_pnl_usd · **STAGED (2026-11-11)**
 - FIL 151804 / BTC 151825 runs show realized −0.008 / −0.020 (entry fee only); their orphan stop closes (−0.47 / −0.49) have run_id NULL. Monitoring side fixed (pnl_audit `orphan`/`all_in`, 2026-11-11). User-visible side (run P&L, agent cash reconciliation) not verified — design first.
 
-### R32 — Breakeven-ratchet arm vs the desk's own bracket · **STAGED (2026-11-10 daily sweep)**
+### R32 — Breakeven-ratchet arm vs the desk's own bracket · **STAGED → FROZEN 2026-11-20 (book is long-only now; short-book tally k=3 Σ +12.08 over 6 calibrated days does not transfer; re-open after ≥3 calibrated long-only days)**
 - **Day 4 (11-17T15Z→11-18T18Z):** n=63, calib median 0.0053 (passes); Δ k=2 +3.96, k=3 +5.69, none +33.97 — falling tape, for. Calibrated tally k=3: +4.06, +2.29, −3.96, +5.69 → ΣΔ +8.08 (+2.39 ex-largest), 3/4 positive, 4/10 days, 0/3 non-trending. STAGED.
 - **Evidence:** 11-10: 51/57 agent-6 exits were `breakeven_ratchet` (+1.26 net, fees 52.5 % of gross, median capture 0.154 %), while the desk's 3 trail exits made +1.12; the desk's last verdict before every ratchet fire was sell/hold. Calibrated 1m replay today: Δ k=3 +4.06, k=5 +7.62, none +24.76.
 - **Against:** 15m replays 09-20→10-01 (n=50, calib ok): Δ k=3 −13.91, k=5 −13.48; October (n=303, calib poor): Δ k=5 −25.25, none −24.57. Sign follows the tape (trend vs chop), not k. **H-ratchet-arm-too-low killed as a general rule.**
