@@ -493,10 +493,17 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
                 # short or futures-market row is refused while it is on.
                 from futures_policy import order_refusal
                 for pos in data.positions:
+                    # A negative quantity is a short downstream, whatever
+                    # the side label says.
                     seeded_side = str(pos.get('side', 'long') or 'long').lower()
+                    try:
+                        seeded_qty = float(pos.get('quantity', 0) or 0)
+                    except (TypeError, ValueError):
+                        seeded_qty = 0.0
+                    is_short = seeded_side == 'short' or seeded_qty < 0
                     futures_refusal = order_refusal(
                         pos.get('market', 'us-stock'),
-                        'short' if seeded_side == 'short' else 'buy')
+                        'short' if is_short else 'buy')
                     if futures_refusal:
                         raise HTTPException(status_code=403, detail=futures_refusal)
                 for pos in data.positions:

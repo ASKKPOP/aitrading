@@ -266,6 +266,28 @@ class ExecutorTests(_DbBase):
         self.assertIsNotNone(sid)
         self.assertEqual(self._positions("BNBUSDT"), [])
 
+    def test_running_pre_switch_futures_run_cannot_open_even_at_1x(self):
+        """A market_type='futures' run already running at deploy never passes
+        start_run again; its 1x buy is still refused, and its cover passes."""
+        from automation import execute_paper_trade
+        with patch.dict(os.environ, _OFF):
+            run_id = trading_runs.create_run(
+                self.agent_id, _settings(symbol="SOLUSDT", market_type="futures"),
+                {"type": "manual"}, {}, True)
+        self._x("UPDATE trading_runs SET status = 'running' WHERE id = ?", (run_id,))
+        sid, why = execute_paper_trade(self.agent_id, "SOLUSDT", "crypto", "buy",
+                                       1.0, 100.0, run_id=run_id)
+        self.assertIsNone(sid)
+        self.assertIn("futures (perpetual) book", why)
+        self.assertEqual(self._positions("SOLUSDT"), [])
+        self._x("INSERT INTO positions (agent_id, symbol, market, side, quantity, "
+                "entry_price, opened_at, run_id) VALUES (?, 'SOLUSDT', 'crypto', "
+                "'short', -1, 100, ?, ?)", (self.agent_id, _NOW, run_id))
+        sid, why = execute_paper_trade(self.agent_id, "SOLUSDT", "crypto", "cover",
+                                       1.0, 95.0, run_id=run_id)
+        self.assertIsNone(why)
+        self.assertEqual(self._positions("SOLUSDT"), [])
+
     def test_spot_buy_fills(self):
         from automation import execute_paper_trade
         sid, why = execute_paper_trade(self.agent_id, "BTC", "crypto", "buy", 1.0, 100.0)
@@ -451,6 +473,23 @@ class ManualOrderTests(_DbBase):
                            "quantity": 1, "entry_price": 100}]})
         self.assertEqual(resp.status_code, 403, resp.text)
         self.assertEqual(self._q("SELECT id FROM agents WHERE name = 'seed-agent'"), [])
+
+    def test_self_register_cannot_seed_a_negative_quantity_long(self):
+        """A negative quantity is a short downstream, whatever the label."""
+        for i, pos in enumerate((
+                {"symbol": "AAPL", "market": "us-stock", "side": "long",
+                 "quantity": -5, "entry_price": 100},
+                {"symbol": "BTC", "market": "crypto", "quantity": -1,
+                 "entry_price": 100})):
+            resp = self.client.post("/api/claw/agents/selfRegister", json={
+                "name": f"neg-seed-{i}", "password": "pw123",
+                "initial_balance": 1000, "positions": [pos]})
+            self.assertEqual(resp.status_code, 403, resp.text)
+        resp = self.client.post("/api/claw/agents/selfRegister", json={
+            "name": "pos-seed", "password": "pw123", "initial_balance": 1000,
+            "positions": [{"symbol": "AAPL", "market": "us-stock", "side": "long",
+                           "quantity": 2, "entry_price": 100}]})
+        self.assertEqual(resp.status_code, 200, resp.text)
 
     def test_resting_order_refused_at_placement(self):
         from resting_orders import place_resting_order

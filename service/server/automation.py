@@ -125,6 +125,21 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             if fence_reason:
                 conn.rollback()
                 return None, fence_reason
+        # Futures block, run shape: a market_type='futures' run that was
+        # already running when the switch went on never passes start_run
+        # again, and the ledger cannot see market_type — refuse its opens
+        # here, inside the transaction. Closes are not affected.
+        if run_id is not None and side in ("buy", "short"):
+            cursor.execute("SELECT market, market_type FROM trading_runs WHERE id = ?",
+                           (run_id,))
+            run_row = cursor.fetchone()
+            if run_row:
+                run_refusal = order_refusal(run_row["market"], side, lev,
+                                            market_type=run_row["market_type"],
+                                            cursor=cursor)
+                if run_refusal:
+                    conn.rollback()
+                    return None, run_refusal
         # Plan 32: on a dedicated trend account only the trend rule opens.
         fenced = trend_accounts.entry_fence(cursor, agent_id, side,
                                             client_order_id)
