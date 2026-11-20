@@ -1,0 +1,5 @@
+# raw candles (~110 MB) and per-run results (~230 MB) are reproducible:
+#   python fetch.py && python fetch_stocks.py && python run.py stock 200 && python run.py crypto 50
+data/
+results_*.json
+__pycache__/
