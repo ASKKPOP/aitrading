@@ -1330,6 +1330,7 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     market_type = symbol_research.thesis_market_type(market, direction)
     if market_type == "spot":
         market_type = thesis.get("market_type") or "spot"
+    margin_book = market_type == "margin"
     archetype = (fleet.get("archetype") or "short").strip().lower()
     if archetype == "swing":
         # Owner spec 2026-08-12: decouple LOOKING from ACTING. The desk
@@ -1391,7 +1392,7 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
     # aggressive/extreme tiers' auto-leverage would otherwise compose runs
     # that start_run refuses.
     from futures_policy import futures_blocked
-    if futures_blocked():
+    if futures_blocked() or margin_book:   # a margin book is 1x only
         leverage = 1.0
     if archetype == "swing":
         # Plan 23 Phase C: gap-sized risk — derive the bet from the overnight

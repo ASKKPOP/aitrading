@@ -147,6 +147,22 @@ class MarginBookTests(unittest.TestCase):
             self.assertEqual(futures_policy.thesis_refusal("us-stock", "short"),
                              "futures_blocked")
 
+    def test_margin_is_1x_even_with_the_block_off(self):
+        """Review F2: with FUTURES_TRADING_BLOCKED=0 the policy allows leverage,
+        but a margin book stays 1x at the API and in the composer."""
+        import fleet_planner as fp
+        with patch.dict(os.environ, {"FUTURES_TRADING_BLOCKED": "0"}):
+            resp = self._create(leverage=5.0,
+                                stop_conditions={"max_loss_usd": 50.0})
+            self.assertEqual(resp.status_code, 400, resp.text)
+            self.assertIn("1x only", resp.text)
+            thesis = {"symbol": "AAPL", "market": "us-stock", "direction": "short",
+                      "confidence": 0.7, "expected_move_pct": 3.0, "horizon_hours": 12}
+            fleet = {"agent_id": self.agent_id, "risk_appetite": "aggressive",
+                     "total_budget_usd": 10000, "n_runs": 4, "leverage": 5}
+            s = fp.compose_run_settings(thesis, 2500.0, fleet)
+            self.assertEqual((s["market_type"], s["leverage"]), ("margin", 1.0))
+
     def test_margin_leverage_still_refused(self):
         self.assertIn("leveraged", futures_policy.run_refusal("us-stock", "margin", 2.0))
 

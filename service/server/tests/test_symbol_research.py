@@ -174,7 +174,9 @@ class ShortVenueTests(unittest.TestCase):
     def test_short_with_no_shortable_venue_is_not_expressible(self):
         # forex is supports_short=True at the MARKET level, which is what let
         # this through — the venue it actually lands on is what matters.
-        for market in ("forex", "us-stock", "futures"):
+        # us-stock left this list 2026-11-20: a US-stock short now lands on a
+        # 'margin' (short-sale) book (tests/test_us_stock_margin_short.py).
+        for market in ("forex", "futures"):
             self.assertEqual(sr.thesis_market_type(market, "short"), "spot")
             self.assertFalse(sr.thesis_is_expressible(market, "short"),
                              f"{market} short would be written to a spot book")

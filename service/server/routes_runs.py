@@ -430,6 +430,8 @@ def validate_run_payload(data: RunIn) -> tuple[dict, dict, dict]:
     # 'margin' is the US-stock short-capable book (two-way, 2026-11-20).
     if data.market_type == "margin" and data.market != "us-stock":
         raise ValueError("margin market_type is US-stock-only")
+    if data.market_type == "margin" and float(data.leverage or 1.0) > 1.0:
+        raise ValueError("a margin (short-sale) book is 1x only")
     # Leveraged SPOT with NO max-loss stop (2026-07-30). A spot book cannot
     # short, so a desk reading bearish has no legal action at all — and
     # leverage then amplifies the one direction it is refusing to take. Live

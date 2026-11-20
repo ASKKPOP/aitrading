@@ -1741,7 +1741,9 @@ function CreateRunForm({ token, onDone, onCancel, language, editRun }: {
         <label style={field}>{lbl({ ko: '시장', en: 'Market', ja: '市場', th: 'ตลาด', vi: 'Thị trường', id: 'Pasar' })}
           <select style={input} value={f.market}
             onChange={(e) => setF({ ...f, market: e.target.value, symbol: '',
-              market_type: e.target.value === 'crypto' ? f.market_type : 'spot' })}>
+              market_type: (e.target.value === 'crypto' && f.market_type === 'futures')
+                || (e.target.value === 'us-stock' && f.market_type === 'margin')
+                ? f.market_type : 'spot' })}>
             <option value="crypto">crypto</option><option value="us-stock">us-stock</option>
             <option value="forex">forex</option>
             <option value="futures">futures</option>
@@ -1751,6 +1753,8 @@ function CreateRunForm({ token, onDone, onCancel, language, editRun }: {
             onChange={(e) => setF({ ...f, market_type: e.target.value })}>
             <option value="spot">spot</option>
             <option value="futures" disabled={f.market !== 'crypto'}>futures</option>
+            {/* US-stock short-sale book (two-way, 2026-11-20): 1x only. */}
+            <option value="margin" disabled={f.market !== 'us-stock'}>margin (short)</option>
           </select></label>
         <label style={field}>{lbl({ ko: '최대 베팅($)', en: 'Max bet ($)', ja: '最大($)', th: 'เดิมพันสูงสุด', vi: 'Cược tối đa', id: 'Taruhan maks ($)' })}
           <input style={input} type="number" value={f.max_bet_usd}
