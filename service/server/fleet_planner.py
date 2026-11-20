@@ -766,7 +766,7 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                 names = sorted({_LABEL.get(m, m) for m in scope})
                 prefix = (_prefix(scope[0]) if len(names) == 1 else
                           f"{' and '.join(names)} trading is disabled on this "
-                          "platform (spot and US stock only)")
+                          "platform (crypto and US stock at 1x only)")
                 raise trading_runs.EntitlementDenied(
                     f"{prefix}: a fleet that can only trade "
                     f"{', '.join(names)} cannot be created.")

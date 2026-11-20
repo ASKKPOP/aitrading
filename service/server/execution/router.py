@@ -273,6 +273,17 @@ class ExecutionRouter:
         order.execution_mode = execution_mode
         order.created_at = order.created_at or utc_now_iso_z()
 
+        # A real venue can only take a US-stock short (two-way, 2026-11-20).
+        # Live: refuse. Shadow: the paper fill stands, no venue mirror.
+        venue_refusal = None
+        if execution_mode != ExecutionMode.PAPER:
+            venue_refusal = order_refusal(order.market, order.side,
+                                          symbol=order.symbol, live=True)
+        if venue_refusal and execution_mode == ExecutionMode.LIVE:
+            order.status = OrderStatus.REJECTED
+            order.error_message = venue_refusal
+            return order
+
         # ── Paper mode (default) ────────────────────────────────────────────
         if execution_mode == ExecutionMode.PAPER:
             order.broker = "paper"
@@ -288,6 +299,8 @@ class ExecutionRouter:
             paper = PaperBroker()
             paper_order = await paper.submit_order(order, cursor=cursor)
             paper_order.db_id = _persist_order(paper_order)
+            if venue_refusal:
+                return paper_order
 
             # Real broker runs in background — errors are logged, not raised
             real_broker = _build_real_broker(account)

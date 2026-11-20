@@ -60,11 +60,19 @@ SHORTS_ENV_VAR = "SHORTS_TRADING_BLOCKED"
 # The only market a 1x short / perp book may open on when shorts are allowed
 # (US-stock shorts are plain short-sales on a spot book).
 PERP_MARKETS = ("crypto",)
+# Shorts are an ALLOWLIST (the owner's rule is "crypto and US stock"), so an
+# unaliased label ('option', 'cme', '') cannot open one.
+SHORT_MARKETS = ("crypto", "us-stock")
+# A short sent to a real venue: only US stock (a margin short-sale). Every
+# crypto adapter is spot-only, so a live crypto "short" would sell coin the
+# ledger does not hold. Crypto shorts stay on the simulated ledger.
+LIVE_SHORT_MARKETS = ("us-stock",)
 
 _OFF = ("0", "false", "no", "off")
 OPEN_ACTIONS = ("buy", "short")
 
-REFUSAL_PREFIX = "futures trading is disabled on this platform (spot and US stock only)"
+_SCOPE = "(crypto and US stock at 1x only)"
+REFUSAL_PREFIX = f"futures trading is disabled on this platform {_SCOPE}"
 
 # Markets nothing may OPEN on while the block is on. Forex added 2026-11-20
 # (owner: "also exchange do not use"): it is neither spot nor US stock.
@@ -105,7 +113,7 @@ def _prefix(market: Optional[str]) -> str:
     label = _LABEL.get(_norm(market))
     if label is None:
         return REFUSAL_PREFIX
-    return f"{label} trading is disabled on this platform (spot and US stock only)"
+    return f"{label} trading is disabled on this platform {_SCOPE}"
 
 
 def _parse(raw: Optional[str]) -> Optional[bool]:
@@ -166,18 +174,23 @@ def _perp_ok(market: Optional[str], cursor=None) -> bool:
 
 def _exposure_kind(action: str, market: Optional[str], leverage: float,
                    market_type: Optional[str] = None,
-                   symbol: Optional[str] = None, cursor=None) -> Optional[str]:
+                   symbol: Optional[str] = None, cursor=None,
+                   live: bool = False) -> Optional[str]:
     """Which refused exposure an OPEN would create, or None if allowed."""
-    if (action or "").strip().lower() not in OPEN_ACTIONS:
+    act = (action or "").strip().lower()
+    if act not in OPEN_ACTIONS:
         return None
-    if (action or "").strip().lower() == "short" and shorts_blocked(cursor):
-        return "opening a short"
     if _norm(market) == "futures":
         return "a futures-market order"
     if _norm(market) in _ORDER_KIND:
         return _ORDER_KIND[_norm(market)]
     if _is_option_symbol(symbol):
         return "an options contract"
+    if act == "short":
+        if shorts_blocked(cursor) or _norm(market) not in SHORT_MARKETS:
+            return "opening a short"
+        if live and _norm(market) not in LIVE_SHORT_MARKETS:
+            return "a live crypto short (no perp venue is connected)"
     if ((market_type or "spot").strip().lower() == "futures"
             and not _perp_ok(market, cursor)):
         return "a futures (perpetual) book"
@@ -192,13 +205,15 @@ def _exposure_kind(action: str, market: Optional[str], leverage: float,
 
 def order_refusal(market: Optional[str], action: str, leverage: float = 1.0,
                   market_type: Optional[str] = None, cursor=None,
-                  symbol: Optional[str] = None) -> Optional[str]:
+                  symbol: Optional[str] = None, live: bool = False) -> Optional[str]:
     """Reason to refuse this order, or None. Closes always get None.
     `symbol`: pass it where known, so an option contract under another
-    market label is refused too."""
+    market label is refused too. `live`: the order goes to a real venue
+    (live or shadow), where only a US-stock short is possible."""
     if not futures_blocked(cursor):
         return None
-    kind = _exposure_kind(action, market, leverage, market_type, symbol, cursor)
+    kind = _exposure_kind(action, market, leverage, market_type, symbol, cursor,
+                          live)
     if kind is None:
         return None
     prefix = _prefix("options") if kind == "an options contract" else _prefix(market)
@@ -230,7 +245,7 @@ def run_refusal(market: Optional[str], market_type: Optional[str],
             kind = f"a {lev:g}x leveraged run"
     if kind is None or not futures_blocked(cursor):
         return None
-    return f"{_prefix(market)}: {kind} cannot start. Use a 1x spot or crypto run."
+    return f"{_prefix(market)}: {kind} cannot start. Use a 1x spot run, or a 1x crypto run."
 
 
 def thesis_refusal(market: Optional[str], direction: Optional[str],

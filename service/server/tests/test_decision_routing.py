@@ -34,6 +34,9 @@ QUIET = dict(  # every signal silent → classifier must say "light"
     event=("market_events.active_event_window", None),
     psych=("psych_feed.get_psych_payload", {"available": False}),
     regime=("regime.current_regime_state", None),
+    # us-stock/forex runs read the US Fear & Greed gauge; unpatched it is the
+    # LIVE reading, so an extreme market day failed this suite.
+    us_fg=("psych_feed.us_fear_greed", None),
 )
 
 

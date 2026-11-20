@@ -1057,6 +1057,64 @@ class TwoWayTests(_DbBase):
                 "sell", 1.0, 100.0, None, None, {})
         live.assert_called_once()
 
+    def test_live_oversell_still_guarded_off_us_stock(self):
+        """Reviewer F1: with shorts allowed, a live oversell on any market but
+        US stock would still open a short at the broker. Refused before it."""
+        import automation
+        for market, symbol in (("crypto", "SOLUSDT"), ("forex", "EURUSD"),
+                               ("futures", "ES"), ("options", "AAPL261218C00200000")):
+            self._seed_position(symbol, market, 1.0)
+            for side in ("sell", "cover"):
+                with patch("execution.gateway.submit_live") as live:
+                    sid, why = automation._execute_for_account_type(
+                        {"account_type": "live"}, self.agent_id, symbol, market,
+                        side, 10.0, 100.0, None, None, {})
+                live.assert_not_called()
+                self.assertIsNone(sid, (market, side))
+
+    def test_live_crypto_short_never_reaches_a_venue(self):
+        """Reviewer F3: every crypto adapter is spot-only; a live 'short' would
+        sell coin the ledger does not hold. A US-stock live short still goes."""
+        import asyncio
+        import automation
+        from execution import gateway
+        from execution.base import Order, OrderStatus
+        from execution.router import ExecutionRouter
+        with patch("execution.gateway.submit_live") as live:
+            sid, why = automation._execute_for_account_type(
+                {"account_type": "live"}, self.agent_id, "SOLUSDT", "crypto",
+                "short", 1.0, 100.0, None, None, {})
+        live.assert_not_called()
+        self.assertIn("live crypto short", why)
+        acct = {"broker": "binance", "execution_mode": "live"}
+        with patch.object(gateway, "active_broker_account", return_value=acct), \
+             patch.object(gateway, "_broker_for") as broker_for, \
+             patch("execution.router._persist_order", return_value=1):
+            order = gateway.submit_live(self.agent_id, "SOLUSDT", "crypto",
+                                        "short", 1.0, 100.0)
+        broker_for.assert_not_called()
+        self.assertEqual(order.status, OrderStatus.REJECTED)
+        with patch.object(gateway, "active_broker_account") as a:
+            self.assertIsNone(gateway.submit_shadow(
+                self.agent_id, "SOLUSDT", "crypto", "short", 1.0, 100.0, 1.0))
+        a.assert_not_called()
+        order = Order(agent_id=self.agent_id, symbol="SOLUSDT", market="crypto",
+                      side="short", quantity=1.0, price=100.0, created_at=_NOW)
+        with patch("execution.router._get_active_broker_account", return_value=acct), \
+             patch("execution.router._build_real_broker") as real:
+            out = asyncio.run(ExecutionRouter().execute(self.agent_id, order))
+        real.assert_not_called()
+        self.assertEqual(out.status, OrderStatus.REJECTED)
+        # US stock: a live short-sale is allowed through the policy.
+        self.assertIsNone(futures_policy.order_refusal("us-stock", "short", live=True))
+        self.assertIsNone(futures_policy.order_refusal("crypto", "short"))  # sim ok
+
+    def test_shorts_are_an_allowlist(self):
+        """Reviewer F4: an unaliased label cannot open a short."""
+        for market in ("option", "cme", "", None, "commodities"):
+            self.assertIn("opening a short",
+                          futures_policy.order_refusal(market, "short") or "", market)
+
     def test_manual_us_stock_short_route_is_ok(self):
         from routes import create_app
         client = TestClient(create_app())

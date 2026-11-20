@@ -396,7 +396,7 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     # Futures block BEFORE any venue: the ledger would refuse this open
     # after a live broker had already filled it.
     from futures_policy import order_refusal
-    futures_refusal = order_refusal(market, side, symbol=symbol)
+    futures_refusal = order_refusal(market, side, symbol=symbol, live=True)
     if futures_refusal:
         return None, futures_refusal
     # A live sell larger than the held long (or a cover larger than the held
@@ -404,8 +404,12 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     # reads as a close. Rules trade the unowned book, so check it before the
     # venue. A ledger close of what IS held is untouched.
     if mode == LIVE and side in ("sell", "cover"):
-        from futures_policy import shorts_blocked
-        if shorts_blocked():
+        # Two-way (owner 2026-11-20): only a US-stock short-sale is allowed
+        # at a venue; every other market keeps this guard.
+        from futures_policy import LIVE_SHORT_MARKETS, _norm, futures_blocked, \
+            shorts_blocked
+        if futures_blocked() and (_norm(market) not in LIVE_SHORT_MARKETS
+                                  or shorts_blocked()):
             from routes_shared import get_position_snapshot
             conn = get_db_connection()
             try:
@@ -416,12 +420,12 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
             held = float(pos["quantity"]) if pos else 0.0
             if side == "sell" and quantity > max(held, 0.0) + 1e-9:
                 return None, ("futures trading is disabled on this platform "
-                              "(spot and US stock only): a live sell larger than "
+                              "(crypto and US stock at 1x only): a live sell larger than "
                               "the held long would open a short at the broker — "
                               "live order not sent")
             if side == "cover" and quantity > max(-held, 0.0) + 1e-9:
                 return None, ("futures trading is disabled on this platform "
-                              "(spot and US stock only): a live cover larger than "
+                              "(crypto and US stock at 1x only): a live cover larger than "
                               "the held short would open a position at the broker "
                               "— live order not sent")
 
