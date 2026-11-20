@@ -502,7 +502,8 @@ def register_runs_routes(app: FastAPI, ctx: RouteContext) -> None:
         # up front; start_run refuses it again.
         from futures_policy import run_refusal
         futures_deny = run_refusal(settings.get("market"), settings.get("market_type"),
-                                   settings.get("leverage") or 1.0)
+                                   settings.get("leverage") or 1.0,
+                                   symbol=settings.get("symbol"))
         if futures_deny:
             raise HTTPException(status_code=403, detail=futures_deny)
 

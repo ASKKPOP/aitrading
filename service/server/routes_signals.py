@@ -179,7 +179,7 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
         # Platform-wide futures block (owner 2026-11-20). The ledger refuses
         # too; this answers before any row is written. Closes always pass.
         from futures_policy import order_refusal
-        futures_refusal = order_refusal(market, action_lower, lev)
+        futures_refusal = order_refusal(market, action_lower, lev, symbol=symbol)
         if futures_refusal:
             raise HTTPException(status_code=403, detail=futures_refusal)
 

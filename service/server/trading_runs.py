@@ -601,7 +601,8 @@ def resolve_start_conflicts(run_id: int, agent_id: int) -> dict:
         except Exception:  # noqa: BLE001
             _snap = {}
         futures_deny = run_refusal(run.get("market"), run.get("market_type"),
-                                   _snap.get("leverage") or 1.0, cursor=cursor)
+                                   _snap.get("leverage") or 1.0, cursor=cursor,
+                                   symbol=run.get("symbol"))
         if futures_deny:
             raise EntitlementDenied(futures_deny)
         market, symbol = run["market"], run["symbol"]
@@ -708,7 +709,8 @@ def start_run(run_id: int, agent_id: int) -> dict:
         except Exception:  # noqa: BLE001
             _snap = {}
         futures_deny = run_refusal(run.get("market"), run.get("market_type"),
-                                   _snap.get("leverage") or 1.0, cursor=cursor)
+                                   _snap.get("leverage") or 1.0, cursor=cursor,
+                                   symbol=run.get("symbol"))
         if futures_deny:
             raise EntitlementDenied(futures_deny)
 

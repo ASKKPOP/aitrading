@@ -261,7 +261,7 @@ class ExecutionRouter:
         # Platform-wide futures block (owner 2026-11-20), before any broker:
         # the live branch below would send the real order first.
         from futures_policy import order_refusal
-        futures_refusal = order_refusal(order.market, order.side)
+        futures_refusal = order_refusal(order.market, order.side, symbol=order.symbol)
         if futures_refusal:
             order.status = OrderStatus.REJECTED
             order.error_message = futures_refusal

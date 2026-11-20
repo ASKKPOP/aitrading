@@ -848,5 +848,50 @@ class OptionsPolymarketBlockTests(_DbBase):
                                             market_scope=["options", "us-stock"]))
 
 
+
+class OptionSymbolUnderStockLabelTests(_DbBase):
+    """An OCC option symbol booked as us-stock must not slip past the options
+    block (it would also be priced at multiplier 1 instead of 100)."""
+    OCC = "AAPL261218C00200000"
+
+    def test_policy_and_ledger(self):
+        self.assertIn("options trading is disabled",
+                      futures_policy.order_refusal("us-stock", "buy", symbol=self.OCC))
+        self.assertIsNone(futures_policy.order_refusal("us-stock", "buy", symbol="AAPL"))
+        self.assertIsNone(futures_policy.order_refusal("us-stock", "sell", symbol=self.OCC))
+        from automation import execute_paper_trade
+        sid, why = execute_paper_trade(self.agent_id, self.OCC, "us-stock", "buy", 1.0, 2.5)
+        self.assertIsNone(sid)
+        self.assertIn("options contract", why)
+        self._seed_position("SPY240119P00470000", "us-stock", 1.0, entry=3.0)
+        sid, why = execute_paper_trade(self.agent_id, "SPY240119P00470000", "us-stock",
+                                       "sell", 1.0, 3.5)
+        self.assertIsNone(why)
+        sid, why = execute_paper_trade(self.agent_id, "AAPL", "us-stock", "buy", 1.0, 150.0)
+        self.assertIsNone(why)
+
+    def test_run_start_refused(self):
+        with patch.dict(os.environ, _OFF):
+            run_id = trading_runs.create_run(
+                self.agent_id, _settings(symbol=self.OCC, market="us-stock"),
+                {"type": "manual"}, {}, True)
+        with self.assertRaises(trading_runs.EntitlementDenied) as ctx:
+            trading_runs.start_run(run_id, self.agent_id)
+        self.assertIn("options trading is disabled", str(ctx.exception))
+
+    def test_realtime_route_403(self):
+        from routes import create_app
+        client = TestClient(create_app())
+        resp = client.post("/api/claw/agents/selfRegister",
+                           json={"name": "occ-agent", "password": "pw123",
+                                 "initial_balance": 10000})
+        headers = {"Authorization": f"Bearer {resp.json()['token']}"}
+        body = {"market": "us-stock", "action": "buy", "symbol": self.OCC,
+                "price": 2.5, "quantity": 1, "executed_at": _MARKET_TS}
+        with patch.dict(os.environ, {"ALLOW_SYNC_PRICE_FETCH_IN_API": "false"}):
+            r = client.post("/api/signals/realtime", json=body, headers=headers)
+        self.assertEqual(r.status_code, 403, r.text)
+
+
 if __name__ == "__main__":
     unittest.main()

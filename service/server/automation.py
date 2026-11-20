@@ -106,7 +106,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
     # Platform-wide futures block (owner 2026-11-20). The ledger refuses too;
     # checking here returns a clean skip reason instead of a logged traceback.
     from futures_policy import order_refusal
-    futures_refusal = order_refusal(market, side, lev)
+    futures_refusal = order_refusal(market, side, lev, symbol=symbol)
     if futures_refusal:
         return None, futures_refusal
 
@@ -396,7 +396,7 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
     # Futures block BEFORE any venue: the ledger would refuse this open
     # after a live broker had already filled it.
     from futures_policy import order_refusal
-    futures_refusal = order_refusal(market, side)
+    futures_refusal = order_refusal(market, side, symbol=symbol)
     if futures_refusal:
         return None, futures_refusal
     # A live sell larger than the held long (or a cover larger than the held
@@ -745,7 +745,7 @@ def run_rule(config: dict[str, Any]) -> dict[str, Any]:
             return result
 
     # Platform-wide block (owner 2026-11-20): an auto-executing rule on a
-    # market nothing may open on (forex, futures) is skipped before paying for
+    # market nothing may open on (futures, forex, options, polymarket) is skipped before paying for
     # the analysis, unless the book still holds that symbol: then it runs, so
     # the rule can still close what it holds.
     if config.get("auto_execute"):

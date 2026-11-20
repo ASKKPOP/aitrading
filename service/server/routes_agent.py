@@ -503,7 +503,8 @@ def register_agent_routes(app: FastAPI, ctx: RouteContext) -> None:
                     is_short = seeded_side == 'short' or seeded_qty < 0
                     futures_refusal = order_refusal(
                         pos.get('market', 'us-stock'),
-                        'short' if is_short else 'buy')
+                        'short' if is_short else 'buy',
+                        symbol=pos.get('symbol'))
                     if futures_refusal:
                         raise HTTPException(status_code=403, detail=futures_refusal)
                 for pos in data.positions:

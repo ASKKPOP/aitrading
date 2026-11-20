@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,17 @@ _ORDER_KIND = {"forex": "a forex order", "options": "an options order",
                "polymarket": "a Polymarket order"}
 _RUN_KIND = {"forex": "a forex run", "options": "an options run",
              "polymarket": "a Polymarket run"}
+
+
+# An OCC option symbol (AAPL261218C00200000). Same shape as
+# price_fetcher._OCC_RE. An option contract booked under another market
+# label (us-stock) would slip past a market-only check and be priced at
+# multiplier 1 instead of 100.
+_OCC_RE = re.compile(r"^[A-Z]{1,6}\d{6}[CP]\d{8}$")
+
+
+def _is_option_symbol(symbol: Optional[str]) -> bool:
+    return bool(_OCC_RE.match((symbol or "").strip().upper()))
 
 
 def _norm(market: Optional[str]) -> str:
@@ -119,7 +131,8 @@ def futures_blocked(cursor=None) -> bool:
 
 
 def _exposure_kind(action: str, market: Optional[str], leverage: float,
-                   market_type: Optional[str] = None) -> Optional[str]:
+                   market_type: Optional[str] = None,
+                   symbol: Optional[str] = None) -> Optional[str]:
     """Which futures exposure an OPEN would create, or None for spot."""
     if (action or "").strip().lower() not in OPEN_ACTIONS:
         return None
@@ -129,6 +142,8 @@ def _exposure_kind(action: str, market: Optional[str], leverage: float,
         return "a futures-market order"
     if _norm(market) in _ORDER_KIND:
         return _ORDER_KIND[_norm(market)]
+    if _is_option_symbol(symbol):
+        return "an options contract"
     if (market_type or "spot").strip().lower() == "futures":
         return "a futures (perpetual) book"
     try:
@@ -141,23 +156,31 @@ def _exposure_kind(action: str, market: Optional[str], leverage: float,
 
 
 def order_refusal(market: Optional[str], action: str, leverage: float = 1.0,
-                  market_type: Optional[str] = None, cursor=None) -> Optional[str]:
-    """Reason to refuse this order, or None. Closes always get None."""
-    kind = _exposure_kind(action, market, leverage, market_type)
+                  market_type: Optional[str] = None, cursor=None,
+                  symbol: Optional[str] = None) -> Optional[str]:
+    """Reason to refuse this order, or None. Closes always get None.
+    `symbol`: pass it where known, so an option contract under another
+    market label is refused too."""
+    kind = _exposure_kind(action, market, leverage, market_type, symbol)
     if kind is None or not futures_blocked(cursor):
         return None
-    return (f"{_prefix(market)}: {kind} is refused. "
+    prefix = _prefix("options") if kind == "an options contract" else _prefix(market)
+    return (f"{prefix}: {kind} is refused. "
             "Closing an existing position is still allowed.")
 
 
 def run_refusal(market: Optional[str], market_type: Optional[str],
-                leverage: float = 1.0, cursor=None) -> Optional[str]:
+                leverage: float = 1.0, cursor=None,
+                symbol: Optional[str] = None) -> Optional[str]:
     """Reason to refuse starting a run with this shape, or None."""
     kind = None
     if _norm(market) == "futures":
         kind = "a futures-market run"
     elif _norm(market) in _RUN_KIND:
         kind = _RUN_KIND[_norm(market)]
+    elif _is_option_symbol(symbol):
+        kind = "an options-contract run"
+        market = "options"
     elif (market_type or "spot").strip().lower() == "futures":
         kind = "a futures (perpetual) run"
     else:

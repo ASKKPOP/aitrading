@@ -545,7 +545,7 @@ def submit_live(agent_id: int, symbol: str, market: str, side: str,
     # real money refuses a new short or a futures-market open itself, not
     # only through its callers. Closes are never refused.
     from futures_policy import order_refusal
-    futures_refusal = order_refusal(market, side)
+    futures_refusal = order_refusal(market, side, symbol=symbol)
     if futures_refusal:
         return _refuse((account or {}).get("broker") or "none", futures_refusal)
     if not account:
@@ -621,7 +621,7 @@ def submit_shadow(agent_id: int, symbol: str, market: str, side: str,
     # Futures block: no sandbox order for a futures open either (the ledger
     # already refused the simulated fill this would mirror).
     from futures_policy import order_refusal
-    if order_refusal(market, side):
+    if order_refusal(market, side, symbol=symbol):
         return None
     account = active_broker_account(agent_id, market)
     if not account or not _has_usable_credentials(account):

@@ -286,7 +286,8 @@ def _update_position_from_signal(
     # are never refused. Checked first, before the lot consolidation below
     # mutates anything.
     from futures_policy import order_refusal
-    futures_refusal = order_refusal(market, (action or "").lower(), leverage, cursor=cursor)
+    futures_refusal = order_refusal(market, (action or "").lower(), leverage,
+                                    cursor=cursor, symbol=symbol)
     if futures_refusal:
         raise ValueError(futures_refusal)
 
