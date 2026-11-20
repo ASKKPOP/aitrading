@@ -650,9 +650,6 @@ class FleetTests(_DbBase):
         self.assertIn("futures_blocked", reasons)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 # ── forex (owner 2026-11-20: "also exchange do not use") ───────────────────
 
@@ -685,6 +682,8 @@ class ForexBlockTests(_DbBase):
         with self.assertRaises(trading_runs.EntitlementDenied) as ctx:
             trading_runs.start_run(run_id, self.agent_id)
         self.assertIn("forex run cannot start", str(ctx.exception))
+        self.assertTrue(str(ctx.exception).startswith("forex trading is disabled"),
+                        str(ctx.exception))
 
     def test_select_targets_drops_forex(self):
         import symbol_research as sr
@@ -720,8 +719,12 @@ class ForexBlockTests(_DbBase):
     def test_forex_only_fleet_refused(self):
         import fleet_planner as fp
         with patch("entitlements.plan_code_for_user", return_value="professional"):
-            with self.assertRaises(trading_runs.EntitlementDenied):
+            with self.assertRaises(trading_runs.EntitlementDenied) as ctx:
                 fp.create_fleet(self.agent_id, 2, 2000.0, market_scope=["forex"])
+            self.assertTrue(str(ctx.exception).startswith("forex trading is disabled"),
+                            str(ctx.exception))
+            with self.assertRaises(trading_runs.EntitlementDenied):
+                fp.create_fleet(self.agent_id, 2, 2000.0, market_scope=["FX", "futures"])
             self.assertTrue(fp.create_fleet(self.agent_id, 2, 2000.0,
                                             market_scope=["forex", "us-stock"]))
 
@@ -770,3 +773,18 @@ class ForexSeedTests(_DbBase):
                 "positions": [{"symbol": "EURUSD", "market": market, "side": "long",
                                "quantity": 1000, "entry_price": 1.08}]})
             self.assertEqual(resp.status_code, 403, (market, resp.text))
+
+
+class ForexAliasLedgerTests(_DbBase):
+    def test_ledger_refuses_an_alias_market_buy(self):
+        from automation import execute_paper_trade
+        for alias in ("fx", "currency"):
+            sid, why = execute_paper_trade(self.agent_id, "EURUSD", alias, "buy",
+                                           100.0, 1.08)
+            self.assertIsNone(sid, alias)
+            self.assertIn("forex trading is disabled", why)
+        self.assertEqual(self._positions("EURUSD"), [])
+
+
+if __name__ == "__main__":
+    unittest.main()
