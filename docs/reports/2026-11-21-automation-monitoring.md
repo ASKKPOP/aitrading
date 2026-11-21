@@ -17,6 +17,8 @@ opened before the block (SOL / ETH / BNB, 11-09…11-12). It is outside the two-
 started at 20:41Z and traded crypto shorts until the owner's **long-only + long-exit-policy** deploy at **11-21T03:03:52Z**. That deploy
 retired every flat run. **`MAX(run_events.ts)` = 04:06:37Z, so nothing has traded for 15 h 39 m.** Fleet 54 shows `replenishing:0/6`.
 
+**Deploy record:** `scripts/deploy.sh sweep-20261121` from 2bb2992 at about 20:10Z (a notes-only image, deployed because R44's falsifier verdict moved and a new trap was found). Verified twice, 60 s apart. `.env` and both containers are on `20261121-sweep-20261121`, and `/app/docs/reports/` lists this file. `futures_blocked()` and `shorts_blocked()` are True. 0 tracebacks, and `/api/subscriptions/plans` returns 200. Rollback tag: `20261121-long-exit-policy`.
+
 ### 1. P&L — dollars first
 
 | window | agent 6 (info) | agent 60 | combined | n trips | fees |
