@@ -659,7 +659,9 @@ def resolve_start_conflicts(run_id: int, agent_id: int) -> dict:
         side = "cover" if qty < 0 else "sell"
         signal_id, skip = execute_paper_trade(
             agent_id, symbol, market, side, abs(qty), float(price),
-            content=f"position closed to start trading run #{run_id}")
+            content=f"position closed to start trading run #{run_id}",
+            # The user consented to this close to start the run.
+            human_initiated=True)
         if signal_id:
             closed = True
         elif skip in ("no long position to sell", "no short position to cover"):

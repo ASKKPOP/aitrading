@@ -901,7 +901,9 @@ class OptionSymbolUnderStockLabelTests(_DbBase):
 
 # ── two-way (owner 2026-11-20 ~18:35Z: "short and long two way") ────────────
 
-_TWO_WAY = {"FUTURES_TRADING_BLOCKED": "1"}   # main block on, shorts switch unset
+# Main block on, shorts explicitly allowed. Since 2026-11-21 (owner: long
+# only) the shorts switch defaults ON, so two-way is an explicit opt-in.
+_TWO_WAY = {"FUTURES_TRADING_BLOCKED": "1", "SHORTS_TRADING_BLOCKED": "0"}
 
 
 class TwoWayTests(_DbBase):
@@ -914,7 +916,6 @@ class TwoWayTests(_DbBase):
         self.env.stop()
         self.env = patch.dict(os.environ, _TWO_WAY)
         self.env.start()
-        os.environ.pop("SHORTS_TRADING_BLOCKED", None)
         self.plan = patch("entitlements.plan_code_for_user",
                           return_value="professional")
         self.plan.start()
@@ -939,9 +940,21 @@ class TwoWayTests(_DbBase):
             return trading_runs.create_run(self.agent_id, _settings(**over),
                                            {"type": "manual"}, {}, True)
 
-    def test_default_allows_shorts_with_the_main_block_on(self):
+    def test_two_way_switch_allows_shorts_with_the_main_block_on(self):
         self.assertTrue(futures_policy.futures_blocked())
         self.assertFalse(futures_policy.shorts_blocked())
+
+    def test_production_default_is_long_only(self):
+        # Owner 2026-11-21: "Long only, no shorts". Unset switch = blocked.
+        with patch.dict(os.environ, {"FUTURES_TRADING_BLOCKED": "1"}):
+            os.environ.pop("SHORTS_TRADING_BLOCKED", None)
+            self.assertTrue(futures_policy.shorts_blocked())
+            self.assertIn("opening a short",
+                          futures_policy.order_refusal("crypto", "short"))
+            self.assertIn("opening a short",
+                          futures_policy.order_refusal("us-stock", "short"))
+            self.assertIsNone(futures_policy.order_refusal("crypto", "buy"))
+            self.assertIsNone(futures_policy.order_refusal("crypto", "cover"))
 
     def test_shorts_switch_re_arms_long_only(self):
         with patch.dict(os.environ, {"SHORTS_TRADING_BLOCKED": "1"}):
@@ -954,11 +967,14 @@ class TwoWayTests(_DbBase):
         with patch.dict(os.environ, _OFF):                   # master off: all open
             self.assertFalse(futures_policy.shorts_blocked())
 
-    def test_unreadable_shorts_setting_keeps_the_two_way_default(self):
+    def test_unreadable_shorts_setting_falls_back_to_the_env(self):
         broken = MagicMock()
         broken.execute.side_effect = RuntimeError("settings unreadable")
         self.assertTrue(futures_policy.futures_blocked(broken))   # still fail closed
-        self.assertFalse(futures_policy.shorts_blocked(broken))
+        self.assertFalse(futures_policy.shorts_blocked(broken))   # env says two-way
+        with patch.dict(os.environ, {"FUTURES_TRADING_BLOCKED": "1"}):
+            os.environ.pop("SHORTS_TRADING_BLOCKED", None)
+            self.assertTrue(futures_policy.shorts_blocked(broken))  # default: long only
         self.assertIsNotNone(futures_policy.order_refusal("crypto", "buy", 2.0,
                                                           cursor=broken))
 

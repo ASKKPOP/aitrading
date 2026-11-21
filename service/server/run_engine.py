@@ -1645,11 +1645,44 @@ def _evaluate_stop(run: dict) -> Optional[str]:
     """Return a stop reason string when a stop event fired, None otherwise.
     Raises on evaluation FAILURE (stale marks, unreadable state) — the
     caller treats failure as fail-closed (pause entries + alert), the
-    inverse of the codebase's fail-open telemetry convention."""
+    inverse of the codebase's fail-open telemetry convention.
+
+    Long exit policy (owner 2026-11-21): while a run HOLDS A LONG, no run
+    rail closes it — not the breakeven ratchet, the trailing lock, max_loss,
+    profit_target, at_time, thesis decay, conviction collapse or a price
+    cross. A long leaves only by the desk's own sell (above buy price +
+    fees) or the watcher's -15% emergency / +5% target. Evaluation FAILURE
+    still raises, so stale marks keep pausing entries."""
+    seen: dict = {}
+    reason = _evaluate_stop_rails(run, seen)
+    if reason is not None and seen.get("holding_long") \
+            and reason not in _LIQUIDATION_REASONS:
+        import long_exit_policy
+        if long_exit_policy.enabled():
+            return None
+    # Long only (owner 2026-11-21): a FLAT run on a futures/margin book can
+    # open nothing any more (futures_policy refuses every open on it), so it
+    # would cycle forever paying for analysis. Hand the slot back the way a
+    # flat no-prospect run does, so the fleet rebuilds it as a spot run.
+    if reason is None and not seen.get("has_position") and \
+            str(run.get("market_type") or "spot").lower() in ("futures", "margin"):
+        try:
+            from futures_policy import run_refusal
+            if run_refusal(run.get("market"), run.get("market_type")):
+                return "no_prospect_switched"
+        except Exception:  # noqa: BLE001 — a policy read never stops a run
+            logger.debug("book check failed (run %s)", run.get("id"), exc_info=True)
+    return reason
+
+
+def _evaluate_stop_rails(run: dict, seen: Optional[dict] = None) -> Optional[str]:
     conditions = json.loads(run.get("stop_conditions_json") or "{}")
     pnl = compute_run_pnl(run)
     pos = pnl["position"]
     has_position = bool(pos and float(pos["quantity"] or 0) != 0)
+    if seen is not None:
+        seen["has_position"] = has_position
+        seen["holding_long"] = bool(has_position and float(pos["quantity"] or 0) > 0)
 
     # Idle retire (2026-07-26): a run that has cycled N times without ever
     # opening a position is not "waiting for its setup", it is burning a
@@ -2054,6 +2087,14 @@ def _manual_halt_blocks(agent_id: int, market: str) -> bool:
         return False
 
 
+_HUMAN_STOP_REASONS = frozenset({"user_stop", "fleet_stop_all"})
+# A leveraged long's liquidation rails are not "selling at a loss" choices:
+# past the margin the loss is no longer the run's to hold. They still close
+# under the long exit policy (only legacy >1x rows can reach them; new
+# leverage is refused platform-wide).
+_LIQUIDATION_REASONS = frozenset({"synthetic_liquidation", "stop_event:liq_cushion"})
+
+
 def _flatten_run(run: dict) -> tuple[bool, Optional[str]]:
     """Close the run-owned position via the watcher-convention exit path.
     Fill price is the last mark (same as watcher closes — the staleness
@@ -2086,10 +2127,17 @@ def _flatten_run(run: dict) -> tuple[bool, Optional[str]]:
         realized_before = float((compute_run_pnl(run) or {}).get("realized") or 0)
     except Exception:  # noqa: BLE001 — reporting must never block the exit
         realized_before = None
+    # Long exit policy (owner 2026-11-21): only a stop a PERSON pressed may
+    # flatten a long below its buy price + fees. Every machine stop passes
+    # its own reason (trading_runs.request_stop), so these two strings are
+    # exactly the human-initiated ones.
+    _human = str(run.get("status_reason") or "") in (_HUMAN_STOP_REASONS
+                                                     | _LIQUIDATION_REASONS)
     signal_id, skip = execute_paper_trade(
         run["agent_id"], run["symbol"], run["market"], side, abs(qty), float(mark),
         content=f"Trading run #{run['id']} flatten on stop",
-        run_id=run["id"], client_order_id=f"run:{run['id']}:flatten")
+        run_id=run["id"], client_order_id=f"run:{run['id']}:flatten",
+        human_initiated=_human)
     if signal_id:
         # FINDING 1 (2026-08-05), fixed here. A forced flatten emitted a
         # `trade` event and NOTHING else, while every ordinary close emits an
@@ -3006,11 +3054,22 @@ def _control_stopping(run: dict, out: dict) -> None:
             conn.close()
     emit_telemetry_event(run["id"], "gate_skip",
                          {"stage": "flatten", "reason": why})
-    if stopping_since and _age_seconds(stopping_since) > _flatten_timeout():
+    # Long exit policy (owner 2026-11-21): a refusal is a decision, not a
+    # transient failure — retrying for an hour would only block a person's
+    # own Stop. Hold the long now and hand it off (the watcher keeps its
+    # -15% / +5% exits).
+    _policy_hold = bool(why) and str(why).startswith("long exit policy")
+    if _policy_hold or (stopping_since
+                        and _age_seconds(stopping_since) > _flatten_timeout()):
         if _simple_transition(run, STATUS_STOPPED, "positions_held",
                               clear_active_key=True):
             out["stopping_finished"] += 1
             _handoff_held_position(run, why or "flatten timed out")
+            if _policy_hold:
+                # An intended hold, not a stuck flatten: the timeout alert
+                # ("blocked past N min") would be false. The hand-off is on
+                # the run's tape (positions_held).
+                return
             _alert_run(run, "run_stopped", "run_positions_held",
                        {"run_id": run["id"], "why": why,
                         "minutes": _flatten_timeout() // 60},

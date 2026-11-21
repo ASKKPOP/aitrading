@@ -338,6 +338,9 @@ def run_resting_orders_tick() -> dict[str, Any]:
                 stop_loss=order["stop_loss"], take_profit=order["take_profit"],
                 client_order_id=f"resting:{order['id']}",
                 leverage=_clamp_leverage(order.get("leverage")),
+                # A resting limit is a price the user chose (owner rule
+                # 2026-11-21 binds automation, not a person's own order).
+                human_initiated=True,
             )
 
             begin_write_transaction(cursor)

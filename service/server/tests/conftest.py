@@ -49,3 +49,10 @@ os.environ["DESK_THREE_AGENT"] = "0"
 # runs with it OFF; tests/test_futures_block.py turns it back on per test
 # and separately asserts the production default by unsetting the variable.
 os.environ["FUTURES_TRADING_BLOCKED"] = "0"
+
+# Long exit policy (owner 2026-11-21) is ON in production by default
+# (long_exit_policy: unset = on). Many pre-existing tests exercise the long
+# rails it suspends (ratchet, max_loss, at_time, stop-loss fills), so the
+# suite runs with it OFF; tests/test_long_exit_policy*.py turn it back on
+# per test and assert the production default by unsetting the variable.
+os.environ["LONG_EXIT_POLICY"] = "0"

@@ -49,10 +49,11 @@ class MarginBookTests(unittest.TestCase):
         database.DATABASE_URL = ""
         database._SQLITE_DB_PATH = os.path.join(self.tmp.name, "test.db")
         database.init_database()
+        # Two-way is an explicit opt-in since the 2026-11-21 long-only default.
         self.env = patch.dict(os.environ, {"AUTO_TRADING_ENABLED": "true",
-                                           "FUTURES_TRADING_BLOCKED": "1"})
+                                           "FUTURES_TRADING_BLOCKED": "1",
+                                           "SHORTS_TRADING_BLOCKED": "0"})
         self.env.start()
-        os.environ.pop("SHORTS_TRADING_BLOCKED", None)
         self.patches = [patch("routes_runs._probe_price", return_value=100.0),
                         patch.object(markets, "is_market_open", return_value=True),
                         patch("entitlements.check_futures_access", return_value=None)]

@@ -72,7 +72,8 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                         run_id: Optional[int] = None,
                         client_order_id: Optional[str] = None,
                         leverage: float = 1.0,
-                        fence=None) -> tuple[Optional[int], Optional[str]]:
+                        fence=None,
+                        human_initiated: bool = False) -> tuple[Optional[int], Optional[str]]:
     """Execute a simulator trade with the same ledger as a manual signal:
     signals row (signal_type='automation') + position update + cash update.
     On buys, stop_loss/take_profit (from the risk gate) are registered on the
@@ -183,6 +184,16 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             fee = trade_value * rate
             if pos["entry_price"] is not None:
                 long_entry = float(pos["entry_price"])
+            # Long exit policy (owner 2026-11-21): automation sells a long
+            # only above its buy price + fees, or at the -15% emergency
+            # level. A human-initiated close (user stop, resting order,
+            # start-conflict close) passes human_initiated=True.
+            from long_exit_policy import long_close_refusal
+            _hold = long_close_refusal(long_entry, price, market,
+                                       automated=not human_initiated)
+            if _hold:
+                conn.rollback()
+                return None, _hold
             pos_lev = _read_pos_leverage()
 
         if side == "cover":
@@ -239,8 +250,20 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
              content, int(datetime.now(timezone.utc).timestamp()), now, now,
              run_id, client_order_id, fee, realized_pnl, exit_price),
         )
+        # Long exit policy: which long row automation may pin — a new one, or
+        # one it already marked. Read BEFORE the ledger merges this buy in.
+        _lep_pin_ok = False
+        if side == "buy" and not human_initiated:
+            _ps, _psa = run_scope_sql(run_id)
+            cursor.execute(
+                "SELECT exit_policy FROM positions WHERE quantity > 0 AND "
+                "agent_id = ? AND market = ? AND symbol = ?" + _ps,
+                (agent_id, market, symbol, *_psa))
+            _pre = cursor.fetchone()
+            _lep_pin_ok = _pre is None or _pre["exit_policy"] == "long_policy"
         _update_position_from_signal(agent_id, symbol, market, side, quantity, price, now,
-                                     cursor=cursor, run_id=run_id, leverage=lev)
+                                     cursor=cursor, run_id=run_id, leverage=lev,
+                                     automated=not human_initiated)
         # Every positions statement below is scoped to the same book this trade
         # wrote — several runs may hold a position on one agent+market+symbol.
         pos_scope, pos_scope_args = run_scope_sql(run_id)
@@ -301,6 +324,25 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                        WHERE agent_id = ? AND market = ? AND symbol = ?""" + pos_scope,
                     (new_sl, new_tp, agent_id, market, symbol, *pos_scope_args),
                 )
+            # Long exit policy (owner 2026-11-21): an automated long's bracket
+            # is exactly -15% / +5% of its average buy price — overriding the
+            # authored levels and the never-loosen rule above, so every reader
+            # (watcher, desk brief, UI) sees the levels that actually apply.
+            if _lep_pin_ok:
+                from long_exit_policy import long_bracket
+                cursor.execute(
+                    """SELECT id, entry_price FROM positions
+                       WHERE quantity > 0 AND agent_id = ? AND market = ?
+                         AND symbol = ?""" + pos_scope,
+                    (agent_id, market, symbol, *pos_scope_args))
+                _er = cursor.fetchone()
+                _br = long_bracket(_er["entry_price"]) if _er else None
+                if _br is not None:
+                    cursor.execute(
+                        """UPDATE positions SET stop_loss = ?, take_profit = ?,
+                                  exit_policy = 'long_policy'
+                           WHERE id = ?""",
+                        (_br[0], _br[1], _er["id"]))
             # Open a long: debit MARGIN = notional/L (L=1 ⇒ full notional).
             cursor.execute("UPDATE agents SET cash = cash - ? WHERE id = ?",
                            (trade_value / lev + fee, agent_id))
@@ -431,6 +473,24 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
                               "(crypto and US stock at 1x only): a live cover larger than "
                               "the held short would open a position at the broker "
                               "— live order not sent")
+
+    # Long exit policy (owner 2026-11-21) BEFORE any venue: the ledger would
+    # refuse a rule's sell below buy price + fees after a live broker had
+    # already sold. Rules trade the unowned book.
+    if mode == LIVE and side == "sell":
+        from long_exit_policy import enabled as _lep_on, long_close_refusal
+        if _lep_on():
+            from routes_shared import get_position_snapshot
+            conn = get_db_connection()
+            try:
+                pos = get_position_snapshot(conn.cursor(), agent_id, market,
+                                            symbol, None, None)
+            finally:
+                conn.close()
+            _hold = long_close_refusal(pos["entry_price"] if pos else None,
+                                       price, market)
+            if _hold:
+                return None, f"{_hold} Live order not sent."
 
     if mode == LIVE:
         order = submit_live(agent_id, symbol, market, side, quantity, price)

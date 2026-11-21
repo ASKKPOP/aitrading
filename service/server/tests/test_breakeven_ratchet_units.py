@@ -140,14 +140,14 @@ class BreakevenFeeRateTests(unittest.TestCase):
         rate binds. If an operator ever sets it, it must still win — that is
         the documented escape hatch."""
         import inspect
-        src = inspect.getsource(run_engine._evaluate_stop)
+        src = inspect.getsource(run_engine._evaluate_stop_rails)
         self.assertIn("BREAKEVEN_FEE_RATE", src)
 
     def _stop_src(self):
         import inspect
         return "\n".join(
             ln.split("#")[0]
-            for ln in inspect.getsource(run_engine._evaluate_stop).splitlines())
+            for ln in inspect.getsource(run_engine._evaluate_stop_rails).splitlines())
 
     def _breakeven_call(self):
         """The `_breakeven_floor_hit(...)` call ALONE.
@@ -233,7 +233,7 @@ class PeakEpochBaselineTests(unittest.TestCase):
         peak_realized_usd and fall back to current realized only when the
         column is NULL (legacy rows)."""
         import inspect
-        src = inspect.getsource(run_engine._evaluate_stop)
+        src = inspect.getsource(run_engine._evaluate_stop_rails)
         self.assertIn('run.get("peak_realized_usd")', src)
         i = src.find('peak_realized_usd')
         j = src.find('_breakeven_floor_hit', i)

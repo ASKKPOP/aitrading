@@ -265,6 +265,7 @@ def _update_position_from_signal(
     outcome: Optional[str] = None,
     run_id: Optional[int] = None,
     leverage: float = 1.0,
+    automated: bool = False,
 ):
     """
     Update position based on trading signal.
@@ -394,12 +395,59 @@ def _update_position_from_signal(
                 """, (agent_id, symbol, market, token_id, outcome, quantity, price, executed_at, executed_at, run_id, float(leverage or 1.0)))
                 _logger.info("[Position] %s: created long position %s", symbol, quantity)
 
+        # Long exit policy (owner 2026-11-21): a long opened by automation
+        # (copy-trading followers write here directly) gets the -15% / +5%
+        # bracket and the provenance marker the SL/TP watcher keys on, so it
+        # is never left with no exit. execute_paper_trade re-pins after its
+        # own bracket write.
+        # Only a NEW long row or one automation already marked: a person's own
+        # long on the same unowned key keeps its own levels.
+        _pin_ok = False
+        if automated:
+            _pin_ok = current_qty <= 0
+            if not _pin_ok and position_id is not None:
+                cursor.execute("SELECT exit_policy FROM positions WHERE id = ?",
+                               (position_id,))
+                _ep = cursor.fetchone()
+                _pin_ok = bool(_ep) and _ep["exit_policy"] == "long_policy"
+        if _pin_ok:
+            from long_exit_policy import long_bracket
+            _pq = ("SELECT id, entry_price FROM positions WHERE quantity > 0 "
+                   "AND agent_id = ? AND market = ?")
+            _pa = [agent_id, market]
+            if market == "polymarket":
+                _pq += " AND token_id = ?"
+                _pa.append(token_id)
+            else:
+                _pq += " AND symbol = ?"
+                _pa.append(symbol)
+            _ps, _psa = run_scope_sql(run_id)
+            cursor.execute(_pq + _ps, _pa + list(_psa))
+            _pr = cursor.fetchone()
+            _br = long_bracket(_pr["entry_price"]) if _pr else None
+            if _br is not None:
+                cursor.execute(
+                    "UPDATE positions SET stop_loss = ?, take_profit = ?, "
+                    "exit_policy = 'long_policy' WHERE id = ?",
+                    (_br[0], _br[1], _pr["id"]))
+
     elif action_lower == "sell":
         # Decrease/close long position
         if current_qty <= 0:
             raise ValueError("No long position to sell")
         if quantity > current_qty:
             raise ValueError("Insufficient long position quantity")
+        # Long exit policy (owner 2026-11-21): automation never sells a long
+        # below its buy price + fees, except at the -15% emergency level.
+        # Backstop for callers that write the ledger directly (copy-trading
+        # followers); automation.execute_paper_trade checks first and skips
+        # cleanly. `automated` defaults False so a manual trade is untouched.
+        if automated:
+            from long_exit_policy import long_close_refusal
+            _hold = long_close_refusal(row["entry_price"] if row else None,
+                                       price, market, automated=True)
+            if _hold:
+                raise ValueError(_hold)
         new_qty = current_qty - quantity
         if new_qty <= 1e-8:
             # Close position. The epsilon matters: float residue here once

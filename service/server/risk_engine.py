@@ -774,14 +774,33 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
                FROM positions
                WHERE quantity != 0 AND current_price IS NOT NULL
                  AND (stop_loss IS NOT NULL OR take_profit IS NOT NULL
-                      OR exit_policy = 'v1')""")
+                      OR exit_policy IN ('v1', 'long_policy')
+                      OR run_id IS NOT NULL OR handoff_run_id IS NOT NULL)""")
         rows = [dict(r) for r in cursor.fetchall()]
 
         # Trailing-stop ratchet pass (before trigger checks, same tick).
         trailed = 0
         limits_cache: dict[int, dict[str, Any]] = {}
+        from long_exit_policy import enabled as _long_policy_on
+        _lep_on = _long_policy_on()
+
+        def _v1_like(p) -> bool:
+            # With the kill switch off, a row the policy marked is an ordinary
+            # 'v1' row again (it was stamped 'v1' or later 'long_policy').
+            ep = p.get("exit_policy")
+            return ep == "v1" or (ep == "long_policy" and not _lep_on)
         for pos in rows:
-            if pos.get("exit_policy") != "v1":
+            if not _v1_like(pos):
+                continue
+            # Long exit policy (owner 2026-11-21): no trailing ratchet on an
+            # AUTOMATION long — a raised stop would sell it on a turn, a
+            # platform exit the owner removed. Policy-pinned longs carry
+            # exit_policy='long_policy' and never reach here; this catches
+            # run/handoff rows stamped 'v1' before the policy. A person's own
+            # opted-in trailing on a manual long, and shorts, keep trailing.
+            if _lep_on and float(pos["quantity"]) > 0 and (
+                    pos.get("run_id") is not None
+                    or pos.get("handoff_run_id") is not None):
                 continue
             agent_id = pos["agent_id"]
             if agent_id not in limits_cache:
@@ -812,11 +831,30 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
     now = datetime.now(timezone.utc)
     closed = 0
     trend_agents = _trend_managed_agents() if rows else set()
+    from long_exit_policy import long_bracket
     for pos in rows:
         price = float(pos["current_price"])
         is_short = float(pos["quantity"]) < 0
         trigger = None
-        if is_short:
+        # Long exit policy (owner 2026-11-21). A long held by automation (a
+        # run, a run's handoff, the trend module) has exactly two watcher
+        # exits: the -15% emergency and the +5% target, both off its buy
+        # price. The stored stop/target, the trailing ratchet and the time
+        # stop do not apply to it. A manual user's own SL/TP on an unowned
+        # position is a promise and executes as always.
+        automated_long = (not is_short and (
+            pos.get("exit_policy") == "long_policy"
+            or pos.get("run_id") is not None
+            or pos.get("handoff_run_id") is not None
+            or pos["agent_id"] in trend_agents))
+        policy_bracket = long_bracket(pos.get("entry_price")) \
+            if automated_long else None
+        if policy_bracket is not None:
+            if price <= policy_bracket[0]:
+                trigger = "stop_loss"
+            elif price >= policy_bracket[1]:
+                trigger = "take_profit"
+        elif is_short:
             # Inverted triggers: stop above (price rose), target below (fell).
             if pos["stop_loss"] is not None and price >= float(pos["stop_loss"]):
                 trigger = "stop_loss"
@@ -827,7 +865,10 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
                 trigger = "stop_loss"
             elif pos["take_profit"] is not None and price >= float(pos["take_profit"]):
                 trigger = "take_profit"
-        if trigger is None and pos.get("exit_policy") == "v1":
+        # Automation longs (policy_bracket set) get no time stop: it exists
+        # to cut losers. A person's own opted-in time stop still applies.
+        if (trigger is None and _v1_like(pos)
+                and policy_bracket is None):
             # Time stop: losers older than time_stop_days are cut ("at ~55%
             # accuracy, cutting losers fast IS the edge"); winners ride.
             # Anchored to first_opened_at, which average-ins never reset.
@@ -869,7 +910,9 @@ def run_sltp_watcher_tick() -> dict[str, Any]:
             # stopped-with-hold run still gets its final exit attributed
             # (and the trade event journaled in the same transaction).
             run_id=pos.get("run_id"),
-            client_order_id=watcher_coid)
+            client_order_id=watcher_coid,
+            # An unowned, non-trend long's SL/TP was set by its owner.
+            human_initiated=not is_short and not automated_long)
         if signal_id:
             closed += 1
             logger.info("SL/TP watcher closed position %s (%s %s @ %s, %s)",

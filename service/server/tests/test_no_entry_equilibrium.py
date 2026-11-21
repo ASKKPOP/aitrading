@@ -245,7 +245,7 @@ class PlanAwareWindowTests(unittest.TestCase):
         smoke check — the BEHAVIOURAL guarantee is the end-to-end pair in
         RailEndToEndTests, which is what actually defends this rail."""
         import inspect
-        src = inspect.getsource(run_engine._evaluate_stop)
+        src = inspect.getsource(run_engine._evaluate_stop_rails)
         self.assertIn("_no_prospect_window_hours(", src)
 
 

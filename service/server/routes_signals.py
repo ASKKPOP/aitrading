@@ -573,6 +573,7 @@ def register_signal_routes(app: FastAPI, ctx: RouteContext) -> None:
                         price,
                         executed_at,
                         leader_id=agent_id,
+                        automated=True,
                         cursor=cursor,
                         token_id=polymarket_token_id,
                         outcome=polymarket_outcome,

@@ -1830,7 +1830,7 @@ class BreakevenRatchetTests(unittest.TestCase):
         # trail and this ratchet) — B's attribution ran into it. The ratchet
         # branch must emit a telemetry discriminator.
         import inspect
-        src = inspect.getsource(run_engine._evaluate_stop)
+        src = inspect.getsource(run_engine._evaluate_stop_rails)
         self.assertIn("breakeven_ratchet", src)
         self.assertIn("stop_mechanism", src)
         # and the call site must actually pass the fee — dropping it
@@ -1901,7 +1901,7 @@ class BreakevenRatchetTests(unittest.TestCase):
         # trailing lock has never fired once. The max-book anchor must be
         # wired too: an anchor computed but not passed is the 976 bug back.
         import inspect
-        src = inspect.getsource(run_engine._evaluate_stop)
+        src = inspect.getsource(run_engine._evaluate_stop_rails)
         self.assertIn("_breakeven_floor_hit(", src)
         self.assertIn("_breakeven_arm_usd(pnl, _run_max_abs_qty(run),", src)
         # Plan 31 item 5: the arm prices at the MARKET's own fee rate.
@@ -4152,7 +4152,7 @@ class TrailPositionScopedTests(unittest.TestCase):
 
     def test_the_call_site_passes_baseline_and_fee(self):
         import inspect
-        src = inspect.getsource(run_engine._evaluate_stop)
+        src = inspect.getsource(run_engine._evaluate_stop_rails)
         self.assertIn("_trailing_lock_hit", src)
         # the VALUE matters: zeroing it silently restores the defect.
         self.assertIn('baseline_pnl=float(pnl.get("realized") or 0)', src)
