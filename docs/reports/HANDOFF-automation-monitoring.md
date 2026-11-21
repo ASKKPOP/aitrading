@@ -658,6 +658,17 @@ partial covers — dim (b), n=3) accrues in the backlog.
 
 ## 10. Traps that have already bitten
 
+### ⚠️ Added 2026-11-21 (daily sweep) — A DEPLOY THAT RE-ARMS A BLOCK RETIRES FLAT RUNS AS `no_prospect_switched`
+At the 11-21T03:03Z long-only deploy, `run_engine.py:1662-1672` retired every flat futures-book run under the label `no_prospect_switched`
+(4 at 03:04:07, one 40 s old; BTC 03:33 and LTC 04:06 right after their take-profits). On a deploy day that label is NOT the desk's
+no-prospect switch — exclude runs stopped within ~1 h of a policy deploy before counting desk switches.
+
+### Added 2026-11-21 — the trading set can shrink silently: agent 60 has NO fleet since 11-20T02:54Z
+`ai_automation_state='active'` does not mean an agent trades. Re-derive the set from fleets/runs every sweep (the 11-21 set was {6}).
+Also: `[FleetPlanner] tick researched=0 built=0` is NOT a stall signal for an `active` fleet — those counters count only fleets in
+`researching`/`building`; an active fleet replenishes through `select_targets` (fleet_supervisor). Read `fleets.status_reason`
+(`replenishing:k/n`) instead.
+
 ### ⚠️ Added 2026-11-20 (daily sweep) — AFTER THE OWNER RESET, `signals` AND `pnl_audit` ARE EMPTY FOR AGENTS 6/60; USE `run_events` `trade`
 
 The 11-20 reset (fleets 43/44 `stop_all` flatten 02:54:37Z, `member.reset_capital` 03:01:53Z) deleted every agent-6/60 `signals` row and zeroed

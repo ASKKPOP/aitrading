@@ -1,7 +1,44 @@
 {
-  "cycle": "24h-sweep-2026-11-20 (daily scheduled task, on time 15:13Z)",
-  "captured_at_utc": "2026-11-20T15:13:21Z",
-  "prod_image": "sooppiy-backend:20261120-stop-stamp (267f742) before this run's deploy",
+  "cycle": "24h-sweep-2026-11-21 (daily scheduled task, ran 4h39m late at 19:45Z)",
+  "captured_at_utc": "2026-11-21T19:45:55Z",
+  "prod_image": "sooppiy-backend:20261121-long-exit-policy (5d48cf3) before this run's deploy",
+  "SWEEP_1121": {
+    "window_kst": "2026-11-20T15:00Z->2026-11-21T15:00Z",
+    "trading_set": [
+      6
+    ],
+    "trading_ended": "2026-11-21T04:06:37Z (long-only deploy 03:03Z)",
+    "pnl_kst": {
+      "agent6": -1.23,
+      "ex_largest_winner": -3.07,
+      "ex_largest_loser": 0.39,
+      "agent60": 0.0,
+      "routes": "A pairing, fill replay -1.2319, cash -1.2317, sum realized"
+    },
+    "exits": {
+      "trailing_lock_11": -0.008,
+      "stop_loss_3": -3.326,
+      "take_profit_2": 2.236,
+      "ai_closes_2": -0.134
+    },
+    "E1_R44": "falsifier met: only long = GLD, backtest_gate -727.53/trade",
+    "E2_R45": "rebuild after profitable stop n=205 mean -0.053 vs ctrl -0.009, perm p=0.145 -> inconclusive",
+    "E3_long_exit_policy": "0 automation longs since deploy -> NOT YET MEASURABLE",
+    "killed": [
+      "archetype-short-blocks-longs (2nd kill)",
+      "planner-tick-counters-prove-stall",
+      "trailing-lock-caused-the-loss",
+      "bench-after-any-stop (p=0.145)"
+    ]
+  },
+  "open_watches": [
+    "WATCH: fleet 54 0 builds by 2026-11-24T15:00Z -> tell owner long-exit-policy day-7 (11-27) has n=0",
+    "R45 rebuild-after-profitable-stop (SOFT)",
+    "R44 STAGED (2 readings, $0 value)",
+    "R37b SOFT",
+    "R32 FROZEN until 3 long-only calibrated days",
+    "agent 60 no fleet (owner)"
+  ],
   "SWEEP_1120": {
     "window_kst": "2026-11-19T15:00Z->2026-11-20T15:00Z",
     "trading_ended": "2026-11-20T02:54:59Z (owner stop_all + reset)",
@@ -29,19 +66,6 @@
       "+2.44-is-entry-skill"
     ]
   },
-  "open_watches": [
-    "R44 long-only research yields no buildable candidate (crowding measurement owed)",
-    "R37b ratchet single-sample spike arm (SOFT)",
-    "R43 chair close->hold: 2nd reading +0.78 for holding (tape-confounded)",
-    "R42 H-CUT observation (AAVE 230845 half-cut cost 0.79)",
-    "R32 FROZEN until 3 long-only calibrated days",
-    "R37 ~$0.0285/fire",
-    "R34 size ignores confidence",
-    "R39 fleet 43 subscription (fleet stopped)",
-    "stop-stamp fix NOT YET MEASURABLE (0 stops since deploy)",
-    "futures block never exercised by an order",
-    "agent 63 trend module 3 pre-block shorts open (hourly monitor)"
-  ],
   "SWEEP_1119": {
     "window_kst": "2026-11-18T15:00Z->2026-11-19T15:00Z",
     "pnl_kst": {
