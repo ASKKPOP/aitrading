@@ -1287,7 +1287,41 @@ safety metrics, and an abort ($5 P&L divergence at ≥10 control closes, or any
 traceback) that needs no deploy. A null result would refute this pass's own
 headline — which is the point.
 
-### 10. Owner-rule compliance note
+### 10. CORRECTION to §7 — at the TRADE level the short book IS positive-expectancy
+
+§7 called the profitable tape "thin and outlier-driven" off a DAY-level
+strip. Day-level aggregation is the wrong unit for an expectancy question.
+Per-trade, from `signals`:
+
+| book | n | total | avg/trade | wins |
+|---|---|---|---|---|
+| `cover` (short closes) | 55 | **+8.674** | **+0.158** | 35 (63.6%) |
+| `sell` (long closes) | 9 | −0.564 | −0.063 | 5 |
+
+Robustness, per owner rule 6:
+
+- strip the single largest LOSS (FILUSDT −5.334) → +14.008 / 54 = **+0.259**
+- strip the single largest WIN (FILUSDT +5.219) → +3.455 / 54 = **+0.064**
+- strip **all of FILUSDT** (n=14, dominates both tails) → **+5.440 / 41 =
+  +0.133**, 24/41 wins
+- strip the top TWO symbols of ten (KAITO +4.472, FIL +3.235) → +0.967 / 34 =
+  **+0.028** — nearly flat
+
+**The sign never flips** on any single-trade removal, nor on removing the
+whole tail-dominating symbol. Per-symbol: 4 positive (KAITO +4.47, FIL +3.24,
+TRUMP +1.24, SUI +0.60), 6 mildly negative (−0.007 .. −0.430) — winners large,
+losers small, the positive-skew profile a momentum short book should have.
+
+**Honest verdict.** There IS a positive-expectancy SHORT book: +0.158/trade
+over n=55, robust to two of three strips. It is NOT robust to removing the
+top two symbols of ten, so it is thin and concentrated and must not be called
+established. The long book (n=9) says nothing.
+
+**Why it matters.** It raises the cost of the shutdown — 86% of executed
+entries were shorts, and that is the book that went to zero. It does NOT
+license reverting #484; the A/B decides that.
+
+### 11. Owner-rule compliance note
 
 The two-subagent trade-outcome split (CLAUDE.md, 2026-08-13) was not run
 this pass: there is **no tape to split** — zero AI-authored and zero
