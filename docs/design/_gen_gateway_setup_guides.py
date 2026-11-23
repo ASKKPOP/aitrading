@@ -44,7 +44,7 @@ BROKER_NAMES = {
     "binance": "Binance", "alpaca": "Alpaca", "ibkr": "Interactive Brokers",
     "bybit": "Bybit", "okx": "OKX", "kraken": "Kraken",
     "cryptocom": "Crypto.com Exchange", "upbit": "Upbit", "kucoin": "KuCoin",
-    "coinbase": "Coinbase",
+    "coinbase": "Coinbase", "webull": "Webull",
 }
 
 # ── shared strings ───────────────────────────────────────────────────────────
@@ -1046,9 +1046,76 @@ B = {
                 "Nama kunci dan kunci privat bukan pasangan, atau kuncinya dicabut di portal Developer Platform. Hubungkan ulang dengan pasangan yang baru dibuat.")],
     },
 },
+"webull": {
+    "fields": ["key", "secret"],
+    "steps": {
+        "en": ["Log in at developer.webull.com with your Webull account and open <b>Developer Console → API Keys</b>.",
+               "Create an application to get an <b>App Key</b> and <b>App Secret</b>. The secret is shown once. Production approval can take 1–2 business days.",
+               "For shadow mode, switch the console to <b>paperTrade</b> and apply for OpenAPI for PaperTrade — that gives a separate App Key/Secret pair for the PaperTrade environment. Use the PaperTrade pair while you run shadow; replace it with the production pair when you go live."],
+        "ko": ["Webull 계정으로 developer.webull.com에 로그인해 <b>Developer Console → API Keys</b>를 엽니다.",
+               "애플리케이션을 만들어 <b>App Key</b>와 <b>App Secret</b>을 받습니다. 시크릿은 한 번만 표시됩니다. 실계좌(Production) 승인은 영업일 기준 1–2일 걸릴 수 있습니다.",
+               "shadow 모드용으로는 콘솔을 <b>paperTrade</b>로 전환해 PaperTrade용 OpenAPI를 신청하세요 — PaperTrade 환경 전용의 별도 App Key/Secret이 발급됩니다. shadow 동안에는 PaperTrade 키를, 실거래 전환 시 Production 키로 교체하세요."],
+        "ja": ["Webullアカウントでdeveloper.webull.comにログインし、<b>Developer Console → API Keys</b>を開きます。",
+               "アプリケーションを作成して<b>App Key</b>と<b>App Secret</b>を取得します。シークレットは一度だけ表示されます。本番の承認には1–2営業日かかることがあります。",
+               "shadowモード用には、コンソールを<b>paperTrade</b>に切り替えてPaperTrade用OpenAPIを申請してください — PaperTrade環境専用の別のApp Key/Secretが発行されます。shadow中はPaperTradeキー、実取引時に本番キーへ差し替えてください。"],
+        "th": ["เข้าสู่ระบบ developer.webull.com ด้วยบัญชี Webull แล้วเปิด <b>Developer Console → API Keys</b>",
+               "สร้างแอปพลิเคชันเพื่อรับ <b>App Key</b> และ <b>App Secret</b> ความลับจะแสดงเพียงครั้งเดียว การอนุมัติ production อาจใช้เวลา 1–2 วันทำการ",
+               "สำหรับโหมด shadow ให้สลับคอนโซลเป็น <b>paperTrade</b> แล้วขอ OpenAPI สำหรับ PaperTrade — จะได้ App Key/Secret แยกสำหรับสภาพแวดล้อม PaperTrade ใช้คู่ PaperTrade ระหว่างรัน shadow และเปลี่ยนเป็นคู่ production เมื่อเทรดจริง"],
+        "vi": ["Đăng nhập developer.webull.com bằng tài khoản Webull và mở <b>Developer Console → API Keys</b>.",
+               "Tạo ứng dụng để nhận <b>App Key</b> và <b>App Secret</b>. Bí mật chỉ hiển thị một lần. Duyệt production có thể mất 1–2 ngày làm việc.",
+               "Với chế độ shadow, chuyển console sang <b>paperTrade</b> và đăng ký OpenAPI cho PaperTrade — bạn nhận cặp App Key/Secret riêng cho môi trường PaperTrade. Dùng cặp PaperTrade khi chạy shadow; thay bằng cặp production khi lên live."],
+        "id": ["Masuk ke developer.webull.com dengan akun Webull Anda dan buka <b>Developer Console → API Keys</b>.",
+               "Buat aplikasi untuk mendapatkan <b>App Key</b> dan <b>App Secret</b>. Secret hanya ditampilkan sekali. Persetujuan production bisa memakan 1–2 hari kerja.",
+               "Untuk mode shadow, alihkan konsol ke <b>paperTrade</b> dan ajukan OpenAPI untuk PaperTrade — Anda mendapat pasangan App Key/Secret terpisah untuk lingkungan PaperTrade. Pakai pasangan PaperTrade selama shadow; ganti ke pasangan production saat live."],
+    },
+    "shadow": {
+        "en": "<b>shadow</b> — fills stay simulated and the same order is ALSO sent to Webull's <b>PaperTrade</b> environment for comparison; the drift is journalled. This needs PaperTrade app keys.",
+        "ko": "<b>shadow</b> — 체결은 시뮬레이션으로 유지되고 같은 주문이 비교용으로 Webull <b>PaperTrade</b> 환경에도 전송되며 차이가 기록됩니다. PaperTrade용 앱 키가 필요합니다.",
+        "ja": "<b>shadow</b> — 約定はシミュレーションのまま、同じ注文が比較用にWebullの<b>PaperTrade</b>環境にも送信され、差異が記録されます。PaperTrade用のアプリキーが必要です。",
+        "th": "<b>shadow</b> — การจับคู่ยังเป็นการจำลอง และคำสั่งเดียวกันถูกส่งไปยังสภาพแวดล้อม <b>PaperTrade</b> ของ Webull เพื่อเปรียบเทียบ และบันทึกส่วนต่าง ต้องใช้คีย์แอป PaperTrade",
+        "vi": "<b>shadow</b> — khớp lệnh vẫn là mô phỏng và lệnh đó được gửi tới môi trường <b>PaperTrade</b> của Webull để so sánh; chênh lệch được ghi lại. Cần khóa ứng dụng PaperTrade.",
+        "id": "<b>shadow</b> — eksekusi tetap simulasi dan order yang sama dikirim ke lingkungan <b>PaperTrade</b> Webull untuk perbandingan; selisihnya dicatat. Ini membutuhkan kunci aplikasi PaperTrade.",
+    },
+    "notes": {
+        "en": ["US stocks only, spot and long-only: buys and sells are sent as market DAY orders in the regular session. Short and cover orders are never sent to Webull.",
+               "If your Webull login holds more than one account, enter the <b>account id</b> in the optional field when you connect — Sooppiy will not guess between accounts. With one account (or one cash account) it is found automatically.",
+               "Production apps can have Webull's two-factor token switched on. Sooppiy does not create that token yet; an app that requires it answers 401 and the order is refused, never filled on paper."],
+        "ko": ["미국 주식 현물·롱 전용입니다: 매수와 매도는 정규장 시장가 DAY 주문으로 전송됩니다. 공매도(short)와 상환(cover) 주문은 Webull로 절대 전송되지 않습니다.",
+               "Webull 로그인에 계좌가 둘 이상이면 연결할 때 선택 입력란에 <b>계좌 ID</b>를 입력하세요 — Sooppiy는 계좌를 추측하지 않습니다. 계좌가 하나(또는 현금 계좌가 하나)면 자동으로 찾습니다.",
+               "Production 앱은 Webull 2단계 인증 토큰이 켜져 있을 수 있습니다. Sooppiy는 아직 그 토큰을 만들지 않으며, 토큰이 필요한 앱은 401로 응답해 주문이 거부됩니다 — 모의로 체결되는 일은 없습니다."],
+        "ja": ["米国株の現物・ロングのみです: 買いと売りは通常取引時間の成行DAY注文として送信されます。空売り(short)と買い戻し(cover)はWebullに送信されません。",
+               "Webullのログインに複数の口座がある場合は、接続時に任意欄へ<b>口座ID</b>を入力してください — Sooppiyは口座を推測しません。口座が1つ(または現金口座が1つ)なら自動で見つけます。",
+               "本番アプリではWebullの二段階認証トークンが有効な場合があります。Sooppiyはまだそのトークンを作成しません。トークンが必要なアプリは401を返し、注文は拒否されます — ペーパーで約定することはありません。"],
+        "th": ["เฉพาะหุ้นสหรัฐฯ แบบ spot และซื้ออย่างเดียว: คำสั่งซื้อและขายส่งเป็นคำสั่ง market DAY ในช่วงตลาดปกติ คำสั่ง short และ cover จะไม่ถูกส่งไป Webull",
+               "ถ้าบัญชีล็อกอิน Webull มีมากกว่าหนึ่งบัญชี ให้กรอก <b>รหัสบัญชี</b> ในช่องที่ไม่บังคับตอนเชื่อมต่อ — Sooppiy จะไม่เดาบัญชีให้ ถ้ามีบัญชีเดียว (หรือบัญชีเงินสดเดียว) จะหาให้อัตโนมัติ",
+               "แอป production อาจเปิดโทเค็นยืนยันสองขั้นของ Webull ไว้ Sooppiy ยังไม่สร้างโทเค็นนั้น แอปที่ต้องใช้โทเค็นจะตอบ 401 และคำสั่งถูกปฏิเสธ — ไม่มีการจับคู่แบบกระดาษแทน"],
+        "vi": ["Chỉ cổ phiếu Mỹ, giao ngay và chỉ mua: lệnh mua và bán được gửi dạng lệnh thị trường DAY trong phiên chính. Lệnh short và cover không bao giờ được gửi tới Webull.",
+               "Nếu đăng nhập Webull có nhiều tài khoản, hãy nhập <b>mã tài khoản</b> vào ô tùy chọn khi kết nối — Sooppiy không đoán tài khoản. Với một tài khoản (hoặc một tài khoản tiền mặt) hệ thống tự tìm.",
+               "Ứng dụng production có thể bật token xác thực hai lớp của Webull. Sooppiy chưa tạo token đó; ứng dụng cần token sẽ trả 401 và lệnh bị từ chối — không bao giờ khớp giả lập thay thế."],
+        "id": ["Hanya saham AS, spot dan long saja: beli dan jual dikirim sebagai order market DAY di sesi reguler. Order short dan cover tidak pernah dikirim ke Webull.",
+               "Jika login Webull Anda memiliki lebih dari satu akun, isi <b>ID akun</b> di kolom opsional saat menghubungkan — Sooppiy tidak menebak akun. Dengan satu akun (atau satu akun tunai) akun ditemukan otomatis.",
+               "Aplikasi production bisa mengaktifkan token dua faktor Webull. Sooppiy belum membuat token itu; aplikasi yang memerlukannya menjawab 401 dan order ditolak — tidak pernah dieksekusi sebagai simulasi."],
+    },
+    "trouble": {
+        "en": [("401 on every order", "Production keys used in shadow (PaperTrade) or the reverse, a revoked key, or the app requires a two-factor token. Match the key pair to the mode you are in."),
+               ("“Webull returned N accounts”", "Your login holds several accounts. Reconnect and enter the account id of the one to trade.")],
+        "ko": [("모든 주문에서 401", "Production 키를 shadow(PaperTrade)에 쓰거나 그 반대, 폐기된 키, 또는 앱이 2단계 인증 토큰을 요구하는 경우입니다. 현재 모드에 맞는 키 쌍인지 확인하세요."),
+               ("“Webull returned N accounts”", "로그인에 계좌가 여러 개 있습니다. 다시 연결하면서 거래할 계좌의 ID를 입력하세요.")],
+        "ja": [("すべての注文で401", "本番キーをshadow(PaperTrade)で使っている、またはその逆、失効したキー、あるいはアプリが二段階認証トークンを要求しています。モードに合ったキーペアか確認してください。"),
+               ("“Webull returned N accounts”", "ログインに複数の口座があります。再接続して取引する口座のIDを入力してください。")],
+        "th": [("401 กับทุกคำสั่ง", "ใช้คีย์ production ใน shadow (PaperTrade) หรือกลับกัน คีย์ถูกเพิกถอน หรือแอปต้องใช้โทเค็นยืนยันสองขั้น ให้ใช้คู่คีย์ที่ตรงกับโหมด"),
+               ("“Webull returned N accounts”", "ล็อกอินของคุณมีหลายบัญชี เชื่อมต่อใหม่แล้วกรอกรหัสบัญชีที่จะเทรด")],
+        "vi": [("401 với mọi lệnh", "Dùng khóa production cho shadow (PaperTrade) hoặc ngược lại, khóa bị thu hồi, hoặc ứng dụng yêu cầu token hai lớp. Khớp cặp khóa với chế độ đang dùng."),
+               ("“Webull returned N accounts”", "Đăng nhập của bạn có nhiều tài khoản. Kết nối lại và nhập mã tài khoản muốn giao dịch.")],
+        "id": [("401 pada setiap order", "Kunci production dipakai di shadow (PaperTrade) atau sebaliknya, kunci dicabut, atau aplikasi mewajibkan token dua faktor. Cocokkan pasangan kunci dengan mode yang dipakai."),
+               ("“Webull returned N accounts”", "Login Anda memiliki beberapa akun. Hubungkan ulang dan isi ID akun yang akan diperdagangkan.")],
+    },
+},
 }
 
 TITLES = {
+    "webull":   {"en": "Connect Webull", "ko": "Webull 연결 가이드", "ja": "Webull接続ガイド",
+                 "th": "คู่มือเชื่อมต่อ Webull", "vi": "Hướng dẫn kết nối Webull", "id": "Panduan Menghubungkan Webull"},
     "binance":  {"en": "Connect Binance", "ko": "바이낸스 연결 가이드", "ja": "Binance接続ガイド",
                  "th": "คู่มือเชื่อมต่อ Binance", "vi": "Hướng dẫn kết nối Binance", "id": "Panduan Menghubungkan Binance"},
     "alpaca":   {"en": "Connect Alpaca", "ko": "알파카 연결 가이드", "ja": "Alpaca接続ガイド",
@@ -1089,6 +1156,7 @@ PASTE_MAP = {
     "kucoin":    [("API Key", "key"), ("API Secret", "secret"), ("API Passphrase", "pass")],
     "coinbase":  [("API key name (organizations/…/apiKeys/…)", "key"),
                   ("Private key — the whole PEM block", "secret")],
+    "webull":    [("App Key", "key"), ("App Secret", "secret")],
 }
 
 
@@ -1167,6 +1235,14 @@ AVAIL = {
  "th": "เป็นโบรกเกอร์ที่อยู่ภายใต้การกำกับ ดำเนินงานในหลายประเทศผ่านนิติบุคคลท้องถิ่น ผลิตภัณฑ์ที่เทรดได้และกฎมาร์จิ้นขึ้นกับนิติบุคคลที่บัญชีของคุณสังกัด (IBKR LLC, IBKR UK, IBKR Japan ฯลฯ)",
  "vi": "Một broker chịu quản lý, hoạt động tại hầu hết các nước qua pháp nhân địa phương. Sản phẩm bạn được giao dịch và quy định ký quỹ áp dụng tùy theo pháp nhân mà tài khoản của bạn thuộc về (IBKR LLC, IBKR UK, IBKR Japan…).",
  "id": "Broker teregulasi yang beroperasi di sebagian besar negara melalui entitas lokal. Produk yang boleh Anda perdagangkan dan aturan margin yang berlaku bergantung pada entitas tempat akun Anda berada (IBKR LLC, IBKR UK, IBKR Japan, dan seterusnya)."},
+"webull": {
+ "en": "<b>Webull Financial LLC</b>, a US broker-dealer, for US-listed stocks and ETFs. OpenAPI trading is offered to Webull US account holders; residency and account eligibility are decided by Webull's own onboarding. US market hours and pattern-day-trading rules apply to your account, not to Sooppiy.",
+ "ko": "미국 상장 주식·ETF를 다루는 미국 브로커-딜러 <b>Webull Financial LLC</b>입니다. OpenAPI 거래는 Webull 미국 계좌 보유자에게 제공되며, 거주지와 계좌 자격은 Webull의 가입 심사가 결정합니다. 미국 장 시간과 패턴 데이트레이딩 규정은 Sooppiy가 아니라 회원님 계좌에 적용됩니다.",
+ "ja": "米国上場株・ETFを扱う米国のブローカーディーラー<b>Webull Financial LLC</b>です。OpenAPI取引はWebull米国口座の保有者向けで、居住地と口座の適格性はWebull自身の審査が決めます。米国市場の時間とパターン・デイトレード規制はSooppiyではなくあなたの口座に適用されます。",
+ "th": "<b>Webull Financial LLC</b> โบรกเกอร์-ดีลเลอร์สหรัฐฯ สำหรับหุ้นและ ETF ที่จดทะเบียนในสหรัฐฯ การเทรดผ่าน OpenAPI ให้บริการแก่ผู้ถือบัญชี Webull สหรัฐฯ ถิ่นพำนักและคุณสมบัติบัญชีขึ้นกับการเปิดบัญชีของ Webull เวลาตลาดสหรัฐฯ และกฎ pattern day trading ใช้กับบัญชีของคุณ ไม่ใช่ Sooppiy",
+ "vi": "<b>Webull Financial LLC</b>, broker-dealer Hoa Kỳ cho cổ phiếu và ETF niêm yết tại Mỹ. Giao dịch OpenAPI dành cho chủ tài khoản Webull Mỹ; nơi cư trú và điều kiện tài khoản do quy trình mở tài khoản của Webull quyết định. Giờ giao dịch Mỹ và quy tắc pattern day trading áp dụng cho tài khoản của bạn, không phải Sooppiy.",
+ "id": "<b>Webull Financial LLC</b>, broker-dealer AS untuk saham dan ETF yang tercatat di AS. Trading OpenAPI ditawarkan kepada pemegang akun Webull AS; domisili dan kelayakan akun ditentukan oleh proses pembukaan akun Webull. Jam pasar AS dan aturan pattern day trading berlaku pada akun Anda, bukan pada Sooppiy.",
+},
 }
 
 CSS = """

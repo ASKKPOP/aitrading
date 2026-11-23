@@ -269,6 +269,15 @@
       "th": "คู่มือเชื่อมต่อ Coinbase",
       "vi": "Hướng dẫn kết nối Coinbase",
       "id": "Panduan Menghubungkan Coinbase"
+    },
+    {
+      "group": "gwsetup-webull",
+      "en": "Connect Webull",
+      "ko": "Webull 연결 가이드",
+      "ja": "Webull接続ガイド",
+      "th": "คู่มือเชื่อมต่อ Webull",
+      "vi": "Hướng dẫn kết nối Webull",
+      "id": "Panduan Menghubungkan Webull"
     }
   ],
   "docs": [
@@ -1399,6 +1408,42 @@
       "lang": "id",
       "group": "gwsetup-coinbase",
       "title": "Panduan Menghubungkan Coinbase"
+    },
+    {
+      "key": "gwsetup-webull-en",
+      "lang": "en",
+      "group": "gwsetup-webull",
+      "title": "Connect Webull"
+    },
+    {
+      "key": "gwsetup-webull-ko",
+      "lang": "ko",
+      "group": "gwsetup-webull",
+      "title": "Webull 연결 가이드"
+    },
+    {
+      "key": "gwsetup-webull-ja",
+      "lang": "ja",
+      "group": "gwsetup-webull",
+      "title": "Webull接続ガイド"
+    },
+    {
+      "key": "gwsetup-webull-th",
+      "lang": "th",
+      "group": "gwsetup-webull",
+      "title": "คู่มือเชื่อมต่อ Webull"
+    },
+    {
+      "key": "gwsetup-webull-vi",
+      "lang": "vi",
+      "group": "gwsetup-webull",
+      "title": "Hướng dẫn kết nối Webull"
+    },
+    {
+      "key": "gwsetup-webull-id",
+      "lang": "id",
+      "group": "gwsetup-webull",
+      "title": "Panduan Menghubungkan Webull"
     }
   ]
 }

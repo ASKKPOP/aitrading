@@ -1,0 +1,585 @@
+"""Webull OpenAPI gateway — US stocks, spot (long-only) market orders.
+
+Contract under test:
+  - the request signature reproduces Webull's documented test vector exactly
+    (developer.webull.com/apis/authentication/signature);
+  - the adapter rejects without credentials and never raises on expected
+    venue errors (417 business error, network failure);
+  - short/cover are refused WITHOUT a network call (spot only — owner rule:
+    Webull support is US stocks 1x long only);
+  - the signed body bytes are exactly the bytes sent;
+  - account discovery: explicit account_id is used as-is, a single account or
+    a single CASH account is picked, anything ambiguous is a refusal;
+  - shadow pins the sandbox host, live the production host;
+  - gateway rails: Webull is a NEW venue — live is refused until it is on
+    LIVE_BROKER_ALLOWLIST, and the per-order notional cap applies.
+
+All HTTP is faked; an unexpected request fails the test.
+"""
+from __future__ import annotations
+
+import base64
+import hashlib
+import hmac
+import json
+import os
+import sys
+import unittest
+from pathlib import Path
+from urllib.parse import parse_qs, quote, urlparse
+
+SERVER_DIR = Path(__file__).resolve().parents[1]
+TESTS_DIR = Path(__file__).resolve().parent
+for p in (SERVER_DIR, TESTS_DIR):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+import database  # noqa: E402
+from test_execution_venues import (  # noqa: E402
+    _accept_tcs,
+    _add_account,
+    _DbTestCase,
+    _FakeResponse,
+    _patch_http,
+    _run,
+)
+
+ACCT_LIST = "/trading/accounts/list"
+PLACE = "/trading/orders/place"
+DETAIL = "/trading/orders/get"
+CANCEL = "/trading/orders/cancel"
+POSITIONS = "/trading/assets/positions/list"
+
+
+def _order(side="buy", qty=3.0, price=100.0, symbol="AAPL"):
+    from execution.base import Order
+    return Order(agent_id=1, symbol=symbol, market="us-stock", side=side,
+                 quantity=qty, price=price)
+
+
+def _path(url):
+    return urlparse(url).path
+
+
+def _responder(routes):
+    """routes: {path: _FakeResponse | callable(method,url,kwargs)}"""
+    def respond(method, url, kwargs):
+        r = routes.get(_path(url))
+        if callable(r):
+            return r(method, url, kwargs)
+        return r
+    return respond
+
+
+_ONE_ACCOUNT = _FakeResponse(200, [{"account_id": "ACC1", "account_type": "CASH"}])
+
+
+def _expected_signature(secret, path, query, headers, body_bytes, host):
+    """Independent re-derivation from the published algorithm — used to check
+    the adapter's request, not the adapter's own helper."""
+    items = dict(query)
+    for k in ("x-app-key", "x-timestamp", "x-signature-algorithm",
+              "x-signature-version", "x-signature-nonce"):
+        items[k] = headers[k]
+    items["host"] = host
+    s = path + "&" + "&".join(f"{k}={items[k]}" for k in sorted(items))
+    if body_bytes:
+        s += "&" + hashlib.md5(body_bytes).hexdigest().upper()
+    mac = hmac.new((secret + "&").encode(), quote(s, safe="").encode(), hashlib.sha1)
+    return base64.b64encode(mac.digest()).decode()
+
+
+class SignatureVectorTests(unittest.TestCase):
+    def test_documented_vector(self):
+        from execution.webull import sign_request
+        # Every value below is the PUBLISHED sample from Webull's signature
+        # docs (developer.webull.com/apis/authentication/signature) — a
+        # documentation fixture, not a credential.
+        body = b'{"k1":123,"k2":"this is the api request body","k3":true,"k4":{"foo":[1,2]}}'
+        sig = sign_request(
+            app_secret="0f50a2e853334a9aae1a783bee120c1f",  # gitleaks:allow — Webull docs sample
+            path="/trade/place_order",
+            query={"a1": "webull", "a2": "123", "a3": "xxx", "q1": "yyy"},
+            headers={
+                "x-app-key": "776da210ab4a452795d74e726ebd74b6",  # gitleaks:allow — Webull docs sample
+                "x-timestamp": "2022-01-04T03:55:31Z",
+                "x-signature-algorithm": "HMAC-SHA1",
+                "x-signature-version": "1.0",
+                "x-signature-nonce": "48ef5afed43d4d91ae514aaeafbc29ba",
+            },
+            host="api.webull.com",
+            body=body,
+        )
+        self.assertEqual(sig, "kvlS6opdZDhEBo5jq40nHYXaLvM=")
+
+
+class RegistryTests(unittest.TestCase):
+    def test_webull_registered_as_us_stock_venue(self):
+        from execution.base import (AVAILABLE_BROKERS, BROKER_MARKETS,
+                                    BROKER_SPECS, REGION_VENUES,
+                                    broker_supports_market)
+        self.assertIn("webull", AVAILABLE_BROKERS)
+        spec = BROKER_SPECS["webull"]
+        self.assertEqual(spec.fields, ("key", "secret"))
+        self.assertEqual(spec.shadow, "sandbox")
+        self.assertEqual(spec.quote, "USD")
+        self.assertEqual(BROKER_MARKETS["webull"], ("us-stock",))
+        self.assertFalse(broker_supports_market("webull", "crypto"))
+        self.assertIn("webull", REGION_VENUES["US"])
+
+    def test_every_broker_has_a_connection_guide(self):
+        """/accounts shows a "Connection guide" button for every broker; a
+        broker without its gwsetup doc would show 'Could not load the guide'."""
+        from execution.base import BROKER_SPECS
+        content = SERVER_DIR / "guide_content"
+        keys = {d.get("key") for d in json.loads(
+            (content / "manifest.json").read_text()).get("docs", [])}
+        for broker in BROKER_SPECS:
+            key = f"gwsetup-{broker}-en"
+            self.assertTrue((content / f"{key}.html").exists(), broker)
+            self.assertIn(key, keys, broker)
+
+    def test_router_pins_host_by_mode(self):
+        from execution.router import _build_real_broker
+        from execution.webull import WebullBroker
+        for mode, host in (("shadow", "api.sandbox.webull.com"),
+                           ("paper", "api.sandbox.webull.com"),
+                           ("live", "api.webull.com")):
+            b = _build_real_broker({"broker": "webull", "credentials_enc": "",
+                                    "execution_mode": mode, "agent_id": 1})
+            self.assertIsInstance(b, WebullBroker, mode)
+            self.assertEqual(b.host, host, mode)
+
+    def test_connect_request_shapes_blob(self):
+        from routes_execution import CreateBrokerAccountRequest
+        req = CreateBrokerAccountRequest(broker="webull", api_key="k", api_secret="s")
+        self.assertEqual(req.credentials(), {"key": "k", "secret": "s"})
+        req = CreateBrokerAccountRequest(broker="webull", api_key="k",
+                                         api_secret="s", account_id=" A9 ")
+        self.assertEqual(req.credentials(),
+                         {"key": "k", "secret": "s", "account_id": "A9"})
+        with self.assertRaises(ValueError):
+            CreateBrokerAccountRequest(broker="webull", api_key="k").credentials()
+
+
+class AdapterTests(unittest.TestCase):
+    def _broker(self, **kw):
+        from execution.webull import WebullBroker
+        args = {"key": "appkey", "secret": "appsecret", "sandbox": False}
+        args.update(kw)
+        b = WebullBroker(**args)
+        b._LOOKUP_DELAYS = (0, 0, 0)  # no real sleeping in unit tests
+        return b
+
+    def test_no_credentials_rejects_without_network(self):
+        from execution.base import OrderStatus
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher:
+            o = _run(self._broker(key="", secret="").submit_order(_order()))
+            st = _run(self._broker(key="", secret="").get_order_status("x"))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("not configured", o.error_message)
+        self.assertIsNone(st)
+        self.assertEqual(calls, [])
+
+    def test_short_and_cover_refused_without_network(self):
+        from execution.base import OrderStatus
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher:
+            for side in ("short", "cover"):
+                o = _run(self._broker().submit_order(_order(side=side)))
+                self.assertIs(o.status, OrderStatus.REJECTED, side)
+                self.assertIn("long-only", o.error_message, side)
+        self.assertEqual(calls, [])
+
+    def test_buy_places_signed_market_order(self):
+        from execution.base import OrderStatus
+        placed = {}
+
+        def place(method, url, kwargs):
+            placed.update(kwargs)
+            return _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})
+
+        patcher, calls = _patch_http(_responder({ACCT_LIST: _ONE_ACCOUNT, PLACE: place}))
+        with patcher:
+            o = _run(self._broker().submit_order(_order(qty=3.0)))
+        self.assertIs(o.status, OrderStatus.SUBMITTED, o.error_message)
+        self.assertEqual([c[0] for c in calls], ["GET", "POST"])
+        method, url, kwargs = calls[1]
+        self.assertEqual(urlparse(url).netloc, "api.webull.com")
+        self.assertEqual(_path(url), PLACE)
+        self.assertNotIn("json", kwargs, "body must be sent as the exact signed bytes")
+        body_bytes = kwargs["content"]
+        body = json.loads(body_bytes)
+        self.assertEqual(body["account_id"], "ACC1")
+        (leg,) = body["new_orders"]
+        self.assertEqual(leg["symbol"], "AAPL")
+        self.assertEqual(leg["side"], "BUY")
+        self.assertEqual(leg["order_type"], "MARKET")
+        self.assertEqual(leg["quantity"], "3")
+        self.assertEqual(leg["instrument_type"], "EQUITY")
+        self.assertEqual(leg["market"], "US")
+        self.assertEqual(leg["time_in_force"], "DAY")
+        self.assertEqual(leg["entrust_type"], "QTY")
+        self.assertEqual(leg["support_trading_session"], "CORE")
+        self.assertLessEqual(len(leg["client_order_id"]), 32)
+        # The reconciler looks the order up by the id we were handed back.
+        self.assertEqual(o.broker_order_id, leg["client_order_id"])
+        h = kwargs["headers"]
+        self.assertEqual(h["x-app-key"], "appkey")
+        self.assertNotIn("x-app-secret", h, "the secret must never be sent")
+        self.assertEqual(h["x-signature"], _expected_signature(
+            "appsecret", PLACE, {}, h, body_bytes, "api.webull.com"))
+
+    def test_sell_maps_to_sell_and_get_is_signed_with_query(self):
+        patcher, calls = _patch_http(_responder({
+            ACCT_LIST: _ONE_ACCOUNT,
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher:
+            _run(self._broker().submit_order(_order(side="sell", qty=0.5)))
+        leg = json.loads(calls[1][2]["content"])["new_orders"][0]
+        self.assertEqual(leg["side"], "SELL")
+        self.assertEqual(leg["quantity"], "0.5")
+        _, url, kwargs = calls[0]
+        self.assertEqual(kwargs["headers"]["x-signature"], _expected_signature(
+            "appsecret", ACCT_LIST, {}, kwargs["headers"], b"", "api.webull.com"))
+
+    def test_explicit_account_id_skips_discovery(self):
+        patcher, calls = _patch_http(_responder({
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher:
+            _run(self._broker(account_id="MINE").submit_order(_order()))
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(json.loads(calls[0][2]["content"])["account_id"], "MINE")
+
+    def test_discovery_prefers_the_single_cash_account(self):
+        patcher, calls = _patch_http(_responder({
+            ACCT_LIST: _FakeResponse(200, [
+                {"account_id": "M1", "account_type": "MARGIN"},
+                {"account_id": "C1", "account_type": "CASH"}]),
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher:
+            _run(self._broker().submit_order(_order()))
+        self.assertEqual(json.loads(calls[1][2]["content"])["account_id"], "C1")
+
+    def test_ambiguous_accounts_refuse(self):
+        from execution.base import OrderStatus
+        patcher, calls = _patch_http(_responder({
+            ACCT_LIST: _FakeResponse(200, [
+                {"account_id": "C1", "account_type": "CASH"},
+                {"account_id": "C2", "account_type": "CASH"}])}))
+        with patcher:
+            o = _run(self._broker().submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("account id", o.error_message)
+        self.assertEqual(len(calls), 1, "no order may be placed on a guessed account")
+
+    def test_business_error_rejects(self):
+        from execution.base import OrderStatus
+        patcher, _ = _patch_http(_responder({
+            ACCT_LIST: _ONE_ACCOUNT,
+            PLACE: _FakeResponse(417, {"error_code": "ORDER_BUYING_POWER_NOT_ENOUGH",
+                                       "message": "insufficient buying power"})}))
+        with patcher:
+            o = _run(self._broker().submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("insufficient buying power", o.error_message)
+
+    def test_network_error_rejects_never_raises(self):
+        import httpx
+        from execution.base import OrderStatus
+        patcher, _ = _patch_http(lambda m, u, k: httpx.ConnectError("boom", request=None))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+            st = _run(self._broker(account_id="A").get_order_status("cid"))
+            ok = _run(self._broker(account_id="A").cancel_order("cid"))
+            pos = _run(self._broker(account_id="A").get_broker_positions())
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("network error", o.error_message)
+        self.assertIsNone(st)
+        self.assertFalse(ok)
+        self.assertEqual(pos, [])
+
+    def test_order_status_mapping(self):
+        from execution.base import OrderStatus
+        cases = {
+            "FILLED": OrderStatus.FILLED, "PARTIAL_FILLED": OrderStatus.PARTIAL_FILL,
+            "CANCELLED": OrderStatus.CANCELLED, "FAILED": OrderStatus.REJECTED,
+            "SUBMITTED": OrderStatus.SUBMITTED, "PENDING": OrderStatus.SUBMITTED,
+        }
+        for venue, ours in cases.items():
+            seen = {}
+
+            def detail(method, url, kwargs, venue=venue):
+                seen["q"] = parse_qs(urlparse(url).query) or {
+                    k: [v] for k, v in (kwargs.get("params") or {}).items()}
+                return _FakeResponse(200, {"client_order_id": "cid", "orders": [{
+                    "client_order_id": "cid", "status": venue,
+                    "filled_quantity": "2", "filled_price": "101.5"}]})
+            patcher, _ = _patch_http(_responder({DETAIL: detail}))
+            with patcher:
+                st = _run(self._broker(account_id="A").get_order_status("cid", "AAPL"))
+            self.assertIs(st["status"], ours, venue)
+            self.assertEqual(st["filled_qty"], 2.0)
+            self.assertEqual(st["avg_price"], 101.5)
+            self.assertEqual(seen["q"]["client_order_id"], ["cid"])
+            self.assertEqual(seen["q"]["account_id"], ["A"])
+
+    def test_cancel_and_positions(self):
+        patcher, calls = _patch_http(_responder({
+            CANCEL: _FakeResponse(200, {"client_order_id": "cid", "order_id": "W1"}),
+            POSITIONS: _FakeResponse(200, [{"symbol": "AAPL", "quantity": "4"},
+                                           {"symbol": "TSLA", "quantity": "-1"}])}))
+        with patcher:
+            self.assertTrue(_run(self._broker(account_id="A").cancel_order("cid")))
+            pos = _run(self._broker(account_id="A").get_broker_positions())
+        self.assertEqual(json.loads(calls[0][2]["content"]),
+                         {"account_id": "A", "client_order_id": "cid"})
+        self.assertEqual(pos, [{"symbol": "AAPL", "qty": 4.0, "side": "long"},
+                               {"symbol": "TSLA", "qty": 1.0, "side": "short"}])
+
+    # ── review fixes (adversarial pass on cb9d6e54) ─────────────────────────
+    def test_lost_place_reply_with_order_at_venue_is_submitted(self):
+        """A read timeout AFTER the request was sent must not hide a live
+        order: the adapter asks Webull about its own client_order_id."""
+        import httpx
+        from execution.base import OrderStatus
+
+        def place(m, u, k):
+            return httpx.ReadTimeout("timed out", request=None)
+
+        def detail(m, u, k):
+            cid = parse_qs(urlparse(u).query)["client_order_id"][0]
+            return _FakeResponse(200, {"orders": [{"client_order_id": cid,
+                                                   "status": "SUBMITTED"}]})
+        patcher, calls = _patch_http(_responder({PLACE: place, DETAIL: detail}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.SUBMITTED, o.error_message)
+        self.assertEqual([c[0] for c in calls], ["POST", "GET"])
+        sent_cid = json.loads(calls[0][2]["content"])["new_orders"][0]["client_order_id"]
+        self.assertEqual(o.broker_order_id, sent_cid)
+
+    def test_lost_place_reply_unconfirmed_is_rejected_but_traceable(self):
+        import httpx
+        from execution.base import OrderStatus
+        patcher, _ = _patch_http(_responder({
+            PLACE: lambda m, u, k: httpx.ReadTimeout("timed out", request=None),
+            DETAIL: _FakeResponse(404, {"message": "not found"})}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("outcome unknown", o.error_message)
+        self.assertIsNotNone(o.broker_order_id, "the id must be kept for the user to check")
+
+    def test_connect_failure_is_plain_rejection_without_lookup(self):
+        import httpx
+        from execution.base import OrderStatus
+        patcher, calls = _patch_http(_responder({
+            PLACE: lambda m, u, k: httpx.ConnectError("refused", request=None)}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("network error", o.error_message)
+        self.assertEqual(len(calls), 1, "a request that never left needs no lookup")
+
+    def test_http_200_with_error_body_is_rejected(self):
+        """A 200 we cannot read is ambiguous: looked up, and refused only when
+        Webull does not confirm the order."""
+        from execution.base import OrderStatus
+        patcher, calls = _patch_http(_responder({
+            PLACE: _FakeResponse(200, {"code": "ORDER_REJECTED",
+                                       "message": "symbol not tradable"}),
+            DETAIL: _FakeResponse(200, {"orders": []})}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("symbol not tradable", o.error_message)
+        self.assertEqual([c[0] for c in calls], ["POST", "GET", "GET", "GET"])
+
+    def test_5xx_with_order_at_venue_is_submitted_never_filled(self):
+        """A 502 can hide a placed order. Found FILLED → still SUBMITTED, so the
+        reconciler records the broker-confirmed fill size."""
+        from execution.base import OrderStatus
+
+        def detail(m, u, k):
+            cid = parse_qs(urlparse(u).query)["client_order_id"][0]
+            return _FakeResponse(200, {"orders": [{"client_order_id": cid,
+                                                   "status": "FILLED",
+                                                   "filled_quantity": "1"}]})
+        patcher, _ = _patch_http(_responder({
+            PLACE: _FakeResponse(502, None, text="Bad Gateway"), DETAIL: detail}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order(qty=3)))
+        self.assertIs(o.status, OrderStatus.SUBMITTED)
+
+    def test_4xx_is_a_rejection_without_lookup(self):
+        from execution.base import OrderStatus
+        patcher, calls = _patch_http(_responder({
+            PLACE: _FakeResponse(401, {"message": "invalid signature"})}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertEqual(len(calls), 1)
+
+    def test_lookup_retries_until_order_is_indexed(self):
+        import httpx
+        from execution.base import OrderStatus
+        seen = []
+
+        def detail(m, u, k):
+            seen.append(1)
+            if len(seen) < 3:
+                return _FakeResponse(200, {"orders": []})
+            cid = parse_qs(urlparse(u).query)["client_order_id"][0]
+            return _FakeResponse(200, {"orders": [{"client_order_id": cid,
+                                                   "status": "SUBMITTED"}]})
+        patcher, _ = _patch_http(_responder({
+            PLACE: lambda m, u, k: httpx.ReadTimeout("t", request=None), DETAIL: detail}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.SUBMITTED)
+        self.assertEqual(len(seen), 3)
+
+    def test_empty_leg_never_confirms_an_order(self):
+        import httpx
+        from execution.base import OrderStatus
+        patcher, _ = _patch_http(_responder({
+            PLACE: lambda m, u, k: httpx.ReadTimeout("t", request=None),
+            DETAIL: _FakeResponse(200, {"orders": [{}]})}))
+        with patcher:
+            o = _run(self._broker(account_id="A").submit_order(_order()))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("outcome unknown", o.error_message)
+
+    def test_foreign_leg_does_not_match(self):
+        patcher, _ = _patch_http(_responder({DETAIL: _FakeResponse(200, {"orders": [
+            {"client_order_id": "someone-else", "status": "FILLED"}]})}))
+        with patcher:
+            self.assertIsNone(_run(self._broker(account_id="A").get_order_status("cid")))
+
+    def test_malformed_responses_never_raise(self):
+        patcher, _ = _patch_http(_responder({
+            DETAIL: _FakeResponse(200, {"orders": 5}),
+            ACCT_LIST: _FakeResponse(200, None, text="<html>oops</html>")}))
+        with patcher:
+            self.assertIsNone(_run(self._broker(account_id="A").get_order_status("cid")))
+            self.assertFalse(_run(self._broker().cancel_order("cid")))
+
+    def test_venue_rejected_status_maps_to_rejected(self):
+        from execution.base import OrderStatus
+        patcher, _ = _patch_http(_responder({DETAIL: _FakeResponse(200, {"orders": [
+            {"client_order_id": "cid", "status": "REJECTED"}]})}))
+        with patcher:
+            st = _run(self._broker(account_id="A").get_order_status("cid"))
+        self.assertIs(st["status"], OrderStatus.REJECTED)
+
+    def test_query_space_sent_as_percent20(self):
+        patcher, calls = _patch_http(_responder({DETAIL: _FakeResponse(200, {"orders": []})}))
+        with patcher:
+            _run(self._broker(account_id="A B").get_order_status("cid"))
+        self.assertIn("account_id=A%20B", calls[0][1])
+
+    def test_sandbox_host(self):
+        patcher, calls = _patch_http(_responder({
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher:
+            _run(self._broker(account_id="A", sandbox=True).submit_order(_order()))
+        self.assertEqual(urlparse(calls[0][1]).netloc, "api.sandbox.webull.com")
+
+
+class WebullGatewayTests(_DbTestCase):
+    """The order path end to end: rule → gateway → adapter → broker_orders."""
+
+    def _live(self, qty=2.0, price=100.0, side="buy"):
+        from execution.gateway import submit_live
+        return submit_live(self.agent_id, "AAPL", "us-stock", side, qty, price)
+
+    def test_live_refused_until_allowlisted(self):
+        from execution.base import OrderStatus
+        from execution.gateway import NOT_ALLOWLISTED, live_refusal_reason
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s"})
+        _accept_tcs(self.agent_id, "webull")
+        self.assertEqual(live_refusal_reason(self.agent_id, "live", "us-stock"),
+                         NOT_ALLOWLISTED)
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher:
+            o = self._live()
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertEqual(o.error_message, NOT_ALLOWLISTED)
+        self.assertEqual(calls, [], "a non-allowlisted venue is never contacted")
+
+    def test_allowlisted_live_reaches_production_and_persists(self):
+        from execution.base import OrderStatus
+        from execution.gateway import live_refusal_reason
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "ACC1"})
+        _accept_tcs(self.agent_id, "webull")
+        os.environ["LIVE_BROKER_ALLOWLIST"] = "alpaca,binance,ibkr,webull"
+        self.assertIsNone(live_refusal_reason(self.agent_id, "live", "us-stock"))
+        patcher, calls = _patch_http(_responder({
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher:
+            o = self._live()
+        self.assertIs(o.status, OrderStatus.SUBMITTED, o.error_message)
+        self.assertEqual(o.broker, "webull")
+        self.assertEqual(urlparse(calls[0][1]).netloc, "api.webull.com")
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT broker, status, broker_order_id FROM broker_orders WHERE id=?",
+                    (o.db_id,))
+        row = dict(cur.fetchone())
+        conn.close()
+        self.assertEqual(row["broker"], "webull")
+        self.assertEqual(row["status"], "submitted")
+        self.assertEqual(row["broker_order_id"], o.broker_order_id)
+
+    def test_new_venue_notional_cap_refuses(self):
+        from execution.base import OrderStatus
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "ACC1"})
+        os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher:
+            o = self._live(qty=20.0, price=100.0)  # $2,000 > $1,000 cap
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("per-order limit", o.error_message)
+        self.assertEqual(calls, [])
+
+    def test_live_short_never_reaches_webull(self):
+        from execution.base import OrderStatus
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "ACC1"})
+        os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher:
+            o = self._live(side="short", qty=1.0)
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertEqual(calls, [])
+
+    def test_crypto_order_never_routes_to_webull(self):
+        from execution.gateway import NOT_CONFIGURED, submit_live
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "ACC1"})
+        os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher:
+            o = submit_live(self.agent_id, "BTCUSDT", "crypto", "buy", 0.01, 100.0)
+        self.assertEqual(o.error_message, NOT_CONFIGURED)
+        self.assertEqual(calls, [])
+
+    def test_shadow_pins_sandbox_even_if_account_says_live(self):
+        from execution.gateway import submit_shadow
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "ACC1"}, mode="live")
+        patcher, calls = _patch_http(_responder({
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher:
+            submit_shadow(self.agent_id, "AAPL", "us-stock", "buy", 2.0, 100.0,
+                          ledger_quantity=2.0)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(urlparse(calls[0][1]).netloc, "api.sandbox.webull.com")
+
+
+if __name__ == "__main__":
+    unittest.main()

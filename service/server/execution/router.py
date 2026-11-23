@@ -236,6 +236,11 @@ def _build_real_broker(account: dict) -> Broker:
         from execution.coinbase import CoinbaseBroker
         return CoinbaseBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
                               preview_only=sandbox)
+    if broker_name == "webull":
+        from execution.webull import WebullBroker
+        return WebullBroker(key=creds.get("key", ""), secret=creds.get("secret", ""),
+                            sandbox=sandbox, account_id=creds.get("account_id", ""),
+                            access_token=creds.get("access_token", ""))
 
     return PaperBroker()
 

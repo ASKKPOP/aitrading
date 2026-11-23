@@ -104,6 +104,8 @@ export function AccountsPage() {
     driftTitle: tr(language, { ko: '드리프트 기록', en: 'Drift records', ja: 'ドリフト記録', th: 'บันทึกดริฟต์', vi: 'Bản ghi lệch', id: 'Catatan penyimpangan' }),
     driftHint: tr(language, { ko: '플랫폼 원장과 브로커의 실제 결과가 달랐던 경우입니다. 원장은 자동으로 수정되지 않으니 브로커 계좌를 확인하고 직접 정정하세요.', en: 'Cases where the platform ledger and the broker’s actual outcome disagreed. The ledger is never auto-corrected — review your broker account and fix manually.', ja: 'プラットフォーム台帳とブローカーの実際の結果が食い違ったケースです。台帳は自動修正されません — ブローカー口座を確認し手動で修正してください。', th: 'กรณีที่บัญชีแพลตฟอร์มกับผลจริงของโบรกเกอร์ไม่ตรงกัน บัญชีจะไม่ถูกแก้อัตโนมัติ — ตรวจสอบและแก้ไขเอง', vi: 'Trường hợp sổ nền tảng và kết quả thực tế của broker khác nhau. Sổ không tự sửa — hãy kiểm tra tài khoản broker và tự chỉnh.', id: 'Kasus di mana buku platform dan hasil sebenarnya dari broker tidak cocok. Buku tidak pernah dikoreksi otomatis — periksa akun broker Anda dan perbaiki secara manual.' }),
     reqQty: tr(language, { ko: '요청', en: 'req', ja: '要求', th: 'ขอ', vi: 'yêu cầu', id: 'diminta' }),
+    webullAccountId: tr(language, { ko: 'Webull 계좌 ID (선택 — 계좌가 여러 개일 때만)', en: 'Webull account id (optional — only if you hold more than one account)', ja: 'Webull口座ID (任意 — 複数口座がある場合のみ)', th: 'รหัสบัญชี Webull (ไม่บังคับ — เฉพาะเมื่อมีหลายบัญชี)', vi: 'Mã tài khoản Webull (tùy chọn — chỉ khi có nhiều tài khoản)', id: 'ID akun Webull (opsional — hanya bila Anda punya lebih dari satu akun)' }),
+    webullNote: tr(language, { ko: 'Webull은 미국 주식 현물(롱 전용)만 지원합니다. App Key와 App Secret을 사용하세요. shadow는 Webull PaperTrade 환경으로 전송되므로 PaperTrade용 키가 필요합니다.', en: 'Webull supports US stocks only, spot and long-only. Use your App Key and App Secret. Shadow mode sends orders to Webull PaperTrade, so it needs PaperTrade app keys.', ja: 'Webullは米国株の現物(ロングのみ)に対応します。App KeyとApp Secretを使用してください。shadowはWebull PaperTrade環境に送信されるため、PaperTrade用キーが必要です。', th: 'Webull รองรับเฉพาะหุ้นสหรัฐฯ แบบ spot (ซื้ออย่างเดียว) ใช้ App Key และ App Secret โหมด shadow จะส่งคำสั่งไปที่ Webull PaperTrade จึงต้องใช้คีย์ PaperTrade', vi: 'Webull chỉ hỗ trợ cổ phiếu Mỹ giao ngay (chỉ mua). Dùng App Key và App Secret. Chế độ shadow gửi lệnh tới Webull PaperTrade nên cần khóa PaperTrade.', id: 'Webull hanya mendukung saham AS spot (long saja). Gunakan App Key dan App Secret. Mode shadow mengirim order ke Webull PaperTrade, jadi perlu kunci aplikasi PaperTrade.' }),
     fillQty: tr(language, { ko: '체결', en: 'filled', ja: '約定', th: 'สำเร็จ', vi: 'khớp', id: 'tereksekusi' }),
   }
 
@@ -171,7 +173,17 @@ export function AccountsPage() {
     loadAccounts()
   }, [token, loadAccounts])
 
+  // IBKR and Webull share the account-id input; an id typed for one broker
+  // must never ride along into another broker's connect payload.
+  function pickBroker(next: string) {
+    setBroker(next)
+    setAccountId('')
+  }
+
   const isIbkr = broker === 'ibkr'
+  // Webull: key/secret plus an OPTIONAL account id (the adapter refuses to
+  // guess between several accounts on one login).
+  const isWebull = broker === 'webull'
   const needsPassphrase = (specs[broker]?.fields || []).includes('passphrase')
   // Coinbase signs with an ES256 JWT, so its "secret" is a multi-line EC
   // private key. A single-line input eats the newlines and the PEM stops
@@ -221,7 +233,8 @@ export function AccountsPage() {
         ? { broker, gateway_url: gatewayUrl.trim(), account_id: accountId.trim(),
             allow_self_signed: allowSelfSigned }
         : { broker, api_key: apiKey.trim(), api_secret: apiSecret.trim(),
-            ...(needsPassphrase ? { passphrase: passphrase.trim() } : {}) }
+            ...(needsPassphrase ? { passphrase: passphrase.trim() } : {}),
+            ...(isWebull && accountId.trim() ? { account_id: accountId.trim() } : {}) }
       const res = await fetch(`${API_BASE}/execution/accounts`, {
         method: 'POST', headers: authHeaders, body: JSON.stringify(payload),
       })
@@ -341,13 +354,13 @@ export function AccountsPage() {
             const rest = brokers.filter(b => !rec.includes(b))
             if (rec.length === 0) {
               return (
-                <select value={broker} onChange={e => setBroker(e.target.value)} style={field}>
+                <select value={broker} onChange={e => pickBroker(e.target.value)} style={field}>
                   {brokers.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               )
             }
             return (
-              <select value={broker} onChange={e => setBroker(e.target.value)} style={field}>
+              <select value={broker} onChange={e => pickBroker(e.target.value)} style={field}>
                 <optgroup label={`★ ${T.recommended}`}>
                   {rec.map(b => <option key={b} value={b}>{b}</option>)}
                 </optgroup>
@@ -394,6 +407,15 @@ export function AccountsPage() {
               ) : (
                 <input value={apiSecret} onChange={e => setApiSecret(e.target.value)} placeholder={T.apiSecret}
                   type="password" autoComplete="new-password" spellCheck={false} style={field} />
+              )}
+              {isWebull && (
+                <>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary,#8a8073)', lineHeight: 1.5, margin: '2px 0 10px' }}>
+                    ⓘ {T.webullNote}
+                  </div>
+                  <input value={accountId} onChange={e => setAccountId(e.target.value)}
+                    placeholder={T.webullAccountId} autoComplete="off" spellCheck={false} style={field} />
+                </>
               )}
               {needsPassphrase && (
                 <input value={passphrase} onChange={e => setPassphrase(e.target.value)} placeholder={T.passphrase}

@@ -66,6 +66,10 @@ class CreateBrokerAccountRequest(BaseModel):
             if not self.passphrase.strip():
                 raise ValueError(f"{self.broker} requires api_key, api_secret and passphrase")
             blob["passphrase"] = self.passphrase.strip()
+        # Webull: optional account id — needed only when the login holds more
+        # than one account (the adapter refuses to guess between them).
+        if self.broker == "webull" and self.account_id.strip():
+            blob["account_id"] = self.account_id.strip()
         return blob
 
 

@@ -73,6 +73,10 @@ BROKER_SPECS: dict[str, BrokerSpec] = {
     # secret is an EC private key in PEM form, not a shared secret — Coinbase
     # signs with a per-request ES256 JWT rather than an HMAC.
     "coinbase":  BrokerSpec(fields=("key", "secret"),               shadow="dry_run", quote="USD"),
+    # US stocks, spot/long only. An optional account_id may ride in the blob;
+    # without it the adapter discovers the account (execution/webull.py).
+    # Shadow uses the PaperTrade host, which needs PaperTrade app keys.
+    "webull":    BrokerSpec(fields=("key", "secret"),               shadow="sandbox", quote="USD"),
 }
 
 AVAILABLE_BROKERS = tuple(BROKER_SPECS)
@@ -84,7 +88,7 @@ REGION_VENUES: dict[str, tuple] = {
     "GLOBAL": ("binance", "bybit", "okx", "kraken", "cryptocom"),
     # US persons cannot use binance.com / bybit / okx, so the GLOBAL fallback
     # would recommend three venues they cannot open an account on.
-    "US": ("coinbase", "kraken", "alpaca"),
+    "US": ("coinbase", "kraken", "alpaca", "webull"),
     "KR": ("upbit", "kraken"),
     "JP": ("kraken",),
     "TH": ("binance", "bybit", "kucoin"),
@@ -239,6 +243,7 @@ class Broker(ABC):
 BROKER_MARKETS: dict = {
     "alpaca": ("us-stock",),
     "ibkr": ("us-stock",),
+    "webull": ("us-stock",),
     "binance": ("crypto",),
     "kraken": ("crypto",),
     "coinbase": ("crypto",),

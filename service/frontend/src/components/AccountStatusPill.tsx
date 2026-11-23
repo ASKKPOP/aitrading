@@ -35,7 +35,7 @@ function brokerLabel(broker: string): string {
   const known: Record<string, string> = {
     alpaca: 'Alpaca', binance: 'Binance', ibkr: 'IBKR', bybit: 'Bybit',
     okx: 'OKX', kraken: 'Kraken', cryptocom: 'Crypto.com', upbit: 'Upbit',
-    kucoin: 'KuCoin', coinbase: 'Coinbase',
+    kucoin: 'KuCoin', coinbase: 'Coinbase', webull: 'Webull',
   }
   return known[broker] || broker
 }
