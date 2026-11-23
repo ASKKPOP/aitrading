@@ -56,6 +56,23 @@ def _sql_literals() -> list[tuple[str, str]]:
             text = _string_text(node)
             if text is not None and _SQL.search(text):
                 out.append((f"{path.relative_to(REPO)}:{node.lineno}", text))
+        for fn in ast.walk(tree):
+            if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            chains: dict[str, list] = {}
+            writes = sorted((n for n in ast.walk(fn) if isinstance(n, (ast.Assign, ast.AugAssign))),
+                            key=lambda n: (n.lineno, n.col_offset))
+            for node in writes:
+                if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+                    text = _string_text(node.value)
+                    chains[node.targets[0].id] = [node.lineno, text] if text is not None else None
+                elif (isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Add)
+                        and isinstance(node.target, ast.Name) and chains.get(node.target.id)):
+                    chain = chains[node.target.id]
+                    piece = _string_text(node.value)
+                    chain[1] += piece if piece is not None else "{}"
+                    if _SQL.search(chain[1]):
+                        out.append((f"{path.relative_to(REPO)}:{chain[0]}", chain[1]))
     return out
 
 
