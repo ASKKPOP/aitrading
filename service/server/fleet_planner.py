@@ -1663,6 +1663,18 @@ def _master_state(agent_id: int) -> str:
         conn.close()
 
 
+def _research_wait_over(fleet: dict) -> bool:
+    """True once FLEET_BUILD_WAIT_HOURS (default 6) have passed since the
+    fleet started. An unreadable start time counts as over (old behaviour)."""
+    try:
+        hours = float(os.getenv("FLEET_BUILD_WAIT_HOURS", "6"))
+        started = datetime.strptime(fleet.get("started_at") or "", TS_FMT)
+    except (TypeError, ValueError):
+        return True
+    elapsed = _now_dt() - started.replace(tzinfo=timezone.utc)
+    return elapsed.total_seconds() >= hours * 3600
+
+
 def _do_research(fleet: dict) -> None:
     """Consume the global batch: select N theses, allocate by key, bind slots.
     Zero LLM — research is the platform loop's job."""
@@ -1714,7 +1726,11 @@ def _do_research(fleet: dict) -> None:
             conn.commit()
         finally:
             conn.close()
-        if attempts >= 20:
+        # Research batches land ~hourly; 20 attempts ~1 min apart re-read the
+        # same batch (prod fleet 56, 2026-11-23, died after 19 min while new
+        # longs arrived hours later). Give up only once the wait window has
+        # also passed since start, so several research rounds are seen.
+        if attempts >= 20 and _research_wait_over(fleet):
             _set_status(fleet["id"], (STATUS_RESEARCHING,), STATUS_STOPPED,
                         "build_failed")
         return

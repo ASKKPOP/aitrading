@@ -31,9 +31,11 @@ Still refused: leverage > 1, the CME `futures` market, forex, options,
 Polymarket, and a 'futures' book on any market other than crypto. Shorts
 have their own switch so the long-only block can be re-armed without a
 deploy: platform_settings key `shorts_trading_blocked`, env twin
-`SHORTS_TRADING_BLOCKED`. Default ON since 2026-11-21 (owner: "Long only, no
-shorts"); an explicit off re-allows shorts. It only bites while the main
-block above is on.
+`SHORTS_TRADING_BLOCKED`. Default ON 2026-11-21 (owner: "Long only, no
+shorts"); default OFF again since 2026-11-23 (owner: "add short ideas" ->
+"Allow shorts again", after research held ~1,137 shorts vs 43 longs over 3
+days and every fleet stalled long-only). An explicit on re-arms long-only.
+It only bites while the main block above is on.
 
 Closing is NEVER refused. A sell of a long and a cover of a short always pass,
 so a position opened before the switch can always be reduced to flat.
@@ -162,12 +164,12 @@ def futures_blocked(cursor=None) -> bool:
 
 def shorts_blocked(cursor=None) -> bool:
     """True when the main block is on AND shorts are blocked.
-    Default: shorts BLOCKED — long only (owner 2026-11-21: "Long only, no
-    shorts", replacing the 2026-11-20 two-way default). An explicit
-    off/0/false/no on the switch re-allows 1x shorts."""
+    Default: shorts ALLOWED at 1x on crypto + US stock (owner 2026-11-23:
+    "Allow shorts again", replacing the 2026-11-21 long-only default). An
+    explicit on/1/true/yes on the switch re-arms long-only."""
     if not futures_blocked(cursor):
         return False
-    return _switch(SHORTS_SETTING_KEY, SHORTS_ENV_VAR, True, cursor)
+    return _switch(SHORTS_SETTING_KEY, SHORTS_ENV_VAR, False, cursor)
 
 
 # Which market each short-capable book type may live on.

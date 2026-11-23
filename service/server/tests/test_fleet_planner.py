@@ -730,3 +730,48 @@ class ExposureFeasibilityClamp(unittest.TestCase):
         is the safe direction; failing open reproduces the churn."""
         self.assertEqual(fp._exposure_cap_usd({"agent_id": None}), 10_000.0)
         self.assertEqual(fp._exposure_cap_usd({}), 10_000.0)
+
+
+class ResearchWaitTests(FleetTestBase):
+    """2026-11-23: fleet 56 (prod) hit 20 empty research attempts ~1 min
+    apart and stopped build_failed after 19 minutes, while research batches
+    land about hourly — new long candidates (ACN, NOW, UNH) arrived hours
+    later. A fleet must wait across several research rounds before giving
+    up: 20 attempts alone is not enough, FLEET_BUILD_WAIT_HOURS must also
+    have passed since the fleet started."""
+
+    def _empty_fleet(self, attempts: int, started_hours_ago: float) -> int:
+        fleet_id = self._fleet(n=2, budget=2000.0)
+        fp.start_fleet(fleet_id, self.agent_id)
+        started = datetime.fromtimestamp(
+            datetime.now(timezone.utc).timestamp() - started_hours_ago * 3600,
+            tz=timezone.utc).strftime(fp.TS_FMT)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE fleets SET build_attempts = ?, started_at = ? WHERE id = ?",
+                    (attempts, started, fleet_id))
+        conn.commit()
+        conn.close()
+        return fleet_id
+
+    def test_twenty_quick_empty_attempts_keep_waiting(self):
+        fleet_id = self._empty_fleet(attempts=19, started_hours_ago=0.3)
+        with patch.dict(os.environ, {"FLEET_BUILD_WAIT_HOURS": "6"}):
+            fp._do_research(fp.get_fleet(fleet_id))   # 20th empty attempt
+        f = fp.get_fleet(fleet_id)
+        self.assertEqual(f["status"], fp.STATUS_RESEARCHING)
+        self.assertEqual(int(f["build_attempts"]), 20)
+
+    def test_gives_up_after_wait_window(self):
+        fleet_id = self._empty_fleet(attempts=19, started_hours_ago=6.5)
+        with patch.dict(os.environ, {"FLEET_BUILD_WAIT_HOURS": "6"}):
+            fp._do_research(fp.get_fleet(fleet_id))
+        f = fp.get_fleet(fleet_id)
+        self.assertEqual(f["status"], fp.STATUS_STOPPED)
+        self.assertEqual(f["status_reason"], "build_failed")
+
+    def test_window_alone_does_not_give_up_before_twenty_attempts(self):
+        fleet_id = self._empty_fleet(attempts=3, started_hours_ago=10)
+        with patch.dict(os.environ, {"FLEET_BUILD_WAIT_HOURS": "6"}):
+            fp._do_research(fp.get_fleet(fleet_id))
+        self.assertEqual(fp.get_fleet(fleet_id)["status"], fp.STATUS_RESEARCHING)

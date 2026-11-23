@@ -19,8 +19,8 @@ refused. A human pressing a button (manual sell, stopping a run or fleet
 with flatten, admin action) is NOT automation and is never refused here.
 
 Shorts: the same owner decision made the platform long-only
-(futures_policy.shorts_blocked() now defaults ON). Open shorts wind down
-under the existing rules; nothing in this module touches them.
+(futures_policy.shorts_blocked() defaulted ON); shorts allowed again
+2026-11-23 (owner). Nothing in this module touches shorts.
 
 Evidence on record against this rule (stated to the owner before building):
 docs/reports/2026-11-21-payoff-ratio-exit-replay.md and

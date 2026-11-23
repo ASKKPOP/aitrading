@@ -901,8 +901,9 @@ class OptionSymbolUnderStockLabelTests(_DbBase):
 
 # ── two-way (owner 2026-11-20 ~18:35Z: "short and long two way") ────────────
 
-# Main block on, shorts explicitly allowed. Since 2026-11-21 (owner: long
-# only) the shorts switch defaults ON, so two-way is an explicit opt-in.
+# Main block on, shorts explicitly allowed. 2026-11-21 (owner: long only)
+# the shorts switch defaulted ON; since 2026-11-23 (owner: "Allow shorts
+# again") it defaults OFF, so an unset switch is two-way.
 _TWO_WAY = {"FUTURES_TRADING_BLOCKED": "1", "SHORTS_TRADING_BLOCKED": "0"}
 
 
@@ -944,15 +945,15 @@ class TwoWayTests(_DbBase):
         self.assertTrue(futures_policy.futures_blocked())
         self.assertFalse(futures_policy.shorts_blocked())
 
-    def test_production_default_is_long_only(self):
-        # Owner 2026-11-21: "Long only, no shorts". Unset switch = blocked.
+    def test_production_default_allows_shorts(self):
+        # Owner 2026-11-23: "Allow shorts again". Unset switch = two-way at 1x.
         with patch.dict(os.environ, {"FUTURES_TRADING_BLOCKED": "1"}):
             os.environ.pop("SHORTS_TRADING_BLOCKED", None)
-            self.assertTrue(futures_policy.shorts_blocked())
-            self.assertIn("opening a short",
-                          futures_policy.order_refusal("crypto", "short"))
-            self.assertIn("opening a short",
-                          futures_policy.order_refusal("us-stock", "short"))
+            self.assertFalse(futures_policy.shorts_blocked())
+            self.assertIsNone(futures_policy.order_refusal("crypto", "short"))
+            self.assertIsNone(futures_policy.order_refusal("us-stock", "short"))
+            self.assertIsNotNone(futures_policy.order_refusal("crypto", "short", 2.0))
+            self.assertIsNotNone(futures_policy.order_refusal("forex", "short"))
             self.assertIsNone(futures_policy.order_refusal("crypto", "buy"))
             self.assertIsNone(futures_policy.order_refusal("crypto", "cover"))
 
@@ -974,7 +975,7 @@ class TwoWayTests(_DbBase):
         self.assertFalse(futures_policy.shorts_blocked(broken))   # env says two-way
         with patch.dict(os.environ, {"FUTURES_TRADING_BLOCKED": "1"}):
             os.environ.pop("SHORTS_TRADING_BLOCKED", None)
-            self.assertTrue(futures_policy.shorts_blocked(broken))  # default: long only
+            self.assertFalse(futures_policy.shorts_blocked(broken))  # default: two-way
         self.assertIsNotNone(futures_policy.order_refusal("crypto", "buy", 2.0,
                                                           cursor=broken))
 

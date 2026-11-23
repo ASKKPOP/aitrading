@@ -429,15 +429,21 @@ class BookRetireTests(unittest.TestCase):
                 return run_engine._evaluate_stop(
                     {"id": 1, "market": "crypto", "market_type": market_type})
 
+    # Long-only is an explicit opt-in since 2026-11-23 (owner: "Allow
+    # shorts again"), so these pass SHORTS_TRADING_BLOCKED=1.
     def test_flat_futures_book_run_retires_under_long_only(self):
-        self.assertEqual(self._eval("futures", False, None), "no_prospect_switched")
+        self.assertEqual(self._eval("futures", False, "1"), "no_prospect_switched")
 
     def test_futures_book_holding_a_short_keeps_running_to_cover(self):
-        self.assertIsNone(self._eval("futures", True, None))
+        self.assertIsNone(self._eval("futures", True, "1"))
 
     def test_spot_run_and_two_way_are_untouched(self):
-        self.assertIsNone(self._eval("spot", False, None))
+        self.assertIsNone(self._eval("spot", False, "1"))
         self.assertIsNone(self._eval("futures", False, "0"))
+
+    def test_flat_futures_book_run_keeps_running_by_default(self):
+        # Unset switch = two-way: a flat perp book can still open a short.
+        self.assertIsNone(self._eval("futures", False, None))
 
 
 class FlattenTests(unittest.TestCase):
