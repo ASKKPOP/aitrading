@@ -87,9 +87,15 @@ def _unscoped_position_book_reads() -> list[str]:
         for fn in ast.walk(tree):
             if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
-            fn_src = ast.get_source_segment(src, fn) or ""
-            if "run_scope_sql(" in fn_src:
-                continue
+            scope_names = set()
+            for node in ast.walk(fn):
+                if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)
+                        and getattr(node.value.func, "id", getattr(node.value.func, "attr", None))
+                        == "run_scope_sql"):
+                    for target in node.targets:
+                        for name in ast.walk(target):
+                            if isinstance(name, ast.Name):
+                                scope_names.add(name.id)
             for call in ast.walk(fn):
                 if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
                         and call.func.attr == "execute" and call.args):
@@ -99,6 +105,7 @@ def _unscoped_position_book_reads() -> list[str]:
                         and re.search(r"\bagent_id\s*=", sql)
                         and re.search(r"\bsymbol\s*=", sql)
                         and "run_id" not in sql
+                        and not any(re.search(rf"\b{re.escape(n)}\b", sql) for n in scope_names)
                         and not re.search(r"\b(SUM|COUNT|MAX|MIN|AVG)\s*\(", sql, re.I)):
                     bad.append(f"{path.relative_to(REPO)}:{call.lineno} ({fn.name})")
     return bad
