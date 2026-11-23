@@ -62,11 +62,53 @@ os.environ["LONG_EXIT_POLICY"] = "0"
 # tests marked "deterministic" are decided by a model (2026-07-27, PR #120).
 # Importing llm_client runs that mirror first; the blanking then wins, and the
 # key list is derived from the provider registry so a new provider is covered.
+import anthropic  # noqa: E402
+import openai  # noqa: E402
+import pytest  # noqa: E402
+
 import llm_client  # noqa: E402
 
 for _spec in llm_client._PROVIDERS.values():
     os.environ[_spec.key_env] = ""
     os.environ[_spec.base_url_env] = ""
+for _aliases in llm_client._KEY_ALIASES.values():
+    for _key in _aliases:
+        os.environ[_key] = ""
 for _key in ("LLM_PROVIDER", "LLM_MODEL", "LLM_MODEL_BRIEF",
              "LLM_MODEL_DECISION", "LOCAL_LLM_MODEL"):
     os.environ[_key] = ""
+
+# Keys are not the only road to a model: an admin-console tier set to `local`
+# needs no key and defaults to http://localhost:11434, a live Ollama on a dev
+# box. So the SDK clients themselves refuse in tests. Tests that exercise the
+# client path patch openai.OpenAI / anthropic.Anthropic, which replaces this.
+LIVE_LLM_CLIENTS: list[str] = []
+
+
+class _LiveLlmClientBlocked:
+    def __init__(self, *args, base_url=None, **kwargs):
+        LIVE_LLM_CLIENTS.append(f"{type(self).__name__} base_url={base_url}")
+        raise RuntimeError("a test constructed a live LLM client; stub generate_text "
+                           "or patch openai.OpenAI / anthropic.Anthropic")
+
+
+class OpenAIBlocked(_LiveLlmClientBlocked):
+    pass
+
+
+class AnthropicBlocked(_LiveLlmClientBlocked):
+    pass
+
+
+openai.OpenAI = OpenAIBlocked
+anthropic.Anthropic = AnthropicBlocked
+
+
+@pytest.fixture(autouse=True)
+def _no_live_llm_client():
+    LIVE_LLM_CLIENTS.clear()
+    yield
+    assert not LIVE_LLM_CLIENTS, (
+        "This test reached a live LLM client (" + "; ".join(LIVE_LLM_CLIENTS) + "). "
+        "generate_text swallows the failure and the test passes on a fallback, so "
+        "stub generate_text or patch openai.OpenAI / anthropic.Anthropic explicitly.")

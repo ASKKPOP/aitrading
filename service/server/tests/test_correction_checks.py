@@ -21,8 +21,23 @@ _SQL = re.compile(r"\b(SELECT|UPDATE|INSERT|DELETE|WHERE|LIKE|ESCAPE)\b")
 
 def _python_sources() -> list[Path]:
     files = [p for p in SERVER.rglob("*.py") if "tests" not in p.relative_to(SERVER).parts]
-    files += sorted((REPO / "scripts").rglob("*.py"))
+    for extra in ("scripts", "research"):
+        files += sorted((REPO / extra).rglob("*.py"))
     return files
+
+
+def _string_text(node: ast.AST) -> str | None:
+    """The text of a string expression: a literal, an f-string (holes as {}), or a
+    `+` chain of those. None when the node is not wholly a string expression."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        return "".join(v.value if isinstance(v, ast.Constant) else "{}" for v in node.values)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left, right = _string_text(node.left), _string_text(node.right)
+        if left is not None or right is not None:
+            return (left if left is not None else "{}") + (right if right is not None else "{}")
+    return None
 
 
 def _sql_literals() -> list[tuple[str, str]]:
@@ -33,18 +48,13 @@ def _sql_literals() -> list[tuple[str, str]]:
         for node in ast.walk(tree):
             if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant):
                 skip.add(id(node.value))
-            if isinstance(node, ast.JoinedStr):
-                skip.update(id(v) for v in node.values)
+            if isinstance(node, (ast.JoinedStr, ast.BinOp)) and _string_text(node) is not None:
+                skip.update(id(child) for child in ast.walk(node) if child is not node)
         for node in ast.walk(tree):
             if id(node) in skip:
                 continue
-            if isinstance(node, ast.JoinedStr):
-                text = "".join(v.value if isinstance(v, ast.Constant) else "{}" for v in node.values)
-            elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-                text = node.value
-            else:
-                continue
-            if _SQL.search(text):
+            text = _string_text(node)
+            if text is not None and _SQL.search(text):
                 out.append((f"{path.relative_to(REPO)}:{node.lineno}", text))
     return out
 
@@ -80,17 +90,20 @@ def test_sql_has_no_space_form_timestamp_literal():
         "whole day. Write the literal as 'YYYY-MM-DDTHH:MM:SSZ'. Offenders: " + ", ".join(bad))
 
 
-def _execute_sql_text(fn: ast.AST, call: ast.Call, src: str) -> str:
+def _execute_sql_text(fn: ast.AST, call: ast.Call, src: str, module_consts: dict) -> str:
     arg = call.args[0]
-    if isinstance(arg, ast.Name):
-        parts = []
-        for node in ast.walk(fn):
-            targets = [node.target] if isinstance(node, ast.AugAssign) else getattr(node, "targets", [])
-            if isinstance(node, (ast.Assign, ast.AugAssign)) and any(
-                    isinstance(t, ast.Name) and t.id == arg.id for t in targets):
-                parts.append(ast.get_source_segment(src, node) or "")
-        return "\n".join(parts)
-    return ast.get_source_segment(src, arg) or ""
+    if not isinstance(arg, ast.Name):
+        return ast.get_source_segment(src, arg) or ""
+    writes = sorted(
+        (node for node in ast.walk(fn)
+         if isinstance(node, (ast.Assign, ast.AugAssign)) and node.lineno <= call.lineno
+         and any(isinstance(t, ast.Name) and t.id == arg.id
+                 for t in ([node.target] if isinstance(node, ast.AugAssign) else node.targets))),
+        key=lambda node: node.lineno)
+    if not writes:
+        return module_consts.get(arg.id, "")
+    last_plain = max((i for i, node in enumerate(writes) if isinstance(node, ast.Assign)), default=0)
+    return "\n".join(ast.get_source_segment(src, node) or "" for node in writes[last_plain:])
 
 
 def _unscoped_position_book_reads() -> list[str]:
@@ -98,6 +111,10 @@ def _unscoped_position_book_reads() -> list[str]:
     for path in _python_sources():
         src = path.read_text(encoding="utf-8")
         tree = ast.parse(src, filename=str(path))
+        module_consts = {
+            t.id: ast.get_source_segment(src, node) or ""
+            for node in tree.body if isinstance(node, ast.Assign)
+            for t in node.targets if isinstance(t, ast.Name)}
         for fn in ast.walk(tree):
             if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
@@ -114,11 +131,11 @@ def _unscoped_position_book_reads() -> list[str]:
                 if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
                         and call.func.attr == "execute" and call.args):
                     continue
-                sql = _execute_sql_text(fn, call, src)
-                if (re.search(r"\bFROM\s+positions\b", sql, re.I)
+                sql = _execute_sql_text(fn, call, src, module_consts)
+                if (re.search(r"\b(FROM|JOIN)\s+positions\b", sql, re.I)
                         and re.search(r"\bagent_id\s*=", sql)
                         and re.search(r"\bsymbol\s*=", sql)
-                        and "run_id" not in sql
+                        and not re.search(r"\brun_id\s*(=|<=>|\bIS\b|\bIN\b)", sql, re.I)
                         and not any(re.search(rf"\b{re.escape(n)}\b", sql) for n in scope_names)
                         and not re.search(r"\b(SUM|COUNT|MAX|MIN|AVG)\s*\(", sql, re.I)):
                     bad.append(f"{path.relative_to(REPO)}:{call.lineno} ({fn.name})")
@@ -153,7 +170,7 @@ def test_banned_packages_absent(lockfile):
         f"{n}: {BANNED_PACKAGES[n]}" for n in found)
 
 
-_CHINA_TERMS = re.compile(r"\ba-stock\b|\bA_STOCK|\bA-shares?\b|A주|A股|A株", re.I)
+_CHINA_TERMS = re.compile(r"\ba-stock\b|\bA_STOCK(_SYMBOLS)?\b|(?i:china\s+a-shares?)|중국\s*A주|A股|A株")
 _CHINA_ROOTS = ("service/server", "service/frontend/src", "skills", "marketing/src")
 _CHINA_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".json", ".md", ".astro", ".html"}
 
