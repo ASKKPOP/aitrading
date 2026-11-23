@@ -16,7 +16,7 @@ import pytest
 SERVER = Path(__file__).resolve().parents[1]
 REPO = SERVER.parents[1]
 
-_SQL = re.compile(r"\b(SELECT|UPDATE|INSERT|DELETE)\b", re.I)
+_SQL = re.compile(r"\b(SELECT|UPDATE|INSERT|DELETE|WHERE|LIKE|ESCAPE)\b")
 
 
 def _python_sources() -> list[Path]:
@@ -29,9 +29,23 @@ def _sql_literals() -> list[tuple[str, str]]:
     out = []
     for path in _python_sources():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        skip = set()
         for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, str) and _SQL.search(node.value):
-                out.append((f"{path.relative_to(REPO)}:{node.lineno}", node.value))
+            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant):
+                skip.add(id(node.value))
+            if isinstance(node, ast.JoinedStr):
+                skip.update(id(v) for v in node.values)
+        for node in ast.walk(tree):
+            if id(node) in skip:
+                continue
+            if isinstance(node, ast.JoinedStr):
+                text = "".join(v.value if isinstance(v, ast.Constant) else "{}" for v in node.values)
+            elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+                text = node.value
+            else:
+                continue
+            if _SQL.search(text):
+                out.append((f"{path.relative_to(REPO)}:{node.lineno}", text))
     return out
 
 
