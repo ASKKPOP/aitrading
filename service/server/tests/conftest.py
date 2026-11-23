@@ -56,3 +56,17 @@ os.environ["FUTURES_TRADING_BLOCKED"] = "0"
 # suite runs with it OFF; tests/test_long_exit_policy*.py turn it back on
 # per test and assert the production default by unsetting the variable.
 os.environ["LONG_EXIT_POLICY"] = "0"
+
+# No test may reach a real LLM. config.py mirrors the developer's .env into
+# os.environ, so without this a dev machine resolves a live provider and
+# tests marked "deterministic" are decided by a model (2026-07-27, PR #120).
+# Importing llm_client runs that mirror first; the blanking then wins, and the
+# key list is derived from the provider registry so a new provider is covered.
+import llm_client  # noqa: E402
+
+for _spec in llm_client._PROVIDERS.values():
+    os.environ[_spec.key_env] = ""
+    os.environ[_spec.base_url_env] = ""
+for _key in ("LLM_PROVIDER", "LLM_MODEL", "LLM_MODEL_BRIEF",
+             "LLM_MODEL_DECISION", "LOCAL_LLM_MODEL"):
+    os.environ[_key] = ""
