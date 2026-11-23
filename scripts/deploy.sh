@@ -17,7 +17,7 @@
 #
 # Usage:
 #   scripts/deploy.sh <tag-suffix>            # e.g. scripts/deploy.sh welcome
-#   scripts/deploy.sh <tag-suffix> --dry-run  # pre-flight only (main parity, audit, lock, guard): no upload, no build, no mutation
+#   scripts/deploy.sh <tag-suffix> --dry-run  # pre-flight only (main parity, CI gate, lock, guard): no upload, no build, no mutation
 #
 # Env overrides: SOOPPIY_SSH_KEY, SOOPPIY_SSH_HOST, SOOPPIY_REMOTE_DIR
 
@@ -54,23 +54,37 @@ MAIN_SHA=$(git rev-parse origin/main)
 [ "$HEAD_SHA" = "$MAIN_SHA" ] || die "HEAD ${HEAD_SHA:0:7} != origin/main ${MAIN_SHA:0:7} — deploy merged main only"
 say "at origin/main ${MAIN_SHA:0:7}"
 
-# ── 1b. audit the dependency lock (warn only) ────────────────────────────────
-# service/constraints.txt pins every package the image installs, so a security
-# fix no longer rides in on a rebuild: someone has to bump the pin. The weekly
-# hosted audit in security.yml is not relied on (ship process is local-only),
-# so every deploy runs it here. Warn-only on purpose: an advisory published
-# this morning must not block an unrelated trading fix.
-if command -v pip-audit >/dev/null 2>&1; then
-  say "auditing the dependency lock"
-  if AUDIT=$(pip-audit -r service/constraints.txt --no-deps --disable-pip 2>&1); then
-    say "dependency lock: no known vulnerabilities"
-  else
-    echo "WARNING: pip-audit flagged service/constraints.txt (or could not run) — bump the pins:" >&2
-    echo "$AUDIT" | grep -v '^WARNING:pip_audit' >&2 || true
-  fi
-else
-  echo "WARNING: pip-audit not installed — the dependency lock was NOT audited this deploy" >&2
-fi
+# ── 1b. the local CI gate — refuse a tree that has not passed every CI job ──
+# The merge gate used to be prose ("run every CI job locally before merging"),
+# and GitHub CI runs only after the push to main with nothing waiting for it,
+# so this script would deploy a tree no test had run on. scripts/ci-local.sh
+# runs every job in .github/workflows/*.yml and fails if any fails. Its secret
+# scan covers the commits since the last deploy recorded on the box.
+#
+# This replaces the warn-only lock audit that stood here: the gate audits the
+# same lock (service/constraints.txt) on EVERY run, cached tree or not, and
+# FAILS, as security.yml does. An advisory published today therefore blocks
+# deploys until the pin is bumped — the owner's merge rule already required
+# pip-audit to pass, so a deploy that skipped it was out of rule.
+say "running the local CI gate"
+LAST_DEPLOYED=$($SSH "awk -F'\t' 'NF >= 3 { s = \$3 } END { print s }' '$REMOTE/deploy-log.tsv'") \
+  || die "could not read $REMOTE/deploy-log.tsv on the box — the secret-scan range is unknown"
+[ -n "$LAST_DEPLOYED" ] || die "$REMOTE/deploy-log.tsv has no deploy line — the secret-scan range is unknown"
+git cat-file -e "${LAST_DEPLOYED}^{commit}" 2>/dev/null \
+  || die "last deployed commit '$LAST_DEPLOYED' (deploy-log.tsv) is not in this checkout — git fetch, then retry"
+# The gate prints `GATED <sha>` last: the commit it actually tested. tee keeps
+# its progress visible; pipefail makes a gate failure fail this pipeline.
+GATED=$(scripts/ci-local.sh "$LAST_DEPLOYED" | tee /dev/stderr | awk '$1 == "GATED" { print $2 }') \
+  || die "local CI gate failed — nothing was uploaded and the running image is untouched"
+# The gate takes minutes. Whatever is shipped below must still be the commit it
+# tested, and still be main: otherwise a session that moved this checkout, or
+# deployed a newer main meanwhile, would be overwritten by an older tree.
+[ "$GATED" = "$MAIN_SHA" ] || die "the gate tested '${GATED:0:7}', not ${MAIN_SHA:0:7} — refusing"
+git fetch origin --quiet || die "git fetch failed after the gate — cannot confirm origin/main is unchanged"
+[ "$(git rev-parse origin/main)" = "$MAIN_SHA" ] \
+  || die "origin/main moved during the gate ($(git rev-parse --short origin/main) != ${MAIN_SHA:0:7}) — pull and deploy the new main"
+[ "$(git rev-parse HEAD)" = "$MAIN_SHA" ] && [ -z "$(git status --porcelain --untracked-files=all)" ] \
+  || die "this checkout moved or changed during the gate — refusing to pack it"
 
 TAG="$(date -u +%Y%m%d)-$SUFFIX"
 IMAGE="sooppiy-backend:$TAG"
@@ -122,7 +136,7 @@ WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/sooppiy-deploy.XXXXXX")
 trap 'rm -rf "$WORKDIR"' EXIT
 TARBALL="$WORKDIR/app.tgz"
 say "packing $MAIN_SHA"
-git archive --format=tar.gz -o "$TARBALL" HEAD
+git archive --format=tar.gz -o "$TARBALL" "$MAIN_SHA"
 
 # The bulk upload is the one step that fails on a flaky path: 2026-08-06 saw
 # three of four deploys die here with `message authentication code incorrect`

@@ -306,7 +306,9 @@ Claude CI,PR".
 **No GitHub Actions CI. No GitHub PRs. The entire merge gate runs locally.**
 
 1. Work on a feature branch as usual.
-2. Run every job from `.github/workflows/*.yml` locally, exact commands and
+2. Run `scripts/ci-local.sh` (it runs every job below and fails if any
+   fails; `scripts/deploy.sh` runs it too and refuses a failing tree).
+   Every job from `.github/workflows/*.yml` locally, exact commands and
    working directories, in a **fresh clean checkout** of the branch — a
    temporary scratch CLONE, never a git worktree (owner 2026-08-31: "do not
    use github worktree"; results and deliverables live in the main checkout):
