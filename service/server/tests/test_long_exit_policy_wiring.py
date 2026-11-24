@@ -387,8 +387,11 @@ class StoppingHoldTests(unittest.TestCase):
         run = {"id": 9, "agent_id": 1, "symbol": "BTCUSDT", "status": "stopping",
                "status_reason": "fleet_breaker", "stop_flatten": 1,
                "stopped_at": "2099-01-01T00:00:00Z", "market": "crypto"}
+        # A simulator run: the fake cursor cannot answer the live-run lookup,
+        # which fails SAFE (treated as live → never hand off). Say it plainly.
         with patch.object(run_engine, "_flush_pending_close_adapts"), \
              patch.object(run_engine, "get_db_connection", return_value=_Conn()), \
+             patch("trading_runs.run_is_live", return_value=False), \
              patch("markets.is_market_open", return_value=True), \
              patch.object(run_engine, "_flatten_run", return_value=(False, why)), \
              patch.object(run_engine, "_simple_transition", return_value=True) as tr, \
