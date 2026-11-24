@@ -20,6 +20,7 @@ type Fleet = {
   id: number; status: string; status_reason: string | null
   n_runs: number; total_budget_usd: number; risk_appetite: string
   archetype?: string
+  account_type?: string
   recommended_max_n_runs?: number | null
   position_cap?: number | null
   profit_target_frac?: number | null; successor_fleet_id?: number | null
@@ -68,7 +69,7 @@ const FLEET_MARKETS = ['crypto', 'us-stock', 'futures', 'forex']
 // (+ base plan) once one is. The 30-minute AI analysis feed renders at the
 // page end via aiFeedHost (owner 2026-11-20).
 export function FleetPanel({ token, monitorOnly = false, combined = false, onSelectRun,
-  blockCreate = false, aiFeedHost }: {
+  blockCreate = false, aiFeedHost, accountType = 'simulator' }: {
   token: string; monitorOnly?: boolean; combined?: boolean; onSelectRun?: (runId: number) => void
   // Owner 2026-11-20: while any TRADING is live, nothing new is made — the
   // top box shows no create form (a live fleet's monitor still renders).
@@ -77,9 +78,15 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
   // renders. undefined = inline in this box (old layout); null = the page's
   // slot is not mounted yet (render nothing); an element = portal into it.
   aiFeedHost?: HTMLElement | null
+  // Real mode (owner 2026-11-24): a fleet created while the page is in Real
+  // is 'live' — every order goes to the connected trading gateway.
+  accountType?: 'simulator' | 'live'
 }) {
   const { language } = useLanguage()
   const T = {
+    realBadge: tr(language, { ko: '실거래', en: 'REAL', ja: '実取引', th: 'จริง', vi: 'THẬT', id: 'NYATA' }),
+    simBadge: tr(language, { ko: '시뮬레이터', en: 'SIMULATOR', ja: 'シミュレーター', th: 'จำลอง', vi: 'MÔ PHỎNG', id: 'SIMULATOR' }),
+    realLaunchNote: tr(language, { ko: '실거래: 모든 주문이 연결된 게이트웨이로 실제 전송됩니다 (주문당 $1,000 한도 적용 시 초과 주문은 거부).', en: 'Real: every order is sent to your connected gateway with real money (where a $1,000 per-order limit applies, larger orders are refused).', ja: '実取引: すべての注文が接続中のゲートウェイへ実際に送信されます(注文あたり$1,000上限がある場合、超過注文は拒否)。', th: 'จริง: ทุกคำสั่งถูกส่งไปยังเกตเวย์ที่เชื่อมต่อด้วยเงินจริง (ถ้ามีเพดาน $1,000 ต่อคำสั่ง คำสั่งที่เกินจะถูกปฏิเสธ)', vi: 'Thật: mọi lệnh được gửi tới cổng đã kết nối bằng tiền thật (nếu có giới hạn $1,000 mỗi lệnh, lệnh lớn hơn bị từ chối).', id: 'Nyata: setiap order dikirim ke gateway yang terhubung dengan uang sungguhan (jika berlaku batas $1.000 per order, order yang lebih besar ditolak).' }),
     title: tr(language, { ko: 'N종목 자동 편성 — AI가 전부 알아서', en: 'Full Auto — the AI does everything', ja: '完全自動 — AIがすべて実行', th: 'อัตโนมัติเต็มรูปแบบ — AI จัดการทั้งหมด', vi: 'Tự động hoàn toàn — AI làm tất cả', id: 'Full Auto — AI mengerjakan semuanya' }),
     desc: tr(language, { ko: 'TRADING 개수만 정하세요 — AI가 전 시장을 리서치해 종목을 고르고, TRADING을 만들어 등록하고, 결과를 다음 판단에 반영하며, 멈출 때까지 개수를 유지합니다. 정지 버튼은 항상 당신에게 있습니다.', en: 'Set only how many TRADINGs — the AI researches the markets, picks the symbols, registers the TRADINGs, feeds every result into the next step, and keeps the count until you stop. You always keep the stop button.', ja: 'TRADING の数だけ設定 — AIが全市場をリサーチして銘柄を選び、TRADING を登録し、結果を次の判断に反映し、停止するまで数を維持します。', th: 'ตั้งแค่จำนวน TRADING — AI รีเสิร์ชตลาด เลือกเหรียญ สร้าง TRADING และรักษาจำนวนจนกว่าคุณจะหยุด', vi: 'Chỉ đặt số lượng TRADING — AI nghiên cứu thị trường, chọn mã, đăng ký TRADING và giữ số lượng cho đến khi bạn dừng.', id: 'Cukup tentukan berapa banyak TRADING — AI meriset pasar, memilih simbol, mendaftarkan TRADING, mengalirkan setiap hasil ke langkah berikutnya, dan menjaga jumlahnya sampai Anda menghentikannya. Tombol stop selalu ada di tangan Anda.' }),
     nRuns: tr(language, { ko: 'TRADING 개수', en: 'Number of TRADINGs', ja: 'TRADING 数', th: 'จำนวน TRADING', vi: 'Số TRADING', id: 'Jumlah TRADING' }),
@@ -332,7 +339,7 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
         // risk_appetite / archetype / leverage are intentionally absent —
         // the Desk decides them (owner 2026-08-31); the server applies its
         // desk-managed defaults.
-        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, markets: mkts.length ? mkts : null, idempotency_key: `ui-${Date.now()}` }),
+        body: JSON.stringify({ n_runs: n, total_budget_usd: budget, markets: mkts.length ? mkts : null, idempotency_key: `ui-${Date.now()}`, account_type: accountType }),
       })
       const body = await r.json()
       if (!r.ok) { setError(body.detail || 'error'); return }
@@ -458,6 +465,9 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
                 onChange={e => setBudget(Number(e.target.value))}
                 style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border-color,rgba(0,0,0,0.15))', width: 160, background: 'transparent', color: 'inherit' }} />
             </label>
+            {accountType === 'live' && (
+              <div style={{ flexBasis: '100%', fontSize: 12.5, color: 'var(--danger,#d9534f)' }}>⚠ {T.realLaunchNote}</div>
+            )}
             <button onClick={launch} disabled={busy || n < 1}
               style={{ padding: '11px 24px', borderRadius: 9, border: 'none', background: 'var(--accent-primary,#c26a45)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
               {T.launch}
@@ -572,6 +582,11 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
               index and controls. */}
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center',
             justifyContent: 'flex-end', marginBottom: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
+              background: fleet.account_type === 'live' ? 'rgba(217,83,79,0.14)' : 'rgba(138,128,115,0.14)',
+              color: fleet.account_type === 'live' ? 'var(--danger,#d9534f)' : 'var(--text-secondary,#8a8073)' }}>
+              {fleet.account_type === 'live' ? T.realBadge : T.simBadge}
+            </span>
             <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 12.5 }}>
               {fleet.status}{fleet.status_reason ? ` · ${reasonLabel(fleet.status_reason)}` : ''}
             </span>

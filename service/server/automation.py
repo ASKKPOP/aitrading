@@ -73,7 +73,9 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                         client_order_id: Optional[str] = None,
                         leverage: float = 1.0,
                         fence=None,
-                        human_initiated: bool = False) -> tuple[Optional[int], Optional[str]]:
+                        human_initiated: bool = False,
+                        _route: bool = True,
+                        _dry_run: bool = False) -> tuple[Optional[int], Optional[str]]:
     """Execute a simulator trade with the same ledger as a manual signal:
     signals row (signal_type='automation') + position update + cash update.
     On buys, stop_loss/take_profit (from the risk gate) are registered on the
@@ -99,6 +101,21 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         return None, f"action '{side}' is not executable"
     if quantity <= 0 or price <= 0:
         return None, "invalid quantity/price"
+    # Real-mode fleets (owner 2026-11-24): a trade owned by a LIVE run — or
+    # closing a position a live run handed off — goes to the gateway first.
+    # Every run-owned path (cycle, armed exit, flatten, SL/TP watcher,
+    # liquidation, overnight cap, orphan reclaim) lands here, so routing
+    # here cannot miss one.
+    if _route:
+        venue_run, venue_err = _live_venue_run(agent_id, symbol, market, side, run_id)
+        if venue_err:
+            return None, venue_err
+        if venue_run is not None:
+            return _execute_live_run_trade(
+                venue_run, agent_id, symbol, market, side, quantity, price,
+                content=content, stop_loss=stop_loss, take_profit=take_profit,
+                run_id=run_id, client_order_id=client_order_id,
+                leverage=leverage, fence=fence, human_initiated=human_initiated)
     # Isolated-margin leverage (2026-07-23): margin = notional / L. L=1 is the
     # prior fully-funded model and every formula below reduces to it exactly.
     lev = float(leverage or 1.0)
@@ -247,6 +264,10 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             exit_price = price
             realized_pnl = (short_entry - price) * quantity - fee
 
+        if _dry_run:
+            # Every ledger refusal above has been checked; nothing written.
+            conn.rollback()
+            return 0, None
         signal_id = _reserve_signal_id(cursor)
         cursor.execute(
             """
@@ -388,6 +409,100 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         return None, str(exc)
     finally:
         conn.close()
+
+
+def _run_is_live(cursor, run_id: int) -> bool:
+    cursor.execute("SELECT config_snapshot_json FROM trading_runs WHERE id = ?", (run_id,))
+    row = cursor.fetchone()
+    if not row:
+        return False
+    try:
+        cfg = json.loads(row["config_snapshot_json"] or "{}")
+    except (ValueError, TypeError):
+        return False
+    from execution.gateway import LIVE, normalize_account_type
+    return normalize_account_type(cfg.get("account_type")) == LIVE
+
+
+def _live_venue_run(agent_id: int, symbol: str, market: str, side: str,
+                    run_id: Optional[int]) -> tuple[Optional[int], Optional[str]]:
+    """(live run this trade belongs to, error).
+
+    run_id given: that run, when its snapshot says account_type=live.
+    No run_id and a CLOSE: the unowned position's handoff_run_id — a live
+    run that stopped with hold released its shares to the unowned book, and
+    the watcher / orphan reclaim close them without a run_id. Opens without
+    a run_id are rules and manual trades: not routed here.
+    A failed lookup on a run-owned trade refuses: booking only the ledger
+    could leave real shares open at the broker."""
+    if run_id is None and side not in ("sell", "cover"):
+        return None, None
+    try:
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+            if run_id is not None:
+                return (run_id if _run_is_live(cur, run_id) else None), None
+            cur.execute(
+                """SELECT handoff_run_id FROM positions
+                   WHERE agent_id = ? AND market = ? AND symbol = ?
+                     AND run_id IS NULL AND handoff_run_id IS NOT NULL
+                     AND quantity != 0""",
+                (agent_id, market, symbol))
+            for row in cur.fetchall():
+                if _run_is_live(cur, int(row["handoff_run_id"])):
+                    return int(row["handoff_run_id"]), None
+            return None, None
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001
+        logger.exception("live-venue lookup failed for agent %s %s", agent_id, symbol)
+        if run_id is not None:
+            return None, "account checks unavailable — order not sent"
+        return None, None
+
+
+def _execute_live_run_trade(venue_run: int, agent_id: int, symbol: str, market: str,
+                            side: str, quantity: float, price: float,
+                            **kw) -> tuple[Optional[int], Optional[str]]:
+    """Live leg for a Real-mode fleet run. Order matters:
+      1. live gate (gateway, allowlist, T&Cs) and 1x only;
+      2. the ledger's own checks as a dry run — a trade the ledger would
+         refuse (cash, duplicate cycle, fences, exit policy) must never
+         reach the broker, where it would become a real position nothing on
+         the platform knows about;
+      3. the broker; a rejection books nothing;
+      4. the ledger, with the broker's fill quantity when it reported one.
+    No DB transaction is held across the network call."""
+    from execution.base import OrderStatus
+    from execution.gateway import LIVE, live_refusal_reason, submit_live
+
+    if float(kw.get("leverage") or 1.0) > 1.0:
+        return None, "live trading is 1x only — order not sent"
+    refusal = live_refusal_reason(agent_id, LIVE, market)
+    if refusal:
+        return None, refusal
+    ok, why = execute_paper_trade(agent_id, symbol, market, side, quantity, price,
+                                  _route=False, _dry_run=True, **kw)
+    if why:
+        return None, why
+    order = submit_live(agent_id, symbol, market, side, quantity, price)
+    if order.status not in (OrderStatus.FILLED, OrderStatus.SUBMITTED):
+        reason = order.error_message or order.status.value
+        _alert_gateway_failure(agent_id, symbol, reason)
+        return None, f"gateway rejected order: {reason}"
+    filled = order.filled_qty if order.filled_qty is not None else quantity
+    signal_id, skip = execute_paper_trade(agent_id, symbol, market, side, filled, price,
+                                          _route=False, **kw)
+    if not signal_id:
+        # The broker took it and the ledger did not: say so loudly — this is
+        # a real position (or close) the platform is not showing.
+        logger.critical("LIVE run %s: %s %s %s reached the broker (%s) but the "
+                        "ledger refused: %s", venue_run, side, filled, symbol,
+                        order.broker_order_id, skip)
+        _alert_gateway_failure(agent_id, symbol,
+                               f"order reached the broker but was not booked: {skip}")
+    return signal_id, skip
 
 
 def _alert_gateway_failure(agent_id: int, symbol: str, reason: str) -> None:

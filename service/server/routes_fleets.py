@@ -47,6 +47,17 @@ class FleetIn(BaseModel):
     # Plan 23: 'short' = today's intraday behavior (default); 'swing' = the
     # US-stock overnight-hold archetype (market scope pinned server-side).
     archetype: str = "short"
+    # Real mode (owner 2026-11-24): 'live' routes every run's orders to the
+    # user's trading gateway; 'simulator' (default) keeps the paper ledger.
+    account_type: str = "simulator"
+
+    @field_validator("account_type")
+    @classmethod
+    def _account_type(cls, v: str) -> str:
+        v = (v or "simulator").strip().lower()
+        if v not in ("simulator", "live"):
+            raise ValueError("account_type must be simulator|live")
+        return v
 
     @field_validator("archetype")
     @classmethod
@@ -496,7 +507,8 @@ def register_fleet_routes(app: FastAPI, ctx: RouteContext) -> None:
                 warn_loss_frac=data.warn_loss_frac,
                 stop_loss_frac=data.stop_loss_frac,
                 idempotency_key=data.idempotency_key, name=data.name,
-                leverage=data.leverage, archetype=data.archetype)
+                leverage=data.leverage, archetype=data.archetype,
+                account_type=data.account_type)
         except trading_runs.EntitlementDenied as exc:
             raise HTTPException(status_code=403, detail=str(exc))
         except fleet_planner.FleetConflict as exc:

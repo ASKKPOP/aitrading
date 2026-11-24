@@ -706,6 +706,27 @@ def _user_id_for_agent(cursor, agent_id: int) -> Optional[int]:
     return row["user_id"] if row else None
 
 
+def live_fleet_refusal(agent_id: int, market_scope: Optional[list[str]],
+                       leverage: Optional[float]) -> Optional[str]:
+    """Why a Real-mode (live) fleet cannot be created, or None.
+
+    Every run of a live fleet sends real orders, so every market it may
+    trade needs a usable live gateway (connected, allowlisted, live T&Cs
+    accepted) — a slot in a market with none would be refused on every
+    order. The markets must be named: an open scope could pick a market the
+    gateway cannot trade. Live is 1x only."""
+    from execution.gateway import LIVE, live_refusal_reason
+    if not market_scope:
+        return "a Real (live) fleet must name the markets your gateway trades"
+    if leverage and float(leverage) > 1.0:
+        return "a Real (live) fleet trades at 1x only"
+    for market in market_scope:
+        reason = live_refusal_reason(agent_id, LIVE, market)
+        if reason:
+            return f"no live trading gateway for {market}: {reason}"
+    return None
+
+
 def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                  risk_appetite: str = "balanced",
                  market_scope: Optional[list[str]] = None,
@@ -715,7 +736,8 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                  name: Optional[str] = None,
                  leverage: Optional[float] = None,
                  profit_target_frac: Optional[float] = None,
-                 archetype: str = "short") -> int:
+                 archetype: str = "short",
+                 account_type: str = "simulator") -> int:
     """Insert a draft fleet. Raises ValueError on bad inputs, FleetConflict
     when the user already has a non-terminal fleet, EntitlementDenied per the
     ALWAYS-ON tier gate."""
@@ -726,6 +748,13 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
         # Plan 23: the swing archetype is US-equities only, by design —
         # whatever scope was passed is overridden, not merged.
         market_scope = ["us-stock"]
+    account_type = (account_type or "simulator").strip().lower()
+    if account_type not in ("simulator", "live"):
+        raise ValueError("account_type must be simulator|live")
+    if account_type == "live":
+        refusal = live_fleet_refusal(agent_id, market_scope, leverage)
+        if refusal:
+            raise ValueError(refusal)
     n_lo, n_hi = FLEET_BOUNDS["n_runs"]
     if not (n_lo <= int(n_runs) <= n_hi):
         raise ValueError(f"n_runs must be between {n_lo} and {n_hi}")
@@ -801,8 +830,9 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                    (agent_id, name, status, active_fleet_key, idempotency_key,
                     n_runs, total_budget_usd, risk_appetite, market_scope_json,
                     warn_loss_frac, stop_loss_frac, provider, lang, created_at,
-                    leverage, profit_target_frac, archetype, user_size_cap)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    leverage, profit_target_frac, archetype, user_size_cap,
+                    account_type)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (agent_id, name, STATUS_DRAFT, f"user:{user_id}", idempotency_key,
                  int(n_runs), float(total_budget_usd), risk_appetite,
                  json.dumps(market_scope) if market_scope else None,
@@ -811,7 +841,7 @@ def create_fleet(agent_id: int, n_runs: int, total_budget_usd: float,
                  float(profit_target_frac) if profit_target_frac else None,
                  # OWNER 2026-08-31: the count the user chose at creation is
                  # pinned — no machine path (auto-tune, H-CONSOL) may change it.
-                 archetype, int(n_runs)))
+                 archetype, int(n_runs), account_type))
         except trading_runs.EntitlementDenied:
             raise
         except Exception as exc:  # noqa: BLE001 — UNIQUE(active_fleet_key)
@@ -1436,6 +1466,10 @@ def compose_run_settings(thesis: dict, run_budget: float, fleet: dict) -> dict:
             "analysis_window": {"pre_open_minutes": 120,
                                 "post_close_minutes": 120}}
            if archetype == "swing" else {}),
+        # Real-mode fleets (owner 2026-11-24): every run inherits the fleet's
+        # account type; automation.execute_paper_trade routes live runs to
+        # the gateway. Carried past validation by carry_snapshot_stamps.
+        "account_type": fleet.get("account_type") or "simulator",
         "max_bet_usd": max_bet,
         "run_budget_usd": round(float(run_budget), 2),
         "interval_minutes": int(interval),
@@ -1500,7 +1534,8 @@ def carry_snapshot_stamps(core: dict, settings: dict) -> None:
     2026-08-11 and died exactly this way: composed, validated away, never
     stored (prod fleet 31's swing runs carry archetype: NULL). Every new
     compose-time stamp must be added HERE, not just to the compose dict."""
-    for key in ("archetype", "entry_spacing_minutes", "analysis_window"):
+    for key in ("archetype", "entry_spacing_minutes", "analysis_window",
+                "account_type"):
         if settings.get(key) is not None:
             core[key] = settings[key]
 

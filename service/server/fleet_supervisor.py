@@ -376,7 +376,11 @@ def _spawn_successor(fleet: dict) -> Optional[int]:
             stop_loss_frac=float(fleet["stop_loss_frac"]),
             name=fleet.get("name"),
             leverage=fleet.get("leverage"),
-            profit_target_frac=fleet.get("profit_target_frac"))
+            profit_target_frac=fleet.get("profit_target_frac"),
+            # A Real fleet's successor is Real too — re-checked against the
+            # gateway (fail-closed: no gateway → successor_failed, never a
+            # silent switch to the simulator).
+            account_type=fleet.get("account_type") or "simulator")
         fp.start_fleet(new_id, fleet["agent_id"])
     except Exception as exc:  # noqa: BLE001
         logger.warning("successor spawn failed for fleet %s: %s",

@@ -3197,6 +3197,11 @@ def init_database():
         cursor.execute("ALTER TABLE fleets ADD COLUMN leverage REAL")
     except Exception:
         pass
+    # Real-mode fleets (2026-11-24): 'live' runs route orders to the gateway.
+    try:
+        cursor.execute("ALTER TABLE fleets ADD COLUMN account_type TEXT NOT NULL DEFAULT 'simulator'")
+    except Exception:
+        pass
     cursor.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS uq_fleets_active
         ON fleets(active_fleet_key)

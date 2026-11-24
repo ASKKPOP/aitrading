@@ -784,7 +784,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         </div>
       )}
 
-      {ruleMode === 'fleet' && <FleetPanel token={token!} />}
+      {ruleMode === 'fleet' && <FleetPanel token={token!} accountType={acctMode === 'real' ? 'live' : 'simulator'} />}
 
       {ruleMode === 'agent' && (
         <>
@@ -1154,6 +1154,7 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           must stay visible even after a plan lapses (fleet 43, 11-12).
           FleetPanel gates only the create form on the plan. */}
       <FleetPanel token={token!} combined blockCreate={anythingLive !== false} aiFeedHost={aiFeedHost}
+        accountType={acctMode === 'real' ? 'live' : 'simulator'}
         onSelectRun={(id) => setOpenRunReq(p => ({ id, nonce: (p?.nonce || 0) + 1 }))} />
 
       {/* The other two ways to make one, below and secondary — shown only
