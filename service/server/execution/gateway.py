@@ -466,6 +466,47 @@ def _alert_session_down(agent_id: int, detail: str) -> None:
         _logger.debug("session-down alert failed for agent %s", agent_id)
 
 
+def gateway_balances(agent_id: int) -> list[dict[str, Any]]:
+    """Each active gateway's own balance, for the Real view.
+
+    Read from the LIVE endpoint: "Real" is the live account, whatever
+    execution_mode the account row was created with. Read-only — the adapter
+    makes GET calls only. One entry per active gateway:
+        {broker, ok, detail, currency, cash, market_value, equity, unrealized}
+    ok=None means the adapter cannot read a balance at all.
+    """
+    from database import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT * FROM broker_accounts WHERE agent_id = ? AND is_active = 1
+           ORDER BY updated_at DESC""",
+        (agent_id,),
+    )
+    accounts = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    out: list[dict[str, Any]] = []
+    for account in accounts:
+        row: dict[str, Any] = {
+            "broker": (account.get("broker") or "").strip().lower(),
+            "ok": None, "detail": "", "currency": None, "cash": None,
+            "market_value": None, "equity": None, "unrealized": None,
+        }
+        try:
+            bal = _run_coro(_broker_for(account, ExecutionMode.LIVE).get_account_balance())
+        except Exception as exc:  # noqa: BLE001 — a balance read must not raise
+            row.update(ok=False, detail=str(exc) or exc.__class__.__name__)
+        else:
+            if bal is None:
+                row["detail"] = "this gateway cannot report a balance yet"
+            else:
+                row.update(bal)
+                row["ok"] = True
+        out.append(row)
+    return out
+
+
 def _run_coro(coro):
     """Run an async broker call from the synchronous automation worker.
 

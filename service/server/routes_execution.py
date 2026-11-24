@@ -6,6 +6,7 @@ Endpoints:
   POST /api/execution/accounts                — create / update broker account
   GET  /api/execution/accounts                — list agent's broker accounts
   GET  /api/execution/status                  — top-bar summary: mode + gateways
+  GET  /api/execution/balance                 — gateways' own (live) balances
   PUT  /api/execution/accounts/{id}/mode      — set paper|shadow|live
   POST /api/execution/tcs-accept              — accept T&Cs for live mode
   GET  /api/execution/orders                  — list agent's broker_orders
@@ -197,6 +198,15 @@ def register_execution_routes(app: FastAPI, ctx: RouteContext) -> None:
             conn.close()
         mode = "live" if "live" in modes else "shadow" if "shadow" in modes else "simulator"
         return {"mode": mode, "gateways": gateways}
+
+    # ── GET /api/execution/balance ────────────────────────────────────────────
+    @app.get("/api/execution/balance")
+    def gateway_balance(req: Request):
+        """The connected gateways' own balances (live account, read-only) —
+        what the Real view shows as the deposit instead of the simulator's."""
+        agent = _require_agent(req)
+        from execution.gateway import gateway_balances
+        return {"balances": gateway_balances(agent["id"])}
 
     # ── GET /api/execution/health ─────────────────────────────────────────────
     @app.get("/api/execution/health")

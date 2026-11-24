@@ -49,6 +49,11 @@ PLACE = "/trading/orders/place"
 DETAIL = "/trading/orders/get"
 CANCEL = "/trading/orders/cancel"
 POSITIONS = "/trading/assets/positions/list"
+BALANCE = "/trading/assets/balances/get"
+# Field names/shape from developer.webull.com "Get Account Balance".
+_BALANCE_BODY = {"total_asset_currency": "USD", "total_cash_balance": "485.50",
+                 "total_market_value": "250.25", "total_net_liquidation_value": "735.75",
+                 "total_unrealized_profit_loss": "-12.40"}
 
 
 def _order(side="buy", qty=3.0, price=100.0, symbol="AAPL"):
@@ -255,6 +260,29 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(leg["instrument_type"], "EQUITY", side)
             self.assertEqual(leg["order_type"], "MARKET", side)
             self.assertNotIn("position_intent", leg, "options-only field")
+
+    # ── balance: the Real view shows the venue's own money ────────────────
+    def test_balance_reads_the_named_account(self):
+        patcher, calls = _patch_http(_responder({BALANCE: _FakeResponse(200, _BALANCE_BODY)}))
+        with patcher:
+            bal = _run(self._broker(account_id="M1").get_account_balance())
+        self.assertEqual(bal, {"currency": "USD", "cash": 485.5, "market_value": 250.25,
+                               "equity": 735.75, "unrealized": -12.4})
+        self.assertEqual([c[0].upper() for c in calls], ["GET"], "a balance read is a single GET")
+        self.assertEqual(_path(calls[0][1]), BALANCE)
+        self.assertEqual(parse_qs(urlparse(calls[0][1]).query)["account_id"], ["M1"])
+
+    def test_balance_rejection_raises_the_venue_reason(self):
+        patcher, _ = _patch_http(_responder({BALANCE: _FakeResponse(401, {"message": "bad key"})}))
+        with patcher, self.assertRaises(RuntimeError) as cm:
+            _run(self._broker(account_id="M1").get_account_balance())
+        self.assertIn("401", str(cm.exception))
+
+    def test_balance_without_credentials_never_calls_out(self):
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher, self.assertRaises(RuntimeError):
+            _run(self._broker(key="", secret="").get_account_balance())
+        self.assertEqual(calls, [])
 
     # ── cover = plain BUY at Webull: never let it open a long ──────────────
     def _cover(self, positions, qty=2.0):
@@ -681,6 +709,33 @@ class WebullGatewayTests(_DbTestCase):
         self.assertEqual(row["broker"], "webull")
         self.assertEqual(row["status"], "submitted")
         self.assertEqual(row["broker_order_id"], o.broker_order_id)
+
+    def test_gateway_balance_reads_the_production_account(self):
+        """Real mode shows the LIVE account's money, so the read goes to the
+        production host even though the account row says paper."""
+        from execution.gateway import gateway_balances
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "ACC1"})
+        patcher, calls = _patch_http(_responder({BALANCE: _FakeResponse(200, _BALANCE_BODY)}))
+        with patcher:
+            out = gateway_balances(self.agent_id)
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0]["ok"], out[0])
+        self.assertEqual((out[0]["broker"], out[0]["equity"], out[0]["cash"]),
+                         ("webull", 735.75, 485.5))
+        self.assertEqual(urlparse(calls[0][1]).netloc, "api.webull.com")
+        self.assertEqual({c[0].upper() for c in calls}, {"GET"}, "read-only")
+
+    def test_gateway_balance_reports_why_it_failed(self):
+        from execution.gateway import gateway_balances
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "ACC1"})
+        patcher, _ = _patch_http(_responder({BALANCE: _FakeResponse(401, {"message": "bad key"})}))
+        with patcher:
+            out = gateway_balances(self.agent_id)
+        self.assertFalse(out[0]["ok"])
+        self.assertIn("401", out[0]["detail"])
+        self.assertIsNone(out[0]["equity"])
 
     def test_new_venue_notional_cap_refuses(self):
         from execution.base import OrderStatus

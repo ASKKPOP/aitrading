@@ -219,6 +219,18 @@ class Broker(ABC):
         """
         return None
 
+    async def get_account_balance(self) -> Optional[dict]:
+        """The venue's own money for this account, read-only:
+            {"currency": str, "cash": float|None, "market_value": float|None,
+             "equity": float|None, "unrealized": float|None}
+
+        None means this adapter cannot read a balance (most cannot yet).
+        Unlike the other optional hooks, a FAILED read raises RuntimeError
+        with the venue's reason — the Real view must say why it has no
+        number (wrong keys, wrong environment) rather than show nothing.
+        """
+        return None
+
     @abstractmethod
     async def cancel_order(self, broker_order_id: str) -> bool:
         """Cancel a pending/submitted order.  Returns True on success."""

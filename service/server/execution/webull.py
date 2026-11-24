@@ -445,6 +445,38 @@ class WebullBroker(Broker):
                     "long; order not sent")
         return None
 
+    async def get_account_balance(self) -> Optional[dict]:
+        """GET /trading/assets/balances/get — one read-only call."""
+        if not self._has_credentials():
+            raise RuntimeError("Webull API key / secret not configured")
+        try:
+            account_id, err = await self._resolve_account()
+            if not account_id:
+                raise RuntimeError(err or "no Webull account")
+            resp = await self._get("/trading/assets/balances/get",
+                                   {"account_id": account_id})
+            if resp.status_code != 200:
+                raise RuntimeError(f"Webull balance read failed (HTTP {resp.status_code}): "
+                                   f"{self._error_text(resp)}")
+            data = resp.json()
+            if isinstance(data, dict) and isinstance(data.get("data"), dict):
+                data = data["data"]
+        except httpx.RequestError as exc:
+            raise RuntimeError(f"Webull unreachable: {exc.__class__.__name__}") from exc
+        except ValueError as exc:
+            raise RuntimeError("Webull balance reply was not JSON") from exc
+        if not isinstance(data, dict):
+            raise RuntimeError("Webull balance reply had no account data")
+        equity = _float(data.get("total_net_liquidation_value"))
+        cash = _float(data.get("total_cash_balance"))
+        if equity is None and cash is None:
+            raise RuntimeError("Webull balance reply had no cash or net value")
+        return {"currency": str(data.get("total_asset_currency") or "USD"),
+                "cash": cash,
+                "market_value": _float(data.get("total_market_value")),
+                "equity": equity,
+                "unrealized": _float(data.get("total_unrealized_profit_loss"))}
+
     async def get_broker_positions(self) -> list[dict]:
         if not self._has_credentials():
             return []

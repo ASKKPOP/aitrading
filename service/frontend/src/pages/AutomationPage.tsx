@@ -150,6 +150,11 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
   const [acctMode, setAcctMode] = useState<'simulator' | 'real'>(
     () => (localStorage.getItem('account_type') === 'real' ? 'real' : 'simulator'))
   const [gwBroker, setGwBroker] = useState<string | null>(null)
+  // Real mode shows the gateway's own money (GET /execution/balance, live
+  // account, read-only) instead of the simulator ledger's deposit.
+  type GwBal = { broker: string, ok: boolean | null, detail: string, currency: string | null,
+    cash: number | null, market_value: number | null, equity: number | null }
+  const [gwBal, setGwBal] = useState<GwBal[] | null>(null)
   const [acctBusy, setAcctBusy] = useState(false)
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
@@ -355,6 +360,9 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     sumMonth: tr(language, { ko: '이번 달', en: 'This month', ja: '今月', th: 'เดือนนี้', vi: 'Tháng này', id: 'Bulan ini' }),
     sumYear: tr(language, { ko: '올해', en: 'This year', ja: '今年', th: 'ปีนี้', vi: 'Năm nay', id: 'Tahun ini' }),
     sumCash: tr(language, { ko: '현금', en: 'cash', ja: '現金', th: 'เงินสด', vi: 'tiền mặt', id: 'kas' }),
+    sumHeld: tr(language, { ko: '보유 평가액', en: 'holdings', ja: '保有評価額', th: 'มูลค่าที่ถือ', vi: 'đang nắm giữ', id: 'kepemilikan' }),
+    sumFrom: tr(language, { ko: '출처', en: 'from', ja: '出所', th: 'จาก', vi: 'từ', id: 'dari' }),
+    sumGwNone: tr(language, { ko: '게이트웨이 잔고를 읽지 못함', en: 'gateway balance unavailable', ja: 'ゲートウェイ残高を取得できません', th: 'อ่านยอดเงินจากเกตเวย์ไม่ได้', vi: 'không đọc được số dư cổng', id: 'saldo gateway tidak tersedia' }),
     sumInUse: tr(language, { ko: '사용 중', en: 'in use', ja: '使用中', th: 'ใช้อยู่', vi: 'đang dùng', id: 'terpakai' }),
     sumSince: tr(language, { ko: '시작', en: 'since', ja: '開始', th: 'เริ่ม', vi: 'từ', id: 'sejak' }),
     sumDay: tr(language, { ko: '일', en: 'd', ja: '日', th: 'วัน', vi: 'ngày', id: 'h' }),
@@ -565,6 +573,19 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
       setAcctBusy(false)
     }
   }
+
+  useEffect(() => {
+    if (!token || acctMode !== 'real') { setGwBal(null); return }
+    let dead = false
+    const load = () => fetch(`${API_BASE}/execution/balance`, { headers: authHeaders })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (!dead && d) setGwBal(d.balances || []) })
+      .catch(() => {})
+    load()
+    const id = setInterval(load, 60_000)
+    return () => { dead = true; clearInterval(id) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, acctMode])
 
   async function refresh() {
     try {
@@ -995,11 +1016,30 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
           ))}
         </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        {acctMode === 'real' ? (() => {
+          // The live account's money, summed over gateways that reported it.
+          // The simulator's deposit chart does not apply, so no detail view.
+          const okRows = (gwBal || []).filter(b => b.ok && b.equity != null)
+          const sum = (k: 'equity' | 'cash' | 'market_value') =>
+            okRows.reduce((a, b) => a + (b[k] ?? 0), 0)
+          const failed = (gwBal || []).find(b => !b.ok)
+          return (
+            <div style={{ ...tile, cursor: 'default' }} title={failed?.detail || ''}>
+              <div style={kSt}>💰 {T.sumDeposit}</div>
+              <div style={vSt}>{okRows.length ? fmtUsd(sum('equity')) : '—'}</div>
+              <div style={sSt}>{okRows.length
+                ? <>{T.sumHeld} {fmtUsd(sum('market_value'))} · {T.sumCash} {fmtUsd(sum('cash'))} · {T.sumFrom} {okRows.map(b => b.broker).join(', ')}</>
+                : gwBal ? <span style={{ color: 'var(--danger,#d9534f)' }}>{T.sumGwNone}{failed?.detail ? `: ${failed.detail}` : ''}</span>
+                : '\u00a0'}</div>
+            </div>
+          )
+        })() : (
         <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('deposit') : undefined}>
           <div style={kSt}>💰 {T.sumDeposit}</div>
           <div style={vSt}>{assets ? fmtUsd(assets.total) : '—'}</div>
           <div style={sSt}>{assets ? <>{T.sumInUse} {fmtUsd(assets.inUse)} · {T.sumCash} {fmtUsd(assets.cash)}</> : '\u00a0'}</div>
         </button>
+        )}
         <button style={tile} title={T.dHint} onClick={ready ? () => setSumDetail('lifetime') : undefined}>
           <div style={kSt}>📅 {T.sumLifetime}</div>
           <div style={vSt}>{win && win.opWindow ? <>{win.opWindow.d}{T.sumDay} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary,#8a8073)' }}>{win.opWindow.h}{T.sumHour}</span></> : '—'}</div>
