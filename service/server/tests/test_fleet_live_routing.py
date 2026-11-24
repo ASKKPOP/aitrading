@@ -422,6 +422,35 @@ class LiveRunRoutingTests(_LiveRunCase):
         conn.close()
         self.assertEqual(row, {"status": "stopping", "status_reason": "fleet_stop_all"})
 
+    def test_live_rule_checks_the_ledger_before_the_broker(self):
+        """A live automation RULE shares the agent's cash with fleet runs and
+        takes the same path discipline: a buy the ledger would refuse for
+        cash never reaches Webull."""
+        from automation import _execute_for_account_type
+        conn = database.get_db_connection()
+        conn.cursor().execute("UPDATE agents SET cash = 50 WHERE id = ?", (self.agent_id,))
+        conn.commit()
+        conn.close()
+        patcher, calls = _patch_http(_webull_ok)
+        result: dict = {}
+        with patcher:
+            sig, skip = _execute_for_account_type(
+                {"account_type": "live"}, self.agent_id, "AAPL", "us-stock", "buy",
+                5, 100.0, None, None, result)
+        self.assertIsNone(sig)
+        self.assertIn("insufficient cash", skip)
+        self.assertEqual(_placed(calls), [])
+
+    def test_live_rule_buy_reaches_webull_once(self):
+        from automation import _execute_for_account_type
+        patcher, calls = _patch_http(_webull_ok)
+        with patcher:
+            sig, skip = _execute_for_account_type(
+                {"account_type": "live"}, self.agent_id, "AAPL", "us-stock", "buy",
+                5, 100.0, None, None, {})
+        self.assertTrue(sig, skip)
+        self.assertEqual([leg["side"] for leg in _placed(calls)], ["BUY"])
+
 class LiveFleetCreationTests(_DbTestCase):
     def test_live_fleet_needs_a_usable_gateway_per_market(self):
         from fleet_planner import live_fleet_refusal

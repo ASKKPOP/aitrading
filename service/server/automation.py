@@ -517,7 +517,7 @@ def _execute_live_run_trade(venue_run: int, agent_id: int, symbol: str, market: 
         return None, refusal
     with _live_order_lock(agent_id, market, symbol) as locked:
         if not locked:
-            return None, "another live order on this symbol is in flight — not sent"
+            return None, "another live order for this account is in flight — not sent"
         return _live_leg(venue_run, agent_id, symbol, market, side, quantity, price, **kw)
 
 
@@ -663,22 +663,36 @@ def _execute_for_account_type(config: dict[str, Any], agent_id: int, symbol: str
                 return None, f"{_hold} Live order not sent."
 
     if mode == LIVE:
-        order = submit_live(agent_id, symbol, market, side, quantity, price)
-        result["broker"] = order.broker
-        result["broker_order_id"] = order.broker_order_id
-        if order.status not in (OrderStatus.FILLED, OrderStatus.SUBMITTED):
-            # Nothing reached the market — do not write a platform position.
-            reason = order.error_message or order.status.value
-            _alert_gateway_failure(agent_id, symbol, reason)
-            return None, f"gateway rejected order: {reason}"
-        # Broker filled: mirror into the ledger so the UI and SL/TP watcher
-        # see the position. Quantity comes from the broker when it reported one
-        # (`is not None`, not truthiness — a genuine 0.0 fill must NOT fall back
-        # to the requested size and overstate the position); only default to the
-        # requested size when the broker gave no fill quantity at all.
-        filled = order.filled_qty if order.filled_qty is not None else quantity
-        return execute_paper_trade(agent_id, symbol, market, side, filled, price,
-                                   stop_loss=stop_loss, take_profit=take_profit)
+        # Same discipline as a live fleet run: one live order per agent at a
+        # time (a rule and a fleet member share the agent's cash), and the
+        # ledger's own checks run BEFORE the broker, so a trade the ledger
+        # would refuse never becomes a real position nothing shows.
+        with _live_order_lock(agent_id, market, symbol) as locked:
+            if not locked:
+                return None, "another live order for this account is in flight — not sent"
+            dry: dict = {}
+            _, why = execute_paper_trade(agent_id, symbol, market, side, quantity, price,
+                                         stop_loss=stop_loss, take_profit=take_profit,
+                                         _route=False, _dry_run=dry)
+            if why:
+                return None, why
+            quantity = float(dry.get("quantity") or quantity)
+            order = submit_live(agent_id, symbol, market, side, quantity, price)
+            result["broker"] = order.broker
+            result["broker_order_id"] = order.broker_order_id
+            if order.status not in (OrderStatus.FILLED, OrderStatus.SUBMITTED):
+                # Nothing reached the market — do not write a platform position.
+                reason = order.error_message or order.status.value
+                _alert_gateway_failure(agent_id, symbol, reason)
+                return None, f"gateway rejected order: {reason}"
+            # Broker filled: mirror into the ledger so the UI and SL/TP watcher
+            # see the position. Quantity comes from the broker when it reported
+            # one (`is not None`, not truthiness — a genuine 0.0 fill must NOT
+            # fall back to the requested size and overstate the position).
+            filled = order.filled_qty if order.filled_qty is not None else quantity
+            return execute_paper_trade(agent_id, symbol, market, side, filled, price,
+                                       stop_loss=stop_loss, take_profit=take_profit,
+                                       _route=False)
 
     signal_id, skip = execute_paper_trade(agent_id, symbol, market, side, quantity,
                                           price, stop_loss=stop_loss,
