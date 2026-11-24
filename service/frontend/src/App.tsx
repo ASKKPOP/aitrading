@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { cloneElement, lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { RegionSetupDialog } from './components/RegionSetup'
 
@@ -431,8 +431,11 @@ function AppRouter({
   // Agent-gated route: with a user session present, the agent token is being
   // auto-linked (POST /api/users/agent) — render a spinner instead of
   // redirecting, or the first click after login bounces to the leaderboard.
+  // Keyed on the token: most gated pages read claw_token once at mount, so a
+  // re-linked (rotated) token must remount them — otherwise they keep sending
+  // the dead one and every call, incl. Connect gateway, fails "Invalid token".
   const agentGate = (el: React.ReactElement) =>
-    token ? el
+    token ? cloneElement(el, { key: token })
     : userToken ? <div className="loading"><div className="spinner"></div></div>
     : <Navigate to="/login" replace />
 
