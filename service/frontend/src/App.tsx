@@ -161,8 +161,12 @@ function App() {
   }
   const dropAgentSession = () => {
     localStorage.removeItem('claw_token'); tokenRef.current = null
-    linkInFlight.current = null
+    linkInFlight.current = null; mintStreak.current = 0; lastMintAt.current = 0
   }
+  // A token in storage belongs to whoever's user session is in storage; only
+  // adopt it when that is the user signed in here (two tabs may hold two users).
+  const storedTokenIsMine = () =>
+    !!userTokenRef.current && localStorage.getItem(USER_TOKEN_KEY) === userTokenRef.current
 
   const logout = () => {
     dropAgentSession(); userTokenRef.current = null
@@ -221,7 +225,7 @@ function App() {
     // Another tab may already have minted: adopt its token instead of
     // minting again, or two open tabs keep killing each other's session.
     const stored = localStorage.getItem('claw_token')
-    if (stored && stored !== tokenRef.current) { login(stored); return Promise.resolve(stored) }
+    if (stored && stored !== tokenRef.current && storedTokenIsMine()) { login(stored); return Promise.resolve(stored) }
     if (mintStreak.current >= 3) return Promise.resolve(null)
     if (tokenRef.current && Date.now() - lastMintAt.current < 10_000) return Promise.resolve(null)
     const p = (async () => {
@@ -281,7 +285,7 @@ function App() {
   // tabs), so tabs share one agent session instead of rotating it away.
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'claw_token' && e.newValue && e.newValue !== tokenRef.current && userTokenRef.current) {
+      if (e.key === 'claw_token' && e.newValue && e.newValue !== tokenRef.current && storedTokenIsMine()) {
         tokenRef.current = e.newValue
         setToken(e.newValue)
       }
