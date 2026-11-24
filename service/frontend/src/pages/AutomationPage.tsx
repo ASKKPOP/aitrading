@@ -578,9 +578,13 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
     if (!token || acctMode !== 'real') { setGwBal(null); return }
     let dead = false
     const load = () => fetch(`${API_BASE}/execution/balance`, { headers: authHeaders })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (!dead && d) setGwBal(d.balances || []) })
-      .catch(() => {})
+      .then(async r => {
+        // A failed refresh must not leave the last balance on screen as if current.
+        const d = r.ok ? await r.json() : null
+        if (!dead) setGwBal(d ? (d.balances || [])
+          : [{ broker: '', ok: false, detail: `HTTP ${r.status}`, currency: null, cash: null, market_value: null, equity: null }])
+      })
+      .catch(() => { if (!dead) setGwBal([{ broker: '', ok: false, detail: 'network error', currency: null, cash: null, market_value: null, equity: null }]) })
     load()
     const id = setInterval(load, 60_000)
     return () => { dead = true; clearInterval(id) }
@@ -1019,16 +1023,18 @@ export function AutomationPage({ planCode = null }: { planCode?: string | null }
         {acctMode === 'real' ? (() => {
           // The live account's money, summed over gateways that reported it.
           // The simulator's deposit chart does not apply, so no detail view.
-          const okRows = (gwBal || []).filter(b => b.ok && b.equity != null)
+          // USD only — the tile formats in USD, never add other currencies in.
+          const okRows = (gwBal || []).filter(b => b.ok && b.equity != null && (b.currency || 'USD') === 'USD')
           const sum = (k: 'equity' | 'cash' | 'market_value') =>
             okRows.reduce((a, b) => a + (b[k] ?? 0), 0)
-          const failed = (gwBal || []).find(b => !b.ok)
+          // ok === null is "this gateway cannot report a balance yet", not a failure.
+          const failed = (gwBal || []).find(b => b.ok === false)
           return (
             <div style={{ ...tile, cursor: 'default' }} title={failed?.detail || ''}>
               <div style={kSt}>💰 {T.sumDeposit}</div>
               <div style={vSt}>{okRows.length ? fmtUsd(sum('equity')) : '—'}</div>
               <div style={sSt}>{okRows.length
-                ? <>{T.sumHeld} {fmtUsd(sum('market_value'))} · {T.sumCash} {fmtUsd(sum('cash'))} · {T.sumFrom} {okRows.map(b => b.broker).join(', ')}</>
+                ? <>{failed && <span style={{ color: 'var(--danger,#d9534f)' }}>⚠ </span>}{T.sumHeld} {fmtUsd(sum('market_value'))} · {T.sumCash} {fmtUsd(sum('cash'))} · {T.sumFrom} {okRows.map(b => b.broker).join(', ')}</>
                 : gwBal ? <span style={{ color: 'var(--danger,#d9534f)' }}>{T.sumGwNone}{failed?.detail ? `: ${failed.detail}` : ''}</span>
                 : '\u00a0'}</div>
             </div>
