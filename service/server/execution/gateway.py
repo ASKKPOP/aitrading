@@ -68,15 +68,24 @@ def _live_broker_allowlist() -> tuple:
     return tuple(b.strip().lower() for b in raw.split(",") if b.strip())
 
 
+# Per-venue cap overriding the platform default (owner 2026-11-24: Webull
+# $1,500). An EXECUTION_MAX_ORDER_USD_<BROKER> env value still wins.
+_VENUE_MAX_ORDER_USD = {"webull": 1500.0}
+
+
 def _max_order_usd_for(broker: str) -> Optional[float]:
     """Per-order notional cap. Applies only to non-legacy venues (Plan 19 §8);
     legacy brokers keep their pre-expansion behaviour. 0 disables the cap."""
     if broker in _LEGACY_LIVE_BROKERS:
         return None
+    default = _VENUE_MAX_ORDER_USD.get(broker, 1000.0)
+    raw = os.environ.get(f"EXECUTION_MAX_ORDER_USD_{broker.upper()}")
+    if raw is None and broker not in _VENUE_MAX_ORDER_USD:
+        raw = os.environ.get("EXECUTION_MAX_ORDER_USD")
     try:
-        cap = float(os.environ.get("EXECUTION_MAX_ORDER_USD", "1000"))
+        cap = float(raw) if raw is not None else default
     except ValueError:
-        cap = 1000.0
+        cap = default
     return cap if cap > 0 else None
 
 

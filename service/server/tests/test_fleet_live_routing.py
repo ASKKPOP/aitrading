@@ -186,11 +186,21 @@ class LiveRunRoutingTests(_LiveRunCase):
         run = self._run("live")
         patcher, calls = _patch_http(_webull_ok)
         with patcher:
-            sig, skip = self._trade("buy", 15, run)   # $1,500 > $1,000 cap
+            sig, skip = self._trade("buy", 16, run)   # $1,600 > $1,500 Webull cap
         self.assertIsNone(sig)
         self.assertIn("per-order limit", skip)
         self.assertEqual(_placed(calls), [])
         self.assertEqual(self._signals(), [])
+
+    def test_order_at_the_webull_cap_reaches_webull(self):
+        """Owner 2026-11-24 raised Webull's cap to $1,500: a $1,500 opening
+        order is sent and booked (the cap refuses only ABOVE it)."""
+        run = self._run("live")
+        patcher, calls = _patch_http(_webull_ok)
+        with patcher:
+            sig, skip = self._trade("buy", 15, run)   # $1,500 == cap
+        self.assertTrue(sig, skip)
+        self.assertEqual([leg["side"] for leg in _placed(calls)], ["BUY"])
 
     def test_live_close_goes_to_webull_too(self):
         run = self._run("live")

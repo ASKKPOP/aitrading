@@ -760,6 +760,25 @@ class NotionalCapTests(_DbTestCase):
         self.assertIs(order.status, OrderStatus.FILLED)
         self.assertEqual(len(calls), 1)
 
+    def test_webull_cap_is_1500_others_keep_1000(self):
+        """Owner 2026-11-24: Webull's per-order cap is $1,500; every other
+        capped venue keeps the $1,000 default, and the platform-wide env
+        default does not move Webull's own figure."""
+        from execution.gateway import _max_order_usd_for
+        self.assertEqual(_max_order_usd_for("webull"), 1500.0)
+        self.assertEqual(_max_order_usd_for("kraken"), 1000.0)
+        os.environ["EXECUTION_MAX_ORDER_USD"] = "800"
+        try:
+            self.assertEqual(_max_order_usd_for("webull"), 1500.0)
+            self.assertEqual(_max_order_usd_for("kraken"), 800.0)
+        finally:
+            os.environ.pop("EXECUTION_MAX_ORDER_USD", None)
+        os.environ["EXECUTION_MAX_ORDER_USD_WEBULL"] = "2000"
+        try:
+            self.assertEqual(_max_order_usd_for("webull"), 2000.0)
+        finally:
+            os.environ.pop("EXECUTION_MAX_ORDER_USD_WEBULL", None)
+
     def test_non_allowlisted_submit_live_refused_at_source(self):
         from execution.base import OrderStatus
         _add_account(self.agent_id, "bybit", {"key": "k", "secret": "s"})

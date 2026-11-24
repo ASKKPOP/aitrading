@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>Mode</th><th>What happens</th></tr>
     <tr><td>paper</td><td><b>paper / simulator</b> — every trade stays on Sooppiy's internal ledger. Webull is never contacted.</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — fills stay simulated and the same order is ALSO sent to Webull's <b>PaperTrade</b> environment for comparison; the drift is journalled. This needs PaperTrade app keys.</td></tr>
-    <tr><td>live</td><td><b>live</b> — real orders go to your Webull account. The broker is authoritative: a rejected order never creates a platform position. Requires accepted terms and usable credentials; refusals are always explicit, never a silent simulation. A $1,000 per-order limit applies to Webull for now: an order that opens or adds to a position above it is refused, never resized. Closing orders are not limited.</td></tr>
+    <tr><td>live</td><td><b>live</b> — real orders go to your Webull account. The broker is authoritative: a rejected order never creates a platform position. Requires accepted terms and usable credentials; refusals are always explicit, never a silent simulation. A $1,500 per-order limit applies to Webull for now: an order that opens or adds to a position above it is refused, never resized. Closing orders are not limited.</td></tr>
   </table>
   <div class="note">Whatever mode you use, the <b>Broker orders</b> and <b>Drift records</b> panels at the bottom of the Accounts page show what Webull actually confirmed next to what the ledger assumed — differences are surfaced loudly, never auto-corrected.</div>
 </section>

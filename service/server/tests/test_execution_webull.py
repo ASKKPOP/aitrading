@@ -146,8 +146,8 @@ class RegistryTests(unittest.TestCase):
 
     def test_guide_states_live_and_cap_like_the_gateway(self):
         """Webull is on prod's LIVE_BROKER_ALLOWLIST (2026-11-24): the /accounts
-        guide must say live is open and name the $1,000 cap the gateway applies
-        to every non-legacy venue, in every language. The generator's legacy
+        guide must say live is open and name the cap the gateway applies to it
+        ($1,500 Webull, $1,000 other non-legacy venues), in every language. The generator's legacy
         set must match the gateway's, or the cap sentence lands on the wrong
         brokers."""
         import importlib.util
@@ -158,7 +158,10 @@ class RegistryTests(unittest.TestCase):
         spec.loader.exec_module(gen)
         self.assertEqual(gen.LEGACY_LIVE, set(_LEGACY_LIVE_BROKERS))
         self.assertIn("webull", gen.LIVE_TODAY)
-        self.assertEqual(_max_order_usd_for("webull"), 1000.0)
+        self.assertEqual(_max_order_usd_for("webull"), 1500.0)
+        for broker, cap in gen.LIVE_CAP_USD.items():
+            self.assertEqual(_max_order_usd_for(broker), float(cap), broker)
+        self.assertEqual(_max_order_usd_for("kraken"), 1000.0)
         content = SERVER_DIR / "guide_content"
         for lang in gen.LANGS:
             html = (content / f"gwsetup-webull-{lang}.html").read_text()
@@ -168,7 +171,10 @@ class RegistryTests(unittest.TestCase):
             self.assertNotIn(s["mode_live_gated"].format(name="Webull"), html, lang)
             for broker, name in (("webull", "Webull"), ("kraken", "Kraken")):
                 page = (content / f"gwsetup-{broker}-{lang}.html").read_text()
-                self.assertIn(gen.LIVE_CAP_NOTE[lang].format(name=name).strip(),
+                cap = f"{int(_max_order_usd_for(broker)):,}"
+                if lang == "id":
+                    cap = cap.replace(",", ".")
+                self.assertIn(gen.LIVE_CAP_NOTE[lang].format(name=name, cap=cap).strip(),
                               page, (broker, lang))
         alpaca = (content / "gwsetup-alpaca-en.html").read_text()
         self.assertNotIn("per-order limit applies", alpaca)

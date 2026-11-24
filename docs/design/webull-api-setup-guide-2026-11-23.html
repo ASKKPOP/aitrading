@@ -24,7 +24,7 @@ nav.toc a{color:var(--acc)} a{color:var(--acc)}
 <h1>Connect Webull to Sooppiy</h1>
 <p class="lede">Create a Webull OpenAPI App Key and App Secret, connect them on sooppiy.com/accounts, and point an automation rule at them. Written 2026-11-23 against production.</p>
 
-<div class="card ok"><b>Status on sooppiy.com today:</b> Webull is connectable on <code>/accounts</code>, and live routing is enabled (<code>webull</code> is on the production live allowlist). A live Webull order that opens or adds to a position is capped at <b>$1,000</b>: over the cap it is refused, never resized. Closing orders are not capped. Shorts are on (1x, US stocks only).</div>
+<div class="card ok"><b>Status on sooppiy.com today:</b> Webull is connectable on <code>/accounts</code>, and live routing is enabled (<code>webull</code> is on the production live allowlist). A live Webull order that opens or adds to a position is capped at <b>$1,500</b>: over the cap it is refused, never resized. Closing orders are not capped. Shorts are on (1x, US stocks only).</div>
 
 <nav class="toc card"><b>Steps</b>
 <ol><li><a href="#before">Before you start</a></li><li><a href="#paper">PaperTrade keys (for shadow mode)</a></li><li><a href="#prod">Production keys (for live mode)</a></li><li><a href="#connect">Connect on sooppiy.com</a></li><li><a href="#rules">Point an automation rule at Webull</a></li><li><a href="#limits">What Sooppiy sends to Webull</a></li><li><a href="#trouble">Troubleshooting</a></li></ol></nav>
@@ -105,7 +105,7 @@ nav.toc a{color:var(--acc)} a{color:var(--acc)}
 <ul>
 <li><b>Never sent:</b> crypto, options, futures, leverage above 1x.</li>
 <li><b>Covers are checked first.</b> Webull has no buy-to-cover order, so a cover with no short behind it would open a long. Sooppiy reads your Webull positions and refuses a cover when nothing is held in that symbol or the cover is larger than the position.</li>
-<li><b>$1,000 per opening order</b> while Webull is new on the platform; closing orders are never capped.</li>
+<li><b>$1,500 per opening order</b> while Webull is new on the platform; closing orders are never capped.</li>
 <li><b>Shorts follow the platform switch.</b> If the operator re-arms long-only, short orders are refused; closing a position is never refused.</li>
 </ul>
 
@@ -117,7 +117,7 @@ nav.toc a{color:var(--acc)} a{color:var(--acc)}
 <tr><td>Short rejected by Webull</td><td>Cash account selected</td><td>Enter the margin account id</td></tr>
 <tr><td>Cover refused before sending</td><td>Webull shows no short (or a smaller one) in that symbol</td><td>Check positions at Webull; the Sooppiy ledger and Webull disagree</td></tr>
 <tr><td>Calls rejected after adding an IP segment</td><td>Sooppiy's address not in the allowlist</td><td>Add <code>52.9.147.202</code> or remove the restriction</td></tr>
-<tr><td>Live order refused: “exceeds the $1,000 per-order limit”</td><td>Above the $1,000 per-order cap</td><td>Smaller rule size</td></tr></table></div>
+<tr><td>Live order refused: “exceeds the $1,500 per-order limit”</td><td>Above the $1,500 per-order cap</td><td>Smaller rule size</td></tr></table></div>
 
 <p class="lede" style="margin-top:32px">Sources: Webull OpenAPI documentation (developer.webull.com, Trading API Application and Getting Started pages), screenshots captured 2026-11-23; Sooppiy production, sooppiy.com/accounts, 2026-11-23. Not verified against a real Webull account: no real Webull request has been made from Sooppiy yet.</p>
 </main>

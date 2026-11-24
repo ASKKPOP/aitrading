@@ -44,14 +44,17 @@ LIVE_TODAY = {"alpaca", "binance", "ibkr", "kraken", "webull"}
 LEGACY_LIVE = {"alpaca", "binance", "ibkr"}
 
 # Sentence appended to a capped live venue's "live" row (gateway
-# _max_order_usd_for: every non-legacy venue, EXECUTION_MAX_ORDER_USD=1000).
+# _max_order_usd_for: every non-legacy venue; amount from LIVE_CAP_USD).
+# Per-venue caps (gateway._VENUE_MAX_ORDER_USD); others use the $1,000 default.
+LIVE_CAP_USD = {"webull": 1500}
+
 LIVE_CAP_NOTE = {
-    "en": " A $1,000 per-order limit applies to {name} for now: an order that opens or adds to a position above it is refused, never resized. Closing orders are not limited.",
-    "ko": " {name}에는 현재 주문당 $1,000 한도가 적용됩니다: 이를 넘는 신규·추가 진입 주문은 축소가 아니라 거부됩니다. 청산 주문에는 한도가 없습니다.",
-    "ja": "{name}には現在、注文あたり$1,000の上限があります:これを超える新規・追加の注文は縮小ではなく拒否されます。決済注文には上限はありません。",
-    "th": " ตอนนี้ {name} มีเพดานคำสั่งละ $1,000: คำสั่งเปิดหรือเพิ่มสถานะที่เกินเพดานถูกปฏิเสธ ไม่ถูกลดขนาด คำสั่งปิดสถานะไม่มีเพดาน",
-    "vi": " Hiện {name} có giới hạn $1,000 mỗi lệnh: lệnh mở hoặc tăng vị thế vượt hạn bị từ chối, không bị thu nhỏ. Lệnh đóng vị thế không bị giới hạn.",
-    "id": " Saat ini {name} dikenakan batas $1.000 per order: order yang membuka atau menambah posisi di atas batas ditolak, bukan diperkecil. Order penutupan tidak dibatasi.",
+    "en": " A ${cap} per-order limit applies to {name} for now: an order that opens or adds to a position above it is refused, never resized. Closing orders are not limited.",
+    "ko": " {name}에는 현재 주문당 ${cap} 한도가 적용됩니다: 이를 넘는 신규·추가 진입 주문은 축소가 아니라 거부됩니다. 청산 주문에는 한도가 없습니다.",
+    "ja": "{name}には現在、注文あたり${cap}の上限があります:これを超える新規・追加の注文は縮小ではなく拒否されます。決済注文には上限はありません。",
+    "th": " ตอนนี้ {name} มีเพดานคำสั่งละ ${cap}: คำสั่งเปิดหรือเพิ่มสถานะที่เกินเพดานถูกปฏิเสธ ไม่ถูกลดขนาด คำสั่งปิดสถานะไม่มีเพดาน",
+    "vi": " Hiện {name} có giới hạn ${cap} mỗi lệnh: lệnh mở hoặc tăng vị thế vượt hạn bị từ chối, không bị thu nhỏ. Lệnh đóng vị thế không bị giới hạn.",
+    "id": " Saat ini {name} dikenakan batas ${cap} per order: order yang membuka atau menambah posisi di atas batas ditolak, bukan diperkecil. Order penutupan tidak dibatasi.",
 }
 
 BROKER_NAMES = {
@@ -1318,7 +1321,10 @@ def render(broker: str, lang: str) -> str:
              else f'<span class="tag warn">{s["badge_gated"]}</span>')
     mode_live = (s["mode_live_live"] if live else s["mode_live_gated"]).format(name=name)
     if live and broker not in LEGACY_LIVE:
-        mode_live += LIVE_CAP_NOTE[lang].format(name=name)
+        cap = f"{LIVE_CAP_USD.get(broker, 1000):,}"
+        if lang == "id":
+            cap = cap.replace(",", ".")
+        mode_live += LIVE_CAP_NOTE[lang].format(name=name, cap=cap)
     trouble_rows = "".join(
         f"<tr><td>{sym}</td><td>{fix}</td></tr>"
         for sym, fix in [s["t_creds"], s["t_tcs"], *([] if live else [s["t_allow"]]),
