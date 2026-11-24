@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>Mode</th><th>What happens</th></tr>
     <tr><td>paper</td><td><b>paper / simulator</b> — every trade stays on Sooppiy's internal ledger. Kraken is never contacted.</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — Kraken has no test environment, so shadow uses Kraken's own <b>validate-only</b> order call against your real account: authentication, pair, size and balance are checked, but the order can never fill and no money moves. The venue's accept/reject answer is journalled.</td></tr>
-    <tr><td>live</td><td><b>live</b> — real orders go to your Kraken account. The broker is authoritative: a rejected order never creates a platform position. Requires accepted terms and usable credentials; refusals are always explicit, never a silent simulation.</td></tr>
+    <tr><td>live</td><td><b>live</b> — real orders go to your Kraken account. The broker is authoritative: a rejected order never creates a platform position. Requires accepted terms and usable credentials; refusals are always explicit, never a silent simulation. A $1,000 per-order limit applies to Kraken for now (over-limit orders are refused, never resized).</td></tr>
   </table>
   <div class="note">Whatever mode you use, the <b>Broker orders</b> and <b>Drift records</b> panels at the bottom of the Accounts page show what Kraken actually confirmed next to what the ledger assumed — differences are surfaced loudly, never auto-corrected.</div>
 </section>

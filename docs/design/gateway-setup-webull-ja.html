@@ -47,7 +47,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 <header class="doc">
   <div class="kicker">SOOPPIY ドキュメント — 取引ゲートウェイ接続</div>
   <h1>Webull接続ガイド</h1>
-  <p class="sub">WebullでAPI資格情報を作成し、アカウントページで接続する方法。 <span class="tag warn">シャドー優先 — 実取引は段階的に開放中</span></p>
+  <p class="sub">WebullでAPI資格情報を作成し、アカウントページで接続する方法。 <span class="tag ok">実取引可能</span></p>
 </header>
 
 <section>
@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>モード</th><th>動作</th></tr>
     <tr><td>paper</td><td><b>paper / シミュレーター</b> — すべての取引はSooppiy内部台帳のみに記録されます。Webullには接続しません。</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — 約定はシミュレーションのまま、同じ注文が比較用にWebullの<b>PaperTrade</b>環境にも送信され、差異が記録されます。PaperTrade用のアプリキーが必要です。</td></tr>
-    <tr><td>live</td><td><b>live</b> — Webullはまだ実取引が開放されていません。シャドー検証期間が完了しプラットフォームで有効化されるまで、実注文は明示的なメッセージとともに拒否されます。その間もルールはシャドーで運用できます。新規開放された取引所には当初、注文あたり$1,000の上限があります(超過注文は縮小ではなく拒否)。</td></tr>
+    <tr><td>live</td><td><b>live</b> — 実際の注文がWebull口座に送信されます。ブローカーが正であり、拒否された注文はプラットフォームのポジションを作りません。規約同意と有効な資格情報が必要で、拒否は常に明示されます — 無断でシミュレーションに切り替わることはありません。Webullには現在、注文あたり$1,000の上限があります(超過注文は縮小ではなく拒否)。</td></tr>
   </table>
   <div class="note">どのモードでも、アカウントページ下部の<b>ブローカー注文履歴</b>と<b>ドリフト記録</b>で、Webullが実際に確認した値と台帳の想定を並べて確認できます — 差異は大きく表示されるだけで、自動修正はされません。</div>
 </section>
@@ -112,7 +112,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
   <h2><span class="no">10</span>トラブルシューティング</h2>
   <table>
     <tr><th>症状</th><th>意味 / 対処</th></tr>
-    <tr><td>“credentials are missing or cannot be decrypted”</td><td>保存済みキーが読み取れない状態です(例: サーバーキー交換後)。新しい資格情報でブローカーを再接続してください。</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>アカウントページでこのブローカーの実取引規約に同意してください — 同意はブローカーごとに記録されます。</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>この取引所はまだシャドー検証中です。シャドーは現在も動作し、検証完了後に実取引が開放されます。</td></tr><tr><td>すべての注文で401</td><td>本番キーをshadow(PaperTrade)で使っている、またはその逆、失効したキー、あるいはアプリが二段階認証トークンを要求しています。モードに合ったキーペアか確認してください。</td></tr><tr><td>“Webull returned N accounts”</td><td>ログインに複数の口座があります。再接続して取引する口座のIDを入力してください。</td></tr>
+    <tr><td>“credentials are missing or cannot be decrypted”</td><td>保存済みキーが読み取れない状態です(例: サーバーキー交換後)。新しい資格情報でブローカーを再接続してください。</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>アカウントページでこのブローカーの実取引規約に同意してください — 同意はブローカーごとに記録されます。</td></tr><tr><td>すべての注文で401</td><td>本番キーをshadow(PaperTrade)で使っている、またはその逆、失効したキー、あるいはアプリが二段階認証トークンを要求しています。モードに合ったキーペアか確認してください。</td></tr><tr><td>“Webull returned N accounts”</td><td>ログインに複数の口座があります。再接続して取引する口座のIDを入力してください。</td></tr>
   </table>
 </section>
 </div>

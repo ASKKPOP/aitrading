@@ -139,6 +139,35 @@ class RegistryTests(unittest.TestCase):
             self.assertTrue((content / f"{key}.html").exists(), broker)
             self.assertIn(key, keys, broker)
 
+    def test_guide_states_live_and_cap_like_the_gateway(self):
+        """Webull is on prod's LIVE_BROKER_ALLOWLIST (2026-11-24): the /accounts
+        guide must say live is open and name the $1,000 cap the gateway applies
+        to every non-legacy venue, in every language. The generator's legacy
+        set must match the gateway's, or the cap sentence lands on the wrong
+        brokers."""
+        import importlib.util
+        from execution.gateway import _LEGACY_LIVE_BROKERS, _max_order_usd_for
+        gen_path = SERVER_DIR.parents[1] / "docs" / "design" / "_gen_gateway_setup_guides.py"
+        spec = importlib.util.spec_from_file_location("_gen_gw_guides", gen_path)
+        gen = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gen)
+        self.assertEqual(gen.LEGACY_LIVE, set(_LEGACY_LIVE_BROKERS))
+        self.assertIn("webull", gen.LIVE_TODAY)
+        self.assertEqual(_max_order_usd_for("webull"), 1000.0)
+        content = SERVER_DIR / "guide_content"
+        for lang in gen.LANGS:
+            html = (content / f"gwsetup-webull-{lang}.html").read_text()
+            s = gen.S[lang]
+            self.assertIn(s["badge_live"], html, lang)
+            self.assertNotIn(s["badge_gated"], html, lang)
+            self.assertNotIn(s["mode_live_gated"].format(name="Webull"), html, lang)
+            for broker, name in (("webull", "Webull"), ("kraken", "Kraken")):
+                page = (content / f"gwsetup-{broker}-{lang}.html").read_text()
+                self.assertIn(gen.LIVE_CAP_NOTE[lang].format(name=name).strip(),
+                              page, (broker, lang))
+        alpaca = (content / "gwsetup-alpaca-en.html").read_text()
+        self.assertNotIn("per-order limit applies", alpaca)
+
     def test_router_pins_host_by_mode(self):
         from execution.router import _build_real_broker
         from execution.webull import WebullBroker

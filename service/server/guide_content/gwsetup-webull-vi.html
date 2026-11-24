@@ -47,7 +47,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 <header class="doc">
   <div class="kicker">TÀI LIỆU SOOPPIY — KẾT NỐI CỔNG GIAO DỊCH</div>
   <h1>Hướng dẫn kết nối Webull</h1>
-  <p class="sub">Cách tạo thông tin xác thực API tại Webull và kết nối trên trang Tài khoản. <span class="tag warn">shadow trước — giao dịch thật đang mở dần</span></p>
+  <p class="sub">Cách tạo thông tin xác thực API tại Webull và kết nối trên trang Tài khoản. <span class="tag ok">đã mở giao dịch thật</span></p>
 </header>
 
 <section>
@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>Chế độ</th><th>Điều gì xảy ra</th></tr>
     <tr><td>paper</td><td><b>paper / mô phỏng</b> — mọi giao dịch chỉ nằm trong sổ nội bộ của Sooppiy. Không hề liên hệ Webull.</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — khớp lệnh vẫn là mô phỏng và lệnh đó được gửi tới môi trường <b>PaperTrade</b> của Webull để so sánh; chênh lệch được ghi lại. Cần khóa ứng dụng PaperTrade.</td></tr>
-    <tr><td>live</td><td><b>live</b> — Webull chưa mở giao dịch thật: sàn đang trong giai đoạn kiểm chứng shadow, lệnh thật bị từ chối kèm thông báo rõ ràng cho tới khi Sooppiy kích hoạt. Trong lúc đó quy tắc của bạn vẫn chạy shadow được. Sàn mới mở ban đầu có giới hạn $1,000 mỗi lệnh (lệnh vượt hạn bị từ chối, không bị thu nhỏ).</td></tr>
+    <tr><td>live</td><td><b>live</b> — lệnh thật được gửi tới tài khoản Webull của bạn. Broker là nguồn chân lý: lệnh bị từ chối không tạo vị thế trên nền tảng. Cần chấp nhận điều khoản và thông tin xác thực hợp lệ; mọi từ chối đều hiển thị rõ, không bao giờ âm thầm chuyển thành mô phỏng. Hiện Webull có giới hạn $1,000 mỗi lệnh (lệnh vượt hạn bị từ chối, không bị thu nhỏ).</td></tr>
   </table>
   <div class="note">Dù ở chế độ nào, hai bảng <b>Lệnh tại broker</b> và <b>Bản ghi lệch</b> cuối trang Tài khoản luôn đặt số liệu Webull xác nhận cạnh giả định của sổ nội bộ — khác biệt được phơi bày rõ, không bao giờ tự sửa.</div>
 </section>
@@ -112,7 +112,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
   <h2><span class="no">10</span>Xử lý sự cố</h2>
   <table>
     <tr><th>Triệu chứng</th><th>Ý nghĩa / cách xử lý</th></tr>
-    <tr><td>“credentials are missing or cannot be decrypted”</td><td>Khóa đã lưu không còn đọc được (ví dụ sau khi xoay khóa máy chủ). Kết nối lại broker với thông tin mới.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Chấp nhận điều khoản của broker này trên trang Tài khoản — sự đồng ý được ghi riêng từng broker.</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>Sàn vẫn đang kiểm chứng shadow. Shadow dùng được ngay; giao dịch thật mở khi kiểm chứng xong.</td></tr><tr><td>401 với mọi lệnh</td><td>Dùng khóa production cho shadow (PaperTrade) hoặc ngược lại, khóa bị thu hồi, hoặc ứng dụng yêu cầu token hai lớp. Khớp cặp khóa với chế độ đang dùng.</td></tr><tr><td>“Webull returned N accounts”</td><td>Đăng nhập của bạn có nhiều tài khoản. Kết nối lại và nhập mã tài khoản muốn giao dịch.</td></tr>
+    <tr><td>“credentials are missing or cannot be decrypted”</td><td>Khóa đã lưu không còn đọc được (ví dụ sau khi xoay khóa máy chủ). Kết nối lại broker với thông tin mới.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Chấp nhận điều khoản của broker này trên trang Tài khoản — sự đồng ý được ghi riêng từng broker.</td></tr><tr><td>401 với mọi lệnh</td><td>Dùng khóa production cho shadow (PaperTrade) hoặc ngược lại, khóa bị thu hồi, hoặc ứng dụng yêu cầu token hai lớp. Khớp cặp khóa với chế độ đang dùng.</td></tr><tr><td>“Webull returned N accounts”</td><td>Đăng nhập của bạn có nhiều tài khoản. Kết nối lại và nhập mã tài khoản muốn giao dịch.</td></tr>
   </table>
 </section>
 </div>

@@ -47,7 +47,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 <header class="doc">
   <div class="kicker">SOOPPIY DOCS — TRADING GATEWAY SETUP</div>
   <h1>Connect Webull</h1>
-  <p class="sub">How to create the API credentials at Webull and connect them on the Accounts page. <span class="tag warn">shadow first — live rollout in progress</span></p>
+  <p class="sub">How to create the API credentials at Webull and connect them on the Accounts page. <span class="tag ok">live trading available</span></p>
 </header>
 
 <section>
@@ -98,7 +98,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
     <tr><th>Mode</th><th>What happens</th></tr>
     <tr><td>paper</td><td><b>paper / simulator</b> — every trade stays on Sooppiy's internal ledger. Webull is never contacted.</td></tr>
     <tr><td>shadow</td><td><b>shadow</b> — fills stay simulated and the same order is ALSO sent to Webull's <b>PaperTrade</b> environment for comparison; the drift is journalled. This needs PaperTrade app keys.</td></tr>
-    <tr><td>live</td><td><b>live</b> — not yet open for Webull: the venue is in its shadow rollout soak, and live routing is refused with an explicit message until Sooppiy enables it platform-wide. Your rules can run in shadow meanwhile. Newly enabled venues also carry a $1,000 per-order limit at first (over-limit orders are refused, never resized).</td></tr>
+    <tr><td>live</td><td><b>live</b> — real orders go to your Webull account. The broker is authoritative: a rejected order never creates a platform position. Requires accepted terms and usable credentials; refusals are always explicit, never a silent simulation. A $1,000 per-order limit applies to Webull for now (over-limit orders are refused, never resized).</td></tr>
   </table>
   <div class="note">Whatever mode you use, the <b>Broker orders</b> and <b>Drift records</b> panels at the bottom of the Accounts page show what Webull actually confirmed next to what the ledger assumed — differences are surfaced loudly, never auto-corrected.</div>
 </section>
@@ -112,7 +112,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
   <h2><span class="no">10</span>Troubleshooting</h2>
   <table>
     <tr><th>Symptom</th><th>What it means / what to do</th></tr>
-    <tr><td>“credentials are missing or cannot be decrypted”</td><td>The stored key can no longer be read (for example after a server key rotation). Reconnect the broker with fresh credentials.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Accept the terms for this broker on the Accounts page — consent is recorded per broker.</td></tr><tr><td>“not yet enabled for live orders on this platform”</td><td>The venue is still in its shadow rollout. Shadow works today; live opens when the soak completes.</td></tr><tr><td>401 on every order</td><td>Production keys used in shadow (PaperTrade) or the reverse, a revoked key, or the app requires a two-factor token. Match the key pair to the mode you are in.</td></tr><tr><td>“Webull returned N accounts”</td><td>Your login holds several accounts. Reconnect and enter the account id of the one to trade.</td></tr>
+    <tr><td>“credentials are missing or cannot be decrypted”</td><td>The stored key can no longer be read (for example after a server key rotation). Reconnect the broker with fresh credentials.</td></tr><tr><td>“live-trading terms have not been accepted”</td><td>Accept the terms for this broker on the Accounts page — consent is recorded per broker.</td></tr><tr><td>401 on every order</td><td>Production keys used in shadow (PaperTrade) or the reverse, a revoked key, or the app requires a two-factor token. Match the key pair to the mode you are in.</td></tr><tr><td>“Webull returned N accounts”</td><td>Your login holds several accounts. Reconnect and enter the account id of the one to trade.</td></tr>
   </table>
 </section>
 </div>

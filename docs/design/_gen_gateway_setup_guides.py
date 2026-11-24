@@ -37,8 +37,22 @@ OUT = Path(__file__).resolve().parent
 LANGS = ["en", "ko", "ja", "th", "vi", "id"]
 
 # Brokers already allowed to route live money (gateway._LEGACY_LIVE_BROKERS
-# plus venues since added to prod's LIVE_BROKER_ALLOWLIST — kraken 2026-08-07).
-LIVE_TODAY = {"alpaca", "binance", "ibkr", "kraken"}
+# plus venues since added to prod's LIVE_BROKER_ALLOWLIST — kraken 2026-08-07,
+# webull 2026-11-24).
+LIVE_TODAY = {"alpaca", "binance", "ibkr", "kraken", "webull"}
+# gateway._LEGACY_LIVE_BROKERS: the only live venues without the per-order cap.
+LEGACY_LIVE = {"alpaca", "binance", "ibkr"}
+
+# Sentence appended to a capped live venue's "live" row (gateway
+# _max_order_usd_for: every non-legacy venue, EXECUTION_MAX_ORDER_USD=1000).
+LIVE_CAP_NOTE = {
+    "en": " A $1,000 per-order limit applies to {name} for now (over-limit orders are refused, never resized).",
+    "ko": " {name}에는 현재 주문당 $1,000 한도가 적용됩니다(초과 주문은 축소가 아니라 거부).",
+    "ja": "{name}には現在、注文あたり$1,000の上限があります(超過注文は縮小ではなく拒否)。",
+    "th": " ตอนนี้ {name} มีเพดานคำสั่งละ $1,000 (คำสั่งเกินเพดานถูกปฏิเสธ ไม่ถูกลดขนาด)",
+    "vi": " Hiện {name} có giới hạn $1,000 mỗi lệnh (lệnh vượt hạn bị từ chối, không bị thu nhỏ).",
+    "id": " Saat ini {name} dikenakan batas $1.000 per order (order yang melebihi batas ditolak, bukan diperkecil).",
+}
 
 BROKER_NAMES = {
     "binance": "Binance", "alpaca": "Alpaca", "ibkr": "Interactive Brokers",
@@ -1303,6 +1317,8 @@ def render(broker: str, lang: str) -> str:
     badge = (f'<span class="tag ok">{s["badge_live"]}</span>' if live
              else f'<span class="tag warn">{s["badge_gated"]}</span>')
     mode_live = (s["mode_live_live"] if live else s["mode_live_gated"]).format(name=name)
+    if live and broker not in LEGACY_LIVE:
+        mode_live += LIVE_CAP_NOTE[lang].format(name=name)
     trouble_rows = "".join(
         f"<tr><td>{sym}</td><td>{fix}</td></tr>"
         for sym, fix in [s["t_creds"], s["t_tcs"], *([] if live else [s["t_allow"]]),
