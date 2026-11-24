@@ -142,13 +142,27 @@ function App() {
 
   const t = getT(language)
 
+  // Live mirrors for async callbacks: a re-link result or a late 401 must be
+  // judged against the CURRENT session, not the one captured when it started.
+  const tokenRef = useRef(token)
+  tokenRef.current = token
+  const userTokenRef = useRef(userToken)
+  userTokenRef.current = userToken
+  const linkInFlight = useRef<{ ut: string, p: Promise<string | null> } | null>(null)
+  const lastMintAt = useRef(0)
+
   const login = (newToken: string) => {
     localStorage.setItem('claw_token', newToken)
+    tokenRef.current = newToken
     setToken(newToken)
+  }
+  const dropAgentSession = () => {
+    localStorage.removeItem('claw_token'); tokenRef.current = null
+    linkInFlight.current = null
   }
 
   const logout = () => {
-    localStorage.removeItem('claw_token')
+    dropAgentSession(); userTokenRef.current = null
     setToken(null)
     setAgentInfo(null)
     setNotificationCounts({ discussion: 0, strategy: 0, experiment: 0 })
@@ -160,8 +174,8 @@ function App() {
   // Phase 5: human-user auth lives alongside the agent claw_token.
   const userLogin = (newToken: string) => { setUserToken(newToken) }
   const userLogout = () => {
-    signOutUser(); setUserToken(null); setUserInfo(null)
-    localStorage.removeItem('claw_token'); setToken(null); setAgentInfo(null)
+    signOutUser(); userTokenRef.current = null; setUserToken(null); setUserInfo(null)
+    dropAgentSession(); setToken(null); setAgentInfo(null)
   }
 
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -186,25 +200,35 @@ function App() {
   // Every human account gets its own auto-provisioned simulator agent — most of
   // the app runs on agent (claw) auth. Issue/refresh the claw token from the
   // user session; returns the fresh token so callers can retry immediately.
-  // Single-flight: each mint rotates the agent session, so two concurrent
-  // re-links would leave whichever token lost the race in state.
-  const linkInFlight = useRef<Promise<string | null> | null>(null)
+  // Single-flight per user session: each mint rotates the agent session, so
+  // two concurrent re-links would leave whichever token lost the race in
+  // state. A result that lands after logout / an account switch is dropped,
+  // and mints are spaced >=10s so a server that rejects its own fresh token
+  // cannot spin re-link -> remount -> 401 forever.
   const linkAgent = (): Promise<string | null> => {
-    if (!userToken) return Promise.resolve(null)
-    if (linkInFlight.current) return linkInFlight.current
-    linkInFlight.current = (async () => {
+    const ut = userTokenRef.current
+    if (!ut) return Promise.resolve(null)
+    const cur = linkInFlight.current
+    if (cur && cur.ut === ut) return cur.p
+    if (tokenRef.current && Date.now() - lastMintAt.current < 10_000) return Promise.resolve(null)
+    const p = (async () => {
       try {
         const res = await fetch(`${API_BASE}/users/agent`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${userToken}` }
+          headers: { 'Authorization': `Bearer ${ut}` }
         })
         if (!res.ok) return null
         const data = await res.json()
-        if (data?.token) { login(data.token); return data.token }
+        if (data?.token && userTokenRef.current === ut) {
+          lastMintAt.current = Date.now()
+          login(data.token)
+          return data.token
+        }
       } catch { /* transient */ }
       return null
-    })().finally(() => { linkInFlight.current = null })
-    return linkInFlight.current
+    })().finally(() => { if (linkInFlight.current?.p === p) linkInFlight.current = null })
+    linkInFlight.current = { ut, p }
+    return p
   }
 
   // Any page's 401 on the current agent token re-links, not only App's own
@@ -217,12 +241,18 @@ function App() {
     let checking = false
     window.fetch = async (input, init) => {
       const res = await orig(input, init)
-      if (res.status === 401 && !checking) {
+      if ((res.status === 401 || res.status === 403) && !checking && tokenRef.current === token) {
         const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
         if (headers.get('Authorization') === `Bearer ${token}`) {
           checking = true
-          orig(`${API_BASE}/claw/agents/me`, { headers: { Authorization: `Bearer ${token}` } })
-            .then((me) => (me.status === 401 ? linkAgent() : null))
+          orig(`${API_BASE}/claw/agents/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: AbortSignal.timeout(10_000),
+          })
+            // Re-check after the await: a re-link elsewhere may already have
+            // replaced this token, and minting again would kill the new one.
+            .then((me) => ((me.status === 401 || me.status === 403) && tokenRef.current === token
+              ? linkAgent() : null))
             .catch(() => {})
             .finally(() => { checking = false })
         }
@@ -257,7 +287,7 @@ function App() {
       // A stale/rotated claw token (401/403) would otherwise strand every
       // agent-authed page on errors with no recovery. If a user session is
       // present, re-link to mint a fresh token and retry once.
-      if ((res.status === 401 || res.status === 403) && userToken) {
+      if ((res.status === 401 || res.status === 403) && userToken && tokenRef.current === token) {
         const fresh = await linkAgent()
         if (fresh) {
           const retry = await fetch(`${API_BASE}/claw/agents/me`, {
