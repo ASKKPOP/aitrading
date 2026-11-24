@@ -777,6 +777,15 @@ def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
             "FROM signals WHERE run_id = ?", (run_id,))
         row = cursor.fetchone()
         last_trade_raw = str(row["ts"]) if row and row["ts"] else ""
+        # Fleet position cap (2026-11-23): a member WAITING for a spot cannot
+        # act, so its wait must not stretch a hold streak into a no-prospect
+        # switch. The latest wait bounds the streak like a trade does.
+        cursor.execute(
+            """SELECT MAX(ts) AS ts FROM run_events
+               WHERE run_id = ? AND event_type = 'gate_skip'
+                 AND payload LIKE '%fleet position cap%'""", (run_id,))
+        row = cursor.fetchone()
+        last_wait_raw = str(row["ts"]) if row and row["ts"] else ""
         cursor.execute(
             """SELECT ts, payload FROM run_events
                WHERE run_id = ? AND event_type = 'decision'
@@ -799,6 +808,9 @@ def _flat_hold_span(run_id: int) -> "tuple[float | None, int]":
         return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
     last_trade = _parse(last_trade_raw) if last_trade_raw else None
+    last_wait = _parse(last_wait_raw) if last_wait_raw else None
+    if last_wait and (last_trade is None or last_wait > last_trade):
+        last_trade = last_wait
     oldest: "datetime | None" = None
     count = 0
     for row in rows:
@@ -904,6 +916,36 @@ def _closed_market_cycles(run_id: int) -> int:
                WHERE run_id = ? AND event_type = 'gate_skip'
                  AND payload LIKE '%"stage": "pre"%'
                  AND payload LIKE '%market closed%'""", (run_id,))
+        row = cursor.fetchone()
+    except Exception:  # noqa: BLE001 — including the connect itself
+        return 0
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        return int((row["n"] if row else 0) or 0)
+    except (KeyError, TypeError, ValueError):
+        return 0
+
+
+def _fleet_cap_cycles(run_id: int) -> int:
+    """Cycles this run spent WAITING for a fleet position spot (owner
+    2026-11-23: N members, ceil(60% of N) in a position, the rest wait).
+    Same correction as _closed_market_cycles: the pre-gate skip costs
+    nothing and the run had no chance to trade, so `idle_retired` must not
+    collect the waiting members. Fail-soft to 0."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT COUNT(*) AS n FROM run_events
+               WHERE run_id = ? AND event_type = 'gate_skip'
+                 AND payload LIKE '%"stage": "pre"%'
+                 AND payload LIKE '%fleet position cap%'""", (run_id,))
         row = cursor.fetchone()
     except Exception:  # noqa: BLE001 — including the connect itself
         return 0
@@ -1713,6 +1755,7 @@ def _evaluate_stop_rails(run: dict, seen: Optional[dict] = None) -> Optional[str
             # collected.
             worked = int(run.get("cycle_seq") or 0) \
                 - _closed_market_cycles(run["id"]) \
+                - _fleet_cap_cycles(run["id"]) \
                 - _entry_wake_cycles(run["id"]) \
                 - _entry_held_cycles(run["id"]) \
                 - _mute_cycles(run["id"])
@@ -8189,6 +8232,20 @@ def _pre_gate_skip(run: dict, cfg: dict) -> Optional[str]:
     max_bet = float(cfg.get("max_bet_usd") or 0)
     if not has_position and cash < max_bet * 1.001:
         return f"insufficient cash for max bet (${cash:.2f} < ${max_bet:.2f})"
+
+    # Fleet position cap (owner 2026-11-23): a flat member of a fleet whose
+    # in-position quota is full WAITS — no analysis is spent on an entry the
+    # ledger would refuse. Not counted by idle-retire (_fleet_cap_cycles).
+    if not has_position and run.get("fleet_id"):
+        import fleet_position_cap
+        conn = get_db_connection()
+        try:
+            wait = fleet_position_cap.refusal(conn.cursor(), run["id"],
+                                              int(run["fleet_id"]))
+        finally:
+            conn.close()
+        if wait:
+            return wait
 
     # Fee/edge re-entry cooldown: only a FLAT run can open, so only a flat run
     # is subject to the post-close spacing that keeps leveraged/fast tiers from

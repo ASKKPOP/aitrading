@@ -131,8 +131,8 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         # again, and the ledger cannot see market_type — refuse its opens
         # here, inside the transaction. Closes are not affected.
         if run_id is not None and side in ("buy", "short"):
-            cursor.execute("SELECT market, market_type FROM trading_runs WHERE id = ?",
-                           (run_id,))
+            cursor.execute("SELECT market, market_type, fleet_id FROM trading_runs "
+                           "WHERE id = ?", (run_id,))
             run_row = cursor.fetchone()
             if run_row:
                 run_refusal = order_refusal(run_row["market"], side, lev,
@@ -141,6 +141,16 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                 if run_refusal:
                     conn.rollback()
                     return None, run_refusal
+                # Fleet position cap (owner 2026-11-23): at most ceil(60% of
+                # N) members in a position at once; the fleet row is locked
+                # so two members cannot both take the last spot.
+                if run_row["fleet_id"]:
+                    import fleet_position_cap
+                    cap_refusal = fleet_position_cap.refusal(
+                        cursor, run_id, int(run_row["fleet_id"]), lock=True)
+                    if cap_refusal:
+                        conn.rollback()
+                        return None, cap_refusal
         # Plan 32: on a dedicated trend account only the trend rule opens.
         fenced = trend_accounts.entry_fence(cursor, agent_id, side,
                                             client_order_id)

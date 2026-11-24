@@ -21,6 +21,7 @@ type Fleet = {
   n_runs: number; total_budget_usd: number; risk_appetite: string
   archetype?: string
   recommended_max_n_runs?: number | null
+  position_cap?: number | null
   profit_target_frac?: number | null; successor_fleet_id?: number | null
   warn_loss_frac: number; stop_loss_frac: number
   warn_latched_at: string | null; warn_acked_at: string | null
@@ -41,6 +42,7 @@ type Member = {
   status_reason: string | null; paused_reason: string | null
   run_budget_usd: number | null; realized_pnl_usd: number | null
   unrealized_pnl_usd?: number | null; total_pnl_usd?: number | null
+  in_position?: boolean
   thesis: { direction?: string; rationale?: string; confidence?: number } | null
 }
 type Entitlements = {
@@ -144,6 +146,9 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
     feedCardLabel: tr(language, { ko: 'N종목 자동 편성', en: 'Full Auto', ja: '完全自動編成', th: 'อัตโนมัติเต็มรูปแบบ', vi: 'Tự động hoàn toàn', id: 'Full Auto' }),
     monitorTitle: tr(language, { ko: 'N종목 자동 편성 — 실시간 모니터', en: 'Full Auto — live monitor', ja: '完全自動編成 — ライブモニター', th: 'อัตโนมัติเต็มรูปแบบ — มอนิเตอร์สด', vi: 'Tự động hoàn toàn — theo dõi trực tiếp', id: 'Full Auto — monitor langsung' }),
     buildingHint: tr(language, { ko: 'AI가 시장을 리서치해 TRADING을 구성하는 중입니다 — 완성되는 대로 여기에 하나씩 나타납니다', en: 'The AI is researching the markets and composing the TRADINGs — each one appears here as it is built', ja: 'AIが市場をリサーチして TRADING を構成中 — 完成し次第ここに表示されます', th: 'AI กำลังรีเสิร์ชตลาดและสร้าง TRADING — จะแสดงที่นี่ทีละรายการ', vi: 'AI đang nghiên cứu thị trường và tạo các TRADING — sẽ hiện ở đây khi hoàn thành', id: 'AI sedang meriset pasar dan menyusun TRADING — masing-masing muncul di sini begitu selesai dibuat' }),
+    inPosition: tr(language, { ko: '보유 중', en: 'In position', ja: '保有中', th: 'ถือสถานะ', vi: 'Đang giữ', id: 'Memegang posisi' }),
+    waitingSpot: tr(language, { ko: '대기', en: 'Waiting', ja: '待機', th: 'รอ', vi: 'Chờ', id: 'Menunggu' }),
+    capLine: tr(language, { ko: '포지션 보유 {k}/{cap} · 대기 {w} — 최대 {cap}개만 동시에 보유하고, 하나가 끝나면 대기 중인 TRADING이 진입합니다', en: 'In position {k}/{cap} · waiting {w} — at most {cap} hold at once; when one finishes, a waiting TRADING may enter', ja: '保有 {k}/{cap} · 待機 {w} — 同時保有は最大 {cap}、1つ終わると待機中の TRADING が入れます', th: 'ถือสถานะ {k}/{cap} · รอ {w} — ถือพร้อมกันได้สูงสุด {cap} เมื่อจบหนึ่งตัว TRADING ที่รอจะเข้าได้', vi: 'Đang giữ {k}/{cap} · chờ {w} — tối đa {cap} cùng lúc; khi một cái kết thúc, TRADING đang chờ có thể vào', id: 'Memegang posisi {k}/{cap} · menunggu {w} — paling banyak {cap} sekaligus; saat satu selesai, TRADING yang menunggu boleh masuk' }),
     clickHint: tr(language, { ko: '카드를 누르면 개별 TRADING의 실시간 모니터링(차트·이벤트 로그·일시정지/정지)이 열립니다', en: 'Click a card to open that TRADING\'s live monitor (chart · event log · pause/stop)', ja: 'カードをクリックすると各 TRADING のライブモニター（チャート・イベントログ・一時停止/停止）が開きます', th: 'คลิกการ์ดเพื่อเปิดจอมอนิเตอร์สดของ TRADING นั้น (กราฟ · บันทึกเหตุการณ์ · พัก/หยุด)', vi: 'Nhấp vào thẻ để mở màn hình theo dõi trực tiếp của TRADING đó (biểu đồ · nhật ký · tạm dừng/dừng)', id: 'Klik sebuah kartu untuk membuka monitor langsung TRADING itu (grafik · catatan peristiwa · jeda/hentikan)' }),
     memberBudget: tr(language, { ko: '예산', en: 'Budget', ja: '予算', th: 'งบ', vi: 'Ngân sách', id: 'Anggaran' }),
     showFinished: tr(language, { ko: '종료된 TRADING 보기', en: 'Show finished TRADINGs',
@@ -305,6 +310,18 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
   }, [])
 
   const finishedCount = members.filter(m => m.status === 'stopped').length
+  // Fleet position cap (owner 2026-11-23): N run, ceil(60% of N) may hold
+  // at once, the rest wait for a free spot.
+  const posCap = fleet?.position_cap ?? null
+  const holdingCount = members.filter(m => m.in_position).length
+  const capFull = posCap != null && holdingCount >= posCap
+  // Only a FULL fleet makes a flat member wait; below the cap it may enter.
+  const waitingCount = capFull ? members.filter(m => m.status === 'running' && !m.in_position).length : 0
+  const spotBadge = (m: Member) => m.in_position
+    ? <span style={{ fontSize: 10.5, padding: '1px 6px', borderRadius: 8, background: 'rgba(46,158,107,0.14)', color: '#2e9e6b' }}>{T.inPosition}</span>
+    : (capFull && m.status === 'running')
+      ? <span style={{ fontSize: 10.5, padding: '1px 6px', borderRadius: 8, background: 'rgba(138,128,115,0.14)', color: 'var(--text-secondary,#8a8073)' }}>{T.waitingSpot}</span>
+      : null
   const visibleMembers = showFinished ? members : members.filter(m => m.status !== 'stopped')
 
   const launch = async () => {
@@ -620,6 +637,11 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
           )}
           {(!mon || monTab === 'monitor') ? (
           <>
+          {posCap != null && fleet.status !== 'stopped' && members.length > 0 && (
+            <div style={{ fontSize: 12.5, color: 'var(--text-secondary,#8a8073)', marginBottom: 6 }}>
+              {T.capLine.split('{k}').join(String(holdingCount)).split('{cap}').join(String(posCap)).split('{w}').join(String(waitingCount))}
+            </div>
+          )}
           {visibleMembers.length > 0 && onSelectRun && (
             <div style={{ fontSize: 11.5, color: 'var(--text-muted,#a89f92)', marginBottom: 6 }}>
               💡 {T.clickHint}
@@ -671,6 +693,7 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
                     {m.thesis?.direction === 'short' && (
                       <span style={{ fontSize: 10.5, color: 'var(--text-muted,#a89f92)' }}>short</span>
                     )}
+                    {spotBadge(m)}
                     {t != null && (
                       <span style={{ fontVariantNumeric: 'tabular-nums', color: t >= 0 ? '#2e9e6b' : '#f0663f' }}>
                         {t >= 0 ? '+' : ''}{t.toFixed(2)}
@@ -704,6 +727,7 @@ export function FleetPanel({ token, monitorOnly = false, combined = false, onSel
                         display: 'inline-block', animation: 'sp-live-pulse 1.6s ease-in-out infinite' }} />
                     )}
                     {statusLabel(m.status, language)}{m.paused_reason ? ` (${m.paused_reason})` : ''}
+                    {spotBadge(m)}
                   </span>
                   {(m.total_pnl_usd ?? m.realized_pnl_usd) != null && (() => {
                     // Plan 15 O2: show the marked TOTAL (realized + unrealized) —

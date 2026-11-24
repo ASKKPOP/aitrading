@@ -183,6 +183,10 @@ def _public_fleet(fleet: dict) -> dict:
         out["recommended_max_n_runs"] = min(rec, _cap) if _cap > 0 else rec
     except Exception:  # noqa: BLE001
         out["recommended_max_n_runs"] = None
+    # Fleet position cap (owner 2026-11-23): how many members may hold a
+    # position at once; the rest wait. None = no cap (N <= 2 or switched off).
+    import fleet_position_cap
+    out["position_cap"] = fleet_position_cap.cap_for(int(fleet.get("n_runs") or 0))
     try:
         out["market_scope"] = _json.loads(out.pop("market_scope_json") or "null")
     except Exception:  # noqa: BLE001
@@ -415,6 +419,7 @@ def _members_public(fleet_id: int) -> list[dict]:
         # on every young run even while its position is winning (Henry read
         # a +$9-unrealized fleet as "100% lost"). Ship the marked total too.
         unrealized = None
+        in_position = False
         total = m.get("realized_pnl_usd")
         # A cleanly stopped member holds no run-owned position, so its P&L is
         # the ledger replay alone. Replay it from legs fetched once for the
@@ -434,6 +439,8 @@ def _members_public(fleet_id: int) -> list[dict]:
         else:
             try:
                 pnl = run_engine.compute_run_pnl(m)
+                pos = pnl.get("position") or {}
+                in_position = float(pos.get("quantity") or 0) != 0
                 unrealized = pnl.get("unrealized")
                 total = pnl.get("total")
             except Exception:  # noqa: BLE001
@@ -448,6 +455,7 @@ def _members_public(fleet_id: int) -> list[dict]:
             "realized_pnl_usd": m.get("realized_pnl_usd"),
             "unrealized_pnl_usd": unrealized,
             "total_pnl_usd": total,
+            "in_position": in_position,
         })
     return members
 
