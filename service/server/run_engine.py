@@ -3033,7 +3033,21 @@ def _control_stopping(run: dict, out: dict) -> None:
             _maybe_auto_restart(run)
         return
 
-    if not run.get("stop_flatten"):
+    # Real-mode fleet run (owner 2026-11-24): its position is real shares at
+    # the broker. It never ends holding them — released to the unowned book,
+    # every close there (manual sell, orphan reclaim) would only write the
+    # ledger. It always flattens, and stays `stopping` (still a fleet member,
+    # still under the SL/TP watcher) until the broker took the close.
+    try:
+        _cur_conn = get_db_connection()
+        try:
+            live_run = trading_runs.run_is_live(_cur_conn.cursor(), run["id"])
+        finally:
+            _cur_conn.close()
+    except Exception:  # noqa: BLE001 — unknown: treat as live, never hand off
+        live_run = True
+
+    if not run.get("stop_flatten") and not live_run:
         # hold: the position stays under the SL/TP watcher, and the stop
         # releases its run_id back to the unowned book — a finished run must
         # not keep the owner from closing by hand. Realized P&L up to the stop
@@ -3099,6 +3113,15 @@ def _control_stopping(run: dict, out: dict) -> None:
     # own Stop. Hold the long now and hand it off (the watcher keeps its
     # -15% / +5% exits).
     _policy_hold = bool(why) and str(why).startswith("long exit policy")
+    if live_run:
+        # Stay `stopping` and retry on the next scan. Past the timeout, tell
+        # the user once — the shares are still open at the broker.
+        if stopping_since and _age_seconds(stopping_since) > _flatten_timeout():
+            _alert_run(run, "run_stopped", "run_positions_held",
+                       {"run_id": run["id"], "why": why,
+                        "minutes": _flatten_timeout() // 60},
+                       dedupe=f"run:{run['id']}:live_flatten_stuck")
+        return
     if _policy_hold or (stopping_since
                         and _age_seconds(stopping_since) > _flatten_timeout()):
         if _simple_transition(run, STATUS_STOPPED, "positions_held",

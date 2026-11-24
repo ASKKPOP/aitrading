@@ -77,7 +77,7 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
                         fence=None,
                         human_initiated: bool = False,
                         _route: bool = True,
-                        _dry_run: bool = False) -> tuple[Optional[int], Optional[str]]:
+                        _dry_run: Optional[dict] = None) -> tuple[Optional[int], Optional[str]]:
     """Execute a simulator trade with the same ledger as a manual signal:
     signals row (signal_type='automation') + position update + cash update.
     On buys, stop_loss/take_profit (from the risk gate) are registered on the
@@ -266,9 +266,13 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
             exit_price = price
             realized_pnl = (short_entry - price) * quantity - fee
 
-        if _dry_run:
+        if _dry_run is not None:
             # Every ledger refusal above has been checked; nothing written.
+            # Report the size the ledger WOULD book: a close is trimmed to
+            # what the book holds, and the broker must get that size, never
+            # the caller's (a stale watcher read would oversell at the broker).
             conn.rollback()
+            _dry_run["quantity"] = quantity
             return 0, None
         signal_id = _reserve_signal_id(cursor)
         cursor.execute(
@@ -517,10 +521,12 @@ def _live_leg(venue_run: int, agent_id: int, symbol: str, market: str, side: str
               quantity: float, price: float, **kw) -> tuple[Optional[int], Optional[str]]:
     from execution.base import OrderStatus
     from execution.gateway import submit_live
-    ok, why = execute_paper_trade(agent_id, symbol, market, side, quantity, price,
-                                  _route=False, _dry_run=True, **kw)
+    dry: dict = {}
+    _, why = execute_paper_trade(agent_id, symbol, market, side, quantity, price,
+                                 _route=False, _dry_run=dry, **kw)
     if why:
         return None, why
+    quantity = float(dry.get("quantity") or quantity)
     order = submit_live(agent_id, symbol, market, side, quantity, price)
     if order.status not in (OrderStatus.FILLED, OrderStatus.SUBMITTED):
         reason = order.error_message or order.status.value

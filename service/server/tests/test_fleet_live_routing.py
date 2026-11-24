@@ -302,6 +302,56 @@ class LiveRunRoutingTests(_LiveRunCase):
         self.assertEqual(sorted(bool(r[0]) for r in results), [False, True])
 
 
+    def test_broker_gets_the_size_the_ledger_books(self):
+        """A stale watcher read asks to sell 10 while the run holds 5 (an
+        armed exit already sold the rest): the ledger trims to 5, and the
+        broker must get 5 — never 10."""
+        run = self._run("live")
+        patcher, calls = _patch_http(_webull_ok)
+        with patcher:
+            self._trade("buy", 5, run)
+            sig, skip = self._trade("sell", 10, run)
+        self.assertTrue(sig, skip)
+        legs = _placed(calls)
+        self.assertEqual([(leg["side"], float(leg["quantity"])) for leg in legs],
+                         [("BUY", 5.0), ("SELL", 5.0)])
+
+    def test_live_run_whose_flatten_keeps_failing_stays_stopping(self):
+        """Past the flatten timeout a simulator run hands its position to the
+        unowned book (positions_held). A live run must not: it stays
+        `stopping`, still owning its real shares, and keeps retrying."""
+        import run_engine
+        run = self._run("live")
+        patcher, _ = _patch_http(_webull_ok)
+        with patcher:
+            self._trade("buy", 5, run)
+        conn = database.get_db_connection()
+        conn.cursor().execute(
+            "UPDATE trading_runs SET status = 'stopping', stop_flatten = 1,"
+            " stopped_at = '2026-01-01T00:00:00Z' WHERE id = ?", (run,))
+        conn.commit()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM trading_runs WHERE id = ?", (run,))
+        row = dict(cur.fetchone())
+        conn.close()
+        out = {"stopping_finished": 0}
+        patcher, _ = _patch_http(lambda m, u, k: _FakeResponse(
+            417, {"error_code": "X", "message": "rejected"}))
+        with patcher, patch.object(run_engine, "_alert_run") as alert:
+            run_engine._control_stopping(row, out)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT status FROM trading_runs WHERE id = ?", (run,))
+        status = cur.fetchone()["status"]
+        cur.execute("SELECT run_id, handoff_run_id FROM positions WHERE agent_id = ?",
+                    (self.agent_id,))
+        pos = dict(cur.fetchone())
+        conn.close()
+        self.assertEqual(status, "stopping")
+        self.assertEqual(pos, {"run_id": run, "handoff_run_id": None})
+        self.assertEqual(out["stopping_finished"], 0)
+        self.assertTrue(alert.called, "the user is told the shares are still open")
+
 class LiveFleetCreationTests(_DbTestCase):
     def test_live_fleet_needs_a_usable_gateway_per_market(self):
         from fleet_planner import live_fleet_refusal
