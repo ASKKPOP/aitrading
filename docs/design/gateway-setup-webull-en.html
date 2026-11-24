@@ -105,7 +105,7 @@ ul,ol{padding-left:20px;margin:6px 0} li{margin:5px 0}
 
 <section>
   <h2><span class="no">9</span>Venue notes</h2>
-  <ul><li>US stocks only, spot and long-only: buys and sells are sent as market DAY orders in the regular session. Short and cover orders are never sent to Webull.</li><li>If your Webull login holds more than one account, enter the <b>account id</b> in the optional field when you connect — Sooppiy will not guess between accounts. With one account (or one cash account) it is found automatically.</li><li>Production apps can have Webull's two-factor token switched on. Sooppiy does not create that token yet; an app that requires it answers 401 and the order is refused, never filled on paper.</li></ul>
+  <ul><li>US stocks only, at 1x: buys, sells, short sales and covers are sent as market DAY orders in the regular session (a short is Webull side SHORT, a cover is a BUY). Shorts follow the platform's short-selling switch; crypto, options and leverage are never sent to Webull.</li><li>Short sales need a Webull <b>margin</b> account. If your login holds more than one account, enter the <b>account id</b> in the optional field when you connect — Sooppiy will not guess, and when it has to choose it picks the single cash account, which cannot short. With one account it is found automatically.</li><li>Production apps can have Webull's two-factor token switched on. Sooppiy does not create that token yet; an app that requires it answers 401 and the order is refused, never filled on paper.</li></ul>
 </section>
 
 <section>

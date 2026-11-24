@@ -1,5 +1,5 @@
 """
-execution/webull.py — WebullBroker (Webull OpenAPI, US stocks, spot only).
+execution/webull.py — WebullBroker (Webull OpenAPI, US stocks, 1x).
 
 Production:  https://api.webull.com
 Sandbox:     https://api.sandbox.webull.com   (PaperTrade app credentials)
@@ -18,8 +18,17 @@ The secret itself is never sent. The body is serialised once and the SAME
 bytes are both hashed and sent — re-serialising (httpx json=) could reorder or
 re-space it and break the signature.
 
-Scope (owner rule): US stocks, 1x, long only. buy/sell map to BUY/SELL market
-DAY orders; short/cover are refused before any network call.
+Scope (owner rules): US stocks, 1x. Market DAY orders, regular session.
+    buy   -> BUY    sell  -> SELL
+    short -> SHORT  (a short sale; Webull's side enum is BUY / SELL / SHORT)
+    cover -> BUY    (buy-to-cover against the open short)
+US-stock shorts follow the platform policy (owner 2026-11-23: "Webull also
+allow short for us-stock"): futures_policy decides upstream whether a short
+may open (shorts_trading_blocked=on re-arms long-only) — this adapter only
+maps the verb. A short sale needs a Webull MARGIN account; a cash account is
+refused by Webull itself. Any other verb is refused before any network call;
+options/crypto/leverage never reach here (BROKER_MARKETS: us-stock only, and
+instrument_type is always EQUITY).
 
 Orders are keyed by OUR client_order_id (Webull's detail and cancel endpoints
 take it), so that is what becomes broker_order_id.
@@ -54,7 +63,7 @@ SANDBOX_HOST = "api.sandbox.webull.com"
 _SIGNED_HEADERS = ("x-app-key", "x-timestamp", "x-signature-algorithm",
                    "x-signature-version", "x-signature-nonce")
 
-_SIDE_MAP = {"buy": "BUY", "sell": "SELL"}
+_SIDE_MAP = {"buy": "BUY", "sell": "SELL", "short": "SHORT", "cover": "BUY"}
 
 _STATUS_MAP = {
     "FILLED": OrderStatus.FILLED,
@@ -217,8 +226,9 @@ class WebullBroker(Broker):
         side = _SIDE_MAP.get(order.side)
         if side is None:
             order.status = OrderStatus.REJECTED
-            order.error_message = (f"Webull gateway is long-only (US stocks, 1x): "
-                                   f"{order.side!r} orders are not sent")
+            order.error_message = (f"Webull gateway trades US stocks at 1x "
+                                   f"(buy/sell/short/cover): {order.side!r} "
+                                   "orders are not sent")
             return order
 
         client_order_id = uuid.uuid4().hex  # 32 chars, the documented maximum
@@ -236,6 +246,15 @@ class WebullBroker(Broker):
             order.status = OrderStatus.REJECTED
             order.error_message = err
             return order
+
+        if order.side == "cover":
+            refusal = await self._cover_refusal(account_id, order)
+            if refusal:
+                order.status = OrderStatus.REJECTED
+                order.error_message = refusal
+                _logger.warning("[WebullBroker] cover refused for agent %s: %s",
+                                order.agent_id, refusal)
+                return order
 
         body = {
             "account_id": account_id,
@@ -379,6 +398,53 @@ class WebullBroker(Broker):
         except (httpx.RequestError, ValueError, TypeError, AttributeError, KeyError):
             return False
 
+    async def _read_positions(self, account_id: str) -> Optional[list]:
+        """Webull's position rows, or None when they could not be read
+        (an empty list means "read, and nothing held")."""
+        try:
+            resp = await self._get("/trading/assets/positions/list",
+                                   {"account_id": account_id})
+            if resp.status_code != 200:
+                return None
+            rows = resp.json()
+            if isinstance(rows, dict):
+                rows = rows.get("data") or rows.get("positions")
+            if not isinstance(rows, list):
+                return None
+            return [r for r in rows if isinstance(r, dict)]
+        except (httpx.RequestError, ValueError, TypeError, AttributeError, KeyError):
+            return None
+
+    async def _cover_refusal(self, account_id: str, order: Order) -> Optional[str]:
+        """Why this cover must not be sent, or None.
+
+        Webull's side enum has no buy-to-cover: a cover is a plain BUY, and a
+        BUY with no short behind it OPENS A LONG. The platform's own guard
+        reads the ledger, which can disagree with the venue (a short Webull
+        rejected after accepting, a short opened by a simulator rule), so ask
+        Webull. Webull does not document how a short position is signed, so
+        only what holds under any convention is refused: no position in the
+        symbol at all, or a cover larger than the position's size. A read
+        that fails does not block the cover — refusing every cover then
+        could strand a real short — it is logged instead."""
+        rows = await self._read_positions(account_id)
+        if rows is None:
+            _logger.warning("[WebullBroker] cover %s: positions unreadable; "
+                            "sending without the venue check", order.symbol)
+            return None
+        sym = order.symbol.upper()
+        held = [abs(_float(r.get("quantity")) or 0.0) for r in rows
+                if str(r.get("symbol") or "").upper() == sym]
+        size = sum(held)
+        if size <= 0:
+            return (f"no open Webull position in {sym} to cover — a cover is a "
+                    "BUY at Webull and would open a long; order not sent")
+        if order.quantity > size + 1e-9:
+            return (f"cover of {_qty(order.quantity)} {sym} exceeds the "
+                    f"{_qty(size)} held at Webull — the excess BUY would open a "
+                    "long; order not sent")
+        return None
+
     async def get_broker_positions(self) -> list[dict]:
         if not self._has_credentials():
             return []
@@ -386,21 +452,12 @@ class WebullBroker(Broker):
             account_id, _ = await self._resolve_account()
             if not account_id:
                 return []
-            resp = await self._get("/trading/assets/positions/list",
-                                   {"account_id": account_id})
-            if resp.status_code != 200:
-                return []
-            rows = resp.json()
-            if isinstance(rows, dict):
-                rows = rows.get("data") or rows.get("positions") or []
-            out = []
-            for p in rows:
-                qty = _float(p.get("quantity")) or 0.0
-                out.append({"symbol": p.get("symbol"), "qty": abs(qty),
-                            "side": "long" if qty >= 0 else "short"})
-            return out
-        except httpx.RequestError:
+        except (httpx.RequestError, ValueError, TypeError, AttributeError, KeyError):
             return []
-        except Exception:  # noqa: BLE001
-            _logger.exception("[WebullBroker] get_broker_positions failed")
-            return []
+        rows = await self._read_positions(account_id) or []
+        out = []
+        for p in rows:
+            qty = _float(p.get("quantity")) or 0.0
+            out.append({"symbol": p.get("symbol"), "qty": abs(qty),
+                        "side": "long" if qty >= 0 else "short"})
+        return out

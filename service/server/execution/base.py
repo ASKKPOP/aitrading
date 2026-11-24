@@ -73,7 +73,8 @@ BROKER_SPECS: dict[str, BrokerSpec] = {
     # secret is an EC private key in PEM form, not a shared secret — Coinbase
     # signs with a per-request ES256 JWT rather than an HMAC.
     "coinbase":  BrokerSpec(fields=("key", "secret"),               shadow="dry_run", quote="USD"),
-    # US stocks, spot/long only. An optional account_id may ride in the blob;
+    # US stocks at 1x: buy/sell plus short/cover (margin account). An optional
+    # account_id may ride in the blob;
     # without it the adapter discovers the account (execution/webull.py).
     # Shadow uses the PaperTrade host, which needs PaperTrade app keys.
     "webull":    BrokerSpec(fields=("key", "secret"),               shadow="sandbox", quote="USD"),

@@ -182,14 +182,79 @@ class AdapterTests(unittest.TestCase):
         self.assertIsNone(st)
         self.assertEqual(calls, [])
 
-    def test_short_and_cover_refused_without_network(self):
+    def test_short_opens_with_SHORT_and_cover_buys_back(self):
+        """US-stock shorts at 1x (owner 2026-11-23: "Webull also allow short
+        for us-stock"): Webull's side enum is BUY/SELL/SHORT — a short sale is
+        SHORT, a cover is a BUY against the open short."""
+        from execution.base import OrderStatus
+        for side, venue_side in (("short", "SHORT"), ("cover", "BUY")):
+            patcher, calls = _patch_http(_responder({
+                POSITIONS: _FakeResponse(200, [{"symbol": "AAPL", "quantity": "-2"}]),
+                PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+            with patcher:
+                o = _run(self._broker(account_id="M1").submit_order(
+                    _order(side=side, qty=2.0)))
+            self.assertIs(o.status, OrderStatus.SUBMITTED, (side, o.error_message))
+            places = [c for c in calls if _path(c[1]) == PLACE]
+            leg = json.loads(places[0][2]["content"])["new_orders"][0]
+            self.assertEqual(leg["side"], venue_side, side)
+            self.assertEqual(leg["instrument_type"], "EQUITY", side)
+            self.assertEqual(leg["order_type"], "MARKET", side)
+            self.assertNotIn("position_intent", leg, "options-only field")
+
+    # ── cover = plain BUY at Webull: never let it open a long ──────────────
+    def _cover(self, positions, qty=2.0):
+        patcher, calls = _patch_http(_responder({
+            POSITIONS: positions,
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher:
+            o = _run(self._broker(account_id="M1").submit_order(
+                _order(side="cover", qty=qty)))
+        return o, [c for c in calls if _path(c[1]) == PLACE]
+
+    def test_cover_with_nothing_held_at_webull_is_refused(self):
+        from execution.base import OrderStatus
+        o, places = self._cover(_FakeResponse(200, [{"symbol": "MSFT", "quantity": "-4"}]))
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("would open a long", o.error_message)
+        self.assertEqual(places, [], "a cover with no short behind it is never sent")
+
+    def test_cover_larger_than_webull_position_is_refused(self):
+        from execution.base import OrderStatus
+        o, places = self._cover(_FakeResponse(200, [{"symbol": "AAPL", "quantity": "-1"}]),
+                                qty=2.0)
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("exceeds", o.error_message)
+        self.assertEqual(places, [])
+
+    def test_cover_within_position_is_sent_either_sign_convention(self):
+        from execution.base import OrderStatus
+        for q in ("-3", "3"):  # Webull does not document the short sign
+            o, places = self._cover(_FakeResponse(200, [{"symbol": "aapl", "quantity": q}]))
+            self.assertIs(o.status, OrderStatus.SUBMITTED, (q, o.error_message))
+            self.assertEqual(len(places), 1, q)
+
+    def test_cover_sent_when_positions_unreadable(self):
+        """Refusing every cover on a failed read could strand a real short."""
+        from execution.base import OrderStatus
+        o, places = self._cover(_FakeResponse(503, None, text="unavailable"))
+        self.assertIs(o.status, OrderStatus.SUBMITTED, o.error_message)
+        self.assertEqual(len(places), 1)
+
+    def test_side_map_is_exactly_the_four_platform_verbs(self):
+        """Mutation gap: an alias key ('sell_short' -> SHORT) would send a
+        short that no other test names. Pin the whole map."""
+        from execution.webull import _SIDE_MAP
+        self.assertEqual(_SIDE_MAP, {"buy": "BUY", "sell": "SELL",
+                                     "short": "SHORT", "cover": "BUY"})
+
+    def test_unknown_side_refused_without_network(self):
         from execution.base import OrderStatus
         patcher, calls = _patch_http(lambda m, u, k: None)
         with patcher:
-            for side in ("short", "cover"):
+            for side in ("buy_to_open", "sell_short_leveraged", ""):
                 o = _run(self._broker().submit_order(_order(side=side)))
                 self.assertIs(o.status, OrderStatus.REJECTED, side)
-                self.assertIn("long-only", o.error_message, side)
         self.assertEqual(calls, [])
 
     def test_buy_places_signed_market_order(self):
@@ -488,6 +553,35 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(urlparse(calls[0][1]).netloc, "api.sandbox.webull.com")
 
 
+class _Env:
+    """Set env vars for one block, restoring the previous values after.
+    conftest runs the suite with FUTURES_TRADING_BLOCKED=0; the short-path
+    tests restore production's switch shape explicitly."""
+
+    def __init__(self, **values):
+        self._values = values
+        self._saved = {}
+
+    def __enter__(self):
+        for k, v in self._values.items():
+            self._saved[k] = os.environ.get(k)
+            os.environ[k] = v
+
+    def __exit__(self, *exc):
+        for k, v in self._saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        return False
+
+
+# Production today: block ON, shorts allowed (owner 2026-11-23).
+_PROD_TWO_WAY = {"FUTURES_TRADING_BLOCKED": "1", "SHORTS_TRADING_BLOCKED": "0"}
+# The re-arm switch: block ON, shorts blocked -> long-only.
+_LONG_ONLY = {"FUTURES_TRADING_BLOCKED": "1", "SHORTS_TRADING_BLOCKED": "1"}
+
+
 class WebullGatewayTests(_DbTestCase):
     """The order path end to end: rule → gateway → adapter → broker_orders."""
 
@@ -546,15 +640,59 @@ class WebullGatewayTests(_DbTestCase):
         self.assertIn("per-order limit", o.error_message)
         self.assertEqual(calls, [])
 
-    def test_live_short_never_reaches_webull(self):
+    def test_live_us_stock_short_reaches_webull_as_SHORT(self):
+        """Shorts allowed (platform default since 2026-11-23): a live us-stock
+        short goes to Webull's production host as side SHORT."""
         from execution.base import OrderStatus
         _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
-                                               "account_id": "ACC1"})
+                                               "account_id": "MARGIN1"})
+        os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
+        patcher, calls = _patch_http(_responder({
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher, _Env(**_PROD_TWO_WAY):
+            o = self._live(side="short", qty=1.0)
+        self.assertIs(o.status, OrderStatus.SUBMITTED, o.error_message)
+        self.assertEqual(urlparse(calls[0][1]).netloc, "api.webull.com")
+        self.assertEqual(json.loads(calls[0][2]["content"])["new_orders"][0]["side"],
+                         "SHORT")
+
+    def test_live_cover_with_block_off_never_opens_a_long(self):
+        """Review of 8b4784f9: with the platform block OFF the automation size
+        guard does not run, so the venue check is what stops a cover from
+        becoming a long-opening BUY."""
+        from execution.base import OrderStatus
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "MARGIN1"})
+        os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
+        patcher, calls = _patch_http(_responder({
+            POSITIONS: _FakeResponse(200, []),
+            PLACE: _FakeResponse(200, {"client_order_id": "c", "order_id": "W1"})}))
+        with patcher, _Env(FUTURES_TRADING_BLOCKED="0"):
+            o = self._live(side="cover", qty=1.0)
+        self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertEqual([_path(c[1]) for c in calls], [POSITIONS])
+
+    def test_shorts_blocked_switch_rearms_long_only_for_webull(self):
+        from execution.base import OrderStatus
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "MARGIN1"})
         os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
         patcher, calls = _patch_http(lambda m, u, k: None)
-        with patcher:
+        with patcher, _Env(**_LONG_ONLY):
             o = self._live(side="short", qty=1.0)
         self.assertIs(o.status, OrderStatus.REJECTED)
+        self.assertIn("opening a short", o.error_message)
+        self.assertEqual(calls, [], "a blocked short must never reach the venue")
+
+    def test_crypto_short_never_routes_to_webull(self):
+        from execution.gateway import submit_live
+        _add_account(self.agent_id, "webull", {"key": "k", "secret": "s",
+                                               "account_id": "MARGIN1"})
+        os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
+        patcher, calls = _patch_http(lambda m, u, k: None)
+        with patcher, _Env(**_PROD_TWO_WAY):
+            o = submit_live(self.agent_id, "BTCUSDT", "crypto", "short", 0.01, 100.0)
+        self.assertNotEqual(o.broker, "webull")
         self.assertEqual(calls, [])
 
     def test_crypto_order_never_routes_to_webull(self):
