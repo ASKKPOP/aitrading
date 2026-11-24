@@ -668,11 +668,13 @@ class _DbTestCase(unittest.TestCase):
         database.init_database()
         self.agent_id = _create_agent()
         os.environ.pop("LIVE_BROKER_ALLOWLIST", None)
-        os.environ.pop("EXECUTION_MAX_ORDER_USD", None)
+        for key in [k for k in os.environ if k.startswith("EXECUTION_MAX_ORDER_USD")]:
+            os.environ.pop(key, None)
 
     def tearDown(self):
         os.environ.pop("LIVE_BROKER_ALLOWLIST", None)
-        os.environ.pop("EXECUTION_MAX_ORDER_USD", None)
+        for key in [k for k in os.environ if k.startswith("EXECUTION_MAX_ORDER_USD")]:
+            os.environ.pop(key, None)
         self.tmp.cleanup()
 
 
@@ -762,22 +764,26 @@ class NotionalCapTests(_DbTestCase):
 
     def test_webull_cap_is_1500_others_keep_1000(self):
         """Owner 2026-11-24: Webull's per-order cap is $1,500; every other
-        capped venue keeps the $1,000 default, and the platform-wide env
-        default does not move Webull's own figure."""
+        capped venue keeps the $1,000 default."""
         from execution.gateway import _max_order_usd_for
         self.assertEqual(_max_order_usd_for("webull"), 1500.0)
         self.assertEqual(_max_order_usd_for("kraken"), 1000.0)
+        # The platform-wide variable still moves every venue, Webull too.
         os.environ["EXECUTION_MAX_ORDER_USD"] = "800"
-        try:
-            self.assertEqual(_max_order_usd_for("webull"), 1500.0)
-            self.assertEqual(_max_order_usd_for("kraken"), 800.0)
-        finally:
-            os.environ.pop("EXECUTION_MAX_ORDER_USD", None)
+        self.assertEqual(_max_order_usd_for("webull"), 800.0)
+        self.assertEqual(_max_order_usd_for("kraken"), 800.0)
+        # A per-venue variable beats the platform one, for that venue only.
         os.environ["EXECUTION_MAX_ORDER_USD_WEBULL"] = "2000"
-        try:
-            self.assertEqual(_max_order_usd_for("webull"), 2000.0)
-        finally:
-            os.environ.pop("EXECUTION_MAX_ORDER_USD_WEBULL", None)
+        self.assertEqual(_max_order_usd_for("webull"), 2000.0)
+        self.assertEqual(_max_order_usd_for("kraken"), 800.0)
+        os.environ.pop("EXECUTION_MAX_ORDER_USD", None)
+        # Garbage never switches the cap off: empty, nan, inf, text -> default.
+        for bad in ("", "  ", "nan", "inf", "-inf", "abc"):
+            os.environ["EXECUTION_MAX_ORDER_USD_WEBULL"] = bad
+            self.assertEqual(_max_order_usd_for("webull"), 1500.0, bad)
+        # 0 is the one explicit way to disable a cap.
+        os.environ["EXECUTION_MAX_ORDER_USD_WEBULL"] = "0"
+        self.assertIsNone(_max_order_usd_for("webull"))
 
     def test_non_allowlisted_submit_live_refused_at_source(self):
         from execution.base import OrderStatus

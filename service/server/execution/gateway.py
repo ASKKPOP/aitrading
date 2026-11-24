@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import os
 from typing import Any, Optional
 
@@ -68,23 +69,27 @@ def _live_broker_allowlist() -> tuple:
     return tuple(b.strip().lower() for b in raw.split(",") if b.strip())
 
 
-# Per-venue cap overriding the platform default (owner 2026-11-24: Webull
-# $1,500). An EXECUTION_MAX_ORDER_USD_<BROKER> env value still wins.
+# Per-venue default caps (owner 2026-11-24: Webull $1,500); every other
+# capped venue defaults to $1,000. Env overrides, most specific first:
+# EXECUTION_MAX_ORDER_USD_<BROKER>, then the platform-wide
+# EXECUTION_MAX_ORDER_USD (so the platform variable still moves every venue).
 _VENUE_MAX_ORDER_USD = {"webull": 1500.0}
 
 
 def _max_order_usd_for(broker: str) -> Optional[float]:
     """Per-order notional cap. Applies only to non-legacy venues (Plan 19 §8);
-    legacy brokers keep their pre-expansion behaviour. 0 disables the cap."""
+    legacy brokers keep their pre-expansion behaviour. 0 disables the cap;
+    an empty, unparsable or non-finite value falls back to the default."""
     if broker in _LEGACY_LIVE_BROKERS:
         return None
     default = _VENUE_MAX_ORDER_USD.get(broker, 1000.0)
-    raw = os.environ.get(f"EXECUTION_MAX_ORDER_USD_{broker.upper()}")
-    if raw is None and broker not in _VENUE_MAX_ORDER_USD:
-        raw = os.environ.get("EXECUTION_MAX_ORDER_USD")
+    raw = (os.environ.get(f"EXECUTION_MAX_ORDER_USD_{broker.upper()}", "").strip()
+           or os.environ.get("EXECUTION_MAX_ORDER_USD", "").strip())
     try:
-        cap = float(raw) if raw is not None else default
+        cap = float(raw) if raw else default
     except ValueError:
+        cap = default
+    if not math.isfinite(cap):
         cap = default
     return cap if cap > 0 else None
 

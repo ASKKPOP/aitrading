@@ -550,7 +550,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <li><b>매도:</b> 보유 롱 포지션이 있어야만 실행 — 없으면 "no long position to sell"로 스킵. 공매도 없음.</li>
     <li><b>미국주식:</b> 장 마감 중엔 체결하지 않고 분석·기록만(skip_reason 저장).</li>
     <li><b>가격 추적:</b> 브로커 없이 <code>price_fetcher</code> 폴링으로 평가손익을 계산 — 워처가 이 가격으로 SL/TP를 판정합니다.</li>
-    <li><b>실계좌:</b> account_type='live'(구 real) 규칙은 <b>연결된 거래 게이트웨이로 실제 주문을 전송합니다</b> — 9개 거래소(Alpaca·Binance·IBKR + 2026-08 지역 확장: Bybit·OKX·Kraken·Crypto.com·Upbit·KuCoin), 브로커별 약관 동의·라이브 허용목록(신규 거래소는 shadow 우선)·주문당 $1,000 초기 한도로 보호됩니다. 자세한 내용은 실거래 게이트웨이 문서 참고.</li>
+    <li><b>실계좌:</b> account_type='live'(구 real) 규칙은 <b>연결된 거래 게이트웨이로 실제 주문을 전송합니다</b> — 9개 거래소(Alpaca·Binance·IBKR + 2026-08 지역 확장: Bybit·OKX·Kraken·Crypto.com·Upbit·KuCoin), 브로커별 약관 동의·라이브 허용목록(신규 거래소는 shadow 우선)·주문당 $1,000 초기 한도(Webull은 $1,500)로 보호됩니다. 자세한 내용은 실거래 게이트웨이 문서 참고.</li>
   </ul>
 </div></section>
 

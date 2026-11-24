@@ -551,7 +551,7 @@ footer{padding:26px 0 46px;font-size:12px;color:var(--muted)}
     <li><b>Sell：</b> 既存のロングポジションに対してのみ実行される — それ以外は「no long position to sell」としてスキップされる。空売りは不可。</li>
     <li><b>米国株：</b> 市場が閉まっている間は約定されない — 分析とログ記録のみ行われる（skip_reasonが保存される）。</li>
     <li><b>価格追跡：</b> 含み損益は<code>price_fetcher</code>のポーリングから計算され、ブローカーは介さない — ウォッチャーはこれらの価格に基づいてSL/TPを判定する。</li>
-    <li><b>実口座：</b> account_type='live'(旧real)のルールは<b>接続済みの取引ゲートウェイへ実注文を送信します</b> — 9取引所(Alpaca・Binance・IBKR + 2026-08地域拡張: Bybit・OKX・Kraken・Crypto.com・Upbit・KuCoin)。ブローカーごとの規約同意・ライブ許可リスト(新規取引所はshadow優先)・注文あたり$1,000の初期上限で保護されます。詳細は実取引ゲートウェイのドキュメント参照。</li>
+    <li><b>実口座：</b> account_type='live'(旧real)のルールは<b>接続済みの取引ゲートウェイへ実注文を送信します</b> — 9取引所(Alpaca・Binance・IBKR + 2026-08地域拡張: Bybit・OKX・Kraken・Crypto.com・Upbit・KuCoin)。ブローカーごとの規約同意・ライブ許可リスト(新規取引所はshadow優先)・注文あたり$1,000の初期上限(Webullは$1,500)で保護されます。詳細は実取引ゲートウェイのドキュメント参照。</li>
   </ul>
 </div></section>
 
