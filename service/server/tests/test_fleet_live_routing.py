@@ -352,6 +352,76 @@ class LiveRunRoutingTests(_LiveRunCase):
         self.assertEqual(out["stopping_finished"], 0)
         self.assertTrue(alert.called, "the user is told the shares are still open")
 
+    def test_a_close_over_the_cap_still_reaches_the_broker(self):
+        """The $1,000 new-venue cap limits NEW risk. A position that grew past
+        it (several entries, or a rise) must still close — refusing would
+        trap real shares at the broker on every flatten and SL/TP exit."""
+        run = self._run("live")
+        patcher, calls = _patch_http(_webull_ok)
+        with patcher:
+            self._trade("buy", 6, run)            # $600
+            self._trade("buy", 6, run)            # $600 more: 12 shares held
+            sig, skip = self._trade("sell", 12, run, price=110.0)   # $1,320 close
+        self.assertTrue(sig, skip)
+        self.assertEqual([leg["side"] for leg in _placed(calls)], ["BUY", "BUY", "SELL"])
+
+    def test_two_symbols_cannot_both_spend_the_last_cash(self):
+        """Members on DIFFERENT symbols share the agent's cash: with $600
+        left, two $500 buys at once must not both reach the broker."""
+        conn = database.get_db_connection()
+        conn.cursor().execute("UPDATE agents SET cash = 600 WHERE id = ?", (self.agent_id,))
+        conn.commit()
+        conn.close()
+        run_a, run_b = self._run("live"), self._run("live")
+        in_broker = threading.Event()
+        places = []
+
+        def slow(method, url, kwargs):
+            if urlparse(url).path == PLACE:
+                places.append(json.loads(kwargs["content"])["new_orders"][0]["symbol"])
+                in_broker.set()
+                time.sleep(0.3)
+                return _FakeResponse(200, {"client_order_id": "c", "order_id": "W"})
+            return None
+
+        from automation import execute_paper_trade
+        results = []
+
+        def buy(run, sym):
+            results.append(execute_paper_trade(self.agent_id, sym, "us-stock", "buy",
+                                               5, 100.0, run_id=run))
+
+        patcher, _ = _patch_http(slow)
+        with patcher:
+            t1 = threading.Thread(target=buy, args=(run_a, "AAPL"))
+            t1.start()
+            in_broker.wait(5)
+            t2 = threading.Thread(target=buy, args=(run_b, "MSFT"))
+            t2.start()
+            t1.join(10)
+            t2.join(10)
+        self.assertEqual(places, ["AAPL"], "the second buy must be refused before the broker")
+        self.assertIn("insufficient cash", [r[1] for r in results if not r[0]][0])
+
+    def test_owner_stop_restamps_a_machine_stopping_run(self):
+        """A live run stuck `stopping` under a machine reason (a below-cost
+        long the long exit policy will not sell) must yield to the owner's
+        own Stop, or the fleet can never finish."""
+        from trading_runs import request_stop
+        run = self._run("live")
+        conn = database.get_db_connection()
+        conn.cursor().execute("UPDATE trading_runs SET status = 'stopping', "
+                              "status_reason = 'fleet_breaker' WHERE id = ?", (run,))
+        conn.commit()
+        conn.close()
+        request_stop(run, self.agent_id, True, reason="fleet_stop_all")
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT status, status_reason FROM trading_runs WHERE id = ?", (run,))
+        row = dict(cur.fetchone())
+        conn.close()
+        self.assertEqual(row, {"status": "stopping", "status_reason": "fleet_stop_all"})
+
 class LiveFleetCreationTests(_DbTestCase):
     def test_live_fleet_needs_a_usable_gateway_per_market(self):
         from fleet_planner import live_fleet_refusal

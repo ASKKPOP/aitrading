@@ -620,7 +620,10 @@ def submit_live(agent_id: int, symbol: str, market: str, side: str,
             _logger.exception("[live] could not persist refused order for agent %s", agent_id)
         return order
     cap = _max_order_usd_for(broker_name)
-    if cap is not None and quantity * price > cap:
+    # The cap limits NEW risk (buy, short). A close only reduces it: capping
+    # one would trap a real position that grew past the limit — every
+    # flatten and SL/TP exit refused while the shares stay at the broker.
+    if cap is not None and side in ("buy", "short") and quantity * price > cap:
         order.status = OrderStatus.REJECTED
         order.error_message = (
             f"order notional ${quantity * price:,.2f} exceeds the "

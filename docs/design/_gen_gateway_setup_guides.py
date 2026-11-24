@@ -46,12 +46,12 @@ LEGACY_LIVE = {"alpaca", "binance", "ibkr"}
 # Sentence appended to a capped live venue's "live" row (gateway
 # _max_order_usd_for: every non-legacy venue, EXECUTION_MAX_ORDER_USD=1000).
 LIVE_CAP_NOTE = {
-    "en": " A $1,000 per-order limit applies to {name} for now (over-limit orders are refused, never resized).",
-    "ko": " {name}에는 현재 주문당 $1,000 한도가 적용됩니다(초과 주문은 축소가 아니라 거부).",
-    "ja": "{name}には現在、注文あたり$1,000の上限があります(超過注文は縮小ではなく拒否)。",
-    "th": " ตอนนี้ {name} มีเพดานคำสั่งละ $1,000 (คำสั่งเกินเพดานถูกปฏิเสธ ไม่ถูกลดขนาด)",
-    "vi": " Hiện {name} có giới hạn $1,000 mỗi lệnh (lệnh vượt hạn bị từ chối, không bị thu nhỏ).",
-    "id": " Saat ini {name} dikenakan batas $1.000 per order (order yang melebihi batas ditolak, bukan diperkecil).",
+    "en": " A $1,000 per-order limit applies to {name} for now: an order that opens or adds to a position above it is refused, never resized. Closing orders are not limited.",
+    "ko": " {name}에는 현재 주문당 $1,000 한도가 적용됩니다: 이를 넘는 신규·추가 진입 주문은 축소가 아니라 거부됩니다. 청산 주문에는 한도가 없습니다.",
+    "ja": "{name}には現在、注文あたり$1,000の上限があります:これを超える新規・追加の注文は縮小ではなく拒否されます。決済注文には上限はありません。",
+    "th": " ตอนนี้ {name} มีเพดานคำสั่งละ $1,000: คำสั่งเปิดหรือเพิ่มสถานะที่เกินเพดานถูกปฏิเสธ ไม่ถูกลดขนาด คำสั่งปิดสถานะไม่มีเพดาน",
+    "vi": " Hiện {name} có giới hạn $1,000 mỗi lệnh: lệnh mở hoặc tăng vị thế vượt hạn bị từ chối, không bị thu nhỏ. Lệnh đóng vị thế không bị giới hạn.",
+    "id": " Saat ini {name} dikenakan batas $1.000 per order: order yang membuka atau menambah posisi di atas batas ditolak, bukan diperkecil. Order penutupan tidak dibatasi.",
 }
 
 BROKER_NAMES = {

@@ -24,7 +24,7 @@ nav.toc a{color:var(--acc)} a{color:var(--acc)}
 <h1>Connect Webull to Sooppiy</h1>
 <p class="lede">Create a Webull OpenAPI App Key and App Secret, connect them on sooppiy.com/accounts, and point an automation rule at them. Written 2026-11-23 against production.</p>
 
-<div class="card ok"><b>Status on sooppiy.com today:</b> Webull is connectable on <code>/accounts</code>, and live routing is enabled (<code>webull</code> is on the production live allowlist). Every live Webull order is capped at <b>$1,000</b>. Orders over the cap are refused, never resized. Shorts are on (1x, US stocks only).</div>
+<div class="card ok"><b>Status on sooppiy.com today:</b> Webull is connectable on <code>/accounts</code>, and live routing is enabled (<code>webull</code> is on the production live allowlist). A live Webull order that opens or adds to a position is capped at <b>$1,000</b>: over the cap it is refused, never resized. Closing orders are not capped. Shorts are on (1x, US stocks only).</div>
 
 <nav class="toc card"><b>Steps</b>
 <ol><li><a href="#before">Before you start</a></li><li><a href="#paper">PaperTrade keys (for shadow mode)</a></li><li><a href="#prod">Production keys (for live mode)</a></li><li><a href="#connect">Connect on sooppiy.com</a></li><li><a href="#rules">Point an automation rule at Webull</a></li><li><a href="#limits">What Sooppiy sends to Webull</a></li><li><a href="#trouble">Troubleshooting</a></li></ol></nav>
@@ -105,7 +105,7 @@ nav.toc a{color:var(--acc)} a{color:var(--acc)}
 <ul>
 <li><b>Never sent:</b> crypto, options, futures, leverage above 1x.</li>
 <li><b>Covers are checked first.</b> Webull has no buy-to-cover order, so a cover with no short behind it would open a long. Sooppiy reads your Webull positions and refuses a cover when nothing is held in that symbol or the cover is larger than the position.</li>
-<li><b>$1,000 per live order</b> while Webull is new on the platform.</li>
+<li><b>$1,000 per opening order</b> while Webull is new on the platform; closing orders are never capped.</li>
 <li><b>Shorts follow the platform switch.</b> If the operator re-arms long-only, short orders are refused; closing a position is never refused.</li>
 </ul>
 

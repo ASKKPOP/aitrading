@@ -450,14 +450,18 @@ _LIVE_LOCKS_GUARD = threading.Lock()
 
 @contextmanager
 def _live_order_lock(agent_id: int, market: str, symbol: str, timeout: int = 30):
-    """One live order per agent+market+symbol at a time, dry run through
+    """One live order per agent at a time, dry run through
     ledger write. Without it the SL/TP watcher and the run cycle can both
     pass the dry run on the same position and both sell it at the broker
     (the ledger then refuses the second — after the broker sold it).
     MySQL: a named lock (GET_LOCK), so it holds across the API and worker
     processes. SQLite (single host, tests): a process lock. Yields False
     when the lock was not obtained."""
-    name = f"live:{agent_id}:{market}:{symbol}"[:64]
+    # Per AGENT, not per symbol: the dry run checks the agent's cash and the
+    # fleet position cap, which every symbol shares — two members buying
+    # different symbols at once could both pass for the last dollar or the
+    # last slot and both buy at the broker (review 2026-11-24).
+    name = f"live:{agent_id}"
     from database import using_mysql
     if using_mysql():
         conn = get_db_connection()

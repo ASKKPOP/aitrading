@@ -949,6 +949,24 @@ def request_stop(run_id: int, agent_id: int, flatten: bool,
                            STATUS_STOPPED, reason, clear_active_key=True,
                            extra_sets="realized_pnl_usd = ?",
                            extra_args=(realized,))
+    if run["status"] == STATUS_STOPPING and reason in ("user_stop", "fleet_stop_all"):
+        # A person's own Stop on a run already stopping under a machine
+        # reason (breaker, profit target): re-stamp it as theirs. The flatten
+        # then closes as a human decision (the long exit policy binds
+        # automation, not the owner) — otherwise a below-cost long keeps a
+        # live run, and its fleet, stopping with no way out in the app.
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            begin_write_transaction(cursor)
+            cursor.execute(
+                "UPDATE trading_runs SET status_reason = ? WHERE id = ? "
+                "AND agent_id = ? AND status = ?",
+                (reason, run_id, agent_id, STATUS_STOPPING))
+            conn.commit()
+        finally:
+            conn.close()
+        return get_run(run_id, agent_id)
     raise ValueError(f"cannot stop a {run['status']} run")
 
 
