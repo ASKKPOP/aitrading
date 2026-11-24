@@ -1,4 +1,4 @@
-import { cloneElement, lazy, Suspense, useEffect, useState } from 'react'
+import { cloneElement, lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { RegionSetupDialog } from './components/RegionSetup'
 
@@ -186,19 +186,51 @@ function App() {
   // Every human account gets its own auto-provisioned simulator agent — most of
   // the app runs on agent (claw) auth. Issue/refresh the claw token from the
   // user session; returns the fresh token so callers can retry immediately.
-  const linkAgent = async (): Promise<string | null> => {
-    if (!userToken) return null
-    try {
-      const res = await fetch(`${API_BASE}/users/agent`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${userToken}` }
-      })
-      if (!res.ok) return null
-      const data = await res.json()
-      if (data?.token) { login(data.token); return data.token }
-    } catch { /* transient */ }
-    return null
+  // Single-flight: each mint rotates the agent session, so two concurrent
+  // re-links would leave whichever token lost the race in state.
+  const linkInFlight = useRef<Promise<string | null> | null>(null)
+  const linkAgent = (): Promise<string | null> => {
+    if (!userToken) return Promise.resolve(null)
+    if (linkInFlight.current) return linkInFlight.current
+    linkInFlight.current = (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/users/agent`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${userToken}` }
+        })
+        if (!res.ok) return null
+        const data = await res.json()
+        if (data?.token) { login(data.token); return data.token }
+      } catch { /* transient */ }
+      return null
+    })().finally(() => { linkInFlight.current = null })
+    return linkInFlight.current
   }
+
+  // Any page's 401 on the current agent token re-links, not only App's own
+  // agents/me check — a token rotated after mount (another tab) otherwise
+  // strands the open page. Re-link only once agents/me confirms the token is
+  // dead, so an endpoint's own 401 can never loop token rotations.
+  useEffect(() => {
+    if (!token || !userToken) return
+    const orig = window.fetch
+    let checking = false
+    window.fetch = async (input, init) => {
+      const res = await orig(input, init)
+      if (res.status === 401 && !checking) {
+        const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
+        if (headers.get('Authorization') === `Bearer ${token}`) {
+          checking = true
+          orig(`${API_BASE}/claw/agents/me`, { headers: { Authorization: `Bearer ${token}` } })
+            .then((me) => (me.status === 401 ? linkAgent() : null))
+            .catch(() => {})
+            .finally(() => { checking = false })
+        }
+      }
+      return res
+    }
+    return () => { window.fetch = orig }
+  }, [token, userToken])
 
   // Link when the claw session is missing. Guarded so an existing agent
   // session is never rotated away on every render.
@@ -634,9 +666,9 @@ function AppRouter({
               <Route path="/monitor" element={<Navigate to="/automation" replace />} />
               <Route path="/docs" element={<DocsPage token={token} userToken={userToken} />} />
               <Route path="/docs/:slug" element={<DocsPage token={token} userToken={userToken} />} />
-                  <Route path="/strategies" element={<StrategiesPage />} />
-              <Route path="/discussions" element={<DiscussionsPage />} />
-              <Route path="/positions" element={<PositionsPage />} />
+                  <Route path="/strategies" element={<StrategiesPage key={token ?? 'anon'} />} />
+              <Route path="/discussions" element={<DiscussionsPage key={token ?? 'anon'} />} />
+              <Route path="/positions" element={<PositionsPage key={token ?? 'anon'} />} />
               {/* AI Analyst merged into Automation (one-off "analyze now" panel). */}
               <Route path="/analyst" element={<Navigate to="/automation" replace />} />
               <Route path="/automation" element={agentGate(
