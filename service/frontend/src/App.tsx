@@ -150,6 +150,9 @@ function App() {
   userTokenRef.current = userToken
   const linkInFlight = useRef<{ ut: string, p: Promise<string | null> } | null>(null)
   const lastMintAt = useRef(0)
+  // Mints since the last token the server accepted; a server that rejects its
+  // own fresh tokens stops being asked after 3 instead of once a minute.
+  const mintStreak = useRef(0)
 
   const login = (newToken: string) => {
     localStorage.setItem('claw_token', newToken)
@@ -172,7 +175,12 @@ function App() {
   }
 
   // Phase 5: human-user auth lives alongside the agent claw_token.
-  const userLogin = (newToken: string) => { setUserToken(newToken) }
+  // Signing in (possibly as someone else) must not inherit the previous
+  // user's agent token — drop it so the auto-link mints one for this user.
+  const userLogin = (newToken: string) => {
+    dropAgentSession(); setToken(null); setAgentInfo(null)
+    userTokenRef.current = newToken; setUserToken(newToken)
+  }
   const userLogout = () => {
     signOutUser(); userTokenRef.current = null; setUserToken(null); setUserInfo(null)
     dropAgentSession(); setToken(null); setAgentInfo(null)
@@ -210,6 +218,11 @@ function App() {
     if (!ut) return Promise.resolve(null)
     const cur = linkInFlight.current
     if (cur && cur.ut === ut) return cur.p
+    // Another tab may already have minted: adopt its token instead of
+    // minting again, or two open tabs keep killing each other's session.
+    const stored = localStorage.getItem('claw_token')
+    if (stored && stored !== tokenRef.current) { login(stored); return Promise.resolve(stored) }
+    if (mintStreak.current >= 3) return Promise.resolve(null)
     if (tokenRef.current && Date.now() - lastMintAt.current < 10_000) return Promise.resolve(null)
     const p = (async () => {
       try {
@@ -221,6 +234,7 @@ function App() {
         const data = await res.json()
         if (data?.token && userTokenRef.current === ut) {
           lastMintAt.current = Date.now()
+          mintStreak.current += 1
           login(data.token)
           return data.token
         }
@@ -245,14 +259,15 @@ function App() {
         const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
         if (headers.get('Authorization') === `Bearer ${token}`) {
           checking = true
-          orig(`${API_BASE}/claw/agents/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-            signal: AbortSignal.timeout(10_000),
-          })
+          // AbortSignal.timeout is missing before Safari 16 — no timeout there.
+          const signal = typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(10_000) : undefined
+          orig(`${API_BASE}/claw/agents/me`, { headers: { Authorization: `Bearer ${token}` }, signal })
             // Re-check after the await: a re-link elsewhere may already have
             // replaced this token, and minting again would kill the new one.
-            .then((me) => ((me.status === 401 || me.status === 403) && tokenRef.current === token
-              ? linkAgent() : null))
+            .then((me) => {
+              if (me.ok) { mintStreak.current = 0; return null }
+              return (me.status === 401 || me.status === 403) && tokenRef.current === token ? linkAgent() : null
+            })
             .catch(() => {})
             .finally(() => { checking = false })
         }
@@ -261,6 +276,19 @@ function App() {
     }
     return () => { window.fetch = orig }
   }, [token, userToken])
+
+  // Follow a token another tab minted (the storage event fires only in OTHER
+  // tabs), so tabs share one agent session instead of rotating it away.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'claw_token' && e.newValue && e.newValue !== tokenRef.current && userTokenRef.current) {
+        tokenRef.current = e.newValue
+        setToken(e.newValue)
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Link when the claw session is missing. Guarded so an existing agent
   // session is never rotated away on every render.
@@ -282,6 +310,7 @@ function App() {
       if (res.ok) {
         const data = await res.json()
         setAgentInfo(data)
+        mintStreak.current = 0
         return
       }
       // A stale/rotated claw token (401/403) would otherwise strand every
