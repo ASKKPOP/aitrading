@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -411,55 +413,73 @@ def execute_paper_trade(agent_id: int, symbol: str, market: str, side: str,
         conn.close()
 
 
-def _run_is_live(cursor, run_id: int) -> bool:
-    cursor.execute("SELECT config_snapshot_json FROM trading_runs WHERE id = ?", (run_id,))
-    row = cursor.fetchone()
-    if not row:
-        return False
-    try:
-        cfg = json.loads(row["config_snapshot_json"] or "{}")
-    except (ValueError, TypeError):
-        return False
-    from execution.gateway import LIVE, normalize_account_type
-    return normalize_account_type(cfg.get("account_type")) == LIVE
-
-
 def _live_venue_run(agent_id: int, symbol: str, market: str, side: str,
                     run_id: Optional[int]) -> tuple[Optional[int], Optional[str]]:
     """(live run this trade belongs to, error).
 
-    run_id given: that run, when its snapshot says account_type=live.
-    No run_id and a CLOSE: the unowned position's handoff_run_id — a live
-    run that stopped with hold released its shares to the unowned book, and
-    the watcher / orphan reclaim close them without a run_id. Opens without
-    a run_id are rules and manual trades: not routed here.
+    ONLY the trade's own run decides: a run whose snapshot says
+    account_type=live. Never inferred from a position stamp — rules, resting
+    orders, the trend module and the live rule path's own ledger write all
+    arrive here without a run_id and must not be routed (a live rule has
+    already sent its order; a simulator rule must never reach a broker).
+    A live run never releases its positions (trading_runs.release_positions),
+    so every close of its real shares carries its run_id.
     A failed lookup on a run-owned trade refuses: booking only the ledger
     could leave real shares open at the broker."""
-    if run_id is None and side not in ("sell", "cover"):
+    if run_id is None:
         return None, None
     try:
+        from trading_runs import run_is_live
         conn = get_db_connection()
         try:
-            cur = conn.cursor()
-            if run_id is not None:
-                return (run_id if _run_is_live(cur, run_id) else None), None
-            cur.execute(
-                """SELECT handoff_run_id FROM positions
-                   WHERE agent_id = ? AND market = ? AND symbol = ?
-                     AND run_id IS NULL AND handoff_run_id IS NOT NULL
-                     AND quantity != 0""",
-                (agent_id, market, symbol))
-            for row in cur.fetchall():
-                if _run_is_live(cur, int(row["handoff_run_id"])):
-                    return int(row["handoff_run_id"]), None
-            return None, None
+            return (run_id if run_is_live(conn.cursor(), run_id) else None), None
         finally:
             conn.close()
     except Exception:  # noqa: BLE001
-        logger.exception("live-venue lookup failed for agent %s %s", agent_id, symbol)
-        if run_id is not None:
-            return None, "account checks unavailable — order not sent"
-        return None, None
+        logger.exception("live-venue lookup failed for run %s", run_id)
+        return None, "account checks unavailable — order not sent"
+
+
+_LIVE_LOCKS: dict[str, Any] = {}
+_LIVE_LOCKS_GUARD = threading.Lock()
+
+
+@contextmanager
+def _live_order_lock(agent_id: int, market: str, symbol: str, timeout: int = 30):
+    """One live order per agent+market+symbol at a time, dry run through
+    ledger write. Without it the SL/TP watcher and the run cycle can both
+    pass the dry run on the same position and both sell it at the broker
+    (the ledger then refuses the second — after the broker sold it).
+    MySQL: a named lock (GET_LOCK), so it holds across the API and worker
+    processes. SQLite (single host, tests): a process lock. Yields False
+    when the lock was not obtained."""
+    name = f"live:{agent_id}:{market}:{symbol}"[:64]
+    from database import using_mysql
+    if using_mysql():
+        conn = get_db_connection()
+        got = False
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT GET_LOCK(?, ?) AS got", (name, timeout))
+            row = cur.fetchone()
+            got = bool(row and list(dict(row).values())[0] == 1)
+            yield got
+        finally:
+            if got:
+                try:
+                    conn.cursor().execute("SELECT RELEASE_LOCK(?)", (name,))
+                except Exception:  # noqa: BLE001
+                    logger.exception("RELEASE_LOCK failed for %s", name)
+            conn.close()
+        return
+    with _LIVE_LOCKS_GUARD:
+        lock = _LIVE_LOCKS.setdefault(name, threading.Lock())
+    got = lock.acquire(timeout=timeout)
+    try:
+        yield got
+    finally:
+        if got:
+            lock.release()
 
 
 def _execute_live_run_trade(venue_run: int, agent_id: int, symbol: str, market: str,
@@ -474,14 +494,29 @@ def _execute_live_run_trade(venue_run: int, agent_id: int, symbol: str, market: 
       3. the broker; a rejection books nothing;
       4. the ledger, with the broker's fill quantity when it reported one.
     No DB transaction is held across the network call."""
-    from execution.base import OrderStatus
-    from execution.gateway import LIVE, live_refusal_reason, submit_live
+    from execution.gateway import LIVE, live_refusal_reason
 
     if float(kw.get("leverage") or 1.0) > 1.0:
         return None, "live trading is 1x only — order not sent"
+    # A market order outside the session is queued (or cancelled) by the
+    # broker while the ledger would book it at once — the ledger would show
+    # a close or an entry the broker has not made. Refuse; the caller retries
+    # on its next pass, inside the session.
+    if not markets.is_market_open(market):
+        return None, f"{market} market is closed — live order not sent"
     refusal = live_refusal_reason(agent_id, LIVE, market)
     if refusal:
         return None, refusal
+    with _live_order_lock(agent_id, market, symbol) as locked:
+        if not locked:
+            return None, "another live order on this symbol is in flight — not sent"
+        return _live_leg(venue_run, agent_id, symbol, market, side, quantity, price, **kw)
+
+
+def _live_leg(venue_run: int, agent_id: int, symbol: str, market: str, side: str,
+              quantity: float, price: float, **kw) -> tuple[Optional[int], Optional[str]]:
+    from execution.base import OrderStatus
+    from execution.gateway import submit_live
     ok, why = execute_paper_trade(agent_id, symbol, market, side, quantity, price,
                                   _route=False, _dry_run=True, **kw)
     if why:

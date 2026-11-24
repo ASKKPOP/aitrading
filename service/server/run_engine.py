@@ -2471,10 +2471,7 @@ def _simple_transition(run: dict, target: str, reason: str,
             # …stamped with the run that released it (2026-11-06, loss
             # analysis §5 #4), so the orphan sweep reads the desk on it at
             # once instead of holding a stop-wearing position for days.
-            cursor.execute(
-                "UPDATE positions SET handoff_run_id = ?, run_id = NULL "
-                "WHERE run_id = ? AND agent_id = ?",
-                (run["id"], run["id"], run["agent_id"]))
+            trading_runs.release_positions(cursor, run["id"], run["agent_id"])
         if extra_sets:
             sets += ", " + extra_sets
             args.extend(extra_args)

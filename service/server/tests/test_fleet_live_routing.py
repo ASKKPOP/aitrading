@@ -8,6 +8,9 @@ Contract under test:
   - the ledger's own refusals (cash, duplicate client_order_id) are checked
     BEFORE the broker, so a trade the ledger would refuse never reaches it;
   - a simulator run never touches the network;
+  - only the trade's own run decides (never a position stamp); a live run
+    keeps its positions when it stops; one live order per symbol at a time;
+    no live order outside the market session;
   - live fleets are refused at creation unless every market has a usable
     live gateway, and never leveraged; the account type rides into each
     run's config snapshot.
@@ -19,7 +22,10 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
+import time
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -60,6 +66,14 @@ class _LiveRunCase(_DbTestCase):
                                                "account_id": "ACC1"})
         _accept_tcs(self.agent_id, "webull")
         os.environ["LIVE_BROKER_ALLOWLIST"] = "webull"
+        # Live orders are refused outside the session; most tests are about
+        # routing, so the clock is pinned open (one test pins it shut).
+        self._open = patch("markets.is_market_open", return_value=True)
+        self._open.start()
+
+    def tearDown(self):
+        self._open.stop()
+        super().tearDown()
 
     def _run(self, account_type):
         conn = database.get_db_connection()
@@ -187,34 +201,105 @@ class LiveRunRoutingTests(_LiveRunCase):
         self.assertTrue(sig, skip)
         self.assertEqual([leg["side"] for leg in _placed(calls)], ["BUY", "SELL"])
 
-    def test_closing_a_handed_off_live_position_goes_to_webull(self):
-        """A live run that stops with hold releases its position to the
-        unowned book (run_id NULL, handoff_run_id set). The watcher / orphan
-        reclaim then close it WITHOUT a run_id — that close must still reach
-        Webull, or the shares stay open at the broker."""
+    def test_live_order_outside_the_session_is_refused(self):
+        """A market order after hours is queued by the broker while the
+        ledger would book it at once: refuse instead."""
         run = self._run("live")
         patcher, calls = _patch_http(_webull_ok)
-        with patcher:
-            self._trade("buy", 5, run)
-        conn = database.get_db_connection()
-        conn.cursor().execute(
-            "UPDATE positions SET handoff_run_id = ?, run_id = NULL "
-            "WHERE agent_id = ? AND symbol = 'AAPL'", (run, self.agent_id))
-        conn.commit()
-        conn.close()
-        patcher, calls = _patch_http(_webull_ok)
-        with patcher:
-            sig, skip = self._trade("sell", 5, None, price=99.0)
-        self.assertTrue(sig, skip)
-        self.assertEqual([leg["side"] for leg in _placed(calls)], ["SELL"])
+        with patch("markets.is_market_open", return_value=False), patcher:
+            sig, skip = self._trade("buy", 5, run)
+        self.assertIsNone(sig)
+        self.assertIn("market is closed", skip)
+        self.assertEqual(calls, [])
+        self.assertEqual(self._signals(), [])
 
-    def test_unowned_close_without_a_live_origin_stays_simulated(self):
+    def test_unowned_trades_are_never_routed_even_with_a_live_handoff_stamp(self):
+        """Rules, resting orders, the trend module and the live rule path's
+        own ledger write carry no run_id. Routing them on a position stamp
+        double-sent a live rule's sell and sent simulator sells to the
+        broker (review 2026-11-24) — only the trade's own run decides."""
+        run = self._run("live")
         patcher, calls = _patch_http(lambda m, u, k: None)
         with patcher:
             self._trade("buy", 5, None)
-            sig, _ = self._trade("sell", 5, None)
-        self.assertTrue(sig)
+            conn = database.get_db_connection()
+            conn.cursor().execute(
+                "UPDATE positions SET handoff_run_id = ? WHERE agent_id = ?",
+                (run, self.agent_id))
+            conn.commit()
+            conn.close()
+            sig, skip = self._trade("sell", 5, None)
+        self.assertTrue(sig, skip)
         self.assertEqual(calls, [])
+
+    def test_a_stopped_live_run_keeps_its_real_positions(self):
+        """Released to the unowned book, a live run's shares would be closed
+        by ledger-only paths (manual sell, orphan reclaim) and stay open at
+        the broker. A simulator run still releases as before."""
+        from trading_runs import release_positions
+        live, sim = self._run("live"), self._run("simulator")
+        patcher, _ = _patch_http(_webull_ok)
+        with patcher:
+            self._trade("buy", 2, live)
+            self._trade("buy", 3, sim)
+        conn = database.get_db_connection()
+        cur = conn.cursor()
+        release_positions(cur, live, self.agent_id)
+        release_positions(cur, sim, self.agent_id)
+        conn.commit()
+        cur.execute("SELECT run_id, handoff_run_id, quantity FROM positions"
+                    " WHERE agent_id = ? ORDER BY quantity", (self.agent_id,))
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        self.assertEqual(rows, [{"run_id": live, "handoff_run_id": None, "quantity": 2.0},
+                                {"run_id": None, "handoff_run_id": sim, "quantity": 3.0}])
+
+    def test_a_run_holding_positions_cannot_be_deleted(self):
+        from trading_runs import delete_run
+        run = self._run("live")
+        patcher, _ = _patch_http(_webull_ok)
+        with patcher:
+            self._trade("buy", 2, run)
+        conn = database.get_db_connection()
+        conn.cursor().execute("UPDATE trading_runs SET status = 'stopped' WHERE id = ?", (run,))
+        conn.commit()
+        conn.close()
+        with self.assertRaises(ValueError) as cm:
+            delete_run(run, self.agent_id)
+        self.assertIn("open positions", str(cm.exception))
+
+    def test_two_closers_on_one_live_position_send_one_order(self):
+        """The SL/TP watcher and the run cycle closing the same position at
+        once: the first holds the live-order lock through the broker call
+        and the ledger write, so the second's dry run sees nothing left to
+        sell and never reaches the broker."""
+        run = self._run("live")
+        patcher, _ = _patch_http(_webull_ok)
+        with patcher:
+            self._trade("buy", 5, run)
+        in_broker = threading.Event()
+        places = []
+
+        def slow(method, url, kwargs):
+            if urlparse(url).path == PLACE:
+                places.append(json.loads(kwargs["content"])["new_orders"][0]["side"])
+                in_broker.set()
+                time.sleep(0.3)
+                return _FakeResponse(200, {"client_order_id": "c", "order_id": "W2"})
+            return None
+
+        results = []
+        patcher, _ = _patch_http(slow)
+        with patcher:
+            t1 = threading.Thread(target=lambda: results.append(self._trade("sell", 5, run)))
+            t1.start()
+            in_broker.wait(5)
+            t2 = threading.Thread(target=lambda: results.append(self._trade("sell", 5, run)))
+            t2.start()
+            t1.join(10)
+            t2.join(10)
+        self.assertEqual(places, ["SELL"], "the second close must not reach Webull")
+        self.assertEqual(sorted(bool(r[0]) for r in results), [False, True])
 
 
 class LiveFleetCreationTests(_DbTestCase):

@@ -796,6 +796,37 @@ def start_run(run_id: int, agent_id: int) -> dict:
     return get_run(run_id, agent_id) or {}
 
 
+def run_is_live(cursor, run_id: int) -> bool:
+    """True when the run's config snapshot says account_type=live (a Real
+    fleet's run): its trades go to the trading gateway, and its positions
+    are real shares at the broker."""
+    cursor.execute("SELECT config_snapshot_json FROM trading_runs WHERE id = ?", (run_id,))
+    row = cursor.fetchone()
+    if not row:
+        return False
+    try:
+        cfg = json.loads(row["config_snapshot_json"] or "{}")
+    except (ValueError, TypeError):
+        return False
+    return str(cfg.get("account_type") or "").strip().lower() == "live"
+
+
+RELEASE_POSITIONS_SQL = (
+    "UPDATE positions SET handoff_run_id = ?, run_id = NULL "
+    "WHERE run_id = ? AND agent_id = ?")
+
+
+def release_positions(cursor, run_id: int, agent_id: int) -> None:
+    """Hand a finished run's positions to the unowned book — except a LIVE
+    run's. Those are real shares at the broker: unowned, every close (manual
+    sell, rules, orphan reclaim) would only write the ledger and leave the
+    shares open at the broker. A live run keeps owning them, so the SL/TP
+    watcher and liquidation close them through the run — to the broker."""
+    if run_is_live(cursor, run_id):
+        return
+    cursor.execute(RELEASE_POSITIONS_SQL, (run_id, run_id, agent_id))
+
+
 def _transition(run_id: int, agent_id: int, allowed_from: tuple, target: str,
                 reason: str, clear_active_key: bool = False,
                 extra_sets: str = "", extra_args: tuple = ()) -> dict:
@@ -826,10 +857,7 @@ def _transition(run_id: int, agent_id: int, allowed_from: tuple, target: str,
             # since both read `run_id IS NULL`.
             # Stamped with the releasing run (2026-11-06, loss analysis §5
             # #4) so the orphan sweep reads the desk on it at once.
-            cursor.execute(
-                "UPDATE positions SET handoff_run_id = ?, run_id = NULL "
-                "WHERE run_id = ? AND agent_id = ?",
-                (run_id, run_id, agent_id))
+            release_positions(cursor, run_id, agent_id)
         if extra_sets:
             sets += ", " + extra_sets
             args.extend(extra_args)
@@ -1000,6 +1028,13 @@ def delete_run(run_id: int, agent_id: int) -> None:
             raise LookupError("run not found")
         if run["status"] not in (STATUS_DRAFT, STATUS_STOPPED):
             raise ValueError("only draft or stopped runs can be deleted")
+        # A stopped LIVE run keeps owning its open positions (real shares at
+        # the broker — see release_positions); deleting it would strand them.
+        cursor.execute(
+            "SELECT 1 FROM positions WHERE run_id = ? AND agent_id = ? "
+            "AND quantity != 0 LIMIT 1", (run_id, agent_id))
+        if cursor.fetchone():
+            raise ValueError("this run still holds open positions — close them first")
         cursor.execute("DELETE FROM run_events WHERE run_id = ?", (run_id,))
         cursor.execute("DELETE FROM run_reports WHERE run_id = ?", (run_id,))
         # A position this run handed off (positions_held) loses its handoff
