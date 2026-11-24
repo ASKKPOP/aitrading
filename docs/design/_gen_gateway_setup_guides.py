@@ -100,7 +100,7 @@ S = {
     connect_steps=[
         "Open <b>Accounts</b> → <b>Trading gateway</b>.",
         "Pick your region (ordering only — every broker stays available) and choose <b>{name}</b>.",
-        "Paste the credentials from step 2.",
+        "Paste the credentials you created in section 4.",
         "Read and accept the live-trading terms — required even if you only plan to use shadow.",
         "Press <b>Connect gateway</b>. The account starts in <b>paper</b> mode: nothing is sent to {name} yet.",
         "Switch the account to <b>shadow</b> (recommended first) or <b>live</b> on the account card.",
@@ -154,7 +154,7 @@ S = {
     connect_steps=[
         "<b>계정</b> → <b>거래 게이트웨이</b>를 엽니다.",
         "지역을 선택하고(추천 정렬일 뿐, 모든 브로커 연결 가능) <b>{name}</b>을(를) 선택합니다.",
-        "2단계에서 만든 자격 증명을 붙여넣습니다.",
+        "4번 섹션에서 만든 자격 증명을 붙여넣습니다.",
         "실거래 약관을 읽고 동의합니다 — 섀도만 쓸 계획이어도 필요합니다.",
         "<b>게이트웨이 연결</b>을 누릅니다. 계정은 <b>paper</b> 모드로 시작하며 아직 {name}에는 아무것도 전송되지 않습니다.",
         "계정 카드에서 <b>shadow</b>(먼저 권장) 또는 <b>live</b>로 전환합니다.",
@@ -208,7 +208,7 @@ S = {
     connect_steps=[
         "<b>アカウント</b> → <b>取引ゲートウェイ</b>を開きます。",
         "地域を選び(おすすめ順になるだけで、全ブローカー接続可能)、<b>{name}</b>を選択します。",
-        "手順2で作成した資格情報を貼り付けます。",
+        "セクション4で作成した資格情報を貼り付けます。",
         "実取引規約を読んで同意します — シャドーのみ使う場合でも必要です。",
         "<b>ゲートウェイを接続</b>を押します。アカウントは<b>paper</b>モードで始まり、まだ{name}には何も送信されません。",
         "アカウントカードで<b>shadow</b>(まず推奨)か<b>live</b>に切り替えます。",
@@ -262,7 +262,7 @@ S = {
     connect_steps=[
         "เปิด <b>บัญชี</b> → <b>เกตเวย์การเทรด</b>",
         "เลือกภูมิภาค (มีผลแค่การจัดเรียงแนะนำ — ทุกโบรกเกอร์ยังเชื่อมต่อได้) แล้วเลือก <b>{name}</b>",
-        "วางข้อมูลรับรองจากขั้นตอนที่ 2",
+        "วางข้อมูลรับรองที่สร้างไว้ในหัวข้อ 4",
         "อ่านและยอมรับข้อกำหนดการเทรดจริง — จำเป็นแม้ตั้งใจใช้แค่ shadow",
         "กด <b>เชื่อมต่อเกตเวย์</b> บัญชีจะเริ่มในโหมด <b>paper</b> — ยังไม่ส่งอะไรไปที่ {name}",
         "สลับบัญชีเป็น <b>shadow</b> (แนะนำให้ทำก่อน) หรือ <b>live</b> ที่การ์ดบัญชี",
@@ -316,7 +316,7 @@ S = {
     connect_steps=[
         "Mở <b>Tài khoản</b> → <b>Cổng giao dịch</b>.",
         "Chọn khu vực (chỉ ảnh hưởng thứ tự đề xuất — mọi broker vẫn kết nối được) rồi chọn <b>{name}</b>.",
-        "Dán thông tin xác thực từ bước 2.",
+        "Dán thông tin xác thực đã tạo ở mục 4.",
         "Đọc và chấp nhận điều khoản giao dịch thật — bắt buộc kể cả khi chỉ định dùng shadow.",
         "Nhấn <b>Kết nối cổng</b>. Tài khoản bắt đầu ở chế độ <b>paper</b>: chưa có gì gửi tới {name}.",
         "Chuyển tài khoản sang <b>shadow</b> (nên làm trước) hoặc <b>live</b> trên thẻ tài khoản.",
@@ -370,7 +370,7 @@ S = {
     connect_steps=[
         "Buka <b>Akun</b> → <b>Gateway trading</b>.",
         "Pilih wilayah (hanya memengaruhi urutan rekomendasi — semua broker tetap bisa dihubungkan) lalu pilih <b>{name}</b>.",
-        "Tempel kredensial dari langkah 2.",
+        "Tempel kredensial yang dibuat di bagian 4.",
         "Baca dan terima ketentuan trading live — wajib meskipun Anda hanya berencana memakai shadow.",
         "Tekan <b>Hubungkan gateway</b>. Akun dimulai dalam mode <b>paper</b>: belum ada yang dikirim ke {name}.",
         "Alihkan akun ke <b>shadow</b> (disarankan lebih dulu) atau <b>live</b> pada kartu akun.",

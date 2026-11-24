@@ -168,6 +168,31 @@ class RegistryTests(unittest.TestCase):
         alpaca = (content / "gwsetup-alpaca-en.html").read_text()
         self.assertNotIn("per-order limit applies", alpaca)
 
+    def test_guides_point_paste_step_at_the_create_section(self):
+        """'Paste the credentials from step N' must name the section where the
+        credentials are created (h_create), in every broker and language. It
+        said "step 2" (Availability) on every guide until 2026-11-24."""
+        import re
+        content = SERVER_DIR / "guide_content"
+        # "section", not "step": the line sits in a numbered list whose own
+        # item 4 is the terms checkbox (reviewer, 2026-11-24).
+        refs = {"en": r"credentials you created in section (\d+)",
+                "ko": r"(\d+)번 섹션에서 만든 자격 증명", "ja": r"セクション(\d+)で作成した資格情報",
+                "th": r"ข้อมูลรับรองที่สร้างไว้ในหัวข้อ (\d+)",
+                "vi": r"thông tin xác thực đã tạo ở mục (\d+)",
+                "id": r"kredensial yang dibuat di bagian (\d+)"}
+        pages = sorted(content.glob("gwsetup-*-*.html"))
+        self.assertGreaterEqual(len(pages), 66)
+        for page in pages:
+            lang = page.stem.rsplit("-", 1)[1]
+            html = page.read_text()
+            ref = re.search(refs[lang], html)
+            self.assertIsNotNone(ref, page.name)
+            create_no = re.search(r'<span class="no">(\d+)</span>[^<]*'
+                                  r'(?:Create|만들기|作成|สร้าง|Tạo|Buat)', html)
+            self.assertIsNotNone(create_no, page.name)
+            self.assertEqual(ref.group(1), create_no.group(1), page.name)
+
     def test_router_pins_host_by_mode(self):
         from execution.router import _build_real_broker
         from execution.webull import WebullBroker
